@@ -10,10 +10,10 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
     diagnose_temperature,
 )
-from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
 
@@ -31,9 +31,9 @@ class TestDiagnoseTemperature(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        theta_v = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        exner = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        temperature = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        temperature = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             theta_v=theta_v,

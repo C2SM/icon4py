@@ -14,19 +14,19 @@ import dataclasses
 import enum
 from typing import Final, Optional
 
-from icon4py.model.common import field_type_aliases as fa
+
 import gt4py.next as gtx
 
-
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states, cached
-
-
-from icon4py.model.common import constants
+from icon4py.model.common import field_type_aliases as fa, constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid, icon as icon_grid
+from icon4py.model.common.grid import (
+    horizontal as h_grid,
+    vertical as v_grid,
+    icon as icon_grid,
+    geometry,
+)
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.common.settings import xp
 
@@ -328,7 +328,7 @@ class Diffusion:
         self.grid: Optional[icon_grid.IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
-        self.vertical_params: Optional[v_grid.VerticalGridParams] = None
+        self.vertical_grid: Optional[v_grid.VerticalGrid] = None
         self.interpolation_state: diffusion_states.DiffusionInterpolationState = None
         self.metric_state: diffusion_states.DiffusionMetricState = None
         self.diff_multfac_w: Optional[float] = None
@@ -337,20 +337,20 @@ class Diffusion:
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
         self.nudgezone_diff: Optional[float] = None
-        self.edge_params: Optional[h_grid.EdgeParams] = None
-        self.cell_params: Optional[h_grid.CellParams] = None
-        self._horizontal_start_index_w_diffusion: gtx.int32 = 0
+        self.edge_params: Optional[geometry.EdgeParams] = None
+        self.cell_params: Optional[geometry.CellParams] = None
+        self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
     def init(
         self,
         grid: icon_grid.IconGrid,
         config: DiffusionConfig,
         params: DiffusionParams,
-        vertical_params: v_grid.VerticalGridParams,
+        vertical_grid: v_grid.VerticalGrid,
         metric_state: diffusion_states.DiffusionMetricState,
         interpolation_state: diffusion_states.DiffusionInterpolationState,
-        edge_params: h_grid.EdgeParams,
-        cell_params: h_grid.CellParams,
+        edge_params: geometry.EdgeParams,
+        cell_params: geometry.CellParams,
     ):
         """
         Initialize Diffusion granule with configuration.
@@ -361,7 +361,7 @@ class Diffusion:
             grid:
             config:
             params:
-            vertical_params:
+            vertical_grid:
             metric_state:
             interpolation_state:
             edge_params:
@@ -370,7 +370,7 @@ class Diffusion:
         self.config: DiffusionConfig = config
         self.params: DiffusionParams = params
         self.grid = grid
-        self.vertical_params = vertical_params
+        self.vertical_grid = vertical_grid
         self.metric_state: diffusion_states.DiffusionMetricState = metric_state
         self.interpolation_state: diffusion_states.DiffusionInterpolationState = interpolation_state
         self.edge_params = edge_params
@@ -379,13 +379,11 @@ class Diffusion:
         self._allocate_temporary_fields()
 
         def _get_start_index_for_w_diffusion() -> gtx.int32:
-            return self.grid.get_start_index(
-                CellDim,
-                (
-                    h_grid.HorizontalMarkerIndex.nudging(CellDim)
-                    if self.grid.limited_area
-                    else h_grid.HorizontalMarkerIndex.interior(CellDim)
-                ),
+            cell_domain = h_grid.domain(dims.CellDim)
+            return (
+                self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+                if self.grid.limited_area
+                else self.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
             )
 
         self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
@@ -402,19 +400,19 @@ class Diffusion:
             config.substep_as_float,
             *params.smagorinski_factor,
             *params.smagorinski_height,
-            self.vertical_params.inteface_physical_height,
+            self.vertical_grid.interface_physical_height,
             self.diff_multfac_vn,
             self.smag_limit,
             self.enh_smag_fac,
-            offset_provider={"Koff": KDim},
+            offset_provider={"Koff": dims.KDim},
         )
 
         # TODO (magdalena) port to gt4py?
         self.diff_multfac_n2w = diffusion_utils.init_nabla2_factor_in_upper_damping_zone(
             k_size=self.grid.num_levels,
             nshift=0,
-            physical_heights=self.vertical_params.inteface_physical_height,
-            nrdmax=self.vertical_params.end_index_of_damping_layer,
+            physical_heights=self.vertical_grid.interface_physical_height,
+            nrdmax=self.vertical_grid.end_index_of_damping_layer,
         )
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
         self._initialized = True
@@ -424,23 +422,26 @@ class Diffusion:
         return self._initialized
 
     def _allocate_temporary_fields(self):
-        self.diff_multfac_vn = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        self.diff_multfac_vn = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
 
-        self.smag_limit = field_alloc.allocate_zero_field(KDim, grid=self.grid)
-        self.enh_smag_fac = field_alloc.allocate_zero_field(KDim, grid=self.grid)
-        self.u_vert = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
-        self.v_vert = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
-        self.kh_smag_e = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
-        self.kh_smag_ec = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
-        self.z_nabla2_e = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
-        self.z_temp = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.diff_multfac_smag = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        self.smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+        self.enh_smag_fac = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+        self.u_vert = field_alloc.allocate_zero_field(dims.VertexDim, dims.KDim, grid=self.grid)
+        self.v_vert = field_alloc.allocate_zero_field(dims.VertexDim, dims.KDim, grid=self.grid)
+        self.kh_smag_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
+        self.kh_smag_ec = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
+        self.z_nabla2_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
+        self.z_temp = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.diff_multfac_smag = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
         # TODO(Magdalena): this is KHalfDim
-        self.vertical_index = field_alloc.allocate_indices(KDim, grid=self.grid, is_halfdim=True)
-        self.horizontal_cell_index = field_alloc.allocate_indices(CellDim, grid=self.grid)
-        self.horizontal_edge_index = field_alloc.allocate_indices(EdgeDim, grid=self.grid)
+        self.vertical_index = field_alloc.allocate_indices(
+            dims.KDim, grid=self.grid, is_halfdim=True
+        )
+        self.horizontal_cell_index = field_alloc.allocate_indices(dims.CellDim, grid=self.grid)
+        self.horizontal_edge_index = field_alloc.allocate_indices(dims.EdgeDim, grid=self.grid)
         self.w_tmp = gtx.as_field(
-            (CellDim, KDim), xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
+            (dims.CellDim, dims.KDim),
+            xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float),
         )
 
     def initial_run(
@@ -460,8 +461,8 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = field_alloc.allocate_zero_field(KDim, grid=self.grid)
-        smag_limit = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        diff_multfac_vn = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+        smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
 
         cached.setup_fields_for_initial_step(
             self.params.K4,
@@ -510,7 +511,7 @@ class Diffusion:
         """
         log.debug("communication of prognostic cell fields: theta, w, exner - start")
         self._exchange.exchange_and_wait(
-            CellDim,
+            dims.CellDim,
             prognostic_state.w,
             prognostic_state.theta_v,
             prognostic_state.exner,
@@ -538,41 +539,30 @@ class Diffusion:
             smag_offset:
 
         """
-        klevels = self.grid.num_levels
-        cell_start_interior = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.interior(CellDim)
-        )
-        cell_start_nudging = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
-        )
-        cell_end_local = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
-        )
-        cell_end_halo = self.grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.halo(CellDim))
+        num_levels = self.grid.num_levels
+        cell_domain = h_grid.domain(dims.CellDim)
+        cell_start_interior = self.grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
 
-        edge_start_nudging_plus_one = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim) + 1
-        )
-        edge_start_nudging = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim)
-        )
-        edge_start_lb_plus4 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
-        )
-        edge_end_local = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
-        )
-        edge_end_local_minus2 = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 2
-        )
-        edge_end_halo = self.grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.halo(EdgeDim))
+        cell_start_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        cell_end_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        cell_end_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-        vertex_start_lb_plus1 = self.grid.get_start_index(
-            VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        edge_start_nudging_level_2 = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+        edge_start_nudging = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING))
+
+        edge_start_lateral_boundary_level_5 = self.grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
-        vertex_end_local = self.grid.get_end_index(
-            VertexDim, h_grid.HorizontalMarkerIndex.local(VertexDim)
+        edge_end_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        edge_end_halo_level_2 = self.grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        edge_end_halo = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+        vertex_domain = h_grid.domain(dims.VertexDim)
+        vertex_start_lateral_boundary_level_2 = self.grid.start_index(
+            vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
+        vertex_end_local = self.grid.end_index(vertex_domain(h_grid.Zone.LOCAL))
 
         # dtime dependent: enh_smag_factor,
         cached.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
@@ -584,17 +574,17 @@ class Diffusion:
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
-            horizontal_start=vertex_start_lb_plus1,
+            horizontal_start=vertex_start_lateral_boundary_level_2,
             horizontal_end=vertex_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("rbf interpolation 1: end")
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
-        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
+        self._exchange.exchange_and_wait(dims.VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -615,10 +605,10 @@ class Diffusion:
             kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
             smag_offset=smag_offset,
-            horizontal_start=edge_start_lb_plus4,
-            horizontal_end=edge_end_local_minus2,
+            horizontal_start=edge_start_lateral_boundary_level_5,
+            horizontal_end=edge_end_halo_level_2,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
@@ -641,7 +631,7 @@ class Diffusion:
                 horizontal_start=cell_start_nudging,
                 horizontal_end=cell_end_local,
                 vertical_start=1,
-                vertical_end=klevels,
+                vertical_end=num_levels,
                 offset_provider=self.grid.offset_providers,
             )
             log.debug(
@@ -652,7 +642,7 @@ class Diffusion:
         # TODO (magdalena) move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
-            self._exchange.exchange_and_wait(EdgeDim, self.z_nabla2_e)
+            self._exchange.exchange_and_wait(dims.EdgeDim, self.z_nabla2_e)
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
@@ -662,17 +652,17 @@ class Diffusion:
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
-            horizontal_start=vertex_start_lb_plus1,
+            horizontal_start=vertex_start_lateral_boundary_level_2,
             horizontal_end=vertex_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("2nd rbf interpolation: end")
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         log.debug("communication rbf extrapolation of z_nable2_e - start")
-        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
+        self._exchange.exchange_and_wait(dims.VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
@@ -692,17 +682,17 @@ class Diffusion:
             edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=gtx.int32(edge_start_nudging_plus_one),
+            start_2nd_nudge_line_idx_e=gtx.int32(edge_start_nudging_level_2),
             limited_area=self.grid.limited_area,
-            horizontal_start=edge_start_lb_plus4,
+            horizontal_start=edge_start_lateral_boundary_level_5,
             horizontal_end=edge_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
         log.debug("communication of prognistic.vn : start")
-        handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
+        handle_edge_comm = self._exchange.exchange(dims.EdgeDim, prognostic_state.vn)
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -725,14 +715,14 @@ class Diffusion:
             k=self.vertical_index,
             cell=self.horizontal_cell_index,
             nrdmax=gtx.int32(
-                self.vertical_params.end_index_of_damping_layer + 1
+                self.vertical_grid.end_index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
             interior_idx=gtx.int32(cell_start_interior),
             halo_idx=gtx.int32(cell_end_local),
             horizontal_start=self._horizontal_start_index_w_diffusion,
             horizontal_end=cell_end_halo,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug(
@@ -751,8 +741,8 @@ class Diffusion:
             kh_smag_e=self.kh_smag_e,
             horizontal_start=edge_start_nudging,
             horizontal_end=edge_end_halo,
-            vertical_start=(klevels - 2),
-            vertical_end=klevels,
+            vertical_start=(num_levels - 2),
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug(
@@ -769,7 +759,7 @@ class Diffusion:
             horizontal_start=cell_start_nudging,
             horizontal_end=cell_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
@@ -789,7 +779,7 @@ class Diffusion:
                 horizontal_start=cell_start_nudging,
                 horizontal_end=cell_end_local,
                 vertical_start=0,
-                vertical_end=klevels,
+                vertical_end=num_levels,
                 offset_provider=self.grid.offset_providers,
             )
 
@@ -806,7 +796,7 @@ class Diffusion:
             horizontal_start=cell_start_nudging,
             horizontal_end=cell_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider={},
         )
         log.debug("running stencil 16 (update_theta_and_exner): end")

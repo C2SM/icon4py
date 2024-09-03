@@ -12,7 +12,7 @@ import pytest
 from icon4py.model.atmosphere.advection.stencils.recon_lsq_cell_c_svd_stencil import (
     recon_lsq_cell_c_svd_stencil,
 )
-from icon4py.model.common.dimension import C2E2C2E2CDim, CECECDim, CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -62,7 +62,7 @@ class TestReconLsqCellCSvdStencil(StencilTest):
         lsq_moments_9: np.array,
         **kwargs,
     ):
-        c2e2c2e2c = grid.connectivities[C2E2C2E2CDim]
+        c2e2c2e2c = grid.connectivities[dims.C2E2C2E2CDim]
         lsq_moments_1 = np.expand_dims(lsq_moments_1, axis=-1)
         lsq_moments_2 = np.expand_dims(lsq_moments_2, axis=-1)
         lsq_moments_3 = np.expand_dims(lsq_moments_3, axis=-1)
@@ -233,53 +233,53 @@ class TestReconLsqCellCSvdStencil(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_cc = random_field(grid, CellDim, KDim)
+        p_cc = random_field(grid, dims.CellDim, dims.KDim)
         lsq_pseudoinv_1_field = as_1D_sparse_field(
-            random_field(grid, CellDim, C2E2C2E2CDim), CECECDim
+            random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
         lsq_pseudoinv_2_field = as_1D_sparse_field(
-            random_field(grid, CellDim, C2E2C2E2CDim), CECECDim
+            random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
         lsq_pseudoinv_3_field = as_1D_sparse_field(
-            random_field(grid, CellDim, C2E2C2E2CDim), CECECDim
+            random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
         lsq_pseudoinv_4_field = as_1D_sparse_field(
-            random_field(grid, CellDim, C2E2C2E2CDim), CECECDim
+            random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
         lsq_pseudoinv_5_field = as_1D_sparse_field(
-            random_field(grid, CellDim, C2E2C2E2CDim), CECECDim
+            random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
         lsq_pseudoinv_6_field = as_1D_sparse_field(
-            random_field(grid, CellDim, C2E2C2E2CDim), CECECDim
+            random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
         lsq_pseudoinv_7_field = as_1D_sparse_field(
-            random_field(grid, CellDim, C2E2C2E2CDim), CECECDim
+            random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
         lsq_pseudoinv_8_field = as_1D_sparse_field(
-            random_field(grid, CellDim, C2E2C2E2CDim), CECECDim
+            random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
         lsq_pseudoinv_9_field = as_1D_sparse_field(
-            random_field(grid, CellDim, C2E2C2E2CDim), CECECDim
+            random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_moments_1 = random_field(grid, CellDim)
-        lsq_moments_2 = random_field(grid, CellDim)
-        lsq_moments_3 = random_field(grid, CellDim)
-        lsq_moments_4 = random_field(grid, CellDim)
-        lsq_moments_5 = random_field(grid, CellDim)
-        lsq_moments_6 = random_field(grid, CellDim)
-        lsq_moments_7 = random_field(grid, CellDim)
-        lsq_moments_8 = random_field(grid, CellDim)
-        lsq_moments_9 = random_field(grid, CellDim)
-        p_coeff_1_dsl = zero_field(grid, CellDim, KDim)
-        p_coeff_2_dsl = zero_field(grid, CellDim, KDim)
-        p_coeff_3_dsl = zero_field(grid, CellDim, KDim)
-        p_coeff_4_dsl = zero_field(grid, CellDim, KDim)
-        p_coeff_5_dsl = zero_field(grid, CellDim, KDim)
-        p_coeff_6_dsl = zero_field(grid, CellDim, KDim)
-        p_coeff_7_dsl = zero_field(grid, CellDim, KDim)
-        p_coeff_8_dsl = zero_field(grid, CellDim, KDim)
-        p_coeff_9_dsl = zero_field(grid, CellDim, KDim)
-        p_coeff_10_dsl = zero_field(grid, CellDim, KDim)
+        lsq_moments_1 = random_field(grid, dims.CellDim)
+        lsq_moments_2 = random_field(grid, dims.CellDim)
+        lsq_moments_3 = random_field(grid, dims.CellDim)
+        lsq_moments_4 = random_field(grid, dims.CellDim)
+        lsq_moments_5 = random_field(grid, dims.CellDim)
+        lsq_moments_6 = random_field(grid, dims.CellDim)
+        lsq_moments_7 = random_field(grid, dims.CellDim)
+        lsq_moments_8 = random_field(grid, dims.CellDim)
+        lsq_moments_9 = random_field(grid, dims.CellDim)
+        p_coeff_1_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_2_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_3_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_4_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_5_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_6_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_7_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_8_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_9_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_10_dsl = zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             p_cc=p_cc,
             lsq_pseudoinv_1=lsq_pseudoinv_1_field,

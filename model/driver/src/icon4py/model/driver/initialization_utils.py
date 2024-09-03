@@ -13,17 +13,12 @@ import pathlib
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.dimension import (
-    CEDim,
-    CellDim,
-    KDim,
-)
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import geometry, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -154,15 +149,17 @@ def model_initialization_serialbox(
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
-        exner_dyn_incr=None,
+        exner_dyn_incr=solve_nonhydro_init_savepoint.exner_dyn_incr(),
     )
 
     diagnostic_state = diagnostics.DiagnosticState(
-        pressure=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
-        pressure_ifc=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
-        temperature=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
-        u=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
-        v=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        pressure=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        pressure_ifc=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
+        ),
+        temperature=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        u=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        v=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
     )
 
     prognostic_state_next = prognostics.PrognosticState(
@@ -177,6 +174,7 @@ def model_initialization_serialbox(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
         mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
+        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
     )
 
     return (
@@ -192,8 +190,8 @@ def model_initialization_serialbox(
 
 def read_initial_state(
     grid: icon_grid.IconGrid,
-    cell_param: h_grid.CellParams,
-    edge_param: h_grid.EdgeParams,
+    cell_param: geometry.CellParams,
+    edge_param: geometry.EdgeParams,
     path: pathlib.Path,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
@@ -275,7 +273,12 @@ def read_geometry_fields(
     grid_id=GLOBAL_GRID_ID,
     grid_root=GRID_ROOT,
     grid_level=GRID_LEVEL,
-) -> tuple[h_grid.EdgeParams, h_grid.CellParams, v_grid.VerticalGridParams, fa.CellField[bool]]:
+) -> tuple[
+    geometry.EdgeParams,
+    geometry.CellParams,
+    v_grid.VerticalGrid,
+    fa.CellField[bool],
+]:
     """
     Read fields containing grid properties.
 
@@ -296,8 +299,8 @@ def read_geometry_fields(
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config)
-        vertical_geometry = v_grid.VerticalGridParams(
-            vertical_config=vertical_grid_config,
+        vertical_geometry = v_grid.VerticalGrid(
+            config=vertical_grid_config,
             vct_a=vct_a,
             vct_b=vct_b,
             _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
@@ -380,10 +383,10 @@ def read_static_fields(
             pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
             pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
             rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
+            e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
             rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
+            geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
             geofac_n2s=interpolation_savepoint.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],

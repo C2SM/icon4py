@@ -6,8 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common import constants as phy_const
-from icon4py.model.common.dimension import EdgeDim
+from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.settings import xp
 
@@ -122,7 +121,7 @@ def zonalwind_2_normalwind_numpy(
 
     mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
-        0 : grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1),
+        0 : grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         :,
     ] = False
     edge_lat = xp.repeat(xp.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)

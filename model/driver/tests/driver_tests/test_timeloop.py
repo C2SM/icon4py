@@ -11,8 +11,8 @@ import pytest
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import geometry, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
@@ -142,8 +142,8 @@ def test_run_timeloop_single_step(
             ndyn_substeps=ndyn_substeps,
         )
 
-    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
 
     diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
         interpolation_savepoint
@@ -157,8 +157,8 @@ def test_run_timeloop_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
@@ -170,7 +170,7 @@ def test_run_timeloop_single_step(
         grid=icon_grid,
         config=diffusion_config,
         params=additional_parameters,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=diffusion_metric_state,
         interpolation_state=diffusion_interpolation_state,
         edge_params=edge_geometry,
@@ -192,10 +192,10 @@ def test_run_timeloop_single_step(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
@@ -258,7 +258,7 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
     nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(

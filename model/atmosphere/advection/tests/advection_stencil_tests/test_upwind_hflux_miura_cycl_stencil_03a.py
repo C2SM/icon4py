@@ -12,7 +12,7 @@ import pytest
 from icon4py.model.atmosphere.advection.stencils.upwind_hflux_miura_cycl_stencil_03a import (
     upwind_hflux_miura_cycl_stencil_03a,
 )
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -32,9 +32,9 @@ class TestUpwindHfluxMiuraCyclStencil03a(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_tracer_mflx_1_dsl = random_field(grid, EdgeDim, KDim)
-        z_tracer_mflx_2_dsl = random_field(grid, EdgeDim, KDim)
-        p_out_e = zero_field(grid, EdgeDim, KDim)
+        z_tracer_mflx_1_dsl = random_field(grid, dims.EdgeDim, dims.KDim)
+        z_tracer_mflx_2_dsl = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_out_e = zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             z_tracer_mflx_1_dsl=z_tracer_mflx_1_dsl,
             z_tracer_mflx_2_dsl=z_tracer_mflx_2_dsl,

@@ -12,7 +12,7 @@ import pytest
 from icon4py.model.atmosphere.advection.stencils.upwind_vflux_ppm_stencil_01 import (
     upwind_vflux_ppm_stencil_01,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -30,11 +30,11 @@ class TestUpwindVfluxPpmStencil01(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_face_up = random_field(grid, CellDim, KDim)
-        z_face_low = random_field(grid, CellDim, KDim)
-        p_cc = random_field(grid, CellDim, KDim)
-        z_delta_q = zero_field(grid, CellDim, KDim)
-        z_a1 = zero_field(grid, CellDim, KDim)
+        z_face_up = random_field(grid, dims.CellDim, dims.KDim)
+        z_face_low = random_field(grid, dims.CellDim, dims.KDim)
+        p_cc = random_field(grid, dims.CellDim, dims.KDim)
+        z_delta_q = zero_field(grid, dims.CellDim, dims.KDim)
+        z_a1 = zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             z_face_up=z_face_up, z_face_low=z_face_low, p_cc=p_cc, z_delta_q=z_delta_q, z_a1=z_a1
         )

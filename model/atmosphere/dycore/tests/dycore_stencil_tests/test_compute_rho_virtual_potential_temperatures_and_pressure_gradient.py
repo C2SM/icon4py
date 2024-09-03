@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -88,22 +88,22 @@ class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest)
         dtime = wpfloat("1.0")
         wgt_nnow_rth = wpfloat("2.0")
         wgt_nnew_rth = wpfloat("3.0")
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        rho_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        rho_var = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        theta_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        theta_var = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        wgtfac_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        theta_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(grid, CellDim, dtype=wpfloat)
-        exner_pr = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        d_exner_dz_ref_ic = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        rho_ic = zero_field(grid, CellDim, KDim, dtype=wpfloat)
-        z_theta_v_pr_ic = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, CellDim, KDim, dtype=wpfloat)
-        z_th_ddz_exner_c = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_var = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_var = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
+        exner_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        rho_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_theta_v_pr_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_th_ddz_exner_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(
             w=w,
             w_concorr_c=w_concorr_c,

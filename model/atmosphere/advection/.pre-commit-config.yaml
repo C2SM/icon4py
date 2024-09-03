@@ -5,7 +5,7 @@
 default_stages: [commit, push]
 default_language_version:
   python: python3.10
-minimum_pre_commit_version: 2.20.0
+minimum_pre_commit_version: 3.8.0
 files: "model/atmosphere/advection/.*"
 
 repos:

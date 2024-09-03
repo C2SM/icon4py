@@ -10,8 +10,8 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 
 
@@ -22,7 +22,7 @@ def _hor_adv_stencil_01(
     tracer_now: fa.CellKField[float],
     rhodz_now: fa.CellKField[float],
     rhodz_new: fa.CellKField[float],
-    geofac_div: Field[[CEDim], float],
+    geofac_div: Field[[dims.CEDim], float],
     p_dtime: float,
 ) -> fa.CellKField[float]:
     tracer_new_hor = (
@@ -42,7 +42,7 @@ def hor_adv_stencil_01(
     tracer_now: fa.CellKField[float],
     rhodz_now: fa.CellKField[float],
     rhodz_new: fa.CellKField[float],
-    geofac_div: Field[[CEDim], float],
+    geofac_div: Field[[dims.CEDim], float],
     tracer_new_hor: fa.CellKField[float],
     p_dtime: float,
     horizontal_start: int32,

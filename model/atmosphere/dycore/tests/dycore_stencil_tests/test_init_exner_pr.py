@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.init_exner_pr import (
     init_exner_pr,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
 
@@ -31,9 +31,9 @@ class TestInitExnerPr(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        exner = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        exner_ref = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        exner_pr = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        exner = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner_ref = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        exner_pr = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             exner=exner,

@@ -16,10 +16,14 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_ed
 from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
     _interpolate_vt_to_interface_edges,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @field_operator

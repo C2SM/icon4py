@@ -14,7 +14,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.stencils.face_val_ppm_stencil_01 import (
     face_val_ppm_stencil_01,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     Output,
     StencilTest,
@@ -67,10 +67,13 @@ class TestFaceValPpmStencil01(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_slope = zero_field(grid, CellDim, KDim)
-        p_cc = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        k = as_field((KDim,), np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32))
+        z_slope = zero_field(grid, dims.CellDim, dims.KDim)
+        p_cc = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_cellhgt_mc_now = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        k = as_field(
+            (dims.KDim,),
+            np.arange(0, _shape(grid, dims.KDim, extend={dims.KDim: 1})[0], dtype=int32),
+        )
         elev = k[-2].as_scalar()
         return dict(
             p_cc=p_cc,

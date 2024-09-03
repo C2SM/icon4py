@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
     interpolate_vt_to_interface_edges,
 )
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
@@ -49,10 +49,10 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        wgtfac_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
-        z_vt_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_vt_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,

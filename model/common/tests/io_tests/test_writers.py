@@ -12,14 +12,15 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
-from icon4py.model.common.io import cf_utils, data, writers
+from icon4py.model.common.io import cf_utils, utils, writers
 from icon4py.model.common.io.writers import (
     NETCDFWriter,
     TimeProperties,
     filter_by_standard_name,
 )
+from icon4py.model.common.states import data
 from icon4py.model.common.test_utils import helpers
 
 from . import test_io
@@ -49,9 +50,9 @@ def initialized_writer(
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
-    vertical_params = v_grid.VerticalGridParams(
+    vertical_params = v_grid.VerticalGrid(
         vertical_config,
-        vct_a=gtx.as_field((KDim,), heights),
+        vct_a=gtx.as_field((dims.KDim,), heights),
         vct_b=None,
     )
     horizontal = grid.config.horizontal_config
@@ -165,8 +166,11 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables
 
-    new_rho = helpers.random_field(grid, CellDim, KDim, dtype=np.float32)
-    state["air_density"] = data.to_data_array(new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"])
+    new_rho = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    state["air_density"] = utils.to_data_array(
+        new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
+    )
+
     new_time = time + timedelta(hours=1)
     dataset.append(state, new_time)
 

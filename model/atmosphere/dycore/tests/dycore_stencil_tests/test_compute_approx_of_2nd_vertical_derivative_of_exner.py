@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
 
@@ -40,12 +40,14 @@ class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_theta_v_pr_ic = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
-        d2dexdz2_fac1_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        d2dexdz2_fac2_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_theta_v_pr_ic = random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
+        )
+        d2dexdz2_fac1_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        d2dexdz2_fac2_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
-        z_dexner_dz_c_2 = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_dexner_dz_c_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             z_theta_v_pr_ic=z_theta_v_pr_ic,

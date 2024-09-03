@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     compute_solver_coefficients_matrix,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -45,15 +45,15 @@ class TestComputeSolverCoefficientsMatrix(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        exner_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        rho_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        theta_v_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        inv_ddqz_z_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
-        theta_v_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        rho_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        z_alpha = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_beta = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        exner_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_v_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
+        theta_v_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_alpha = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_beta = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         dtime = wpfloat("10.0")
         rd = wpfloat("5.0")
         cvd = wpfloat("3.0")

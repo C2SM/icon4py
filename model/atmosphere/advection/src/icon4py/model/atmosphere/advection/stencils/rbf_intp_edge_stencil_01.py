@@ -10,15 +10,15 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2E, E2C2EDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C2E, E2C2EDim, KDim
 from icon4py.model.common.settings import backend
 
 
 @field_operator
 def _rbf_intp_edge_stencil_01(
     p_vn_in: fa.EdgeKField[float],
-    ptr_coeff: Field[[EdgeDim, E2C2EDim], float],
+    ptr_coeff: Field[[dims.EdgeDim, E2C2EDim], float],
 ) -> fa.EdgeKField[float]:
     p_vt_out = neighbor_sum(p_vn_in(E2C2E) * ptr_coeff, axis=E2C2EDim)
     return p_vt_out
@@ -27,7 +27,7 @@ def _rbf_intp_edge_stencil_01(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def rbf_intp_edge_stencil_01(
     p_vn_in: fa.EdgeKField[float],
-    ptr_coeff: Field[[EdgeDim, E2C2EDim], float],
+    ptr_coeff: Field[[dims.EdgeDim, E2C2EDim], float],
     p_vt_out: fa.EdgeKField[float],
     horizontal_start: int32,
     horizontal_end: int32,

@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
-from icon4py.model.common.dimension import E2C2EDim, E2C2EODim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -31,8 +31,8 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
         rbf_vec_coeff_e: np.array,
         **kwargs,
     ) -> dict:
-        e2c2eO = grid.connectivities[E2C2EODim]
-        e2c2e = grid.connectivities[E2C2EDim]
+        e2c2eO = grid.connectivities[dims.E2C2EODim]
+        e2c2e = grid.connectivities[dims.E2C2EDim]
         e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
         z_vn_avg = np.sum(
             np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * e_flx_avg, 0), axis=1
@@ -49,13 +49,13 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        e_flx_avg = random_field(grid, EdgeDim, E2C2EODim, dtype=wpfloat)
-        geofac_grdiv = random_field(grid, EdgeDim, E2C2EODim, dtype=wpfloat)
-        rbf_vec_coeff_e = random_field(grid, EdgeDim, E2C2EDim, dtype=wpfloat)
-        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        z_vn_avg = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        z_graddiv_vn = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        vt = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        e_flx_avg = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
+        geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim, dtype=wpfloat)
+        rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_vn_avg = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_graddiv_vn = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vt = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             e_flx_avg=e_flx_avg,
