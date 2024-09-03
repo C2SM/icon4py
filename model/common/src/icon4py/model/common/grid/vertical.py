@@ -8,6 +8,7 @@
 
 import dataclasses
 import enum
+import functools
 import logging
 import math
 import pathlib
@@ -22,21 +23,30 @@ from icon4py.model.common.settings import xp
 log = logging.getLogger(__name__)
 
 
-class VerticalZone(enum.IntEnum):
-    FULL = 0
-    DAMPING_HEIGHT = 1
+class Zone(enum.IntEnum):
+    """
+    Vertical zone markers to be used to select vertical domain indices.
+
+    The values here are taken from the special indices computed in `VerticalGridParams`.
+    """
+
+    TOP = 0
+    BOTTOM = 1
+    DAMPING = 2
+    MOIST = 3
+    FLAT = 4
+
 
 @dataclasses.dataclass(frozen=True)
-class VerticalDomain:
+class Domain:
+    """
+    Simple data class used to specify a vertical domain such that index lookup and domain specification can be separated.
+    """
+
     dim: dims.KDim
-    zone: VerticalZone
-    
+    marker: Zone
 
-    
-    
 
-    # TODO (@halungge) add as needed
-    
 @dataclasses.dataclass(frozen=True)
 class VerticalGridConfig:
     """
@@ -81,7 +91,7 @@ class VerticalGridParams:
     _min_index_flat_horizontal_grad_pressure: The minimum height index at which the height of the center of an edge lies within two neighboring cells so that horizontal pressure gradient can be computed by first order discretization scheme.
     """
 
-    vertical_config: dataclasses.InitVar[VerticalGridConfig]
+    config: VerticalGridConfig
     vct_a: dataclasses.InitVar[fa.KField[float]]
     vct_b: dataclasses.InitVar[fa.KField[float]]
     _vct_a: fa.KField[float] = dataclasses.field(init=False)
@@ -90,8 +100,8 @@ class VerticalGridParams:
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
-    
-    def __post_init__(self, vertical_config, vct_a, vct_b):
+
+    def __post_init__(self, vct_a, vct_b):
         object.__setattr__(
             self,
             "_vct_a",
@@ -106,14 +116,12 @@ class VerticalGridParams:
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
-            self._determine_damping_height_index(
-                vct_a_array, vertical_config.rayleigh_damping_height
-            ),
+            self._determine_damping_height_index(vct_a_array, self.config.rayleigh_damping_height),
         )
         object.__setattr__(
             self,
             "_start_index_for_moist_physics",
-            self._determine_kstart_moist(vct_a_array, vertical_config.htop_moist_proc),
+            self._determine_start_level_of_moist_physics(vct_a_array, self.config.htop_moist_proc),
         )
         object.__setattr__(
             self,
@@ -139,16 +147,6 @@ class VerticalGridParams:
         vertical_params_properties.extend(array_value)
         return "\n".join(vertical_params_properties)
 
-    def start_index(self, domain:VerticalDomain):
-        return self._end_index_of_damping_layer if domain.zone == VerticalZone.DAMPING_HEIGHT else 0
-    
-    
-    
-    def end_index(self, domain:VerticalDomain):
-        num_levels = self.vertical_config.num_levels if domain.dim == dims.KDim else self.vertical_config.num_levels + 1
-        return self._end_index_of_damping_layer if domain.zone == VerticalZone.DAMPING_HEIGHT else gtx.int32(num_levels)
-    
-        
     @property
     def metadata_interface_physical_height(self):
         return dict(
