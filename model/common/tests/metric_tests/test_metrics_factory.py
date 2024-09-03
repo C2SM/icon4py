@@ -53,7 +53,7 @@ def test_factory(icon_grid, metrics_savepoint):
     ddxt_z_half_e_full = factory.get("ddxt_z_half_e", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(ddxt_z_half_e_full.asnumpy(), ddxt_z_half_e_ref.asnumpy())
 
-    ddxn_z_full_ref = metrics_savepoint.ddxt_z_half_e()
+    ddxn_z_full_ref = metrics_savepoint.ddxn_z_full()
     ddxn_z_full = factory.get("ddxn_z_full", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(ddxn_z_full.asnumpy(), ddxn_z_full_ref.asnumpy())
 
@@ -69,10 +69,10 @@ def test_factory(icon_grid, metrics_savepoint):
     mask_prog_halo_c_full = factory.get("mask_prog_halo_c", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy())
 
-    bdy_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
+    bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
     bdy_halo_c_full = factory.get("bdy_halo_c", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
 
-    hmask_dd3d_ref = metrics_savepoint.mask_prog_halo_c()
+    hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
     hmask_dd3d_full = factory.get("hmask_dd3d", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
