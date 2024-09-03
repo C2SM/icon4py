@@ -201,7 +201,7 @@ def get_runtype(with_mpi: bool = False) -> RunType:
 
 
 @functools.singledispatch
-def get_processor_properties(runtime:RunType) -> ProcessProperties:
+def get_processor_properties(runtime: RunType) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
 
 

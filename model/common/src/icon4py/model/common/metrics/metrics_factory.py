@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import pathlib
 
 import icon4py.model.common.states.factory as factory
@@ -15,15 +23,15 @@ properties = decomposition.get_processor_properties(decomposition.get_runtype(wi
 path = dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, properties)
 
 data_provider = sb.IconSerialDataProvider(
-        "icon_pydycore", str(path.absolute()), False, mpi_rank=properties.rank
-    )
+    "icon_pydycore", str(path.absolute()), False, mpi_rank=properties.rank
+)
 
 # z_ifc (computable from vertical grid for model without topography)
 metrics_savepoint = data_provider.from_metrics_savepoint()
 
-#interpolation fields also for now passing as precomputed fields
+# interpolation fields also for now passing as precomputed fields
 interpolation_savepoint = data_provider.from_interpolation_savepoint()
-#can get geometry fields as pre computed fields from the grid_savepoint 
+# can get geometry fields as pre computed fields from the grid_savepoint
 grid_savepoint = data_provider.from_savepoint_grid()
 #######
 
@@ -47,14 +55,14 @@ fields_factory.register_provider(
     )
 )
 height_provider = factory.ProgramFieldProvider(
-        func=mf.compute_z_mc,
-        domain={
-            dims.CellDim: (
-                horizontal.HorizontalMarkerIndex.local(dims.CellDim),
-                horizontal.HorizontalMarkerIndex.end(dims.CellDim),
-            ),
-            dims.KDim: (0, grid.num_levels),
-        },
-        fields={"z_mc": "height"},
-        deps={"z_ifc": "height_on_interface_levels"},
-    )
+    func=mf.compute_z_mc,
+    domain={
+        dims.CellDim: (
+            horizontal.HorizontalMarkerIndex.local(dims.CellDim),
+            horizontal.HorizontalMarkerIndex.end(dims.CellDim),
+        ),
+        dims.KDim: (0, grid.num_levels),
+    },
+    fields={"z_mc": "height"},
+    deps={"z_ifc": "height_on_interface_levels"},
+)
