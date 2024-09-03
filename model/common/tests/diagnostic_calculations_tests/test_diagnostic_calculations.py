@@ -79,9 +79,7 @@ def test_diagnose_temperature(
         diagnostic_state.temperature,
         phy_const.RV_O_RD_MINUS_1,
         horizontal_start=0,
-        horizontal_end=icon_grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-        ),
+        horizontal_end=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.END)),
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={},
@@ -129,23 +127,22 @@ def test_diagnose_meridional_and_zonal_winds(
         v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
         virtual_temperature=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
-
+    cell_domain = h_grid.domain(dims.CellDim)
     rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
-    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1
+    cell_end_lateral_boundary_level_2 = icon_grid.end_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    grid_idx_cell_end = icon_grid.get_end_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-    )
+
+    end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
     rbf.edge_2_cell_vector_rbf_interpolation(
         prognostic_state_now.vn,
         rbv_vec_coeff_c1,
         rbv_vec_coeff_c2,
         diagnostic_state.u,
         diagnostic_state.v,
-        grid_idx_cell_start_plus1,
-        grid_idx_cell_end,
+        cell_end_lateral_boundary_level_2,
+        end_cell_end,
         0,
         icon_grid.num_levels,
         offset_provider={
@@ -197,6 +194,7 @@ def test_diagnose_pressure(
         v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
 
+    cell_domain = h_grid.domain(dims.CellDim)
     surface_pressure.diagnose_surface_pressure(
         prognostic_state_now.exner,
         diagnostic_state.virtual_temperature,
@@ -206,9 +204,7 @@ def test_diagnose_pressure(
         phy_const.P0REF,
         phy_const.GRAV_O_RD,
         horizontal_start=0,
-        horizontal_end=icon_grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-        ),
+        horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=icon_grid.num_levels,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={"Koff": dims.KDim},
@@ -222,9 +218,7 @@ def test_diagnose_pressure(
         diagnostic_state.pressure_ifc,
         phy_const.GRAV_O_RD,
         horizontal_start=0,
-        horizontal_end=icon_grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-        ),
+        horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={},
