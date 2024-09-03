@@ -80,7 +80,7 @@ class VerticalGridConfig:
 
 
 @dataclasses.dataclass(frozen=True)
-class VerticalGridParams:
+class VerticalGrid:
     """
     Contains vertical physical parameters defined on the vertical grid derived from vertical grid configuration.
 
@@ -126,7 +126,7 @@ class VerticalGridParams:
         object.__setattr__(
             self,
             "_end_index_of_flat_layer",
-            self._determine_kstart_flat(vct_a_array, vertical_config.flat_height),
+            self._determine_end_index_of_flat_layers(vct_a_array, self.config.flat_height),
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
@@ -147,6 +147,16 @@ class VerticalGridParams:
         vertical_params_properties.extend(array_value)
         return "\n".join(vertical_params_properties)
 
+    def start_index(self, domain:VerticalDomain):
+        return self._end_index_of_damping_layer if domain.zone == VerticalZone.DAMPING_HEIGHT else 0
+
+
+
+    def end_index(self, domain:VerticalDomain):
+        num_levels = self.vertical_config.num_levels if domain.dim == dims.KDim else self.vertical_config.num_levels + 1
+        return self._end_index_of_damping_layer if domain.zone == VerticalZone.DAMPING_HEIGHT else gtx.int32(num_levels)
+
+
     @property
     def metadata_interface_physical_height(self):
         return dict(
@@ -157,36 +167,63 @@ class VerticalGridParams:
             icon_var_name="vct_a",
         )
 
+    def index(self, domain: Domain) -> gtx.int32:
+        match domain.marker:
+            case Zone.TOP:
+                return gtx.int32(0)
+            case Zone.BOTTOM:
+                return (
+                    gtx.int32(self.config.num_levels)
+                    if domain.dim == dims.KDim
+                    else gtx.int32(self.config.num_levels + 1)
+                )
+            case Zone.MOIST:
+                return self._start_index_for_moist_physics
+            case Zone.FLAT:
+                return self._end_index_of_flat_layer
+            case Zone.DAMPING:
+                return self._end_index_of_damping_layer
+
     @property
-    def inteface_physical_height(self) -> fa.KField[float]:
+    def interface_physical_height(self) -> fa.KField[float]:
         return self._vct_a
 
-    @property
+    @functools.cached_property
     def kstart_moist(self):
         """Vertical index for start level of moist physics."""
-        return self._start_index_for_moist_physics
+        return self.index(Domain(dims.KDim, Zone.MOIST))
 
-    @property
+    @functools.cached_property
     def nflatlev(self):
         """Vertical index for bottommost level at which coordinate surfaces are flat."""
-        return self._end_index_of_flat_layer
+        return self.index(Domain(dims.KDim, Zone.FLAT))
 
-    @property
+    @functools.cached_property
     def nrdmax(self):
         """Vertical index where damping starts."""
-        return self._end_index_of_damping_layer
+        return self.end_index_of_damping_layer
 
-    @property
+    @functools.cached_property
     def end_index_of_damping_layer(self):
         """Vertical index where damping starts."""
-        return self._end_index_of_damping_layer
+        return self.index(Domain(dims.KDim, Zone.DAMPING))
 
     @property
     def nflat_gradp(self):
         return self._min_index_flat_horizontal_grad_pressure
 
+    def size(self, dim: dims.VerticalDim) -> int:
+        assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
+        match dim:
+            case dims.KDim:
+                return self.config.num_levels
+            case dims.KHalfDim:
+                return self.config.num_levels + 1
+            case _:
+                raise ValueError(f"Unkown dimension {dim}.")
+
     @classmethod
-    def _determine_kstart_moist(
+    def _determine_start_level_of_moist_physics(
         cls, vct_a: xp.ndarray, top_moist_threshold: float, nshift_total: int = 0
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
@@ -203,7 +240,9 @@ class VerticalGridParams:
         )
 
     @classmethod
-    def _determine_kstart_flat(cls, vct_a: xp.ndarray, flat_height: float) -> gtx.int32:
+    def _determine_end_index_of_flat_layers(
+        cls, vct_a: xp.ndarray, flat_height: float
+    ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
             0
