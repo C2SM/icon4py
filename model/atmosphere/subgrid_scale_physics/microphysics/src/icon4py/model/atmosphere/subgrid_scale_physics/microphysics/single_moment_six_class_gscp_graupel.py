@@ -39,7 +39,7 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
-# TODO (Chia Rui): remove this manual recursion when
+# TODO (Chia Rui): The limit has to be manually set to a huge value for a big scan operator. Remove it when neccesary.
 sys.setrecursionlimit(350000)
 
 
@@ -403,7 +403,7 @@ def _compute_snow_interception_and_collision_parameters(
             local_m3s = local_alf * exp(local_bet * log(local_m2s))
 
             local_hlp = icon_graupel_params.snow_intercept_parameter_n0s1 * exp(
-                icon_graupel_params.snow_intercept_parameter_n0s1 * local_tc
+                icon_graupel_params.snow_intercept_parameter_n0s2 * local_tc
             )
             n0s = wpfloat("13.50") * local_m2s * (local_m2s / local_m3s) ** 3.0
             n0s = maximum(n0s, wpfloat("0.5") * local_hlp)
@@ -1426,10 +1426,6 @@ class SingleMomentSixClassIconGraupel:
             CellDim, KDim, grid=self.grid, dtype=wpfloat
         )
 
-    def __str__(self):
-        # TODO (Chia Rui): Print out the configuration and derived empirical parameters
-        pass
-
     def run(
         self,
         dtime: wpfloat,
@@ -1595,7 +1591,6 @@ def _icon_graupel_flux_ground(
     graupel_flux = wpfloat("0.5") * ((qg + qg_tendency * dtime) * rho * vnew_g + rhoqgv_old_kup)
     ice_flux = wpfloat("0.5") * ((qi + qi_tendency * dtime) * rho * vnew_i + rhoqiv_old_kup)
     zero = broadcast(wpfloat("0.0"), (CellDim, KDim))
-    # TODO (Chia Rui): check whether lpres_ice is redundant, prs_gsp = 0.5 * (rho * (qs * Vnew_s + qi * Vnew_i) + rhoqsV_old_kup + rhoqiV_old_kup)
     # for the latent heat nudging
     total_flux = rain_flux + snow_flux + graupel_flux if do_latent_heat_nudging else zero
     return rain_flux, snow_flux, graupel_flux, ice_flux, total_flux
@@ -1955,7 +1950,7 @@ def _icon_graupel_scan(
     #  Section 1: Skip microphysics when k < kstart_moist
     # ------------------------------------------------------------------------------
 
-    # TODO (Chia Rui): Consider to remove this when graupel scan can be run on gtfn backend because bounds are ignored on embedded backend.
+    # TODO (Chia Rui): This scan operator has to be run from top to bottom because bounds are ignored on embedded backend. Consider to remove this when graupel scan can be run on gtfn backend.
     if k_lev < startmoist_level:
         k_lev = k_lev + 1
         return (
