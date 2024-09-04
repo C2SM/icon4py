@@ -122,40 +122,51 @@ def test_graupel(
     assert helpers.dallclose(graupel_microphysics.ccs[0], init_savepoint.ccsrim(), atol=1.0e-8)
     assert helpers.dallclose(graupel_microphysics.ccs[1], init_savepoint.ccsagg(), atol=1.0e-8)
     assert helpers.dallclose(graupel.icon_graupel_params.ccsaxp, init_savepoint.ccsaxp())
-    assert helpers.dallclose(graupel.icon_graupel_params.ccsdep, init_savepoint.ccsdep(), atol=1.0e-7)
+    assert helpers.dallclose(
+        graupel.icon_graupel_params.ccsdep, init_savepoint.ccsdep(), atol=1.0e-7
+    )
     assert helpers.dallclose(graupel.icon_graupel_params.ccsdxp, init_savepoint.ccsdxp())
     assert helpers.dallclose(graupel_microphysics.ccs[2], init_savepoint.ccsvel(), atol=1.0e-8)
     assert helpers.dallclose(graupel.icon_graupel_params.ccsvxp, init_savepoint.ccsvxp())
-    assert helpers.dallclose(graupel.icon_graupel_params.ccslam, init_savepoint.ccslam(), atol=1.0e-10)
+    assert helpers.dallclose(
+        graupel.icon_graupel_params.ccslam, init_savepoint.ccslam(), atol=1.0e-10
+    )
     assert helpers.dallclose(graupel.icon_graupel_params.ccslxp, init_savepoint.ccslxp())
     assert helpers.dallclose(graupel.icon_graupel_params.ccshi1, init_savepoint.ccshi1())
     assert helpers.dallclose(graupel.icon_graupel_params.ccdvtp, init_savepoint.ccdvtp())
     assert helpers.dallclose(graupel.icon_graupel_params.ccidep, init_savepoint.ccidep())
+    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[0], init_savepoint.vzxp())
+    assert helpers.dallclose(
+        graupel_microphysics.rain_vel_coef[1], init_savepoint.vz0r(), atol=1.0e-10
+    )
     assert helpers.dallclose(graupel_microphysics.rain_vel_coef[2], init_savepoint.cevxp())
-    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[3], init_savepoint.cev(), atol=1.0e-10)
+    assert helpers.dallclose(
+        graupel_microphysics.rain_vel_coef[3], init_savepoint.cev(), atol=1.0e-10
+    )
     assert helpers.dallclose(graupel_microphysics.rain_vel_coef[4], init_savepoint.bevxp())
     assert helpers.dallclose(graupel_microphysics.rain_vel_coef[5], init_savepoint.bev())
-    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[0], init_savepoint.vzxp())
-    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[1], init_savepoint.vz0r(), atol=1.0e-10)
 
     # TODO (Chia Rui): remove this slicing process, which finds the column with maximum tendency, when either the scan operator can be run on the gtfn backend or running on embedded backend is faster
     max_index = np.unravel_index(
         np.abs(tracer_state.qv.ndarray - exit_savepoint.qv().ndarray).argmax(),
         exit_savepoint.qv().ndarray.shape,
     )
-    cell_lower_limit = max_index[0] - 300  # - 277
-    cell_upper_limit = max_index[0] + 300  # - 276
+    cell_lower_limit = max_index[0] - 300
+    cell_upper_limit = max_index[0] + 300
     cell_size = cell_upper_limit - cell_lower_limit
     vertical_size = icon_grid.num_levels
 
     slice_t = gtx.as_field(
-        (dims.CellDim, dims.KDim), diagnostic_state.temperature.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim),
+        diagnostic_state.temperature.ndarray[cell_lower_limit:cell_upper_limit, :],
     )
     slice_pres = gtx.as_field(
-        (dims.CellDim, dims.KDim), diagnostic_state.pressure.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim),
+        diagnostic_state.pressure.ndarray[cell_lower_limit:cell_upper_limit, :],
     )
     slice_rho = gtx.as_field(
-        (dims.CellDim, dims.KDim), prognostic_state.rho.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim),
+        prognostic_state.rho.ndarray[cell_lower_limit:cell_upper_limit, :],
     )
     slice_qv = gtx.as_field(
         (dims.CellDim, dims.KDim), tracer_state.qv.ndarray[cell_lower_limit:cell_upper_limit, :]
@@ -183,13 +194,27 @@ def test_graupel(
         graupel_microphysics.metric_state.ddqz_z_full.ndarray[cell_lower_limit:cell_upper_limit, :],
     )
 
-    slice_t_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qv_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qc_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qi_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qr_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qs_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qg_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_t_t = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
+    slice_qv_t = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
+    slice_qc_t = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
+    slice_qi_t = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
+    slice_qr_t = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
+    slice_qs_t = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
+    slice_qg_t = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
 
     slice_rhoqrv_old_kup = gtx.as_field(
         (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
@@ -203,10 +228,18 @@ def test_graupel(
     slice_rhoqiv_old_kup = gtx.as_field(
         (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
-    slice_vnew_r = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_vnew_s = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_vnew_g = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_vnew_i = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_vnew_r = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
+    slice_vnew_s = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
+    slice_vnew_g = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
+    slice_vnew_i = gtx.as_field(
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
+    )
     slice_rain_precipitation_flux = gtx.as_field(
         (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )

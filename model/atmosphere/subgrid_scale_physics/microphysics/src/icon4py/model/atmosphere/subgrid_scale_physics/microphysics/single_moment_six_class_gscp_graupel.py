@@ -26,9 +26,11 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
-from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import saturation_adjustment as satad
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
+    saturation_adjustment as satad,
+)
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid, horizontal as h_grid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.settings import backend
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -257,13 +259,13 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     latent_heat_for_vaporisation: wpfloat = 2.5008e6
     #: Latent heat of sublimation for water [J/kg]. Originally expressed as als in ICON.
     latent_heat_for_sublimation: wpfloat = 2.8345e6
-    #: Melting temperature of ice/snow [K]
-    tmelt: wpfloat = 273.15
+    #: Melting temperature of ice/snow [K]. Originally expressed as tmelt in ICON.
+    melting_temperature: wpfloat = 273.15
     #: Triple point of water at 611hPa [K]
     t3: wpfloat = 273.16
 
     #: ice crystal number concentration at threshold temperature for mixed-phase cloud
-    nimix: wpfloat = 5.0 * np.exp(0.304 * (tmelt - threshold_freeze_temperature_mixedphase))
+    nimix: wpfloat = 5.0 * np.exp(0.304 * (melting_temperature - threshold_freeze_temperature_mixedphase))
 
     #: Gas constant of dry air [J/K/kg]
     rd: wpfloat = 287.04
@@ -290,7 +292,7 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     ccshi1: wpfloat = (
         latent_heat_for_sublimation * latent_heat_for_sublimation / (dry_air_latent_heat * rv)
     )
-    ccdvtp: wpfloat = 2.22e-5 * tmelt ** (-1.94) * 101325.0
+    ccdvtp: wpfloat = 2.22e-5 * melting_temperature ** (-1.94) * 101325.0
     ccidep: wpfloat = 4.0 * ice_m0 ** (-1.0 / 3.0)
     ccswxp_ln1o2: wpfloat = np.exp(ccswxp * np.log(0.5))
 
@@ -306,7 +308,7 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     #: [K*kg/J]"""
     rcvd: wpfloat = 1.0 / cvd
 
-    pvsw0: wpfloat = tetens_p0 * np.exp(tetens_aw * (tmelt - tmelt) / (tmelt - tetens_bw))
+    pvsw0: wpfloat = tetens_p0 * np.exp(tetens_aw * (melting_temperature - melting_temperature) / (melting_temperature - tetens_bw))
 
 
 icon_graupel_params: Final = SingleMomentSixClassIconGraupelParams()
@@ -314,7 +316,7 @@ icon_graupel_params: Final = SingleMomentSixClassIconGraupelParams()
 
 @gtx.field_operator
 def _compute_cooper_inp_concentration(temperature: wpfloat) -> wpfloat:
-    cnin = 5.0 * exp(0.304 * (icon_graupel_params.tmelt - temperature))
+    cnin = 5.0 * exp(0.304 * (icon_graupel_params.melting_temperature - temperature))
     cnin = minimum(cnin, icon_graupel_params.nimax_Thom)
     return cnin
 
@@ -357,17 +359,19 @@ def _compute_snow_interception_and_collision_parameters(
         if snow_intercept_option == 1:
             # Calculate n0s using the temperature-dependent
             # formula of Field et al. (2005)
-            local_tc = temperature - icon_graupel_params.tmelt
+            local_tc = temperature - icon_graupel_params.melting_temperature
             local_tc = minimum(local_tc, wpfloat("0.0"))
             local_tc = maximum(local_tc, wpfloat("-40.0"))
-            n0s = icon_graupel_params.snow_intercept_parameter_n0s1 * exp(icon_graupel_params.snow_intercept_parameter_n0s2 * local_tc)
+            n0s = icon_graupel_params.snow_intercept_parameter_n0s1 * exp(
+                icon_graupel_params.snow_intercept_parameter_n0s2 * local_tc
+            )
             n0s = minimum(n0s, wpfloat("1.0e9"))
             n0s = maximum(n0s, wpfloat("1.0e6"))
 
         elif snow_intercept_option == 2:
             # Calculate n0s using the temperature-dependent moment
             # relations of Field et al. (2005)
-            local_tc = temperature - icon_graupel_params.tmelt
+            local_tc = temperature - icon_graupel_params.melting_temperature
             local_tc = minimum(local_tc, wpfloat("0.0"))
             local_tc = maximum(local_tc, wpfloat("-40.0"))
 
@@ -662,7 +666,7 @@ def _riming_in_clouds(
 
         srimg_c2g = icon_graupel_params.crim_g * qc * celnrimexp_g
 
-        if temperature >= icon_graupel_params.tmelt:
+        if temperature >= icon_graupel_params.melting_temperature:
             sshed_c2r = srims_c2s + srimg_c2g
             srims_c2s = wpfloat("0.0")
             srimg_c2g = wpfloat("0.0")
@@ -829,11 +833,11 @@ def _collision_and_ice_deposition_in_cold_ice_clouds(
     Returns:
         cloud-to-rain autoconversionn rate, rain-cloud accretion rate
     """
-    if (temperature <= icon_graupel_params.tmelt) & llqi:
+    if (temperature <= icon_graupel_params.melting_temperature) & llqi:
         # Change in sticking efficiency needed in case of cloud ice sedimentation
         # (based on Guenther Zaengls work)
         local_eff = minimum(
-            exp(wpfloat("0.09") * (temperature - icon_graupel_params.tmelt)), wpfloat("1.0")
+            exp(wpfloat("0.09") * (temperature - icon_graupel_params.melting_temperature)), wpfloat("1.0")
         )
         local_eff = maximum(local_eff, ice_stickeff_min)
         local_eff = maximum(
@@ -967,7 +971,7 @@ def _snow_and_graupel_depositional_growth_in_cold_ice_clouds(
         depositional growth rate of snow, depositional growth rate of graupel
     """
     if llqi | llqs | llqg:
-        if temperature <= icon_graupel_params.tmelt:
+        if temperature <= icon_graupel_params.melting_temperature:
             local_qvsidiff = qv - qvsi
             local_svmax = local_qvsidiff / dt
 
@@ -1054,24 +1058,24 @@ def _melting(
         depositional growth rate of snow, depositional growth rate of graupel
     """
     if llqi | llqs | llqg:
-        if temperature > icon_graupel_params.tmelt:
+        if temperature > icon_graupel_params.melting_temperature:
             # cloud ice melts instantaneously
             simlt_i2c = rhoqi_intermediate / rho / dt
 
             local_qvsw0 = icon_graupel_params.pvsw0 / (
-                rho * icon_graupel_params.rv * icon_graupel_params.tmelt
+                rho * icon_graupel_params.rv * icon_graupel_params.melting_temperature
             )
             local_qvsw0diff = qv - local_qvsw0
 
             # ** GZ: several numerical fits in this section should be replaced with physically more meaningful formulations **
             if (
                 temperature
-                > icon_graupel_params.tmelt - icon_graupel_params.tcrit * local_qvsw0diff
+                > icon_graupel_params.melting_temperature - icon_graupel_params.tcrit * local_qvsw0diff
             ):
                 # calculate melting rate
                 local_x1 = (
                     temperature
-                    - icon_graupel_params.tmelt
+                    - icon_graupel_params.melting_temperature
                     + icon_graupel_params.asmel * local_qvsw0diff
                 )
                 ssmlt_s2r = (
@@ -1200,7 +1204,7 @@ def _evaporation_and_freezing_in_subsaturated_air(
         local_lnqr = log(rhoqr)
         local_x1 = wpfloat("1.0") + bev * exp(bevxp * local_lnqr)
         # Limit evaporation rate in order to avoid overshoots towards supersaturation, the pre-factor approximates (esat(T_wb)-e)/(esat(T)-e) at temperatures between 0 degC and 30 degC
-        local_temp_c = temperature - icon_graupel_params.tmelt
+        local_temp_c = temperature - icon_graupel_params.melting_temperature
         local_maxevap = (
             (
                 wpfloat("0.61")
@@ -1241,7 +1245,7 @@ def _evaporation_and_freezing_in_subsaturated_air(
 def sat_pres_water(temperature: wpfloat) -> wpfloat:
     return icon_graupel_params.tetens_p0 * exp(
         icon_graupel_params.tetens_aw
-        * (temperature - icon_graupel_params.tmelt)
+        * (temperature - icon_graupel_params.melting_temperature)
         / (temperature - icon_graupel_params.tetens_bw)
     )
 
@@ -1250,7 +1254,7 @@ def sat_pres_water(temperature: wpfloat) -> wpfloat:
 def sat_pres_ice(temperature: wpfloat) -> wpfloat:
     return icon_graupel_params.tetens_p0 * exp(
         icon_graupel_params.tetens_ai
-        * (temperature - icon_graupel_params.tmelt)
+        * (temperature - icon_graupel_params.melting_temperature)
         / (temperature - icon_graupel_params.tetens_bi)
     )
 
@@ -1275,7 +1279,12 @@ class SingleMomentSixClassIconGraupel:
         self.metric_state = metric_state
         self.vertical_params = vertical_params
         self.saturation_adjustment = satad.SaturationAdjustment(
-            config=saturation_adjust_config, grid=grid, vertical_params=vertical_params,metric_state=satad.MetricStateSaturationAdjustment(ddqz_z_full=metric_state.ddqz_z_full),
+            config=saturation_adjust_config,
+            grid=grid,
+            vertical_params=vertical_params,
+            metric_state=satad.MetricStateSaturationAdjustment(
+                ddqz_z_full=metric_state.ddqz_z_full
+            ),
         )
 
         self._initialize_local_fields()
@@ -2006,7 +2015,7 @@ def _icon_graupel_scan(
         if use_constant_water_heat_capacity
         else icon_graupel_params.latent_heat_for_vaporisation
         + (icon_graupel_params.cp_v - icon_graupel_params.spec_heat_cap_water)
-        * (temperature - icon_graupel_params.tmelt)
+        * (temperature - icon_graupel_params.melting_temperature)
         - icon_graupel_params.rv * temperature
     )
     lhs = (
@@ -2014,7 +2023,7 @@ def _icon_graupel_scan(
         if use_constant_water_heat_capacity
         else icon_graupel_params.latent_heat_for_sublimation
         + (icon_graupel_params.cp_v - icon_graupel_params.spec_heat_cap_ice)
-        * (temperature - icon_graupel_params.tmelt)
+        * (temperature - icon_graupel_params.melting_temperature)
         - icon_graupel_params.rv * temperature
     )
 
@@ -2410,7 +2419,7 @@ def _icon_graupel_scan(
         scosg_s2g = minimum(scosg_s2g, srims_c2s + cssmax)
 
     if llqi | llqs | llqg:
-        if temperature <= icon_graupel_params.tmelt:  # cold case
+        if temperature <= icon_graupel_params.melting_temperature:  # cold case
             qvsidiff = qv - qvsi
             csimax = rhoqi_intermediate / rho / dt
 

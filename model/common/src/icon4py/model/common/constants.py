@@ -33,9 +33,6 @@ CPD_O_RD: Final[wpfloat] = CPD / RD
 GAS_CONSTANT_WATER_VAPOR: Final[wpfloat] = 461.51
 RV: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR
 
-#: Melting temperature of ice/snow [K]
-TMELT: Final[wpfloat] = 273.15
-
 #: RV/RD - 1, tvmpc1 in ICON.
 RV_O_RD_MINUS_1: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
 TVMPC1: Final[wpfloat] = RV_O_RD_MINUS_1
