@@ -796,6 +796,17 @@ def test_start_end_index(processor_props, caplog, dim, experiment, grid_file):
             domain
         ), f"end index wrong for domain {domain}"
 
+    for domain in valid_boundary_zones_for_dim(dim):
+        if limited_area:
+            assert grid.start_index(domain) == 0
+            assert grid.end_index(domain) == 0
+        assert grid.start_index(domain) == single_node_grid.start_index(
+            domain
+        ), f"start index wrong for domain {domain}"
+        assert grid.end_index(domain) == single_node_grid.end_index(
+            domain
+        ), f"end index wrong for domain {domain}"
+
 
 def global_grid_domains(dim: dims.Dimension):
     zones = [
@@ -810,11 +821,15 @@ def global_grid_domains(dim: dims.Dimension):
 
 
 def _domain(dim, zones):
-    for z in zones:
-        yield h_grid.domain(dim)(z)
+    domain = h_grid.domain(dim)
+    for zone in zones:
+        try:
+            yield domain(zone)
+        except AssertionError:
+            ...
 
 
-def boundary_domains(dim: dims.Dimension):
+def valid_boundary_zones_for_dim(dim: dims.Dimension):
     zones = [
         h_grid.Zone.LATERAL_BOUNDARY,
         h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2,
@@ -826,4 +841,5 @@ def boundary_domains(dim: dims.Dimension):
         h_grid.Zone.NUDGING,
         h_grid.Zone.NUDGING_LEVEL_2,
     ]
+
     yield from _domain(dim, zones)
