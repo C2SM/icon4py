@@ -26,7 +26,7 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
-from icon4py.model.atmosphere.physics.microphysics import saturation_adjustment as satad
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import saturation_adjustment as satad
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid, horizontal as h_grid
 from icon4py.model.common.settings import backend
@@ -402,8 +402,8 @@ def _compute_snow_interception_and_collision_parameters(
             local_m2s = qs * rho / icon_graupel_params.snow_m0  # UB rho added as bugfix
             local_m3s = local_alf * exp(local_bet * log(local_m2s))
 
-            local_hlp = icon_graupel_params.snow_n0s1 * exp(
-                icon_graupel_params.snow_n0s2 * local_tc
+            local_hlp = icon_graupel_params.snow_intercept_parameter_n0s1 * exp(
+                icon_graupel_params.snow_intercept_parameter_n0s1 * local_tc
             )
             n0s = wpfloat("13.50") * local_m2s * (local_m2s / local_m3s) ** 3.0
             n0s = maximum(n0s, wpfloat("0.5") * local_hlp)
@@ -1267,7 +1267,7 @@ class SingleMomentSixClassIconGraupel:
         saturation_adjust_config: satad.SaturationAdjustmentConfig,
         grid: Optional[icon_grid.IconGrid],
         metric_state: Optional[MetricStateIconGraupel],
-        vertical_params: Optional[v_grid.VerticalGridParams],
+        vertical_params: Optional[v_grid.VerticalGrid],
     ):
         self.config = graupel_config
         self._validate_and_initialize_configurable_parameters()
@@ -1275,7 +1275,7 @@ class SingleMomentSixClassIconGraupel:
         self.metric_state = metric_state
         self.vertical_params = vertical_params
         self.saturation_adjustment = satad.SaturationAdjustment(
-            config=saturation_adjust_config, grid=grid
+            config=saturation_adjust_config, grid=grid, vertical_params=vertical_params,metric_state=satad.MetricStateSaturationAdjustment(ddqz_z_full=metric_state.ddqz_z_full),
         )
 
         self._initialize_local_fields()
@@ -1437,10 +1437,10 @@ class SingleMomentSixClassIconGraupel:
         diagnostic_state: diagnostics.DiagnosticState,
         tracer_state: tracers.TracerState,
     ):
-        start_cell_nudging = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.nudging(CellDim)
-        )
-        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        # TODO (Chia Rui): move this to initialization following the style in dycore granules
+        cell_domain = h_grid.domain(CellDim)
+        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
         icon_graupel(
             self.vertical_params.kstart_moist,
