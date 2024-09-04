@@ -224,12 +224,12 @@ class SaturationAdjustment:
         self,
         config: SaturationAdjustmentConfig,
         grid: icon_grid.IconGrid,
-        vertical_params: v_grid.VerticalGridParams,
+        vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
     ):
         self.config = config
         self.grid = grid
-        self.vertical_params: v_grid.VerticalGridParams = vertical_params
+        self.vertical_params: v_grid.VerticalGrid = vertical_params
         self.metric_state: MetricStateSaturationAdjustment = metric_state
         self._allocate_tendencies()
 
@@ -332,12 +332,10 @@ class SaturationAdjustment:
         Originally inspired from satad_v_3D of ICON.
         """
 
-        start_cell_nudging = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
-        )
-        end_cell_local = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
-        )
+        # TODO (Chia Rui): move this to initialization following the style in dycore granules
+        cell_domain = h_grid.domain(CellDim)
+        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
         compute_subsaturated_case_and_initialize_newton_iterations(
             self.config.tolerance,
