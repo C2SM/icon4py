@@ -352,6 +352,10 @@ class Domain(Protocol):
     def _valid(self, marker: Zone) -> bool:
         ...
 
+    @property
+    def zone(self) -> Zone:
+        return self._marker
+
     def marker(self, marker: Zone):
         assert self._valid(marker), f" Domain `{marker}` not a valid zone for use with '{self.dim}'"
         self._marker = marker

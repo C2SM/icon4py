@@ -763,48 +763,67 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)
 
 
+@pytest.mark.with_netcdf
 @pytest.mark.parametrize(
-    "grid_file, experiment", [(utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)]
+    "grid_file, experiment",
+    [
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT)
+    ],
 )
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
-def test_start_end_index(processor_props, caplog, dim, experiment, grid_file, icon_grid):
-    caplog.set_level(logging.DEBUG)
+def test_start_end_index(processor_props, caplog, dim, experiment, grid_file):
+    caplog.set_level(logging.INFO)
     file = utils.resolve_file_from_gridfile_name(grid_file)
-    manager = grid_manager(file)
-    grid = manager.grid
-    # if dim is not dims.CellDim:
-    #    pytest.mark.xfail(reason="not yet implemented for other dimensions than CellDim")
+    limited_area = experiment == dt_utils.REGIONAL_EXPERIMENT
+    manager = gm.GridManager(
+        gm.ToZeroBasedIndexTransformation(), file, v_grid.VerticalGridConfig(1)
+    )
+    manager(limited_area=limited_area)
+    single_node_grid = manager.grid
 
     partitioner = halo.SimpleMetisDecomposer()
 
-    face_face_connectivity = grid.connectivities[dims.C2E2CDim]
-    labels = partitioner(face_face_connectivity, n_part=processor_props.comm_size)
-    halo_generator = halo.HaloGenerator(
-        connectivities=grid.connectivities,
-        run_properties=processor_props,
-        rank_mapping=labels,
-        num_levels=1,
-    )
+    manager.with_decomposer(partitioner, processor_props)  # add these args to __call__?
+    manager(limited_area=limited_area)
+    grid = manager.grid
 
-    decomposition_info = halo_generator()
-    manager._construct_start_indices(decomposition_info)
-
-    for domain in domains(dim):
-        assert grid.start_index(domain) == icon_grid.start_index(
+    for domain in global_grid_domains(dim):
+        assert grid.start_index(domain) == single_node_grid.start_index(
             domain
         ), f"start index wrong for domain {domain}"
-        assert grid.end_index(domain) == icon_grid.end_index(
+        assert grid.end_index(domain) == single_node_grid.end_index(
             domain
         ), f"end index wrong for domain {domain}"
 
 
-def domains(dim: dims.Dimension):
-    # TODO (@halungge) INTERIOR?? for global single node grid
-    # zones = [ h_grid.Zone.LOCAL, h_grid.Zone.INTERIOR, h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2]
+def global_grid_domains(dim: dims.Dimension):
     zones = [
+        h_grid.Zone.END,
         h_grid.Zone.LOCAL,
+        h_grid.Zone.INTERIOR,
         h_grid.Zone.HALO,
         h_grid.Zone.HALO_LEVEL_2,
     ]
+
+    yield from _domain(dim, zones)
+
+
+def _domain(dim, zones):
     for z in zones:
         yield h_grid.domain(dim)(z)
+
+
+def boundary_domains(dim: dims.Dimension):
+    zones = [
+        h_grid.Zone.LATERAL_BOUNDARY,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7,
+        h_grid.Zone.NUDGING,
+        h_grid.Zone.NUDGING_LEVEL_2,
+    ]
+    yield from _domain(dim, zones)

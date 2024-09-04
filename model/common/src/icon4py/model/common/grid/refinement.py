@@ -30,8 +30,8 @@ This module only contains functionality related to grid refinement as we use it 
 
 _MAX_ORDERED: Final[dict[dims.Dimension, int]] = {
     dims.CellDim: 14,
-    dims.EdgeDim: 15,
-    dims.VertexDim: 16,
+    dims.EdgeDim: 14,
+    dims.VertexDim: 14,
 }
 """Lateral boundary points are ordered and have an index indicating the (cell) s distance to the boundary,
 generally the number of ordered rows can be defined in the grid generator, but it will never exceed 14.
@@ -53,8 +53,8 @@ _MIN_ORDERED: Final[dict[dims.Dimension, int]] = {
 
 @dataclasses.dataclass(frozen=True)
 class RefinementValue:
-    value: int
     dim: dims.Dimension
+    value: int
 
     def __post_init__(self):
         assert (

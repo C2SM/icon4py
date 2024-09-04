@@ -26,7 +26,7 @@ from . import utils
 def grid_from_file() -> icon.IconGrid:
     file_name = utils.resolve_file_from_gridfile_name("mch_ch_r04b09_dsl")
     manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(65)
+        gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(1)
     )
     manager()
     return manager.grid

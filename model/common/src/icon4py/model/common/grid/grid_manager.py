@@ -22,6 +22,7 @@ from icon4py.model.common.decomposition import (
 )
 from icon4py.model.common.grid import horizontal as h_grid, refinement as refin
 from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import builder
 
 
 try:
@@ -40,6 +41,10 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
+
+
+_log = logging.getLogger(__name__)
+_single_node_properties = decomposition.SingleNodeProcessProperties()
 
 
 class ReadType(enum.IntEnum):
@@ -190,7 +195,7 @@ class GridFile:
 
     def __init__(self, dataset: Dataset):
         self._dataset = dataset
-        self._log = logging.getLogger(__name__)
+        _log = logging.getLogger(__name__)
 
     def dimension(self, name: GridFileName) -> int:
         return self._dataset.dimensions[name].size
@@ -199,14 +204,14 @@ class GridFile:
         try:
             nc_variable = self._dataset.variables[name]
 
-            self._log.debug(f"reading {name}: {nc_variable}: transposing = {transpose}")
+            _log.debug(f"reading {name}: {nc_variable}: transposing = {transpose}")
 
             data = nc_variable[:]
             data = np.array(data, dtype=dtype)
             return np.transpose(data) if transpose else data
         except KeyError as err:
             msg = f"{name} does not exist in dataset"
-            self._log.warning(msg)
+            _log.warning(msg)
             raise IconGridError(msg) from err
 
     def array_1d(
@@ -223,13 +228,13 @@ class GridFile:
         try:
             # use python slice? 2D fields (sparse, horizontal)
             variable = self._dataset.variables[name]
-            self._log.debug(f"reading {name}: {variable}")
+            _log.debug(f"reading {name}: {variable}")
             data = variable[:] if indices is None else variable[indices]
             data = np.array(data, dtype=dtype)
             return data
         except KeyError as err:
             msg = f"{name} does not exist in dataset"
-            self._log.warning(msg)
+            _log.warning(msg)
             raise IconGridError(msg) from err
 
 
@@ -258,6 +263,24 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
 
 # TODO make this a context manager
 class GridManager:
+    def __init__(
+        self,
+        transformation: IndexTransformation,
+        grid_file: Union[pathlib.Path, str],
+        config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove
+        decomposer: Optional[Callable[[np.ndarray, int], np.ndarray]] = halo.SingleNodeDecomposer(),
+        run_properties: decomposition.ProcessProperties = _single_node_properties,  # get rid of that? only used info from decomposer?
+    ):
+        self._run_properties = run_properties
+        self._transformation = transformation
+        self._file_name = str(grid_file)
+        self._decompose = decomposer
+        self._config = config
+        self._grid: Optional[icon_grid.IconGrid] = None
+        self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
+        self._dataset = None
+        self._reader = None
+
     """
     Read ICON grid file and set up  IconGrid.
 
@@ -265,47 +288,30 @@ class GridManager:
     domain boundaries. Provides an IconGrid instance for further usage.
     """
 
-    def __init__(
+    # TODO # add args to __call__?
+    @builder.builder
+    def with_decomposer(
         self,
-        transformation: IndexTransformation,
-        grid_file: Union[pathlib.Path, str],
-        config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove
-        decomposer: Optional[Callable[[np.ndarray, int], np.ndarray]] = None,
-        run_properties: decomposition.ProcessProperties = decomposition.SingleNodeProcessProperties(),
+        decomposer: Callable[[np.ndarray, int], np.ndarray],
+        run_properties: decomposition.ProcessProperties,
     ):
-        self._log = logging.getLogger(__name__)
         self._run_properties = run_properties
-        self._transformation = transformation
-        self._file_name = str(grid_file)
-
-        if decomposer is None:
-            self._decompose = (
-                halo.SingleNodeDecomposer()
-                if run_properties.single_node()
-                else halo.SimpleMetisDecomposer()
-            )
-        else:
-            self._decompose = decomposer
-        self._config = config
-        self._grid: Optional[icon_grid.IconGrid] = None
-        self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
-        self._dataset = None
-        self._reader = None
+        self._decompose = decomposer
 
     def __call__(self, on_gpu: bool = False, limited_area=True):
         self._read_gridfile(self._file_name)
-
         grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._grid = grid
+        return self
 
     def _read_gridfile(self, fname: str) -> None:
         try:
             dataset = Dataset(self._file_name, "r", format="NETCDF4")
-            self._log.debug(dataset)
+            _log.debug(dataset)
             self._dataset = dataset
             self._reader = GridFile(dataset)
         except FileNotFoundError:
-            self._log.error(f"gridfile {fname} not found, aborting")
+            _log.error(f"gridfile {fname} not found, aborting")
             exit(1)
 
     def _read_grid_refinement_information(self, dataset):
@@ -431,13 +437,13 @@ class GridManager:
     def _get_index(self, dim: gtx.Dimension, start_marker: int, index_dict):
         if dim.kind != gtx.DimensionKind.HORIZONTAL:
             msg = f"getting start index in horizontal domain with non - horizontal dimension {dim}"
-            self._log.warning(msg)
+            _log.warning(msg)
             raise IconGridError(msg)
         try:
             return index_dict[dim][start_marker]
         except KeyError:
             msg = f"start, end indices for dimension {dim} not present"
-            self._log.error(msg)
+            _log.error(msg)
 
     def _from_grid_dataset(self, grid, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
         e2c2v = _construct_diamond_vertices(
@@ -542,9 +548,11 @@ class GridManager:
             }
             grid.with_connectivities(local_connectivities)
             _add_derived_connectivities(grid)
-            # it has a fixed size that is a dimension in the grid file
+            _update_size_for_1d_sparse_dims(grid)
+            start_indices, end_indices = self._construct_start_indices(decomposition_info)
+            for dim in dims.horizontal_dims.values():
+                grid.with_start_end_indices(dim, start_indices[dim], end_indices[dim])
 
-        _update_size_for_1d_sparse_dims(grid)
         return grid
 
     # TODO (@halungge) is this used?
@@ -556,7 +564,7 @@ class GridManager:
         elif dim == dims.EdgeDim:
             return self._grid.config.num_edges
         else:
-            self._log.warning(f"cannot determine size of unknown dimension {dim}")
+            _log.warning(f"cannot determine size of unknown dimension {dim}")
             raise IconGridError(f"Unknown dimension {dim}")
 
     def _get_index_field(
@@ -567,7 +575,9 @@ class GridManager:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
-    def _construct_start_indices(self, decomposition_info: decomposition.DecompositionInfo):
+    def _construct_start_indices(
+        self, decomposition_info: decomposition.DecompositionInfo
+    ) -> tuple[dict[dims.Dimension, np.ndarray], dict[dims.Dimension, np.ndarray]]:
         grid_refinement_dimensions = {
             dim: self._reader.dimension(name)
             for dim, name in {
@@ -654,7 +664,7 @@ class GridManager:
 
             start_index[dim][domain(h_grid.Zone.HALO_LEVEL_2)()] = minimal_second_halo_index
             end_index[dim][domain(h_grid.Zone.HALO_LEVEL_2)()] = local_size
-            self.grid.with_start_end_indices(dim, start_index[dim], end_index[dim])
+        return start_index, end_index
 
         # TODO global grid so no lateral boundary / nudging levels: need to make sure they are empty
         # for now (global grid) we set them to be empty

@@ -8,40 +8,56 @@
 
 import pytest
 
+import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.refinement as refin
 
-
-def out_of_range():
-    for v in range(-15, -4):
-        yield v
-    for v in range(15, 20):
-        yield v
+from . import utils
 
 
-def refinement_value():
-    for v in range(-4, 14):
+def out_of_range(dim: dims.Dimension):
+    lower = range(-25, -9) if dim == dims.EdgeDim else range(-25, -5)
+    for v in lower:
         yield v
 
-
-@pytest.mark.parametrize("value", refinement_value())
-def test_ordered(value):
-    ordered = refin.RefinementValue(value)
-    if ordered.value == 0 or ordered.value == -4:
-        assert not ordered.is_ordered()
-    else:
-        assert ordered.is_ordered()
+    for v in range(15, 25):
+        yield v
 
 
-@pytest.mark.parametrize("value", refinement_value())
-def test_nested(value):
-    nested = refin.RefinementValue(value)
-    if nested.value < 0:
-        assert nested.is_nested()
-    else:
-        assert not nested.is_nested()
+def refinement_value(dim: dims.Dimension):
+    lower = -8 if dim == dims.EdgeDim else -4
+    for v in range(lower, 14):
+        yield v
 
 
-@pytest.mark.parametrize("value", out_of_range())
-def test_valid_refinement_values(value):
-    with pytest.raises(AssertionError):
-        refin.RefinementValue(value)
+# TODO (@halungge) fix this test -- too complex
+@pytest.mark.parametrize("dim", utils.horizontal_dim())
+def test_ordered(dim):
+    for value in refinement_value(dim):
+        ordered = refin.RefinementValue(dim, value)
+        if dim == dims.EdgeDim:
+            if ordered.value == 0 or ordered.value == -8:
+                assert not ordered.is_ordered()
+            else:
+                assert ordered.is_ordered()
+        else:
+            if ordered.value == 0 or ordered.value == -4:
+                assert not ordered.is_ordered()
+            else:
+                assert ordered.is_ordered()
+
+
+@pytest.mark.parametrize("dim", utils.horizontal_dim())
+def test_nested(dim):
+    for value in refinement_value(dim):
+        nested = refin.RefinementValue(dim, value)
+        if nested.value < 0:
+            assert nested.is_nested()
+        else:
+            assert not nested.is_nested()
+
+
+@pytest.mark.parametrize("dim", utils.horizontal_dim())
+def test_valid_refinement_values(dim):
+    for value in out_of_range(dim):
+        with pytest.raises(AssertionError):
+            refin.RefinementValue(dim, value)
