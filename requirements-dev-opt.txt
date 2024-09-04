@@ -1,11 +1,11 @@
-git+https://github.com/ghex-org/GHEX.git@master#subdirectory=bindings/python
+git+https://github.com/ghex-org/GHEX.git@61ca5f0e3b6b473f9ca397052b2b0c1d8a4d3c55#subdirectory=bindings/python
 -r base-requirements-dev.txt
 # icon4py model
 -e ./model/common[all]
 -e ./model/atmosphere/dycore
 -e ./model/atmosphere/advection
 -e ./model/atmosphere/diffusion
--e ./model/atmosphere/physics/microphysics
+-e ./model/atmosphere/subgrid_scale_physics/microphysics
 -e ./model/driver
 
 # icon4pytools

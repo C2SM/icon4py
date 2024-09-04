@@ -16,6 +16,7 @@ import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
+import icon4py.model.common.grid.geometry as geometry
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
@@ -464,7 +465,7 @@ class IconGridSavepoint(IconSavepoint):
 
         return grid
 
-    def construct_edge_geometry(self) -> horizontal.EdgeParams:
+    def construct_edge_geometry(self) -> geometry.EdgeParams:
         primal_normal_vert: tuple[
             gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
         ] = (
@@ -491,7 +492,7 @@ class IconGridSavepoint(IconSavepoint):
             helpers.as_1D_sparse_field(self.dual_normal_cell_x(), dims.ECDim),
             helpers.as_1D_sparse_field(self.dual_normal_cell_y(), dims.ECDim),
         )
-        return horizontal.EdgeParams(
+        return geometry.EdgeParams(
             tangent_orientation=self.tangent_orientation(),
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
@@ -512,8 +513,8 @@ class IconGridSavepoint(IconSavepoint):
             primal_normal_y=self.primal_normal_y(),
         )
 
-    def construct_cell_geometry(self) -> horizontal.CellParams:
-        return horizontal.CellParams.from_global_num_cells(
+    def construct_cell_geometry(self) -> geometry.CellParams:
+        return geometry.CellParams.from_global_num_cells(
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
@@ -1439,7 +1440,6 @@ class IconGraupelExitSavepoint(IconSavepoint):
     def qg(self):
         return self._get_field("ser_out_graupel_qg", dims.CellDim, dims.KDim)
 
-
     def ddt_tend_t(self):
         return self._get_field("ser_out_graupel_ddt_tend_t", dims.CellDim, dims.KDim)
 
@@ -1534,7 +1534,7 @@ class IconInterfaceSatadEntrySavepoint(IconSavepoint):
         return self.serializer.read("ser_in_satad_iend", self.savepoint)[0]
 
     def tolerance(self):
-        return self.serializer.read("ser_in_satad_satad_tol", self.savepoint)[0]
+        return self.serializer.read("ser_in_satad_tol", self.savepoint)[0]
 
     def maxiter(self):
         return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
@@ -1549,6 +1549,50 @@ class IconInterfaceSatadExitSavepoint(IconSavepoint):
 
     def qc(self):
         return self._get_field("ser_out_satad_qc", dims.CellDim, dims.KDim)
+
+    def qi(self):
+        return self._get_field("ser_out_satad_qi", dims.CellDim, dims.KDim)
+
+    def qr(self):
+        return self._get_field("ser_out_satad_qr", dims.CellDim, dims.KDim)
+
+    def qs(self):
+        return self._get_field("ser_out_satad_qs", dims.CellDim, dims.KDim)
+
+    def qg(self):
+        return self._get_field("ser_out_satad_qg", dims.CellDim, dims.KDim)
+
+    def virtual_temperature(self):
+        return self._get_field("ser_out_satad_tempv", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("ser_out_satad_exner", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("ser_out_satad_pres", dims.CellDim, dims.KDim)
+
+    def pressure_ifc(self):
+        return self._get_field("ser_out_satad_pres_ifc", dims.CellDim, dims.KDim)
+
+    def pressure_sfc(self):
+        return self._get_field("ser_out_satad_pres_sfc", dims.CellDim)
+
+
+class IconInterfaceDiagSatadExitSavepoint(IconSavepoint):
+    def virtual_temperature(self):
+        return self._get_field("ser_out_satad_diag_tempv", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("ser_out_satad_diag_exner", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("ser_out_satad_diag_pres", dims.CellDim, dims.KDim)
+
+    def pressure_ifc(self):
+        return self._get_field("ser_out_satad_diag_pres_ifc", dims.CellDim, dims.KDim)
+
+    def qsum(self):
+        return self._get_field("ser_out_satad_diag_qsum", dims.CellDim, dims.KDim)
 
 
 class IconGraupelInitSavepoint(IconSavepoint):
@@ -1790,25 +1834,72 @@ class IconSerialDataProvider:
         return IconGraupelInitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelEntrySavepoint:
-        savepoint = self.serializer.savepoint["call-graupel-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["call-graupel-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconGraupelEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelExitSavepoint:
-        savepoint = self.serializer.savepoint["call-graupel-exit"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["call-graupel-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconGraupelExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_weisman_klemp_gscp_satad_entry(self, date: str) -> IconGscpSatadEntrySavepoint:
-        savepoint = self.serializer.savepoint["call-gscp-satad-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+    def from_savepoint_weisman_klemp_gscp_satad_entry(
+        self, date: str
+    ) -> IconGscpSatadEntrySavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-gscp-satad-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconGscpSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_gscp_satad_exit(self, date: str) -> IconGscpSatadExitSavepoint:
-        savepoint = self.serializer.savepoint["call-gscp-satad-exit"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["call-gscp-satad-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconGscpSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_weisman_klemp_interface_satad_entry(self, date: str) -> IconInterfaceSatadEntrySavepoint:
-        savepoint = self.serializer.savepoint["call-interface-satad-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+    def from_savepoint_weisman_klemp_interface_satad_entry(
+        self, date: str
+    ) -> IconInterfaceSatadEntrySavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconInterfaceSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_weisman_klemp_interface_satad_exit(self, date: str) -> IconInterfaceSatadExitSavepoint:
-        savepoint = self.serializer.savepoint["call-interface-satad-exit"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+    def from_savepoint_weisman_klemp_interface_satad_exit(
+        self, date: str
+    ) -> IconInterfaceSatadExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconInterfaceSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_interface_diag_after_satad_exit(
+        self, date: str
+    ) -> IconInterfaceDiagSatadExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-diag-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconInterfaceDiagSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)

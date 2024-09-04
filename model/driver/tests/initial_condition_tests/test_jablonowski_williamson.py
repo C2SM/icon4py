@@ -81,7 +81,7 @@ def test_jabw_initial_condition(
     )
 
     assert helpers.dallclose(
-        diagnostic_state.pressure_sfc.asnumpy(),
+        diagnostic_state.surface_pressure.asnumpy(),
         data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
     )
 

@@ -4,7 +4,7 @@
 -e ./model/atmosphere/dycore
 -e ./model/atmosphere/advection
 -e ./model/atmosphere/diffusion
--e ./model/atmosphere/physics/microphysics
+-e ./model/atmosphere/subgrid_scale_physics/microphysics
 -e ./model/common[io]
 -e ./model/driver
 

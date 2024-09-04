@@ -28,6 +28,7 @@ TORUS_100X116_1000M_GRID_URI = "https://polybox.ethz.ch/index.php/s/yqvotFss9i1O
 GRID_URIS = {
     REGIONAL_EXPERIMENT: MC_CH_R04B09_DSL_GRID_URI,
     R02B04_GLOBAL: R02B04_GLOBAL_GRID_URI,
+    # TODO (Chia Rui): check if we can use the grid for gauss3d and get a good quality data for testing microphysics
     WEISMAN_KLEMP_EXPERIMENT: TORUS_100X116_1000M_GRID_URI,
 }
 
@@ -64,7 +65,7 @@ DATA_URIS = {
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
 DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
 DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/IiRimdJH2ZBZ1od/download"}
-DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/pruE9yYGeiuIP6d/download"}
+DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/91DEUGmAkBgrXO6/download"}
 
 
 def get_global_grid_params(experiment: str) -> tuple[int, int]:
