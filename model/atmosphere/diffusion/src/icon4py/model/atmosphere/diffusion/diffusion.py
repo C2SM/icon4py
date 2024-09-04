@@ -407,7 +407,7 @@ class Diffusion:
             nrdmax=self.vertical_grid.end_index_of_damping_layer,
         )
         self._determine_horizontal_domains()
-        
+
         self._initialized = True
 
     @property
@@ -437,8 +437,6 @@ class Diffusion:
             xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float),
         )
 
-    
-        
     def _determine_horizontal_domains(self):
         cell_domain = h_grid.domain(dims.CellDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
@@ -451,29 +449,28 @@ class Diffusion:
                 else self.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
             )
 
-    
-        
         self._cell_start_interior = self.grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
         self._cell_start_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._cell_end_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._cell_end_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
-        
-        self._edge_start_nudging_level_2 = self.grid.start_index(
-            edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
-        self._edge_start_nudging = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING))
+
         self._edge_start_lateral_boundary_level_5 = self.grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
+        self._edge_start_nudging = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING))
+        self._edge_start_nudging_level_2 = self.grid.start_index(
+            edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
+        )
         self._edge_end_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-        self._edge_end_halo_level_2 = self.grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
         self._edge_end_halo = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
-        
+        self._edge_end_halo_level_2 = self.grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+
         self._vertex_start_lateral_boundary_level_2 = self.grid.start_index(
             vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
         self._vertex_end_local = self.grid.end_index(vertex_domain(h_grid.Zone.LOCAL))
+
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
- 
 
     def initial_run(
         self,
@@ -809,5 +806,3 @@ class Diffusion:
         log.debug("running stencil 16 (update_theta_and_exner): end")
         handle_edge_comm.wait()  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
-
-
