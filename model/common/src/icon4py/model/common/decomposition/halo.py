@@ -19,7 +19,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import enum
 import logging
 from typing import Protocol
 
@@ -34,35 +33,6 @@ log = logging.getLogger(__name__)
 
 
 # TODO (@halungge) do we need three of those: one for each dimension?
-class DecompositionFlag(enum.IntEnum):
-    UNDEFINED = -1
-    OWNED = 0
-    """used for locally owned cells, vertices, edges"""
-
-    FIRST_HALO_LINE = 1
-    """
-    used for:
-    - cells that share 1 edge with an OWNED cell
-    - vertices that are on OWNED cell 
-    - edges that are on OWNED cell
-    """
-
-    SECOND_HALO_LINE = 2
-    """
-    used for:
-    - cells that share a vertex with an OWNED cell
-    - vertices that are on a cell(FIRST_HALO_LINE) but not on an owned cell
-    - edges that have _exactly_ one vertex shared with and OWNED Cell
-    """
-
-    THIRD_HALO_LINE = 3
-    """
-    This type does not exist in ICON. It denotes the "closing/far" edges of the SECOND_HALO_LINE cells
-    used for:
-    - cells (NOT USED)
-    - vertices (NOT USED)
-    - edges that are only on the cell(SECOND_HALO_LINE)
-    """
 
 
 class HaloGenerator:
@@ -224,10 +194,14 @@ class HaloGenerator:
         all_cells = xp.hstack((owned_cells, total_halo_cells))
 
         cell_owner_mask = xp.isin(all_cells, owned_cells)
-        cell_halo_levels = DecompositionFlag.UNDEFINED * xp.ones(all_cells.size, dtype=int)
-        cell_halo_levels[cell_owner_mask] = DecompositionFlag.OWNED
-        cell_halo_levels[xp.isin(all_cells, first_halo_cells)] = DecompositionFlag.FIRST_HALO_LINE
-        cell_halo_levels[xp.isin(all_cells, second_halo_cells)] = DecompositionFlag.SECOND_HALO_LINE
+        cell_halo_levels = defs.DecompositionFlag.UNDEFINED * xp.ones(all_cells.size, dtype=int)
+        cell_halo_levels[cell_owner_mask] = defs.DecompositionFlag.OWNED
+        cell_halo_levels[
+            xp.isin(all_cells, first_halo_cells)
+        ] = defs.DecompositionFlag.FIRST_HALO_LINE
+        cell_halo_levels[
+            xp.isin(all_cells, second_halo_cells)
+        ] = defs.DecompositionFlag.SECOND_HALO_LINE
         decomp_info = defs.DecompositionInfo(klevels=self._num_levels).with_dimension(
             dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels
         )
@@ -251,17 +225,19 @@ class HaloGenerator:
             self.node_face_connectivity,
         )
         vertex_second_level = xp.setdiff1d(vertex_on_first_halo_line, vertex_on_owned_cells)
-        vertex_halo_levels = DecompositionFlag.UNDEFINED * xp.ones(all_vertices.size, dtype=int)
-        vertex_halo_levels[vertex_owner_mask] = DecompositionFlag.OWNED
+        vertex_halo_levels = defs.DecompositionFlag.UNDEFINED * xp.ones(
+            all_vertices.size, dtype=int
+        )
+        vertex_halo_levels[vertex_owner_mask] = defs.DecompositionFlag.OWNED
         vertex_halo_levels[
             xp.logical_and(
                 xp.logical_not(vertex_owner_mask),
                 xp.isin(all_vertices, vertex_on_cutting_line),
             )
-        ] = DecompositionFlag.FIRST_HALO_LINE
+        ] = defs.DecompositionFlag.FIRST_HALO_LINE
         vertex_halo_levels[
             xp.isin(all_vertices, vertex_second_level)
-        ] = DecompositionFlag.SECOND_HALO_LINE
+        ] = defs.DecompositionFlag.SECOND_HALO_LINE
         decomp_info.with_dimension(
             dims.VertexDim, all_vertices, vertex_owner_mask, vertex_halo_levels
         )
@@ -298,14 +274,16 @@ class HaloGenerator:
             edge_intersect_owned_first_line,
             self.edge_face_connectivity,
         )
-        edge_halo_levels = DecompositionFlag.UNDEFINED * xp.ones(all_edges.shape, dtype=int)
-        edge_halo_levels[edge_owner_mask] = DecompositionFlag.OWNED
+        edge_halo_levels = defs.DecompositionFlag.UNDEFINED * xp.ones(all_edges.shape, dtype=int)
+        edge_halo_levels[edge_owner_mask] = defs.DecompositionFlag.OWNED
         edge_halo_levels[
             xp.logical_and(
                 xp.logical_not(edge_owner_mask), xp.isin(all_edges, edge_intersect_owned_first_line)
             )
-        ] = DecompositionFlag.FIRST_HALO_LINE
-        edge_halo_levels[xp.isin(all_edges, level_two_edges)] = DecompositionFlag.SECOND_HALO_LINE
+        ] = defs.DecompositionFlag.FIRST_HALO_LINE
+        edge_halo_levels[
+            xp.isin(all_edges, level_two_edges)
+        ] = defs.DecompositionFlag.SECOND_HALO_LINE
         decomp_info.with_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
 
         return decomp_info

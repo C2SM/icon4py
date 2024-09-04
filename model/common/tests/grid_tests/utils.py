@@ -8,6 +8,7 @@
 
 from pathlib import Path
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.datatest_utils import (
     GRIDS_PATH,
@@ -48,3 +49,8 @@ def resolve_file_from_gridfile_name(name: str) -> Path:
         return gridfile
     else:
         raise ValueError(f"invalid name: use one of {R02B04_GLOBAL, REGIONAL_EXPERIMENT}")
+
+
+def horizontal_dim():
+    for dim in (dims.VertexDim, dims.EdgeDim, dims.CellDim):
+        yield dim

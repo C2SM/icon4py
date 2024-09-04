@@ -29,8 +29,8 @@ import pytest
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.grid_manager as gm
 from icon4py.model.common.decomposition import definitions as defs
+from icon4py.model.common.decomposition.definitions import DecompositionFlag
 from icon4py.model.common.decomposition.halo import (
-    DecompositionFlag,
     HaloGenerator,
     SimpleMetisDecomposer,
 )

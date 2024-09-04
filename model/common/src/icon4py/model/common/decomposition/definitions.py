@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import enum
 import functools
 import logging
 from dataclasses import dataclass
@@ -18,6 +19,7 @@ import numpy as np
 import numpy.ma as ma
 from gt4py.next import Dimension
 
+from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
 
 
@@ -126,6 +128,9 @@ class DecompositionInfo:
 
     def halo_levels(self, dim: Dimension):
         return self._halo_levels[dim]
+
+    def halo_level_mask(self, dim: Dimension, level: DecompositionFlag):
+        return xp.where(self._halo_levels[dim] == level, True, False)
 
 
 class ExchangeResult(Protocol):
@@ -239,3 +244,34 @@ def create_single_node_exchange(
     props: SingleNodeProcessProperties, decomp_info: DecompositionInfo
 ) -> ExchangeRuntime:
     return SingleNodeExchange()
+
+
+class DecompositionFlag(enum.IntEnum):
+    UNDEFINED = -1
+    OWNED = 0
+    """used for locally owned cells, vertices, edges"""
+
+    FIRST_HALO_LINE = 1
+    """
+    used for:
+    - cells that share 1 edge with an OWNED cell
+    - vertices that are on OWNED cell 
+    - edges that are on OWNED cell
+    """
+
+    SECOND_HALO_LINE = 2
+    """
+    used for:
+    - cells that share a vertex with an OWNED cell
+    - vertices that are on a cell(FIRST_HALO_LINE) but not on an owned cell
+    - edges that have _exactly_ one vertex shared with and OWNED Cell
+    """
+
+    THIRD_HALO_LINE = 3
+    """
+    This type does not exist in ICON. It denotes the "closing/far" edges of the SECOND_HALO_LINE cells
+    used for:
+    - cells (NOT USED)
+    - vertices (NOT USED)
+    - edges that are only on the cell(SECOND_HALO_LINE)
+    """

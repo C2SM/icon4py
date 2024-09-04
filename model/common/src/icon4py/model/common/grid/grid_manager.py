@@ -20,7 +20,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition,
     halo,
 )
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import horizontal as h_grid, refinement as refin
 from icon4py.model.common.settings import xp
 
 
@@ -64,123 +64,129 @@ def _validate_shape(data: np.array, field_definition: GridFileField):
         )
 
 
+class PropertyName(GridFileName):
+    GRID_ID = "uuidOfHGrid"
+    PARENT_GRID_ID = "uuidOfParHGrid"
+    LEVEL = "grid_level"
+    ROOT = "grid_root"
+
+
+class ConnectivityName(GridFileName):
+    """Names for connectivities used in the grid file."""
+
+    # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> construct
+    #               from e2c and c2e
+    # e2c2v: diamond vertices: not present in grid file -> constructed from e2c and c2v
+
+    #: name of C2E2C connectivity in grid file: dims(nv=3, cell)
+    C2E2C = "neighbor_cell_index"
+
+    #: name of V2E2V connectivity in gridfile: dims(ne=6, vertex),
+    #: all vertices of a pentagon/hexagon, same as V2C2V
+    V2E2V = "vertices_of_vertex"  # does not exist in simple.py
+
+    #: name of V2E dimension in grid file: dims(ne=6, vertex)
+    V2E = "edges_of_vertex"
+
+    #: name fo V2C connectivity in grid file: dims(ne=6, vertex)
+    V2C = "cells_of_vertex"
+
+    #: name of E2V connectivity in grid file: dims(nc=2, edge)
+    E2V = "edge_vertices"
+
+    #: name of C2V connectivity in grid file: dims(nv=3, cell)
+    C2V = "vertex_of_cell"  # does not exist in grid.simple.py
+
+    #: name of E2C connectivity in grid file: dims(nc=2, edge)
+    E2C = "adjacent_cell_of_edge"
+
+    #: name of C2E connectivity in grid file: dims(nv=3, cell)
+    C2E = "edge_of_cell"
+
+
+class DimensionName(GridFileName):
+    """Dimension values (sizes) used in grid file."""
+
+    #: number of vertices
+    VERTEX_NAME = "vertex"
+
+    #: number of edges
+    EDGE_NAME = "edge"
+
+    #: number of cells
+    CELL_NAME = "cell"
+
+    #: number of edges in a diamond: 4
+    DIAMOND_EDGE_SIZE = "no"
+
+    #: number of edges/cells neighboring one vertex: 6 (for regular, non pentagons)
+    NEIGHBORS_TO_VERTEX_SIZE = "ne"
+
+    #: number of cells edges, vertices and cells neighboring a cell: 3
+    NEIGHBORS_TO_CELL_SIZE = "nv"
+
+    #: number of vertices/cells neighboring an edge: 2
+    NEIGHBORS_TO_EDGE_SIZE = "nc"
+
+    #: number of child domains (for nesting)
+    MAX_CHILD_DOMAINS = "max_chdom"
+
+    #: Grid refinement: maximal number in grid-refinement (refin_ctl) array for each dimension
+    CELL_GRF = "cell_grf"
+    EDGE_GRF = "edge_grf"
+    VERTEX_GRF = "vert_grf"
+    CHILD_DOMAINS = "max_chdom"
+
+
+class GeometryName(GridFileName):
+    CELL_AREA = "cell_area"
+    EDGE_LENGTH = "edge_length"
+
+
+class CoordinateName(GridFileName):
+    CELL_LONGITUDE = "clon"
+    CELL_LATITUDE = "clat"
+    EDGE_LONGITUDE = "elon"
+    EDGE_LATITUDE = "elat"
+    VERTEX_LONGITUDE = "vlon"
+    VERTEX_LATITUDE = "vlat"
+
+
+class GridRefinementName(GridFileName):
+    """Names of arrays in grid file defining the grid control, definition of boundaries layers, start and end indices of horizontal zones."""
+
+    #: refine control value of cell indices
+    CONTROL_CELLS = "refin_c_ctrl"
+
+    #: refine control value of edge indices
+    CONTROL_EDGES = "refin_e_ctrl"
+
+    #: refine control value of vertex indices
+    CONTROL_VERTICES = "refin_v_ctrl"
+
+    #: start indices of horizontal grid zones for cell fields
+    START_INDEX_CELLS = "start_idx_c"
+
+    #: start indices of horizontal grid zones for edge fields
+    START_INDEX_EDGES = "start_idx_e"
+
+    #: start indices of horizontal grid zones for vertex fields
+    START_INDEX_VERTICES = "start_idx_v"
+
+    #: end indices of horizontal grid zones for cell fields
+    END_INDEX_CELLS = "end_idx_c"
+
+    #: end indices of horizontal grid zones for edge fields
+    END_INDEX_EDGES = "end_idx_e"
+
+    #: end indices of horizontal grid zones for vertex fields
+    END_INDEX_VERTICES = "end_idx_v"
+
+
 class GridFile:
     """Represent and ICON netcdf grid file."""
 
     INVALID_INDEX = -1
-
-    class PropertyName(GridFileName):
-        GRID_ID = "uuidOfHGrid"
-        PARENT_GRID_ID = "uuidOfParHGrid"
-        LEVEL = "grid_level"
-        ROOT = "grid_root"
-
-    class ConnectivityName(GridFileName):
-        """Names for connectivities used in the grid file."""
-
-        # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> construct
-        #               from e2c and c2e
-        # e2c2v: diamond vertices: not present in grid file -> constructed from e2c and c2v
-
-        #: name of C2E2C connectivity in grid file: dims(nv=3, cell)
-        C2E2C = "neighbor_cell_index"
-
-        #: name of V2E2V connectivity in gridfile: dims(ne=6, vertex),
-        #: all vertices of a pentagon/hexagon, same as V2C2V
-        V2E2V = "vertices_of_vertex"  # does not exist in simple.py
-
-        #: name of V2E dimension in grid file: dims(ne=6, vertex)
-        V2E = "edges_of_vertex"
-
-        #: name fo V2C connectivity in grid file: dims(ne=6, vertex)
-        V2C = "cells_of_vertex"
-
-        #: name of E2V connectivity in grid file: dims(nc=2, edge)
-        E2V = "edge_vertices"
-
-        #: name of C2V connectivity in grid file: dims(nv=3, cell)
-        C2V = "vertex_of_cell"  # does not exist in grid.simple.py
-
-        #: name of E2C connectivity in grid file: dims(nc=2, edge)
-        E2C = "adjacent_cell_of_edge"
-
-        #: name of C2E connectivity in grid file: dims(nv=3, cell)
-        C2E = "edge_of_cell"
-
-    class DimensionName(GridFileName):
-        """Dimension values (sizes) used in grid file."""
-
-        #: number of vertices
-        VERTEX_NAME = "vertex"
-
-        #: number of edges
-        EDGE_NAME = "edge"
-
-        #: number of cells
-        CELL_NAME = "cell"
-
-        #: number of edges in a diamond: 4
-        DIAMOND_EDGE_SIZE = "no"
-
-        #: number of edges/cells neighboring one vertex: 6 (for regular, non pentagons)
-        NEIGHBORS_TO_VERTEX_SIZE = "ne"
-
-        #: number of cells edges, vertices and cells neighboring a cell: 3
-        NEIGHBORS_TO_CELL_SIZE = "nv"
-
-        #: number of vertices/cells neighboring an edge: 2
-        NEIGHBORS_TO_EDGE_SIZE = "nc"
-
-        #: number of child domains (for nesting)
-        MAX_CHILD_DOMAINS = "max_chdom"
-
-        #: Grid refinement: maximal number in grid-refinement (refin_ctl) array for each dimension
-        CELL_GRF = "cell_grf"
-        EDGE_GRF = "edge_grf"
-        VERTEX_GRF = "vert_grf"
-        CHILD_DOMAINS = "max_chdom"
-
-    class GridRefinementName(GridFileName):
-        """Names of arrays in grid file defining the grid control, definition of boundaries layers, start and end indices of horizontal zones."""
-
-        #: refine control value of cell indices
-        CONTROL_CELLS = "refin_c_ctrl"
-
-        #: refine control value of edge indices
-        CONTROL_EDGES = "refin_e_ctrl"
-
-        #: refine control value of vertex indices
-        CONTROL_VERTICES = "refin_v_ctrl"
-
-        #: start indices of horizontal grid zones for cell fields
-        START_INDEX_CELLS = "start_idx_c"
-
-        #: start indices of horizontal grid zones for edge fields
-        START_INDEX_EDGES = "start_idx_e"
-
-        #: start indices of horizontal grid zones for vertex fields
-        START_INDEX_VERTICES = "start_idx_v"
-
-        #: end indices of horizontal grid zones for cell fields
-        END_INDEX_CELLS = "end_idx_c"
-
-        #: end indices of horizontal grid zones for edge fields
-        END_INDEX_EDGES = "end_idx_e"
-
-        #: end indices of horizontal grid zones for vertex fields
-        END_INDEX_VERTICES = "end_idx_v"
-
-    class GeometryName(GridFileName):
-        CELL_AREA = "cell_area"
-        EDGE_LENGTH = "edge_length"
-
-    class CoordinateName(GridFileName):
-        CELL_LONGITUDE = "clon"
-        CELL_LATITUDE = "clat"
-        EDGE_LONGITUDE = "elon"
-        EDGE_LATITUDE = "elat"
-        VERTEX_LONGITUDE = "vlon"
-        VERTEX_LATITUDE = "vlat"
 
     def __init__(self, dataset: Dataset):
         self._dataset = dataset
@@ -215,8 +221,7 @@ class GridFile:
             dtype: datatype of the field
         """
         try:
-            # use python slice? 2D fields
-            #           (sparse, horizontal)
+            # use python slice? 2D fields (sparse, horizontal)
             variable = self._dataset.variables[name]
             self._log.debug(f"reading {name}: {variable}")
             data = variable[:] if indices is None else variable[indices]
@@ -308,9 +313,9 @@ class GridManager:
         reader = GridFile(dataset)
 
         control_dims = [
-            GridFile.GridRefinementName.CONTROL_CELLS,
-            GridFile.GridRefinementName.CONTROL_EDGES,
-            GridFile.GridRefinementName.CONTROL_VERTICES,
+            GridRefinementName.CONTROL_CELLS,
+            GridRefinementName.CONTROL_EDGES,
+            GridRefinementName.CONTROL_VERTICES,
         ]
         refin_ctrl = {
             dim: reader.int_field(control_dims[i])
@@ -318,9 +323,9 @@ class GridManager:
         }
 
         grf_dims = [
-            GridFile.DimensionName.CELL_GRF,
-            GridFile.DimensionName.EDGE_GRF,
-            GridFile.DimensionName.VERTEX_GRF,
+            DimensionName.CELL_GRF,
+            DimensionName.EDGE_GRF,
+            DimensionName.VERTEX_GRF,
         ]
         refin_ctrl_max = {
             dim: reader.dimension(grf_dims[i])
@@ -328,9 +333,9 @@ class GridManager:
         }
 
         start_index_dims = [
-            GridFile.GridRefinementName.START_INDEX_CELLS,
-            GridFile.GridRefinementName.START_INDEX_EDGES,
-            GridFile.GridRefinementName.START_INDEX_VERTICES,
+            GridRefinementName.START_INDEX_CELLS,
+            GridRefinementName.START_INDEX_EDGES,
+            GridRefinementName.START_INDEX_VERTICES,
         ]
         start_indices = {
             dim: self._get_index_field(start_index_dims[i], transpose=False, dtype=gtx.int32)[
@@ -340,9 +345,9 @@ class GridManager:
         }
 
         end_index_dims = [
-            GridFile.GridRefinementName.END_INDEX_CELLS,
-            GridFile.GridRefinementName.END_INDEX_EDGES,
-            GridFile.GridRefinementName.END_INDEX_VERTICES,
+            GridRefinementName.END_INDEX_CELLS,
+            GridRefinementName.END_INDEX_EDGES,
+            GridRefinementName.END_INDEX_VERTICES,
         ]
         end_indices = {
             dim: self._get_index_field(
@@ -380,9 +385,9 @@ class GridManager:
             edge_fields = fields.get(dims.EdgeDim, [])
             vertex_fields = fields.get(dims.VertexDim, [])
             vals = (
-                {name: reader(name, cells_on_node) for name in cell_fields}
-                | {name: reader(name, edges_on_node) for name in edge_fields}
-                | {name: reader(name, vertices_on_node) for name in vertex_fields}
+                {name: reader(name, cells_on_node, dtype=gtx.int32) for name in cell_fields}
+                | {name: reader(name, edges_on_node, dtype=gtx.int32) for name in edge_fields}
+                | {name: reader(name, vertices_on_node, dtype=gtx.int32) for name in vertex_fields}
             )
 
             return vals
@@ -393,8 +398,8 @@ class GridManager:
         return self._read(
             decomposition_info,
             {
-                dims.CellDim: [GridFile.GeometryName.CELL_AREA],
-                dims.EdgeDim: [GridFile.GeometryName.EDGE_LENGTH],
+                dims.CellDim: [GeometryName.CELL_AREA],
+                dims.EdgeDim: [GeometryName.EDGE_LENGTH],
             },
         )
 
@@ -405,16 +410,16 @@ class GridManager:
             decomposition_info,
             {
                 dims.CellDim: [
-                    GridFile.CoordinateName.CELL_LONGITUDE,
-                    GridFile.CoordinateName.CELL_LATITUDE,
+                    CoordinateName.CELL_LONGITUDE,
+                    CoordinateName.CELL_LATITUDE,
                 ],
                 dims.EdgeDim: [
-                    GridFile.CoordinateName.EDGE_LONGITUDE,
-                    GridFile.CoordinateName.EDGE_LATITUDE,
+                    CoordinateName.EDGE_LONGITUDE,
+                    CoordinateName.EDGE_LATITUDE,
                 ],
                 dims.VertexDim: [
-                    GridFile.CoordinateName.VERTEX_LONGITUDE,
-                    GridFile.CoordinateName.VERTEX_LATITUDE,
+                    CoordinateName.VERTEX_LONGITUDE,
+                    CoordinateName.VERTEX_LATITUDE,
                 ],
             },
         )
@@ -468,7 +473,7 @@ class GridManager:
 
         return grid
 
-    def _add_start_end_indices(self, grid):
+    def _read_start_end_indices(self, grid):
         (
             start_indices,
             end_indices,
@@ -492,25 +497,25 @@ class GridManager:
         grid = self._initialize_global(limited_area, on_gpu)
 
         global_connectivities = {
-            dims.C2E2C: self._get_index_field(GridFile.ConnectivityName.C2E2C),
-            dims.C2E: self._get_index_field(GridFile.ConnectivityName.C2E),
-            dims.E2C: self._get_index_field(GridFile.ConnectivityName.E2C),
-            dims.V2E: self._get_index_field(GridFile.ConnectivityName.V2E),
-            dims.E2V: self._get_index_field(GridFile.ConnectivityName.E2V),
-            dims.V2C: self._get_index_field(GridFile.ConnectivityName.V2C),
-            dims.C2V: self._get_index_field(GridFile.ConnectivityName.C2V),
-            dims.V2E2V: self._get_index_field(GridFile.ConnectivityName.V2E2V),
+            dims.C2E2C: self._get_index_field(ConnectivityName.C2E2C),
+            dims.C2E: self._get_index_field(ConnectivityName.C2E),
+            dims.E2C: self._get_index_field(ConnectivityName.E2C),
+            dims.V2E: self._get_index_field(ConnectivityName.V2E),
+            dims.E2V: self._get_index_field(ConnectivityName.E2V),
+            dims.V2C: self._get_index_field(ConnectivityName.V2C),
+            dims.C2V: self._get_index_field(ConnectivityName.C2V),
+            dims.V2E2V: self._get_index_field(ConnectivityName.V2E2V),
         }
         if self._run_properties.single_node():
             global_connectivities.update(
                 {
-                    dims.E2V: self._get_index_field(GridFile.ConnectivityName.E2V),
-                    dims.C2V: self._get_index_field(GridFile.ConnectivityName.C2V),
+                    dims.E2V: self._get_index_field(ConnectivityName.E2V),
+                    dims.C2V: self._get_index_field(ConnectivityName.C2V),
                 }
             )
             grid.with_connectivities({o.target[1]: c for o, c in global_connectivities.items()})
             _add_derived_connectivities(grid)
-            self._add_start_end_indices(grid)
+            self._read_start_end_indices(grid)
             return grid
         else:
             cells_to_rank_mapping = self._decompose(
@@ -525,8 +530,8 @@ class GridManager:
             decomposition_info = construct_decomposition_info()
             global_connectivities.update(
                 {
-                    dims.E2V: self._get_index_field(GridFile.ConnectivityName.E2V),
-                    dims.C2V: self._get_index_field(GridFile.ConnectivityName.C2V),
+                    dims.E2V: self._get_index_field(ConnectivityName.E2V),
+                    dims.C2V: self._get_index_field(ConnectivityName.C2V),
                 }
             )
             local_connectivities = {
@@ -563,55 +568,107 @@ class GridManager:
         return field
 
     def _construct_start_indices(self, decomposition_info: decomposition.DecompositionInfo):
-        num_child_domains = self._reader.dimension(GridFile.DimensionName.MAX_CHILD_DOMAINS)
         grid_refinement_dimensions = {
             dim: self._reader.dimension(name)
             for dim, name in {
-                dims.CellDim: GridFile.DimensionName.CELL_GRF,
-                dims.EdgeDim: GridFile.DimensionName.EDGE_GRF,
-                dims.VertexDim: GridFile.DimensionName.VERTEX_GRF,
+                dims.CellDim: DimensionName.CELL_GRF,
+                dims.EdgeDim: DimensionName.EDGE_GRF,
+                dims.VertexDim: DimensionName.VERTEX_GRF,
             }.items()
         }
 
         start_index = {
-            dim: np.zeros((num_child_domains, size), dtype=gtx.int32)
+            dim: np.zeros((size,), dtype=gtx.int32)
             for dim, size in grid_refinement_dimensions.items()
         }
         end_index = {
-            dim: np.zeros((num_child_domains, size), dtype=gtx.int32)
+            dim: np.zeros((size,), dtype=gtx.int32)
             for dim, size in grid_refinement_dimensions.items()
         }
         field_names = {
-            dims.CellDim: [GridFile.GridRefinementName.CONTROL_CELLS],
-            dims.EdgeDim: [GridFile.GridRefinementName.CONTROL_EDGES],
-            dims.VertexDim: [GridFile.GridRefinementName.CONTROL_EDGES],
+            dims.CellDim: (GridRefinementName.CONTROL_CELLS,),
+            dims.EdgeDim: (GridRefinementName.CONTROL_EDGES,),
+            dims.VertexDim: (GridRefinementName.CONTROL_VERTICES,),
         }
 
-        refine_control_fields = self._read(decomposition_info, fields=field_names)
+        field_list = self._read(decomposition_info, fields=field_names)
+        refine_control_fields = {dim: field_list[name[0]] for dim, name in field_names.items()}
         # do we need to modify the refinement control for "halo"
-        dim = dims.CellDim
-        local_size = decomposition_info.global_index(
-            dim, decomposition.DecompositionInfo.EntryType.ALL
-        ).shape[0]
-        start_index[dim][h_grid.HorizontalMarkerIndex.end(dim)] = local_size
-        start_index[dim][h_grid.HorizontalMarkerIndex.local(dim)] = 0
-        # find first local halo index which is not on lateral boundary
-        local_halo_index = decomposition_info.local_index(
-            dim, decomposition.DecompositionInfo.EntryType.HALO
-        )
-        ref_ctrl = refine_control_fields[dim]
-        minimial_local_halo_index = np.min(np.where(ref_ctrl == local_halo_index))
-        start_index[dim][h_grid.HorizontalMarkerIndex.halo(dim)] = minimial_local_halo_index
+        for dim in dims.horizontal_dims.values():
+            domain = h_grid.domain(dim)
+            local_size = decomposition_info.global_index(
+                dim, decomposition.DecompositionInfo.EntryType.ALL
+            ).shape[0]
+            # END: size of the local grid for both start and end index
+            start_index[dim][domain(h_grid.Zone.END)()] = local_size
+            end_index[dim][domain(h_grid.Zone.END)()] = local_size
 
-        # for global
+            local_owned_index = decomposition_info.local_index(
+                dim, decomposition.DecompositionInfo.EntryType.OWNED
+            )
+            unordered = refin.is_unordered(refine_control_fields[dim], dim)
+
+            # LOCAL: all values up to the halos
+            start_index[dim][domain(h_grid.Zone.LOCAL)()] = 0
+            end_index[dim][domain(h_grid.Zone.LOCAL)()] = np.max(local_owned_index) + gtx.int32(1)
+
+            # INTERIOR: unordered prognostic region
+            start_index[dim][domain(h_grid.Zone.INTERIOR)()] = np.min(local_owned_index[unordered])
+            max_local_interior = np.max(local_owned_index[unordered]) + gtx.int32(1)
+            end_index[dim][domain(h_grid.Zone.INTERIOR)()] = max_local_interior
+
+            # HALO lines
+            # find first local halo index which is in the unordered region (0 or -4) so not on boundary.
+            # TODO nudging: where does ICON group nudging halo points grouped?
+            local_halo_index = decomposition_info.local_index(
+                dim, decomposition.DecompositionInfo.EntryType.HALO
+            )
+
+            first_halo_mask = decomposition_info.halo_level_mask(
+                dim, decomposition.DecompositionFlag.FIRST_HALO_LINE
+            )
+            second_halo_mask = decomposition_info.halo_level_mask(
+                dim, decomposition.DecompositionFlag.SECOND_HALO_LINE
+            )
+
+            minimal_halo_index = (
+                local_size
+                if local_halo_index.size == 0
+                else np.min(np.nonzero(np.logical_and(unordered, first_halo_mask)))
+            )
+            assert (
+                minimal_halo_index >= 0 and minimal_halo_index >= max_local_interior
+            ), "first halo line should start after last interior cell"
+
+            minimal_second_halo_index = (
+                local_size
+                if local_halo_index.size == 0
+                else np.min(np.nonzero(np.logical_and(unordered, second_halo_mask)))
+            )
+            assert (
+                minimal_second_halo_index >= 0 and minimal_second_halo_index >= minimal_halo_index
+            ), "second halo line should start after first halo line"
+
+            start_index[dim][domain(h_grid.Zone.HALO)()] = minimal_halo_index
+            end_index[dim][domain(h_grid.Zone.HALO)()] = minimal_second_halo_index
+
+            start_index[dim][domain(h_grid.Zone.HALO_LEVEL_2)()] = minimal_second_halo_index
+            end_index[dim][domain(h_grid.Zone.HALO_LEVEL_2)()] = local_size
+            self.grid.with_start_end_indices(dim, start_index[dim], end_index[dim])
+
+        # TODO global grid so no lateral boundary / nudging levels: need to make sure they are empty
+        # for now (global grid) we set them to be empty
+
+        # TODO (@halungge) do the same for edges and vertices
+        #
 
     def _initialize_global(self, limited_area, on_gpu):
-        num_cells = self._reader.dimension(GridFile.DimensionName.CELL_NAME)
-        num_edges = self._reader.dimension(GridFile.DimensionName.EDGE_NAME)
-        num_vertices = self._reader.dimension(GridFile.DimensionName.VERTEX_NAME)
-        uuid = self._dataset.getncattr(GridFile.PropertyName.GRID_ID)
-        grid_level = self._dataset.getncattr(GridFile.PropertyName.LEVEL)
-        grid_root = self._dataset.getncattr(GridFile.PropertyName.ROOT)
+        num_cells = self._reader.dimension(DimensionName.CELL_NAME)
+        num_edges = self._reader.dimension(DimensionName.EDGE_NAME)
+        num_vertices = self._reader.dimension(DimensionName.VERTEX_NAME)
+        uuid = self._dataset.getncattr(PropertyName.GRID_ID)
+        grid_level = self._dataset.getncattr(PropertyName.LEVEL)
+        grid_root = self._dataset.getncattr(PropertyName.ROOT)
         global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
         grid_size = base_grid.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
