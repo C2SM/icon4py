@@ -1,0 +1,139 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0", "wheel>=0.40.0"]
+
+[project]
+authors = [
+  {email = "gridtools@cscs.ch"},
+  {name = "ETH Zurich"}
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: POSIX",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering :: Atmospheric Science",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Physics"
+]
+dependencies = [
+  "gt4py>=1.0.1",
+  "icon4py-common>=0.0.5"
+]
+description = "ICON microphysics."
+dynamic = ['version']
+license = {file = "LICENSE"}
+name = "icon4py-atmosphere-subgrid_scale_physics-microphysics"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.urls]
+repository = "https://github.com/C2SM/icon4py"
+
+[tool.coverage]
+
+[tool.coverage.html]
+directory = 'tests/_reports/coverage_html'
+
+[tool.coverage.paths]
+source = ['src/icon4py/model/']
+
+[tool.coverage.report]
+exclude_lines = [
+  'raise AssertionError',  # Don't complain if tests don't hit defensive assertion code
+  'raise NotImplementedError',  # Don't complain if tests don't hit defensive assertion code
+  'if 0:',  # Don't complain if non-runnable code isn't run
+  'if __name__ == .__main__.:'  # Don't complain if non-runnable code isn't run
+]
+ignore_errors = true
+
+[tool.coverage.run]
+branch = true
+parallel = true
+source_pkgs = ['microphysics']
+
+[tool.mypy]
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+exclude = [
+  '^tests/*.py'
+]
+ignore_missing_imports = false
+implicit_reexport = true
+install_types = true
+non_interactive = true
+show_column_numbers = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.pytest]
+
+[tool.pytest.ini_options]
+addopts = ['-p icon4py.model.common.test_utils.pytest_config']
+testpaths = 'tests'
+
+[tool.ruff]
+extend-exclude = [
+  '.eggs',
+  '.gt_cache',
+  '.ipynb_checkpoints',
+  '.tox',
+  '_local_',
+  'build',
+  'dist',
+  'docs',
+  '_external_src',
+  'tests/_disabled',
+  'setup.py'
+]
+indent-width = 4
+line-length = 100
+respect-gitignore = true
+show-fixes = true
+# Assume Python 3.10
+target-version = "py310"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+extend-select = ['E', 'F', 'I', 'B', 'A', 'T10', 'ERA', 'NPY', 'RUF']
+# # Rules sets:
+# E: pycodestyle
+# F: Pyflakes
+# I: isort
+# B: flake8-bugbear
+# A: flake8-builtins
+# T10: flake8-debugger
+# ERA: eradicate
+# NPY: NumPy-specific rules
+# RUF: Ruff-specific rules
+ignore = [
+  'E501',  # Line too long (using Bugbear's B950 warning)
+  'RUF009'  # Do not perform function call in dataclass defaults
+]
+ignore-init-module-imports = true
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ['icon4py.model']
+known-third-party = [
+  'gt4py'
+]
+lines-after-imports = 2
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.setuptools.dynamic]
+version = {attr = 'icon4py.model.atmosphere.subgrid_scale_physics.microphysics.__init__.__version__'}
+
+[tool.setuptools.package-data]
+'icon4py.model.atmosphere.subgrid_scale_physics.microphysics' = ['py.typed']

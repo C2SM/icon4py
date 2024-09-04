@@ -1289,10 +1289,10 @@ class IconJabwInitSavepoint(IconSavepoint):
     def dtemp(self):
         return self.serializer.read("dtemp", self.savepoint)[0]
 
-    def latC(self):
+    def lat_perturbation_center(self):
         return self.serializer.read("latC", self.savepoint)[0]
 
-    def lonC(self):
+    def lon_perturbation_center(self):
         return self.serializer.read("lonC", self.savepoint)[0]
 
 
@@ -1346,6 +1346,343 @@ class IconJabwDiagnosticSavepoint(IconSavepoint):
 
     def meridional_wind(self):
         return self._get_field("output_diag_v", dims.CellDim, dims.KDim)
+
+
+class IconGraupelEntrySavepoint(IconSavepoint):
+    def temperature(self):
+        return self._get_field("ser_in_graupel_temperature", dims.CellDim, dims.KDim)
+
+    def pres(self):
+        return self._get_field("ser_in_graupel_pres", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("ser_in_graupel_rho", dims.CellDim, dims.KDim)
+
+    def qv(self):
+        return self._get_field("ser_in_graupel_qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("ser_in_graupel_qc", dims.CellDim, dims.KDim)
+
+    def qi(self):
+        return self._get_field("ser_in_graupel_qi", dims.CellDim, dims.KDim)
+
+    def qr(self):
+        return self._get_field("ser_in_graupel_qr", dims.CellDim, dims.KDim)
+
+    def qs(self):
+        return self._get_field("ser_in_graupel_qs", dims.CellDim, dims.KDim)
+
+    def qg(self):
+        return self._get_field("ser_in_graupel_qg", dims.CellDim, dims.KDim)
+
+    def qnc(self):
+        return self._get_field("ser_in_graupel_qnc", dims.CellDim, dims.KDim)
+
+    def dt_microphysics(self):
+        return self.serializer.read("ser_in_graupel_dt", self.savepoint)[0]
+
+    def qc0(self):
+        return self.serializer.read("ser_in_graupel_qc0", self.savepoint)[0]
+
+    def qi0(self):
+        return self.serializer.read("ser_in_graupel_qi0", self.savepoint)[0]
+
+    def kstart_moist(self):
+        return self.serializer.read("ser_in_graupel_kstart_moist", self.savepoint)[0]
+
+    def l_cv(self):
+        return self.serializer.read("ser_in_graupel_l_cv", self.savepoint)[0]
+
+    def ithermo_water(self):
+        return self.serializer.read("ser_in_graupel_ithermo_water", self.savepoint)[0]
+
+    def ldiag_ttend(self):
+        return self.serializer.read("ser_in_graupel_ldiag_ttend", self.savepoint)[0]
+
+    def ldiag_qtend(self):
+        return self.serializer.read("ser_in_graupel_ldiag_qtend", self.savepoint)[0]
+
+    def istart_idx(self):
+        return self.serializer.read("ser_in_graupel_istart", self.savepoint)[0]
+
+    def iend_idx(self):
+        return self.serializer.read("ser_in_graupel_iend", self.savepoint)[0]
+
+
+class IconGraupelExitSavepoint(IconSavepoint):
+    def temperature(self):
+        return self._get_field("ser_out_graupel_temperature", dims.CellDim, dims.KDim)
+
+    def pres(self):
+        return self._get_field("ser_out_graupel_pres", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("ser_out_graupel_rho", dims.CellDim, dims.KDim)
+
+    def qv(self):
+        return self._get_field("ser_out_graupel_qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("ser_out_graupel_qc", dims.CellDim, dims.KDim)
+
+    def qi(self):
+        return self._get_field("ser_out_graupel_qi", dims.CellDim, dims.KDim)
+
+    def qr(self):
+        return self._get_field("ser_out_graupel_qr", dims.CellDim, dims.KDim)
+
+    def qs(self):
+        return self._get_field("ser_out_graupel_qs", dims.CellDim, dims.KDim)
+
+    def qg(self):
+        return self._get_field("ser_out_graupel_qg", dims.CellDim, dims.KDim)
+
+    def ddt_tend_t(self):
+        return self._get_field("ser_out_graupel_ddt_tend_t", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qv(self):
+        return self._get_field("ser_out_graupel_ddt_tend_qv", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qc(self):
+        return self._get_field("ser_out_graupel_ddt_tend_qc", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qi(self):
+        return self._get_field("ser_out_graupel_ddt_tend_qi", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qr(self):
+        return self._get_field("ser_out_graupel_ddt_tend_qr", dims.CellDim, dims.KDim)
+
+    def ddt_tend_qs(self):
+        return self._get_field("ser_out_graupel_ddt_tend_qs", dims.CellDim, dims.KDim)
+
+    def rain_flux(self):
+        return self._get_field("ser_out_graupel_prr_gsp", dims.CellDim)
+
+    def snow_flux(self):
+        return self._get_field("ser_out_graupel_prs_gsp", dims.CellDim)
+
+    def graupel_flux(self):
+        return self._get_field("ser_out_graupel_pri_gsp", dims.CellDim)
+
+    def ice_flux(self):
+        return self._get_field("ser_out_graupel_prg_gsp", dims.CellDim)
+
+
+class IconGscpSatadEntrySavepoint(IconSavepoint):
+    def temperature(self):
+        return self._get_field("ser_in_satad_temperature", dims.CellDim, dims.KDim)
+
+    def qv(self):
+        return self._get_field("ser_in_satad_qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("ser_in_satad_qc", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("ser_in_satad_rho", dims.CellDim, dims.KDim)
+
+    def kstart_moist(self):
+        return self.serializer.read("ser_in_satad_kstart_moist", self.savepoint)[0]
+
+    def istart_idx(self):
+        return self.serializer.read("ser_in_satad_istart", self.savepoint)[0]
+
+    def iend_idx(self):
+        return self.serializer.read("ser_in_satad_iend", self.savepoint)[0]
+
+    def tolerance(self):
+        return self.serializer.read("ser_in_satad_tol", self.savepoint)[0]
+
+    def maxiter(self):
+        return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
+
+
+class IconGscpSatadExitSavepoint(IconSavepoint):
+    def temperature(self):
+        return self._get_field("ser_out_satad_temperature", dims.CellDim, dims.KDim)
+
+    def qv(self):
+        return self._get_field("ser_out_satad_qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("ser_out_satad_qc", dims.CellDim, dims.KDim)
+
+
+class IconInterfaceSatadEntrySavepoint(IconSavepoint):
+    def temperature(self):
+        return self._get_field("ser_in_satad_temperature", dims.CellDim, dims.KDim)
+
+    def qv(self):
+        return self._get_field("ser_in_satad_qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("ser_in_satad_qc", dims.CellDim, dims.KDim)
+
+    def rho(self):
+        return self._get_field("ser_in_satad_rho", dims.CellDim, dims.KDim)
+
+    def kstart_moist(self):
+        return self.serializer.read("ser_in_satad_kstart_moist", self.savepoint)[0]
+
+    def istart_idx(self):
+        return self.serializer.read("ser_in_satad_istart", self.savepoint)[0]
+
+    def iend_idx(self):
+        return self.serializer.read("ser_in_satad_iend", self.savepoint)[0]
+
+    def tolerance(self):
+        return self.serializer.read("ser_in_satad_tol", self.savepoint)[0]
+
+    def maxiter(self):
+        return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
+
+
+class IconInterfaceSatadExitSavepoint(IconSavepoint):
+    def temperature(self):
+        return self._get_field("ser_out_satad_temperature", dims.CellDim, dims.KDim)
+
+    def qv(self):
+        return self._get_field("ser_out_satad_qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("ser_out_satad_qc", dims.CellDim, dims.KDim)
+
+    def qi(self):
+        return self._get_field("ser_out_satad_qi", dims.CellDim, dims.KDim)
+
+    def qr(self):
+        return self._get_field("ser_out_satad_qr", dims.CellDim, dims.KDim)
+
+    def qs(self):
+        return self._get_field("ser_out_satad_qs", dims.CellDim, dims.KDim)
+
+    def qg(self):
+        return self._get_field("ser_out_satad_qg", dims.CellDim, dims.KDim)
+
+    def virtual_temperature(self):
+        return self._get_field("ser_out_satad_tempv", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("ser_out_satad_exner", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("ser_out_satad_pres", dims.CellDim, dims.KDim)
+
+    def pressure_ifc(self):
+        return self._get_field("ser_out_satad_pres_ifc", dims.CellDim, dims.KDim)
+
+    def pressure_sfc(self):
+        return self._get_field("ser_out_satad_pres_sfc", dims.CellDim)
+
+
+class IconInterfaceDiagSatadExitSavepoint(IconSavepoint):
+    def virtual_temperature(self):
+        return self._get_field("ser_out_satad_diag_tempv", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("ser_out_satad_diag_exner", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("ser_out_satad_diag_pres", dims.CellDim, dims.KDim)
+
+    def pressure_ifc(self):
+        return self._get_field("ser_out_satad_diag_pres_ifc", dims.CellDim, dims.KDim)
+
+    def qsum(self):
+        return self._get_field("ser_out_satad_diag_qsum", dims.CellDim, dims.KDim)
+
+
+class IconGraupelInitSavepoint(IconSavepoint):
+    def iautocon(self):
+        return self.serializer.read("ser_init_graupel_iautocon", self.savepoint)[0]
+
+    def isnow_n0temp(self):
+        return self.serializer.read("ser_init_graupel_isnow_n0temp", self.savepoint)[0]
+
+    def ceff_min(self):
+        return self.serializer.read("ser_init_graupel_zceff_min", self.savepoint)[0]
+
+    def v0snow(self):
+        return self.serializer.read("ser_init_graupel_v0snow", self.savepoint)[0]
+
+    def vz0i(self):
+        return self.serializer.read("ser_init_graupel_zvz0i", self.savepoint)[0]
+
+    def icesedi_exp(self):
+        return self.serializer.read("ser_init_graupel_icesedi_exp", self.savepoint)[0]
+
+    def mu_rain(self):
+        return self.serializer.read("ser_init_graupel_mu_rain", self.savepoint)[0]
+
+    def rain_n0_factor(self):
+        return self.serializer.read("ser_init_graupel_rain_n0_factor", self.savepoint)[0]
+
+    def qmin(self):
+        return self.serializer.read("ser_init_graupel_zqmin", self.savepoint)[0]
+
+    def eps(self):
+        return self.serializer.read("ser_init_graupel_zeps", self.savepoint)[0]
+
+    def ams(self):
+        return self.serializer.read("ser_init_graupel_zams", self.savepoint)[0]
+
+    def ccsrim(self):
+        return self.serializer.read("ser_init_graupel_ccsrim", self.savepoint)[0]
+
+    def ccsagg(self):
+        return self.serializer.read("ser_init_graupel_ccsagg", self.savepoint)[0]
+
+    def ccsdep(self):
+        return self.serializer.read("ser_init_graupel_ccsdep", self.savepoint)[0]
+
+    def ccsvel(self):
+        return self.serializer.read("ser_init_graupel_ccsvel", self.savepoint)[0]
+
+    def ccsvxp(self):
+        return self.serializer.read("ser_init_graupel_ccsvxp", self.savepoint)[0]
+
+    def ccslam(self):
+        return self.serializer.read("ser_init_graupel_ccslam", self.savepoint)[0]
+
+    def ccslxp(self):
+        return self.serializer.read("ser_init_graupel_ccslxp", self.savepoint)[0]
+
+    def ccswxp(self):
+        return self.serializer.read("ser_init_graupel_ccswxp", self.savepoint)[0]
+
+    def ccsaxp(self):
+        return self.serializer.read("ser_init_graupel_ccsaxp", self.savepoint)[0]
+
+    def ccsdxp(self):
+        return self.serializer.read("ser_init_graupel_ccsdxp", self.savepoint)[0]
+
+    def ccshi1(self):
+        return self.serializer.read("ser_init_graupel_ccshi1", self.savepoint)[0]
+
+    def ccdvtp(self):
+        return self.serializer.read("ser_init_graupel_ccdvtp", self.savepoint)[0]
+
+    def ccidep(self):
+        return self.serializer.read("ser_init_graupel_ccidep", self.savepoint)[0]
+
+    def cevxp(self):
+        return self.serializer.read("ser_init_graupel_zcevxp", self.savepoint)[0]
+
+    def cev(self):
+        return self.serializer.read("ser_init_graupel_zcev", self.savepoint)[0]
+
+    def bevxp(self):
+        return self.serializer.read("ser_init_graupel_zbevxp", self.savepoint)[0]
+
+    def bev(self):
+        return self.serializer.read("ser_init_graupel_zbev", self.savepoint)[0]
+
+    def vzxp(self):
+        return self.serializer.read("ser_init_graupel_zvzxp", self.savepoint)[0]
+
+    def vz0r(self):
+        return self.serializer.read("ser_init_graupel_zvz0r", self.savepoint)[0]
 
 
 class IconSerialDataProvider:
@@ -1489,3 +1826,78 @@ class IconSerialDataProvider:
     def from_savepoint_jabw_diagnostic(self) -> IconJabwDiagnosticSavepoint:
         savepoint = self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
         return IconJabwDiagnosticSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_graupel_init(self) -> IconGraupelInitSavepoint:
+        savepoint = self.serializer.savepoint["init-graupel"].serial_rank[0].as_savepoint()
+        return IconGraupelInitSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelEntrySavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-graupel-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconGraupelEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-graupel-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconGraupelExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_gscp_satad_entry(
+        self, date: str
+    ) -> IconGscpSatadEntrySavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-gscp-satad-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconGscpSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_gscp_satad_exit(self, date: str) -> IconGscpSatadExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-gscp-satad-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconGscpSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_interface_satad_entry(
+        self, date: str
+    ) -> IconInterfaceSatadEntrySavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconInterfaceSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_interface_satad_exit(
+        self, date: str
+    ) -> IconInterfaceSatadExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconInterfaceSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_interface_diag_after_satad_exit(
+        self, date: str
+    ) -> IconInterfaceDiagSatadExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-diag-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconInterfaceDiagSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)
