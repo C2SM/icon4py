@@ -11,10 +11,8 @@ import pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.horizontal import (
-    HorizontalMarkerIndex,
-)
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
@@ -41,13 +39,9 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     z_ifc = metrics_savepoint.z_ifc()
     k_lev = as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=int))
     z_me = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
-    horizontal_start_edge = icon_grid.get_start_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1,
-    )
-    end_edge_nudging = icon_grid.get_end_index(
-        dims.EdgeDim, HorizontalMarkerIndex.nudging(dims.EdgeDim)
-    )
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    horizontal_start_edge = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    start_nudging = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     compute_z_mc.with_backend(backend)(
         z_ifc,
         z_mc,
@@ -84,7 +78,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     _compute_z_aux2(
         z_ifc=z_ifc_sliced,
         out=z_aux2,
-        domain={dims.EdgeDim: (end_edge_nudging, icon_grid.num_edges)},
+        domain={dims.EdgeDim: (start_nudging, icon_grid.num_edges)},
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
 
@@ -97,7 +91,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         z_aux2=z_aux2.asnumpy(),
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
-        horizontal_start_1=end_edge_nudging,
+        horizontal_start_1=start_nudging,
         nedges=icon_grid.num_edges,
     )
     zdiff_gradp_full_field = flatten_first_two_dims(

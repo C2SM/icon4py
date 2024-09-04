@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore import init_exner_pr
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants as phy_const, dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.grid import geometry, horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
     edge_2_cell_vector_rbf_interpolation,
@@ -36,8 +36,8 @@ log = logging.getLogger(__name__)
 
 def model_initialization_jabw(
     grid: icon_grid.IconGrid,
-    cell_param: h_grid.CellParams,
-    edge_param: h_grid.EdgeParams,
+    cell_param: geometry.CellParams,
+    edge_param: geometry.EdgeParams,
     path: pathlib.Path,
     rank=0,
 ) -> tuple[
@@ -87,18 +87,16 @@ def model_initialization_jabw(
     num_cells = grid.num_cells
     num_levels = grid.num_levels
 
-    grid_idx_edge_start_plus1 = grid.get_end_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    cell_domain = h_grid.domain(dims.CellDim)
+    end_edge_lateral_boundary_level_2 = grid.end_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    grid_idx_edge_end = grid.get_end_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.end(dims.EdgeDim)
+    end_edge_end = grid.end_index(edge_domain(h_grid.Zone.END))
+    end_cell_lateral_boundary_level_2 = grid.end_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    grid_idx_cell_start_plus1 = grid.get_end_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1
-    )
-    grid_idx_cell_end = grid.get_end_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-    )
+    end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
     p_sfc = 100000.0
     jw_up = 0.0  # if doing baroclinic wave test, please set it to a nonzero value
@@ -201,8 +199,8 @@ def model_initialization_jabw(
         eta_v,
         cell_2_edge_coeff,
         eta_v_e,
-        grid_idx_edge_start_plus1,
-        grid_idx_edge_end,
+        end_edge_lateral_boundary_level_2,
+        end_edge_end,
         0,
         num_levels,
         offset_provider=grid.offset_providers,
@@ -261,8 +259,8 @@ def model_initialization_jabw(
         rbf_vec_coeff_c2,
         u,
         v,
-        grid_idx_cell_start_plus1,
-        grid_idx_cell_end,
+        end_cell_lateral_boundary_level_2,
+        end_cell_end,
         0,
         num_levels,
         offset_provider=grid.offset_providers,
