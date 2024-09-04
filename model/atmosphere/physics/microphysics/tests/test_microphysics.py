@@ -6,18 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
 
 import gt4py.next as gtx
 import numpy as np
@@ -27,15 +15,14 @@ from icon4py.model.atmosphere.physics.microphysics import (
     saturation_adjustment,
     single_moment_six_class_gscp_graupel as graupel,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
     tracer_state as tracers,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
-from icon4py.model.common.test_utils.helpers import dallclose
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 
 
 @pytest.mark.parametrize(
@@ -128,27 +115,27 @@ def test_graupel(
         vertical_params=vertical_params,
     )
 
-    assert dallclose(graupel.icon_graupel_params.qmin, init_savepoint.qmin())
-    assert dallclose(graupel.icon_graupel_params.eps, init_savepoint.eps())
-    assert dallclose(graupel.icon_graupel_params.snow_m0, init_savepoint.ams())
-    assert dallclose(graupel_microphysics.ccs[0], init_savepoint.ccsrim(), atol=1.0e-8)
-    assert dallclose(graupel_microphysics.ccs[1], init_savepoint.ccsagg(), atol=1.0e-8)
-    assert dallclose(graupel.icon_graupel_params.ccsaxp, init_savepoint.ccsaxp())
-    assert dallclose(graupel.icon_graupel_params.ccsdep, init_savepoint.ccsdep(), atol=1.0e-7)
-    assert dallclose(graupel.icon_graupel_params.ccsdxp, init_savepoint.ccsdxp())
-    assert dallclose(graupel_microphysics.ccs[2], init_savepoint.ccsvel(), atol=1.0e-8)
-    assert dallclose(graupel.icon_graupel_params.ccsvxp, init_savepoint.ccsvxp())
-    assert dallclose(graupel.icon_graupel_params.ccslam, init_savepoint.ccslam(), atol=1.0e-10)
-    assert dallclose(graupel.icon_graupel_params.ccslxp, init_savepoint.ccslxp())
-    assert dallclose(graupel.icon_graupel_params.ccshi1, init_savepoint.ccshi1())
-    assert dallclose(graupel.icon_graupel_params.ccdvtp, init_savepoint.ccdvtp())
-    assert dallclose(graupel.icon_graupel_params.ccidep, init_savepoint.ccidep())
-    assert dallclose(graupel_microphysics.rain_vel_coef[2], init_savepoint.cevxp())
-    assert dallclose(graupel_microphysics.rain_vel_coef[3], init_savepoint.cev(), atol=1.0e-10)
-    assert dallclose(graupel_microphysics.rain_vel_coef[4], init_savepoint.bevxp())
-    assert dallclose(graupel_microphysics.rain_vel_coef[5], init_savepoint.bev())
-    assert dallclose(graupel_microphysics.rain_vel_coef[0], init_savepoint.vzxp())
-    assert dallclose(graupel_microphysics.rain_vel_coef[1], init_savepoint.vz0r(), atol=1.0e-10)
+    assert helpers.dallclose(graupel.icon_graupel_params.qmin, init_savepoint.qmin())
+    assert helpers.dallclose(graupel.icon_graupel_params.eps, init_savepoint.eps())
+    assert helpers.dallclose(graupel.icon_graupel_params.snow_m0, init_savepoint.ams())
+    assert helpers.dallclose(graupel_microphysics.ccs[0], init_savepoint.ccsrim(), atol=1.0e-8)
+    assert helpers.dallclose(graupel_microphysics.ccs[1], init_savepoint.ccsagg(), atol=1.0e-8)
+    assert helpers.dallclose(graupel.icon_graupel_params.ccsaxp, init_savepoint.ccsaxp())
+    assert helpers.dallclose(graupel.icon_graupel_params.ccsdep, init_savepoint.ccsdep(), atol=1.0e-7)
+    assert helpers.dallclose(graupel.icon_graupel_params.ccsdxp, init_savepoint.ccsdxp())
+    assert helpers.dallclose(graupel_microphysics.ccs[2], init_savepoint.ccsvel(), atol=1.0e-8)
+    assert helpers.dallclose(graupel.icon_graupel_params.ccsvxp, init_savepoint.ccsvxp())
+    assert helpers.dallclose(graupel.icon_graupel_params.ccslam, init_savepoint.ccslam(), atol=1.0e-10)
+    assert helpers.dallclose(graupel.icon_graupel_params.ccslxp, init_savepoint.ccslxp())
+    assert helpers.dallclose(graupel.icon_graupel_params.ccshi1, init_savepoint.ccshi1())
+    assert helpers.dallclose(graupel.icon_graupel_params.ccdvtp, init_savepoint.ccdvtp())
+    assert helpers.dallclose(graupel.icon_graupel_params.ccidep, init_savepoint.ccidep())
+    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[2], init_savepoint.cevxp())
+    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[3], init_savepoint.cev(), atol=1.0e-10)
+    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[4], init_savepoint.bevxp())
+    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[5], init_savepoint.bev())
+    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[0], init_savepoint.vzxp())
+    assert helpers.dallclose(graupel_microphysics.rain_vel_coef[1], init_savepoint.vz0r(), atol=1.0e-10)
 
     # TODO (Chia Rui): remove this slicing process, which finds the column with maximum tendency, when either the scan operator can be run on the gtfn backend or running on embedded backend is faster
     max_index = np.unravel_index(
@@ -161,81 +148,78 @@ def test_graupel(
     vertical_size = icon_grid.num_levels
 
     slice_t = gtx.as_field(
-        (CellDim, KDim), diagnostic_state.temperature.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim), diagnostic_state.temperature.ndarray[cell_lower_limit:cell_upper_limit, :]
     )
     slice_pres = gtx.as_field(
-        (CellDim, KDim), diagnostic_state.pressure.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim), diagnostic_state.pressure.ndarray[cell_lower_limit:cell_upper_limit, :]
     )
     slice_rho = gtx.as_field(
-        (CellDim, KDim), prognostic_state.rho.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim), prognostic_state.rho.ndarray[cell_lower_limit:cell_upper_limit, :]
     )
     slice_qv = gtx.as_field(
-        (CellDim, KDim), tracer_state.qv.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim), tracer_state.qv.ndarray[cell_lower_limit:cell_upper_limit, :]
     )
     slice_qc = gtx.as_field(
-        (CellDim, KDim), tracer_state.qc.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim), tracer_state.qc.ndarray[cell_lower_limit:cell_upper_limit, :]
     )
     slice_qi = gtx.as_field(
-        (CellDim, KDim), tracer_state.qi.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim), tracer_state.qi.ndarray[cell_lower_limit:cell_upper_limit, :]
     )
     slice_qr = gtx.as_field(
-        (CellDim, KDim), tracer_state.qr.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim), tracer_state.qr.ndarray[cell_lower_limit:cell_upper_limit, :]
     )
     slice_qs = gtx.as_field(
-        (CellDim, KDim), tracer_state.qs.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim), tracer_state.qs.ndarray[cell_lower_limit:cell_upper_limit, :]
     )
     slice_qg = gtx.as_field(
-        (CellDim, KDim), tracer_state.qg.ndarray[cell_lower_limit:cell_upper_limit, :]
+        (dims.CellDim, dims.KDim), tracer_state.qg.ndarray[cell_lower_limit:cell_upper_limit, :]
     )
 
     qnc_2d = entry_savepoint.qnc().ndarray
-    qnc = gtx.as_field(
-        (CellDim, KDim), np.repeat(np.expand_dims(qnc_2d, axis=-1), icon_grid.num_levels, axis=1)
-    )
-    slice_qnc = gtx.as_field((CellDim, KDim), qnc.ndarray[cell_lower_limit:cell_upper_limit, :])
+    slice_qnc = gtx.as_field((dims.CellDim,), qnc_2d[cell_lower_limit:cell_upper_limit])
     slice_ddqz_z_full = gtx.as_field(
-        (CellDim, KDim),
+        (dims.CellDim, dims.KDim),
         graupel_microphysics.metric_state.ddqz_z_full.ndarray[cell_lower_limit:cell_upper_limit, :],
     )
 
-    slice_t_t = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qv_t = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qc_t = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qi_t = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qr_t = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qs_t = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_qg_t = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_t_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_qv_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_qc_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_qi_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_qr_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_qs_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_qg_t = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
 
     slice_rhoqrv_old_kup = gtx.as_field(
-        (CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float)
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
     slice_rhoqsv_old_kup = gtx.as_field(
-        (CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float)
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
     slice_rhoqgv_old_kup = gtx.as_field(
-        (CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float)
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
     slice_rhoqiv_old_kup = gtx.as_field(
-        (CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float)
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
-    slice_vnew_r = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_vnew_s = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_vnew_g = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
-    slice_vnew_i = gtx.as_field((CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_vnew_r = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_vnew_s = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_vnew_g = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
+    slice_vnew_i = gtx.as_field((dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float))
     slice_rain_precipitation_flux = gtx.as_field(
-        (CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float)
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
     slice_snow_precipitation_flux = gtx.as_field(
-        (CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float)
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
     slice_graupel_precipitation_flux = gtx.as_field(
-        (CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float)
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
     slice_ice_precipitation_flux = gtx.as_field(
-        (CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float)
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
     slice_total_precipitation_flux = gtx.as_field(
-        (CellDim, KDim), np.zeros((cell_size, vertical_size), dtype=float)
+        (dims.CellDim, dims.KDim), np.zeros((cell_size, vertical_size), dtype=float)
     )
 
     graupel.icon_graupel(
@@ -380,61 +364,61 @@ def test_graupel(
         offset_provider={},
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         new_temperature,
         exit_savepoint.temperature().ndarray[
             cell_lower_limit:cell_upper_limit, 0 : icon_grid.num_levels
         ],
     )
-    assert dallclose(
+    assert helpers.dallclose(
         new_qv,
         exit_savepoint.qv().ndarray[cell_lower_limit:cell_upper_limit, 0 : icon_grid.num_levels],
         atol=1.0e-12,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         new_qc,
         exit_savepoint.qc().ndarray[cell_lower_limit:cell_upper_limit, 0 : icon_grid.num_levels],
         atol=1.0e-12,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         new_qr,
         exit_savepoint.qr().ndarray[cell_lower_limit:cell_upper_limit, 0 : icon_grid.num_levels],
         atol=1.0e-12,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         new_qi,
         exit_savepoint.qi().ndarray[cell_lower_limit:cell_upper_limit, 0 : icon_grid.num_levels],
         atol=1.0e-12,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         new_qs,
         exit_savepoint.qs().ndarray[cell_lower_limit:cell_upper_limit, 0 : icon_grid.num_levels],
         atol=1.0e-12,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         new_qg,
         exit_savepoint.qg().ndarray[cell_lower_limit:cell_upper_limit, 0 : icon_grid.num_levels],
         atol=1.0e-12,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         slice_rain_precipitation_flux.ndarray[:, -1],
         exit_savepoint.rain_flux().ndarray[cell_lower_limit:cell_upper_limit],
         atol=1.0e-12,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         slice_snow_precipitation_flux.ndarray[:, -1],
         exit_savepoint.snow_flux().ndarray[cell_lower_limit:cell_upper_limit],
         atol=1.0e-12,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         slice_graupel_precipitation_flux.ndarray[:, -1],
         exit_savepoint.graupel_flux().ndarray[cell_lower_limit:cell_upper_limit],
         atol=1.0e-12,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         slice_ice_precipitation_flux.ndarray[:, -1],
         exit_savepoint.ice_flux().ndarray[cell_lower_limit:cell_upper_limit],
         atol=1.0e-12,

@@ -6,19 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
 
 import dataclasses
 import math
@@ -41,9 +28,7 @@ from gt4py.next.ffront.fbuiltins import (
 
 from icon4py.model.atmosphere.physics.microphysics import saturation_adjustment as satad
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.math.math_utilities import gamma_fct
+from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid, horizontal as h_grid
 from icon4py.model.common.settings import backend
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
@@ -180,9 +165,12 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     #: specific heat of ice. Originally expressed as ci in ICON.
     spec_heat_cap_ice: wpfloat = 2108.0
 
-    snow_n0s1: wpfloat = 13.5 * 5.65e5  # parameter in N0S(T)
-    snow_n0s2: wpfloat = -0.107  # parameter in N0S(T), Field et al
-    snow_mma: tuple[
+    #: parameter for snow intercept parameter when snow_intercept_option=1, see Field et al. (2005). Originally expressed as zn0s1 in ICON.
+    snow_intercept_parameter_n0s1: wpfloat = 13.5 * 5.65e5
+    #: parameter for snow intercept parameter when snow_intercept_option=1, see Field et al. (2005). Originally expressed as zn0s2 in ICON.
+    snow_intercept_parameter_n0s2: wpfloat = -0.107
+    #: parameter for snow intercept parameter when snow_intercept_option=2. Originally expressed as mma in ICON.
+    snow_intercept_parameter_mma: tuple[
         wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat
     ] = (
         5.065339,
@@ -196,7 +184,8 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
         0.000000,
         -0.015952,
     )
-    snow_mmb: tuple[
+    #: parameter for snow intercept parameter when snow_intercept_option=2. Originally expressed as mmb in ICON.
+    snow_intercept_parameter_mmb: tuple[
         wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat
     ] = (
         0.476221,
@@ -290,10 +279,10 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     #: Specific heat of water vapour at constant volume [J/K/kg]
     cvv: wpfloat = cpv - rv
 
-    ccsdep: wpfloat = 0.26 * gamma_fct((snow_exp_v + 5.0) / 2.0) * np.sqrt(1.0 / eta)
+    ccsdep: wpfloat = 0.26 * math.gamma((snow_exp_v + 5.0) / 2.0) * np.sqrt(1.0 / eta)
     _ccsvxp: wpfloat = -(snow_exp_v / (snow_exp_m + 1.0) + 1.0)
     ccsvxp: wpfloat = _ccsvxp + 1.0
-    ccslam: wpfloat = snow_m0 * gamma_fct(snow_exp_m + 1.0)
+    ccslam: wpfloat = snow_m0 * math.gamma(snow_exp_m + 1.0)
     ccslxp: wpfloat = 1.0 / (snow_exp_m + 1.0)
     ccswxp: wpfloat = snow_exp_v * ccslxp
     ccsaxp: wpfloat = -(snow_exp_v + 3.0)
@@ -371,7 +360,7 @@ def _compute_snow_interception_and_collision_parameters(
             local_tc = temperature - icon_graupel_params.tmelt
             local_tc = minimum(local_tc, wpfloat("0.0"))
             local_tc = maximum(local_tc, wpfloat("-40.0"))
-            n0s = icon_graupel_params.snow_n0s1 * exp(icon_graupel_params.snow_n0s2 * local_tc)
+            n0s = icon_graupel_params.snow_intercept_parameter_n0s1 * exp(icon_graupel_params.snow_intercept_parameter_n0s2 * local_tc)
             n0s = minimum(n0s, wpfloat("1.0e9"))
             n0s = maximum(n0s, wpfloat("1.0e6"))
 
@@ -384,29 +373,29 @@ def _compute_snow_interception_and_collision_parameters(
 
             local_nnr = wpfloat("3.0")
             local_hlp = (
-                icon_graupel_params.snow_mma[0]
-                + icon_graupel_params.snow_mma[1] * local_tc
-                + icon_graupel_params.snow_mma[2] * local_nnr
-                + icon_graupel_params.snow_mma[3] * local_tc * local_nnr
-                + icon_graupel_params.snow_mma[4] * local_tc**2.0
-                + icon_graupel_params.snow_mma[5] * local_nnr**2.0
-                + icon_graupel_params.snow_mma[6] * local_tc**2.0 * local_nnr
-                + icon_graupel_params.snow_mma[7] * local_tc * local_nnr**2.0
-                + icon_graupel_params.snow_mma[8] * local_tc**3.0
-                + icon_graupel_params.snow_mma[9] * local_nnr**3.0
+                icon_graupel_params.snow_intercept_parameter_mma[0]
+                + icon_graupel_params.snow_intercept_parameter_mma[1] * local_tc
+                + icon_graupel_params.snow_intercept_parameter_mma[2] * local_nnr
+                + icon_graupel_params.snow_intercept_parameter_mma[3] * local_tc * local_nnr
+                + icon_graupel_params.snow_intercept_parameter_mma[4] * local_tc**2.0
+                + icon_graupel_params.snow_intercept_parameter_mma[5] * local_nnr**2.0
+                + icon_graupel_params.snow_intercept_parameter_mma[6] * local_tc**2.0 * local_nnr
+                + icon_graupel_params.snow_intercept_parameter_mma[7] * local_tc * local_nnr**2.0
+                + icon_graupel_params.snow_intercept_parameter_mma[8] * local_tc**3.0
+                + icon_graupel_params.snow_intercept_parameter_mma[9] * local_nnr**3.0
             )
             local_alf = exp(local_hlp * log(wpfloat("10.0")))
             local_bet = (
-                icon_graupel_params.snow_mmb[0]
-                + icon_graupel_params.snow_mmb[1] * local_tc
-                + icon_graupel_params.snow_mmb[2] * local_nnr
-                + icon_graupel_params.snow_mmb[3] * local_tc * local_nnr
-                + icon_graupel_params.snow_mmb[4] * local_tc**2.0
-                + icon_graupel_params.snow_mmb[5] * local_nnr**2.0
-                + icon_graupel_params.snow_mmb[6] * local_tc**2.0 * local_nnr
-                + icon_graupel_params.snow_mmb[7] * local_tc * local_nnr**2.0
-                + icon_graupel_params.snow_mmb[8] * local_tc**3.0
-                + icon_graupel_params.snow_mmb[9] * local_nnr**3.0
+                icon_graupel_params.snow_intercept_parameter_mmb[0]
+                + icon_graupel_params.snow_intercept_parameter_mmb[1] * local_tc
+                + icon_graupel_params.snow_intercept_parameter_mmb[2] * local_nnr
+                + icon_graupel_params.snow_intercept_parameter_mmb[3] * local_tc * local_nnr
+                + icon_graupel_params.snow_intercept_parameter_mmb[4] * local_tc**2.0
+                + icon_graupel_params.snow_intercept_parameter_mmb[5] * local_nnr**2.0
+                + icon_graupel_params.snow_intercept_parameter_mmb[6] * local_tc**2.0 * local_nnr
+                + icon_graupel_params.snow_intercept_parameter_mmb[7] * local_tc * local_nnr**2.0
+                + icon_graupel_params.snow_intercept_parameter_mmb[8] * local_tc**3.0
+                + icon_graupel_params.snow_intercept_parameter_mmb[9] * local_nnr**3.0
             )
 
             # Here is the exponent bms=2.0 hardwired# not ideal# (Uli Blahak)
@@ -1306,17 +1295,17 @@ class SingleMomentSixClassIconGraupel:
             * math.pi
             * icon_graupel_params.snow_cloud_collection_eff
             * self.config.snow_v0
-            * gamma_fct(icon_graupel_params.snow_exp_v + 3.0)
+            * math.gamma(icon_graupel_params.snow_exp_v + 3.0)
         )
         ccsagg: wpfloat = (
-            0.25 * math.pi * self.config.snow_v0 * gamma_fct(icon_graupel_params.snow_exp_v + 3.0)
+            0.25 * math.pi * self.config.snow_v0 * math.gamma(icon_graupel_params.snow_exp_v + 3.0)
         )
         _ccsvxp = -(icon_graupel_params.snow_exp_v / (icon_graupel_params.snow_exp_m + 1.0) + 1.0)
         ccsvel: wpfloat = (
             icon_graupel_params.snow_m0
             * self.config.snow_v0
-            * gamma_fct(icon_graupel_params.snow_exp_m + icon_graupel_params.snow_exp_v + 1.0)
-            * (icon_graupel_params.snow_m0 * gamma_fct(icon_graupel_params.snow_exp_m + 1.0))
+            * math.gamma(icon_graupel_params.snow_exp_m + icon_graupel_params.snow_exp_v + 1.0)
+            * (icon_graupel_params.snow_m0 * math.gamma(icon_graupel_params.snow_exp_m + 1.0))
             ** _ccsvxp
         )
         _n0r: wpfloat = (
@@ -1328,14 +1317,14 @@ class SingleMomentSixClassIconGraupel:
             * icon_graupel_params.water_density
             / 6.0
             * _n0r
-            * gamma_fct(self.config.rain_mu + 4.0)
+            * math.gamma(self.config.rain_mu + 4.0)
         )  # pre-factor
 
         rain_exp_v: wpfloat = wpfloat(0.5) / (self.config.rain_mu + wpfloat(4.0))
         rain_v0: wpfloat = (
             wpfloat(130.0)
-            * gamma_fct(self.config.rain_mu + 4.5)
-            / gamma_fct(self.config.rain_mu + 4.0)
+            * math.gamma(self.config.rain_mu + 4.5)
+            / math.gamma(self.config.rain_mu + 4.0)
             * _ar ** (-rain_exp_v)
         )
 
@@ -1347,7 +1336,7 @@ class SingleMomentSixClassIconGraupel:
             / icon_graupel_params.howell_factor
             * _n0r
             * _ar ** (-cevxp)
-            * gamma_fct(self.config.rain_mu + 2.0)
+            * math.gamma(self.config.rain_mu + 2.0)
         )
         bevxp: wpfloat = (wpfloat(2.0) * self.config.rain_mu + wpfloat(5.5)) / (
             2.0 * self.config.rain_mu + wpfloat(8.0)
@@ -1356,8 +1345,8 @@ class SingleMomentSixClassIconGraupel:
             0.26
             * np.sqrt(icon_graupel_params.ref_air_density * 130.0 / icon_graupel_params.eta)
             * _ar ** (-bevxp)
-            * gamma_fct((2.0 * self.config.rain_mu + 5.5) / 2.0)
-            / gamma_fct(self.config.rain_mu + 2.0)
+            * math.gamma((2.0 * self.config.rain_mu + 5.5) / 2.0)
+            / math.gamma(self.config.rain_mu + 2.0)
         )
 
         # Precomputations for optimization
@@ -2584,7 +2573,7 @@ def _icon_graupel(
     qr: gtx.Field[[CellDim, KDim], wpfloat],
     qs: gtx.Field[[CellDim, KDim], wpfloat],
     qg: gtx.Field[[CellDim, KDim], wpfloat],
-    qnc: gtx.Field[[CellDim, KDim], wpfloat],  # originally 2D Field, now 3D Field
+    qnc: gtx.Field[[CellDim], wpfloat],
 ) -> tuple[
     gtx.Field[[CellDim, KDim], wpfloat],
     gtx.Field[[CellDim, KDim], wpfloat],
@@ -2722,7 +2711,7 @@ def icon_graupel(
     qr: gtx.Field[[CellDim, KDim], wpfloat],
     qs: gtx.Field[[CellDim, KDim], wpfloat],
     qg: gtx.Field[[CellDim, KDim], wpfloat],
-    qnc: gtx.Field[[CellDim, KDim], wpfloat],  # originally 2D Field, now 3D Field
+    qnc: gtx.Field[[CellDim], wpfloat],
     temperature_tendency: gtx.Field[[CellDim, KDim], wpfloat],
     qv_tendency: gtx.Field[[CellDim, KDim], wpfloat],
     qc_tendency: gtx.Field[[CellDim, KDim], wpfloat],
