@@ -14,16 +14,16 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.advection.stencils import (
-    hflx_limiter_pd_stencil_01,
-    hflx_limiter_pd_stencil_02,
-    hor_adv_stencil_01,
-    mo_advection_traj_btraj_compute_o1_dsl,
-    rbf_intp_edge_stencil_01,
-    recon_lsq_cell_l_svd_stencil,
-    step_advection_stencil_01,
-    step_advection_stencil_02,
-    step_advection_stencil_03,
-    upwind_hflux_miura_stencil_01,
+    compute_positive_definite_horizontal_multiplicative_flux_factor,
+    apply_positive_definite_horizontal_multiplicative_flux_factor,
+    integrate_tracer_horizontally,
+    compute_barycentric_backtrajectory,
+    compute_edge_tangential,
+    reconstruct_linear_coefficients_svd,
+    apply_vertical_density_increment,
+    apply_horizontal_density_increment,
+    apply_interpolated_tracer_time_tendency,
+    compute_horizontal_tracer_flux_from_linear_coefficients,
 )
 from icon4py.model.atmosphere.dycore import compute_tangential_wind
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
@@ -262,8 +262,8 @@ class Advection:
         # Godunov splitting
         if self.even_timestep:  # even timestep, vertical transport precedes horizontal transport
             # reintegrate density with vertical increment for conservation of mass
-            log.debug("running stencil step_advection_stencil_01 - start")
-            step_advection_stencil_01.step_advection_stencil_01(
+            log.debug("running stencil apply_vertical_density_increment - start")
+            apply_vertical_density_increment.apply_vertical_density_increment(
                 rhodz_ast=diagnostic_state.airmass_now,
                 p_mflx_contra_v=prep_adv.mass_flx_ic,
                 deepatmo_divzl=self.metric_state.deepatmo_divzl,
@@ -276,7 +276,7 @@ class Advection:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil step_advection_stencil_01 - end")
+            log.debug("running stencil apply_vertical_density_increment - end")
 
             # vertical transport
             self._run_vertical_advection(
@@ -302,8 +302,8 @@ class Advection:
 
         else:  # odd timestep, horizontal transport precedes vertical transport
             # reintegrate density with horizontal increment for conservation of mass
-            log.debug("running stencil step_advection_stencil_02 - start")
-            step_advection_stencil_02.step_advection_stencil_02(
+            log.debug("running stencil apply_horizontal_density_increment - start")
+            apply_horizontal_density_increment.apply_horizontal_density_increment(
                 p_rhodz_new=diagnostic_state.airmass_new,
                 p_mflx_contra_v=prep_adv.mass_flx_ic,
                 deepatmo_divzl=self.metric_state.deepatmo_divzl,
@@ -316,7 +316,7 @@ class Advection:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil step_advection_stencil_02 - end")
+            log.debug("running stencil apply_horizontal_density_increment - end")
 
             # horizontal transport
             self._run_horizontal_advection(
@@ -342,8 +342,8 @@ class Advection:
 
         # update lateral boundaries with interpolated time tendencies
         if self.grid.limited_area:
-            log.debug("running stencil step_advection_stencil_03 - start")
-            step_advection_stencil_03.step_advection_stencil_03(
+            log.debug("running stencil apply_interpolated_tracer_time_tendency - start")
+            apply_interpolated_tracer_time_tendency.apply_interpolated_tracer_time_tendency(
                 p_tracer_now=p_tracer_now,
                 p_grf_tend_tracer=diagnostic_state.grf_tend_tracer,
                 p_tracer_new=p_tracer_new,
@@ -354,7 +354,7 @@ class Advection:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil step_advection_stencil_03 - end")
+            log.debug("running stencil apply_interpolated_tracer_time_tendency - end")
 
         # exchange updated tracer values, originally happens only if iforcing /= inwp
         log.debug("communication of advection cell field: p_tracer_new - start")
@@ -407,8 +407,8 @@ class Advection:
         )
 
         # update tracer mass fraction
-        log.debug("running stencil hor_adv_stencil_01 - start")
-        hor_adv_stencil_01.hor_adv_stencil_01(
+        log.debug("running stencil integrate_tracer_horizontally - start")
+        integrate_tracer_horizontally.integrate_tracer_horizontally(
             p_mflx_tracer_h=p_mflx_tracer_h,
             deepatmo_divh=self.metric_state.deepatmo_divh,
             tracer_now=p_tracer_now,
@@ -423,7 +423,7 @@ class Advection:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
-        log.debug("running stencil hor_adv_stencil_01 - end")
+        log.debug("running stencil integrate_tracer_horizontally - end")
 
         log.debug("horizontal advection run - end")
 
@@ -490,7 +490,7 @@ class Advection:
         ## tracer-independent part
 
         # compute tangential velocity
-        log.debug("running stencil rbf_intp_edge_stencil_01 - start")
+        log.debug("running stencil compute_edge_tangential - start")
         if 0:
             compute_tangential_wind.compute_tangential_wind(
                 vn=prep_adv.vn_traj,
@@ -503,7 +503,7 @@ class Advection:
                 offset_provider=self.grid.offset_providers,
             )
         else:
-            rbf_intp_edge_stencil_01.rbf_intp_edge_stencil_01(  # TODO (dastrm): duplicate stencil of compute_tangential_wind
+            compute_edge_tangential.compute_edge_tangential(  # TODO (dastrm): duplicate stencil of compute_tangential_wind
                 p_vn_in=prep_adv.vn_traj,
                 ptr_coeff=self.interpolation_state.rbf_vec_coeff_e,
                 p_vt_out=self.z_real_vt,
@@ -513,11 +513,11 @@ class Advection:
                 vertical_end=self.grid.num_levels,  # originally UBOUND(p_vn,2)
                 offset_provider=self.grid.offset_providers,
             )
-        log.debug("running stencil rbf_intp_edge_stencil_01 - end")
+        log.debug("running stencil compute_edge_tangential - end")
 
         # backtrajectory calculation
-        log.debug("running stencil mo_advection_traj_btraj_compute_o1_dsl - start")
-        mo_advection_traj_btraj_compute_o1_dsl.mo_advection_traj_btraj_compute_o1_dsl(
+        log.debug("running stencil compute_barycentric_backtrajectory - start")
+        compute_barycentric_backtrajectory.compute_barycentric_backtrajectory(
             p_vn=prep_adv.vn_traj,
             p_vt=self.z_real_vt,
             cell_idx=self.cell_idx,
@@ -540,14 +540,14 @@ class Advection:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
-        log.debug("running stencil mo_advection_traj_btraj_compute_o1_dsl - end")
+        log.debug("running stencil compute_barycentric_backtrajectory - end")
 
         ## tracer-specific part
 
         if self.config.horizontal_advection_type == HorizontalAdvectionType.LINEAR_2ND_ORDER:
             # linear reconstruction using singular value decomposition
-            log.debug("running stencil recon_lsq_cell_l_svd_stencil - start")
-            recon_lsq_cell_l_svd_stencil.recon_lsq_cell_l_svd_stencil(
+            log.debug("running stencil reconstruct_linear_coefficients_svd - start")
+            reconstruct_linear_coefficients_svd.reconstruct_linear_coefficients_svd(
                 p_cc=p_tracer_now,
                 lsq_pseudoinv_1=self.least_squares_state.lsq_pseudoinv_1,
                 lsq_pseudoinv_2=self.least_squares_state.lsq_pseudoinv_2,
@@ -560,11 +560,13 @@ class Advection:
                 vertical_end=self.grid.num_levels,  # originally UBOUND(p_cc,2)
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil recon_lsq_cell_l_svd_stencil - end")
+            log.debug("running stencil reconstruct_linear_coefficients_svd - end")
 
             # compute reconstructed tracer value at each barycenter and corresponding flux at each edge
-            log.debug("running stencil upwind_hflux_miura_stencil_01 - start")
-            upwind_hflux_miura_stencil_01.upwind_hflux_miura_stencil_01(
+            log.debug(
+                "running stencil compute_horizontal_tracer_flux_from_linear_coefficients - start"
+            )
+            compute_horizontal_tracer_flux_from_linear_coefficients.compute_horizontal_tracer_flux_from_linear_coefficients(
                 z_lsq_coeff_1=self.p_coeff_1,
                 z_lsq_coeff_2=self.p_coeff_2,
                 z_lsq_coeff_3=self.p_coeff_3,
@@ -579,7 +581,9 @@ class Advection:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil upwind_hflux_miura_stencil_01 - end")
+            log.debug(
+                "running stencil compute_horizontal_tracer_flux_from_linear_coefficients - end"
+            )
 
         # apply flux limiter
         if (
@@ -587,8 +591,10 @@ class Advection:
             == HorizontalAdvectionLimiterType.POSITIVE_DEFINITE
         ):
             # compute multiplicative flux factor to guarantee no undershoot
-            log.debug("running stencil hflx_limiter_pd_stencil_01 - start")
-            hflx_limiter_pd_stencil_01.hflx_limiter_pd_stencil_01(
+            log.debug(
+                "running stencil compute_positive_definite_horizontal_multiplicative_flux_factor - start"
+            )
+            compute_positive_definite_horizontal_multiplicative_flux_factor.compute_positive_definite_horizontal_multiplicative_flux_factor(
                 geofac_div=self.interpolation_state.geofac_div,
                 p_cc=p_tracer_now,
                 p_rhodz_now=rhodz_now,
@@ -602,15 +608,19 @@ class Advection:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil hflx_limiter_pd_stencil_01 - end")
+            log.debug(
+                "running stencil compute_positive_definite_horizontal_multiplicative_flux_factor - end"
+            )
 
             log.debug("communication of advection cell field: r_m - start")
             self.exchange.exchange_and_wait(dims.CellDim, self.r_m)
             log.debug("communication of advection cell field: r_m - end")
 
             # limit outward fluxes
-            log.debug("running stencil hflx_limiter_pd_stencil_02 - start")
-            hflx_limiter_pd_stencil_02.hflx_limiter_pd_stencil_02(
+            log.debug(
+                "running stencil apply_positive_definite_horizontal_multiplicative_flux_factor - start"
+            )
+            apply_positive_definite_horizontal_multiplicative_flux_factor.apply_positive_definite_horizontal_multiplicative_flux_factor(
                 r_m=self.r_m,
                 p_mflx_tracer_h=p_mflx_tracer_h,
                 horizontal_start=self.start_edge_lateral_boundary_level_5,
@@ -619,6 +629,8 @@ class Advection:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil hflx_limiter_pd_stencil_02 - end")
+            log.debug(
+                "running stencil apply_positive_definite_horizontal_multiplicative_flux_factor - end"
+            )
 
         log.debug("horizontal tracer flux computation - end")
