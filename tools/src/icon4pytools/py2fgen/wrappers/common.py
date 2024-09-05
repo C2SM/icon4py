@@ -8,7 +8,7 @@ import logging
 log = logging.getLogger(__name__)
 
 def offset_fortran_indices_return_numpy(inp) -> np.ndarray:
-    return np.subtract(inp.asnumpy(), 1)
+    return xp.subtract(inp.ndarray, 1)
 
 
 def offset_squeeze_fortran_indices_return_xp(inp) -> xp.ndarray:
@@ -51,9 +51,9 @@ def construct_icon_grid(
     vertex_start_index_np = offset_fortran_indices_return_numpy(vertex_starts)
     edge_start_index_np = offset_fortran_indices_return_numpy(edge_starts)
 
-    cells_end_index_np = cell_ends.asnumpy()
-    vertex_end_index_np = vertex_ends.asnumpy()
-    edge_end_index_np = edge_ends.asnumpy()
+    cells_end_index_np = cell_ends.ndarray
+    vertex_end_index_np = vertex_ends.ndarray
+    edge_end_index_np = edge_ends.ndarray
 
     c2e_loc = offset_squeeze_fortran_indices_return_xp(c2e)
     c2v_loc = offset_squeeze_fortran_indices_return_xp(c2v)
@@ -77,9 +77,9 @@ def construct_icon_grid(
     )
     log.debug(" c2e2c.shape[0] %s", c2e2c_loc.shape[0])
     log.debug(" xp.asarray(range(c2e2c.shape[0]))) %s", xp.asarray(range(c2e2c_loc.shape[0])).shape)
-    c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c_loc.shape[0]))), c2e2c_loc))
+    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c_loc.shape[0])), c2e2c_loc))
 
-    e2c2e0 = xp.column_stack((range(e2c2e_loc.shape[0]), e2c2e_loc))
+    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e_loc.shape[0])), e2c2e_loc))
 
     grid = (
         icon.IconGrid(id_=grid_id)

@@ -174,7 +174,7 @@ class IconGrid(BaseGrid):
         For a given dimension, returns the start index of the
         horizontal region in a field given by the marker.
         """
-        return self.start_indices[dim][marker]
+        return self.start_indices[dim][marker].item()
 
     def get_end_index(self, dim: gt_common.Dimension, marker: int) -> gt_builtins.int32:
         """
@@ -183,4 +183,4 @@ class IconGrid(BaseGrid):
         For a given dimension, returns the end index of the
         horizontal region in a field given by the marker.
         """
-        return self.end_indices[dim][marker]
+        return self.end_indices[dim][marker].item()
