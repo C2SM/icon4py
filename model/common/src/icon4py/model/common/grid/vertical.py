@@ -505,7 +505,7 @@ def init_vert_coord(
     nshift: int = 0, # shift parameter used for vertical nesting
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Computes the 3D vertical coordinate fields for the nonhydrostatic model.
+    Computes the 3D vertical coordinate fields.
     """
 
     z3d_i = xp.zeros((grid.num_cells, grid.num_levels+1), dtype=ta.wpfloat)
@@ -536,7 +536,7 @@ def init_vert_coord(
     
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
-    for k in range(grid.num_levels-1, 0, -1):
+    for k in range(grid.num_levels-1, -1, -1):
         k1 = k + nshift
         dvct = vct_a[k1] - vct_a[k1+1]
         if (dvct < dvct1):
@@ -554,26 +554,25 @@ def init_vert_coord(
 
         # Ensure that the layer thickness is not too small, if so fix it and
         # save the layer index
-        idxs = xp.argwhere(z3d_i[:,k+1] + min_lay_spacing > z3d_i[:,k])
-        z3d_i[idxs,k] = z3d_i[idxs,k+1] + min_lay_spacing
-        ktop_thicklimit[idxs] = k
+        cell_ids = xp.argwhere(z3d_i[:,k+1] + min_lay_spacing > z3d_i[:,k])
+        z3d_i[cell_ids,k] = z3d_i[cell_ids,k+1] + min_lay_spacing
+        ktop_thicklimit[cell_ids] = k
 
     # Smooth layer thickness ratios in the transition layer of columns where the
     # thickness limiter has been active (exclude lowest and highest layers)
-    idxs = xp.argwhere(ktop_thicklimit <= grid.num_levels-3 and ktop_thicklimit >= 3)
-    dz1 = z3d_i[idxs, ktop_thicklimit[idxs]+1] - z3d_i[idxs, ktop_thicklimit[idxs]+2]
-    dz2 = z3d_i[idxs, ktop_thicklimit[idxs]-3] - z3d_i[idxs, ktop_thicklimit[idxs]-2]
+    cell_ids = xp.argwhere(ktop_thicklimit <= grid.num_levels-3 and ktop_thicklimit >= 3)
+    dz1 = z3d_i[cell_ids, ktop_thicklimit[cell_ids]+1] - z3d_i[cell_ids, ktop_thicklimit[cell_ids]+2]
+    dz2 = z3d_i[cell_ids, ktop_thicklimit[cell_ids]-3] - z3d_i[cell_ids, ktop_thicklimit[cell_ids]-2]
     dzr = (dz2/dz1)**0.25 # stretching factor
-    dz3 = (z3d_i[idxs, ktop_thicklimit[idxs]-2] - z3d_i[idxs, ktop_thicklimit[idxs]+1])/(dzr*(1.0 + dzr*(1.0 + dzr)))
-    z3d_i[idxs, ktop_thicklimit[idxs]] = xp.maximum(z3d_i[idxs, ktop_thicklimit[idxs]], z3d_i[idxs, ktop_thicklimit[idxs]+1] + dz3*dzr)
-    z3d_i[idxs, ktop_thicklimit[idxs]-1] = xp.maximum(z3d_i[idxs, ktop_thicklimit[idxs]-1], z3d_i[idxs, ktop_thicklimit[idxs]] + dz3*dzr*dzr)
+    dz3 = (z3d_i[cell_ids, ktop_thicklimit[cell_ids]-2] - z3d_i[cell_ids, ktop_thicklimit[cell_ids]+1])/(dzr*(1.0 + dzr*(1.0 + dzr)))
+    z3d_i[cell_ids, ktop_thicklimit[cell_ids]] = xp.maximum(z3d_i[cell_ids, ktop_thicklimit[cell_ids]], z3d_i[cell_ids, ktop_thicklimit[cell_ids]+1] + dz3*dzr)
+    z3d_i[cell_ids, ktop_thicklimit[cell_ids]-1] = xp.maximum(z3d_i[cell_ids, ktop_thicklimit[cell_ids]-1], z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + dz3*dzr*dzr)
 
     # Check if level nflatlev is still flat
     try:
         assert xp.all(z3d_i[:,vertical_geometry.nflatlev] == vct_a[vertical_geometry.nflatlev+nshift])
     except AssertionError:
         log.error("Level nflatlev is not flat")
-    
     # Check if ktop_thicklimit is sufficiently far away from the model top
     try:
         assert xp.all(ktop_thicklimit > 2)
