@@ -193,19 +193,36 @@ class GridFile:
 
     INVALID_INDEX = -1
 
-    def __init__(self, dataset: Dataset):
-        self._dataset = dataset
-        _log = logging.getLogger(__name__)
-
+    def __init__(self, file_name: str):
+        self._filename = file_name
+        
+    def __enter__(self):
+        self._dataset = Dataset(self._filename, "r", format="NETCDF4")
+        _log.debug(self._dataset)
+        return self
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        
+        if exc_type is not None:
+            _log.debug(f"Exception '{exc_type}: {exc_val}' while reading the grid file {self._filename}")
+        if exc_type is FileNotFoundError:
+            raise FileNotFoundError(f"gridfile {self._filename} not found, aborting")
+        
+        
+        _log.info(f"Closing dataset: {self._filename}")
+        self.close()
+        
     def dimension(self, name: GridFileName) -> int:
         return self._dataset.dimensions[name].size
+    
+    def attribute(self, name:PropertyName):
+        return self._dataset.getncattr(name)
 
     def int_field(self, name: GridFileName, transpose=True, dtype=gtx.int32) -> np.ndarray:
         try:
             nc_variable = self._dataset.variables[name]
 
             _log.debug(f"reading {name}: {nc_variable}: transposing = {transpose}")
-
             data = nc_variable[:]
             data = np.array(data, dtype=dtype)
             return np.transpose(data) if transpose else data
@@ -236,7 +253,9 @@ class GridFile:
             msg = f"{name} does not exist in dataset"
             _log.warning(msg)
             raise IconGridError(msg) from err
-
+    
+    def close(self):
+        self._dataset.close()
 
 class IconGridError(RuntimeError):
     pass
@@ -268,8 +287,8 @@ class GridManager:
         transformation: IndexTransformation,
         grid_file: Union[pathlib.Path, str],
         config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove
-        decomposer: Optional[Callable[[np.ndarray, int], np.ndarray]] = halo.SingleNodeDecomposer(),
-        run_properties: decomposition.ProcessProperties = _single_node_properties,  # get rid of that? only used info from decomposer?
+        decomposer: Callable[[np.ndarray, int], np.ndarray] = halo.SingleNodeDecomposer(),
+        run_properties: decomposition.ProcessProperties = _single_node_properties,
     ):
         self._run_properties = run_properties
         self._transformation = transformation
@@ -278,7 +297,6 @@ class GridManager:
         self._config = config
         self._grid: Optional[icon_grid.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
-        self._dataset = None
         self._reader = None
 
     """
@@ -299,32 +317,29 @@ class GridManager:
         self._decompose = decomposer
 
     def __call__(self, on_gpu: bool = False, limited_area=True):
-        self._read_gridfile(self._file_name)
-        grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
-        self._grid = grid
-        return self
+        with GridFile(self._file_name) as self._reader:
+            grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
+            self._grid = grid
+            self._start, self._end, self._refinement, self._refinement_max = self._read_grid_refinement_information()
+            return self
 
-    def _read_gridfile(self, fname: str) -> None:
+    def _read_gridfile(self) -> None:
         try:
-            dataset = Dataset(self._file_name, "r", format="NETCDF4")
-            _log.debug(dataset)
-            self._dataset = dataset
-            self._reader = GridFile(dataset)
+            self._reader = GridFile(self._file_name)
         except FileNotFoundError:
-            _log.error(f"gridfile {fname} not found, aborting")
+            _log.error(f"gridfile {self._file_name} not found, aborting")
             exit(1)
 
-    def _read_grid_refinement_information(self, dataset):
+    def _read_grid_refinement_information(self):
         _CHILD_DOM = 0
-        reader = GridFile(dataset)
-
+    
         control_dims = [
             GridRefinementName.CONTROL_CELLS,
             GridRefinementName.CONTROL_EDGES,
             GridRefinementName.CONTROL_VERTICES,
         ]
         refin_ctrl = {
-            dim: reader.int_field(control_dims[i])
+            dim: self._reader.int_field(control_dims[i])
             for i, dim in enumerate(dims.horizontal_dims.values())
         }
 
@@ -334,7 +349,7 @@ class GridManager:
             DimensionName.VERTEX_GRF,
         ]
         refin_ctrl_max = {
-            dim: reader.dimension(grf_dims[i])
+            dim: self._reader.dimension(grf_dims[i])
             for i, dim in enumerate(dims.horizontal_dims.values())
         }
 
@@ -433,6 +448,18 @@ class GridManager:
     @property
     def grid(self):
         return self._grid
+    
+    @property
+    def start_indices(self):
+        return self._start
+    
+    @property
+    def end_indices(self):
+        return self._end
+    
+    @property
+    def refinement(self):
+        return self._refinement
 
     def _get_index(self, dim: gtx.Dimension, start_marker: int, index_dict):
         if dim.kind != gtx.DimensionKind.HORIZONTAL:
@@ -485,7 +512,7 @@ class GridManager:
             end_indices,
             refine_ctrl,
             refine_ctrl_max,
-        ) = self._read_grid_refinement_information(self._dataset)
+        ) = self._read_grid_refinement_information()
         grid.with_start_end_indices(
             dims.CellDim, start_indices[dims.CellDim], end_indices[dims.CellDim]
         ).with_start_end_indices(
@@ -676,9 +703,9 @@ class GridManager:
         num_cells = self._reader.dimension(DimensionName.CELL_NAME)
         num_edges = self._reader.dimension(DimensionName.EDGE_NAME)
         num_vertices = self._reader.dimension(DimensionName.VERTEX_NAME)
-        uuid = self._dataset.getncattr(PropertyName.GRID_ID)
-        grid_level = self._dataset.getncattr(PropertyName.LEVEL)
-        grid_root = self._dataset.getncattr(PropertyName.ROOT)
+        uuid = self._reader.attribute(PropertyName.GRID_ID)
+        grid_level = self._reader.attribute(PropertyName.LEVEL)
+        grid_root = self._reader.attribute(PropertyName.ROOT)
         global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
         grid_size = base_grid.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells

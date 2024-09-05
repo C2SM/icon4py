@@ -267,13 +267,13 @@ def grid_manager(fname, num_levels=65, transformation=None) -> gm.GridManager:
 
 
 @pytest.mark.with_netcdf
-def test_gridparser_dimension(simple_grid_gridfile):
-    data = netCDF4.Dataset(simple_grid_gridfile, "r")
-    parser = gm.GridFile(data)
+def test_gridfile_dimension(simple_grid_gridfile):
     grid = simple.SimpleGrid()
-    assert parser.dimension(gm.DimensionName.CELL_NAME) == grid.num_cells
-    assert parser.dimension(gm.DimensionName.VERTEX_NAME) == grid.num_vertices
-    assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid.num_edges
+
+    with gm.GridFile(str(simple_grid_gridfile)) as parser:
+        assert parser.dimension(gm.DimensionName.CELL_NAME) == grid.num_cells
+        assert parser.dimension(gm.DimensionName.VERTEX_NAME) == grid.num_vertices
+        assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid.num_edges
 
 
 @pytest.mark.datatest
@@ -287,33 +287,31 @@ def test_gridparser_dimension(simple_grid_gridfile):
 )
 def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, parser):
     file = utils.resolve_file_from_gridfile_name(parser)
-    parser = gm.GridFile(netCDF4.Dataset(file, "r"))
-
-    assert parser.dimension(gm.DimensionName.CELL_NAME) == grid_savepoint.num(dims.CellDim)
-    assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid_savepoint.num(dims.EdgeDim)
-    assert parser.dimension(gm.DimensionName.VERTEX_NAME) == grid_savepoint.num(dims.VertexDim)
+    with gm.GridFile(str(file)) as parser:
+        assert parser.dimension(gm.DimensionName.CELL_NAME) == grid_savepoint.num(dims.CellDim)
+        assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid_savepoint.num(dims.EdgeDim)
+        assert parser.dimension(gm.DimensionName.VERTEX_NAME) == grid_savepoint.num(dims.VertexDim)
 
 
 @pytest.mark.with_netcdf
-def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
+def test_gridfile_index_fields(simple_grid_gridfile, caplog):
     caplog.set_level(logging.DEBUG)
-    data = netCDF4.Dataset(simple_grid_gridfile, "r")
     simple_grid = simple.SimpleGrid()
-    parser = gm.GridFile(data)
-
-    assert np.allclose(
-        parser.int_field(gm.ConnectivityName.C2E), simple_grid.connectivities[dims.C2EDim]
-    )
-    assert np.allclose(
-        parser.int_field(gm.ConnectivityName.E2C), simple_grid.connectivities[dims.E2CDim]
-    )
-    assert np.allclose(
-        parser.int_field(gm.ConnectivityName.V2E), simple_grid.connectivities[dims.V2EDim]
-    )
-    assert np.allclose(
-        parser.int_field(gm.ConnectivityName.V2C), simple_grid.connectivities[dims.V2CDim]
-    )
-
+    with gm.GridFile(str(simple_grid_gridfile)) as parser:
+         
+        assert np.allclose(
+            parser.int_field(gm.ConnectivityName.C2E), simple_grid.connectivities[dims.C2EDim]
+        )
+        assert np.allclose(
+            parser.int_field(gm.ConnectivityName.E2C), simple_grid.connectivities[dims.E2CDim]
+        )
+        assert np.allclose(
+            parser.int_field(gm.ConnectivityName.V2E), simple_grid.connectivities[dims.V2EDim]
+        )
+        assert np.allclose(
+            parser.int_field(gm.ConnectivityName.V2C), simple_grid.connectivities[dims.V2CDim]
+        )
+    
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
 # v2e2v: grid,???
@@ -356,9 +354,7 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
 def test_refin_ctrl(grid_savepoint, grid_file, experiment, dim):
     file = utils.resolve_file_from_gridfile_name(grid_file)
     gm = grid_manager(file)
-    start_index, end_index, refin_ctrl, refin_ctrl_max = gm._read_grid_refinement_information(
-        gm._dataset
-    )
+    refin_ctrl = gm.refinement
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
     assert np.all(refin_ctrl_serialized.ndarray == refin.to_unnested(refin_ctrl[dim], dim))
 
@@ -662,12 +658,11 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
 @pytest.mark.with_netcdf
 def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
-    with pytest.raises(SystemExit) as error:
+    with pytest.raises(FileNotFoundError) as error:
         manager = gm.GridManager(
             gm.IndexTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
         )
         manager()
-        assert error.type == SystemExit
         assert error.value == 1
 
 
