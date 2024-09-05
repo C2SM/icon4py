@@ -53,7 +53,8 @@ class SingleMomentSixClassIconGraupelConfig:
     Encapsulates namelist parameters.
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
-    lpres_pri is removed because it is a duplicated parameter with do_ice_sedimentation.
+    lsedi_ice (option for whether ice sedimendation is performed), lstickeff (option for different empirical formulae of sticking efficiency), and lred_depgrow (option for reduced depositional growth) are removed because they are set to True in the original code gscp_graupel.f90.
+    lpres_pri is removed because it is a duplicated parameter with lsedi_ice.
     ldiag_ttend, and ldiag_qtend are removed because default outputs in icon4py physics granules include tendencies.
     """
 
@@ -814,6 +815,9 @@ def _collision_and_ice_deposition_in_cold_ice_clouds(
             ice loss = pi/4 qi N0 E v0 Gamma(b+3) / lamda^(b+3), lamda = (alpha N0 Gamma(beta+1) / rhoqs)^(beta+1)
 
             rain loss = pi/4 qi N0 E v0 Gamma(b+3) / lamda^(b+3), lamda = (alpha N0 Gamma(beta+1) / rhoqs)^(beta+1)
+
+        E(T) = max( 0.02, min( exp(0.09(T - T_0 )), 1.0), C_se (T - T_se )), Eq. 5.163
+        Another E(T) = max(0.2, min(exp(0.09(T - T 0 )), 1.0)), Eq. 5.162, based on Lin et al. 1983 is ABANDONNED.
 
     Args:
         temperature: air temperature [K]
