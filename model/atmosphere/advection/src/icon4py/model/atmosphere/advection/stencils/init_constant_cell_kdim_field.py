@@ -10,19 +10,18 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import CellDim, KDim
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
+# TODO (dastrm): move this highly generic stencil to common
 
 
 @field_operator
-def _set_zero_cell_field() -> fa.CellKField[float]:
-    return broadcast(0.0, (CellDim, KDim))
+def _init_constant_cell_kdim_field(value: float) -> fa.CellKField[float]:
+    return broadcast(value, (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def set_zero_cell_field(field: fa.CellKField[float]):
-    _set_zero_cell_field(out=field)
+def init_constant_cell_kdim_field(field: fa.CellKField[float], value: float):
+    _init_constant_cell_kdim_field(value, out=field)

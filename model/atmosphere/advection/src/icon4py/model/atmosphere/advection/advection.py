@@ -24,11 +24,11 @@ from icon4py.model.atmosphere.advection.stencils import (
     apply_horizontal_density_increment,
     apply_interpolated_tracer_time_tendency,
     compute_horizontal_tracer_flux_from_linear_coefficients,
+    copy_cell_kdim_field,
 )
 from icon4py.model.atmosphere.dycore import compute_tangential_wind
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
-from icon4py.model.common.copy import copy_cell_field
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
 from icon4py.model.common.test_utils.helpers import (
@@ -244,8 +244,8 @@ class Advection:
             self.config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
             and self.config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION
         ):
-            log.debug("running stencil copy_cell_field - start")
-            copy_cell_field(
+            log.debug("running stencil copy_cell_kdim_field - start")
+            copy_cell_kdim_field.copy_cell_kdim_field(
                 p_tracer_now,
                 p_tracer_new,
                 horizontal_start=self.start_cell_nudging,
@@ -254,7 +254,7 @@ class Advection:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil copy_cell_field - end")
+            log.debug("running stencil copy_cell_kdim_field - end")
 
             log.debug("advection class run - early end")
             return
@@ -382,8 +382,8 @@ class Advection:
         log.debug("horizontal advection run - start")
 
         if self.config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION:
-            log.debug("running stencil copy_cell_field - start")
-            copy_cell_field(
+            log.debug("running stencil copy_cell_kdim_field - start")
+            copy_cell_kdim_field.copy_cell_kdim_field(
                 p_tracer_now,
                 p_tracer_new,
                 horizontal_start=self.start_cell_nudging,
@@ -392,7 +392,7 @@ class Advection:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil copy_cell_field - end")
+            log.debug("running stencil copy_cell_kdim_field - end")
 
             log.debug("horizontal advection run - early end")
             return
@@ -449,8 +449,8 @@ class Advection:
         # note: horizontal advection is always called with the same indices, i.e. i_rlstart = grf_bdywidth_c+1, i_rlend = min_rlcell_int
 
         if self.config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION:
-            log.debug("running stencil copy_cell_field - start")
-            copy_cell_field(
+            log.debug("running stencil copy_cell_kdim_field - start")
+            copy_cell_kdim_field.copy_cell_kdim_field(
                 p_tracer_now,
                 p_tracer_new,
                 horizontal_start=(
@@ -463,7 +463,7 @@ class Advection:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-            log.debug("running stencil copy_cell_field - end")
+            log.debug("running stencil copy_cell_kdim_field - end")
 
             log.debug("vertical advection run - early end")
             return

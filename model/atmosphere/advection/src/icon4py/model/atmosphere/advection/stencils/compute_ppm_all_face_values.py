@@ -27,22 +27,6 @@ def _compute_ppm_quadratic_face_values(
 
 
 @field_operator
-def _copy_ppm(
-    p_cc: fa.CellKField[float],
-) -> fa.CellKField[float]:
-    p_face = p_cc
-    return p_face
-
-
-@field_operator
-def _copy_ppm_p1(
-    p_cc: fa.CellKField[float],
-) -> fa.CellKField[float]:
-    p_face = p_cc(Koff[-1])
-    return p_face
-
-
-@field_operator
 def _compute_ppm_all_face_values(
     p_cc: fa.CellKField[float],
     p_cellhgt_mc_now: fa.CellKField[float],
@@ -61,9 +45,9 @@ def _compute_ppm_all_face_values(
         p_face_in,
     )
 
-    p_face = where((k == slev), _copy_ppm(p_cc), p_face)
+    p_face = where((k == slev), p_cc, p_face)
 
-    p_face = where((k == elevp1), _copy_ppm_p1(p_cc), p_face)
+    p_face = where((k == elevp1), p_cc(Koff[-1]), p_face)
 
     return p_face
 

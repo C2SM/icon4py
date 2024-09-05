@@ -10,16 +10,19 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim, Koff
+
+
+# TODO (dastrm): move this highly generic stencil to common
 
 
 @field_operator
-def _copy_cell_field(field_in: fa.CellKField[float]) -> fa.CellKField[float]:
-    return field_in
+def _copy_cell_kdim_field_koff_minus1(field_in: fa.CellKField[float]) -> fa.CellKField[float]:
+    return field_in(Koff[-1])
 
 
 @program
-def copy_cell_field(
+def copy_cell_kdim_field_koff_minus1(
     field_in: fa.CellKField[float],
     field_out: fa.CellKField[float],
     horizontal_start: int32,
@@ -27,7 +30,7 @@ def copy_cell_field(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _copy_cell_field(
+    _copy_cell_kdim_field_koff_minus1(
         field_in,
         out=field_out,
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
