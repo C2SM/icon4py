@@ -525,8 +525,7 @@ def test_compute_exner_exfac(
 def test_compute_vwind_impl_wgt(
     icon_grid, experiment, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    if is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
+    backend = None
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     z_ddxn_z_half_e = zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
@@ -599,12 +598,8 @@ def test_compute_vwind_impl_wgt(
         icon_grid=icon_grid,
         vct_a=grid_savepoint.vct_a(),
         z_ifc=metrics_savepoint.z_ifc(),
-        z_ddxn_z_half_e=gtx.as_field(
-            (dims.EdgeDim,), z_ddxn_z_half_e.asnumpy()[:, icon_grid.num_levels]
-        ),
-        z_ddxt_z_half_e=gtx.as_field(
-            (dims.EdgeDim,), z_ddxt_z_half_e.asnumpy()[:, icon_grid.num_levels]
-        ),
+        z_ddxn_z_half_e=z_ddxn_z_half_e,
+        z_ddxt_z_half_e=z_ddxt_z_half_e,
         dual_edge_length=dual_edge_length,
         vwind_impl_wgt_full=vwind_impl_wgt_full,
         vwind_impl_wgt_k=vwind_impl_wgt_k,
@@ -697,12 +692,13 @@ def test_compute_pg_exdist_dsl(
         },
     )
     flat_idx_np = np.amax(flat_idx.asnumpy(), axis=1)
+    flat_idx_max = (gtx.as_field((dims.EdgeDim,), flat_idx_np, dtype=gtx.int32),)
 
     compute_pg_exdist_dsl.with_backend(backend)(
         z_aux2=z_aux2,
         z_me=z_me,
         e_owner_mask=grid_savepoint.e_owner_mask(),
-        flat_idx_max=gtx.as_field((dims.EdgeDim,), flat_idx_np, dtype=gtx.int32),
+        flat_idx_max=flat_idx_max,
         k_lev=k_lev,
         pg_exdist_dsl=pg_exdist_dsl,
         horizontal_start=start_edge_nudging,

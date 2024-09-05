@@ -832,6 +832,29 @@ def _compute_flat_idx(
     return flat_idx
 
 
+@program
+def compute_flat_idx(
+    z_me: fa.EdgeKField[wpfloat],
+    z_ifc: fa.CellKField[wpfloat],
+    k_lev: fa.KField[int32],
+    flat_idx: fa.EdgeKField[int32],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_flat_idx(
+        z_me=z_me,
+        z_ifc=z_ifc,
+        k_lev=k_lev,
+        out=flat_idx,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
 @field_operator
 def _compute_z_aux2(
     z_ifc: fa.CellField[wpfloat],
@@ -841,6 +864,18 @@ def _compute_z_aux2(
     z_aux2 = z_aux1 - extrapol_dist
 
     return z_aux2
+
+
+@program
+def compute_z_aux2(
+    z_ifc_sliced: fa.CellField[wpfloat],
+    z_aux2: fa.EdgeField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+):
+    _compute_z_aux2(
+        z_ifc=z_ifc_sliced, out=z_aux2, domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
+    )
 
 
 @field_operator
@@ -866,6 +901,37 @@ def _compute_pg_edgeidx_vertidx(
         (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux2) & e_owner_mask, k_lev, pg_vertidx
     )
     return pg_edgeidx, pg_vertidx
+
+
+@program
+def compute_pg_edgeidx_vertidx(
+    c_lin_e: Field[[dims.EdgeDim, dims.E2CDim], float],
+    z_ifc: fa.CellKField[wpfloat],
+    z_aux2: fa.EdgeField[wpfloat],
+    e_owner_mask: fa.EdgeField[bool],
+    flat_idx_max: fa.EdgeField[int32],
+    e_lev: fa.EdgeField[int32],
+    k_lev: fa.KField[int32],
+    pg_edgeidx: fa.EdgeKField[int32],
+    pg_vertidx: fa.EdgeKField[int32],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_pg_edgeidx_vertidx(
+        c_lin_e=c_lin_e,
+        z_ifc=z_ifc,
+        z_aux2=z_aux2,
+        e_owner_mask=e_owner_mask,
+        flat_idx_max=flat_idx_max,
+        e_lev=e_lev,
+        k_lev=k_lev,
+        pg_edgeidx=pg_edgeidx,
+        pg_vertidx=pg_vertidx,
+        out=(pg_edgeidx, pg_vertidx),
+        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
 
 
 @field_operator
@@ -1224,6 +1290,7 @@ def _compute_cell_2_vertex_interpolation(
 program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
 
 
+@program
 def compute_cell_2_vertex_interpolation(
     cell_in: Field[[dims.CellDim, dims.KDim], wpfloat],
     c_int: Field[[dims.VertexDim, V2CDim], wpfloat],

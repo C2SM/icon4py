@@ -31,6 +31,10 @@ def test_factory(icon_grid, metrics_savepoint):
     ddqz_z_half_full = factory.get("ddqz_z_half", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(ddqz_z_half_full.asnumpy(), ddq_z_half_ref.asnumpy())
 
+    scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
+    scalfac_dd3d_full = factory.get("scalfac_dd3d", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(scalfac_dd3d_full.asnumpy(), scalfac_dd3d_ref.asnumpy())
+
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     rayleigh_w_full = factory.get("rayleigh_w", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(rayleigh_w_full.asnumpy(), rayleigh_w_ref.asnumpy())
@@ -57,13 +61,29 @@ def test_factory(icon_grid, metrics_savepoint):
     ddxn_z_full = factory.get("ddxn_z_full", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(ddxn_z_full.asnumpy(), ddxn_z_full_ref.asnumpy())
 
+    vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
+    vwind_impl_wgt_full = factory.get("vwind_impl_wgt", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(vwind_impl_wgt_full.asnumpy(), vwind_impl_wgt_ref.asnumpy())
+
+    vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
+    vwind_expl_wgt_full = factory.get("vwind_expl_wgt", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
+
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     exner_exfac_full = factory.get("exner_exfac", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(exner_exfac_full.asnumpy(), exner_exfac_ref.asnumpy())
 
-    wgtfac_e_ref = metrics_savepoint.wgtfac_e()
-    wgtfac_e_full = factory.get("wgtfac_e", states_factory.RetrievalType.FIELD)
-    assert helpers.dallclose(wgtfac_e_full.asnumpy(), wgtfac_e_ref.asnumpy())
+    pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
+    pg_edgeidx_dsl_full = factory.get("pg_edgeidx_dsl", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(pg_edgeidx_dsl_full.asnumpy(), pg_edgeidx_dsl_ref.asnumpy())
+
+    pg_exdist_dsl_ref = metrics_savepoint.pg_exdist_dsl()
+    pg_exdist_dsl_full = factory.get("pg_exdist_dsl", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(pg_exdist_dsl_full.asnumpy(), pg_exdist_dsl_ref.asnumpy())
+
+    mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
+    mask_prog_halo_c_full = factory.get("mask_prog_halo_c", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy())
 
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     mask_prog_halo_c_full = factory.get("mask_prog_halo_c", states_factory.RetrievalType.FIELD)

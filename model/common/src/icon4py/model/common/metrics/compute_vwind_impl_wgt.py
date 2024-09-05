@@ -5,9 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 
 import icon4py.model.common.field_type_aliases as fa
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as grid
 from icon4py.model.common.metrics.metric_fields import compute_vwind_impl_wgt_partial
 from icon4py.model.common.type_alias import wpfloat
@@ -18,8 +20,8 @@ def compute_vwind_impl_wgt(
     icon_grid: grid.BaseGrid,
     vct_a: fa.KField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
-    z_ddxn_z_half_e: fa.EdgeField[wpfloat],
-    z_ddxt_z_half_e: fa.EdgeField[wpfloat],
+    z_ddxn_z_half_e: fa.EdgeKField[wpfloat],
+    z_ddxt_z_half_e: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
     vwind_impl_wgt_full: fa.CellField[wpfloat],
     vwind_impl_wgt_k: fa.CellField[wpfloat],
@@ -28,6 +30,18 @@ def compute_vwind_impl_wgt(
     vwind_offctr: float,
     horizontal_start_cell: int,
 ) -> np.ndarray:
+    z_ddxn_z_half_e = gtx.as_field(
+        [
+            dims.EdgeDim,
+        ],
+        z_ddxn_z_half_e.asnumpy()[:, icon_grid.num_levels],
+    )
+    z_ddxt_z_half_e = gtx.as_field(
+        [
+            dims.EdgeDim,
+        ],
+        z_ddxt_z_half_e.asnumpy()[:, icon_grid.num_levels],
+    )
     compute_vwind_impl_wgt_partial.with_backend(backend)(
         z_ddxn_z_half_e=z_ddxn_z_half_e,
         z_ddxt_z_half_e=z_ddxt_z_half_e,
