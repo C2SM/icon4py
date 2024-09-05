@@ -361,7 +361,7 @@ def test_distributed_fields(processor_props):  # noqa F811 # fixture
     )
     decomposition_info = halo_generator()
     # distributed read: read one field per dimension
-    local_geometry_fields = grid_manager.read_geometry(decomposition_info)
+    local_geometry_fields = grid_manager._read_geometry(decomposition_info)
     local_cell_area = local_geometry_fields[gm.GridFile.GeometryName.CELL_AREA]
     local_edge_length = local_geometry_fields[gm.GridFile.GeometryName.EDGE_LENGTH]
     local_vlon = grid_manager.read_coordinates(decomposition_info)[
@@ -373,7 +373,7 @@ def test_distributed_fields(processor_props):  # noqa F811 # fixture
     # the local number of cells must be at most the global number of cells (analytically computed)
     assert local_cell_area.size <= global_grid.global_properties.num_cells
     # global read: read the same (global fields)
-    global_geometry_fields = grid_manager.read_geometry()
+    global_geometry_fields = grid_manager._read_geometry()
     global_cell_area = global_geometry_fields[gm.GridFile.GeometryName.CELL_AREA]
     global_edge_length = global_geometry_fields[gm.GridFile.GeometryName.EDGE_LENGTH]
     global_vlon = grid_manager.read_coordinates()[gm.GridFile.CoordinateName.VERTEX_LONGITUDE]
@@ -424,3 +424,14 @@ def assert_gathered_field_against_global(
 
 # TODO add test including halo access:
 #  Will uses geofac_div and geofac_n2s
+
+def test_halo_neighbor_access_c2e():
+    ...
+    # geofac_div = primal_edge_length(C2E) * edge_orientation / area
+    
+    # 1. read grid and distribue - GridManager
+    
+    # 2. get geometry fields (from GridManger) primal_edge_length, edge_orientation, area (local read)
+    # 3. compute geofac_div = primal_edge_length * edge_orientation / area
+    #4. gather geofac_div
+    # 5 compare (possible reorder
