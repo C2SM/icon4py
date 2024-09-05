@@ -59,21 +59,21 @@ class SingleMomentSixClassIconGraupelConfig:
 
     #: execute saturation adjustment right after microphysics. Originally defined as lsatad as input to nwp_microphysics in mo_nwp_gscp_interface.f90 in ICON.
     do_saturation_adjustment: bool = True
-    #: liquid auto conversion mode. 1: Kessler (1969), 2: Seifert & Beheng (2006). Originally defined as iautocon (PARAMETER) in gscp_data.f90 in ICON.
+    #: liquid auto conversion mode. 1: Kessler (1969), 2: Seifert & Beheng (2006). Originally defined as iautocon (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
     liquid_autoconversion_option: gtx.int32 = gtx.int32(1)
-    #: Option for deriving snow size distribution interception parameter. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON.
+    #: Option for deriving snow size distribution interception parameter. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
     snow_intercept_option: gtx.int32 = gtx.int32(2)
-    #: Determine whether the microphysical processes are isochoric or isobaric. Originally defined as l_cv as input to the graupel in ICON. It is hardcoded to True, I still keep it as it may be need to changed to False for high resolution.
+    #: Determine whether the microphysical processes are isochoric or isobaric. Originally defined as l_cv as input to the graupel in ICON. It is hardcoded to True, I still keep it because I no dot understand the reason for its existence.
     is_isochoric: bool = True
     #: Do latent heat nudging. Originally defined as dass_lhn in mo_run_config.f90 in ICON.
     do_latent_heat_nudging = False
     #: Whether a fixed latent heat capacities are used for water. Originally defined as ithermo_water in mo_atm_phy_nwp_config.f90 in ICON (0 means True).
     use_constant_water_heat_capacity = True
-    #: First parameter in RHS of eq. 5.163 for the sticking efficiency when lstickeff = True (repricated in icon4py because it is always True). Originally defined as tune_zceff_min in mo_tuning_nwp_config.f90 in ICON. Default seems to be 0.075.
+    #: First parameter in RHS of eq. 5.163 for the sticking efficiency when lstickeff = True (repricated in icon4py because it is always True in ICON). Originally defined as tune_zceff_min in mo_tuning_nwp_config.f90 in ICON. Default value is 0.075.
     ice_stickeff_min: wpfloat = 0.01
     #: Constant in v-qi ice terminal velocity-mixing ratio relationship, see eq. 5.169. Originally defined as tune_zvz0i in mo_tuning_nwp_config.f90 in ICON.
     ice_v0: wpfloat = 1.25
-    #: Exponent of the density factor in ice terminal velocity equation to account for density (air thermodynamic state) change. Originally defined as tune_icesedi_exp in mo_tuning_nwp_config.f90 in ICON. Default seems to be 0.33.
+    #: Exponent of the density factor in ice terminal velocity equation to account for density (air thermodynamic state) change. Originally defined as tune_icesedi_exp in mo_tuning_nwp_config.f90 in ICON. Default value is 0.33.
     ice_sedi_density_factor_exp: wpfloat = 0.3
     #: Constant in v-D snow terminal velocity-Diameter relationship, see eqs. 5.57 (depricated after COSMO 3.0) and unnumbered eq. (v = 25 D^0.5) below eq. 5.159. Originally defined as tune_v0snow in mo_tuning_nwp_config.f90 in ICON.
     snow_v0: wpfloat = 20.0
@@ -265,7 +265,9 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     t3: wpfloat = 273.16
 
     #: ice crystal number concentration at threshold temperature for mixed-phase cloud
-    nimix: wpfloat = 5.0 * np.exp(0.304 * (melting_temperature - threshold_freeze_temperature_mixedphase))
+    nimix: wpfloat = 5.0 * np.exp(
+        0.304 * (melting_temperature - threshold_freeze_temperature_mixedphase)
+    )
 
     #: Gas constant of dry air [J/K/kg]
     rd: wpfloat = 287.04
@@ -308,7 +310,9 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     #: [K*kg/J]"""
     rcvd: wpfloat = 1.0 / cvd
 
-    pvsw0: wpfloat = tetens_p0 * np.exp(tetens_aw * (melting_temperature - melting_temperature) / (melting_temperature - tetens_bw))
+    pvsw0: wpfloat = tetens_p0 * np.exp(
+        tetens_aw * (melting_temperature - melting_temperature) / (melting_temperature - tetens_bw)
+    )
 
 
 icon_graupel_params: Final = SingleMomentSixClassIconGraupelParams()
@@ -458,7 +462,7 @@ def _deposition_nucleation_at_low_temperature_or_in_clouds(
         rho: air density [kg/m3]
         qv: specific humidity [kg/kg]
         qvsi: saturated vapor mixing ratio over ice
-        cnin:
+        cnin: number concentration of ice nucleating particles [/m3]
         dt: time step [s]
     Returns:
         Deposition nucleation rate
@@ -717,7 +721,7 @@ def _reduced_deposition_in_clouds(
         dist_cldtop_kup: vertical distance to cloud top
         k_lev: current k index
         startmoist_level: moist porcess starting index
-        is_surface:
+        is_surface: True if the current k level is at the bottom
         llqc: cloud grid cell
     Returns:
         cloud-to-rain autoconversionn rate, rain-cloud accretion rate
@@ -837,7 +841,8 @@ def _collision_and_ice_deposition_in_cold_ice_clouds(
         # Change in sticking efficiency needed in case of cloud ice sedimentation
         # (based on Guenther Zaengls work)
         local_eff = minimum(
-            exp(wpfloat("0.09") * (temperature - icon_graupel_params.melting_temperature)), wpfloat("1.0")
+            exp(wpfloat("0.09") * (temperature - icon_graupel_params.melting_temperature)),
+            wpfloat("1.0"),
         )
         local_eff = maximum(local_eff, ice_stickeff_min)
         local_eff = maximum(
@@ -1070,7 +1075,8 @@ def _melting(
             # ** GZ: several numerical fits in this section should be replaced with physically more meaningful formulations **
             if (
                 temperature
-                > icon_graupel_params.melting_temperature - icon_graupel_params.tcrit * local_qvsw0diff
+                > icon_graupel_params.melting_temperature
+                - icon_graupel_params.tcrit * local_qvsw0diff
             ):
                 # calculate melting rate
                 local_x1 = (
@@ -1288,6 +1294,7 @@ class SingleMomentSixClassIconGraupel:
         )
 
         self._initialize_local_fields()
+        self._determine_horizontal_domains()
 
     def _validate_and_initialize_configurable_parameters(self):
         if self.config.liquid_autoconversion_option != gtx.int32(
@@ -1435,6 +1442,11 @@ class SingleMomentSixClassIconGraupel:
             CellDim, KDim, grid=self.grid, dtype=wpfloat
         )
 
+    def _determine_horizontal_domains(self):
+        cell_domain = h_grid.domain(CellDim)
+        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
+
     def run(
         self,
         dtime: wpfloat,
@@ -1442,11 +1454,6 @@ class SingleMomentSixClassIconGraupel:
         diagnostic_state: diagnostics.DiagnosticState,
         tracer_state: tracers.TracerState,
     ):
-        # TODO (Chia Rui): move this to initialization following the style in dycore granules
-        cell_domain = h_grid.domain(CellDim)
-        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
-
         icon_graupel(
             self.vertical_params.kstart_moist,
             self.config.liquid_autoconversion_option,
@@ -1487,8 +1494,8 @@ class SingleMomentSixClassIconGraupel:
             self.vnew_s,
             self.vnew_g,
             self.vnew_i,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -1519,8 +1526,8 @@ class SingleMomentSixClassIconGraupel:
             self.graupel_precipitation_flux,
             self.ice_precipitation_flux,
             self.total_precipitation_flux,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels - gtx.int32(1),
             offset_provider={},
@@ -1551,8 +1558,8 @@ class SingleMomentSixClassIconGraupel:
             self.graupel_precipitation_flux,
             self.ice_precipitation_flux,
             self.total_precipitation_flux,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=self.grid.num_levels - gtx.int32(1),
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -1897,31 +1904,31 @@ def _icon_graupel_scan(
         7. update all tendencies.
 
     Below is a list of the so-called transfered rates for all microphyiscal processes in ICON graupel scheme:
-        szdep_v2i:   vapor   -> ice,     ice vapor deposition
-        szsub_v2i:   vapor   -> ice,     ice vapor sublimation
-        sidep_v2i:   vapor   -> ice,     ice vapor net deposition
-        ssdep_v2s:   vapor   -> snow,    snow vapor deposition
-        sgdep_v2g:   vapor   -> graupel, graupel vapor deposition
-        snucl_v2i:   vapor   -> ice,     ice nucleation
-        sconr_v2r:   vapor   -> rain,    rain condensation on melting snow/graupel
-        scaut_c2r:   cloud   -> rain,    cloud autoconversion into rain
-        scfrz_c2i:   cloud   -> ice,     cloud freezing
-        scacr_c2r:   cloud   -> rain,    rain-cloud accretion
-        sshed_c2r:   cloud   -> rain,    rain shedding from riming above freezing
-        srims_c2s:   cloud   -> snow,    snow riming
-        srimg_c2g:   cloud   -> graupel, graupel riming
-        simlt_i2c:   ice     -> cloud,   ice melting
-        sicri_i2g:   ice     -> graupel, ice loss in rain-ice accretion
-        sdaut_i2s:   ice     -> snow,    ice vapor depositional autoconversion into snow
-        saggs_i2s:   ice     -> snow,    snow-ice aggregation
-        saggg_i2g:   ice     -> graupel, graupel-ice aggregation
-        siaut_i2s:   ice     -> snow,    ice autoconversion into snow
-        srcri_r2g:   rain    -> graupel, rain loss in rain-ice accretion
-        srfrz_r2g:   rain    -> graupel, rain freezing
-        sevap_r2v:   rain    -> vapor,   rain evaporation
-        ssmlt_s2r:   snow    -> rain,    snow melting
-        scosg_s2g:   snow    -> graupel, snow autoconversion into graupel
-        sgmlt_g2r:   graupel -> rain,    graupel melting
+        ice_net_deposition_rate_v2i         :   vapor   -> ice,     ice vapor deposition
+        ice_net_sublimation_rate_v2i        :   vapor   -> ice,     ice vapor sublimation
+        ice_deposition_rate_v2i             :   vapor   -> ice,     ice vapor net deposition
+        snow_deposition_rate_v2s            :   vapor   -> snow,    snow vapor deposition
+        graupel_deposition_rate_v2g         :   vapor   -> graupel, graupel vapor deposition
+        ice_nucleation_rate_v2i             :   vapor   -> ice,     ice nucleation
+        rain_deposition_rate_v2r            :   vapor   -> rain,    rain condensation on melting snow/graupel
+        cloud_autoconversion_rate_c2r       :   cloud   -> rain,    cloud autoconversion into rain
+        cloud_freezing_rate_c2i             :   cloud   -> ice,     cloud freezing
+        rain_cloud_collision_rate_c2r       :   cloud   -> rain,    rain-cloud accretion
+        rain_shedding_rate_c2r              :   cloud   -> rain,    rain shedding from riming above freezing
+        snow_riming_rate_c2s                :   cloud   -> snow,    snow riming
+        graupel_riming_rate_c2g             :   cloud   -> graupel, graupel riming
+        ice_melting_rate_i2c                :   ice     -> cloud,   ice melting
+        rain_ice_2graupel_ice_loss_rate_i2g :   ice     -> graupel, ice loss in rain-ice accretion
+        ice_dep_autoconversion_rate_i2s     :   ice     -> snow,    ice vapor depositional autoconversion into snow
+        snow_ice_collision_rate_i2s         :   ice     -> snow,    snow-ice aggregation
+        graupel_ice_collision_rate_i2g      :   ice     -> graupel, graupel-ice aggregation
+        ice_autoconverson_rate_i2s          :   ice     -> snow,    ice autoconversion into snow
+        rain_ice_2graupel_rain_loss_rate_r2g:   rain    -> graupel, rain loss in rain-ice accretion
+        rain_freezing_rate_r2g              :   rain    -> graupel, rain freezing
+        rain_evaporation_rate_r2v           :   rain    -> vapor,   rain evaporation
+        snow_melting_rate_s2r               :   snow    -> rain,    snow melting
+        snow_autoconversion_rate_s2g        :   snow    -> graupel, snow autoconversion into graupel
+        graupel_melting_rate_g2r            :   graupel -> rain,    graupel melting
     """
 
     (
@@ -2281,21 +2288,27 @@ def _icon_graupel_scan(
     #  Section 5: Transfer rates
     # ------------------------------------------------------------------------------
 
-    snucl_v2i = _deposition_nucleation_at_low_temperature_or_in_clouds(
+    ice_nucleation_rate_v2i = _deposition_nucleation_at_low_temperature_or_in_clouds(
         temperature, rho, qv, qi, qvsi, cnin, dt, llqc
     )
 
-    scaut_c2r, scacr_c2r = _autoconversion_and_rain_accretion(
+    (
+        cloud_autoconversion_rate_c2r,
+        rain_cloud_collision_rate_c2r,
+    ) = _autoconversion_and_rain_accretion(
         temperature, qc, qr, qnc, celn7o8qrk, llqc, liquid_autoconversion_option
     )
 
-    scfrz_c2i, srfrz_r2g_in_clouds = _freezing_in_clouds(
+    cloud_freezing_rate_c2i, rain_freezing_rate_r2g_in_clouds = _freezing_in_clouds(
         temperature, qc, qr, cscmax, csrmax, celn7o4qrk, llqc, llqr
     )
 
-    srims_c2s, srimg_c2g, sshed_c2r, scosg_s2g = _riming_in_clouds(
-        temperature, qc, crim, cslam, celnrimexp_g, celn3o4qsk, llqc, llqs
-    )
+    (
+        snow_riming_rate_c2s,
+        graupel_riming_rate_c2g,
+        rain_shedding_rate_c2r,
+        snow_autoconversion_rate_s2g,
+    ) = _riming_in_clouds(temperature, qc, crim, cslam, celnrimexp_g, celn3o4qsk, llqc, llqs)
 
     dist_cldtop, reduce_dep = _reduced_deposition_in_clouds(
         temperature,
@@ -2314,15 +2327,15 @@ def _icon_graupel_scan(
     )
 
     (
-        saggs_i2s,
-        saggg_i2g,
-        siaut_i2s,
-        sidep_v2i,
-        sicri_i2g,
-        srcri_r2g,
-        sdaut_i2s,
-        szdep_v2i,
-        szsub_v2i,
+        snow_ice_collision_rate_i2s,
+        graupel_ice_collision_rate_i2g,
+        ice_autoconverson_rate_i2s,
+        ice_deposition_rate_v2i,
+        rain_ice_2graupel_ice_loss_rate_i2g,
+        rain_ice_2graupel_rain_loss_rate_r2g,
+        ice_dep_autoconversion_rate_i2s,
+        ice_net_deposition_rate_v2i,
+        ice_net_sublimation_rate_v2i,
     ) = _collision_and_ice_deposition_in_cold_ice_clouds(
         temperature,
         rho,
@@ -2345,8 +2358,8 @@ def _icon_graupel_scan(
     )
 
     (
-        ssdep_v2s_before_melting,
-        sgdep_v2g_before_melting,
+        snow_deposition_rate_v2s_before_melting,
+        graupel_deposition_rate_v2g_before_melting,
     ) = _snow_and_graupel_depositional_growth_in_cold_ice_clouds(
         temperature,
         pres,
@@ -2354,7 +2367,7 @@ def _icon_graupel_scan(
         qs,
         qvsi,
         dt,
-        szdep_v2i,
+        ice_net_deposition_rate_v2i,
         cslam,
         cbsdep,
         csdep,
@@ -2365,7 +2378,14 @@ def _icon_graupel_scan(
         llqg,
     )
 
-    simlt_i2c, ssmlt_s2r, sgmlt_g2r, ssdep_v2s, sgdep_v2g, sconr_v2r = _melting(
+    (
+        ice_melting_rate_i2c,
+        snow_melting_rate_s2r,
+        graupel_melting_rate_g2r,
+        snow_deposition_rate_v2s,
+        graupel_deposition_rate_v2g,
+        rain_deposition_rate_v2r,
+    ) = _melting(
         temperature,
         pres,
         rho,
@@ -2373,8 +2393,8 @@ def _icon_graupel_scan(
         qvsw,
         rhoqi_intermediate,
         dt,
-        ssdep_v2s_before_melting,
-        sgdep_v2g_before_melting,
+        snow_deposition_rate_v2s_before_melting,
+        graupel_deposition_rate_v2g_before_melting,
         cssmax,
         csgmax,
         celn8qsk,
@@ -2384,14 +2404,17 @@ def _icon_graupel_scan(
         llqg,
     )
 
-    sevap_r2v, srfrz_r2g = _evaporation_and_freezing_in_subsaturated_air(
+    (
+        rain_evaporation_rate_r2v,
+        rain_freezing_rate_r2g,
+    ) = _evaporation_and_freezing_in_subsaturated_air(
         temperature,
         qv,
         qc,
         qvsw,
         rhoqr,
         dt,
-        srfrz_r2g_in_clouds,
+        rain_freezing_rate_r2g_in_clouds,
         csrmax,
         bev,
         bevxp,
@@ -2409,14 +2432,22 @@ def _icon_graupel_scan(
     if llqc & (temperature > icon_graupel_params.homogeneous_freeze_temperature):
         # Check for maximum depletion of cloud water and adjust the
         # transfer rates accordingly
-        csum = scaut_c2r + scacr_c2r + srims_c2s + srimg_c2g + sshed_c2r
+        csum = (
+            cloud_autoconversion_rate_c2r
+            + rain_cloud_collision_rate_c2r
+            + snow_riming_rate_c2s
+            + graupel_riming_rate_c2g
+            + rain_shedding_rate_c2r
+        )
         ccorr = cscmax / maximum(cscmax, csum)
-        scaut_c2r = ccorr * scaut_c2r
-        scacr_c2r = ccorr * scacr_c2r
-        srims_c2s = ccorr * srims_c2s
-        srimg_c2g = ccorr * srimg_c2g
-        sshed_c2r = ccorr * sshed_c2r
-        scosg_s2g = minimum(scosg_s2g, srims_c2s + cssmax)
+        cloud_autoconversion_rate_c2r = ccorr * cloud_autoconversion_rate_c2r
+        rain_cloud_collision_rate_c2r = ccorr * rain_cloud_collision_rate_c2r
+        snow_riming_rate_c2s = ccorr * snow_riming_rate_c2s
+        graupel_riming_rate_c2g = ccorr * graupel_riming_rate_c2g
+        rain_shedding_rate_c2r = ccorr * rain_shedding_rate_c2r
+        snow_autoconversion_rate_s2g = minimum(
+            snow_autoconversion_rate_s2g, snow_riming_rate_c2s + cssmax
+        )
 
     if llqi | llqs | llqg:
         if temperature <= icon_graupel_params.melting_temperature:  # cold case
@@ -2427,77 +2458,108 @@ def _icon_graupel_scan(
             # No check is done for depositional autoconversion (sdau) because
             # this is a always a fraction of the gain rate due to
             # deposition (i.e the sum of this rates is always positive)
-            csum = siaut_i2s + saggs_i2s + saggg_i2g + sicri_i2g + szsub_v2i
+            csum = (
+                ice_autoconverson_rate_i2s
+                + snow_ice_collision_rate_i2s
+                + graupel_ice_collision_rate_i2g
+                + rain_ice_2graupel_ice_loss_rate_i2g
+                + ice_net_sublimation_rate_v2i
+            )
             ccorr = csimax / maximum(csimax, csum) if csimax > wpfloat("0.0") else wpfloat("0.0")
-            sidep_v2i = szdep_v2i - ccorr * szsub_v2i
-            siaut_i2s = ccorr * siaut_i2s
-            saggs_i2s = ccorr * saggs_i2s
-            saggg_i2g = ccorr * saggg_i2g
-            sicri_i2g = ccorr * sicri_i2g
+            ice_deposition_rate_v2i = (
+                ice_net_deposition_rate_v2i - ccorr * ice_net_sublimation_rate_v2i
+            )
+            ice_autoconverson_rate_i2s = ccorr * ice_autoconverson_rate_i2s
+            snow_ice_collision_rate_i2s = ccorr * snow_ice_collision_rate_i2s
+            graupel_ice_collision_rate_i2g = ccorr * graupel_ice_collision_rate_i2g
+            rain_ice_2graupel_ice_loss_rate_i2g = ccorr * rain_ice_2graupel_ice_loss_rate_i2g
             if qvsidiff < wpfloat("0.0"):
-                ssdep_v2s = maximum(ssdep_v2s, -cssmax)
-                sgdep_v2g = maximum(sgdep_v2g, -csgmax)
+                snow_deposition_rate_v2s = maximum(snow_deposition_rate_v2s, -cssmax)
+                graupel_deposition_rate_v2g = maximum(graupel_deposition_rate_v2g, -csgmax)
 
-    csum = sevap_r2v + srfrz_r2g + srcri_r2g
+    csum = rain_evaporation_rate_r2v + rain_freezing_rate_r2g + rain_ice_2graupel_rain_loss_rate_r2g
     ccorr = csrmax / maximum(csrmax, csum) if csum > wpfloat("0.0") else wpfloat("1.0")
-    sevap_r2v = ccorr * sevap_r2v
-    srfrz_r2g = ccorr * srfrz_r2g
-    srcri_r2g = ccorr * srcri_r2g
+    rain_evaporation_rate_r2v = ccorr * rain_evaporation_rate_r2v
+    rain_freezing_rate_r2g = ccorr * rain_freezing_rate_r2g
+    rain_ice_2graupel_rain_loss_rate_r2g = ccorr * rain_ice_2graupel_rain_loss_rate_r2g
 
     # limit snow depletion in order to avoid negative values of qs
     ccorr = wpfloat("1.0")
-    if ssdep_v2s <= wpfloat("0.0"):
-        csum = ssmlt_s2r + scosg_s2g - ssdep_v2s
+    if snow_deposition_rate_v2s <= wpfloat("0.0"):
+        csum = snow_melting_rate_s2r + snow_autoconversion_rate_s2g - snow_deposition_rate_v2s
         if csum > wpfloat("0.0"):
             ccorr = cssmax / maximum(cssmax, csum)
-        ssmlt_s2r = ccorr * ssmlt_s2r
-        scosg_s2g = ccorr * scosg_s2g
-        ssdep_v2s = ccorr * ssdep_v2s
+        snow_melting_rate_s2r = ccorr * snow_melting_rate_s2r
+        snow_autoconversion_rate_s2g = ccorr * snow_autoconversion_rate_s2g
+        snow_deposition_rate_v2s = ccorr * snow_deposition_rate_v2s
     else:
-        csum = ssmlt_s2r + scosg_s2g
+        csum = snow_melting_rate_s2r + snow_autoconversion_rate_s2g
         if csum > wpfloat("0.0"):
             ccorr = cssmax / maximum(cssmax, csum)
-        ssmlt_s2r = ccorr * ssmlt_s2r
-        scosg_s2g = ccorr * scosg_s2g
+        snow_melting_rate_s2r = ccorr * snow_melting_rate_s2r
+        snow_autoconversion_rate_s2g = ccorr * snow_autoconversion_rate_s2g
 
     # ------------------------------------------------------------------------------
     #  Section 7: Update tendencies
     # ------------------------------------------------------------------------------
 
-    cqvt = sevap_r2v - sidep_v2i - ssdep_v2s - sgdep_v2g - snucl_v2i - sconr_v2r
-    cqct = simlt_i2c - scaut_c2r - scfrz_c2i - scacr_c2r - sshed_c2r - srims_c2s - srimg_c2g
+    cqvt = (
+        rain_evaporation_rate_r2v
+        - ice_deposition_rate_v2i
+        - snow_deposition_rate_v2s
+        - graupel_deposition_rate_v2g
+        - ice_nucleation_rate_v2i
+        - rain_deposition_rate_v2r
+    )
+    cqct = (
+        ice_melting_rate_i2c
+        - cloud_autoconversion_rate_c2r
+        - cloud_freezing_rate_c2i
+        - rain_cloud_collision_rate_c2r
+        - rain_shedding_rate_c2r
+        - snow_riming_rate_c2s
+        - graupel_riming_rate_c2g
+    )
     cqit = (
-        snucl_v2i
-        + scfrz_c2i
-        - simlt_i2c
-        - sicri_i2g
-        + sidep_v2i
-        - sdaut_i2s
-        - saggs_i2s
-        - saggg_i2g
-        - siaut_i2s
+        ice_nucleation_rate_v2i
+        + cloud_freezing_rate_c2i
+        - ice_melting_rate_i2c
+        - rain_ice_2graupel_ice_loss_rate_i2g
+        + ice_deposition_rate_v2i
+        - ice_dep_autoconversion_rate_i2s
+        - snow_ice_collision_rate_i2s
+        - graupel_ice_collision_rate_i2g
+        - ice_autoconverson_rate_i2s
     )
     cqrt = (
-        scaut_c2r
-        + sshed_c2r
-        + scacr_c2r
-        + ssmlt_s2r
-        + sgmlt_g2r
-        - sevap_r2v
-        - srcri_r2g
-        - srfrz_r2g
-        + sconr_v2r
+        cloud_autoconversion_rate_c2r
+        + rain_shedding_rate_c2r
+        + rain_cloud_collision_rate_c2r
+        + snow_melting_rate_s2r
+        + graupel_melting_rate_g2r
+        - rain_evaporation_rate_r2v
+        - rain_ice_2graupel_rain_loss_rate_r2g
+        - rain_freezing_rate_r2g
+        + rain_deposition_rate_v2r
     )
-    cqst = siaut_i2s + sdaut_i2s - ssmlt_s2r + srims_c2s + ssdep_v2s + saggs_i2s - scosg_s2g
+    cqst = (
+        ice_autoconverson_rate_i2s
+        + ice_dep_autoconversion_rate_i2s
+        - snow_melting_rate_s2r
+        + snow_riming_rate_c2s
+        + snow_deposition_rate_v2s
+        + snow_ice_collision_rate_i2s
+        - snow_autoconversion_rate_s2g
+    )
     cqgt = (
-        saggg_i2g
-        - sgmlt_g2r
-        + sicri_i2g
-        + srcri_r2g
-        + sgdep_v2g
-        + srfrz_r2g
-        + srimg_c2g
-        + scosg_s2g
+        graupel_ice_collision_rate_i2g
+        - graupel_melting_rate_g2r
+        + rain_ice_2graupel_ice_loss_rate_i2g
+        + rain_ice_2graupel_rain_loss_rate_r2g
+        + graupel_deposition_rate_v2g
+        + rain_freezing_rate_r2g
+        + graupel_riming_rate_c2g
+        + snow_autoconversion_rate_s2g
     )
 
     temperature_tendency = heat_cap_r * (lhv * (cqct + cqrt) + lhs * (cqit + cqst + cqgt))
