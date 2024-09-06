@@ -635,7 +635,7 @@ class SolveNonhydro:
             f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
         )
 
-        # # TODO: abishekg7 move this to tests
+        # # TODO: move this to tests
         if self.p_test_run:
             nhsolve_prog.init_test_fields(
                 self.intermediate_fields.z_rho_e,
