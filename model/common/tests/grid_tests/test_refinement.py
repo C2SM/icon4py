@@ -15,36 +15,34 @@ from . import utils
 
 
 def out_of_range(dim: dims.Dimension):
-    lower = range(-25, -9) if dim == dims.EdgeDim else range(-25, -5)
+    
+    lower = range(-36, refin._UNORDERED[dim][1]) 
     for v in lower:
         yield v
 
-    for v in range(15, 25):
+    upper = range(refin._MAX_ORDERED[dim] + 1, 36) 
+    for v in upper:
         yield v
 
 
 def refinement_value(dim: dims.Dimension):
-    lower = -8 if dim == dims.EdgeDim else -4
-    for v in range(lower, 14):
+    lower = refin._UNORDERED[dim][1] 
+    upper = refin._MAX_ORDERED[dim]
+    for v in range(lower, upper):
         yield v
 
 
-# TODO (@halungge) fix this test -- too complex
+
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
 def test_ordered(dim):
     for value in refinement_value(dim):
         ordered = refin.RefinementValue(dim, value)
-        if dim == dims.EdgeDim:
-            if ordered.value == 0 or ordered.value == -8:
-                assert not ordered.is_ordered()
-            else:
-                assert ordered.is_ordered()
+        
+        if ordered.value in refin._UNORDERED[dim]:
+            assert not ordered.is_ordered()
         else:
-            if ordered.value == 0 or ordered.value == -4:
-                assert not ordered.is_ordered()
-            else:
-                assert ordered.is_ordered()
-
+            assert ordered.is_ordered()
+        
 
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
 def test_nested(dim):

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import logging
 from typing import Final
 
 from icon4py.model.common import dimension as dims
@@ -26,15 +27,16 @@ See Zaengl et al. Grid Refinement in ICON v2.6.4 (Geosci. Model Dev., 15, 7153-7
 This module only contains functionality related to grid refinement as we use it in ICON4Py.
 
 """
-
+_log = logging.getLogger(__name__)
 
 _MAX_ORDERED: Final[dict[dims.Dimension, int]] = {
     dims.CellDim: 14,
-    dims.EdgeDim: 14,
-    dims.VertexDim: 14,
+    dims.EdgeDim: 24,
+    dims.VertexDim: 13,
 }
 """Lateral boundary points are ordered and have an index indicating the (cell) s distance to the boundary,
-generally the number of ordered rows can be defined in the grid generator, but it will never exceed 14.
+generally the number of ordered rows can be defined in the grid generator, but it will never exceed 14 for cells.
+TODO: Are these the x_grf dimension in the netcdf grid file?
 """
 
 
@@ -57,6 +59,7 @@ class RefinementValue:
     value: int
 
     def __post_init__(self):
+        _log.debug(f"Checking refinement value {self.value} for dimension {self.dim}")
         assert (
             _UNORDERED[self.dim][1] <= self.value <= _MAX_ORDERED[self.dim]
         ), f"Invalid refinement control constant {self.value}"
@@ -68,13 +71,18 @@ class RefinementValue:
         return self.value not in _UNORDERED[self.dim]
 
 
-def is_unordered(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
+def is_unordered_field(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
     assert field.dtype == xp.int32 or field.dtype == xp.int64, f"not an integer type {field.dtype}"
     return xp.where(
         field == _UNORDERED[dim][0], True, xp.where(field == _UNORDERED[dim][1], True, False)
     )
 
 
-def to_unnested(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
+def convert_to_unnested_refinement_values(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
+    """Convenience function that converts the grid refinement value from a coarser  
+    parent grid to the canonical values used in an unnested setup.
+    
+    The nested values are used for example in the radiation grids. 
+    """
     assert field.dtype == xp.int32 or field.dtype == xp.int64, f"not an integer type {field.dtype}"
     return xp.where(field == _UNORDERED[dim][1], 0, xp.where(field < 0, -field, field))
