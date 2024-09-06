@@ -59,6 +59,17 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 # used for vertical domain below: should go away once vertical grid provids start_index and end_index like interface
 grid = grid_savepoint.global_grid_params
 
+# TODO: this will go in a future ConfigurationProvider
+experiment = dt_utils.GLOBAL_EXPERIMENT
+init_val = 0.65 if experiment == dt_utils.GLOBAL_EXPERIMENT else 0.7
+vwind_offctr = 0.2
+divdamp_trans_start = 12500.0
+divdamp_trans_end = 17500.0
+divdamp_type = 3
+damping_height = 50000.0 if dt_utils.GLOBAL_EXPERIMENT else 12500.0
+rayleigh_coeff = 0.1 if dt_utils.GLOBAL_EXPERIMENT else 5.0
+vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
+
 interface_model_height = metrics_savepoint.z_ifc()
 c_lin_e = interpolation_savepoint.c_lin_e()
 k_index = gtx.as_field((dims.KDim,), xp.arange(nlev + 1, dtype=gtx.int32))
@@ -74,11 +85,8 @@ inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
 inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
 cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
 cells_aw_verts_field = gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts)
-vwind_offctr = 0.2
 icon_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
 vwind_impl_wgt_full = constant_field(icon_grid, 0.5 + vwind_offctr, dims.CellDim)
-experiment = dt_utils.GLOBAL_EXPERIMENT
-init_val = 0.65 if experiment == dt_utils.GLOBAL_EXPERIMENT else 0.7
 vwind_impl_wgt_k = constant_field(icon_grid, init_val, dims.CellDim, dims.KDim)
 k_lev = gtx.as_field((dims.KDim,), np.arange(nlev, dtype=gtx.int32))
 e_lev = gtx.as_field((dims.EdgeDim,), np.arange(icon_grid.num_edges, dtype=gtx.int32))
@@ -117,7 +125,10 @@ height_provider = factory.ProgramFieldProvider(
     func=mf.compute_z_mc,
     domain={
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
-        dims.KDim: (0, nlev),
+        dims.KDim: (
+            v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
+            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
+        ),
     },
     fields={"z_mc": "height"},
     deps={"z_ifc": "height_on_interface_levels"},
@@ -138,7 +149,7 @@ compute_ddqz_z_half_provider = factory.ProgramFieldProvider(
         ),
         dims.KDim: (
             v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
-            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
+            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),  # TODO: edit dimension - KHalfDim
         ),
     },
     fields={"ddqz_z_half": "ddqz_z_half"},
@@ -165,9 +176,6 @@ ddqz_z_full_and_inverse_provider = factory.ProgramFieldProvider(
 )
 fields_factory.register_provider(ddqz_z_full_and_inverse_provider)
 
-divdamp_trans_start = 12500.0
-divdamp_trans_end = 17500.0
-divdamp_type = 3
 
 compute_scalfac_dd3d_provider = factory.ProgramFieldProvider(
     func=mf.compute_scalfac_dd3d,
@@ -189,10 +197,6 @@ compute_scalfac_dd3d_provider = factory.ProgramFieldProvider(
 )
 fields_factory.register_provider(compute_scalfac_dd3d_provider)
 
-# TODO: this should include experiment param as in test_metric_fields
-damping_height = 50000.0 if dt_utils.GLOBAL_EXPERIMENT else 12500.0
-rayleigh_coeff = 0.1 if dt_utils.GLOBAL_EXPERIMENT else 5.0
-vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
 
 compute_rayleigh_w_provider = factory.ProgramFieldProvider(
     func=mf.compute_rayleigh_w,
@@ -226,7 +230,10 @@ compute_coeff_dwdz_provider = factory.ProgramFieldProvider(
             cell_domain(h_grid.Zone.LOCAL),
             cell_domain(h_grid.Zone.LOCAL),
         ),
-        dims.KDim: (1, nlev),
+        dims.KDim: (
+            v_grid.domain(dims.KDim)(v_grid.Zone.TOP),  # TODO: edit bounds - actual start at 1
+            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
+        ),
     },
     fields={"coeff1_dwdz_full": "coeff1_dwdz_full", "coeff2_dwdz_full": "coeff2_dwdz_full"},
 )
@@ -275,7 +282,7 @@ compute_cell_2_vertex_interpolation_provider = factory.ProgramFieldProvider(
         ),
         dims.KDim: (
             v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
-            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
+            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),  # TODO: edit dimension - KHalfDim
         ),
     },
     fields={"z_ifv": "z_ifv"},
@@ -294,7 +301,7 @@ compute_ddxt_z_half_e_provider = factory.ProgramFieldProvider(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3),
             edge_domain(h_grid.Zone.INTERIOR),
         ),
-        dims.KDim: (nlev, nlev + 1),
+        dims.KDim: (nlev, nlev + 1),  # TODO: edit dimension - KHalfDim
     },
     fields={"ddxt_z_half_e": "ddxt_z_half_e"},
 )
@@ -323,7 +330,7 @@ compute_ddxn_z_half_e_provider = factory.ProgramFieldProvider(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
             edge_domain(h_grid.Zone.INTERIOR),
         ),
-        dims.KDim: (nlev, nlev + 1),
+        dims.KDim: (nlev, nlev + 1),  # TODO: edit dimension - KHalfDim
     },
     fields={"ddxn_z_half_e": "ddxn_z_half_e"},
 )
@@ -411,7 +418,7 @@ compute_wgtfac_e_provider = factory.ProgramFieldProvider(
         ),
         dims.KDim: (
             v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
-            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
+            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),  # TODO: edit dimension - KHalfDim
         ),
     },
     fields={"wgtfac_e": "wgtfac_e"},
