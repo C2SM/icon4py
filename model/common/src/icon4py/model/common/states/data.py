@@ -50,6 +50,46 @@ PROGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     ),
 )
 
+#: CF attributes of common tracer variables
+COMMON_TRACER_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+    specific_humidity=dict(
+        standard_name="specific_humidity",
+        long_name="ratio of water vapor mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qv",
+    ),
+    specific_cloud=dict(
+        standard_name="specific_cloud_content",
+        long_name="ratio of cloud water mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qc",
+    ),
+    specific_ice=dict(
+        standard_name="specific_ice_content",
+        long_name="ratio of cloud ice mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qi",
+    ),
+    specific_rain=dict(
+        standard_name="specific_rain_content",
+        long_name="ratio of rain mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qr",
+    ),
+    specific_snow=dict(
+        standard_name="specific_snow_content",
+        long_name="ratio of snow mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qs",
+    ),
+    specific_graupel=dict(
+        standard_name="specific_graupel_content",
+        long_name="ratio of graupel mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qg",
+    ),
+)
+
 #: CF attributes of diagnostic variables
 DIAGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
     eastward_wind=dict(
@@ -63,5 +103,29 @@ DIAGNOSTIC_CF_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
         long_name="northward wind component",
         units="m s-1",
         icon_var_name="v",
+    ),
+    temperature=dict(
+        standard_name="air_temperature",
+        long_name="air temperature",
+        units="K",
+        icon_var_name="temp",
+    ),
+    virtual_temperature=dict(
+        standard_name="air_virtual_temperature",
+        long_name="air virtual temperature",
+        units="K",
+        icon_var_name="tempv",
+    ),
+    pressure=dict(
+        standard_name="air_pressure",
+        long_name="air pressure",
+        units="Pa",
+        icon_var_name="pres",
+    ),
+    surface_pressure=dict(
+        standard_name="air_pressure_at_ground_level",
+        long_name="air pressure at ground level",
+        units="Pa",
+        icon_var_name="pres_sfc",
     ),
 )

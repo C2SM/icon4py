@@ -158,6 +158,7 @@ def model_initialization_serialbox(
             dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
         ),
         temperature=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        virtual_temperature=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
         u=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
         v=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
     )

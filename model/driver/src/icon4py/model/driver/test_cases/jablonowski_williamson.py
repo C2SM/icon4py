@@ -13,7 +13,6 @@ import pathlib
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
-from icon4py.model.atmosphere.dycore import init_exner_pr
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import geometry, horizontal as h_grid, icon as icon_grid
@@ -239,6 +238,7 @@ def model_initialization_jabw(
     exner = gtx.as_field((dims.CellDim, dims.KDim), exner_numpy)
     rho = gtx.as_field((dims.CellDim, dims.KDim), rho_numpy)
     temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_numpy)
+    virutal_temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_numpy)
     pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_numpy)
     theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_numpy)
     pressure_ifc_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
@@ -269,7 +269,7 @@ def model_initialization_jabw(
     log.info("U, V computation completed.")
 
     exner_pr = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
-    init_exner_pr.init_exner_pr(
+    testcases_utils.compute_perturbed_exner(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
         exner_pr,
@@ -285,6 +285,7 @@ def model_initialization_jabw(
         pressure=pressure,
         pressure_ifc=pressure_ifc,
         temperature=temperature,
+        virtual_temperature=virutal_temperature,
         u=u,
         v=v,
     )

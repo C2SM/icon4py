@@ -43,8 +43,16 @@ class Domain:
     Simple data class used to specify a vertical domain such that index lookup and domain specification can be separated.
     """
 
-    dim: dims.KDim
+    dim: gtx.Dimension
     marker: Zone
+
+
+def domain(dim: gtx.Dimension):
+    def _domain(marker: Zone):
+        assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
+        return Domain(dim, marker)
+
+    return _domain
 
 
 @dataclasses.dataclass(frozen=True)
@@ -147,23 +155,6 @@ class VerticalGrid:
         vertical_params_properties.extend(array_value)
         return "\n".join(vertical_params_properties)
 
-    def start_index(self, domain: Domain):
-        return (
-            self._end_index_of_damping_layer
-            if domain.zone.DAMPING == self.config.rayleigh_damping_height
-            else 0
-        )
-
-    def end_index(self, domain: Domain):
-        num_levels = (
-            self.config.num_levels if domain.dim == dims.KDim else self.config.num_levels + 1
-        )
-        return (
-            self._end_index_of_damping_layer
-            if domain.zone.DAMPING == self.config.rayleigh_damping_height
-            else gtx.int32(num_levels)
-        )
-
     @property
     def metadata_interface_physical_height(self):
         return dict(
@@ -173,6 +164,10 @@ class VerticalGrid:
             positive="up",
             icon_var_name="vct_a",
         )
+
+    @property
+    def num_levels(self):
+        return self.config.num_levels
 
     def index(self, domain: Domain) -> gtx.int32:
         match domain.marker:
