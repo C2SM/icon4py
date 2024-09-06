@@ -137,7 +137,7 @@ compute_ddqz_z_half_provider = factory.ProgramFieldProvider(
     domain={
         dims.CellDim: (
             icon_grid.start_index(cell_domain(horizontal.Zone.LOCAL)),
-            icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL)),
+            cell_domain(horizontal.Zone.LOCAL),
         ),
         dims.KDim: (0, nlev + 1),
     },
