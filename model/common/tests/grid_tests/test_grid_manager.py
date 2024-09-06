@@ -359,7 +359,9 @@ def test_refin_ctrl(grid_savepoint, grid_file, experiment, dim):
         manager.read()
         refin_ctrl = manager.refinement
         refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
-        assert np.all(refin_ctrl_serialized.ndarray == refin.to_unnested(refin_ctrl[dim], dim))
+        assert np.all(
+            refin_ctrl_serialized.ndarray == refin.convert_to_unnested_refinement_values(refin_ctrl[dim], dim)
+        )
 
 
 # v2c: exists in serial, simple, grid
@@ -728,7 +730,7 @@ def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
     "grid_file, experiment",
     [
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT)
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
