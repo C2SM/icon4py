@@ -573,10 +573,15 @@ def init_vert_coord(
         assert xp.all(z3d_i[:,vertical_geometry.nflatlev] == vct_a[vertical_geometry.nflatlev+nshift])
     except AssertionError:
         log.error("Level nflatlev is not flat")
+        exit(1)
     # Check if ktop_thicklimit is sufficiently far away from the model top
     try:
         assert xp.all(ktop_thicklimit > 2)
     except AssertionError:
-        log.error("ktop_thicklimit is not sufficiently far away from the model top")
+        if vertical_config.num_levels > 6:
+            log.error(f"Model top is too low and num_levels, {vertical_config.num_levels}, > 6.")
+            exit(1)
+        else:
+            log.warning(f"Model top is too low. But num_levels, {vertical_config.num_levels}, <= 6. ")
 
     return gtx.as_field((dims.CellDim, dims.KDim), z3d_i)
