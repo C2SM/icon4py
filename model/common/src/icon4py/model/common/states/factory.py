@@ -10,17 +10,34 @@ import abc
 import enum
 import functools
 import inspect
-from typing import Callable, Iterable, Optional, Protocol, Sequence, Union, get_args
+from typing import (
+    Callable,
+    Iterable,
+    Optional,
+    Protocol,
+    Sequence,
+    TypeVar,
+    Union,
+    get_args,
+)
 
 import gt4py.next as gtx
 import gt4py.next.ffront.decorator as gtx_decorator
 import xarray as xa
 
 from icon4py.model.common import dimension as dims, exceptions, settings
-from icon4py.model.common.grid import base as base_grid, icon as icon_grid
+from icon4py.model.common.grid import (
+    base as base_grid,
+    horizontal as h_grid,
+    icon as icon_grid,
+    vertical as v_grid,
+)
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import metadata as metadata, utils as state_utils
 from icon4py.model.common.utils import builder
+
+
+DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
 
 
 class RetrievalType(enum.IntEnum):
@@ -104,9 +121,7 @@ class ProgramFieldProvider(FieldProvider):
     def __init__(
         self,
         func: gtx_decorator.Program,
-        domain: dict[
-            gtx.Dimension : tuple[Callable[[gtx.Dimension], int], Callable[[gtx.Dimension], int]]
-        ],
+        domain: dict[gtx.Dimension : tuple[DomainType, DomainType]],
         fields: dict[str:str],
         deps: dict[str, str],
         params: Optional[dict[str, state_utils.Scalar]] = None,
@@ -142,21 +157,24 @@ class ProgramFieldProvider(FieldProvider):
             for k in self._fields.keys()
         }
 
-    def _domain_args(self, grid: icon_grid.IconGrid) -> dict[str : gtx.int32]:
+    def _domain_args(
+        self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid
+    ) -> dict[str : gtx.int32]:
         domain_args = {}
+
         for dim in self._compute_domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 domain_args.update(
                     {
-                        "horizontal_start": grid.get_start_index(dim, self._compute_domain[dim][0]),
-                        "horizontal_end": grid.get_end_index(dim, self._compute_domain[dim][1]),
+                        "horizontal_start": grid.start_index(self._compute_domain[dim][0]),
+                        "horizontal_end": grid.end_index(self._compute_domain[dim][1]),
                     }
                 )
             elif dim.kind == gtx.DimensionKind.VERTICAL:
                 domain_args.update(
                     {
-                        "vertical_start": self._compute_domain[dim][0],
-                        "vertical_end": self._compute_domain[dim][1],
+                        "vertical_start": vertical_grid.index(self._compute_domain[dim][0]),
+                        "vertical_end": vertical_grid.index(self._compute_domain[dim][1]),
                     }
                 )
             else:
@@ -168,7 +186,7 @@ class ProgramFieldProvider(FieldProvider):
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
-        dims = self._domain_args(factory.grid)
+        dims = self._domain_args(factory.grid, factory.vertical_grid)
         deps.update(dims)
         self._func(**deps, offset_provider=factory.grid.offset_providers)
 
@@ -180,7 +198,7 @@ class NumpyFieldsProvider(FieldProvider):
     def __init__(
         self,
         func: Callable,
-        domain: dict[gtx.Dimension : tuple[gtx.int32, gtx.int32]],
+        domain: dict[gtx.Dimension : tuple[DomainType, DomainType]],
         fields: Sequence[str],
         deps: dict[str, str],
         offsets: Optional[dict[str, gtx.Dimension]] = None,
@@ -250,8 +268,14 @@ class FieldsFactory:
     Lazily compute fields and cache them.
     """
 
-    def __init__(self, grid: icon_grid.IconGrid = None, backend=settings.backend):
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid = None,
+        vertical_grid: v_grid.VerticalGrid = None,
+        backend=settings.backend,
+    ):
         self._grid = grid
+        self._vertical = vertical_grid
         self._providers: dict[str, "FieldProvider"] = {}
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
 
@@ -259,8 +283,9 @@ class FieldsFactory:
         return self._grid is not None
 
     @builder.builder
-    def with_grid(self, grid: base_grid.BaseGrid):
+    def with_grid(self, grid: base_grid.BaseGrid, vertical_grid: v_grid.VerticalGrid):
         self._grid = grid
+        self._vertical = vertical_grid
 
     @builder.builder
     def with_allocator(self, backend=settings.backend):
@@ -269,6 +294,10 @@ class FieldsFactory:
     @property
     def grid(self):
         return self._grid
+
+    @property
+    def vertical_grid(self):
+        return self._vertical
 
     @property
     def allocator(self):
