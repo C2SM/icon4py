@@ -329,26 +329,35 @@ class GridManager:
     ):
         self._run_properties = run_properties
         self._decompose = decomposer
-
-    def __enter__(self):
+    
+    def open(self):
         self._reader = GridFile(self._file_name)
         self._reader.open()
+        
+    def close(self):
+        self._reader.close()
+        
+    def __enter__(self):
+        self.open()
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._reader.close()
+        self.close()
         if exc_type is not None:
             _log.debug(f"Exception '{exc_type}: {exc_val}' while reading the grid file {self._file_name}")
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, on_gpu: bool = False, limited_area=True):
-        self.__enter__()
-        
+    def read(self, on_gpu: bool = False, limited_area=True):
+        if not self._reader:    
+            self.open()
         grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._grid = grid
         self._start, self._end, self._refinement, self._refinement_max = self._read_grid_refinement_information()
         return self
+
+    def __call__(self, on_gpu: bool = False, limited_area=True):  
+        self.read(on_gpu=on_gpu, limited_area=limited_area)
 
     def _open_gridfile(self) -> None:
         self._reader = GridFile(self._file_name)
@@ -568,21 +577,17 @@ class GridManager:
             dims.V2C: self._get_index_field(ConnectivityName.V2C),
             dims.C2V: self._get_index_field(ConnectivityName.C2V),
             dims.V2E2V: self._get_index_field(ConnectivityName.V2E2V),
+            dims.E2V: self._get_index_field(ConnectivityName.E2V),
+            dims.C2V: self._get_index_field(ConnectivityName.C2V),
         }
         if self._run_properties.single_node():
-            global_connectivities.update(
-                {
-                    dims.E2V: self._get_index_field(ConnectivityName.E2V),
-                    dims.C2V: self._get_index_field(ConnectivityName.C2V),
-                }
-            )
             grid.with_connectivities({o.target[1]: c for o, c in global_connectivities.items()})
             _add_derived_connectivities(grid)
             self._read_start_end_indices(grid)
             return grid
         else:
             cells_to_rank_mapping = self._decompose(
-                global_connectivities[dims.C2E2CDim], self._run_properties.comm_size
+                global_connectivities[dims.C2E2C], self._run_properties.comm_size
             )
             construct_decomposition_info = halo.HaloGenerator(
                 self._run_properties,
@@ -591,12 +596,7 @@ class GridManager:
                 self._config.num_levels,
             )
             decomposition_info = construct_decomposition_info()
-            global_connectivities.update(
-                {
-                    dims.E2V: self._get_index_field(ConnectivityName.E2V),
-                    dims.C2V: self._get_index_field(ConnectivityName.C2V),
-                }
-            )
+            
             local_connectivities = {
                 offset.target[1]: construct_local_connectivity(
                     offset, decomposition_info, global_connectivities[offset]

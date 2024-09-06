@@ -25,7 +25,10 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, processor_props)
+    
+    path = dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, processor_props)
+    print(path)
+    return path
 
 
 @pytest.fixture
@@ -43,6 +46,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+
         if experiment == dt_utils.GLOBAL_EXPERIMENT:
             uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
         elif experiment == dt_utils.JABW_EXPERIMENT:
@@ -63,7 +67,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             processor_props.comm.barrier()
     except KeyError as err:
         raise AssertionError(
-            f"no data for communicator of size {processor_props.comm_size} exists, use 1, 2 or 4"
+            f"no data url for experiment {experiment} and comm size {processor_props.comm_size} exists."
         ) from err
 
 

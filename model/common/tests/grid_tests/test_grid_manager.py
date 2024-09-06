@@ -21,7 +21,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as defs, halo
 from icon4py.model.common.grid import (
     grid_manager as gm,
-    horizontal as h_grid,
     refinement as refin,
     simple,
     vertical as v_grid,
@@ -89,6 +88,8 @@ MCH_CH_R04B09_EDGE_DOMAINS = {
     "END": 31558,
 }
 
+zero_base =  gm.ToZeroBasedIndexTransformation()
+vertical = v_grid.VerticalGridConfig(num_levels=80)
 
 @pytest.fixture
 def simple_grid_gridfile(tmp_path):
@@ -330,16 +331,18 @@ def test_gridfile_index_fields(simple_grid_gridfile, caplog):
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = utils.resolve_file_from_gridfile_name(grid_file)
-    grid = grid_manager(file).grid
-    seralized_v2e = grid_savepoint.v2e()
-    # there are vertices at the boundary of a local domain or at a pentagon point that have less than
-    # 6 neighbors hence there are "Missing values" in the grid file
-    # they get substituted by the "last valid index" in preprocessing step in icon.
-    assert not has_invalid_index(seralized_v2e)
-    v2e_table = grid.get_offset_provider("V2E").table
-    assert has_invalid_index(v2e_table)
-    reset_invalid_index(seralized_v2e)
-    assert np.allclose(v2e_table, seralized_v2e)
+    with gm.GridManager(zero_base, file, vertical) as manager:
+        manager.read()
+        grid = manager.grid
+        seralized_v2e = grid_savepoint.v2e()
+        # there are vertices at the boundary of a local domain or at a pentagon point that have less than
+        # 6 neighbors hence there are "Missing values" in the grid file
+        # they get substituted by the "last valid index" in preprocessing step in icon.
+        assert not has_invalid_index(seralized_v2e)
+        v2e_table = grid.get_offset_provider("V2E").table
+        assert has_invalid_index(v2e_table)
+        reset_invalid_index(seralized_v2e)
+        assert np.allclose(v2e_table, seralized_v2e)
 
 
 @pytest.mark.with_netcdf
@@ -353,10 +356,11 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 def test_refin_ctrl(grid_savepoint, grid_file, experiment, dim):
     file = utils.resolve_file_from_gridfile_name(grid_file)
-    gm = grid_manager(file)
-    refin_ctrl = gm.refinement
-    refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
-    assert np.all(refin_ctrl_serialized.ndarray == refin.to_unnested(refin_ctrl[dim], dim))
+    with gm.GridManager(zero_base, file, vertical) as manager:
+        manager.read()
+        refin_ctrl = manager.refinement
+        refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
+        assert np.all(refin_ctrl_serialized.ndarray == refin.to_unnested(refin_ctrl[dim], dim))
 
 
 # v2c: exists in serial, simple, grid
@@ -771,19 +775,18 @@ def test_start_end_index(processor_props, caplog, dim, experiment, grid_file):
     caplog.set_level(logging.INFO)
     file = utils.resolve_file_from_gridfile_name(grid_file)
     limited_area = experiment == dt_utils.REGIONAL_EXPERIMENT
-    manager = gm.GridManager(
-        gm.ToZeroBasedIndexTransformation(), file, v_grid.VerticalGridConfig(1)
-    )
-    manager(limited_area=limited_area)
-    single_node_grid = manager.grid
+    manager = gm.GridManager(zero_base, file, vertical)
+    with manager as single_node:
+        single_node(limited_area=limited_area)
+        single_node_grid = single_node.grid
 
     partitioner = halo.SimpleMetisDecomposer()
 
-    manager.with_decomposer(partitioner, processor_props)  # add these args to __call__?
-    manager(limited_area=limited_area)
-    grid = manager.grid
+    with manager.with_decomposer(partitioner, processor_props) as partitioned:  # add these args to __call__?
+        partitioned(limited_area=limited_area)
+        grid = partitioned.grid
 
-    for domain in global_grid_domains(dim):
+    for domain in utils.global_grid_domains(dim):
         assert grid.start_index(domain) == single_node_grid.start_index(
             domain
         ), f"start index wrong for domain {domain}"
@@ -791,7 +794,7 @@ def test_start_end_index(processor_props, caplog, dim, experiment, grid_file):
             domain
         ), f"end index wrong for domain {domain}"
 
-    for domain in valid_boundary_zones_for_dim(dim):
+    for domain in utils.valid_boundary_zones_for_dim(dim):
         if limited_area:
             assert grid.start_index(domain) == 0
             assert grid.end_index(domain) == 0
@@ -803,38 +806,3 @@ def test_start_end_index(processor_props, caplog, dim, experiment, grid_file):
         ), f"end index wrong for domain {domain}"
 
 
-def global_grid_domains(dim: dims.Dimension):
-    zones = [
-        h_grid.Zone.END,
-        h_grid.Zone.LOCAL,
-        h_grid.Zone.INTERIOR,
-        h_grid.Zone.HALO,
-        h_grid.Zone.HALO_LEVEL_2,
-    ]
-
-    yield from _domain(dim, zones)
-
-
-def _domain(dim, zones):
-    domain = h_grid.domain(dim)
-    for zone in zones:
-        try:
-            yield domain(zone)
-        except AssertionError:
-            ...
-
-
-def valid_boundary_zones_for_dim(dim: dims.Dimension):
-    zones = [
-        h_grid.Zone.LATERAL_BOUNDARY,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6,
-        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7,
-        h_grid.Zone.NUDGING,
-        h_grid.Zone.NUDGING_LEVEL_2,
-    ]
-
-    yield from _domain(dim, zones)
