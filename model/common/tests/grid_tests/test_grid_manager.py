@@ -96,9 +96,9 @@ def simple_grid_gridfile(tmp_path):
     grid = simple.SimpleGrid()
 
     dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
-    dataset.setncattr(gm.PropertyName.GRID_ID, str(uuid.uuid4()))
-    dataset.setncattr(gm.PropertyName.LEVEL, 0)
-    dataset.setncattr(gm.PropertyName.ROOT, 0)
+    dataset.setncattr(gm.MandatoryPropertyName.GRID_UUID, str(uuid.uuid4()))
+    dataset.setncattr(gm.MandatoryPropertyName.LEVEL, 0)
+    dataset.setncattr(gm.MandatoryPropertyName.ROOT, 0)
     dataset.createDimension(gm.DimensionName.VERTEX_NAME, size=grid.num_vertices)
 
     dataset.createDimension(gm.DimensionName.EDGE_NAME, size=grid.num_edges)
@@ -299,16 +299,16 @@ def test_gridfile_index_fields(simple_grid_gridfile, caplog):
     simple_grid = simple.SimpleGrid()
     with gm.GridFile(str(simple_grid_gridfile)) as parser:
         assert np.allclose(
-            parser.int_field(gm.ConnectivityName.C2E), simple_grid.connectivities[dims.C2EDim]
+            parser.int_variable(gm.ConnectivityName.C2E), simple_grid.connectivities[dims.C2EDim]
         )
         assert np.allclose(
-            parser.int_field(gm.ConnectivityName.E2C), simple_grid.connectivities[dims.E2CDim]
+            parser.int_variable(gm.ConnectivityName.E2C), simple_grid.connectivities[dims.E2CDim]
         )
         assert np.allclose(
-            parser.int_field(gm.ConnectivityName.V2E), simple_grid.connectivities[dims.V2EDim]
+            parser.int_variable(gm.ConnectivityName.V2E), simple_grid.connectivities[dims.V2EDim]
         )
         assert np.allclose(
-            parser.int_field(gm.ConnectivityName.V2C), simple_grid.connectivities[dims.V2CDim]
+            parser.int_variable(gm.ConnectivityName.V2C), simple_grid.connectivities[dims.V2CDim]
         )
 
 
@@ -360,7 +360,8 @@ def test_refin_ctrl(grid_savepoint, grid_file, experiment, dim):
         refin_ctrl = manager.refinement
         refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
         assert np.all(
-            refin_ctrl_serialized.ndarray == refin.convert_to_unnested_refinement_values(refin_ctrl[dim], dim)
+            refin_ctrl_serialized.ndarray
+            == refin.convert_to_unnested_refinement_values(refin_ctrl[dim], dim)
         )
 
 

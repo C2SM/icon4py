@@ -42,50 +42,68 @@ from icon4py.model.common.grid import (
 _log = logging.getLogger(__name__)
 
 
-
-
 class GridFileName(str, enum.Enum):
     pass
 
 
+class OptionalPropertyName(GridFileName):
+    """Global grid file attributes hat are not present in all files."""
+
+    HISTORY = "history"
+    GRID_ID = "grid_ID"
+    PARENT_GRID_ID = "parent_grid_ID"
+    MAX_CHILD_DOMAINS = "max_childdom"
+
+
 class PropertyName(GridFileName):
-    GRID_ID = "uuidOfHGrid"
+    ...
+
+
+class LAMPropertyName(PropertyName):
+    GLOBAL_GRID = "global_grid"
+
+
+class MPIMPropertyName(PropertyName):
+    REVISION = "revision"
+    DATE = "date"
+    USER = "user_name"
+    OS = "os_name"
+    NUMBER_OF_SUBGRIDS = "number_of_subgrids"
+    START_SUBGRID = "start_subgrid_id"
+    BOUNDARY_DEPTH = "boundary_depth_index"
+    ROTATION = "rotation_vector"
+    GEOMETRY = "grid_geometry"
+    CELL_TYPE = "grid_cell_type"
+    MEAN_EDGE_LENGTH = "mean_edge_length"
+    MEAN_DUAL_EDGE_LENGTH = "mean_dual_edge_length"
+    MEAN_CELL_AREA = "mean_cell_area"
+    MEAN_DUAL_CELL_AREA = "mean_dual_cell_area"
+    DOMAIN_LENGTH = "domain_length"
+    DOMAIN_HEIGHT = "domain_height"
+    SPHERE_RADIUS = "sphere_radius"
+    CARTESIAN_CENTER = "domain_cartesian_center"
+
+
+class MandatoryPropertyName(PropertyName):
+    """File attributes present in all files."""
+
+    TITLE = "title"
+    INSTITUTION = "institution"
+    SOURCE = "source"
+    GRID_UUID = "uuidOfHGrid"
     PARENT_GRID_ID = "uuidOfParHGrid"
+    NUMBER_OF_GRID = "number_of_grid_used"
+    URI = "ICON_grid_file_uri"
+    CENTER = "center"
+    SUB_CENTER = "subcenter"
+    CRS_ID = "crs_id"
+    CRS_NAME = "crs_name"
+    GRID_MAPPING = "grid_mapping_name"
+    ELLIPSOID = "ellipsoid_name"
+    SEMI_MAJOR_AXIS = "semi_major_axis"
+    INVERSE_FLATTENING = "inverse_flattening"
     LEVEL = "grid_level"
     ROOT = "grid_root"
-
-
-class ConnectivityName(GridFileName):
-    """Names for connectivities used in the grid file."""
-
-    # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> construct
-    #               from e2c and c2e
-    # e2c2v: diamond vertices: not present in grid file -> constructed from e2c and c2v
-
-    #: name of C2E2C connectivity in grid file: dims(nv=3, cell)
-    C2E2C = "neighbor_cell_index"
-
-    #: name of V2E2V connectivity in gridfile: dims(ne=6, vertex),
-    #: all vertices of a pentagon/hexagon, same as V2C2V
-    V2E2V = "vertices_of_vertex"  # does not exist in simple.py
-
-    #: name of V2E dimension in grid file: dims(ne=6, vertex)
-    V2E = "edges_of_vertex"
-
-    #: name fo V2C connectivity in grid file: dims(ne=6, vertex)
-    V2C = "cells_of_vertex"
-
-    #: name of E2V connectivity in grid file: dims(nc=2, edge)
-    E2V = "edge_vertices"
-
-    #: name of C2V connectivity in grid file: dims(nv=3, cell)
-    C2V = "vertex_of_cell"  # does not exist in grid.simple.py
-
-    #: name of E2C connectivity in grid file: dims(nc=2, edge)
-    E2C = "adjacent_cell_of_edge"
-
-    #: name of C2E connectivity in grid file: dims(nv=3, cell)
-    C2E = "edge_of_cell"
 
 
 class DimensionName(GridFileName):
@@ -119,15 +137,51 @@ class DimensionName(GridFileName):
     CELL_GRF = "cell_grf"
     EDGE_GRF = "edge_grf"
     VERTEX_GRF = "vert_grf"
-    CHILD_DOMAINS = "max_chdom"
 
 
-class GeometryName(GridFileName):
+class FieldName(GridFileName):
+    ...
+
+
+class ConnectivityName(FieldName):
+    """Names for connectivities used in the grid file."""
+
+    # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> construct
+    #               from e2c and c2e
+    # e2c2v: diamond vertices: not present in grid file -> constructed from e2c and c2v
+
+    #: name of C2E2C connectivity in grid file: dims(nv=3, cell)
+    C2E2C = "neighbor_cell_index"
+
+    #: name of V2E2V connectivity in gridfile: dims(ne=6, vertex),
+    #: all vertices of a pentagon/hexagon, same as V2C2V
+    V2E2V = "vertices_of_vertex"  # does not exist in simple.py
+
+    #: name of V2E dimension in grid file: dims(ne=6, vertex)
+    V2E = "edges_of_vertex"
+
+    #: name fo V2C connectivity in grid file: dims(ne=6, vertex)
+    V2C = "cells_of_vertex"
+
+    #: name of E2V connectivity in grid file: dims(nc=2, edge)
+    E2V = "edge_vertices"
+
+    #: name of C2V connectivity in grid file: dims(nv=3, cell)
+    C2V = "vertex_of_cell"  # does not exist in grid.simple.py
+
+    #: name of E2C connectivity in grid file: dims(nc=2, edge)
+    E2C = "adjacent_cell_of_edge"
+
+    #: name of C2E connectivity in grid file: dims(nv=3, cell)
+    C2E = "edge_of_cell"
+
+
+class GeometryName(FieldName):
     CELL_AREA = "cell_area"
     EDGE_LENGTH = "edge_length"
 
 
-class CoordinateName(GridFileName):
+class CoordinateName(FieldName):
     CELL_LONGITUDE = "clon"
     CELL_LATITUDE = "clat"
     EDGE_LONGITUDE = "elon"
@@ -136,7 +190,7 @@ class CoordinateName(GridFileName):
     VERTEX_LATITUDE = "vlat"
 
 
-class GridRefinementName(GridFileName):
+class GridRefinementName(FieldName):
     """Names of arrays in grid file defining the grid control, definition of boundaries layers, start and end indices of horizontal zones."""
 
     #: refine control value of cell indices
@@ -190,16 +244,15 @@ class GridFile:
         _log.info(f"Closing dataset: {self._filename}")
         self.close()
 
-    def dimension(self, name: GridFileName) -> int:
+    def dimension(self, name: DimensionName) -> int:
         """Read a dimension with name 'name' from the grid file."""
         return self._dataset.dimensions[name].size
 
-    def attribute(self, name: PropertyName):
+    def attribute(self, name: PropertyName) -> str:
         "Read a global attribute with name 'name' from the grid file."
         return self._dataset.getncattr(name)
 
-    # TODO add index list for reading, is it obsolete or should become read2d?
-    def int_field(self, name: GridFileName, transpose: bool = True) -> np.ndarray:
+    def int_variable(self, name: FieldName, transpose: bool = True) -> np.ndarray:
         """Read a integer field from the grid file.
 
         Reads as int32.
@@ -211,19 +264,12 @@ class GridFile:
             np.ndarray: field data
 
         """
-        try:
-            nc_variable = self._dataset.variables[name]
-            _log.debug(f"reading {name}: {nc_variable}: transposing = {transpose}")
-            data = nc_variable[:]
-            data = np.array(data, dtype=gtx.int32)
-            return np.transpose(data) if transpose else data
-        except KeyError as err:
-            msg = f"{name} does not exist in dataset"
-            _log.warning(msg)
-            raise IconGridError(msg) from err
+        _log.debug(f"reading {name}: transposing = {transpose}")
+        data = self.variable(name, dtype=gtx.int32)
+        return np.transpose(data) if transpose else data
 
-    def array_1d(
-        self, name: GridFileName, indices: np.ndarray = None, dtype: np.dtype = gtx.float64
+    def variable(
+        self, name: FieldName, indices: np.ndarray = None, dtype: np.dtype = gtx.float64
     ) -> np.ndarray:
         """Read a  field from the grid file.
 
@@ -234,7 +280,6 @@ class GridFile:
             dtype: datatype of the field
         """
         try:
-            # use python slice? 2D fields (sparse, horizontal)
             variable = self._dataset.variables[name]
             _log.debug(f"reading {name}: {variable}")
             data = variable[:] if indices is None else variable[indices]
@@ -357,7 +402,7 @@ class GridManager:
             GridRefinementName.CONTROL_VERTICES,
         ]
         refin_ctrl = {
-            dim: self._reader.int_field(control_dims[i])
+            dim: self._reader.int_variable(control_dims[i])
             for i, dim in enumerate(dims.global_dimensions.values())
         }
 
@@ -436,7 +481,7 @@ class GridManager:
 
     def _read_geometry(self, decomposition_info: Optional[decomposition.DecompositionInfo] = None):
         return self._read(
-            self._reader.array_1d,
+            self._reader.variable,
             decomposition_info,
             {
                 dims.CellDim: [GeometryName.CELL_AREA],
@@ -448,7 +493,7 @@ class GridManager:
         self, decomposition_info: Optional[decomposition.DecompositionInfo] = None
     ):
         return self._read(
-            self._reader.array_1d,
+            self._reader.variable,
             decomposition_info,
             {
                 dims.CellDim: [
@@ -580,7 +625,7 @@ class GridManager:
             raise IconGridError(f"Unknown dimension {dim}")
 
     def _get_index_field(self, field: GridFileName, transpose=True, apply_offset=True):
-        field = self._reader.int_field(field, transpose=transpose)
+        field = self._reader.int_variable(field, transpose=transpose)
         if apply_offset:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
@@ -589,9 +634,9 @@ class GridManager:
         num_cells = self._reader.dimension(DimensionName.CELL_NAME)
         num_edges = self._reader.dimension(DimensionName.EDGE_NAME)
         num_vertices = self._reader.dimension(DimensionName.VERTEX_NAME)
-        uuid = self._reader.attribute(PropertyName.GRID_ID)
-        grid_level = self._reader.attribute(PropertyName.LEVEL)
-        grid_root = self._reader.attribute(PropertyName.ROOT)
+        uuid = self._reader.attribute(MandatoryPropertyName.GRID_UUID)
+        grid_level = self._reader.attribute(MandatoryPropertyName.LEVEL)
+        grid_root = self._reader.attribute(MandatoryPropertyName.ROOT)
         global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
         grid_size = base_grid.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells

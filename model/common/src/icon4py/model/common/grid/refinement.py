@@ -79,10 +79,10 @@ def is_unordered_field(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
 
 
 def convert_to_unnested_refinement_values(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
-    """Convenience function that converts the grid refinement value from a coarser  
+    """Convenience function that converts the grid refinement value from a coarser
     parent grid to the canonical values used in an unnested setup.
-    
-    The nested values are used for example in the radiation grids. 
+
+    The nested values are used for example in the radiation grids.
     """
     assert field.dtype == xp.int32 or field.dtype == xp.int64, f"not an integer type {field.dtype}"
     return xp.where(field == _UNORDERED[dim][1], 0, xp.where(field < 0, -field, field))
