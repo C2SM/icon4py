@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import dataclasses
 import enum
 import logging
 import pathlib
@@ -43,26 +42,10 @@ from icon4py.model.common.grid import (
 _log = logging.getLogger(__name__)
 
 
-class ReadType(enum.IntEnum):
-    FLOAT = 0
-    INT = 1
 
 
 class GridFileName(str, enum.Enum):
     pass
-
-
-@dataclasses.dataclass
-class GridFileField:
-    name: GridFileName
-    shape: tuple[int, ...]
-
-
-def _validate_shape(data: np.array, field_definition: GridFileField):
-    if data.shape != field_definition.shape:
-        raise IconGridError(
-            f"invalid grid file field {field_definition.name} does not have dimension {field_definition.shape}"
-        )
 
 
 class PropertyName(GridFileName):
