@@ -491,28 +491,16 @@ class Advection:
 
         # compute tangential velocity
         log.debug("running stencil compute_edge_tangential - start")
-        if 0:
-            compute_tangential_wind.compute_tangential_wind(
-                vn=prep_adv.vn_traj,
-                rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
-                vt=self.z_real_vt,
-                horizontal_start=self.start_edge_lateral_boundary_level_2,
-                horizontal_end=self.end_edge_halo,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
-        else:
-            compute_edge_tangential.compute_edge_tangential(  # TODO (dastrm): duplicate stencil of compute_tangential_wind
-                p_vn_in=prep_adv.vn_traj,
-                ptr_coeff=self.interpolation_state.rbf_vec_coeff_e,
-                p_vt_out=self.z_real_vt,
-                horizontal_start=self.start_edge_lateral_boundary_level_2,
-                horizontal_end=self.end_edge_halo,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,  # originally UBOUND(p_vn,2)
-                offset_provider=self.grid.offset_providers,
-            )
+        compute_edge_tangential.compute_edge_tangential(  # TODO (dastrm): duplicate stencil of compute_tangential_wind
+            p_vn_in=prep_adv.vn_traj,
+            ptr_coeff=self.interpolation_state.rbf_vec_coeff_e,
+            p_vt_out=self.z_real_vt,
+            horizontal_start=self.start_edge_lateral_boundary_level_2,
+            horizontal_end=self.end_edge_halo,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,  # originally UBOUND(p_vn,2)
+            offset_provider=self.grid.offset_providers,
+        )
         log.debug("running stencil compute_edge_tangential - end")
 
         # backtrajectory calculation
