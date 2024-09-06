@@ -346,11 +346,15 @@ class Domain(Protocol):
     _index: int
 
     def __str__(self):
-        return f"{self.dim}: {self._marker} /[ {self._index}]"
+        return f"Domain (dim = {self.dim}: zone = {self._marker} /[ {self._index}])"
 
     @abstractmethod
     def _valid(self, marker: Zone) -> bool:
         ...
+
+    @property
+    def zone(self) -> Zone:
+        return self._marker
 
     def marker(self, marker: Zone):
         assert self._valid(marker), f" Domain `{marker}` not a valid zone for use with '{self.dim}'"
