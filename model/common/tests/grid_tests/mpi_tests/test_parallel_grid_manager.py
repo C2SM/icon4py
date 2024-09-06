@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import logging
 
 import pytest
@@ -18,8 +26,9 @@ try:
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
-#mpi marker meses up mpi initialization
-#@pytest.mark.mpi(min_size=2)
+
+# mpi marker meses up mpi initialization
+# @pytest.mark.mpi(min_size=2)
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(caplog, processor_props):  # noqa: F811  # fixture
     caplog.set_level(logging.DEBUG)
@@ -38,16 +47,17 @@ def test_props(caplog, processor_props):  # noqa: F811  # fixture
 )
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
 def test_start_end_index(caplog, processor_props, grid_file, experiment, dim, icon_grid):  # noqa: F811  # fixture
-
     caplog.set_level(logging.INFO)
     file = utils.resolve_file_from_gridfile_name(grid_file)
     limited_area = experiment == dt_utils.REGIONAL_EXPERIMENT
     partitioner = halo.SimpleMetisDecomposer()
-    manager = gm.GridManager(gm.ToZeroBasedIndexTransformation(), file, v_grid.VerticalGridConfig(1))
+    manager = gm.GridManager(
+        gm.ToZeroBasedIndexTransformation(), file, v_grid.VerticalGridConfig(1)
+    )
     with manager.with_decomposer(partitioner, processor_props) as manage:
         manage(limited_area=limited_area)
         grid = manage.grid
-        
+
     for domain in utils.global_grid_domains(dim):
         assert grid.start_index(domain) == utils.single_node_grid.start_index(
             domain

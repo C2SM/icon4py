@@ -425,13 +425,14 @@ def assert_gathered_field_against_global(
 # TODO add test including halo access:
 #  Will uses geofac_div and geofac_n2s
 
+
 def test_halo_neighbor_access_c2e():
     ...
     # geofac_div = primal_edge_length(C2E) * edge_orientation / area
-    
+
     # 1. read grid and distribue - GridManager
-    
+
     # 2. get geometry fields (from GridManger) primal_edge_length, edge_orientation, area (local read)
     # 3. compute geofac_div = primal_edge_length * edge_orientation / area
-    #4. gather geofac_div
+    # 4. gather geofac_div
     # 5 compare (possible reorder

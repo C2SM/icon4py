@@ -25,7 +25,6 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    
     path = dt_utils.get_ranked_data_path(dt_utils.SERIALIZED_DATA_PATH, processor_props)
     print(path)
     return path
@@ -67,7 +66,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             processor_props.comm.barrier()
     except KeyError as err:
         raise AssertionError(
-            f"no data url for experiment {experiment} and comm size {processor_props.comm_size} exists."
+            f"No data URL for experiment {experiment} and comm size {processor_props.comm_size} available."
         ) from err
 
 

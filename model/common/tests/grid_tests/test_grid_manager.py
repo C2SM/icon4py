@@ -88,8 +88,9 @@ MCH_CH_R04B09_EDGE_DOMAINS = {
     "END": 31558,
 }
 
-zero_base =  gm.ToZeroBasedIndexTransformation()
+zero_base = gm.ToZeroBasedIndexTransformation()
 vertical = v_grid.VerticalGridConfig(num_levels=80)
+
 
 @pytest.fixture
 def simple_grid_gridfile(tmp_path):
@@ -299,7 +300,6 @@ def test_gridfile_index_fields(simple_grid_gridfile, caplog):
     caplog.set_level(logging.DEBUG)
     simple_grid = simple.SimpleGrid()
     with gm.GridFile(str(simple_grid_gridfile)) as parser:
-         
         assert np.allclose(
             parser.int_field(gm.ConnectivityName.C2E), simple_grid.connectivities[dims.C2EDim]
         )
@@ -312,7 +312,7 @@ def test_gridfile_index_fields(simple_grid_gridfile, caplog):
         assert np.allclose(
             parser.int_field(gm.ConnectivityName.V2C), simple_grid.connectivities[dims.V2CDim]
         )
-    
+
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
 # v2e2v: grid,???
@@ -782,7 +782,9 @@ def test_start_end_index(processor_props, caplog, dim, experiment, grid_file):
 
     partitioner = halo.SimpleMetisDecomposer()
 
-    with manager.with_decomposer(partitioner, processor_props) as partitioned:  # add these args to __call__?
+    with manager.with_decomposer(
+        partitioner, processor_props
+    ) as partitioned:  # add these args to __call__?
         partitioned(limited_area=limited_area)
         grid = partitioned.grid
 
@@ -804,5 +806,3 @@ def test_start_end_index(processor_props, caplog, dim, experiment, grid_file):
         assert grid.end_index(domain) == single_node_grid.end_index(
             domain
         ), f"end index wrong for domain {domain}"
-
-

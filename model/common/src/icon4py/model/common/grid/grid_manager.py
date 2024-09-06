@@ -195,41 +195,42 @@ class GridFile:
 
     def __init__(self, file_name: str):
         self._filename = file_name
-        
+
     def __enter__(self):
         self.open()
         return self
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
-        
         if exc_type is not None:
-            _log.debug(f"Exception '{exc_type}: {exc_val}' while reading the grid file {self._filename}")
+            _log.debug(
+                f"Exception '{exc_type}: {exc_val}' while reading the grid file {self._filename}"
+            )
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._filename} not found, aborting")
-        
+
         _log.info(f"Closing dataset: {self._filename}")
         self.close()
-        
+
     def dimension(self, name: GridFileName) -> int:
         """Read a dimension with name 'name' from the grid file."""
         return self._dataset.dimensions[name].size
-    
-    def attribute(self, name:PropertyName):
+
+    def attribute(self, name: PropertyName):
         "Read a global attribute with name 'name' from the grid file."
         return self._dataset.getncattr(name)
-    
+
     # TODO add index list for reading, is it obsolete or should become read2d?
-    def int_field(self, name: GridFileName, transpose:bool=True) -> np.ndarray:
+    def int_field(self, name: GridFileName, transpose: bool = True) -> np.ndarray:
         """Read a integer field from the grid file.
-        
+
         Reads as int32.
-        
+
         Args:
             name: name of the field to read
             transpose: flag to indicate whether the file should be transposed (for 2d fields)
         Returns:
-            np.ndarray: field data 
-        
+            np.ndarray: field data
+
         """
         try:
             nc_variable = self._dataset.variables[name]
@@ -243,7 +244,7 @@ class GridFile:
             raise IconGridError(msg) from err
 
     def array_1d(
-        self, name: GridFileName, indices: np.ndarray = None, dtype:np.dtype=gtx.float64
+        self, name: GridFileName, indices: np.ndarray = None, dtype: np.dtype = gtx.float64
     ) -> np.ndarray:
         """Read a  field from the grid file.
 
@@ -264,13 +265,15 @@ class GridFile:
             msg = f"{name} does not exist in dataset"
             _log.warning(msg)
             raise IconGridError(msg) from err
-    
+
     def close(self):
         self._dataset.close()
+
     def open(self):
         self._dataset = Dataset(self._filename, "r", format="NETCDF4")
         _log.debug(f"opened data set: {self._dataset}")
-                   
+
+
 class IconGridError(RuntimeError):
     pass
 
@@ -329,44 +332,51 @@ class GridManager:
     ):
         self._run_properties = run_properties
         self._decompose = decomposer
-    
+
     def open(self):
         self._reader = GridFile(self._file_name)
         self._reader.open()
-        
+
     def close(self):
         self._reader.close()
-        
+
     def __enter__(self):
         self.open()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
         if exc_type is not None:
-            _log.debug(f"Exception '{exc_type}: {exc_val}' while reading the grid file {self._file_name}")
+            _log.debug(
+                f"Exception '{exc_type}: {exc_val}' while reading the grid file {self._file_name}"
+            )
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
     def read(self, on_gpu: bool = False, limited_area=True):
-        if not self._reader:    
+        if not self._reader:
             self.open()
         grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._grid = grid
-        self._start, self._end, self._refinement, self._refinement_max = self._read_grid_refinement_information()
+        (
+            self._start,
+            self._end,
+            self._refinement,
+            self._refinement_max,
+        ) = self._read_grid_refinement_information()
         return self
 
-    def __call__(self, on_gpu: bool = False, limited_area=True):  
+    def __call__(self, on_gpu: bool = False, limited_area=True):
         self.read(on_gpu=on_gpu, limited_area=limited_area)
 
     def _open_gridfile(self) -> None:
         self._reader = GridFile(self._file_name)
         self.reader.open()
-        
+
     def _read_grid_refinement_information(self):
         assert self._reader is not None, "grid file not opened!"
         _CHILD_DOM = 0
-    
+
         control_dims = [
             GridRefinementName.CONTROL_CELLS,
             GridRefinementName.CONTROL_EDGES,
@@ -393,9 +403,7 @@ class GridManager:
             GridRefinementName.START_INDEX_VERTICES,
         ]
         start_indices = {
-            dim: self._get_index_field(start_index_dims[i], transpose=False)[
-                _CHILD_DOM
-            ]
+            dim: self._get_index_field(start_index_dims[i], transpose=False)[_CHILD_DOM]
             for i, dim in enumerate(dims.horizontal_dims.values())
         }
 
@@ -405,9 +413,9 @@ class GridManager:
             GridRefinementName.END_INDEX_VERTICES,
         ]
         end_indices = {
-            dim: self._get_index_field(
-                end_index_dims[i], transpose=False, apply_offset=False
-            )[_CHILD_DOM]
+            dim: self._get_index_field(end_index_dims[i], transpose=False, apply_offset=False)[
+                _CHILD_DOM
+            ]
             for i, dim in enumerate(dims.horizontal_dims.values())
         }
 
@@ -415,13 +423,10 @@ class GridManager:
 
     def _read(
         self,
-        reader_func: Callable[
-                [GridFileName, np.ndarray, np.dtype], np.ndarray],
+        reader_func: Callable[[GridFileName, np.ndarray, np.dtype], np.ndarray],
         decomposition_info: decomposition.DecompositionInfo,
         fields: dict[dims.Dimension, Sequence[GridFileName]],
-        
     ):
-       
         (cells_on_node, edges_on_node, vertices_on_node) = (
             (
                 decomposition_info.global_index(
@@ -445,7 +450,10 @@ class GridManager:
             vals = (
                 {name: reader_func(name, cells_on_node, dtype=gtx.int32) for name in cell_fields}
                 | {name: reader_func(name, edges_on_node, dtype=gtx.int32) for name in edge_fields}
-                | {name: reader_func(name, vertices_on_node, dtype=gtx.int32) for name in vertex_fields}
+                | {
+                    name: reader_func(name, vertices_on_node, dtype=gtx.int32)
+                    for name in vertex_fields
+                }
             )
 
             return vals
@@ -487,15 +495,15 @@ class GridManager:
     @property
     def grid(self):
         return self._grid
-    
+
     @property
     def start_indices(self):
         return self._start
-    
+
     @property
     def end_indices(self):
         return self._end
-    
+
     @property
     def refinement(self):
         return self._refinement
@@ -596,7 +604,7 @@ class GridManager:
                 self._config.num_levels,
             )
             decomposition_info = construct_decomposition_info()
-            
+
             local_connectivities = {
                 offset.target[1]: construct_local_connectivity(
                     offset, decomposition_info, global_connectivities[offset]
@@ -624,9 +632,7 @@ class GridManager:
             _log.warning(f"cannot determine size of unknown dimension {dim}")
             raise IconGridError(f"Unknown dimension {dim}")
 
-    def _get_index_field(
-        self, field: GridFileName, transpose=True, apply_offset=True
-    ):
+    def _get_index_field(self, field: GridFileName, transpose=True, apply_offset=True):
         field = self._reader.int_field(field, transpose=transpose)
         if apply_offset:
             field = field + self._transformation.get_offset_for_index_field(field)
@@ -753,7 +759,7 @@ class GridManager:
 ###########################
 
 
-def _add_derived_connectivities(grid:icon_grid.IconGrid) -> icon_grid.IconGrid:
+def _add_derived_connectivities(grid: icon_grid.IconGrid) -> icon_grid.IconGrid:
     e2c2v = _construct_diamond_vertices(
         grid.connectivities[dims.E2VDim],
         grid.connectivities[dims.C2VDim],
