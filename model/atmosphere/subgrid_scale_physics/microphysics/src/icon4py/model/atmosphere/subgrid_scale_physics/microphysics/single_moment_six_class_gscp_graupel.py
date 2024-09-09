@@ -1617,12 +1617,13 @@ class SingleMomentSixClassIconGraupel:
         # TODO (Chia Rui): the entire call of microphysics needs to be tested when slow performance of scan operator is resolved. Until then, the following call of saturation adjusmnt is wrong.
         # TODO (Chia Rui): Change the way saturation adjustment is called when the interface to the saturation adjustment which follows the protocol is completed.
         if self.config.do_saturation_adjustment:
-            self.saturation_adjustment.run(
-                dtime=dtime,
-                prognostic_state=prognostic_state,
-                diagnostic_state=diagnostic_state,
-                tracer_state=tracer_state,
-            )
+            # self.saturation_adjustment.run( # [commented-out-code]
+            #     dtime=dtime, # noqa: ERA001 [commented-out-code]
+            #     prognostic_state=prognostic_state, # noqa: ERA001 [commented-out-code]
+            #     diagnostic_state=diagnostic_state, # noqa: ERA001 [commented-out-code]
+            #     tracer_state=tracer_state, # noqa: ERA001 [commented-out-code]
+            # ) # [commented-out-code]
+            raise NotImplementedError
 
 
 @gtx.field_operator
