@@ -8,11 +8,16 @@ import logging
 log = logging.getLogger(__name__)
 
 def offset_fortran_indices_return_numpy(inp) -> np.ndarray:
-    return xp.subtract(inp.ndarray, 1)
+    # todo: maybe needed in Fortran? (breaks datatest)
+    #   return xp.subtract(inp.ndarray, 1)
+    return inp.ndarray
 
 
 def offset_squeeze_fortran_indices_return_xp(inp) -> xp.ndarray:
-    return xp.squeeze(xp.subtract(inp.ndarray, 1))
+    # todo: maybe needed in Fortran? (breaks datatest)
+    #   return xp.squeeze(xp.subtract(inp.ndarray, 1))
+    return xp.squeeze(inp.ndarray)
+
 
 def construct_icon_grid(
     grid_id,
@@ -32,7 +37,6 @@ def construct_icon_grid(
     c2e,
     e2c,
     c2e2c,
-    #c2e2c2e,
     e2c2e,
     e2v,
     v2e,

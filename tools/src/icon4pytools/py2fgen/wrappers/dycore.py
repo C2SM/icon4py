@@ -45,7 +45,6 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.common.dimension import (
-    C2E2C2EDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
@@ -116,7 +115,6 @@ def grid_init(
     c2e: Field[[CellDim, C2EDim], int32],
     e2c: Field[[EdgeDim, E2CDim], int32],
     c2e2c: Field[[CellDim, C2E2CDim], int32],
-    #c2e2c2e: Field[[CellDim, C2E2C2EDim], int32],
     e2c2e: Field[[EdgeDim, E2C2EDim], int32],
     e2v: Field[[EdgeDim, E2VDim], int32],
     v2e: Field[[VertexDim, V2EDim], int32],
@@ -153,7 +151,6 @@ def grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
-        #c2e2c2e=c2e2c2e,
         e2c2e=e2c2e,
         e2v=e2v,
         v2e=v2e,

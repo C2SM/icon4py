@@ -219,27 +219,28 @@ def test_granule_solve_nonhydro_single_step_regional(
     c_owner_mask = grid_savepoint.c_owner_mask()
 
     # grid params
-    cell_starts = grid_savepoint.cells_start_index()
-    cell_ends = grid_savepoint.cells_end_index()
-    vertex_starts = grid_savepoint.vertex_start_index()
-    vertex_ends = grid_savepoint.vertex_end_index()
-    edge_starts = grid_savepoint.edge_start_index()
-    edge_ends = grid_savepoint.edge_end_index()
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
     num_edges = grid_savepoint.num(dims.EdgeDim)
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
-    c2e = grid_savepoint.c2e()
-    e2c = grid_savepoint.e2c()
-    e2v = grid_savepoint.e2v()
-    v2e = grid_savepoint.v2e()
-    v2c = grid_savepoint.v2c()
-    e2c2v = grid_savepoint.e2c2v()
-    c2v = grid_savepoint.c2v()
-    c2e2c = grid_savepoint.c2e2c()
-    e2c2e = grid_savepoint.e2c2e()
-    c2e2c2e = grid_savepoint.c2e2c2e()
+
+    cell_starts = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_start_index())
+    cell_ends = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_end_index())
+    vertex_starts = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_start_index())
+    vertex_ends = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_end_index())
+    edge_starts = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_start_index())
+    edge_ends = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_end_index())
+
+    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint.c2e())
+    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint.e2c())
+    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint.c2e2c())
+    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint.e2c2e())
+    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint.e2v())
+    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint.v2e())
+    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
+    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
+    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
 
     # global grid params
     global_root = 4
@@ -255,7 +256,6 @@ def test_granule_solve_nonhydro_single_step_regional(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
-        c2e2c2e=c2e2c2e,
         e2c2e=e2c2e,
         e2v=e2v,
         v2e=v2e,
@@ -421,8 +421,8 @@ def test_granule_solve_nonhydro_single_step_regional(
     rho_new = sp.rho_new()
     exner_new = sp.exner_new()
 
-    nnow = 0
-    nnew = 1
+    nnow = 1 # using fortran indices
+    nnew = 2
 
     solve_nh_run(
         rho_now=rho_now,
@@ -666,27 +666,28 @@ def test_granule_solve_nonhydro_multi_step_regional(
     c_owner_mask = grid_savepoint.c_owner_mask()
 
     # grid params
-    cell_starts = grid_savepoint.cells_start_index()
-    cell_ends = grid_savepoint.cells_end_index()
-    vertex_starts = grid_savepoint.vertex_start_index()
-    vertex_ends = grid_savepoint.vertex_end_index()
-    edge_starts = grid_savepoint.edge_start_index()
-    edge_ends = grid_savepoint.edge_end_index()
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
     num_edges = grid_savepoint.num(dims.EdgeDim)
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
-    c2e = grid_savepoint.c2e()
-    e2c = grid_savepoint.e2c()
-    e2v = grid_savepoint.e2v()
-    v2e = grid_savepoint.v2e()
-    v2c = grid_savepoint.v2c()
-    e2c2v = grid_savepoint.e2c2v()
-    c2v = grid_savepoint.c2v()
-    c2e2c = grid_savepoint.c2e2c()
-    e2c2e = grid_savepoint.e2c2e()
-    c2e2c2e = grid_savepoint.c2e2c2e()
+
+    cell_starts = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_start_index())
+    cell_ends = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_end_index())
+    vertex_starts = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_start_index())
+    vertex_ends = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_end_index())
+    edge_starts = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_start_index())
+    edge_ends = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_end_index())
+
+    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint.c2e())
+    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint.e2c())
+    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint.c2e2c())
+    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint.e2c2e())
+    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint.e2v())
+    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint.v2e())
+    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
+    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
+    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
 
     # global grid params
     global_root = 4
@@ -702,7 +703,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
-        c2e2c2e=c2e2c2e,
         e2c2e=e2c2e,
         e2v=e2v,
         v2e=v2e,
@@ -869,8 +869,8 @@ def test_granule_solve_nonhydro_multi_step_regional(
     exner_new = sp.exner_new()
 
     # other params
-    nnow = 0
-    nnew = 1
+    nnow = 1 # use fortran indices
+    nnew = 2
 
     for i_substep in range(ndyn_substeps):
 
@@ -944,13 +944,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
-    # todo?
-    # assert helpers.dallclose(
-    #     z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
-    #     savepoint_nonhydro_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
-    #     atol=1.0e-18,
-    # )
-
     assert helpers.dallclose(
         mass_fl_e.asnumpy()[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
@@ -968,29 +961,29 @@ def test_granule_solve_nonhydro_multi_step_regional(
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         atol=1e-12,
     )
-
-    # todo?
+    #
+    # # todo: fields do not verify
     # assert helpers.dallclose(
     #     theta_v_new.asnumpy(),
     #     sp_step_exit.theta_v_new().asnumpy(),
     # )
-    #
+
     # assert helpers.dallclose(
     #     rho_new.asnumpy(),
     #     savepoint_nonhydro_exit.rho_new().asnumpy(),
     # )
-    #
+
     # assert helpers.dallclose(
     #     exner_new.asnumpy(),
     #     sp_step_exit.exner_new().asnumpy(),
     # )
-    #
+
     # assert helpers.dallclose(
     #     w_new.asnumpy(),
     #     savepoint_nonhydro_exit.w_new().asnumpy(),
     #     atol=8e-14,
     # )
-    #
+
     # assert helpers.dallclose(
     #     vn_new.asnumpy(),
     #     savepoint_nonhydro_exit.vn_new().asnumpy(),
