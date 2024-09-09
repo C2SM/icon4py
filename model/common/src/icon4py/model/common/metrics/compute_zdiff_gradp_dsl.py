@@ -7,10 +7,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
+from gt4py.next import as_field
+
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.test_utils.helpers import flatten_first_two_dims
 
 
 def compute_zdiff_gradp_dsl(
-    e2c,
+    e2c: np.ndarray,
     z_me: np.ndarray,
     z_mc: np.ndarray,
     z_ifc: np.ndarray,
@@ -107,4 +111,10 @@ def compute_zdiff_gradp_dsl(
                         jk_start = jk1
                         break
 
-    return zdiff_gradp
+    zdiff_gradp_full_field = flatten_first_two_dims(
+        dims.ECDim,
+        dims.KDim,
+        field=as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp),
+    )
+
+    return zdiff_gradp_full_field

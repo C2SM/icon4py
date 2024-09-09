@@ -127,24 +127,27 @@ def _compute_k_start_end(
 
 
 def compute_diffusion_metrics(
+    c2e2c: np.ndarray,
     z_mc: np.ndarray,
-    z_mc_off: np.ndarray,
     max_nbhgt: np.ndarray,
     c_owner_mask: np.ndarray,
-    nbidx: np.ndarray,
-    z_vintcoeff: np.ndarray,
     z_maxslp_avg: np.ndarray,
     z_maxhgtd_avg: np.ndarray,
-    mask_hdiff: np.ndarray,
-    zd_diffcoef_dsl: np.ndarray,
-    zd_intcoef_dsl: np.ndarray,
-    zd_vertoffset_dsl: np.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
+    n_c2e2c: int,
     cell_nudging: int,
     n_cells: int,
     nlev: int,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    z_mc_off = z_mc[c2e2c]
+    nbidx = np.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
+    z_vintcoeff = np.zeros(shape=(n_cells, n_c2e2c, nlev))
+    mask_hdiff = np.zeros(shape=(n_cells, nlev), dtype=bool)
+    zd_vertoffset_dsl = np.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_intcoef_dsl = np.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_diffcoef_dsl = np.zeros(shape=(n_cells, nlev))
+
     k_start, k_end = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
@@ -194,5 +197,13 @@ def compute_diffusion_metrics(
                 ),
             )
             zd_diffcoef_dsl[jc, k_range] = np.minimum(0.002, zd_diffcoef_dsl_var)
+
+    # flatten first two dims:
+    zd_intcoef_dsl = zd_intcoef_dsl.reshape(
+        (zd_intcoef_dsl.shape[0] * zd_intcoef_dsl.shape[1],) + zd_intcoef_dsl.shape[2:]
+    )
+    zd_vertoffset_dsl = zd_vertoffset_dsl.reshape(
+        (zd_vertoffset_dsl.shape[0] * zd_vertoffset_dsl.shape[1],) + zd_vertoffset_dsl.shape[2:]
+    )
 
     return mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl

@@ -12,6 +12,7 @@ from icon4py.model.common.io import cf_utils
 from icon4py.model.common.metrics import metrics_factory as mf
 
 # TODO: mf is metrics_fields in metrics_factory.py. We should change `mf` either here or there
+from icon4py.model.common.metrics.metrics_factory import interpolation_savepoint
 from icon4py.model.common.states import factory as states_factory
 
 
@@ -96,3 +97,43 @@ def test_factory(icon_grid, metrics_savepoint):
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
     hmask_dd3d_full = factory.get("hmask_dd3d", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
+
+    zdiff_gradp_full_field = factory.get("zdiff_gradp", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(
+        zdiff_gradp_full_field, metrics_savepoint.zdiff_gradp().asnumpy(), rtol=1.0e-5
+    )
+
+    nudgecoeffs_e_full = factory.get("nudgecoeffs_e", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(nudgecoeffs_e_full, interpolation_savepoint.nudgecoeff_e())
+
+    coeff_gradekin_full = factory.get(
+        "coeff_gradekin", states_factory.RetrievalType.FIELD
+    )  # TODO: FIELD or DATARRAY?
+    assert helpers.dallclose(coeff_gradekin_full, metrics_savepoint.coeff_gradekin().asnumpy())
+
+    wgtfacq_e = factory.get(
+        "weighting_factor_for_quadratic_interpolation_to_edge_center",
+        states_factory.RetrievalType.FIELD,
+    )  # TODO: FIELD or DATARRAY?
+    assert helpers.dallclose(
+        wgtfacq_e.asnumpy(), metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels + 1).asnumpy()
+    )
+
+    mask_hdiff = factory.get(
+        "mask_hdiff", states_factory.RetrievalType.FIELD
+    )  # TODO: FIELD or DATARRAY?
+    zd_diffcoef_dsl = factory.get(
+        "zd_diffcoef_dsl", states_factory.RetrievalType.FIELD
+    )  # TODO: FIELD or DATARRAY?
+    zd_vertoffset_dsl = factory.get(
+        "zd_vertoffset_dsl", states_factory.RetrievalType.FIELD
+    )  # TODO: FIELD or DATARRAY?
+    zd_intcoef_dsl = factory.get(
+        "zd_intcoef_dsl", states_factory.RetrievalType.FIELD
+    )  # TODO: FIELD or DATARRAY?
+    assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
+    assert helpers.dallclose(
+        zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
+    )
+    assert helpers.dallclose(zd_vertoffset_dsl, metrics_savepoint.zd_vertoffset().asnumpy())
+    assert helpers.dallclose(zd_intcoef_dsl, metrics_savepoint.zd_intcoef().asnumpy())

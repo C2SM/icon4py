@@ -24,7 +24,6 @@ from icon4py.model.common.metrics.metric_fields import (
 )
 from icon4py.model.common.test_utils.helpers import (
     dallclose,
-    flatten_first_two_dims,
     is_roundtrip,
     zero_field,
 )
@@ -82,8 +81,8 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
 
-    zdiff_gradp_full_np = compute_zdiff_gradp_dsl(
-        e2c=icon_grid.connectivities[dims.E2CDim],
+    zdiff_gradp_full_field = compute_zdiff_gradp_dsl(
+        icon_grid=icon_grid,
         z_me=z_me.asnumpy(),
         z_mc=z_mc.asnumpy(),
         z_ifc=metrics_savepoint.z_ifc().asnumpy(),
@@ -94,9 +93,5 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         horizontal_start_1=start_nudging,
         nedges=icon_grid.num_edges,
     )
-    zdiff_gradp_full_field = flatten_first_two_dims(
-        dims.ECDim,
-        dims.KDim,
-        field=as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp_full_np),
-    )
-    assert dallclose(zdiff_gradp_full_field.asnumpy(), zdiff_gradp_ref.asnumpy(), rtol=1.0e-5)
+
+    assert dallclose(zdiff_gradp_full_field, zdiff_gradp_ref.asnumpy(), rtol=1.0e-5)

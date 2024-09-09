@@ -597,8 +597,8 @@ def _compute_maxslp_maxhgtd(
 def compute_maxslp_maxhgtd(
     ddxn_z_full: Field[[dims.EdgeDim, dims.KDim], wpfloat],
     dual_edge_length: Field[[dims.EdgeDim], wpfloat],
-    z_maxslp: Field[[dims.CellDim, dims.KDim], wpfloat],
-    z_maxhgtd: Field[[dims.CellDim, dims.KDim], wpfloat],
+    maxslp: Field[[dims.CellDim, dims.KDim], wpfloat],
+    maxhgtd: Field[[dims.CellDim, dims.KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -612,8 +612,8 @@ def compute_maxslp_maxhgtd(
     Args:
         ddxn_z_full: dual_edge_length
         dual_edge_length: dual_edge_length
-        z_maxslp: output
-        z_maxhgtd: output
+        maxslp: output
+        maxhgtd: output
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
         vertical_start: vertical start index
@@ -622,7 +622,7 @@ def compute_maxslp_maxhgtd(
     _compute_maxslp_maxhgtd(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
-        out=(z_maxslp, z_maxhgtd),
+        out=(maxslp, maxhgtd),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

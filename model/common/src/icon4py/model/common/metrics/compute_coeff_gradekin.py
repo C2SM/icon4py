@@ -37,4 +37,5 @@ def compute_coeff_gradekin(
             edge_cell_length[e, 0] / edge_cell_length[e, 1] * inv_dual_edge_length[e]
         )
     coeff_gradekin_full = np.column_stack((coeff_gradekin_0, coeff_gradekin_1))
-    return numpy_to_1D_sparse_field(coeff_gradekin_full, dims.ECDim)
+    coeff_gradekin = numpy_to_1D_sparse_field(coeff_gradekin_full, dims.ECDim)
+    return coeff_gradekin

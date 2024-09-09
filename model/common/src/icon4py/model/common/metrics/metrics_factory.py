@@ -11,6 +11,7 @@ import pathlib
 
 import gt4py.next as gtx
 import numpy as np
+from gt4py.next import as_field
 
 import icon4py.model.common.states.factory as factory
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
@@ -21,7 +22,16 @@ from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.io import cf_utils
-from icon4py.model.common.metrics import compute_vwind_impl_wgt, metric_fields as mf
+from icon4py.model.common.metrics import (
+    compute_coeff_gradekin,
+    compute_diffusion_metrics,
+    compute_nudgecoeffs,
+    compute_vwind_impl_wgt,
+    compute_wgtfac_c,
+    compute_wgtfacq,
+    compute_zdiff_gradp_dsl,
+    metric_fields as mf,
+)
 from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, serialbox_utils as sb
 
@@ -69,14 +79,19 @@ divdamp_type = 3
 damping_height = 50000.0 if dt_utils.GLOBAL_EXPERIMENT else 12500.0
 rayleigh_coeff = 0.1 if dt_utils.GLOBAL_EXPERIMENT else 5.0
 vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
+nudge_max_coeff = 0.375
+nudge_efold_width = 2.0
+nudge_zone_width = 10
+thslp_zdiffu = 0.02
+thhgtd_zdiffu = 125
 
 interface_model_height = metrics_savepoint.z_ifc()
 c_lin_e = interpolation_savepoint.c_lin_e()
+c_bln_avg = interpolation_savepoint.c_bln_avg()
 k_index = gtx.as_field((dims.KDim,), xp.arange(nlev + 1, dtype=gtx.int32))
 vct_a = grid_savepoint.vct_a()
 theta_ref_mc = metrics_savepoint.theta_ref_mc()
 exner_ref_mc = metrics_savepoint.exner_ref_mc()
-wgtfac_c = metrics_savepoint.wgtfac_c()
 c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
 e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
 dual_edge_length = grid_savepoint.dual_edge_length()
@@ -91,6 +106,9 @@ vwind_impl_wgt_k = constant_field(icon_grid, init_val, dims.CellDim, dims.KDim)
 k_lev = gtx.as_field((dims.KDim,), np.arange(nlev, dtype=gtx.int32))
 e_lev = gtx.as_field((dims.EdgeDim,), np.arange(icon_grid.num_edges, dtype=gtx.int32))
 e_owner_mask = grid_savepoint.e_owner_mask()
+c_owner_mask = grid_savepoint.c_owner_mask()
+edge_cell_length = grid_savepoint.edge_cell_length()
+
 
 fields_factory = factory.FieldsFactory()
 
@@ -99,11 +117,11 @@ fields_factory.register_provider(
         {
             "height_on_interface_levels": interface_model_height,
             "cell_to_edge_interpolation_coefficient": c_lin_e,
+            "c_bln_avg": c_bln_avg,
             cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index,
             "vct_a": vct_a,
             "theta_ref_mc": theta_ref_mc,
             "exner_ref_mc": exner_ref_mc,
-            "wgtfac_c": wgtfac_c,
             "c_refin_ctrl": c_refin_ctrl,
             "e_refin_ctrl": e_refin_ctrl,
             "dual_edge_length": dual_edge_length,
@@ -116,6 +134,8 @@ fields_factory.register_provider(
             "k_lev": k_lev,
             "e_lev": e_lev,
             "e_owner_mask": e_owner_mask,
+            "c_owner_mask": c_owner_mask,
+            "edge_cell_length": edge_cell_length,
         }
     )
 )
@@ -405,6 +425,18 @@ compute_exner_exfac_provider = factory.ProgramFieldProvider(
 )
 fields_factory.register_provider(compute_exner_exfac_provider)
 
+compute_wgtfac_c_provider = factory.ProgramFieldProvider(
+    func=compute_wgtfac_c.compute_wgtfac_c,
+    deps={
+        "z_ifc": "z_ifc",
+        "k": "k_index",
+    },
+    domain={dims.CellDim: (0, icon_grid.num_cells), dims.KDim: (0, icon_grid.num_levels)},
+    fields={"wgtfac_c": "wgtfac_c"},
+    params={"nlev": icon_grid.num_levels},
+)
+fields_factory.register_provider(compute_wgtfac_c_provider)
+
 compute_wgtfac_e_provider = factory.ProgramFieldProvider(
     func=mf.compute_wgtfac_e,
     deps={
@@ -474,8 +506,6 @@ compute_flat_idx_provider = factory.ProgramFieldProvider(
 )
 fields_factory.register_provider(compute_flat_idx_provider)
 
-flat_idx_np = np.amax(compute_flat_idx_provider.fields()["flat_idx"].asnumpy(), axis=1)
-flat_idx_max = (gtx.as_field((dims.EdgeDim,), flat_idx_np, dtype=gtx.int32),)
 
 compute_pg_edgeidx_vertidx_provider = factory.ProgramFieldProvider(
     func=mf.compute_pg_edgeidx_vertidx,
@@ -484,7 +514,11 @@ compute_pg_edgeidx_vertidx_provider = factory.ProgramFieldProvider(
         "z_ifc": "height_on_interface_levels",
         "z_aux2": "z_aux2",
         "e_owner_mask": "e_owner_mask",
-        "flat_idx_max": flat_idx_max,
+        "flat_idx_max": gtx.as_field(
+            (dims.EdgeDim,),
+            np.amax(compute_flat_idx_provider.fields()["flat_idx"].asnumpy(), axis=1),
+            dtype=gtx.int32,
+        ),
         "e_lev": "e_lev",
         "k_lev": "k_lev",
     },
@@ -525,7 +559,11 @@ compute_pg_exdist_dsl_provider = factory.ProgramFieldProvider(
         "z_aux2": "z_aux2",
         "z_me": "z_me",
         "e_owner_mask": "e_owner_mask",
-        "flat_idx_max": flat_idx_max,
+        "flat_idx_max": gtx.as_field(
+            (dims.EdgeDim,),
+            np.amax(compute_flat_idx_provider.fields()["flat_idx"].asnumpy(), axis=1),
+            dtype=gtx.int32,
+        ),
         "k_lev": "k_lev",
     },
     domain={
@@ -593,3 +631,177 @@ compute_hmask_dd3d_provider = factory.ProgramFieldProvider(
     },
 )
 fields_factory.register_provider(compute_hmask_dd3d_provider)
+
+
+compute_zdiff_gradp_dsl_provider = factory.NumpyFieldsProvider(
+    func=compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
+    domain={},
+    fields=["zdiff_gradp"],
+    deps={
+        "z_me": "z_me",
+        "z_mc": "height",
+        "z_ifc": "height_on_interface_levels",
+        "flat_idx_max": gtx.as_field(
+            (dims.EdgeDim,),
+            np.amax(compute_flat_idx_provider.fields()["flat_idx"].asnumpy(), axis=1),
+            dtype=gtx.int32,
+        ),
+        "z_aux2": "z_aux2",
+    },
+    offsets={"e2c": dims.E2CDim},
+    params={
+        "nlev": icon_grid.num_levels,
+        "horizontal_start": icon_grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        ),
+        "horizontal_start_1": icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2)),
+        "nedges": icon_grid.num_edges,
+    },
+)
+fields_factory.register_provider(compute_zdiff_gradp_dsl_provider)
+
+compute_nudgecoeffs_provider = factory.ProgramFieldProvider(
+    func=compute_nudgecoeffs.compute_nudgecoeffs,
+    deps={
+        "refin_ctrl": "e_refin_ctrl",
+    },
+    domain={
+        dims.EdgeDim: (
+            edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
+            edge_domain(h_grid.Zone.LOCAL),
+        )
+    },
+    fields={"nudgecoeffs_e": "nudgecoeffs_e"},
+    params={
+        "grf_nudge_start_e": gtx.int32(h_grid._GRF_NUDGEZONE_START_EDGES),
+        "nudge_max_coeffs": "nudge_max_coeffs",
+        "nudge_efold_width": "nudge_efold_width",
+        "nudge_zone_width": "nudge_zone_width",
+    },
+)
+fields_factory.register_provider(compute_nudgecoeffs_provider)
+
+
+compute_coeff_gradekin_provider = factory.NumpyFieldsProvider(
+    func=compute_coeff_gradekin.compute_coeff_gradekin,
+    domain={dims.EdgeDim: (0, icon_grid.num_edges)},
+    fields=["coeff_gradekin"],
+    deps={
+        "edge_cell_length": "edge_cell_length",
+        "inv_dual_edge_length": icon_grid.num_levels,
+    },
+    params={
+        "horizontal_start": edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+        "horizontal_end": icon_grid.num_edges,
+    },
+)
+fields_factory.register_provider(compute_coeff_gradekin_provider)
+
+
+compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(
+    func=compute_wgtfacq.compute_wgtfacq_c_dsl,
+    domain={dims.CellDim: (0, icon_grid.num_cells), dims.KDim: (0, icon_grid.num_levels)},
+    fields=["weighting_factor_for_quadratic_interpolation_to_cell_surface"],
+    deps={"z_ifc": "height_on_interface_levels"},
+    params={"nlev": icon_grid.num_levels},
+)
+
+fields_factory.register_provider(compute_wgtfacq_c_provider)
+
+
+compute_wgtfacq_e_provider = factory.NumpyFieldsProvider(
+    func=compute_wgtfacq.compute_wgtfacq_e_dsl,
+    deps={
+        "z_ifc": "height_on_interface_levels",
+        "c_lin_e": "cell_to_edge_interpolation_coefficient",
+        "wgtfacq_c_dsl": "weighting_factor_for_quadratic_interpolation_to_cell_surface",
+    },
+    offsets={"e2c": dims.E2CDim},
+    domain={dims.EdgeDim: (0, icon_grid.num_edges), dims.KDim: (0, icon_grid.num_levels)},
+    fields=["weighting_factor_for_quadratic_interpolation_to_edge_center"],
+    params={"n_edges": icon_grid.num_edges, "nlev": icon_grid.num_levels},
+)
+
+fields_factory.register_provider(compute_wgtfacq_e_provider)
+
+compute_max_nbhgt_provider = factory.ProgramFieldProvider(
+    func=mf.compute_max_nbhgt,
+    deps={
+        "z_mc_nlev": as_field(
+            (dims.CellDim,), height_provider.fields()["z_mc"].asnumpy()[:, nlev - 1]
+        ),
+    },
+    domain={
+        dims.CellDim: (
+            cell_domain(h_grid.Zone.NUDGING),
+            icon_grid.num_cells,
+        )
+    },
+    fields={"max_nbhgt": "max_nbhgt"},
+)
+fields_factory.register_provider(compute_max_nbhgt_provider)
+
+compute_maxslp_maxhgtd_provider = factory.ProgramFieldProvider(
+    func=mf.compute_maxslp_maxhgtd,
+    deps={
+        "ddxn_z_full": "ddxn_z_full",
+        "dual_edge_length": "dual_edge_length",
+    },
+    domain={
+        dims.CellDim: (
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+            icon_grid.num_cells,
+        ),
+        dims.KDim: (
+            v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
+            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
+        ),
+    },
+    fields={"maxslp": "maxslp", "maxhgtd": "maxhgtd"},
+)
+fields_factory.register_provider(compute_maxslp_maxhgtd_provider)
+
+compute_weighted_cell_neighbor_sum_provider = factory.ProgramFieldProvider(
+    func=mf.compute_weighted_cell_neighbor_sum,
+    deps={
+        "maxslp": "maxslp",
+        "maxhgtd": "maxhgtd",
+        "c_bln_avg": "c_bln_avg",
+    },
+    domain={
+        dims.CellDim: (
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+            icon_grid.num_cells,
+        ),
+        dims.KDim: (
+            v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
+            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
+        ),
+    },
+    fields={"z_maxslp_avg": "z_maxslp_avg", "z_maxhgtd_avg": "z_maxhgtd_avg"},
+)
+fields_factory.register_provider(compute_weighted_cell_neighbor_sum_provider)
+
+compute_diffusion_metrics_provider = factory.NumpyFieldsProvider(
+    func=compute_diffusion_metrics.compute_diffusion_metrics,
+    deps={
+        "z_mc": "height",
+        "max_nbhgt": "max_nbhgt",
+        "c_owner_mask": "c_owner_mask",
+        "z_maxslp_avg": "z_maxslp_avg",
+        "z_maxhgtd_avg": "z_maxhgtd_avg",
+    },
+    offsets={"c2e2c": dims.C2E2CDim},
+    domain={dims.CellDim: (0, icon_grid.num_cells), dims.KDim: (0, icon_grid.num_levels)},
+    fields=["mask_hdiff", "zd_diffcoef_dsl", "zd_intcoef_dsl", "zd_vertoffset_dsl"],
+    params={
+        "thslp_zdiffu": thslp_zdiffu,
+        "thhgtd_zdiffu": thhgtd_zdiffu,
+        "n_c2e2c": icon_grid.connectivities[dims.C2E2CDim].shape[1],
+        "cell_nudging": cell_domain(h_grid.Zone.NUDGING),
+        "n_cells": icon_grid.num_cells,
+        "nlev": icon_grid.num_levels,
+    },
+)
+
+fields_factory.register_provider(compute_diffusion_metrics_provider)

@@ -209,6 +209,7 @@ def test_field_provider_for_numpy_function_with_offsets(
     fields_factory.register_provider(pre_computed_fields)
     func = compute_wgtfacq_c_dsl
     # TODO (magdalena): need to fix this for parameters
+    # TODO: replica in metrics_fields_factory
     params = {"nlev": icon_grid.num_levels}
     compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(
         func=func,
