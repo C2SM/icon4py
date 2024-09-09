@@ -590,8 +590,6 @@ def test_compute_vwind_impl_wgt(
     dual_edge_length = grid_savepoint.dual_edge_length()
     vwind_offctr = 0.2
     vwind_impl_wgt_full = constant_field(icon_grid, 0.5 + vwind_offctr, dims.CellDim)
-    init_val = 0.65 if experiment == dt_utils.GLOBAL_EXPERIMENT else 0.7
-    vwind_impl_wgt_k = constant_field(icon_grid, init_val, dims.CellDim, dims.KDim)
 
     vwind_impl_wgt = compute_vwind_impl_wgt(
         backend=backend,
@@ -602,7 +600,6 @@ def test_compute_vwind_impl_wgt(
         z_ddxt_z_half_e=z_ddxt_z_half_e,
         dual_edge_length=dual_edge_length,
         vwind_impl_wgt_full=vwind_impl_wgt_full,
-        vwind_impl_wgt_k=vwind_impl_wgt_k,
         global_exp=dt_utils.GLOBAL_EXPERIMENT,
         experiment=experiment,
         vwind_offctr=vwind_offctr,

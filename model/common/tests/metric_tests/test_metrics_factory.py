@@ -86,10 +86,6 @@ def test_factory(icon_grid, metrics_savepoint):
     mask_prog_halo_c_full = factory.get("mask_prog_halo_c", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy())
 
-    mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
-    mask_prog_halo_c_full = factory.get("mask_prog_halo_c", states_factory.RetrievalType.FIELD)
-    assert helpers.dallclose(mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy())
-
     bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
     bdy_halo_c_full = factory.get("bdy_halo_c", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())

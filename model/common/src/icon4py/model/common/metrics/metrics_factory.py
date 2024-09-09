@@ -35,8 +35,8 @@ from icon4py.model.common.metrics import (
 from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, serialbox_utils as sb
 
+
 # we need to register a couple of fields from the serializer. Those should get replaced one by one.
-from icon4py.model.common.test_utils.helpers import constant_field
 
 
 dt_utils.TEST_DATA_ROOT = pathlib.Path(__file__).parent / "testdata"
@@ -71,7 +71,6 @@ grid = grid_savepoint.global_grid_params
 
 # TODO: this will go in a future ConfigurationProvider
 experiment = dt_utils.GLOBAL_EXPERIMENT
-init_val = 0.65 if experiment == dt_utils.GLOBAL_EXPERIMENT else 0.7
 vwind_offctr = 0.2
 divdamp_trans_start = 12500.0
 divdamp_trans_end = 17500.0
@@ -90,8 +89,8 @@ c_lin_e = interpolation_savepoint.c_lin_e()
 c_bln_avg = interpolation_savepoint.c_bln_avg()
 k_index = gtx.as_field((dims.KDim,), xp.arange(nlev + 1, dtype=gtx.int32))
 vct_a = grid_savepoint.vct_a()
-theta_ref_mc = metrics_savepoint.theta_ref_mc()
-exner_ref_mc = metrics_savepoint.exner_ref_mc()
+theta_ref_mc = metrics_savepoint.theta_ref_mc()  # TODO: implement
+exner_ref_mc = metrics_savepoint.exner_ref_mc()  # TODO: implement
 c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
 e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
 dual_edge_length = grid_savepoint.dual_edge_length()
@@ -101,10 +100,7 @@ inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
 cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
 cells_aw_verts_field = gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts)
 icon_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
-vwind_impl_wgt_full = constant_field(icon_grid, 0.5 + vwind_offctr, dims.CellDim)
-vwind_impl_wgt_k = constant_field(icon_grid, init_val, dims.CellDim, dims.KDim)
-k_lev = gtx.as_field((dims.KDim,), np.arange(nlev, dtype=gtx.int32))
-e_lev = gtx.as_field((dims.EdgeDim,), np.arange(icon_grid.num_edges, dtype=gtx.int32))
+e_lev = gtx.as_field((dims.EdgeDim,), xp.arange(icon_grid.num_edges, dtype=gtx.int32))
 e_owner_mask = grid_savepoint.e_owner_mask()
 c_owner_mask = grid_savepoint.c_owner_mask()
 edge_cell_length = grid_savepoint.edge_cell_length()
@@ -129,9 +125,6 @@ fields_factory.register_provider(
             "inv_primal_edge_length": inv_primal_edge_length,
             "inv_dual_edge_length": inv_dual_edge_length,
             "cells_aw_verts_field": cells_aw_verts_field,
-            "vwind_impl_wgt_full": vwind_impl_wgt_full,
-            "vwind_impl_wgt_k": vwind_impl_wgt_k,
-            "k_lev": k_lev,
             "e_lev": e_lev,
             "e_owner_mask": e_owner_mask,
             "c_owner_mask": c_owner_mask,
@@ -376,8 +369,6 @@ compute_vwind_impl_wgt_provider = factory.NumpyFieldsProvider(
         "z_ddxn_z_half_e": "z_ddxn_z_half_e",
         "z_ddxt_z_half_e": "z_ddxt_z_half_e",
         "dual_edge_length": "dual_edge_length",
-        "vwind_impl_wgt_full": "vwind_impl_wgt_full",
-        "vwind_impl_wgt_k": "vwind_impl_wgt_k",
     },
     params={
         "backend": "backend",
@@ -457,7 +448,7 @@ compute_wgtfac_e_provider = factory.ProgramFieldProvider(
 )
 fields_factory.register_provider(compute_wgtfac_e_provider)
 
-compute_compute_z_aux2 = factory.ProgramFieldProvider(
+compute_compute_z_aux2_provider = factory.ProgramFieldProvider(
     func=mf.compute_z_aux2,
     deps={"z_ifc_sliced": "z_ifc_sliced"},
     domain={
@@ -468,6 +459,7 @@ compute_compute_z_aux2 = factory.ProgramFieldProvider(
     },
     fields={"z_aux2": "z_aux2"},
 )
+fields_factory.register_provider(compute_compute_z_aux2_provider)
 
 cell_2_edge_interpolation_provider = factory.ProgramFieldProvider(
     func=cell_2_edge_interpolation.cell_2_edge_interpolation,
@@ -484,13 +476,15 @@ cell_2_edge_interpolation_provider = factory.ProgramFieldProvider(
     },
     fields={"z_me": "z_me"},
 )
+fields_factory.register_provider(cell_2_edge_interpolation_provider)
+
 
 compute_flat_idx_provider = factory.ProgramFieldProvider(
     func=mf.compute_flat_idx,
     deps={
         "z_me": "z_me",
         "z_ifc": "height_on_interface_levels",
-        "k_lev": "k_lev",
+        "k_lev": cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
     },
     domain={
         dims.EdgeDim: (
@@ -520,7 +514,7 @@ compute_pg_edgeidx_vertidx_provider = factory.ProgramFieldProvider(
             dtype=gtx.int32,
         ),
         "e_lev": "e_lev",
-        "k_lev": "k_lev",
+        "k_lev": cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
     },
     domain={
         dims.EdgeDim: (
@@ -534,6 +528,8 @@ compute_pg_edgeidx_vertidx_provider = factory.ProgramFieldProvider(
     },
     fields={"pg_edgeidx": "pg_edgeidx", "pg_vertidx": "pg_vertidx"},
 )
+fields_factory.register_provider(compute_pg_edgeidx_vertidx_provider)
+
 
 compute_pg_edgeidx_dsl_provider = factory.ProgramFieldProvider(
     func=mf.compute_pg_edgeidx_dsl,
@@ -564,7 +560,7 @@ compute_pg_exdist_dsl_provider = factory.ProgramFieldProvider(
             np.amax(compute_flat_idx_provider.fields()["flat_idx"].asnumpy(), axis=1),
             dtype=gtx.int32,
         ),
-        "k_lev": "k_lev",
+        "k_lev": cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
     },
     domain={
         dims.CellDim: (

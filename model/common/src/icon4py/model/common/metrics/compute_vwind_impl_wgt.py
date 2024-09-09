@@ -23,13 +23,15 @@ def compute_vwind_impl_wgt(
     z_ddxn_z_half_e: fa.EdgeKField[wpfloat],
     z_ddxt_z_half_e: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
-    vwind_impl_wgt_full: fa.CellField[wpfloat],
-    vwind_impl_wgt_k: fa.CellField[wpfloat],
     global_exp: str,
     experiment: str,
     vwind_offctr: float,
     horizontal_start_cell: int,
 ) -> np.ndarray:
+    init_val = 0.65 if experiment == global_exp else 0.7
+    vwind_impl_wgt_full = np.full(z_ifc.asnumpy().shape[0], 0.5 + vwind_offctr)
+    vwind_impl_wgt_k = np.full(vwind_impl_wgt_full.shape, init_val)
+
     z_ddxn_z_half_e = gtx.as_field(
         [
             dims.EdgeDim,
