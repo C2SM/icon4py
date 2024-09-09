@@ -953,7 +953,7 @@ def test_run_solve_nonhydro_multi_step(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
     edge_start_lb_plus4 = icon_grid.start_index(
-        h_grid.comain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
 
     assert helpers.dallclose(
