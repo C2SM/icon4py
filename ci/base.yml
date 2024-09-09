@@ -3,47 +3,68 @@ include:
 
 stages:
   - baseimage
-  - build
+  - image
   - test
   - benchmark
 
-.py310: &py310
+variables:
   PYVERSION_PREFIX: py310
   PYVERSION: 3.10.9
 
 # Base image build step with SHA256 checksum for caching
-build_baseimage:
-  extends: .container-builder-cscs-zen2
+.build_baseimage:
   stage: baseimage
   before_script:
-    - DOCKER_TAG=`sha256sum $DOCKERFILE | head -c 16`
-    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/base/icon4py:$DOCKER_TAG-$PYVERSION
+    # include build arguments in hash since we use a parameterized Docker file
+    - DOCKER_TAG=`echo "$(cat $DOCKERFILE) $DOCKER_BUILD_ARGS" | sha256sum | head -c 16`
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-$PYVERSION
     - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
   artifacts:
     reports:
       dotenv: build.env
   variables:
     DOCKERFILE: ci/docker/base.Dockerfile
+    # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
     CSCS_REBUILD_POLICY: if-not-exists
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
-    <<: *py310
+    DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "BASE_IMAGE=$BASE_IMAGE", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "CUPY_PACKAGE=$CUPY_PACKAGE", "PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
+build_baseimage_x86_64:
+  extends: [.container-builder-cscs-zen2, .build_baseimage]
+  variables:
+    # x86_64 test target is Daint-gpu through Sarus:
+    # the base image does not need to provide the cuda runtime
+    BASE_IMAGE: "ubuntu:20.04"
+    HPC_SDK_VERSION: 22.11
+    HPC_SDK_NAME: "nvhpc_2022_2211_Linux_${ARCH}_cuda_11.8"
+    CUPY_PACKAGE: cupy-cuda11x
+build_baseimage_aarch64:
+  extends: [.container-builder-cscs-gh200, .build_baseimage]
+  variables:
+    # aarm64 test target is Todi through Container Engine:
+    # the base image should provide the cuda runtime, therefore we use the cuda base image
+    BASE_IMAGE: "docker.io/nvidia/cuda:12.4.1-base-ubuntu20.04"
+    HPC_SDK_VERSION: 24.5
+    HPC_SDK_NAME: "nvhpc_2024_245_Linux_${ARCH}_cuda_12.4"
+    CUPY_PACKAGE: cupy-cuda12x
+  # TODO: re-enable CI job when Todi is back in operational state
+  when: manual
 
-build_image:
-  stage: build
-  extends: .container-builder-cscs-zen2
-  needs: ["build_baseimage"]
+.build_image:
+  stage: image
   variables:
       # Unique image name based on commit SHA
-      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
       DOCKERFILE: ci/docker/checkout.Dockerfile
       DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
-      <<: *py310
+build_image_x86_64:
+  extends: [.container-builder-cscs-zen2, .build_image]
+  needs: [build_baseimage_x86_64]
+build_image_aarch64:
+  extends: [.container-builder-cscs-gh200, .build_image]
+  needs: [build_baseimage_aarch64]
 
 .test_template:
-  extends: .container-runner-daint-gpu
-  needs: ["build_image"]
   timeout: 8h
-  image: $CSCS_REGISTRY_PATH/public/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
     - python -c "import cupy"
     - cd /icon4py
@@ -55,11 +76,26 @@ build_image:
     CRAY_CUDA_MPS: 1
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
-    CSCS_NEEDED_DATA: icon4py
-    TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"
+    TEST_DATA_PATH: "/icon4py/ci/testdata"
     ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
     PY2F_GPU_TESTS: 1
-    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/22.11"
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
-    <<: *py310
+.test_template_x86_64:
+  extends: [.container-runner-daint-gpu-f7t, .test_template]
+  needs: [build_image_x86_64]
+  variables:
+    CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/22.11"
+.test_template_aarch64:
+  extends: [.container-runner-todi-gh200, .test_template]
+  needs: [build_image_aarch64]
+  variables:
+    CSCS_ADDITIONAL_MOUNTS: '["/store/migration/project/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.5"
+    # Grace-Hopper gpu architecture is not enabled by default in CUDA build
+    CUDAARCHS: "90"
+    # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
+    # Another problem, observed in test stage, is that gpu tests hang in combination with CUDA MPS,
+    # when high test parallelism is used.
+    NUM_PROCESSES: 16

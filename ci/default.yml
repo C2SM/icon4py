@@ -1,8 +1,7 @@
 include:
   - local: 'ci/base.yml'
 
-test_model_stencils:
-  extends: .test_template
+.test_model_stencils:
   stage: test
   script:
     - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
@@ -15,19 +14,29 @@ test_model_stencils:
     - if: $BACKEND == "roundtrip" && $GRID == "icon_grid"
       when: never
     - when: on_success
+test_model_stencils_x86_64:
+  extends: [.test_model_stencils, .test_template_x86_64]
+test_model_stencils_aarch64:
+  extends: [.test_model_stencils, .test_template_aarch64]
 
-test_tools:
-  extends: .test_template
+.test_tools:
   stage: test
   script:
     - tox -r -c tools/ --verbose
+test_tools_x86_64:
+  extends: [.test_tools, .test_template_x86_64]
+test_tools_aarch64:
+  extends: [.test_tools, .test_template_aarch64]
 
-test_model_datatests:
-  extends: .test_template
+.test_model_datatests:
   stage: test
   script:
     - tox -r -e run_model_tests -c model/ --verbose -- --backend=$BACKEND $COMPONENT
   parallel:
     matrix:
-    - COMPONENT: [atmosphere/advection/tests/advection_tests atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, common/tests, driver/tests]
+    - COMPONENT: [atmosphere/advection/tests/advection_tests atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, atmosphere/subgrid_scale_physics/microphysics/tests, common/tests, driver/tests]
       BACKEND: [gtfn_cpu]
+test_model_datatests_x86_64:
+  extends: [.test_model_datatests, .test_template_x86_64]
+test_model_datatests_aarch64:
+  extends: [.test_model_datatests, .test_template_aarch64]
