@@ -116,6 +116,12 @@ class ProgramFieldProvider(FieldProvider):
     """
     Computes a field defined by a GT4Py Program.
 
+    Args:
+        func: GT4Py Program that computes the fields
+        domain: the compute domain used for the stencil computation
+        fields: dict[str, str], fields produced by this stencils:  the key is the variable name of the out arguments used in the program and the value the name the field is registered under and declared in the metadata.
+        deps: dict[str, str], input fields used for computing this stencil: the key is the variable name used in the program and the value the name of the field it depends on.
+        params: scalar parameters used in the program
     """
 
     def __init__(
@@ -195,6 +201,17 @@ class ProgramFieldProvider(FieldProvider):
 
 
 class NumpyFieldsProvider(FieldProvider):
+    """
+    Computes a field defined by a numpy function.
+
+    Args:
+        func: numpy function that computes the fields
+        domain: the compute domain used for the stencil computation
+        fields: Seq[str] names under which the results fo the function will be registered
+        deps: dict[str, str] input fields used for computing this stencil: the key is the variable name used in the program and the value the name of the field it depends on.
+        params: scalar arguments for the function
+    """
+
     def __init__(
         self,
         func: Callable,
