@@ -6,7 +6,7 @@
 - Burgdorfer, Nina. MeteoSwiss
 - Canton, Jacopo. ETH Zurich - EXCLAIM
 - Ehrengruber, Till. ETH Zurich - CSCS
-- Farabullini, Nicoletta. ETH Zurich - C2SM
+- Farabullini, Nicoletta. ETH Zurich - EXCLAIM
 - González Paredes, Enrique. ETH Zurich - CSCS
 - Gopal, Abishek. ETH Zurich - EXCLAIM
 - Häuselmann, Rico. ETH Zurich - CSCS
