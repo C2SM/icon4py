@@ -8,15 +8,18 @@
 
 import dataclasses
 import functools
+import logging
 import uuid
 
-import gt4py.next.common as gt_common
-import gt4py.next.ffront.fbuiltins as gt_builtins
+import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.base import BaseGrid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import builder
+
+
+log = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -29,13 +32,13 @@ class GlobalGridParams:
         return 20.0 * self.root**2 * 4.0**self.level
 
 
-class IconGrid(BaseGrid):
+class IconGrid(base.BaseGrid):
     def __init__(self, id_: uuid.UUID):
         """Instantiate a grid according to the ICON model."""
         super().__init__()
         self._id = id_
-        self.start_indices = {}
-        self.end_indices = {}
+        self._start_indices = {}
+        self._end_indices = {}
         self.global_properties = None
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
@@ -85,10 +88,11 @@ class IconGrid(BaseGrid):
 
     @builder.builder
     def with_start_end_indices(
-        self, dim: gt_common.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
+        self, dim: gtx.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
-        self.start_indices[dim] = start_indices.astype(gt_builtins.int32)
-        self.end_indices[dim] = end_indices.astype(gt_builtins.int32)
+        log.debug(f"Using start_indices {dim} {start_indices}, end_indices {dim} {end_indices}")
+        self._start_indices[dim] = start_indices.astype(gtx.int32)
+        self._end_indices[dim] = end_indices.astype(gtx.int32)
 
     @builder.builder
     def with_global_params(self, global_params: GlobalGridParams):
@@ -125,7 +129,7 @@ class IconGrid(BaseGrid):
         # defined in mo_grid_nml.f90
         return self.config.limited_area
 
-    def _has_skip_values(self, dimension: gt_common.Dimension) -> bool:
+    def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         """
         Determine whether a sparse dimension has skip values.
 
@@ -133,7 +137,7 @@ class IconGrid(BaseGrid):
         accessing neighbouring cells or edges from vertices.
         """
         assert (
-            dimension.kind == gt_common.DimensionKind.LOCAL
+            dimension.kind == gtx.DimensionKind.LOCAL
         ), "only local dimensions can have skip values"
         if dimension in (dims.V2EDim, dims.V2CDim):
             return True
@@ -164,20 +168,23 @@ class IconGrid(BaseGrid):
     def lvert_nest(self):
         return True if self.config.lvertnest else False
 
-    def get_start_index(self, dim: gt_common.Dimension, marker: int) -> gt_builtins.int32:
+    def start_index(self, domain: h_grid.Domain):
         """
         Use to specify lower end of domains of a field for field_operators.
 
         For a given dimension, returns the start index of the
         horizontal region in a field given by the marker.
         """
-        return self.start_indices[dim][marker]
+        if domain.local:
+            # special treatment because this value is not set properly in the underlying data.
+            return 0
+        return self._start_indices[domain.dim][domain()]
 
-    def get_end_index(self, dim: gt_common.Dimension, marker: int) -> gt_builtins.int32:
+    def end_index(self, domain: h_grid.Domain):
         """
         Use to specify upper end of domains of a field for field_operators.
 
         For a given dimension, returns the end index of the
         horizontal region in a field given by the marker.
         """
-        return self.end_indices[dim][marker]
+        return self._end_indices[domain.dim][domain()]

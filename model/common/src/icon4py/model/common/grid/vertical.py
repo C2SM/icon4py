@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import enum
+import functools
 import logging
 import math
 import pathlib
@@ -19,6 +21,30 @@ from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
+
+
+class Zone(enum.IntEnum):
+    """
+    Vertical zone markers to be used to select vertical domain indices.
+
+    The values here are taken from the special indices computed in `VerticalGridParams`.
+    """
+
+    TOP = 0
+    BOTTOM = 1
+    DAMPING = 2
+    MOIST = 3
+    FLAT = 4
+
+
+@dataclasses.dataclass(frozen=True)
+class Domain:
+    """
+    Simple data class used to specify a vertical domain such that index lookup and domain specification can be separated.
+    """
+
+    dim: dims.KDim
+    marker: Zone
 
 
 @dataclasses.dataclass(frozen=True)
@@ -54,7 +80,7 @@ class VerticalGridConfig:
 
 
 @dataclasses.dataclass(frozen=True)
-class VerticalGridParams:
+class VerticalGrid:
     """
     Contains vertical physical parameters defined on the vertical grid derived from vertical grid configuration.
 
@@ -65,7 +91,7 @@ class VerticalGridParams:
     _min_index_flat_horizontal_grad_pressure: The minimum height index at which the height of the center of an edge lies within two neighboring cells so that horizontal pressure gradient can be computed by first order discretization scheme.
     """
 
-    vertical_config: dataclasses.InitVar[VerticalGridConfig]
+    config: VerticalGridConfig
     vct_a: dataclasses.InitVar[fa.KField[float]]
     vct_b: dataclasses.InitVar[fa.KField[float]]
     _vct_a: fa.KField[float] = dataclasses.field(init=False)
@@ -75,7 +101,7 @@ class VerticalGridParams:
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
 
-    def __post_init__(self, vertical_config, vct_a, vct_b):
+    def __post_init__(self, vct_a, vct_b):
         object.__setattr__(
             self,
             "_vct_a",
@@ -90,19 +116,17 @@ class VerticalGridParams:
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
-            self._determine_damping_height_index(
-                vct_a_array, vertical_config.rayleigh_damping_height
-            ),
+            self._determine_damping_height_index(vct_a_array, self.config.rayleigh_damping_height),
         )
         object.__setattr__(
             self,
             "_start_index_for_moist_physics",
-            self._determine_kstart_moist(vct_a_array, vertical_config.htop_moist_proc),
+            self._determine_start_level_of_moist_physics(vct_a_array, self.config.htop_moist_proc),
         )
         object.__setattr__(
             self,
             "_end_index_of_flat_layer",
-            self._determine_kstart_flat(vct_a_array, vertical_config.flat_height),
+            self._determine_end_index_of_flat_layers(vct_a_array, self.config.flat_height),
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
@@ -133,36 +157,63 @@ class VerticalGridParams:
             icon_var_name="vct_a",
         )
 
+    def index(self, domain: Domain) -> gtx.int32:
+        match domain.marker:
+            case Zone.TOP:
+                return gtx.int32(0)
+            case Zone.BOTTOM:
+                return (
+                    gtx.int32(self.config.num_levels)
+                    if domain.dim == dims.KDim
+                    else gtx.int32(self.config.num_levels + 1)
+                )
+            case Zone.MOIST:
+                return self._start_index_for_moist_physics
+            case Zone.FLAT:
+                return self._end_index_of_flat_layer
+            case Zone.DAMPING:
+                return self._end_index_of_damping_layer
+
     @property
-    def inteface_physical_height(self) -> fa.KField[float]:
+    def interface_physical_height(self) -> fa.KField[float]:
         return self._vct_a
 
-    @property
+    @functools.cached_property
     def kstart_moist(self):
         """Vertical index for start level of moist physics."""
-        return self._start_index_for_moist_physics
+        return self.index(Domain(dims.KDim, Zone.MOIST))
 
-    @property
+    @functools.cached_property
     def nflatlev(self):
         """Vertical index for bottommost level at which coordinate surfaces are flat."""
-        return self._end_index_of_flat_layer
+        return self.index(Domain(dims.KDim, Zone.FLAT))
 
-    @property
+    @functools.cached_property
     def nrdmax(self):
         """Vertical index where damping starts."""
-        return self._end_index_of_damping_layer
+        return self.end_index_of_damping_layer
 
-    @property
+    @functools.cached_property
     def end_index_of_damping_layer(self):
         """Vertical index where damping starts."""
-        return self._end_index_of_damping_layer
+        return self.index(Domain(dims.KDim, Zone.DAMPING))
 
     @property
     def nflat_gradp(self):
         return self._min_index_flat_horizontal_grad_pressure
 
+    def size(self, dim: dims.VerticalDim) -> int:
+        assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
+        match dim:
+            case dims.KDim:
+                return self.config.num_levels
+            case dims.KHalfDim:
+                return self.config.num_levels + 1
+            case _:
+                raise ValueError(f"Unkown dimension {dim}.")
+
     @classmethod
-    def _determine_kstart_moist(
+    def _determine_start_level_of_moist_physics(
         cls, vct_a: xp.ndarray, top_moist_threshold: float, nshift_total: int = 0
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
@@ -179,7 +230,9 @@ class VerticalGridParams:
         )
 
     @classmethod
-    def _determine_kstart_flat(cls, vct_a: xp.ndarray, flat_height: float) -> gtx.int32:
+    def _determine_end_index_of_flat_layers(
+        cls, vct_a: xp.ndarray, flat_height: float
+    ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
             0

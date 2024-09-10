@@ -8,29 +8,19 @@
 
 import pytest
 
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.common import dimension as dims, settings
+from icon4py.model.atmosphere.diffusion import diffusion as diffusion_
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.test_utils import datatest_utils, parallel_helpers
 from icon4py.model.common.orchestration.decorator import dace_orchestration
-from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
-from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
-    check_comm_size,
-    processor_props,
-)
+from icon4py.model.common import settings
 
-from ..utils import (
-    compare_dace_orchestration_multiple_steps,
-    construct_config,
-    construct_diagnostics,
-    construct_interpolation_state,
-    construct_metric_state,
-    verify_diffusion_fields,
-)
+from .. import utils
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
 def test_parallel_diffusion(
@@ -38,7 +28,7 @@ def test_parallel_diffusion(
     step_date_init,
     linit,
     ndyn_substeps,
-    processor_props,  # noqa: F811  # fixture
+    processor_props,  # fixture
     decomposition_info,
     icon_grid,
     diffusion_savepoint_init,
@@ -50,10 +40,12 @@ def test_parallel_diffusion(
     model_top_height,
     stretch_factor,
     damping_height,
+    caplog,
 ):
-    check_comm_size(processor_props)
+    caplog.set_level("INFO")
+    parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing diffusion for experiment '{REGIONAL_EXPERIMENT}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{datatest_utils.REGIONAL_EXPERIMENT}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
@@ -68,32 +60,32 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = construct_metric_state(metrics_savepoint)
+    metric_state = utils.construct_metric_state(metrics_savepoint)
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = construct_interpolation_state(interpolation_savepoint)
-    vertical_config = VerticalGridConfig(
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
-    diffusion_params = DiffusionParams(config)
+    config = utils.construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    diffusion_params = diffusion_.DiffusionParams(config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    diffusion = Diffusion(exchange)
+    diffusion = diffusion_.Diffusion(exchange)
 
     diffusion.init(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=VerticalGridParams(
+        vertical_grid=v_grid.VerticalGrid(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
         ),
         metric_state=metric_state,
@@ -102,7 +94,7 @@ def test_parallel_diffusion(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
+    diagnostic_state = utils.construct_diagnostics(diffusion_savepoint_init)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     if linit:
         diffusion.initial_run(
@@ -118,7 +110,7 @@ def test_parallel_diffusion(
         )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
 
-    verify_diffusion_fields(
+    utils.verify_diffusion_fields(
         config=config,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
@@ -130,7 +122,7 @@ def test_parallel_diffusion(
 
 
 @pytest.mark.mpi
-@pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
 def test_parallel_diffusion_multiple_steps(
@@ -138,7 +130,7 @@ def test_parallel_diffusion_multiple_steps(
     step_date_init,
     linit,
     ndyn_substeps,
-    processor_props,  # noqa: F811  # fixture
+    processor_props,  # fixture
     decomposition_info,
     icon_grid,
     diffusion_savepoint_init,
@@ -150,16 +142,18 @@ def test_parallel_diffusion_multiple_steps(
     model_top_height,
     stretch_factor,
     damping_height,
+    caplog,
 ):
+    caplog.set_level("INFO")
     if not dace_orchestration():
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
     # Diffusion initialization
     ######################################################################
-    check_comm_size(processor_props)
+    parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing diffusion for experiment '{REGIONAL_EXPERIMENT}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing diffusion for experiment '{datatest_utils.REGIONAL_EXPERIMENT}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
@@ -174,19 +168,19 @@ def test_parallel_diffusion_multiple_steps(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = construct_metric_state(metrics_savepoint)
+    metric_state =  utils.construct_metric_state(metrics_savepoint)
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = construct_interpolation_state(interpolation_savepoint)
-    vertical_config = VerticalGridConfig(
+    interpolation_state =  utils.construct_interpolation_state(interpolation_savepoint)
+    vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
-    diffusion_params = DiffusionParams(config)
+    config = utils.construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    diffusion_params = diffusion_.DiffusionParams(config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
@@ -198,13 +192,13 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     settings.dace_orchestration = None
 
-    diffusion = Diffusion(exchange)
+    diffusion = diffusion_.Diffusion(exchange)
 
     diffusion.init(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=VerticalGridParams(
+        vertical_params=v_grid.VerticalGridParams(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
         ),
         metric_state=metric_state,
@@ -213,7 +207,7 @@ def test_parallel_diffusion_multiple_steps(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state_dace_non_orch = construct_diagnostics(diffusion_savepoint_init)
+    diagnostic_state_dace_non_orch = utils.construct_diagnostics(diffusion_savepoint_init)
     prognostic_state_dace_non_orch = diffusion_savepoint_init.construct_prognostics()
     if linit:
         for _ in range(3):
@@ -239,13 +233,13 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     settings.dace_orchestration = True
 
-    diffusion = Diffusion(exchange)
+    diffusion = diffusion_.Diffusion(exchange)
 
     diffusion.init(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=VerticalGridParams(
+        vertical_params=v_grid.VerticalGridParams(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
         ),
         metric_state=metric_state,
@@ -254,7 +248,7 @@ def test_parallel_diffusion_multiple_steps(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state_dace_orch = construct_diagnostics(diffusion_savepoint_init)
+    diagnostic_state_dace_orch = utils.construct_diagnostics(diffusion_savepoint_init)
     prognostic_state_dace_orch = diffusion_savepoint_init.construct_prognostics()
     if linit:
         for _ in range(3):
@@ -278,9 +272,9 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     # Verify the results
     ######################################################################
-    compare_dace_orchestration_multiple_steps(
+    utils.compare_dace_orchestration_multiple_steps(
         diagnostic_state_dace_non_orch, diagnostic_state_dace_orch
     )
-    compare_dace_orchestration_multiple_steps(
+    utils.compare_dace_orchestration_multiple_steps(
         prognostic_state_dace_non_orch, prognostic_state_dace_orch
     )
