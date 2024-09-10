@@ -330,7 +330,7 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = utils.resolve_file_from_gridfile_name(grid_file)
     with gm.GridManager(zero_base, file, vertical) as manager:
-        manager.read()
+        manager.run()
         grid = manager.grid
         seralized_v2e = grid_savepoint.v2e()
         # there are vertices at the boundary of a local domain or at a pentagon point that have less than
@@ -356,7 +356,7 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
 def test_refin_ctrl(grid_savepoint, grid_file, experiment, dim):
     file = utils.resolve_file_from_gridfile_name(grid_file)
     with gm.GridManager(zero_base, file, vertical) as manager:
-        manager.read()
+        manager.run()
         refin_ctrl = manager.refinement
         refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
         assert np.all(
@@ -636,7 +636,7 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
 def test_grid_manager_getsize(simple_grid_gridfile, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
     manager = grid_manager(
-        simple_grid_gridfile, num_levels=10, transformation=gm.IndexTransformation()
+        simple_grid_gridfile, num_levels=10, transformation=gm.NoTransformation()
     )
 
     assert size == manager.get_size(dim)
@@ -654,7 +654,7 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
     manager = grid_manager(
         simple_grid_gridfile,
         num_levels=simple_grid.num_levels,
-        transformation=gm.IndexTransformation(),
+        transformation=gm.NoTransformation(),
     )
 
     table = manager.grid.get_offset_provider("E2C2V").table
@@ -666,7 +666,7 @@ def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(FileNotFoundError) as error:
         manager = gm.GridManager(
-            gm.IndexTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
+            gm.NoTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
         )
         manager()
         assert error.value == 1
@@ -678,7 +678,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
     trafo = gm.ToZeroBasedIndexTransformation()
     rng = np.random.default_rng()
     input_field = rng.integers(-1, size, size)
-    offset = trafo.get_offset_for_index_field(input_field)
+    offset = trafo(input_field)
     expected = np.where(input_field >= 0, -1, 0)
     assert np.allclose(expected, offset)
 
@@ -700,7 +700,7 @@ def test_grid_manager_eval_c2e2c2e(simple_grid_gridfile):
     manager = grid_manager(
         simple_grid_gridfile,
         num_levels=simple_grid.num_levels,
-        transformation=gm.IndexTransformation(),
+        transformation=gm.NoTransformation(),
     )
 
     table = manager.grid.get_offset_provider("C2E2C2E").table
