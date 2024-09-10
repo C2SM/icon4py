@@ -380,7 +380,7 @@ def test_run_diffusion_multiple_steps(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = vertical_grid(vertical_config, grid_savepoint)
     config = construct_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
@@ -397,7 +397,7 @@ def test_run_diffusion_multiple_steps(
         grid=icon_grid,
         config=config,
         params=additional_parameters,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
@@ -424,7 +424,7 @@ def test_run_diffusion_multiple_steps(
         grid=icon_grid,
         config=config,
         params=additional_parameters,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,

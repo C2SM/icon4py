@@ -21,7 +21,6 @@ from gt4py.next import int32
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states, cached
 from icon4py.model.common import field_type_aliases as fa, constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.decomposition import mpi_decomposition
 from icon4py.model.common.grid import (
     horizontal as h_grid,
     vertical as v_grid,
@@ -327,6 +326,7 @@ class Diffusion:
         self, exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()
     ):
         self._exchange = exchange
+        self.halo_exchange_wait = decomposition.create_halo_exchange_wait(self._exchange)
         self._initialized = False
         self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
             constants.CPD - constants.GAS_CONSTANT_DRY_AIR
@@ -348,12 +348,6 @@ class Diffusion:
         self.edge_params: Optional[geometry.EdgeParams] = None
         self.cell_params: Optional[geometry.CellParams] = None
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
-
-        self.halo_exchange_wait = (
-            mpi_decomposition.HaloExchangeWait(self._exchange)
-            if isinstance(self._exchange, mpi_decomposition.GHexMultiNodeExchange)
-            else decomposition.HaloExchangeWait(self._exchange)
-        )
 
     def init(
         self,

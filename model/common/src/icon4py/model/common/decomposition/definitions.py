@@ -214,6 +214,20 @@ class SingleNodeExchange:
     __sdfg_signature__ = dace__sdfg_signature__
 
 
+class HaloExchangeWaitRuntime(Protocol):
+    def __call__(self, communication_handle: ExchangeResult):
+        ...
+
+    def __sdfg__(self, *args, **kwargs):
+        ...
+
+    def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
+        ...
+
+    def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+        ...
+
+
 @dataclass
 class HaloExchangeWait:
     exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
@@ -257,6 +271,16 @@ class HaloExchangeWait:
     __sdfg__ = dace__sdfg__
     __sdfg_closure__ = dace__sdfg_closure__
     __sdfg_signature__ = dace__sdfg_signature__
+
+
+@functools.singledispatch
+def create_halo_exchange_wait(runtime: ExchangeRuntime) -> HaloExchangeWaitRuntime:
+    raise TypeError(f"Unknown ExchangeRuntime type ({type(runtime)})")
+
+
+@create_halo_exchange_wait.register(SingleNodeExchange)
+def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloExchangeWait:
+    return HaloExchangeWait(runtime)
 
 
 class SingleNodeResult:

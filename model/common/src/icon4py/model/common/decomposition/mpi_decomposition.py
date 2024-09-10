@@ -387,6 +387,11 @@ class HaloExchangeWait:
     __sdfg_signature__ = dace__sdfg_signature__
 
 
+@definitions.create_halo_exchange_wait.register(GHexMultiNodeExchange)
+def create_multinode_halo_exchange_wait(runtime: GHexMultiNodeExchange) -> HaloExchangeWait:
+    return HaloExchangeWait(runtime)
+
+
 @dataclass
 class MultiNodeResult:
     handle: ...

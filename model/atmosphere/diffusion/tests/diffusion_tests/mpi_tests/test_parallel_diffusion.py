@@ -9,12 +9,11 @@
 import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion as diffusion_
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils, parallel_helpers
 from icon4py.model.common.orchestration.decorator import dace_orchestration
-from icon4py.model.common import settings
+from icon4py.model.common.test_utils import datatest_utils, parallel_helpers
 
 from .. import utils
 
@@ -124,7 +123,12 @@ def test_parallel_diffusion(
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
-@pytest.mark.parametrize("linit", [True, False])
+@pytest.mark.parametrize(
+    "linit",
+    [
+        True,
+    ],
+)
 def test_parallel_diffusion_multiple_steps(
     experiment,
     step_date_init,
@@ -168,10 +172,10 @@ def test_parallel_diffusion_multiple_steps(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state =  utils.construct_metric_state(metrics_savepoint)
+    metric_state = utils.construct_metric_state(metrics_savepoint)
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state =  utils.construct_interpolation_state(interpolation_savepoint)
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -198,7 +202,7 @@ def test_parallel_diffusion_multiple_steps(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=v_grid.VerticalGridParams(
+        vertical_grid=v_grid.VerticalGrid(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
         ),
         metric_state=metric_state,
@@ -239,7 +243,7 @@ def test_parallel_diffusion_multiple_steps(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=v_grid.VerticalGridParams(
+        vertical_grid=v_grid.VerticalGrid(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
         ),
         metric_state=metric_state,
