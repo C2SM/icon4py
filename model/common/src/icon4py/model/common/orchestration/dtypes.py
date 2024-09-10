@@ -19,126 +19,100 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Optional, Type
+
+from gt4py.next import Field
+from gt4py.next.ffront.fbuiltins import int32, int64
+
+import icon4py.model.common.states.prognostic_state as prognostics
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.common import type_alias
+
+
 try:
     import dace
 except ImportError:
     from types import ModuleType
-    from typing import Optional
 
     dace: Optional[ModuleType] = None  # type: ignore[no-redef]
 
 
 if dace:
-    # Define DaCe Symbols
     CellDim_sym = dace.symbol("CellDim_sym")
     EdgeDim_sym = dace.symbol("EdgeDim_sym")
     VertexDim_sym = dace.symbol("VertexDim_sym")
     KDim_sym = dace.symbol("KDim_sym")
 
-    DiffusionDiagnosticState_symbols = {
-        f"DiffusionDiagnosticState_{member}_s{stride}_sym": dace.symbol(
-            f"DiffusionDiagnosticState_{member}_s{stride}_sym"
-        )
-        for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"]
-        for stride in [0, 1]
-    }
-    PrognosticState_symbols = {
-        f"PrognosticState_{member}_s{stride}_sym": dace.symbol(
-            f"PrognosticState_{member}_s{stride}_sym"
-        )
-        for member in ["rho", "w", "vn", "exner", "theta_v"]
-        for stride in [0, 1]
-    }
-
-    # Define DaCe Data Types
-    DiffusionDiagnosticState_t = dace.data.Structure(
-        dict(
-            hdef_ic=dace.data.Array(
-                dtype=dace.float64,
-                shape=[CellDim_sym, KDim_sym],
-                strides=[
-                    DiffusionDiagnosticState_symbols[
-                        f"DiffusionDiagnosticState_{'hdef_ic'}_s{0}_sym"
-                    ],
-                    DiffusionDiagnosticState_symbols[
-                        f"DiffusionDiagnosticState_{'hdef_ic'}_s{1}_sym"
-                    ],
-                ],
-            ),
-            div_ic=dace.data.Array(
-                dtype=dace.float64,
-                shape=[CellDim_sym, KDim_sym],
-                strides=[
-                    DiffusionDiagnosticState_symbols[
-                        f"DiffusionDiagnosticState_{'div_ic'}_s{0}_sym"
-                    ],
-                    DiffusionDiagnosticState_symbols[
-                        f"DiffusionDiagnosticState_{'div_ic'}_s{1}_sym"
-                    ],
-                ],
-            ),
-            dwdx=dace.data.Array(
-                dtype=dace.float64,
-                shape=[CellDim_sym, KDim_sym],
-                strides=[
-                    DiffusionDiagnosticState_symbols[f"DiffusionDiagnosticState_{'dwdx'}_s{0}_sym"],
-                    DiffusionDiagnosticState_symbols[f"DiffusionDiagnosticState_{'dwdx'}_s{1}_sym"],
-                ],
-            ),
-            dwdy=dace.data.Array(
-                dtype=dace.float64,
-                shape=[CellDim_sym, KDim_sym],
-                strides=[
-                    DiffusionDiagnosticState_symbols[f"DiffusionDiagnosticState_{'dwdy'}_s{0}_sym"],
-                    DiffusionDiagnosticState_symbols[f"DiffusionDiagnosticState_{'dwdy'}_s{1}_sym"],
-                ],
-            ),
-        ),
-        name="DiffusionDiagnosticState_t",
+    icon4py_primitive_dtypes = (type_alias.wpfloat, type_alias.vpfloat, float, bool, int32, int64)
+    dace_primitive_dtypes = (
+        dace.float64,
+        dace.float64 if type_alias.precision == "double" else dace.float32,
+        dace.float64,
+        dace.bool,
+        dace.int32,
+        dace.int64,
     )
 
+    def stride_symbol_name_from_field(cls: Type, field_name: str, stride: int) -> str:
+        return f"{cls.__name__}_{field_name}_s{stride}_sym"
+
+    def dace_structure_dict(cls):
+        """Dictionary to be used to define DaCe Structures based on the provided class."""
+        dace_structure_dict = {}
+
+        # Define DaCe Symbols: Field Sizes and Strides
+        dace_symbols = {
+            stride_symbol_name_from_field(cls, member, stride): dace.symbol(
+                stride_symbol_name_from_field(cls, member, stride)
+            )
+            for member in cls.__dataclass_fields__.keys()
+            for stride in [0, 1]
+        }
+
+        for member_name, dataclass_field in cls.__dataclass_fields__.items():
+            # TODO(kotsaloscv): DaCe Structure with GT4Py Fields. Disregard the rest of the fields.
+            if not hasattr(dataclass_field, "type"):
+                continue
+            type_ = dataclass_field.type
+            if not hasattr(type_, "__origin__"):
+                continue
+            if type_.__origin__ is not Field:
+                continue
+
+            dims_ = type_.__args__[0].__args__  # dimensions of the field
+            dtype_ = type_.__args__[1]  # data type of the field
+
+            dace_dims = []
+            for dim_ in dims_:
+                if "cell" in dim_.value.lower():
+                    dace_dims.append(CellDim_sym)
+                elif "edge" in dim_.value.lower():
+                    dace_dims.append(EdgeDim_sym)
+                elif "vertex" in dim_.value.lower():
+                    dace_dims.append(VertexDim_sym)
+                elif "k" == dim_.value.lower():
+                    dace_dims.append(KDim_sym)
+                else:
+                    raise ValueError(f"The dimension [{dim_}] is not supported.")
+
+            # TODO(kotsaloscv): how about StorageType (?)
+            dace_structure_dict[member_name] = dace.data.Array(
+                dtype=dace_primitive_dtypes[icon4py_primitive_dtypes.index(dtype_)],
+                shape=dace_dims,
+                strides=[
+                    dace_symbols[f"{cls.__name__}_{member_name}_s{0}_sym"],
+                    dace_symbols[f"{cls.__name__}_{member_name}_s{1}_sym"],
+                ],
+            )
+
+        return dace_structure_dict
+
+    # Define DaCe Structures
+    DiffusionDiagnosticState_t = dace.data.Structure(
+        dace_structure_dict(diffusion_states.DiffusionDiagnosticState),
+        name="DiffusionDiagnosticState_t",
+    )
     PrognosticState_t = dace.data.Structure(
-        dict(
-            rho=dace.data.Array(
-                dtype=dace.float64,
-                shape=[CellDim_sym, KDim_sym],
-                strides=[
-                    PrognosticState_symbols[f"PrognosticState_{'rho'}_s{0}_sym"],
-                    PrognosticState_symbols[f"PrognosticState_{'rho'}_s{1}_sym"],
-                ],
-            ),
-            w=dace.data.Array(
-                dtype=dace.float64,
-                shape=[CellDim_sym, KDim_sym],
-                strides=[
-                    PrognosticState_symbols[f"PrognosticState_{'w'}_s{0}_sym"],
-                    PrognosticState_symbols[f"PrognosticState_{'w'}_s{1}_sym"],
-                ],
-            ),
-            vn=dace.data.Array(
-                dtype=dace.float64,
-                shape=[EdgeDim_sym, KDim_sym],
-                strides=[
-                    PrognosticState_symbols[f"PrognosticState_{'vn'}_s{0}_sym"],
-                    PrognosticState_symbols[f"PrognosticState_{'vn'}_s{1}_sym"],
-                ],
-            ),
-            exner=dace.data.Array(
-                dtype=dace.float64,
-                shape=[CellDim_sym, KDim_sym],
-                strides=[
-                    PrognosticState_symbols[f"PrognosticState_{'exner'}_s{0}_sym"],
-                    PrognosticState_symbols[f"PrognosticState_{'exner'}_s{1}_sym"],
-                ],
-            ),
-            theta_v=dace.data.Array(
-                dtype=dace.float64,
-                shape=[CellDim_sym, KDim_sym],
-                strides=[
-                    PrognosticState_symbols[f"PrognosticState_{'theta_v'}_s{0}_sym"],
-                    PrognosticState_symbols[f"PrognosticState_{'theta_v'}_s{1}_sym"],
-                ],
-            ),
-        ),
+        dace_structure_dict(prognostics.PrognosticState),
         name="PrognosticState_t",
     )

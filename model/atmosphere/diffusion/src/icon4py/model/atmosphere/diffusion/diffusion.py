@@ -36,7 +36,6 @@ from icon4py.model.common.orchestration.decorator import (
     orchestration,
     build_compile_time_connectivities,
 )
-from icon4py.model.common.orchestration.dtypes import *
 
 
 """
