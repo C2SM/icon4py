@@ -9,7 +9,7 @@
 import enum
 import logging
 import pathlib
-from typing import Any, Callable, Optional, Protocol, Sequence, Union
+from typing import Optional, Protocol, Union
 
 import gt4py.next as gtx
 import numpy as np
@@ -251,7 +251,9 @@ class GridFile:
         "Read a global attribute with name 'name' from the grid file."
         return self._dataset.getncattr(name)
 
-    def int_variable(self, name: FieldName, indices:np.ndarray=None, transpose: bool = True) -> np.ndarray:
+    def int_variable(
+        self, name: FieldName, indices: np.ndarray = None, transpose: bool = True
+    ) -> np.ndarray:
         """Read a integer field from the grid file.
 
         Reads as int32.
@@ -303,16 +305,18 @@ class IconGridError(RuntimeError):
 
 
 class IndexTransformation(Protocol):
-    """ Return a transformation field to be applied to index fields"""
-    
+    """Return a transformation field to be applied to index fields"""
+
     def __call__(
         self,
         array: np.ndarray,
-    )-> np.ndarray:
+    ) -> np.ndarray:
         ...
-        
+
+
 class NoTransformation(IndexTransformation):
     """Empty implementation of the Protocol. Just return zeros."""
+
     def __call__(self, array: np.ndarray):
         return np.zeros_like(array)
 
@@ -374,118 +378,73 @@ class GridManager:
             self.open()
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields()
-       
 
     def __call__(self, on_gpu: bool = False, limited_area=True):
         self.run(on_gpu=on_gpu, limited_area=limited_area)
 
-    def _read_start_end_indices(self)-> tuple[dict[dims.HorizontalDim: np.ndarray], dict[dims.HorizontalDim: np.ndarray], dict[dims.HorizontalDim: gtx.int32]:]:
+    def _read_start_end_indices(
+        self,
+    ) -> tuple[
+        dict[dims.HorizontalDim : np.ndarray],
+        dict[dims.HorizontalDim : np.ndarray],
+        dict[dims.HorizontalDim : gtx.int32],
+    ]:
         _CHILD_DOM = 0
-        grid_refinement_dimensions = {dims.CellDim: DimensionName.CELL_GRF,
-                                      dims.EdgeDim: DimensionName.EDGE_GRF,
-                                      dims.VertexDim: DimensionName.VERTEX_GRF}
-        max_refinement_control_values = {
-            dim: self._reader.dimension(name)
-            for dim, name in grid_refinement_dimensions.items()
+        grid_refinement_dimensions = {
+            dims.CellDim: DimensionName.CELL_GRF,
+            dims.EdgeDim: DimensionName.EDGE_GRF,
+            dims.VertexDim: DimensionName.VERTEX_GRF,
         }
-        start_index_names = {dims.CellDim: GridRefinementName.START_INDEX_CELLS, dims.EdgeDim: GridRefinementName.START_INDEX_EDGES, dims.VertexDim: GridRefinementName.START_INDEX_VERTICES}
-            
+        max_refinement_control_values = {
+            dim: self._reader.dimension(name) for dim, name in grid_refinement_dimensions.items()
+        }
+        start_index_names = {
+            dims.CellDim: GridRefinementName.START_INDEX_CELLS,
+            dims.EdgeDim: GridRefinementName.START_INDEX_EDGES,
+            dims.VertexDim: GridRefinementName.START_INDEX_VERTICES,
+        }
+
         start_indices = {
-            dim: self._get_index_field(name, transpose=False, apply_offset = True)[_CHILD_DOM]
+            dim: self._get_index_field(name, transpose=False, apply_offset=True)[_CHILD_DOM]
             for dim, name in start_index_names.items()
         }
         for dim in grid_refinement_dimensions.keys():
-            assert start_indices[dim].shape == (max_refinement_control_values[dim],), f"start index array for {dim} has wrong shape"
+            assert start_indices[dim].shape == (
+                max_refinement_control_values[dim],
+            ), f"start index array for {dim} has wrong shape"
 
-        end_index_names = {dims.CellDim: GridRefinementName.END_INDEX_CELLS, dims.EdgeDim: GridRefinementName.END_INDEX_EDGES, dims.VertexDim: GridRefinementName.END_INDEX_VERTICES}
+        end_index_names = {
+            dims.CellDim: GridRefinementName.END_INDEX_CELLS,
+            dims.EdgeDim: GridRefinementName.END_INDEX_EDGES,
+            dims.VertexDim: GridRefinementName.END_INDEX_VERTICES,
+        }
         end_indices = {
             dim: self._get_index_field(name, transpose=False, apply_offset=False)[_CHILD_DOM]
             for dim, name in end_index_names.items()
         }
         for dim in grid_refinement_dimensions.keys():
-            assert start_indices[dim].shape == (max_refinement_control_values[dim],), f"start index array for {dim} has wrong shape"
-            assert end_indices[dim].shape == (max_refinement_control_values[dim],), f"start index array for {dim} has wrong shape"
+            assert start_indices[dim].shape == (
+                max_refinement_control_values[dim],
+            ), f"start index array for {dim} has wrong shape"
+            assert end_indices[dim].shape == (
+                max_refinement_control_values[dim],
+            ), f"start index array for {dim} has wrong shape"
 
-        return start_indices, end_indices,grid_refinement_dimensions 
+        return start_indices, end_indices, grid_refinement_dimensions
 
-
-    def _read_grid_refinement_fields(self, decomposition_info: Optional[decomposition.DecompositionInfo] = None) -> tuple[dict[dims.HorizontalDim: np.ndarray],]:
-        refinement_control_names = {dims.CellDim: GridRefinementName.CONTROL_CELLS,
-                                dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
-                                dims.VertexDim: GridRefinementName.CONTROL_VERTICES}
-        refinement_control_fields = {dim: self._reader.int_variable(name, decomposition_info, transpose=False) for dim, name in refinement_control_names.items()}
-        return refinement_control_fields
-        
-
-    def _read(
-        self,
-        reader_func: Callable[[GridFileName, np.ndarray, np.dtype, Any], np.ndarray],
-        decomposition_info: decomposition.DecompositionInfo,
-        fields: dict[dims.Dimension, Sequence[GridFileName]],
-        dtype: np.dtype = gtx.int32,    
-        args = []     
-    ):
-        (cells_on_node, edges_on_node, vertices_on_node) = (
-            (
-                decomposition_info.global_index(
-                    dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL
-                ),
-                decomposition_info.global_index(
-                    dims.EdgeDim, decomposition.DecompositionInfo.EntryType.ALL
-                ),
-                decomposition_info.global_index(
-                    dims.VertexDim, decomposition.DecompositionInfo.EntryType.ALL
-                ),
-            )
-            if decomposition_info is not None
-            else (None, None, None)
-        )
-
-        def _read_local(fields: dict[dims.Dimension, Sequence[GridFileName]]) -> dict[dims.HorizontalDim: Sequence[np.ndarray]]:
-            cell_fields = fields.get(dims.CellDim, [])
-            edge_fields = fields.get(dims.EdgeDim, [])
-            vertex_fields = fields.get(dims.VertexDim, [])
-            vals = (
-                {name: reader_func(name, cells_on_node, dtype=dtype, *args) for name in cell_fields}
-                | {name: reader_func(name, edges_on_node, dtype=dtype, *args) for name in edge_fields}
-                | {name: reader_func(name, vertices_on_node, dtype=dtype, *args) for name in vertex_fields
-                }
-            )
-            return vals
-
-        return _read_local(fields)
-
-    def _read_geometry(self, decomposition_info: Optional[decomposition.DecompositionInfo] = None):
-        return self._read(
-            self._reader.variable,
-            decomposition_info,
-            {
-                dims.CellDim: [GeometryName.CELL_AREA],
-                dims.EdgeDim: [GeometryName.EDGE_LENGTH],
-            },
-        )
-
-    def read_coordinates(
+    def _read_grid_refinement_fields(
         self, decomposition_info: Optional[decomposition.DecompositionInfo] = None
-    ):
-        return self._read(
-            self._reader.variable,
-            decomposition_info,
-            {
-                dims.CellDim: [
-                    CoordinateName.CELL_LONGITUDE,
-                    CoordinateName.CELL_LATITUDE,
-                ],
-                dims.EdgeDim: [
-                    CoordinateName.EDGE_LONGITUDE,
-                    CoordinateName.EDGE_LATITUDE,
-                ],
-                dims.VertexDim: [
-                    CoordinateName.VERTEX_LONGITUDE,
-                    CoordinateName.VERTEX_LATITUDE,
-                ],
-            },
-        )
+    ) -> tuple[dict[dims.HorizontalDim : np.ndarray],]:
+        refinement_control_names = {
+            dims.CellDim: GridRefinementName.CONTROL_CELLS,
+            dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
+            dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
+        }
+        refinement_control_fields = {
+            dim: self._reader.int_variable(name, decomposition_info, transpose=False)
+            for dim, name in refinement_control_names.items()
+        }
+        return refinement_control_fields
 
     @property
     def grid(self):
@@ -494,15 +453,6 @@ class GridManager:
     @property
     def refinement(self):
         return self._refinement
-
-
-
-    
-
-    # TODO (@halungge)
-    #  - remove duplication,
-    # - only read fields globally that are used for halo construction
-    # - make halo constructor transparent
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon_grid.IconGrid:
         grid = self._initialize_global(limited_area, on_gpu)
@@ -523,21 +473,21 @@ class GridManager:
         _add_derived_connectivities(grid)
         start, end, _ = self._read_start_end_indices()
         for dim in dims.global_dimensions.values():
-            grid.with_start_end_indices(dim, start[dim],end[dim])
+            grid.with_start_end_indices(dim, start[dim], end[dim])
 
         return grid
 
-    # TODO (@halungge) is this used?
-    def get_size(self, dim: gtx.Dimension):
-        if dim == dims.VertexDim:
-            return self._grid.config.num_vertices
-        elif dim == dims.CellDim:
-            return self._grid.config.num_cells
-        elif dim == dims.EdgeDim:
-            return self._grid.config.num_edges
-        else:
-            _log.warning(f"cannot determine size of unknown dimension {dim}")
-            raise IconGridError(f"Unknown dimension {dim}")
+    def dimension_size(self, dim: dims.HorizontalDim) -> int:
+        match dim:
+            case dims.VertexDim:
+                return self._reader.dimension(DimensionName.VERTEX_NAME)
+            case dims.CellDim:
+                return self._reader.dimension(DimensionName.CELL_NAME)
+            case dims.EdgeDim:
+                return self._reader.dimension(DimensionName.EDGE_NAME)
+            case _:
+                _log.warning(f"cannot determine size of unknown dimension {dim}")
+                raise IconGridError(f"Unknown dimension {dim}")
 
     def _get_index_field(self, field: GridFileName, transpose=True, apply_offset=True):
         field = self._reader.int_variable(field, transpose=transpose)
@@ -564,9 +514,6 @@ class GridManager:
         )
         grid = icon_grid.IconGrid(uuid).with_config(config).with_global_params(global_params)
         return grid
-
-
-###########################
 
 
 def _add_derived_connectivities(grid: icon_grid.IconGrid) -> icon_grid.IconGrid:
