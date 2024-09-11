@@ -82,7 +82,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     )
 
     zdiff_gradp_full_field = compute_zdiff_gradp_dsl(
-        icon_grid=icon_grid,
+        e2c=icon_grid.connectivities[dims.E2CDim],
         z_me=z_me.asnumpy(),
         z_mc=z_mc.asnumpy(),
         z_ifc=metrics_savepoint.z_ifc().asnumpy(),

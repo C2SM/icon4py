@@ -17,7 +17,7 @@ def compute_coeff_gradekin(
     inv_dual_edge_length: np.array,
     horizontal_start: float,
     horizontal_end: float,
-) -> np.array:
+):
     """
     Compute coefficients for improved calculation of kinetic energy gradient
 
@@ -38,4 +38,4 @@ def compute_coeff_gradekin(
         )
     coeff_gradekin_full = np.column_stack((coeff_gradekin_0, coeff_gradekin_1))
     coeff_gradekin = numpy_to_1D_sparse_field(coeff_gradekin_full, dims.ECDim)
-    return coeff_gradekin
+    return coeff_gradekin.asnumpy()

@@ -346,6 +346,10 @@ def test_compute_ddxt_z_full_e(
     compute_ddxn_z_full.with_backend(backend)(
         ddxnt_z_half_e=ddxt_z_half_e,
         ddxn_z_full=ddxn_z_full,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_edges,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
@@ -427,6 +431,10 @@ def test_compute_ddxn_z_full(
     compute_ddxn_z_full.with_backend(backend)(
         z_ddxnt_z_half_e=ddxn_z_half_e,
         ddxn_z_full=ddxn_z_full,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_edges,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
@@ -482,6 +490,10 @@ def test_compute_ddxt_z_full(
     compute_ddxn_z_full.with_backend(backend)(
         z_ddxnt_z_half_e=ddxt_z_half_e,
         ddxn_z_full=ddxt_z_full,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_edges,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
@@ -782,7 +794,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
 def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backend):
     hmask_dd3d_full = zero_field(icon_grid, dims.EdgeDim)
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
-    horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
     compute_hmask_dd3d(
         e_refin_ctrl=e_refin_ctrl,
@@ -794,4 +806,4 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
         offset_provider={},
     )
 
-    dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
+    assert dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())

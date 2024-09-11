@@ -29,4 +29,4 @@ def test_compute_coeff_gradekin(icon_grid, grid_savepoint, metrics_savepoint):
     coeff_gradekin_full = compute_coeff_gradekin(
         edge_cell_length, inv_dual_edge_length, horizontal_start, horizontal_end
     )
-    assert dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full.asnumpy())
+    assert dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full)

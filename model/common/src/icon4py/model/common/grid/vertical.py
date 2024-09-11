@@ -35,6 +35,9 @@ class Zone(enum.IntEnum):
     DAMPING = 2
     MOIST = 3
     FLAT = 4
+    TOP1 = 5
+    NRDMAX = 6
+    BOTTOM1 = 7
 
 
 @dataclasses.dataclass(frozen=True)
@@ -85,6 +88,7 @@ class VerticalGridConfig:
     htop_moist_proc: Final[float] = 22500.0
     #: file name containing vct_a and vct_b table
     file_path: pathlib.Path = None
+    nrdmax: int = 9
 
 
 @dataclasses.dataclass(frozen=True)
@@ -185,6 +189,12 @@ class VerticalGrid:
                 return self._end_index_of_flat_layer
             case Zone.DAMPING:
                 return self._end_index_of_damping_layer
+            case Zone.TOP1:
+                return gtx.int32(1)
+            case Zone.NRDMAX:
+                return gtx.int32(self.config.nrdmax + 1)
+            case Zone.BOTTOM1:
+                return gtx.int32(self.config.num_levels + 1)
 
     @property
     def interface_physical_height(self) -> fa.KField[float]:
