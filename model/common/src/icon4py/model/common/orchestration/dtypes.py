@@ -24,8 +24,6 @@ from typing import Optional, Type
 from gt4py.next import Field
 from gt4py.next.ffront.fbuiltins import int32, int64
 
-import icon4py.model.common.states.prognostic_state as prognostics
-from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.common import type_alias
 
 
@@ -57,7 +55,13 @@ if dace:
         return f"{cls.__name__}_{field_name}_s{stride}_sym"
 
     def dace_structure_dict(cls):
-        """Dictionary to be used to define DaCe Structures based on the provided class."""
+        """
+        Function that returns a dictionary to be used to define DaCe Structures based on the provided data class.
+        The function extracts the GT4Py field members of the data class and builds the dictionary accordingly.
+        """
+        if not hasattr(cls, "__dataclass_fields__"):
+            raise ValueError("The provided class is not a data class.")
+
         dace_structure_dict = {}
 
         # Define DaCe Symbols: Field Sizes and Strides
@@ -70,12 +74,12 @@ if dace:
         }
 
         for member_name, dataclass_field in cls.__dataclass_fields__.items():
-            # TODO(kotsaloscv): DaCe Structure with GT4Py Fields. Disregard the rest of the fields.
             if not hasattr(dataclass_field, "type"):
                 continue
             type_ = dataclass_field.type
             if not hasattr(type_, "__origin__"):
                 continue
+            # TODO(kotsaloscv): DaCe Structure with GT4Py Fields. Disregard the rest of the fields.
             if type_.__origin__ is not Field:
                 continue
 
@@ -106,13 +110,3 @@ if dace:
             )
 
         return dace_structure_dict
-
-    # Define DaCe Structures
-    DiffusionDiagnosticState_t = dace.data.Structure(
-        dace_structure_dict(diffusion_states.DiffusionDiagnosticState),
-        name="DiffusionDiagnosticState_t",
-    )
-    PrognosticState_t = dace.data.Structure(
-        dace_structure_dict(prognostics.PrognosticState),
-        name="PrognosticState_t",
-    )

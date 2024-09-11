@@ -33,8 +33,6 @@ import gt4py.next as gtx
 import numpy as np
 from gt4py._core import definitions as core_defs
 
-import icon4py.model.common.states.prognostic_state as prognostics
-from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import icon as icon_grid
@@ -129,7 +127,7 @@ def orchestration(method=True):
                     configure_dace_temp_env(default_build_folder)
 
                     updated_args, updated_kwargs = mod_xargs_for_dace_structures(
-                        fuse_func, args, kwargs
+                        fuse_func, fuse_func_orig_annotations, args, kwargs
                     )
 
                     updated_kwargs = {
@@ -139,7 +137,9 @@ def orchestration(method=True):
 
                     updated_kwargs = {
                         **updated_kwargs,
-                        **dace_symbols_concretization(grid, fuse_func, args, kwargs),
+                        **dace_symbols_concretization(
+                            grid, fuse_func, fuse_func_orig_annotations, args, kwargs
+                        ),
                     }
 
                     sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
@@ -226,10 +226,11 @@ if dace:
                         raise ValueError(
                             f"The type hint [{fuse_func_type_hints[param.name]}] is not supported."
                         )
-                elif fuse_func_type_hints[param.name] is diffusion_states.DiffusionDiagnosticState:
-                    dace_annotations[param.name] = orchestration_dtypes.DiffusionDiagnosticState_t
-                elif fuse_func_type_hints[param.name] is prognostics.PrognosticState:
-                    dace_annotations[param.name] = orchestration_dtypes.PrognosticState_t
+                elif hasattr(fuse_func_type_hints[param.name], "__dataclass_fields__"):
+                    dace_annotations[param.name] = dace.data.Structure(
+                        orchestration_dtypes.dace_structure_dict(fuse_func_type_hints[param.name]),
+                        name=fuse_func_type_hints[param.name].__name__,
+                    )
                 elif (
                     fuse_func_type_hints[param.name]
                     in orchestration_dtypes.icon4py_primitive_dtypes
@@ -458,8 +459,29 @@ if dace:
             },
         }
 
+    def modified_orig_annotations(
+        fuse_func: Callable, fuse_func_orig_annotations: dict[str, Any]
+    ) -> dict[str, Any]:
+        ii = 0
+        modified_fuse_func_orig_annotations = {}
+        for i, annotation_ in enumerate(fuse_func.__annotations__.values()):
+            if annotation_ is dace.compiletime:
+                modified_fuse_func_orig_annotations[
+                    list(fuse_func.__annotations__.keys())[i]
+                ] = None
+            else:
+                modified_fuse_func_orig_annotations[
+                    list(fuse_func.__annotations__.keys())[i]
+                ] = list(fuse_func_orig_annotations.values())[ii]
+                ii += 1
+        return modified_fuse_func_orig_annotations
+
     def dace_symbols_concretization(
-        grid: icon_grid.IconGrid, fuse_func: Callable, args: Any, kwargs: Any
+        grid: icon_grid.IconGrid,
+        fuse_func: Callable,
+        fuse_func_orig_annotations: dict[str, Any],
+        args: Any,
+        kwargs: Any,
     ) -> dict[str, Any]:
         flattened_xargs_type_value = list(
             zip(
@@ -483,22 +505,34 @@ if dace:
                         ] = get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride)
             return concretized_symbols
 
+        modified_fuse_func_orig_annotations = modified_orig_annotations(
+            fuse_func, fuse_func_orig_annotations
+        )
+
+        concretize_symbols_for_dace_structure = {}
+        for annotation_, annotation_orig_ in zip(
+            fuse_func.__annotations__.values(),
+            modified_fuse_func_orig_annotations.values(),
+            strict=False,
+        ):
+            if type(annotation_) is not dace.data.Structure:
+                continue
+            concretize_symbols_for_dace_structure.update(
+                _concretize_symbols_for_dace_structure(annotation_, annotation_orig_)
+            )
+
         return {
             **{
                 "CellDim_sym": grid.offset_providers["C2E"].table.shape[0],
                 "EdgeDim_sym": grid.offset_providers["E2C"].table.shape[0],
                 "KDim_sym": grid.num_levels,
             },
-            **_concretize_symbols_for_dace_structure(
-                orchestration_dtypes.DiffusionDiagnosticState_t,
-                diffusion_states.DiffusionDiagnosticState,
-            ),
-            **_concretize_symbols_for_dace_structure(
-                orchestration_dtypes.PrognosticState_t, prognostics.PrognosticState
-            ),
+            **concretize_symbols_for_dace_structure,
         }
 
-    def mod_xargs_for_dace_structures(fuse_func: Callable, args: Any, kwargs: Any) -> tuple:
+    def mod_xargs_for_dace_structures(
+        fuse_func: Callable, fuse_func_orig_annotations: dict[str, Any], args: Any, kwargs: Any
+    ) -> tuple:
         """Modify the args/kwargs to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding Python data classes"""
         flattened_xargs_type_value = list(
             zip(
@@ -508,6 +542,7 @@ if dace:
             )
         )
         # initialize
+        orig_args_kwargs = list(args) + list(kwargs.values())
         mod_args_kwargs = list(args) + list(kwargs.values())
 
         def _mod_xargs_for_dace_structure(dace_cls, orig_cls):
@@ -520,25 +555,29 @@ if dace:
                         }
                     )
 
-        # modify mod_args_kwargs in place
-        _mod_xargs_for_dace_structure(
-            orchestration_dtypes.DiffusionDiagnosticState_t,
-            diffusion_states.DiffusionDiagnosticState,
-        )
-        _mod_xargs_for_dace_structure(
-            orchestration_dtypes.PrognosticState_t, prognostics.PrognosticState
+        modified_fuse_func_orig_annotations = modified_orig_annotations(
+            fuse_func, fuse_func_orig_annotations
         )
 
-        for mod_arg_kwarg in mod_args_kwargs:
-            if isinstance(
-                mod_arg_kwarg,
-                orchestration_dtypes.DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes(),
-            ):
-                mod_arg_kwarg.descriptor = orchestration_dtypes.DiffusionDiagnosticState_t
-            if isinstance(
-                mod_arg_kwarg, orchestration_dtypes.PrognosticState_t.dtype._typeclass.as_ctypes()
-            ):
-                mod_arg_kwarg.descriptor = orchestration_dtypes.PrognosticState_t
+        for annotation_, annotation_orig_ in zip(
+            fuse_func.__annotations__.values(),
+            modified_fuse_func_orig_annotations.values(),
+            strict=False,
+        ):
+            if type(annotation_) is not dace.data.Structure:
+                continue
+            # modify mod_args_kwargs in place
+            _mod_xargs_for_dace_structure(
+                annotation_,
+                annotation_orig_,
+            )
+
+        for i, mod_arg_kwarg in enumerate(mod_args_kwargs):
+            if hasattr(mod_arg_kwarg, "_fields_"):
+                mod_arg_kwarg.descriptor = dace.data.Structure(
+                    orchestration_dtypes.dace_structure_dict(orig_args_kwargs[i].__class__),
+                    name=orig_args_kwargs[i].__class__.__name__,
+                )
 
         return tuple(mod_args_kwargs[0 : len(args)]), {
             k: v for k, v in zip(kwargs.keys(), mod_args_kwargs[len(args) :], strict=False)
