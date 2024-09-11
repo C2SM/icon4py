@@ -421,7 +421,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     rho_new = sp.rho_new()
     exner_new = sp.exner_new()
 
-    nnow = 1 # using fortran indices
+    nnow = 1  # using fortran indices
     nnew = 2
 
     solve_nh_run(
@@ -502,10 +502,10 @@ def test_granule_solve_nonhydro_single_step_regional(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
-        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000"),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000"),
     ],
 )
 def test_granule_solve_nonhydro_multi_step_regional(
@@ -518,17 +518,13 @@ def test_granule_solve_nonhydro_multi_step_regional(
     stretch_factor,
     damping_height,
     grid_savepoint,
-    vn_only,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
     experiment,
     ndyn_substeps,
-    caplog
 ):
-    caplog.set_level(logging.DEBUG)
-
     # savepoints
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
@@ -961,34 +957,35 @@ def test_granule_solve_nonhydro_multi_step_regional(
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         atol=1e-12,
     )
-    #
-    # # todo: fields do not verify
-    # assert helpers.dallclose(
-    #     theta_v_new.asnumpy(),
-    #     sp_step_exit.theta_v_new().asnumpy(),
-    # )
 
-    # assert helpers.dallclose(
-    #     rho_new.asnumpy(),
-    #     savepoint_nonhydro_exit.rho_new().asnumpy(),
-    # )
+    # we compare against _now fields as _new and _now are switched internally in the granule.
+    assert helpers.dallclose(
+        theta_v_now.asnumpy(),
+        sp_step_exit.theta_v_new().asnumpy(),
+        atol=5e-7,
+    )
 
-    # assert helpers.dallclose(
-    #     exner_new.asnumpy(),
-    #     sp_step_exit.exner_new().asnumpy(),
-    # )
+    assert helpers.dallclose(
+        rho_now.asnumpy(),
+        savepoint_nonhydro_exit.rho_new().asnumpy(),
+    )
 
-    # assert helpers.dallclose(
-    #     w_new.asnumpy(),
-    #     savepoint_nonhydro_exit.w_new().asnumpy(),
-    #     atol=8e-14,
-    # )
+    assert helpers.dallclose(
+        exner_now.asnumpy(),
+        sp_step_exit.exner_new().asnumpy(),
+    )
 
-    # assert helpers.dallclose(
-    #     vn_new.asnumpy(),
-    #     savepoint_nonhydro_exit.vn_new().asnumpy(),
-    #     atol=5e-13,
-    # )
+    assert helpers.dallclose(
+        w_now.asnumpy(),
+        savepoint_nonhydro_exit.w_new().asnumpy(),
+        atol=8e-14,
+    )
+
+    assert helpers.dallclose(
+        vn_now.asnumpy(),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
+        atol=5e-13,
+    )
     assert helpers.dallclose(
         exner_dyn_incr.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),

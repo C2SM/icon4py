@@ -16,7 +16,8 @@ def offset_fortran_indices_return_numpy(inp) -> np.ndarray:
 def offset_squeeze_fortran_indices_return_xp(inp) -> xp.ndarray:
     # todo: maybe needed in Fortran? (breaks datatest)
     #   return xp.squeeze(xp.subtract(inp.ndarray, 1))
-    return xp.squeeze(inp.ndarray)
+    #   might only be needed for Fortran
+    return inp.ndarray
 
 
 def construct_icon_grid(
