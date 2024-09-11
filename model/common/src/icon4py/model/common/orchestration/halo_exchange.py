@@ -39,7 +39,7 @@ from dace.sdfg.state import SDFGState
 from gt4py.next.ffront.fbuiltins import Dimension
 
 import icon4py.model.common as common
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common import dimension as dims
 
 
 ghex_ptr_names = (
@@ -201,7 +201,7 @@ def add_halo_tasklet(
         # Here, they are initialized at the first encounter of the halo exchange node
         __pattern = ""
         __domain_descriptor = ""
-        for dim_ in (CellDim, VertexDim, EdgeDim):
+        for dim_ in dims.global_dimensions.values():
             __pattern += f"__pattern_{dim_.value}Dim_ptr_{unique_id} = IN___pattern_{dim_.value}Dim_ptr;\n"  # IN_XXX comes from the DaCe connector
             __domain_descriptor += f"__domain_descriptor_{dim_.value}Dim_ptr_{unique_id} = IN___domain_descriptor_{dim_.value}Dim_ptr;\n"
 
@@ -233,7 +233,7 @@ def add_halo_tasklet(
         # Set global variables
         __pattern = ""
         __domain_descriptor = ""
-        for dim_ in (CellDim, VertexDim, EdgeDim):
+        for dim_ in dims.global_dimensions.values():
             __pattern += f"{dace.uintp.dtype} __pattern_{dim_.value}Dim_ptr_{unique_id};\n"
             __domain_descriptor += (
                 f"{dace.uintp.dtype} __domain_descriptor_{dim_.value}Dim_ptr_{unique_id};\n"

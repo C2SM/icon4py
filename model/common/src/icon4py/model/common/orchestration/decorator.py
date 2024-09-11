@@ -29,24 +29,15 @@ from collections.abc import Callable
 from types import ModuleType
 from typing import Any, Optional, Union, get_type_hints
 
+import gt4py.next as gtx
 import numpy as np
 from gt4py._core import definitions as core_defs
-from gt4py.next import CompileTimeConnectivity, Field
-from gt4py.next.common import Connectivity
-from gt4py.next.program_processors.runners.dace_iterator.utility import (
-    connectivity_identifier,
-)
 
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.atmosphere.diffusion import diffusion_states
-from icon4py.model.common import settings
-from icon4py.model.common.decomposition.definitions import SingleNodeExchange, SingleNodeResult
-from icon4py.model.common.decomposition.mpi_decomposition import (
-    GHexMultiNodeExchange,
-    MultiNodeResult,
-)
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common import dimension as dims, settings
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.orchestration import dtypes as orchestration_dtypes
 
 
@@ -99,14 +90,10 @@ def orchestration(method=True):
                 has_exchange = False
                 has_grid = False
                 for attr_name, attr_value in self.__dict__.items():
-                    if (
-                        isinstance(attr_value, GHexMultiNodeExchange)
-                        or isinstance(attr_value, SingleNodeExchange)
-                        and not has_exchange
-                    ):
+                    if isinstance(attr_value, decomposition.ExchangeRuntime) and not has_exchange:
                         has_exchange = True
                         exchange_obj = getattr(self, attr_name)
-                    if isinstance(attr_value, IconGrid) and not has_grid:
+                    if isinstance(attr_value, icon_grid.IconGrid) and not has_grid:
                         has_grid = True
                         grid = getattr(self, attr_name)
 
@@ -171,66 +158,13 @@ def orchestration(method=True):
     return decorator
 
 
-def to_dace_annotations(fuse_func: Callable) -> dict[str, Any]:
-    dace_annotations = {}  # replace the fuse_func.__annotations__ with DaCe annotations
-
-    fuse_func_type_hints = get_type_hints(fuse_func)
-    for param in inspect.signature(fuse_func).parameters.values():
-        if param.name in fuse_func_type_hints:
-            if hasattr(fuse_func_type_hints[param.name], "__origin__"):
-                if fuse_func_type_hints[param.name].__origin__ is Field:
-                    dims_ = fuse_func_type_hints[param.name].__args__[0].__args__
-                    dace_dims = []
-                    for dim_ in dims_:
-                        if "cell" in dim_.value.lower():
-                            dace_dims.append(orchestration_dtypes.CellDim_sym)
-                        elif "edge" in dim_.value.lower():
-                            dace_dims.append(orchestration_dtypes.EdgeDim_sym)
-                        elif "vertex" in dim_.value.lower():
-                            dace_dims.append(orchestration_dtypes.VertexDim_sym)
-                        elif "k" == dim_.value.lower():
-                            dace_dims.append(orchestration_dtypes.KDim_sym)
-                        else:
-                            raise ValueError(f"The dimension [{dim_}] is not supported.")
-
-                    dtype_ = fuse_func_type_hints[param.name].__args__[1]
-                    dace_annotations[param.name] = dace.data.Array(
-                        dtype=orchestration_dtypes.dace_primitive_dtypes[
-                            orchestration_dtypes.icon4py_primitive_dtypes.index(dtype_)
-                        ],
-                        shape=dace_dims,
-                    )
-                else:
-                    raise ValueError(
-                        f"The type hint [{fuse_func_type_hints[param.name]}] is not supported."
-                    )
-            elif fuse_func_type_hints[param.name] is diffusion_states.DiffusionDiagnosticState:
-                dace_annotations[param.name] = orchestration_dtypes.DiffusionDiagnosticState_t
-            elif fuse_func_type_hints[param.name] is prognostics.PrognosticState:
-                dace_annotations[param.name] = orchestration_dtypes.PrognosticState_t
-            elif fuse_func_type_hints[param.name] in orchestration_dtypes.icon4py_primitive_dtypes:
-                dace_annotations[param.name] = orchestration_dtypes.dace_primitive_dtypes[
-                    orchestration_dtypes.icon4py_primitive_dtypes.index(
-                        fuse_func_type_hints[param.name]
-                    )
-                ]
-            else:
-                raise ValueError(
-                    f"The type hint [{fuse_func_type_hints[param.name]}] is not supported."
-                )
-        else:
-            dace_annotations[param.name] = dace.compiletime
-
-    return dace_annotations
-
-
 def dace_inhibitor(f: Callable):
     """Triggers callback generation wrapping `func` while doing DaCe parsing."""
     return f
 
 
 @dace_inhibitor
-def wait(comm_handle: Union[int, SingleNodeResult, MultiNodeResult]):
+def wait(comm_handle: Union[int, decomposition.ExchangeResult]):
     if isinstance(comm_handle, int):
         pass
     else:
@@ -238,12 +172,12 @@ def wait(comm_handle: Union[int, SingleNodeResult, MultiNodeResult]):
 
 
 def build_compile_time_connectivities(
-    offset_providers: dict[str, Connectivity],
-) -> dict[str, Connectivity]:
+    offset_providers: dict[str, gtx.common.Connectivity],
+) -> dict[str, gtx.common.Connectivity]:
     connectivities = {}
     for k, v in offset_providers.items():
         if hasattr(v, "table"):
-            connectivities[k] = CompileTimeConnectivity(
+            connectivities[k] = gtx.CompileTimeConnectivity(
                 v.max_neighbors, v.has_skip_values, v.origin_axis, v.neighbor_axis, v.table.dtype
             )
         else:
@@ -253,9 +187,66 @@ def build_compile_time_connectivities(
 
 
 if dace:
-    import dace
     from dace import hooks
     from dace.transformation.passes.simplify import SimplifyPass
+    from gt4py.next.program_processors.runners.dace_iterator.utility import (
+        connectivity_identifier,
+    )
+
+    def to_dace_annotations(fuse_func: Callable) -> dict[str, Any]:
+        dace_annotations = {}  # replace the fuse_func.__annotations__ with DaCe annotations
+
+        fuse_func_type_hints = get_type_hints(fuse_func)
+        for param in inspect.signature(fuse_func).parameters.values():
+            if param.name in fuse_func_type_hints:
+                if hasattr(fuse_func_type_hints[param.name], "__origin__"):
+                    if fuse_func_type_hints[param.name].__origin__ is gtx.Field:
+                        dims_ = fuse_func_type_hints[param.name].__args__[0].__args__
+                        dace_dims = []
+                        for dim_ in dims_:
+                            if "cell" in dim_.value.lower():
+                                dace_dims.append(orchestration_dtypes.CellDim_sym)
+                            elif "edge" in dim_.value.lower():
+                                dace_dims.append(orchestration_dtypes.EdgeDim_sym)
+                            elif "vertex" in dim_.value.lower():
+                                dace_dims.append(orchestration_dtypes.VertexDim_sym)
+                            elif "k" == dim_.value.lower():
+                                dace_dims.append(orchestration_dtypes.KDim_sym)
+                            else:
+                                raise ValueError(f"The dimension [{dim_}] is not supported.")
+
+                        dtype_ = fuse_func_type_hints[param.name].__args__[1]
+                        dace_annotations[param.name] = dace.data.Array(
+                            dtype=orchestration_dtypes.dace_primitive_dtypes[
+                                orchestration_dtypes.icon4py_primitive_dtypes.index(dtype_)
+                            ],
+                            shape=dace_dims,
+                        )
+                    else:
+                        raise ValueError(
+                            f"The type hint [{fuse_func_type_hints[param.name]}] is not supported."
+                        )
+                elif fuse_func_type_hints[param.name] is diffusion_states.DiffusionDiagnosticState:
+                    dace_annotations[param.name] = orchestration_dtypes.DiffusionDiagnosticState_t
+                elif fuse_func_type_hints[param.name] is prognostics.PrognosticState:
+                    dace_annotations[param.name] = orchestration_dtypes.PrognosticState_t
+                elif (
+                    fuse_func_type_hints[param.name]
+                    in orchestration_dtypes.icon4py_primitive_dtypes
+                ):
+                    dace_annotations[param.name] = orchestration_dtypes.dace_primitive_dtypes[
+                        orchestration_dtypes.icon4py_primitive_dtypes.index(
+                            fuse_func_type_hints[param.name]
+                        )
+                    ]
+                else:
+                    raise ValueError(
+                        f"The type hint [{fuse_func_type_hints[param.name]}] is not supported."
+                    )
+            else:
+                dace_annotations[param.name] = dace.compiletime
+
+        return dace_annotations
 
     def dev_type_from_gt4py_to_dace(device_type: core_defs.DeviceType) -> dace.dtypes.DeviceType:
         if device_type == core_defs.DeviceType.CPU:
@@ -269,7 +260,7 @@ if dace:
         unique_id: int,
         compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG],
         default_build_folder: str,
-        exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange],
+        exchange_obj: decomposition.ExchangeRuntime,
         fuse_func: Callable,
         compile_time_args_kwargs: dict[str, Any],
         self_name: Optional[str] = None,
@@ -384,7 +375,8 @@ if dace:
             return str(e)
 
     def cache_sanitization(
-        default_build_folder: str, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange]
+        default_build_folder: str,
+        exchange_obj: decomposition.ExchangeRuntime,
     ) -> None:
         normalized_path = os.path.normpath(default_build_folder)
         parts = normalized_path.split(os.sep)
@@ -433,8 +425,8 @@ if dace:
         return numpy_array.strides[axis] // numpy_array.itemsize
 
     def dace_specific_kwargs(
-        exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange],
-        offset_providers: dict[str, Connectivity],
+        exchange_obj: decomposition.ExchangeRuntime,
+        offset_providers: dict[str, gtx.common.Connectivity],
     ) -> dict[str, Any]:
         return {
             # connectivity tables
@@ -445,29 +437,29 @@ if dace:
             },
             # GHEX C++ ptrs
             "__context_ptr": expose_cpp_ptr(exchange_obj._context)
-            if isinstance(exchange_obj, GHexMultiNodeExchange)
+            if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
             else 0,
             "__comm_ptr": expose_cpp_ptr(exchange_obj._comm)
-            if isinstance(exchange_obj, GHexMultiNodeExchange)
+            if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
             else 0,
             **{
                 f"__pattern_{dim.value}Dim_ptr": expose_cpp_ptr(exchange_obj._patterns[dim])
-                if isinstance(exchange_obj, GHexMultiNodeExchange)
+                if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
-                for dim in (CellDim, VertexDim, EdgeDim)
+                for dim in dims.global_dimensions.values()
             },
             **{
                 f"__domain_descriptor_{dim.value}Dim_ptr": expose_cpp_ptr(
                     exchange_obj._domain_descriptors[dim].__wrapped__
                 )
-                if isinstance(exchange_obj, GHexMultiNodeExchange)
+                if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
-                for dim in (CellDim, VertexDim, EdgeDim)
+                for dim in dims.global_dimensions.values()
             },
         }
 
     def dace_symbols_concretization(
-        grid: IconGrid, fuse_func: Callable, args: Any, kwargs: Any
+        grid: icon_grid.IconGrid, fuse_func: Callable, args: Any, kwargs: Any
     ) -> dict[str, Any]:
         flattened_xargs_type_value = list(
             zip(

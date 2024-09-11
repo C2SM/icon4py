@@ -12,7 +12,7 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Optional, Protocol, Sequence
+from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 
 import numpy as np
 import numpy.ma as ma
@@ -132,6 +132,7 @@ class ExchangeResult(Protocol):
         ...
 
 
+@runtime_checkable
 class ExchangeRuntime(Protocol):
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         ...
@@ -144,12 +145,6 @@ class ExchangeRuntime(Protocol):
 
     def my_rank(self):
         ...
-
-    def wait(self):
-        pass
-
-    def is_ready(self) -> bool:
-        return True
 
 
 @dataclass
