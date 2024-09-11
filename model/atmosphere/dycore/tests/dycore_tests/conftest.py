@@ -27,6 +27,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
     jstep_init,
     linit,
     metrics_savepoint,
+    decomposition_info,
     ndyn_substeps,
     processor_props,
     ranked_data_path,

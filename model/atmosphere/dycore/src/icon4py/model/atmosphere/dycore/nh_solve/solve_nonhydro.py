@@ -13,6 +13,7 @@ from typing import Final, Optional
 import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
+import icon4py.model.common.grid.geometry as geometry
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
@@ -419,9 +420,9 @@ class SolveNonhydro:
         self.params: Optional[NonHydrostaticParams] = None
         self.metric_state_nonhydro: Optional[solve_nh_states.MetricStateNonHydro] = None
         self.interpolation_state: Optional[solve_nh_states.InterpolationState] = None
-        self.vertical_params: Optional[v_grid.VerticalGridParams] = None
-        self.edge_geometry: Optional[h_grid.EdgeParams] = None
-        self.cell_params: Optional[h_grid.CellParams] = None
+        self.vertical_params: Optional[v_grid.VerticalGrid] = None
+        self.edge_geometry: Optional[geometry.EdgeParams] = None
+        self.cell_params: Optional[geometry.CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
         self.enh_divdamp_fac: Optional[fa.KField[float]] = None
@@ -439,9 +440,9 @@ class SolveNonhydro:
         params: NonHydrostaticParams,
         metric_state_nonhydro: solve_nh_states.MetricStateNonHydro,
         interpolation_state: solve_nh_states.InterpolationState,
-        vertical_params: v_grid.VerticalGridParams,
-        edge_geometry: h_grid.EdgeParams,
-        cell_geometry: h_grid.CellParams,
+        vertical_params: v_grid.VerticalGrid,
+        edge_geometry: geometry.EdgeParams,
+        cell_geometry: geometry.CellParams,
         owner_mask: fa.CellField[bool],
     ):
         """
@@ -466,7 +467,7 @@ class SolveNonhydro:
             owner_mask,
         )
         self._allocate_local_fields()
-
+        self._determine_local_domains()
         # TODO (magdalena) vertical nesting is only relevant in the context of
         #      horizontal nesting, since we don't support this we should remove this option
         if grid.lvert_nest:
@@ -476,7 +477,7 @@ class SolveNonhydro:
             self.jk_start = 0
 
         smagorinsky.en_smag_fac_for_zero_nshift(
-            self.vertical_params.inteface_physical_height,
+            self.vertical_params.interface_physical_height,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,
             self.config.divdamp_fac3,
@@ -550,6 +551,61 @@ class SolveNonhydro:
         self.scal_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
         self.intermediate_fields = IntermediateFields.allocate(self.grid)
 
+    def _determine_local_domains(self):
+        vertex_domain = h_grid.domain(dims.VertexDim)
+        cell_domain = h_grid.domain(dims.CellDim)
+        cell_halo_level_2 = cell_domain(h_grid.Zone.HALO_LEVEL_2)
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        edge_halo_level_2 = edge_domain(h_grid.Zone.HALO_LEVEL_2)
+
+        self._start_cell_lateral_boundary = self.grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY)
+        )
+        self._start_cell_lateral_boundary_level_3 = self.grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+        )
+        self._start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self._start_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.LOCAL))
+        self._start_cell_halo = self.grid.start_index(cell_domain(h_grid.Zone.HALO))
+        self._start_cell_halo_level_2 = self.grid.start_index(cell_halo_level_2)
+        self._end_cell_lateral_boundary_level_4 = self.grid.end_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
+        )
+        self._end_cell_nudging = self.grid.end_index(cell_domain(h_grid.Zone.NUDGING))
+        self._end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        self._end_cell_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
+        self._end_cell_halo_level_2 = self.grid.end_index(cell_halo_level_2)
+        self._end_cell_end = self.grid.end_index(cell_domain(h_grid.Zone.END))
+
+        self._start_edge_lateral_boundary = self.grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY)
+        )
+        self._start_edge_lateral_boundary_level_5 = self.grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        self._start_edge_lateral_boundary_level_7 = self.grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
+        )
+        self._start_edge_nudging_level_2 = self.grid.start_index(
+            edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
+        )
+
+        self._start_edge_halo_level_2 = self.grid.start_index(edge_halo_level_2)
+
+        self._end_cell_lateral_boundary_level_4 = self.grid.end_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
+        )
+        self._end_edge_nudging = self.grid.end_index(edge_domain(h_grid.Zone.NUDGING))
+        self._end_edge_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        self._end_edge_halo = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
+        self._end_edge_halo_level_2 = self.grid.end_index(edge_halo_level_2)
+        self._end_edge_end = self.grid.end_index(edge_domain(h_grid.Zone.END))
+
+        self._start_vertex_lateral_boundary_level_2 = self.grid.start_index(
+            vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self._end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Zone.HALO))
+
     def set_timelevels(self, nnow, nnew):
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
         if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
@@ -578,18 +634,7 @@ class SolveNonhydro:
         log.info(
             f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
         )
-        start_cell_lb = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
-        )
-        end_cell_end = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-        )
-        start_edge_lb = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim)
-        )
-        end_edge_local = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim)
-        )
+
         # # TODO: abishekg7 move this to tests
         if self.p_test_run:
             nhsolve_prog.init_test_fields(
@@ -597,11 +642,12 @@ class SolveNonhydro:
                 self.intermediate_fields.z_theta_v_e,
                 self.intermediate_fields.z_dwdz_dd,
                 self.intermediate_fields.z_graddiv_vn,
-                start_edge_lb,
-                end_edge_local,
-                start_cell_lb,
-                end_cell_end,
-                self.grid.num_levels,
+                self._start_edge_lateral_boundary,
+                self._end_edge_local,
+                self._start_cell_lateral_boundary,
+                self._end_cell_end,
+                vertical_start=gtx.int32(0),
+                vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
 
@@ -633,18 +679,6 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
 
-        start_cell_lb = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
-        )
-        end_cell_nudging_minus1 = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim) - 1
-        )
-        start_cell_halo = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.halo(dims.CellDim)
-        )
-        end_cell_end = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-        )
         if self.grid.limited_area:
             compute_theta_and_exner(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
@@ -653,8 +687,8 @@ class SolveNonhydro:
                 exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=self.params.rd_o_cvd,
                 rd_o_p0ref=self.params.rd_o_p0ref,
-                horizontal_start=0,
-                horizontal_end=end_cell_end,
+                horizontal_start=self._start_cell_local,
+                horizontal_end=self._end_cell_end,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -666,8 +700,8 @@ class SolveNonhydro:
                 exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=self.params.rd_o_cvd,
                 rd_o_p0ref=self.params.rd_o_p0ref,
-                horizontal_start=start_cell_lb,
-                horizontal_end=end_cell_nudging_minus1,
+                horizontal_start=self._start_cell_lateral_boundary,
+                horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -682,8 +716,8 @@ class SolveNonhydro:
             rho_new=prognostic_state_ls[nnew].rho,
             theta_v_new=prognostic_state_ls[nnew].theta_v,
             cvd_o_rd=self.params.cvd_o_rd,
-            horizontal_start=start_cell_halo,
-            horizontal_end=end_cell_end,
+            horizontal_start=self._start_cell_halo,
+            horizontal_end=self._end_cell_end,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -723,82 +757,6 @@ class SolveNonhydro:
                 cell_areas=self.cell_params.area,
             )
 
-        p_dthalf = 0.5 * dtime
-
-        end_cell_end = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-        )
-
-        start_cell_local_minus2 = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim) - 2
-        )
-        end_cell_local_minus2 = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim) - 2
-        )
-
-        start_vertex_lb_plus1 = self.grid.get_start_index(
-            dims.VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1
-        )  # TODO: check
-        end_vertex_local_minus1 = self.grid.get_end_index(
-            dims.VertexDim, h_grid.HorizontalMarkerIndex.local(dims.VertexDim) - 1
-        )
-
-        start_cell_lb = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
-        )
-        end_cell_nudging_minus1 = self.grid.get_end_index(
-            dims.CellDim,
-            h_grid.HorizontalMarkerIndex.nudging(dims.CellDim) - 1,
-        )
-
-        start_edge_lb_plus6 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
-        )
-        end_edge_local_minus1 = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim) - 1
-        )
-        end_edge_local = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim)
-        )
-
-        start_edge_nudging_plus1 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim) + 1
-        )
-        end_edge_end = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.end(dims.EdgeDim)
-        )
-
-        start_edge_lb = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim)
-        )
-        end_edge_nudging = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim)
-        )
-
-        start_edge_lb_plus4 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4
-        )
-        start_edge_local_minus2 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim) - 2
-        )
-        end_edge_local_minus2 = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim) - 2
-        )
-
-        start_cell_lb_plus2 = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2
-        )
-
-        end_cell_halo = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.halo(dims.CellDim)
-        )
-        start_cell_nudging = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
-        )
-        end_cell_local = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim)
-        )
-
         #  Precompute Rayleigh damping factor
         solve_nh_utils.compute_z_raylfac(
             rayleigh_w=self.metric_state_nonhydro.rayleigh_w,
@@ -812,8 +770,8 @@ class SolveNonhydro:
             init_two_cell_kdim_fields_with_zero_vp(
                 cell_kdim_field_with_zero_vp_1=self.z_rth_pr_1,
                 cell_kdim_field_with_zero_vp_2=self.z_rth_pr_2,
-                horizontal_start=start_cell_lb,
-                horizontal_end=end_cell_end,
+                horizontal_start=self._start_cell_lateral_boundary,
+                horizontal_end=self._end_cell_end,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -825,8 +783,8 @@ class SolveNonhydro:
             exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
             exner_pr=diagnostic_state_nh.exner_pr,
             z_exner_ex_pr=self.z_exner_ex_pr,
-            horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_halo,
+            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            horizontal_end=self._end_cell_halo,
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             vertical_start=0,
@@ -844,8 +802,8 @@ class SolveNonhydro:
                 z_dexner_dz_c_1=self.z_dexner_dz_c_1,
                 k_field=self.k_field,
                 nlev=self.grid.num_levels,
-                horizontal_start=start_cell_lb_plus2,
-                horizontal_end=end_cell_halo,
+                horizontal_start=self._start_cell_lateral_boundary_level_3,
+                horizontal_end=self._end_cell_halo,
                 vertical_start=max(1, self.vertical_params.nflatlev),
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider=self.grid.offset_providers,
@@ -873,8 +831,8 @@ class SolveNonhydro:
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             k_field=self.k_field,
             nlev=self.grid.num_levels,
-            horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_halo,
+            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -889,8 +847,8 @@ class SolveNonhydro:
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             k_field=self.k_field,
             nlev=self.grid.num_levels,
-            horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_halo,
+            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
@@ -904,8 +862,8 @@ class SolveNonhydro:
                 d2dexdz2_fac2_mc=self.metric_state_nonhydro.d2dexdz2_fac2_mc,
                 z_rth_pr_2=self.z_rth_pr_2,
                 z_dexner_dz_c_2=self.z_dexner_dz_c_2,
-                horizontal_start=start_cell_lb_plus2,
-                horizontal_end=end_cell_halo,
+                horizontal_start=self._start_cell_lateral_boundary_level_3,
+                horizontal_end=self._end_cell_halo,
                 vertical_start=self.vertical_params.nflat_gradp,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -921,8 +879,8 @@ class SolveNonhydro:
             theta_ref_mc=self.metric_state_nonhydro.theta_ref_mc,
             z_rth_pr_1=self.z_rth_pr_1,
             z_rth_pr_2=self.z_rth_pr_2,
-            horizontal_start=start_cell_local_minus2,
-            horizontal_end=end_cell_local_minus2,
+            horizontal_start=self._start_cell_halo_level_2,
+            horizontal_end=self._end_cell_halo_level_2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -934,8 +892,8 @@ class SolveNonhydro:
                 p_cell_in=prognostic_state[nnow].rho,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_rho_v,
-                horizontal_start=start_vertex_lb_plus1,
-                horizontal_end=end_vertex_local_minus1,
+                horizontal_start=self._start_vertex_lateral_boundary_level_2,
+                horizontal_end=self._end_vertex_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_cell_in,2)
                 offset_provider=self.grid.offset_providers,
@@ -944,8 +902,8 @@ class SolveNonhydro:
                 p_cell_in=prognostic_state[nnow].theta_v,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_theta_v_v,
-                horizontal_start=start_vertex_lb_plus1,
-                horizontal_end=end_vertex_local_minus1,
+                horizontal_start=self._start_vertex_lateral_boundary_level_2,
+                horizontal_end=self._end_vertex_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -961,8 +919,8 @@ class SolveNonhydro:
                 p_ccpr2=self.z_rth_pr_2,
                 geofac_grg_x=self.interpolation_state.geofac_grg_x,
                 geofac_grg_y=self.interpolation_state.geofac_grg_y,
-                horizontal_start=start_cell_lb_plus2,
-                horizontal_end=end_cell_halo,
+                horizontal_start=self._start_cell_lateral_boundary_level_3,
+                horizontal_end=self._end_cell_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_ccpr,2)
                 offset_provider=self.grid.offset_providers,
@@ -971,8 +929,8 @@ class SolveNonhydro:
             init_two_edge_kdim_fields_with_zero_wp(
                 edge_kdim_field_with_zero_wp_1=z_fields.z_rho_e,
                 edge_kdim_field_with_zero_wp_2=z_fields.z_theta_v_e,
-                horizontal_start=start_edge_local_minus2,
-                horizontal_end=end_edge_local_minus2,
+                horizontal_start=self._start_edge_halo_level_2,
+                horizontal_end=self._end_edge_halo_level_2,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -982,8 +940,8 @@ class SolveNonhydro:
                 init_two_edge_kdim_fields_with_zero_wp(
                     edge_kdim_field_with_zero_wp_1=z_fields.z_rho_e,
                     edge_kdim_field_with_zero_wp_2=z_fields.z_theta_v_e,
-                    horizontal_start=start_edge_lb,
-                    horizontal_end=end_edge_local_minus1,
+                    horizontal_start=self._start_edge_lateral_boundary,
+                    horizontal_end=self._end_edge_halo,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
@@ -1002,7 +960,7 @@ class SolveNonhydro:
                     dual_normal_cell_1=self.edge_geometry.dual_normal_cell[0],
                     primal_normal_cell_2=self.edge_geometry.primal_normal_cell[1],
                     dual_normal_cell_2=self.edge_geometry.dual_normal_cell[1],
-                    p_dthalf=p_dthalf,
+                    p_dthalf=(0.5 * dtime),
                     rho_ref_me=self.metric_state_nonhydro.rho_ref_me,
                     theta_ref_me=self.metric_state_nonhydro.theta_ref_me,
                     z_grad_rth_1=self.z_grad_rth_1,
@@ -1013,8 +971,8 @@ class SolveNonhydro:
                     z_rth_pr_2=self.z_rth_pr_2,
                     z_rho_e=z_fields.z_rho_e,
                     z_theta_v_e=z_fields.z_theta_v_e,
-                    horizontal_start=start_edge_lb_plus6,
-                    horizontal_end=end_edge_local_minus1,
+                    horizontal_start=self._start_edge_lateral_boundary_level_7,
+                    horizontal_end=self._end_edge_halo,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider=self.grid.offset_providers,
@@ -1025,8 +983,8 @@ class SolveNonhydro:
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
             z_exner_ex_pr=self.z_exner_ex_pr,
             z_gradh_exner=z_fields.z_gradh_exner,
-            horizontal_start=start_edge_nudging_plus1,
-            horizontal_end=end_edge_local,
+            horizontal_start=self._start_edge_nudging_level_2,
+            horizontal_end=self._end_edge_local,
             vertical_start=0,
             vertical_end=self.vertical_params.nflatlev,
             offset_provider=self.grid.offset_providers,
@@ -1043,8 +1001,8 @@ class SolveNonhydro:
                 c_lin_e=self.interpolation_state.c_lin_e,
                 z_dexner_dz_c_1=self.z_dexner_dz_c_1,
                 z_gradh_exner=z_fields.z_gradh_exner,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_local,
                 vertical_start=self.vertical_params.nflatlev,
                 vertical_end=gtx.int32(self.vertical_params.nflat_gradp + 1),
                 offset_provider=self.grid.offset_providers,
@@ -1058,8 +1016,8 @@ class SolveNonhydro:
                 z_dexner_dz_c_1=self.z_dexner_dz_c_1,
                 z_dexner_dz_c_2=self.z_dexner_dz_c_2,
                 z_gradh_exner=z_fields.z_gradh_exner,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_local,
                 vertical_start=gtx.int32(self.vertical_params.nflat_gradp + 1),
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -1075,8 +1033,8 @@ class SolveNonhydro:
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_hydro_corr=self.z_hydro_corr,
                 grav_o_cpd=self.params.grav_o_cpd,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_local,
                 vertical_start=self.grid.num_levels - 1,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -1093,8 +1051,8 @@ class SolveNonhydro:
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
                 z_hydro_corr=hydro_corr_horizontal,
                 z_gradh_exner=z_fields.z_gradh_exner,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_end,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_end,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1109,8 +1067,8 @@ class SolveNonhydro:
             vn_nnew=prognostic_state[nnew].vn,
             dtime=dtime,
             cpd=constants.CPD,
-            horizontal_start=start_edge_nudging_plus1,
-            horizontal_end=end_edge_local,
+            horizontal_start=self._start_edge_nudging_level_2,
+            horizontal_end=self._end_edge_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -1121,8 +1079,8 @@ class SolveNonhydro:
                 vn_incr=diagnostic_state_nh.vn_incr,
                 vn=prognostic_state[nnew].vn,
                 iau_wgt_dyn=self.config.iau_wgt_dyn,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1134,8 +1092,8 @@ class SolveNonhydro:
                 vn_now=prognostic_state[nnow].vn,
                 vn_new=prognostic_state[nnew].vn,
                 dtime=dtime,
-                horizontal_start=start_edge_lb,
-                horizontal_end=end_edge_nudging,
+                horizontal_start=self._start_edge_lateral_boundary,
+                horizontal_end=self._end_edge_nudging,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1151,8 +1109,8 @@ class SolveNonhydro:
             z_vn_avg=self.z_vn_avg,
             z_graddiv_vn=z_fields.z_graddiv_vn,
             vt=diagnostic_state_nh.vt,
-            horizontal_start=start_edge_lb_plus4,
-            horizontal_end=end_edge_local_minus2,
+            horizontal_start=self._start_edge_lateral_boundary_level_5,
+            horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1165,8 +1123,8 @@ class SolveNonhydro:
             z_theta_v_e=z_fields.z_theta_v_e,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
-            horizontal_start=start_edge_lb_plus4,
-            horizontal_end=end_edge_local_minus2,
+            horizontal_start=self._start_edge_lateral_boundary_level_5,
+            horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -1184,8 +1142,8 @@ class SolveNonhydro:
             z_kin_hor_e=z_fields.z_kin_hor_e,
             k_field=self.k_field,
             nflatlev_startindex=self.vertical_params.nflatlev,
-            horizontal_start=start_edge_lb_plus4,
-            horizontal_end=end_edge_local_minus2,
+            horizontal_start=self._start_edge_lateral_boundary_level_5,
+            horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1199,8 +1157,8 @@ class SolveNonhydro:
                 z_vt_ie=z_fields.z_vt_ie,
                 z_kin_hor_e=z_fields.z_kin_hor_e,
                 wgtfacq_e_dsl=self.metric_state_nonhydro.wgtfacq_e,
-                horizontal_start=start_edge_lb_plus4,
-                horizontal_end=end_edge_local_minus2,
+                horizontal_start=self._start_edge_lateral_boundary_level_5,
+                horizontal_end=self._end_edge_halo_level_2,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider=self.grid.offset_providers,
@@ -1215,8 +1173,8 @@ class SolveNonhydro:
             k_field=self.k_field,
             nflatlev_startindex_plus1=gtx.int32(self.vertical_params.nflatlev + 1),
             nlev=self.grid.num_levels,
-            horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_halo,
+            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
@@ -1228,8 +1186,8 @@ class SolveNonhydro:
             z_theta_v_fl_e=self.z_theta_v_fl_e,
             z_flxdiv_mass=self.z_flxdiv_mass,
             z_flxdiv_theta=self.z_flxdiv_theta,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1259,8 +1217,8 @@ class SolveNonhydro:
             dtime=dtime,
             cpd=constants.CPD,
             nlev=self.grid.num_levels,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider={},
@@ -1270,8 +1228,8 @@ class SolveNonhydro:
             init_two_cell_kdim_fields_with_zero_wp(
                 cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=0,
                 vertical_end=1,
                 offset_provider={},
@@ -1293,8 +1251,8 @@ class SolveNonhydro:
             k_field=self.k_field,
             dtime=dtime,
             nlev=self.grid.num_levels,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
@@ -1307,8 +1265,8 @@ class SolveNonhydro:
                 diagnostic_state_nh.rho_incr,
                 diagnostic_state_nh.exner_incr,
                 self.config.iau_wgt_dyn,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1326,8 +1284,8 @@ class SolveNonhydro:
             w=prognostic_state[nnew].w,
             dtime=dtime,
             cpd=constants.CPD,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1336,8 +1294,8 @@ class SolveNonhydro:
         solve_tridiagonal_matrix_for_w_back_substitution(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -1348,8 +1306,8 @@ class SolveNonhydro:
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=1,
                 vertical_end=gtx.int32(
                     self.vertical_params.end_index_of_damping_layer + 1
@@ -1375,8 +1333,8 @@ class SolveNonhydro:
             theta_v_new=prognostic_state[nnew].theta_v,
             dtime=dtime,
             cvd_o_rd=constants.CVD_O_RD,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(self.jk_start),
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1389,8 +1347,8 @@ class SolveNonhydro:
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
                 z_dwdz_dd=z_fields.z_dwdz_dd,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=self.params.kstart_dd3d,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -1400,8 +1358,8 @@ class SolveNonhydro:
             copy_cell_kdim_field_to_vp(
                 field=prognostic_state[nnow].exner,
                 field_copy=diagnostic_state_nh.exner_dyn_incr,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=self.vertical_params.kstart_moist,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1421,8 +1379,8 @@ class SolveNonhydro:
                 k_field=self.k_field,
                 dtime=dtime,
                 nlev=self.grid.num_levels,
-                horizontal_start=start_cell_lb,
-                horizontal_end=end_cell_nudging_minus1,
+                horizontal_start=self._start_cell_lateral_boundary,
+                horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=0,
                 vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={},
@@ -1434,8 +1392,8 @@ class SolveNonhydro:
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
                 z_dwdz_dd=z_fields.z_dwdz_dd,
-                horizontal_start=start_cell_lb,
-                horizontal_end=end_cell_nudging_minus1,
+                horizontal_start=self._start_cell_lateral_boundary,
+                horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=self.params.kstart_dd3d,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -1463,7 +1421,8 @@ class SolveNonhydro:
         at_last_substep: bool,
     ):
         log.info(
-            f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  divdamp_fac_o2 = {divdamp_fac_o2} clean_mfxl= {lclean_mflx}  "
+            f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
+            f"divdamp_fac_o2 = {divdamp_fac_o2} clean_mfxl= {lclean_mflx}  "
         )
 
         # TODO (magdalena) is it correct to to use a config parameter here? the actual number of substeps can vary dynmically...
@@ -1487,49 +1446,6 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        start_cell_lb_plus2 = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2
-        )
-
-        start_edge_lb_plus6 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
-        )
-
-        start_edge_nudging_plus1 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim) + 1
-        )
-        end_edge_local = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim)
-        )
-
-        start_edge_lb_plus4 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4
-        )
-        end_edge_local_minus2 = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim) - 2
-        )
-
-        start_edge_lb = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim)
-        )
-        end_edge_end = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.end(dims.EdgeDim)
-        )
-
-        start_cell_lb = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
-        )
-        end_cell_nudging = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
-        )
-
-        start_cell_nudging = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
-        )
-        end_cell_local = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim)
-        )
-
         lvn_only = False
         log.debug(f"corrector run velocity advection")
         self.velocity_advection.run_corrector_step(
@@ -1545,7 +1461,6 @@ class SolveNonhydro:
 
         nvar = nnew
 
-        #  Precompute Rayleigh damping factor
         solve_nh_utils.compute_z_raylfac(
             self.metric_state_nonhydro.rayleigh_w,
             dtime,
@@ -1573,8 +1488,8 @@ class SolveNonhydro:
             dtime=dtime,
             wgt_nnow_rth=self.params.wgt_nnow_rth,
             wgt_nnew_rth=self.params.wgt_nnew_rth,
-            horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            horizontal_end=self._end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1587,8 +1502,8 @@ class SolveNonhydro:
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
             z_dwdz_dd=z_fields.z_dwdz_dd,
             z_graddiv_vn=z_fields.z_graddiv_vn,
-            horizontal_start=start_edge_lb_plus6,
-            horizontal_end=end_edge_local_minus2,
+            horizontal_start=self._start_edge_lateral_boundary_level_7,
+            horizontal_end=self._end_edge_halo_level_2,
             vertical_start=self.params.kstart_dd3d,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1608,8 +1523,8 @@ class SolveNonhydro:
                 wgt_nnow_vel=self.params.wgt_nnow_vel,
                 wgt_nnew_vel=self.params.wgt_nnew_vel,
                 cpd=constants.CPD,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1625,8 +1540,8 @@ class SolveNonhydro:
                 geofac_grdiv=self.interpolation_state.geofac_grdiv,
                 z_graddiv_vn=z_fields.z_graddiv_vn,
                 z_graddiv2_vn=self.z_graddiv2_vn,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -1641,8 +1556,8 @@ class SolveNonhydro:
                 z_graddiv_vn=z_fields.z_graddiv_vn,
                 vn=prognostic_state[nnew].vn,
                 scal_divdamp_o2=scal_divdamp_o2,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1661,8 +1576,8 @@ class SolveNonhydro:
                     nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
                     z_graddiv2_vn=self.z_graddiv2_vn,
                     vn=prognostic_state[nnew].vn,
-                    horizontal_start=start_edge_nudging_plus1,
-                    horizontal_end=end_edge_local,
+                    horizontal_start=self._start_edge_nudging_level_2,
+                    horizontal_end=self._end_edge_local,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
@@ -1673,8 +1588,8 @@ class SolveNonhydro:
                     scal_divdamp=self.scal_divdamp,
                     z_graddiv2_vn=self.z_graddiv2_vn,
                     vn=prognostic_state[nnew].vn,
-                    horizontal_start=start_edge_nudging_plus1,
-                    horizontal_end=end_edge_local,
+                    horizontal_start=self._start_edge_nudging_level_2,
+                    horizontal_end=self._end_edge_local,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
@@ -1687,8 +1602,8 @@ class SolveNonhydro:
                 diagnostic_state_nh.vn_incr,
                 prognostic_state[nnew].vn,
                 self.config.iau_wgt_dyn,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
+                horizontal_start=self._start_edge_nudging_level_2,
+                horizontal_end=self._end_edge_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1700,8 +1615,8 @@ class SolveNonhydro:
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
             z_vn_avg=self.z_vn_avg,
-            horizontal_start=start_edge_lb_plus4,
-            horizontal_end=end_edge_local_minus2,
+            horizontal_start=self._start_edge_lateral_boundary_level_5,
+            horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1715,8 +1630,8 @@ class SolveNonhydro:
             z_theta_v_e=z_fields.z_theta_v_e,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
-            horizontal_start=start_edge_lb_plus4,
-            horizontal_end=end_edge_local_minus2,  # TODO: (halungge) this is actually the second halo line
+            horizontal_start=self._start_edge_lateral_boundary_level_5,
+            horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -1729,8 +1644,8 @@ class SolveNonhydro:
                 init_two_edge_kdim_fields_with_zero_wp(
                     edge_kdim_field_with_zero_wp_1=prep_adv.vn_traj,
                     edge_kdim_field_with_zero_wp_2=prep_adv.mass_flx_me,
-                    horizontal_start=start_edge_lb,
-                    horizontal_end=end_edge_end,
+                    horizontal_start=self._start_edge_lateral_boundary,
+                    horizontal_end=self._end_edge_end,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
@@ -1742,8 +1657,8 @@ class SolveNonhydro:
                 vn_traj=prep_adv.vn_traj,
                 mass_flx_me=prep_adv.mass_flx_me,
                 r_nsubsteps=r_nsubsteps,
-                horizontal_start=start_edge_lb_plus4,
-                horizontal_end=end_edge_local_minus2,
+                horizontal_start=self._start_edge_lateral_boundary_level_5,
+                horizontal_end=self._end_edge_halo_level_2,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1757,8 +1672,8 @@ class SolveNonhydro:
             z_theta_v_fl_e=self.z_theta_v_fl_e,
             z_flxdiv_mass=self.z_flxdiv_mass,
             z_flxdiv_theta=self.z_flxdiv_theta,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1793,8 +1708,8 @@ class SolveNonhydro:
                 wgt_nnow_vel=self.params.wgt_nnow_vel,
                 wgt_nnew_vel=self.params.wgt_nnew_vel,
                 nlev=self.grid.num_levels,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={},
@@ -1825,8 +1740,8 @@ class SolveNonhydro:
                 dtime=dtime,
                 cpd=constants.CPD,
                 nlev=self.grid.num_levels,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={},
@@ -1835,8 +1750,8 @@ class SolveNonhydro:
             init_two_cell_kdim_fields_with_zero_wp(
                 cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=0,
                 vertical_end=0,
                 offset_provider={},
@@ -1860,8 +1775,8 @@ class SolveNonhydro:
             k_field=self.k_field,
             dtime=dtime,
             nlev=self.grid.num_levels,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
@@ -1876,8 +1791,8 @@ class SolveNonhydro:
                 rho_incr=diagnostic_state_nh.rho_incr,
                 exner_incr=diagnostic_state_nh.exner_incr,
                 iau_wgt_dyn=self.config.iau_wgt_dyn,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
@@ -1895,8 +1810,8 @@ class SolveNonhydro:
             w=prognostic_state[nnew].w,
             dtime=dtime,
             cpd=constants.CPD,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1905,8 +1820,8 @@ class SolveNonhydro:
         solve_tridiagonal_matrix_for_w_back_substitution(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -1918,8 +1833,8 @@ class SolveNonhydro:
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=1,
                 vertical_end=gtx.int32(
                     self.vertical_params.end_index_of_damping_layer + 1
@@ -1945,8 +1860,8 @@ class SolveNonhydro:
             theta_v_new=prognostic_state[nnew].theta_v,
             dtime=dtime,
             cvd_o_rd=constants.CVD_O_RD,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=gtx.int32(self.jk_start),
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1958,8 +1873,8 @@ class SolveNonhydro:
                 init_two_cell_kdim_fields_with_zero_wp(
                     prep_adv.mass_flx_ic,
                     prep_adv.vol_flx_ic,
-                    horizontal_start=start_cell_nudging,
-                    horizontal_end=end_cell_local,
+                    horizontal_start=self._start_cell_nudging,
+                    horizontal_end=self._end_cell_local,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
@@ -1973,8 +1888,8 @@ class SolveNonhydro:
             mass_flx_ic=prep_adv.mass_flx_ic,
             vol_flx_ic=prep_adv.vol_flx_ic,
             r_nsubsteps=r_nsubsteps,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -1986,8 +1901,8 @@ class SolveNonhydro:
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
                 ndyn_substeps_var=float(self.config.ndyn_substeps_var),
                 dtime=dtime,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
+                horizontal_start=self._start_cell_nudging,
+                horizontal_end=self._end_cell_local,
                 vertical_start=self.vertical_params.kstart_moist,
                 vertical_end=gtx.int32(self.grid.num_levels),
                 offset_provider={},
@@ -1998,8 +1913,8 @@ class SolveNonhydro:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
                 init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.mass_flx_ic,
-                    horizontal_start=start_cell_lb,
-                    horizontal_end=end_cell_nudging,
+                    horizontal_start=self._start_cell_lateral_boundary,
+                    horizontal_end=self._end_cell_nudging,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels + 1,
                     offset_provider={},
@@ -2014,8 +1929,8 @@ class SolveNonhydro:
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
                 mass_flx_ic=prep_adv.mass_flx_ic,
                 r_nsubsteps=r_nsubsteps,
-                horizontal_start=start_cell_lb,
-                horizontal_end=end_cell_nudging,
+                horizontal_start=self._start_cell_lateral_boundary,
+                horizontal_end=self._end_cell_nudging,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
