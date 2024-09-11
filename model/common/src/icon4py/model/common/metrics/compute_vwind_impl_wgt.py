@@ -11,9 +11,9 @@ import numpy as np
 import icon4py.model.common.field_type_aliases as fa
 from icon4py.model.common.grid import base as grid
 from icon4py.model.common.metrics.metric_fields import compute_vwind_impl_wgt_partial
+from icon4py.model.common.settings import xp
 from icon4py.model.common.type_alias import wpfloat
 
-from icon4py.model.common.settings import xp
 
 def compute_vwind_impl_wgt(
     backend,

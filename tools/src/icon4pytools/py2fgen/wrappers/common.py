@@ -1,21 +1,31 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
+import logging
+
+import numpy as np
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.settings import xp
-import numpy as np
-import logging
+
 
 log = logging.getLogger(__name__)
 
+
 def offset_fortran_indices_return_numpy(inp) -> np.ndarray:
     # todo: maybe needed in Fortran? (breaks datatest)
-    #   return xp.subtract(inp.ndarray, 1)
+    #   return xp.subtract(inp.ndarray, 1)  # noqa: ERA001
     return inp.ndarray
 
 
 def offset_squeeze_fortran_indices_return_xp(inp) -> xp.ndarray:
     # todo: maybe needed in Fortran? (breaks datatest)
-    #   return xp.squeeze(xp.subtract(inp.ndarray, 1))
+    #   return xp.squeeze(xp.subtract(inp.ndarray, 1))  # noqa: ERA001
     #   might only be needed for Fortran
     return inp.ndarray
 

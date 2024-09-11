@@ -21,9 +21,8 @@
 
 import logging
 
-import pytest
-
 import gt4py.next as gtx
+import pytest
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     DivergenceDampingOrder,
     HorizontalPressureDiscretizationType,
@@ -36,7 +35,9 @@ from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     helpers,
 )
+
 from icon4pytools.py2fgen.wrappers.dycore import grid_init, solve_nh_init, solve_nh_run
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -459,7 +460,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         ndyn_substeps=ndyn_substeps,
         idyn_timestep=jstep_init,
         nnow=nnow,
-        nnew=nnew
+        nnew=nnew,
     )
 
     assert helpers.dallclose(
@@ -489,7 +490,6 @@ def test_granule_solve_nonhydro_single_step_regional(
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
-
 
 
 @pytest.mark.slow_tests
@@ -859,11 +859,10 @@ def test_granule_solve_nonhydro_multi_step_regional(
     exner_new = sp.exner_new()
 
     # other params
-    nnow = 1 # use fortran indices
+    nnow = 1  # use fortran indices
     nnew = 2
 
     for i_substep in range(ndyn_substeps):
-
         is_last_substep = i_substep == (ndyn_substeps - 1)
 
         solve_nh_run(
@@ -907,7 +906,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             ndyn_substeps=ndyn_substeps,
             idyn_timestep=i_substep,
             nnow=nnow,
-            nnew=nnew
+            nnew=nnew,
         )
         linit = False
         recompute = False

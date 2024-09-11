@@ -44,6 +44,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
+from icon4py.model.common import settings
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -70,8 +71,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGrid
-from icon4py.model.common import settings
+from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -450,7 +450,7 @@ def solve_nh_run(
     ndyn_substeps: float64,
     idyn_timestep: int32,
     nnew: int32,
-    nnow: int32
+    nnow: int32,
 ):
     log.info(f"Using Device = {settings.device}")
 

@@ -15,6 +15,7 @@ import pytest
 def samples_path():
     return Path(__file__).parent / "fortran_samples"
 
+
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
     istep_init,
     istep_exit,
@@ -38,5 +39,5 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
     download_ser_data,
     processor_props,
     ranked_data_path,
-    icon_grid
+    icon_grid,
 )
