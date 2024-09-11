@@ -44,15 +44,21 @@ def _compute_hydrostatic_correction_term(
     theta_v_ic_p1_0 = theta_v_ic(E2C[0])(as_offset(Koff, ikoffset(E2EC[0]) + 1))
     theta_v_ic_p1_1 = theta_v_ic(E2C[1])(as_offset(Koff, ikoffset(E2EC[1]) + 1))
 
-    inv_ddqz_z_full_0_wp = astype(inv_ddqz_z_full(E2C[0])(as_offset(Koff, ikoffset(E2EC[0]))), wpfloat)
-    inv_ddqz_z_full_1_wp = astype(inv_ddqz_z_full(E2C[1])(as_offset(Koff, ikoffset(E2EC[1]))), wpfloat)
+    inv_ddqz_z_full_0_wp = astype(
+        inv_ddqz_z_full(E2C[0])(as_offset(Koff, ikoffset(E2EC[0]))), wpfloat
+    )
+    inv_ddqz_z_full_1_wp = astype(
+        inv_ddqz_z_full(E2C[1])(as_offset(Koff, ikoffset(E2EC[1]))), wpfloat
+    )
 
-    z_theta_0 = theta_v_0 + zdiff_gradp_wp(E2EC[0]) * (
-        theta_v_ic_0 - theta_v_ic_p1_0
-    ) * inv_ddqz_z_full_0_wp
-    z_theta_1 = theta_v_1 + zdiff_gradp_wp(E2EC[1]) * (
-        theta_v_ic_1 - theta_v_ic_p1_1
-    ) * inv_ddqz_z_full_1_wp
+    z_theta_0 = (
+        theta_v_0
+        + zdiff_gradp_wp(E2EC[0]) * (theta_v_ic_0 - theta_v_ic_p1_0) * inv_ddqz_z_full_0_wp
+    )
+    z_theta_1 = (
+        theta_v_1
+        + zdiff_gradp_wp(E2EC[1]) * (theta_v_ic_1 - theta_v_ic_p1_1) * inv_ddqz_z_full_1_wp
+    )
     z_hydro_corr_wp = (
         grav_o_cpd
         * inv_dual_edge_length
