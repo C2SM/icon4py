@@ -8,24 +8,28 @@
 
 import numpy as np
 
+import icon4py.model.common.field_type_aliases as fa
+from icon4py.model.common.grid import base as grid
 from icon4py.model.common.metrics.metric_fields import compute_vwind_impl_wgt_partial
+from icon4py.model.common.type_alias import wpfloat
+
 from icon4py.model.common.settings import xp
 
 def compute_vwind_impl_wgt(
     backend,
-    icon_grid,
-    vct_a,
-    z_ifc,
-    z_ddxn_z_half_e,
-    z_ddxt_z_half_e,
-    dual_edge_length,
-    vwind_impl_wgt_full,
-    vwind_impl_wgt_k,
+    icon_grid: grid.BaseGrid,
+    vct_a: fa.KField[wpfloat],
+    z_ifc: fa.CellKField[wpfloat],
+    z_ddxn_z_half_e: fa.EdgeField[wpfloat],
+    z_ddxt_z_half_e: fa.EdgeField[wpfloat],
+    dual_edge_length: fa.EdgeField[wpfloat],
+    vwind_impl_wgt_full: fa.CellField[wpfloat],
+    vwind_impl_wgt_k: fa.CellField[wpfloat],
     global_exp: str,
     experiment: str,
     vwind_offctr: float,
     horizontal_start_cell: int,
-):
+) -> np.ndarray:
     compute_vwind_impl_wgt_partial.with_backend(backend)(
         z_ddxn_z_half_e=z_ddxn_z_half_e,
         z_ddxt_z_half_e=z_ddxt_z_half_e,

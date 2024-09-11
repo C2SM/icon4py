@@ -10,13 +10,17 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import program, scan_operator
 from gt4py.next.ffront.fbuiltins import astype, int32
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@scan_operator(axis=KDim, forward=False, init=wpfloat("0.0"))
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
+@scan_operator(axis=dims.KDim, forward=False, init=wpfloat("0.0"))
 def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
     w_state: wpfloat, z_q: vpfloat, w: wpfloat
 ) -> wpfloat:

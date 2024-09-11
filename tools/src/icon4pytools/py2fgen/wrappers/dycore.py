@@ -68,9 +68,9 @@ from icon4py.model.common.dimension import (
     VertexDim,
     VertexIndexDim,
 )
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGrid
 from icon4py.model.common import settings
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
@@ -389,8 +389,8 @@ def solve_nh_init(
     )
 
     # datatest config, vertical parameters
-    vertical_params = VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = VerticalGrid(
+        config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,

@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_03 import step_advection_stencil_03
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
@@ -33,9 +33,9 @@ class TestStepAdvectionStencil03(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_tracer_now = random_field(grid, CellDim, KDim)
-        p_grf_tend_tracer = random_field(grid, CellDim, KDim)
-        p_tracer_new = random_field(grid, CellDim, KDim)
+        p_tracer_now = random_field(grid, dims.CellDim, dims.KDim)
+        p_grf_tend_tracer = random_field(grid, dims.CellDim, dims.KDim)
+        p_tracer_new = random_field(grid, dims.CellDim, dims.KDim)
         p_dtime = np.float64(5.0)
         return dict(
             p_tracer_now=p_tracer_now,

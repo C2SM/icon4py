@@ -32,6 +32,23 @@ contains
       end do
    end subroutine fill_random_2d
 
+   subroutine fill_random_2d_int(array, low, high)
+     use, intrinsic :: iso_c_binding, only: c_int
+     implicit none
+
+     integer(c_int), intent(inout) :: array(:, :)
+     integer(c_int), intent(in) :: low, high
+     integer :: i, j
+     real(c_int) :: rnd
+
+     do i = 1, size(array, 1)
+        do j = 1, size(array, 2)
+           call random_number(rnd)
+           array(i, j) = low + rnd*(high - low)
+        end do
+     end do
+   end subroutine fill_random_2d_int
+
    subroutine fill_random_3d_int(array, low, high)
       use, intrinsic :: iso_c_binding, only: c_int
       implicit none
@@ -113,7 +130,7 @@ end module random_utils
 
 program solve_nh_simulation
    use, intrinsic :: iso_c_binding, only: c_double, c_int
-   use random_utils, only: fill_random_1d, fill_random_2d, fill_random_2d_bool, fill_random_1d_bool, &
+   use random_utils, only: fill_random_1d, fill_random_2d, fill_random_2d_int, fill_random_2d_bool, fill_random_1d_bool, &
                             fill_random_3d_int, fill_random_3d
    use dycore_plugin
    implicit none
@@ -132,6 +149,8 @@ program solve_nh_simulation
    integer(c_int), parameter :: num_e2c2v = 4
    integer(c_int), parameter :: num_e2c = 2
    integer(c_int), parameter :: num_e2c2eo = 3  !todo: check
+   integer(c_int), parameter :: nnow = 1
+   integer(c_int), parameter :: nnew = 2
    real(c_double), parameter :: mean_cell_area = 24907282236.708576
 
    real(c_double), parameter :: dtime = 10.0
@@ -154,9 +173,6 @@ program solve_nh_simulation
    real(c_double), parameter :: divdamp_trans_start = 1000.0
    real(c_double), parameter :: divdamp_trans_end = 2000.0
    logical(c_int), parameter :: l_vert_nested = .false.  ! vertical nesting support is not implemented
-   real(c_double), parameter :: rhotheta_offctr = 1.0
-   real(c_double), parameter :: veladv_offctr = 1.0
-   real(c_double), parameter :: max_nudging_coeff = 0.1
    real(c_double), parameter :: divdamp_fac = 1.0
    real(c_double), parameter :: divdamp_fac2 = 2.0
    real(c_double), parameter :: divdamp_fac3 = 3.0
@@ -171,9 +187,27 @@ program solve_nh_simulation
    logical(c_int), parameter :: clean_mflx = .true.
    logical(c_int), parameter :: recompute = .false.
    logical(c_int), parameter :: linit = .false.
+   integer(c_int), parameter :: global_root = 4
+   integer(c_int), parameter :: global_level = 9
+   real(c_double), parameter :: lowest_layer_thickness = 20.0
+   real(c_double), parameter :: model_top_height = 23000.0
+   real(c_double), parameter :: stretch_factor = 0.65
+   real(c_double), parameter :: rhotheta_offctr = -0.1
+   real(c_double), parameter :: veladv_offctr = 0.25
+   real(c_double), parameter :: max_nudging_coeff = 0.075
+   integer(c_int), parameter :: vertical_size = num_levels
+
+
+   ! Connectivity arrays
+   integer(c_int), dimension(:, :), allocatable :: c2e, e2c, e2v, v2e, v2c, c2v
+   integer(c_int), dimension(:, :), allocatable :: e2c2v, c2e2c, e2c2e
+
+   integer(c_int), dimension(:), allocatable :: cell_starts, cell_ends
+   integer(c_int), dimension(:), allocatable :: vertex_starts, vertex_ends
+   integer(c_int), dimension(:), allocatable :: edge_starts, edge_ends
 
    ! Declaring arrays
-    real(c_double), dimension(:), allocatable :: vct_a
+    real(c_double), dimension(:), allocatable :: vct_a, vct_b
     real(c_double), dimension(:), allocatable :: rayleigh_w
     real(c_double), dimension(:), allocatable :: tangent_orientation
     real(c_double), dimension(:), allocatable :: inverse_primal_edge_lengths
@@ -269,11 +303,16 @@ program solve_nh_simulation
     real(c_double), dimension(:, :), allocatable :: geofac_grdiv
     real(c_double), dimension(:, :), allocatable :: geofac_rot
     real(c_double), dimension(:, :), allocatable :: c_intp
-
     integer(c_int), dimension(:, :, :), allocatable :: vertoffset_gradp
     real(c_double), dimension(:, :, :), allocatable :: zdiff_gradp
+    real(c_double), dimension(:), allocatable :: cell_center_lat
+    real(c_double), dimension(:), allocatable :: cell_center_lon
+    real(c_double), dimension(:), allocatable :: edge_center_lat
+    real(c_double), dimension(:), allocatable :: edge_center_lon
+    real(c_double), dimension(:), allocatable :: primal_normal_x
+    real(c_double), dimension(:), allocatable :: primal_normal_y
 
-   !$acc enter data create (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc enter data create (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
    !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
    !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
@@ -293,12 +332,13 @@ program solve_nh_simulation
    !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
    !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
    !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
-   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
-
-
+   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp, &
+   !$acc c2e, e2c, e2v, v2e, v2c, c2v, e2c2v, c2e2c, e2c2e, cell_starts, cell_ends, &
+   !$acc vertex_starts, vertex_ends, edge_starts, edge_ends)
 
    ! Allocate arrays
    allocate(vct_a(num_levels))
+   allocate(vct_b(num_levels))
    allocate(rayleigh_w(num_levels))
    allocate(tangent_orientation(num_edges))
    allocate(nudgecoeff_e(num_edges))
@@ -399,6 +439,51 @@ program solve_nh_simulation
    allocate(vertoffset_gradp(num_edges, num_e2c, num_levels))
    allocate(zdiff_gradp(num_edges, num_e2c, num_levels))
 
+   ! Connectivity arrays allocation
+   allocate(c2e(num_cells, num_c2e))
+   allocate(e2c(num_edges, num_e2c))
+   allocate(e2v(num_edges, num_e2c))
+   allocate(v2e(num_verts, num_v2e))
+   allocate(v2c(num_verts, num_v2e))
+   allocate(c2v(num_cells, num_c2e))
+   allocate(e2c2v(num_edges, num_e2c2v))
+   allocate(c2e2c(num_cells, num_c2e))
+   allocate(e2c2e(num_edges, num_e2c2v))
+   allocate(cell_starts(14))
+   allocate(cell_ends(14))
+   allocate(vertex_starts(13))
+   allocate(vertex_ends(13))
+   allocate(edge_starts(24))
+   allocate(edge_ends(24))
+
+   allocate(cell_center_lat(num_cells))
+   allocate(cell_center_lon(num_cells))
+   allocate(edge_center_lat(num_edges))
+   allocate(edge_center_lon(num_edges))
+   allocate(primal_normal_x(num_edges))
+   allocate(primal_normal_y(num_edges))
+
+    ! Initialize the arrays with the values from the Python arrays
+
+    ! cell_starts initialization
+    cell_starts = (/ 20896, 20896, 20896, 20896, -1, -1, -1, -1, 4104, 0, 850, 1688, 2511, 3316 /)
+
+    ! cell_ends initialization
+    cell_ends = (/ 20896, 20896, 20896, 20896, 20896, 20896, 20896, 20896, 20896, 850, 1688, 2511, 3316, 4104 /)
+
+    ! edge_starts initialization
+    edge_starts = (/ 31558, 31558, 31558, 31558, 31558, -1, -1, -1, -1, -1, -1, -1, -1, 6176, 0, 428, 1278, 1700, &
+                    2538, 2954, 3777, 4184, 4989, 5387 /)
+
+    ! edge_ends initialization
+    edge_ends = (/ 31558, 31558, 31558, 31558, 31558, 31558, 31558, 31558, 31558, 31558, 31558, 31558, 31558, 31558, &
+                    428, 1278, 1700, 2538, 2954, 3777, 4184, 4989, 5387, 6176 /)
+
+    ! vertex_starts initialization
+    vertex_starts = (/ 10663, 10663, 10663, -1, -1, -1, -1, 2071, 0, 428, 850, 1266, 1673 /)
+
+    ! vertex_ends initialization
+    vertex_ends = (/ 10663, 10663, 10663, 10663, 10663, 10663, 10663, 10663, 428, 850, 1266, 1673, 2071 /)
 
     ! The vct_a array must be set to the same values as the ones in ICON.
     ! It represents the reference heights of vertical levels in meters, and many key vertical indices are derived from it.
@@ -421,6 +506,8 @@ program solve_nh_simulation
           527.6654250683475, 440.93877255014786, 360.09231087410603, 285.34182080238656, &
           216.98400030452174, 155.43579225710877, 101.30847966961008, 55.56948426298202, &
           20.00000000000001, 0.0 /)
+
+   vct_b = vct_a
 
    ! Fill arrays with random numbers
    call fill_random_1d(rayleigh_w, 0.0_c_double, 1.0_c_double)
@@ -520,13 +607,22 @@ program solve_nh_simulation
    call fill_random_2d(rho_ic, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(ddt_exner_phy, 0.0_c_double, 1.0_c_double)
 
-
-
    ! For 3D arrays
    call fill_random_3d(zdiff_gradp, 0.0_c_double, 1.0_c_double)
    call fill_random_3d_int(vertoffset_gradp, 0, 1)
 
-   !$acc data copyin (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   ! Fill connectivities with random values
+   call fill_random_2d_int(c2e, 0, num_edges)
+   call fill_random_2d_int(e2c, 0, num_cells)
+   call fill_random_2d_int(e2v, 0, num_verts)
+   call fill_random_2d_int(v2e, 0, num_edges)
+   call fill_random_2d_int(v2c, 0, num_cells)
+   call fill_random_2d_int(c2v, 0, num_verts)
+   call fill_random_2d_int(e2c2v, 0, num_verts)
+   call fill_random_2d_int(c2e2c, 0, num_cells)
+   call fill_random_2d_int(e2c2e, 0, num_edges)
+
+   !$acc data copyin (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
    !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
    !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
@@ -546,40 +642,131 @@ program solve_nh_simulation
    !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
    !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
    !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
-   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
+   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp, &
+   !$acc c2e, e2c, e2v, v2e, v2c, c2v, e2c2v, c2e2c, e2c2e, cell_starts, cell_ends, &
+   !$acc vertex_starts, vertex_ends, edge_starts, edge_ends)
 
+   call grid_init( &
+    cell_starts, cell_ends, &
+    vertex_starts, vertex_ends, &
+    edge_starts, edge_ends, &
+    c2e, e2c, c2e2c, e2c2e, &
+    e2v, v2e, v2c, c2v, e2c2v, &
+    global_root, global_level, &
+    num_verts, num_cells, num_edges, &
+    vertical_size, limited_area, rc)
+
+   if (rc /= 0) then
+       print *, "Error in solve_nh_init"
+       call exit(1)
+   end if
 
    ! Call solve_nh_init
-   call solve_nh_init(vct_a, nflat_gradp, num_levels, mean_cell_area, &
-                      cell_areas, primal_normal_cell_x, primal_normal_cell_y, &
-                      dual_normal_cell_x, dual_normal_cell_y, edge_areas, &
-                      tangent_orientation, inverse_primal_edge_lengths, &
-                      inv_dual_edge_length, inv_vert_vert_length, &
-                      primal_normal_vert_x, primal_normal_vert_y, &
-                      dual_normal_vert_x, dual_normal_vert_y, f_e, &
-                      c_lin_e, c_intp, e_flx_avg, geofac_grdiv, geofac_rot, &
-                      pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, &
-                      e_bln_c_s, rbf_coeff_1, rbf_coeff_2, geofac_div, &
-                      geofac_n2s, geofac_grg_x, geofac_grg_y, nudgecoeff_e, &
-                      bdy_halo_c, mask_prog_halo_c, rayleigh_w, exner_exfac, &
-                      exner_ref_mc, wgtfac_c, wgtfacq_c_dsl, inv_ddqz_z_full, &
-                      rho_ref_mc, theta_ref_mc, vwind_expl_wgt, &
-                      d_exner_dz_ref_ic, ddqz_z_half, theta_ref_ic, &
-                      d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, rho_ref_me, &
-                      theta_ref_me, ddxn_z_full, zdiff_gradp, &
-                      vertoffset_gradp, ipeidx_dsl, pg_exdist, &
-                      ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, &
-                      vwind_impl_wgt, hmask_dd3d, scalfac_dd3d, &
-                      coeff1_dwdz, coeff2_dwdz, coeff_gradekin, &
-                      c_owner_mask, rayleigh_damping_height, itime_scheme, &
-                      iadv_rhotheta, igradp_method, ndyn_substeps, &
-                      rayleigh_type, rayleigh_coeff, divdamp_order, &
-                      is_iau_active, iau_wgt_dyn, divdamp_type, &
-                      divdamp_trans_start, divdamp_trans_end, l_vert_nested, &
-                      rhotheta_offctr, veladv_offctr, max_nudging_coeff, &
-                      divdamp_fac, divdamp_fac2, divdamp_fac3, divdamp_fac4, &
-                      divdamp_z, divdamp_z2, divdamp_z3, divdamp_z4, &
-                      htop_moist_proc, limited_area, flat_height, rc)
+   call solve_nh_init( &
+        vct_a=vct_a, &
+        vct_b=vct_b, &
+        cell_areas=cell_areas, &
+        primal_normal_cell_x=primal_normal_cell_x, &
+        primal_normal_cell_y=primal_normal_cell_y, &
+        dual_normal_cell_x=dual_normal_cell_x, &
+        dual_normal_cell_y=dual_normal_cell_y, &
+        edge_areas=edge_areas, &
+        tangent_orientation=tangent_orientation, &
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths, &
+        inverse_dual_edge_lengths=inv_dual_edge_length, &
+        inverse_vertex_vertex_lengths=inv_vert_vert_length, &
+        primal_normal_vert_x=primal_normal_vert_x, &
+        primal_normal_vert_y=primal_normal_vert_y, &
+        dual_normal_vert_x=dual_normal_vert_x, &
+        dual_normal_vert_y=dual_normal_vert_y, &
+        f_e=f_e, &
+        c_lin_e=c_lin_e, &
+        c_intp=c_intp, &
+        e_flx_avg=e_flx_avg, &
+        geofac_grdiv=geofac_grdiv, &
+        geofac_rot=geofac_rot, &
+        pos_on_tplane_e_1=pos_on_tplane_e_1, &
+        pos_on_tplane_e_2=pos_on_tplane_e_2, &
+        rbf_vec_coeff_e=rbf_vec_coeff_e, &
+        e_bln_c_s=e_bln_c_s, &
+        rbf_coeff_1=rbf_coeff_1, &
+        rbf_coeff_2=rbf_coeff_2, &
+        geofac_div=geofac_div, &
+        geofac_n2s=geofac_n2s, &
+        geofac_grg_x=geofac_grg_x, &
+        geofac_grg_y=geofac_grg_y, &
+        nudgecoeff_e=nudgecoeff_e, &
+        bdy_halo_c=bdy_halo_c, &
+        mask_prog_halo_c=mask_prog_halo_c, &
+        rayleigh_w=rayleigh_w, &
+        exner_exfac=exner_exfac, &
+        exner_ref_mc=exner_ref_mc, &
+        wgtfac_c=wgtfac_c, &
+        wgtfacq_c=wgtfacq_c_dsl, &
+        inv_ddqz_z_full=inv_ddqz_z_full, &
+        rho_ref_mc=rho_ref_mc, &
+        theta_ref_mc=theta_ref_mc, &
+        vwind_expl_wgt=vwind_expl_wgt, &
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic, &
+        ddqz_z_half=ddqz_z_half, &
+        theta_ref_ic=theta_ref_ic, &
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc, &
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc, &
+        rho_ref_me=rho_ref_me, &
+        theta_ref_me=theta_ref_me, &
+        ddxn_z_full=ddxn_z_full, &
+        zdiff_gradp=zdiff_gradp, &
+        vertoffset_gradp=vertoffset_gradp, &
+        ipeidx_dsl=ipeidx_dsl, &
+        pg_exdist=pg_exdist, &
+        ddqz_z_full_e=ddqz_z_full_e, &
+        ddxt_z_full=ddxt_z_full, &
+        wgtfac_e=wgtfac_e, &
+        wgtfacq_e=wgtfacq_e, &
+        vwind_impl_wgt=vwind_impl_wgt, &
+        hmask_dd3d=hmask_dd3d, &
+        scalfac_dd3d=scalfac_dd3d, &
+        coeff1_dwdz=coeff1_dwdz, &
+        coeff2_dwdz=coeff2_dwdz, &
+        coeff_gradekin=coeff_gradekin, &
+        c_owner_mask=c_owner_mask, &
+        cell_center_lat=cell_center_lat, &
+        cell_center_lon=cell_center_lon, &
+        edge_center_lat=edge_center_lat, &
+        edge_center_lon=edge_center_lon, &
+        primal_normal_x=primal_normal_x, &
+        primal_normal_y=primal_normal_y, &
+        rayleigh_damping_height=rayleigh_damping_height, &
+        itime_scheme=itime_scheme, &
+        iadv_rhotheta=iadv_rhotheta, &
+        igradp_method=igradp_method, &
+        ndyn_substeps=ndyn_substeps, &
+        rayleigh_type=rayleigh_type, &
+        rayleigh_coeff=rayleigh_coeff, &
+        divdamp_order=divdamp_order, &
+        is_iau_active=is_iau_active, &
+        iau_wgt_dyn=iau_wgt_dyn, &
+        divdamp_type=divdamp_type, &
+        divdamp_trans_start=divdamp_trans_start, &
+        divdamp_trans_end=divdamp_trans_end, &
+        l_vert_nested=l_vert_nested, &
+        rhotheta_offctr=rhotheta_offctr, &
+        veladv_offctr=veladv_offctr, &
+        max_nudging_coeff=max_nudging_coeff, &
+        divdamp_fac=divdamp_fac, &
+        divdamp_fac2=divdamp_fac2, &
+        divdamp_fac3=divdamp_fac3, &
+        divdamp_fac4=divdamp_fac4, &
+        divdamp_z=divdamp_z, &
+        divdamp_z2=divdamp_z2, &
+        divdamp_z3=divdamp_z3, &
+        divdamp_z4=divdamp_z4, &
+        lowest_layer_thickness=lowest_layer_thickness, &
+        model_top_height=model_top_height, &
+        stretch_factor=stretch_factor, &
+        nflat_gradp=nflat_gradp, &
+        num_levels=num_levels, &
+        rc=rc)
 
    if (rc /= 0) then
        print *, "Error in solve_nh_init"
@@ -587,25 +774,24 @@ program solve_nh_simulation
    end if
 
 
-   do idyn_timestep = 0, ndyn_substeps
-      ! Call solve_nh_run
-      call solve_nh_run(rho_now, rho_new, exner_now, exner_new, w_now, w_new, &
-                        theta_v_now, theta_v_new, vn_now, vn_new, &
-                        w_concorr_c, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, &
-                        ddt_w_adv_ntl1, ddt_w_adv_ntl2, theta_v_ic, rho_ic, &
-                        exner_pr, exner_dyn_incr, ddt_exner_phy, grf_tend_rho, &
-                        grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, &
-                        grf_tend_vn, vn_ie, vt, mass_flx_me, mass_flx_ic, &
-                        vn_traj, dtime, lprep_adv, clean_mflx, recompute, linit, &
-                        divdamp_fac_o2, ndyn_substeps, idyn_timestep, rc)
 
-      if (rc /= 0) then
-          print *, "Error in solve_nh_run"
-          call exit(1)
-      end if
-  end do
+  call solve_nh_run(rho_now, rho_new, exner_now, exner_new, w_now, w_new, &
+                    theta_v_now, theta_v_new, vn_now, vn_new, &
+                    w_concorr_c, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, &
+                    ddt_w_adv_ntl1, ddt_w_adv_ntl2, theta_v_ic, rho_ic, &
+                    exner_pr, exner_dyn_incr, ddt_exner_phy, grf_tend_rho, &
+                    grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, &
+                    grf_tend_vn, vn_ie, vt, mass_flx_me, mass_flx_ic, &
+                    vn_traj, dtime, lprep_adv, clean_mflx, recompute, linit, &
+                    divdamp_fac_o2, ndyn_substeps, idyn_timestep, nnow, nnew, rc)
 
-   !$acc update host (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+  if (rc /= 0) then
+      print *, "Error in solve_nh_run"
+      call exit(1)
+  end if
+
+
+   !$acc update host (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
    !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
    !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
@@ -625,12 +811,14 @@ program solve_nh_simulation
    !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
    !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
    !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
-   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
+   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp, &
+   !$acc c2e, e2c, e2v, v2e, v2c, c2v, e2c2v, c2e2c, e2c2e, cell_starts, cell_ends, &
+   !$acc vertex_starts, vertex_ends, edge_starts, edge_ends)
 
    print *, "passed"
 
   !$acc end data
-  !$acc exit data delete (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+  !$acc exit data delete (vct_a, vct_b, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
   !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
   !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
@@ -650,7 +838,9 @@ program solve_nh_simulation
   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
-  !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
+  !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp, &
+  !$acc c2e, e2c, e2v, v2e, v2c, c2v, e2c2v, c2e2c, e2c2e, cell_starts, cell_ends, &
+  !$acc vertex_starts, vertex_ends, edge_starts, edge_ends)
 
 
 end program solve_nh_simulation

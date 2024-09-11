@@ -80,9 +80,14 @@ from icon4py.model.atmosphere.dycore.update_density_exner_wind import (
     _update_density_exner_wind,
 )
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
+
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 # TODO: abishekg7 move this to tests
@@ -92,19 +97,20 @@ def init_test_fields(
     z_theta_v_e: fa.EdgeKField[float],
     z_dwdz_dd: fa.CellKField[float],
     z_graddiv_vn: fa.EdgeKField[float],
-    indices_edges_1: gtx.int32,
-    indices_edges_2: gtx.int32,
-    indices_cells_1: gtx.int32,
-    indices_cells_2: gtx.int32,
-    nlev: gtx.int32,
+    edges_start: gtx.int32,
+    edges_end: gtx.int32,
+    cells_start: gtx.int32,
+    cells_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _broadcast_zero_to_three_edge_kdim_fields_wp(
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
-        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
+        domain={EdgeDim: (edges_start, edges_end), KDim: (vertical_start, vertical_end)},
     )
     _init_cell_kdim_field_with_zero_wp(
         out=z_dwdz_dd,
-        domain={CellDim: (indices_cells_1, indices_cells_2), KDim: (0, nlev)},
+        domain={CellDim: (cells_start, cells_end), KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -560,12 +566,12 @@ def predictor_stencils_11_lower_upper(
 def compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[float],
     p_vt: fa.EdgeKField[float],
-    pos_on_tplane_e_1: gtx.Field[[ECDim], float],
-    pos_on_tplane_e_2: gtx.Field[[ECDim], float],
-    primal_normal_cell_1: gtx.Field[[ECDim], float],
-    dual_normal_cell_1: gtx.Field[[ECDim], float],
-    primal_normal_cell_2: gtx.Field[[ECDim], float],
-    dual_normal_cell_2: gtx.Field[[ECDim], float],
+    pos_on_tplane_e_1: gtx.Field[[dims.ECDim], float],
+    pos_on_tplane_e_2: gtx.Field[[dims.ECDim], float],
+    primal_normal_cell_1: gtx.Field[[dims.ECDim], float],
+    dual_normal_cell_1: gtx.Field[[dims.ECDim], float],
+    primal_normal_cell_2: gtx.Field[[dims.ECDim], float],
+    dual_normal_cell_2: gtx.Field[[dims.ECDim], float],
     p_dthalf: float,
     rho_ref_me: fa.EdgeKField[float],
     theta_ref_me: fa.EdgeKField[float],
@@ -713,7 +719,7 @@ def predictor_stencils_37_38(
 
 @gtx.field_operator
 def _stencils_39_40(
-    e_bln_c_s: gtx.Field[[CEDim], float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
     z_w_concorr_me: fa.EdgeKField[float],
     wgtfac_c: fa.CellKField[float],
     wgtfacq_c_dsl: fa.CellKField[float],
@@ -741,7 +747,7 @@ def _stencils_39_40(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def stencils_39_40(
-    e_bln_c_s: gtx.Field[[CEDim], float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
     z_w_concorr_me: fa.EdgeKField[float],
     wgtfac_c: fa.CellKField[float],
     wgtfacq_c_dsl: fa.CellKField[float],

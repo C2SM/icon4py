@@ -10,21 +10,21 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as test_helpers
 import icon4py.model.common.type_alias as types
-from icon4py.model.common.dimension import CellDim, KDim, V2CDim, VertexDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     compute_cell_2_vertex_interpolation,
 )
+from icon4py.model.common.test_utils import helpers
 
 
-class TestComputeCells2VertsInterpolation(test_helpers.StencilTest):
+class TestComputeCells2VertsInterpolation(helpers.StencilTest):
     PROGRAM = compute_cell_2_vertex_interpolation
     OUTPUTS = ("vert_out",)
 
     @staticmethod
     def reference(grid, cell_in: np.array, c_int: np.array, **kwargs) -> dict:
-        v2c = grid.connectivities[V2CDim]
+        v2c = grid.connectivities[dims.V2CDim]
         c_int = np.expand_dims(c_int, axis=-1)
         out_field = np.sum(cell_in[v2c] * c_int, axis=1)
 
@@ -34,9 +34,9 @@ class TestComputeCells2VertsInterpolation(test_helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        cell_in = test_helpers.random_field(grid, CellDim, KDim, dtype=types.wpfloat)
-        c_int = test_helpers.random_field(grid, VertexDim, V2CDim, dtype=types.wpfloat)
-        vert_out = test_helpers.zero_field(grid, VertexDim, KDim, dtype=types.wpfloat)
+        cell_in = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=types.wpfloat)
+        c_int = helpers.random_field(grid, dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)
+        vert_out = helpers.zero_field(grid, dims.VertexDim, dims.KDim, dtype=types.wpfloat)
 
         return dict(
             cell_in=cell_in,

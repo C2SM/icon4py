@@ -11,12 +11,12 @@ import numpy as np
 
 def _compute_nbidx(
     k_range: range,
-    z_mc: np.array,
-    z_mc_off: np.array,
-    nbidx: np.array,
+    z_mc: np.ndarray,
+    z_mc_off: np.ndarray,
+    nbidx: np.ndarray,
     jc: int,
     nlev: int,
-) -> np.array:
+) -> np.ndarray:
     for ind in range(3):
         jk_start = nlev - 1
         for jk in reversed(k_range):
@@ -34,12 +34,12 @@ def _compute_nbidx(
 
 def _compute_z_vintcoeff(
     k_range: range,
-    z_mc: np.array,
-    z_mc_off: np.array,
-    z_vintcoeff: np.array,
+    z_mc: np.ndarray,
+    z_mc_off: np.ndarray,
+    z_vintcoeff: np.ndarray,
     jc: int,
     nlev: int,
-) -> np.array:
+) -> np.ndarray:
     for ind in range(3):
         jk_start = nlev - 1
         for jk in reversed(k_range):
@@ -60,9 +60,9 @@ def _compute_z_vintcoeff(
 def _compute_ls_params(
     k_start: list,
     k_end: list,
-    z_maxslp_avg: np.array,
-    z_maxhgtd_avg: np.array,
-    c_owner_mask: np.array,
+    z_maxslp_avg: np.ndarray,
+    z_maxhgtd_avg: np.ndarray,
+    c_owner_mask: np.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     cell_nudging: int,
@@ -92,11 +92,11 @@ def _compute_ls_params(
 
 
 def _compute_k_start_end(
-    z_mc: np.array,
-    max_nbhgt: np.array,
-    z_maxslp_avg: np.array,
-    z_maxhgtd_avg: np.array,
-    c_owner_mask: np.array,
+    z_mc: np.ndarray,
+    max_nbhgt: np.ndarray,
+    z_maxslp_avg: np.ndarray,
+    z_maxhgtd_avg: np.ndarray,
+    c_owner_mask: np.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     cell_nudging: int,
@@ -127,24 +127,24 @@ def _compute_k_start_end(
 
 
 def compute_diffusion_metrics(
-    z_mc: np.array,
-    z_mc_off: np.array,
-    max_nbhgt: np.array,
-    c_owner_mask: np.array,
-    nbidx: np.array,
-    z_vintcoeff: np.array,
-    z_maxslp_avg: np.array,
-    z_maxhgtd_avg: np.array,
-    mask_hdiff: np.array,
-    zd_diffcoef_dsl: np.array,
-    zd_intcoef_dsl: np.array,
-    zd_vertoffset_dsl: np.array,
+    z_mc: np.ndarray,
+    z_mc_off: np.ndarray,
+    max_nbhgt: np.ndarray,
+    c_owner_mask: np.ndarray,
+    nbidx: np.ndarray,
+    z_vintcoeff: np.ndarray,
+    z_maxslp_avg: np.ndarray,
+    z_maxhgtd_avg: np.ndarray,
+    mask_hdiff: np.ndarray,
+    zd_diffcoef_dsl: np.ndarray,
+    zd_intcoef_dsl: np.ndarray,
+    zd_vertoffset_dsl: np.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     cell_nudging: int,
     n_cells: int,
     nlev: int,
-) -> tuple[np.array, np.array, np.array, np.array]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     k_start, k_end = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,

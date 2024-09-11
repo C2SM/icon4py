@@ -11,16 +11,16 @@ import numpy as np
 
 def compute_zdiff_gradp_dsl(
     e2c,
-    z_me: np.array,
-    z_mc: np.array,
-    z_ifc: np.array,
-    flat_idx: np.array,
-    z_aux2: np.array,
+    z_me: np.ndarray,
+    z_mc: np.ndarray,
+    z_ifc: np.ndarray,
+    flat_idx: np.ndarray,
+    z_aux2: np.ndarray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
     nedges: int,
-) -> np.array:
+) -> np.ndarray:
     zdiff_gradp = np.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
         np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]

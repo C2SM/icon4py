@@ -21,28 +21,22 @@
 
 import logging
 
-import gt4py.next as gtx
 import pytest
-from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.dimension import CellDim, EdgeDim
-from icon4pytools.py2fgen.wrappers.dycore import grid_init, solve_nh_init, solve_nh_run
 
+import gt4py.next as gtx
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     DivergenceDampingOrder,
     HorizontalPressureDiscretizationType,
     RhoThetaAdvectionType,
     TimeSteppingScheme,
 )
-
 from icon4py.model.common import constants, dimension as dims
-
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     helpers,
 )
-
-from icon4pytools.py2fgen.wrappers.dycore import solve_nh_init, solve_nh_run
-
+from icon4pytools.py2fgen.wrappers.dycore import grid_init, solve_nh_init, solve_nh_run
 
 logging.basicConfig(level=logging.INFO)
 
@@ -923,11 +917,11 @@ def test_granule_solve_nonhydro_multi_step_regional(
             nnow = nnew
             nnew = ntemp
 
-    cell_start_lb_plus2 = icon_grid.get_start_index(
-        CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+    cell_start_lb_plus2 = icon_grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    edge_start_lb_plus4 = icon_grid.get_start_index(
-        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+    edge_start_lb_plus4 = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
 
     assert helpers.dallclose(

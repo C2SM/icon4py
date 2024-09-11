@@ -15,7 +15,7 @@ from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.model.common.dimension import KDim, Koff
+from icon4py.model.common import dimension as dims
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
 from icon4pytools.icon4pygen.metadata import StencilInfo
@@ -66,7 +66,7 @@ def transform_and_configure_fencil(
                 itir.FunCall(
                     fun=itir.SymRef(id="named_range"),
                     args=[
-                        itir.AxisLiteral(value=Koff.source.value),
+                        itir.AxisLiteral(value=dims.Koff.source.value),
                         itir.SymRef(id=V_START),
                         itir.SymRef(id=V_END),
                     ],
@@ -145,7 +145,7 @@ def generate_gtheader(
     return translation.generate_stencil_source(
         transformed_fencil,
         offset_provider=offset_provider,
-        column_axis=KDim,  # only used for ScanOperator
+        column_axis=dims.KDim,  # only used for ScanOperator
         **kwargs,
     )
 
