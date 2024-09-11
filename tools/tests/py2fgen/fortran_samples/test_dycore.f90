@@ -137,7 +137,7 @@ program solve_nh_simulation
    real(c_double), parameter :: dtime = 10.0
    real(c_double), parameter :: rayleigh_damping_height = 12500.0
    real(c_double), parameter :: flat_height = 16000.0
-   integer(c_int), parameter :: jstep = 0
+   integer(c_int), parameter :: idyn_timestep = 0
    integer(c_int), parameter :: nflat_gradp = 59
    real(c_double), parameter :: ndyn_substeps = 2.0
 
@@ -586,21 +586,24 @@ program solve_nh_simulation
        call exit(1)
    end if
 
-  ! Call solve_nh_run
-  call solve_nh_run(rho_now, rho_new, exner_now, exner_new, w_now, w_new, &
-                    theta_v_now, theta_v_new, vn_now, vn_new, &
-                    w_concorr_c, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, &
-                    ddt_w_adv_ntl1, ddt_w_adv_ntl2, theta_v_ic, rho_ic, &
-                    exner_pr, exner_dyn_incr, ddt_exner_phy, grf_tend_rho, &
-                    grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, &
-                    grf_tend_vn, vn_ie, vt, mass_flx_me, mass_flx_ic, &
-                    vn_traj, dtime, lprep_adv, clean_mflx, recompute, linit, &
-                    divdamp_fac_o2, ndyn_substeps, jstep, rc)
 
-  if (rc /= 0) then
-      print *, "Error in solve_nh_run"
-      call exit(1)
-  end if
+   do idyn_timestep = 0, ndyn_substeps
+      ! Call solve_nh_run
+      call solve_nh_run(rho_now, rho_new, exner_now, exner_new, w_now, w_new, &
+                        theta_v_now, theta_v_new, vn_now, vn_new, &
+                        w_concorr_c, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, &
+                        ddt_w_adv_ntl1, ddt_w_adv_ntl2, theta_v_ic, rho_ic, &
+                        exner_pr, exner_dyn_incr, ddt_exner_phy, grf_tend_rho, &
+                        grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, &
+                        grf_tend_vn, vn_ie, vt, mass_flx_me, mass_flx_ic, &
+                        vn_traj, dtime, lprep_adv, clean_mflx, recompute, linit, &
+                        divdamp_fac_o2, ndyn_substeps, idyn_timestep, rc)
+
+      if (rc /= 0) then
+          print *, "Error in solve_nh_run"
+          call exit(1)
+      end if
+  end do
 
    !$acc update host (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
    !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &

@@ -47,7 +47,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-
+from icon4py.model.common.settings import xp
 
 class VelocityAdvection:
     def __init__(
@@ -409,7 +409,7 @@ class VelocityAdvection:
 
     def _update_levmask_from_cfl_clipping(self):
         self.levmask = gtx.as_field(
-            domain=(KDim,), data=(np.any(self.cfl_clipping.ndarray, 0)), dtype=bool
+            domain=(KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):

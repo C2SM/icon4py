@@ -249,6 +249,8 @@ logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else 
                     datefmt='%Y-%m-%d %H:%M:%S')
 {% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
 
+import numpy as np
+
 # embedded module imports
 {% for stmt in imports -%}
 {{ stmt }}

@@ -565,7 +565,7 @@ class SolveNonhydro:
         end_edge_local = self.grid.get_end_index(
             EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
         )
-        # # TODO: abishekg7 move this to tests
+        # TODO: abishekg7 move this to tests
         if self.p_test_run:
             nhsolve_prog.init_test_fields(
                 self.intermediate_fields.z_rho_e,
@@ -678,6 +678,10 @@ class SolveNonhydro:
         log.info(
             f"running predictor step: dtime = {dtime}, init = {l_init}, recompute = {l_recompute} "
         )
+
+        log.debug(f"NNOW {nnow}")
+        log.debug(f"NNEW {nnew}")
+
         if l_init or l_recompute:
             if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT and not l_init:
                 lvn_only = True  # Recompute only vn tendency
@@ -909,6 +913,7 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
+
 
         # Compute rho and theta at edges for horizontal flux divergence term
         if self.config.iadv_rhotheta == RhoThetaAdvectionType.SIMPLE:

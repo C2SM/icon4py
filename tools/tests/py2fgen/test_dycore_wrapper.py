@@ -21,23 +21,25 @@
 
 import logging
 
-from gt4py.next import as_field
-from icon4py.model.common.dimension import (
-    C2E2CODim,
-    C2EDim,
-    CellDim,
-    E2C2EDim,
-    E2C2EODim,
-    E2C2VDim,
-    E2CDim,
-    EdgeDim,
-    KDim,
-    V2CDim,
-    V2EDim,
-    VertexDim,
+import gt4py.next as gtx
+import pytest
+from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.dimension import CellDim, EdgeDim
+from icon4pytools.py2fgen.wrappers.dycore import grid_init, solve_nh_init, solve_nh_run
+
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
+    DivergenceDampingOrder,
+    HorizontalPressureDiscretizationType,
+    RhoThetaAdvectionType,
+    TimeSteppingScheme,
 )
-from icon4py.model.common.settings import xp
-from icon4py.model.common.test_utils.grid_utils import MCH_CH_R04B09_LEVELS
+
+from icon4py.model.common import constants, dimension as dims
+
+from icon4py.model.common.test_utils import (
+    datatest_utils as dt_utils,
+    helpers,
+)
 
 from icon4pytools.py2fgen.wrappers.dycore import solve_nh_init, solve_nh_run
 
@@ -45,297 +47,234 @@ from icon4pytools.py2fgen.wrappers.dycore import solve_nh_init, solve_nh_run
 logging.basicConfig(level=logging.INFO)
 
 
-def test_solve_nh_wrapper():
-    # Grid parameters
-    num_cells = 20896
-    num_edges = 31558
-    num_verts = 10663
-    num_levels = MCH_CH_R04B09_LEVELS
-    num_c2ec2o = 4
-    num_v2e = 6
-    num_c2e = 3
-    num_e2c2v = 4
-    num_e2c = 2
-    num_e2c2eo = 3  # todo: check
-    mean_cell_area = 24907282236.708576
+@pytest.mark.datatest
+@pytest.mark.parametrize("istep_init,jstep_init, istep_exit,jstep_exit", [(1, 0, 2, 0)])
+@pytest.mark.parametrize(
+    "experiment,step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+    ],
+)
+def test_granule_solve_nonhydro_single_step_regional(
+    istep_init,
+    istep_exit,
+    jstep_init,
+    jstep_exit,
+    step_date_init,
+    step_date_exit,
+    experiment,
+    ndyn_substeps,
+    savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    grid_savepoint,
+    metrics_savepoint,
+    interpolation_savepoint,
+    savepoint_nonhydro_exit,
+    savepoint_nonhydro_step_exit,
+    caplog,
+):
+    caplog.set_level(logging.DEBUG)
 
-    # Other configuration parameters
-    dtime = 10.0
+    # savepoints
+    sp = savepoint_nonhydro_init
+    sp_step_exit = savepoint_nonhydro_step_exit
+
+    # non hydrostatic config parameters
+    itime_scheme = TimeSteppingScheme.MOST_EFFICIENT
+    iadv_rhotheta = RhoThetaAdvectionType.MIURA
+    igradp_method = HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    ndyn_substeps = ndyn_substeps
+    rayleigh_type = constants.RayleighType.KLEMP
+    rayleigh_coeff = 0.05
+    divdamp_order = DivergenceDampingOrder.COMBINED
+    is_iau_active = False
+    iau_wgt_dyn = 1.0
+    divdamp_type = 3
+    divdamp_trans_start = 12500.0
+    divdamp_trans_end = 17500.0
+    l_vert_nested = False
+    rhotheta_offctr = -0.1
+    veladv_offctr = 0.25
+    max_nudging_coeff = 0.075
+    divdamp_fac = 0.004
+    divdamp_fac2 = 0.004
+    divdamp_fac3 = 0.004
+    divdamp_fac4 = 0.004
+    divdamp_z = 32500.0
+    divdamp_z2 = 40000.0
+    divdamp_z3 = 60000.0
+    divdamp_z4 = 80000.0
+
+    # vertical grid params
+    num_levels = 65
+    lowest_layer_thickness = 20.0
+    model_top_height = 23000.0
+    stretch_factor = 0.65
     rayleigh_damping_height = 12500.0
-    flat_height = 16000.0
-    nflat_gradp = 59
-    ndyn_substeps = 2.0
-    jstep = 0
 
-    # Nonhydrostatic configuration
-    itime_scheme = 4  # itime scheme can only be 4
-    iadv_rhotheta = 2
-    igradp_method = 3
-    rayleigh_type = 1
-    rayleigh_coeff = 0.1
-    divdamp_order = 24  # divdamp order can only be 24
-    is_iau_active = False  # todo: ...
-    iau_wgt_dyn = 0.5
-    divdamp_fac_o2 = 0.5
-    divdamp_type = 1
-    divdamp_trans_start = 1000.0
-    divdamp_trans_end = 2000.0
-    l_vert_nested = False  # vertical nesting support is not implemented
-    rhotheta_offctr = 1.0
-    veladv_offctr = 1.0
-    max_nudging_coeff = 0.1
-    divdamp_fac = 1.0
-    divdamp_fac2 = 2.0
-    divdamp_fac3 = 3.0
-    divdamp_fac4 = 4.0
-    divdamp_z = 1.0
-    divdamp_z2 = 2.0
-    divdamp_z3 = 3.0
-    divdamp_z4 = 4.0
-    htop_moist_proc = 1000.0
-    limited_area = True
-    lprep_adv = False
-    clean_mflx = True
-    recompute = False
-    linit = False
+    # vertical params
+    vct_a = grid_savepoint.vct_a()
+    vct_b = grid_savepoint.vct_b()
+    nflat_gradp = grid_savepoint.nflat_gradp()
 
-    # Input data - numpy
-    rng = xp.random.default_rng()
+    # other params
+    dtime = sp.get_metadata("dtime").get("dtime")
+    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
 
-    # The vct_a array must be set to the same values as the ones in ICON.
-    # It represents the reference heights of vertical levels in meters, and many key vertical indices are derived from it.
-    # Accurate computation of bounds relies on using the same vct_a values as those in ICON.
-    vct_a = xp.asarray(
-        [
-            23000.0,
-            20267.579776144084,
-            18808.316862872744,
-            17645.20947843258,
-            16649.573524156993,
-            15767.598849006221,
-            14970.17804229092,
-            14239.283693028447,
-            13562.75820630252,
-            12931.905058984285,
-            12340.22824884565,
-            11782.711681133735,
-            11255.378878851721,
-            10755.009592797565,
-            10278.949589989745,
-            9824.978499468381,
-            9391.215299185755,
-            8976.0490382992,
-            8578.086969013575,
-            8196.11499008041,
-            7829.066987285794,
-            7476.0007272129105,
-            7136.078660578203,
-            6808.552460051288,
-            6492.750437928688,
-            6188.067212417723,
-            5893.955149722682,
-            5609.917223280037,
-            5335.501014932097,
-            5070.293644636082,
-            4813.9174616536775,
-            4566.0263653241045,
-            4326.302650484456,
-            4094.4542934937413,
-            3870.212611174545,
-            3653.3302379273473,
-            3443.5793766239703,
-            3240.750287267658,
-            3044.649984289428,
-            2855.101119099911,
-            2671.9410294241347,
-            2495.0209412555105,
-            2324.2053131841913,
-            2159.371316580089,
-            2000.4084488403732,
-            1847.2182808658658,
-            1699.7143443769428,
-            1557.8221699649202,
-            1421.479493379662,
-            1290.63665617212,
-            1165.2572384824416,
-            1045.3189781024735,
-            930.8150535208842,
-            821.7558437251436,
-            718.1713313259359,
-            620.1144009054101,
-            527.6654250683475,
-            440.93877255014786,
-            360.09231087410603,
-            285.34182080238656,
-            216.98400030452174,
-            155.43579225710877,
-            101.30847966961008,
-            55.56948426298202,
-            20.00000000000001,
-            0.0,
-        ]
+    # Cell geometry
+    cell_center_lat = grid_savepoint.cell_center_lat()
+    cell_center_lon = grid_savepoint.cell_center_lon()
+    cell_areas = grid_savepoint.cell_areas()
+
+    # Edge geometry
+    tangent_orientation = grid_savepoint.tangent_orientation()
+    inverse_primal_edge_lengths = grid_savepoint.inverse_primal_edge_lengths()
+    inverse_dual_edge_lengths = grid_savepoint.inv_dual_edge_length()
+    inverse_vertex_vertex_lengths = grid_savepoint.inv_vert_vert_length()
+    primal_normal_vert_x = grid_savepoint.primal_normal_vert_x()
+    primal_normal_vert_y = grid_savepoint.primal_normal_vert_y()
+    dual_normal_vert_x = grid_savepoint.dual_normal_vert_x()
+    dual_normal_vert_y = grid_savepoint.dual_normal_vert_y()
+    primal_normal_cell_x = grid_savepoint.primal_normal_cell_x()
+    primal_normal_cell_y = grid_savepoint.primal_normal_cell_y()
+    dual_normal_cell_x = grid_savepoint.dual_normal_cell_x()
+    dual_normal_cell_y = grid_savepoint.dual_normal_cell_y()
+    edge_areas = grid_savepoint.edge_areas()
+    f_e = grid_savepoint.f_e()
+    edge_center_lat = grid_savepoint.edge_center_lat()
+    edge_center_lon = grid_savepoint.edge_center_lon()
+    primal_normal_x = grid_savepoint.primal_normal_x()
+    primal_normal_y = grid_savepoint.primal_normal_y()
+
+    # metric state parameters
+    bdy_halo_c = metrics_savepoint.bdy_halo_c()
+    mask_prog_halo_c = metrics_savepoint.mask_prog_halo_c()
+    rayleigh_w = metrics_savepoint.rayleigh_w()
+    exner_exfac = metrics_savepoint.exner_exfac()
+    exner_ref_mc = metrics_savepoint.exner_ref_mc()
+    wgtfac_c = metrics_savepoint.wgtfac_c()
+    wgtfacq_c = metrics_savepoint.wgtfacq_c_dsl()
+    inv_ddqz_z_full = metrics_savepoint.inv_ddqz_z_full()
+    rho_ref_mc = metrics_savepoint.rho_ref_mc()
+    theta_ref_mc = metrics_savepoint.theta_ref_mc()
+    vwind_expl_wgt = metrics_savepoint.vwind_expl_wgt()
+    d_exner_dz_ref_ic = metrics_savepoint.d_exner_dz_ref_ic()
+    ddqz_z_half = metrics_savepoint.ddqz_z_half()
+    theta_ref_ic = metrics_savepoint.theta_ref_ic()
+    d2dexdz2_fac1_mc = metrics_savepoint.d2dexdz2_fac1_mc()
+    d2dexdz2_fac2_mc = metrics_savepoint.d2dexdz2_fac2_mc()
+    rho_ref_me = metrics_savepoint.rho_ref_me()
+    theta_ref_me = metrics_savepoint.theta_ref_me()
+    ddxn_z_full = metrics_savepoint.ddxn_z_full()
+    zdiff_gradp = metrics_savepoint._get_field(
+        "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
+    )
+    vertoffset_gradp = metrics_savepoint._get_field(
+        "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+    )
+    ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
+    pg_exdist = metrics_savepoint.pg_exdist()
+    ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
+    ddxt_z_full = metrics_savepoint.ddxt_z_full()
+    wgtfac_e = metrics_savepoint.wgtfac_e()
+    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(num_levels)
+    vwind_impl_wgt = metrics_savepoint.vwind_impl_wgt()
+    hmask_dd3d = metrics_savepoint.hmask_dd3d()
+    scalfac_dd3d = metrics_savepoint.scalfac_dd3d()
+    coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
+    coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
+    coeff_gradekin = metrics_savepoint._get_field("coeff_gradekin", dims.EdgeDim, dims.E2CDim)
+
+    # interpolation state parameters
+    c_lin_e = interpolation_savepoint.c_lin_e()
+    c_intp = interpolation_savepoint.c_intp()
+    e_flx_avg = interpolation_savepoint.e_flx_avg()
+    geofac_grdiv = interpolation_savepoint.geofac_grdiv()
+    geofac_rot = interpolation_savepoint.geofac_rot()
+    pos_on_tplane_e_1 = interpolation_savepoint._get_field(
+        "pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim
+    )
+    pos_on_tplane_e_2 = interpolation_savepoint._get_field(
+        "pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim
+    )
+    rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
+    e_bln_c_s = interpolation_savepoint.e_bln_c_s()
+    rbf_coeff_1 = interpolation_savepoint.rbf_vec_coeff_v1()
+    rbf_coeff_2 = interpolation_savepoint.rbf_vec_coeff_v2()
+    geofac_div = interpolation_savepoint.geofac_div()
+    geofac_n2s = interpolation_savepoint.geofac_n2s()
+    geofac_grg_x = interpolation_savepoint.geofac_grg()[0]
+    geofac_grg_y = interpolation_savepoint.geofac_grg()[1]
+    nudgecoeff_e = interpolation_savepoint.nudgecoeff_e()
+
+    # other params
+    c_owner_mask = grid_savepoint.c_owner_mask()
+
+    # grid params
+    num_vertices = grid_savepoint.num(dims.VertexDim)
+    num_cells = grid_savepoint.num(dims.CellDim)
+    num_edges = grid_savepoint.num(dims.EdgeDim)
+    vertical_size = grid_savepoint.num(dims.KDim)
+    limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
+
+    cell_starts = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_start_index())
+    cell_ends = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_end_index())
+    vertex_starts = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_start_index())
+    vertex_ends = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_end_index())
+    edge_starts = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_start_index())
+    edge_ends = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_end_index())
+
+    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint.c2e())
+    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint.e2c())
+    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint.c2e2c())
+    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint.e2c2e())
+    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint.e2v())
+    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint.v2e())
+    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
+    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
+    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
+
+    # global grid params
+    global_root = 4
+    global_level = 9
+
+    grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+        global_root=global_root,
+        global_level=global_level,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
     )
 
-    theta_ref_mc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    wgtfac_c = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
-    e_bln_c_s = rng.uniform(low=0, high=1, size=(num_cells, num_c2e))
-    geofac_div = rng.uniform(low=0, high=1, size=(num_cells, num_c2e))
-    geofac_grg_x = rng.uniform(low=0, high=1, size=(num_cells, num_c2ec2o))
-    geofac_grg_y = rng.uniform(low=0, high=1, size=(num_cells, num_c2ec2o))
-    geofac_n2s = rng.uniform(low=0, high=1, size=(num_cells, num_c2ec2o))
-    nudgecoeff_e = xp.zeros((num_edges,))
-    rbf_coeff_1 = rng.uniform(low=0, high=1, size=(num_verts, num_v2e))
-    rbf_coeff_2 = rng.uniform(low=0, high=1, size=(num_verts, num_v2e))
-    w_now = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
-    w_new = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
-    vn_now = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    vn_new = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    exner_now = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    exner_new = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    theta_v_now = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    theta_v_new = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    rho_now = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    rho_new = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    dual_normal_cell_x = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
-    dual_normal_cell_y = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
-    dual_normal_vert_x = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2v))
-    dual_normal_vert_y = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2v))
-    primal_normal_cell_x = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
-    primal_normal_cell_y = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
-    primal_normal_vert_x = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2v))
-    primal_normal_vert_y = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2v))
-    tangent_orientation = rng.uniform(low=0, high=1, size=(num_edges))
-    inverse_primal_edge_lengths = rng.uniform(low=0, high=1, size=(num_edges))
-    inv_dual_edge_length = rng.uniform(low=0, high=1, size=(num_edges))
-    inv_vert_vert_length = rng.uniform(low=0, high=1, size=(num_edges))
-    edge_areas = rng.uniform(low=0, high=1, size=(num_edges))
-    f_e = rng.uniform(low=0, high=1, size=(num_edges))
-    cell_areas = rng.uniform(low=0, high=1, size=(num_cells))
-    c_lin_e = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
-    c_intp = rng.uniform(low=0, high=1, size=(num_verts, num_e2c))
-    e_flx_avg = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2eo))
-    geofac_grdiv = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2eo))
-    geofac_rot = rng.uniform(low=0, high=1, size=(num_verts, num_v2e))
-    pos_on_tplane_e_1 = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
-    pos_on_tplane_e_2 = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
-    rbf_vec_coeff_e = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2v))
-    rayleigh_w = rng.uniform(low=0, high=1, size=(num_levels,))
-    exner_exfac = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    exner_ref_mc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    wgtfacq_c_dsl = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    inv_ddqz_z_full = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    vwind_expl_wgt = rng.uniform(low=0, high=1, size=(num_cells,))
-    d_exner_dz_ref_ic = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    ddqz_z_half = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    theta_ref_ic = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    d2dexdz2_fac1_mc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    d2dexdz2_fac2_mc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    rho_ref_me = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    theta_ref_me = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    ddxn_z_full = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    zdiff_gradp = rng.uniform(low=0, high=1, size=(num_edges, num_e2c, num_levels))
-    vertoffset_gradp = xp.round(
-        rng.uniform(low=0, high=1, size=(num_edges, num_e2c, num_levels))
-    ).astype(xp.int32)
-    ipeidx_dsl = rng.uniform(low=0, high=1, size=(num_edges, num_levels)) < 0.5
-    pg_exdist = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    ddqz_z_full_e = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    ddxt_z_full = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    wgtfac_e = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    wgtfacq_e = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    vwind_impl_wgt = rng.uniform(low=0, high=1, size=(num_cells,))
-    hmask_dd3d = rng.uniform(low=0, high=1, size=(num_edges,))
-    scalfac_dd3d = rng.uniform(low=0, high=1, size=(num_levels,))
-    coeff1_dwdz = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    coeff2_dwdz = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    coeff_gradekin = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
-    rho_ref_mc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-
-    # Convert numpy arrays to gt4py fields
-    vct_a = as_field((KDim,), vct_a)
-    theta_ref_mc = as_field((CellDim, KDim), theta_ref_mc)
-    wgtfac_c = as_field((CellDim, KDim), wgtfac_c)
-    e_bln_c_s = as_field((CellDim, C2EDim), e_bln_c_s)
-    geofac_div = as_field((CellDim, C2EDim), geofac_div)
-    geofac_grg_x = as_field((CellDim, C2E2CODim), geofac_grg_x)
-    geofac_grg_y = as_field((CellDim, C2E2CODim), geofac_grg_y)
-    geofac_n2s = as_field((CellDim, C2E2CODim), geofac_n2s)
-    nudgecoeff_e = as_field((EdgeDim,), nudgecoeff_e)
-    rbf_coeff_1 = as_field((VertexDim, V2EDim), rbf_coeff_1)
-    rbf_coeff_2 = as_field((VertexDim, V2EDim), rbf_coeff_2)
-    w_now = as_field((CellDim, KDim), w_now)
-    w_new = as_field((CellDim, KDim), w_new)
-    vn_now = as_field((EdgeDim, KDim), vn_now)
-    vn_new = as_field((EdgeDim, KDim), vn_new)
-    exner_now = as_field((CellDim, KDim), exner_now)
-    exner_new = as_field((CellDim, KDim), exner_new)
-    theta_v_now = as_field((CellDim, KDim), theta_v_now)
-    theta_v_new = as_field((CellDim, KDim), theta_v_new)
-    rho_now = as_field((CellDim, KDim), rho_now)
-    rho_new = as_field((CellDim, KDim), rho_new)
-    dual_normal_cell_x = as_field((EdgeDim, E2CDim), dual_normal_cell_x)
-    dual_normal_cell_y = as_field((EdgeDim, E2CDim), dual_normal_cell_y)
-    dual_normal_vert_x = as_field((EdgeDim, E2C2VDim), dual_normal_vert_x)
-    dual_normal_vert_y = as_field((EdgeDim, E2C2VDim), dual_normal_vert_y)
-    primal_normal_cell_x = as_field((EdgeDim, E2CDim), primal_normal_cell_x)
-    primal_normal_cell_y = as_field((EdgeDim, E2CDim), primal_normal_cell_y)
-    primal_normal_vert_x = as_field((EdgeDim, E2C2VDim), primal_normal_vert_x)
-    primal_normal_vert_y = as_field((EdgeDim, E2C2VDim), primal_normal_vert_y)
-    tangent_orientation = as_field((EdgeDim,), tangent_orientation)
-    inverse_primal_edge_lengths = as_field((EdgeDim,), inverse_primal_edge_lengths)
-    inv_dual_edge_length = as_field((EdgeDim,), inv_dual_edge_length)
-    inv_vert_vert_length = as_field((EdgeDim,), inv_vert_vert_length)
-    edge_areas = as_field((EdgeDim,), edge_areas)
-    f_e = as_field((EdgeDim,), f_e)
-    cell_areas = as_field((CellDim,), cell_areas)
-    c_lin_e = as_field((EdgeDim, E2CDim), c_lin_e)
-    c_intp = as_field((VertexDim, V2CDim), c_intp)
-    e_flx_avg = as_field((EdgeDim, E2C2EODim), e_flx_avg)
-    geofac_grdiv = as_field((EdgeDim, E2C2EODim), geofac_grdiv)
-    geofac_rot = as_field((VertexDim, V2EDim), geofac_rot)
-    pos_on_tplane_e_1 = as_field((EdgeDim, E2CDim), pos_on_tplane_e_1)
-    pos_on_tplane_e_2 = as_field((EdgeDim, E2CDim), pos_on_tplane_e_2)
-    rbf_vec_coeff_e = as_field((EdgeDim, E2C2EDim), rbf_vec_coeff_e)
-    rayleigh_w = as_field((KDim,), rayleigh_w)
-    exner_exfac = as_field((CellDim, KDim), exner_exfac)
-    exner_ref_mc = as_field((CellDim, KDim), exner_ref_mc)
-    wgtfacq_c_dsl = as_field((CellDim, KDim), wgtfacq_c_dsl)
-    inv_ddqz_z_full = as_field((CellDim, KDim), inv_ddqz_z_full)
-    vwind_expl_wgt = as_field((CellDim,), vwind_expl_wgt)
-    d_exner_dz_ref_ic = as_field((CellDim, KDim), d_exner_dz_ref_ic)
-    ddqz_z_half = as_field((CellDim, KDim), ddqz_z_half)
-    theta_ref_ic = as_field((CellDim, KDim), theta_ref_ic)
-    d2dexdz2_fac1_mc = as_field((CellDim, KDim), d2dexdz2_fac1_mc)
-    d2dexdz2_fac2_mc = as_field((CellDim, KDim), d2dexdz2_fac2_mc)
-    rho_ref_me = as_field((EdgeDim, KDim), rho_ref_me)
-    theta_ref_me = as_field((EdgeDim, KDim), theta_ref_me)
-    ddxn_z_full = as_field((EdgeDim, KDim), ddxn_z_full)
-    zdiff_gradp = as_field((EdgeDim, E2CDim, KDim), zdiff_gradp)
-    vertoffset_gradp = as_field((EdgeDim, E2CDim, KDim), vertoffset_gradp)
-    ipeidx_dsl = as_field((EdgeDim, KDim), ipeidx_dsl)
-    pg_exdist = as_field((EdgeDim, KDim), pg_exdist)
-    ddqz_z_full_e = as_field((EdgeDim, KDim), ddqz_z_full_e)
-    ddxt_z_full = as_field((EdgeDim, KDim), ddxt_z_full)
-    wgtfac_e = as_field((EdgeDim, KDim), wgtfac_e)
-    wgtfacq_e = as_field((EdgeDim, KDim), wgtfacq_e)
-    vwind_impl_wgt = as_field((CellDim,), vwind_impl_wgt)
-    hmask_dd3d = as_field((EdgeDim,), hmask_dd3d)
-    scalfac_dd3d = as_field((KDim,), scalfac_dd3d)
-    coeff1_dwdz = as_field((CellDim, KDim), coeff1_dwdz)
-    coeff2_dwdz = as_field((CellDim, KDim), coeff2_dwdz)
-    coeff_gradekin = as_field((EdgeDim, E2CDim), coeff_gradekin)
-    rho_ref_mc = as_field((CellDim, KDim), rho_ref_mc)
-
-    # Create boolean arrays
-    bdy_halo_c = as_field((CellDim,), rng.uniform(low=0, high=1, size=(num_cells,)) < 0.5)
-    mask_prog_halo_c = as_field((CellDim,), rng.uniform(low=0, high=1, size=(num_cells,)) < 0.5)
-    c_owner_mask = as_field((CellDim,), rng.uniform(low=0, high=1, size=(num_cells,)) < 0.5)
-
+    # call solve init
     solve_nh_init(
         vct_a=vct_a,
-        nflat_gradp=nflat_gradp,
-        num_levels=num_levels,
-        mean_cell_area=mean_cell_area,
+        vct_b=vct_b,
         cell_areas=cell_areas,
         primal_normal_cell_x=primal_normal_cell_x,
         primal_normal_cell_y=primal_normal_cell_y,
@@ -344,8 +283,8 @@ def test_solve_nh_wrapper():
         edge_areas=edge_areas,
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_vert_vert_length=inv_vert_vert_length,
+        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
+        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
         primal_normal_vert_x=primal_normal_vert_x,
         primal_normal_vert_y=primal_normal_vert_y,
         dual_normal_vert_x=dual_normal_vert_x,
@@ -373,7 +312,7 @@ def test_solve_nh_wrapper():
         exner_exfac=exner_exfac,
         exner_ref_mc=exner_ref_mc,
         wgtfac_c=wgtfac_c,
-        wgtfacq_c_dsl=wgtfacq_c_dsl,
+        wgtfacq_c=wgtfacq_c,
         inv_ddqz_z_full=inv_ddqz_z_full,
         rho_ref_mc=rho_ref_mc,
         theta_ref_mc=theta_ref_mc,
@@ -393,7 +332,7 @@ def test_solve_nh_wrapper():
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
         wgtfac_e=wgtfac_e,
-        wgtfacq_e=wgtfacq_e,  # todo: wgtfacq_e_dsl
+        wgtfacq_e=wgtfacq_e,
         vwind_impl_wgt=vwind_impl_wgt,
         hmask_dd3d=hmask_dd3d,
         scalfac_dd3d=scalfac_dd3d,
@@ -401,6 +340,12 @@ def test_solve_nh_wrapper():
         coeff2_dwdz=coeff2_dwdz,
         coeff_gradekin=coeff_gradekin,
         c_owner_mask=c_owner_mask,
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
         rayleigh_damping_height=rayleigh_damping_height,
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
@@ -426,55 +371,58 @@ def test_solve_nh_wrapper():
         divdamp_z2=divdamp_z2,
         divdamp_z3=divdamp_z3,
         divdamp_z4=divdamp_z4,
-        htop_moist_proc=htop_moist_proc,
-        limited_area=limited_area,
-        flat_height=flat_height,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        nflat_gradp=nflat_gradp,
+        num_levels=num_levels,
     )
 
-    w_concorr_c = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
-    theta_v_ic = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
-    rho_ic = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
-    exner_pr = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    exner_dyn_incr = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    ddt_exner_phy = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    grf_tend_rho = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    grf_tend_thv = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    grf_tend_w = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
-    mass_fl_e = rng.uniform(low=0, high=1, size=(num_edges, num_levels + 1))
-    ddt_vn_phy = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    grf_tend_vn = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    vn_ie = rng.uniform(low=0, high=1, size=(num_edges, num_levels + 1))
-    vt = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    mass_flx_me = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    mass_flx_ic = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    vn_traj = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    ddt_vn_apc_ntl1 = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    ddt_vn_apc_ntl2 = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
-    ddt_w_adv_ntl1 = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    ddt_w_adv_ntl2 = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
+    # solve nh run parameters
+    recompute = sp.get_metadata("recompute").get("recompute")
+    linit = sp.get_metadata("linit").get("linit")
+    initial_divdamp_fac = sp.divdamp_fac_o2()
 
-    # Convert numpy arrays to gt4py fields
-    w_concorr_c = as_field((CellDim, KDim), w_concorr_c)
-    ddt_vn_apc_ntl1 = as_field((EdgeDim, KDim), ddt_vn_apc_ntl1)
-    ddt_vn_apc_ntl2 = as_field((EdgeDim, KDim), ddt_vn_apc_ntl2)
-    ddt_w_adv_ntl1 = as_field((CellDim, KDim), ddt_w_adv_ntl1)
-    ddt_w_adv_ntl2 = as_field((CellDim, KDim), ddt_w_adv_ntl2)
-    theta_v_ic = as_field((CellDim, KDim), theta_v_ic)
-    rho_ic = as_field((CellDim, KDim), rho_ic)
-    exner_pr = as_field((CellDim, KDim), exner_pr)
-    exner_dyn_incr = as_field((CellDim, KDim), exner_dyn_incr)
-    ddt_exner_phy = as_field((CellDim, KDim), ddt_exner_phy)
-    grf_tend_rho = as_field((CellDim, KDim), grf_tend_rho)
-    grf_tend_thv = as_field((CellDim, KDim), grf_tend_thv)
-    grf_tend_w = as_field((CellDim, KDim), grf_tend_w)
-    mass_fl_e = as_field((EdgeDim, KDim), mass_fl_e)
-    ddt_vn_phy = as_field((EdgeDim, KDim), ddt_vn_phy)
-    grf_tend_vn = as_field((EdgeDim, KDim), grf_tend_vn)
-    vn_ie = as_field((EdgeDim, KDim), vn_ie)
-    vt = as_field((EdgeDim, KDim), vt)
-    mass_flx_me = as_field((EdgeDim, KDim), mass_flx_me)
-    mass_flx_ic = as_field((CellDim, KDim), mass_flx_ic)
-    vn_traj = as_field((EdgeDim, KDim), vn_traj)
+    # PrepAdvection
+    vn_traj = sp.vn_traj()
+    mass_flx_me = sp.mass_flx_me()
+    mass_flx_ic = sp.mass_flx_ic()
+
+    # Diagnostic state parameters
+    theta_v_ic = sp.theta_v_ic()
+    exner_pr = sp.exner_pr()
+    rho_ic = sp.rho_ic()
+    ddt_exner_phy = sp.ddt_exner_phy()
+    grf_tend_rho = sp.grf_tend_rho()
+    grf_tend_thv = sp.grf_tend_thv()
+    grf_tend_w = sp.grf_tend_w()
+    mass_fl_e = sp.mass_fl_e()
+    ddt_vn_phy = sp.ddt_vn_phy()
+    grf_tend_vn = sp.grf_tend_vn()
+    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(1)
+    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(2)
+    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
+    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
+    vt = sp.vt()
+    vn_ie = sp.vn_ie()
+    w_concorr_c = sp.w_concorr_c()
+    exner_dyn_incr = sp.exner_dyn_incr()
+
+    # Prognostic state parameters
+    w_now = sp.w_now()
+    vn_now = sp.vn_now()
+    theta_v_now = sp.theta_v_now()
+    rho_now = sp.rho_now()
+    exner_now = sp.exner_now()
+
+    w_new = sp.w_new()
+    vn_new = sp.vn_new()
+    theta_v_new = sp.theta_v_new()
+    rho_new = sp.rho_new()
+    exner_new = sp.exner_new()
+
+    nnow = 1  # using fortran indices
+    nnew = 2
 
     solve_nh_run(
         rho_now=rho_now,
@@ -513,7 +461,533 @@ def test_solve_nh_wrapper():
         clean_mflx=clean_mflx,
         recompute=recompute,
         linit=linit,
-        divdamp_fac_o2=divdamp_fac_o2,
+        divdamp_fac_o2=initial_divdamp_fac,
         ndyn_substeps=ndyn_substeps,
-        jstep=jstep,
+        idyn_timestep=jstep_init,
+        nnow=nnow,
+        nnew=nnew
+    )
+
+    assert helpers.dallclose(
+        theta_v_new.asnumpy(),
+        sp_step_exit.theta_v_new().asnumpy(),
+    )
+
+    assert helpers.dallclose(exner_new.asnumpy(), sp_step_exit.exner_new().asnumpy())
+
+    assert helpers.dallclose(
+        vn_new.asnumpy(),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
+        rtol=1e-12,
+        atol=1e-13,
+    )
+
+    assert helpers.dallclose(rho_new.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy())
+
+    assert helpers.dallclose(
+        w_new.asnumpy(),
+        savepoint_nonhydro_exit.w_new().asnumpy(),
+        atol=8e-14,
+    )
+
+    assert helpers.dallclose(
+        exner_dyn_incr.asnumpy(),
+        savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
+        atol=1e-14,
+    )
+
+
+
+@pytest.mark.slow_tests
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit",
+    [
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000"),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000"),
+    ],
+)
+def test_granule_solve_nonhydro_multi_step_regional(
+    step_date_init,
+    step_date_exit,
+    icon_grid,
+    savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    grid_savepoint,
+    metrics_savepoint,
+    interpolation_savepoint,
+    savepoint_nonhydro_exit,
+    savepoint_nonhydro_step_exit,
+    experiment,
+    ndyn_substeps,
+):
+    # savepoints
+    sp = savepoint_nonhydro_init
+    sp_step_exit = savepoint_nonhydro_step_exit
+
+    # non hydrostatic config parameters
+    itime_scheme = TimeSteppingScheme.MOST_EFFICIENT
+    iadv_rhotheta = RhoThetaAdvectionType.MIURA
+    igradp_method = HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    ndyn_substeps = ndyn_substeps
+    rayleigh_type = constants.RayleighType.KLEMP
+    rayleigh_coeff = 0.05
+    divdamp_order = DivergenceDampingOrder.COMBINED
+    is_iau_active = False
+    iau_wgt_dyn = 1.0
+    divdamp_type = 3
+    divdamp_trans_start = 12500.0
+    divdamp_trans_end = 17500.0
+    l_vert_nested = False
+    rhotheta_offctr = -0.1
+    veladv_offctr = 0.25
+    max_nudging_coeff = 0.075
+    divdamp_fac = 0.004
+    divdamp_fac2 = 0.004
+    divdamp_fac3 = 0.004
+    divdamp_fac4 = 0.004
+    divdamp_z = 32500.0
+    divdamp_z2 = 40000.0
+    divdamp_z3 = 60000.0
+    divdamp_z4 = 80000.0
+
+    # vertical grid params
+    num_levels = 65
+    lowest_layer_thickness = 20.0
+    model_top_height = 23000.0
+    stretch_factor = 0.65
+    rayleigh_damping_height = 12500.0
+
+    # vertical params
+    vct_a = grid_savepoint.vct_a()
+    vct_b = grid_savepoint.vct_b()
+    nflat_gradp = grid_savepoint.nflat_gradp()
+
+    # other params
+    dtime = sp.get_metadata("dtime").get("dtime")
+    lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
+
+    # Cell geometry
+    cell_center_lat = grid_savepoint.cell_center_lat()
+    cell_center_lon = grid_savepoint.cell_center_lon()
+    cell_areas = grid_savepoint.cell_areas()
+
+    # Edge geometry
+    tangent_orientation = grid_savepoint.tangent_orientation()
+    inverse_primal_edge_lengths = grid_savepoint.inverse_primal_edge_lengths()
+    inverse_dual_edge_lengths = grid_savepoint.inv_dual_edge_length()
+    inverse_vertex_vertex_lengths = grid_savepoint.inv_vert_vert_length()
+    primal_normal_vert_x = grid_savepoint.primal_normal_vert_x()
+    primal_normal_vert_y = grid_savepoint.primal_normal_vert_y()
+    dual_normal_vert_x = grid_savepoint.dual_normal_vert_x()
+    dual_normal_vert_y = grid_savepoint.dual_normal_vert_y()
+    primal_normal_cell_x = grid_savepoint.primal_normal_cell_x()
+    primal_normal_cell_y = grid_savepoint.primal_normal_cell_y()
+    dual_normal_cell_x = grid_savepoint.dual_normal_cell_x()
+    dual_normal_cell_y = grid_savepoint.dual_normal_cell_y()
+    edge_areas = grid_savepoint.edge_areas()
+    f_e = grid_savepoint.f_e()
+    edge_center_lat = grid_savepoint.edge_center_lat()
+    edge_center_lon = grid_savepoint.edge_center_lon()
+    primal_normal_x = grid_savepoint.primal_normal_x()
+    primal_normal_y = grid_savepoint.primal_normal_y()
+
+    # metric state parameters
+    bdy_halo_c = metrics_savepoint.bdy_halo_c()
+    mask_prog_halo_c = metrics_savepoint.mask_prog_halo_c()
+    rayleigh_w = metrics_savepoint.rayleigh_w()
+    exner_exfac = metrics_savepoint.exner_exfac()
+    exner_ref_mc = metrics_savepoint.exner_ref_mc()
+    wgtfac_c = metrics_savepoint.wgtfac_c()
+    wgtfacq_c = metrics_savepoint.wgtfacq_c_dsl()
+    inv_ddqz_z_full = metrics_savepoint.inv_ddqz_z_full()
+    rho_ref_mc = metrics_savepoint.rho_ref_mc()
+    theta_ref_mc = metrics_savepoint.theta_ref_mc()
+    vwind_expl_wgt = metrics_savepoint.vwind_expl_wgt()
+    d_exner_dz_ref_ic = metrics_savepoint.d_exner_dz_ref_ic()
+    ddqz_z_half = metrics_savepoint.ddqz_z_half()
+    theta_ref_ic = metrics_savepoint.theta_ref_ic()
+    d2dexdz2_fac1_mc = metrics_savepoint.d2dexdz2_fac1_mc()
+    d2dexdz2_fac2_mc = metrics_savepoint.d2dexdz2_fac2_mc()
+    rho_ref_me = metrics_savepoint.rho_ref_me()
+    theta_ref_me = metrics_savepoint.theta_ref_me()
+    ddxn_z_full = metrics_savepoint.ddxn_z_full()
+    zdiff_gradp = metrics_savepoint._get_field(
+        "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
+    )
+    vertoffset_gradp = metrics_savepoint._get_field(
+        "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+    )
+    ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
+    pg_exdist = metrics_savepoint.pg_exdist()
+    ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
+    ddxt_z_full = metrics_savepoint.ddxt_z_full()
+    wgtfac_e = metrics_savepoint.wgtfac_e()
+    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(num_levels)
+    vwind_impl_wgt = metrics_savepoint.vwind_impl_wgt()
+    hmask_dd3d = metrics_savepoint.hmask_dd3d()
+    scalfac_dd3d = metrics_savepoint.scalfac_dd3d()
+    coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
+    coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
+    coeff_gradekin = metrics_savepoint._get_field("coeff_gradekin", dims.EdgeDim, dims.E2CDim)
+
+    # interpolation state parameters
+    c_lin_e = interpolation_savepoint.c_lin_e()
+    c_intp = interpolation_savepoint.c_intp()
+    e_flx_avg = interpolation_savepoint.e_flx_avg()
+    geofac_grdiv = interpolation_savepoint.geofac_grdiv()
+    geofac_rot = interpolation_savepoint.geofac_rot()
+    pos_on_tplane_e_1 = interpolation_savepoint._get_field(
+        "pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim
+    )
+    pos_on_tplane_e_2 = interpolation_savepoint._get_field(
+        "pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim
+    )
+    rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
+    e_bln_c_s = interpolation_savepoint.e_bln_c_s()
+    rbf_coeff_1 = interpolation_savepoint.rbf_vec_coeff_v1()
+    rbf_coeff_2 = interpolation_savepoint.rbf_vec_coeff_v2()
+    geofac_div = interpolation_savepoint.geofac_div()
+    geofac_n2s = interpolation_savepoint.geofac_n2s()
+    geofac_grg_x = interpolation_savepoint.geofac_grg()[0]
+    geofac_grg_y = interpolation_savepoint.geofac_grg()[1]
+    nudgecoeff_e = interpolation_savepoint.nudgecoeff_e()
+
+    # other params
+    c_owner_mask = grid_savepoint.c_owner_mask()
+
+    # grid params
+    num_vertices = grid_savepoint.num(dims.VertexDim)
+    num_cells = grid_savepoint.num(dims.CellDim)
+    num_edges = grid_savepoint.num(dims.EdgeDim)
+    vertical_size = grid_savepoint.num(dims.KDim)
+    limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
+
+    cell_starts = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_start_index())
+    cell_ends = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_end_index())
+    vertex_starts = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_start_index())
+    vertex_ends = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_end_index())
+    edge_starts = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_start_index())
+    edge_ends = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_end_index())
+
+    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint.c2e())
+    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint.e2c())
+    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint.c2e2c())
+    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint.e2c2e())
+    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint.e2v())
+    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint.v2e())
+    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
+    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
+    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
+
+    # global grid params
+    global_root = 4
+    global_level = 9
+
+    grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+        global_root=global_root,
+        global_level=global_level,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+    )
+
+    # call solve init
+    solve_nh_init(
+        vct_a=vct_a,
+        vct_b=vct_b,
+        cell_areas=cell_areas,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
+        edge_areas=edge_areas,
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
+        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        f_e=f_e,
+        c_lin_e=c_lin_e,
+        c_intp=c_intp,
+        e_flx_avg=e_flx_avg,
+        geofac_grdiv=geofac_grdiv,
+        geofac_rot=geofac_rot,
+        pos_on_tplane_e_1=pos_on_tplane_e_1,
+        pos_on_tplane_e_2=pos_on_tplane_e_2,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        e_bln_c_s=e_bln_c_s,
+        rbf_coeff_1=rbf_coeff_1,
+        rbf_coeff_2=rbf_coeff_2,
+        geofac_div=geofac_div,
+        geofac_n2s=geofac_n2s,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
+        nudgecoeff_e=nudgecoeff_e,
+        bdy_halo_c=bdy_halo_c,
+        mask_prog_halo_c=mask_prog_halo_c,
+        rayleigh_w=rayleigh_w,
+        exner_exfac=exner_exfac,
+        exner_ref_mc=exner_ref_mc,
+        wgtfac_c=wgtfac_c,
+        wgtfacq_c=wgtfacq_c,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        rho_ref_mc=rho_ref_mc,
+        theta_ref_mc=theta_ref_mc,
+        vwind_expl_wgt=vwind_expl_wgt,
+        d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+        ddqz_z_half=ddqz_z_half,
+        theta_ref_ic=theta_ref_ic,
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
+        rho_ref_me=rho_ref_me,
+        theta_ref_me=theta_ref_me,
+        ddxn_z_full=ddxn_z_full,
+        zdiff_gradp=zdiff_gradp,
+        vertoffset_gradp=vertoffset_gradp,
+        ipeidx_dsl=ipeidx_dsl,
+        pg_exdist=pg_exdist,
+        ddqz_z_full_e=ddqz_z_full_e,
+        ddxt_z_full=ddxt_z_full,
+        wgtfac_e=wgtfac_e,
+        wgtfacq_e=wgtfacq_e,
+        vwind_impl_wgt=vwind_impl_wgt,
+        hmask_dd3d=hmask_dd3d,
+        scalfac_dd3d=scalfac_dd3d,
+        coeff1_dwdz=coeff1_dwdz,
+        coeff2_dwdz=coeff2_dwdz,
+        coeff_gradekin=coeff_gradekin,
+        c_owner_mask=c_owner_mask,
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
+        rayleigh_damping_height=rayleigh_damping_height,
+        itime_scheme=itime_scheme,
+        iadv_rhotheta=iadv_rhotheta,
+        igradp_method=igradp_method,
+        ndyn_substeps=ndyn_substeps,
+        rayleigh_type=rayleigh_type,
+        rayleigh_coeff=rayleigh_coeff,
+        divdamp_order=divdamp_order,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
+        divdamp_type=divdamp_type,
+        divdamp_trans_start=divdamp_trans_start,
+        divdamp_trans_end=divdamp_trans_end,
+        l_vert_nested=l_vert_nested,
+        rhotheta_offctr=rhotheta_offctr,
+        veladv_offctr=veladv_offctr,
+        max_nudging_coeff=max_nudging_coeff,
+        divdamp_fac=divdamp_fac,
+        divdamp_fac2=divdamp_fac2,
+        divdamp_fac3=divdamp_fac3,
+        divdamp_fac4=divdamp_fac4,
+        divdamp_z=divdamp_z,
+        divdamp_z2=divdamp_z2,
+        divdamp_z3=divdamp_z3,
+        divdamp_z4=divdamp_z4,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        nflat_gradp=nflat_gradp,
+        num_levels=num_levels,
+    )
+
+    # solve nh run parameters
+    recompute = sp.get_metadata("recompute").get("recompute")
+    linit = sp.get_metadata("linit").get("linit")
+    initial_divdamp_fac = sp.divdamp_fac_o2()
+
+    # PrepAdvection
+    vn_traj = sp.vn_traj()
+    mass_flx_me = sp.mass_flx_me()
+    mass_flx_ic = sp.mass_flx_ic()
+
+    # Diagnostic state parameters
+    theta_v_ic = sp.theta_v_ic()
+    exner_pr = sp.exner_pr()
+    rho_ic = sp.rho_ic()
+    ddt_exner_phy = sp.ddt_exner_phy()
+    grf_tend_rho = sp.grf_tend_rho()
+    grf_tend_thv = sp.grf_tend_thv()
+    grf_tend_w = sp.grf_tend_w()
+    mass_fl_e = sp.mass_fl_e()
+    ddt_vn_phy = sp.ddt_vn_phy()
+    grf_tend_vn = sp.grf_tend_vn()
+    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(1)
+    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(2)
+    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
+    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
+    vt = sp.vt()
+    vn_ie = sp.vn_ie()
+    w_concorr_c = sp.w_concorr_c()
+    exner_dyn_incr = sp.exner_dyn_incr()
+
+    # Prognostic state parameters
+    w_now = sp.w_now()
+    vn_now = sp.vn_now()
+    theta_v_now = sp.theta_v_now()
+    rho_now = sp.rho_now()
+    exner_now = sp.exner_now()
+
+    w_new = sp.w_new()
+    vn_new = sp.vn_new()
+    theta_v_new = sp.theta_v_new()
+    rho_new = sp.rho_new()
+    exner_new = sp.exner_new()
+
+    # other params
+    nnow = 1 # use fortran indices
+    nnew = 2
+
+    for i_substep in range(ndyn_substeps):
+
+        is_last_substep = i_substep == (ndyn_substeps - 1)
+
+        solve_nh_run(
+            rho_now=rho_now,
+            rho_new=rho_new,
+            exner_now=exner_now,
+            exner_new=exner_new,
+            w_now=w_now,
+            w_new=w_new,
+            theta_v_now=theta_v_now,
+            theta_v_new=theta_v_new,
+            vn_now=vn_now,
+            vn_new=vn_new,
+            w_concorr_c=w_concorr_c,
+            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+            ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+            theta_v_ic=theta_v_ic,
+            rho_ic=rho_ic,
+            exner_pr=exner_pr,
+            exner_dyn_incr=exner_dyn_incr,
+            ddt_exner_phy=ddt_exner_phy,
+            grf_tend_rho=grf_tend_rho,
+            grf_tend_thv=grf_tend_thv,
+            grf_tend_w=grf_tend_w,
+            mass_fl_e=mass_fl_e,
+            ddt_vn_phy=ddt_vn_phy,
+            grf_tend_vn=grf_tend_vn,
+            vn_ie=vn_ie,
+            vt=vt,
+            mass_flx_me=mass_flx_me,
+            mass_flx_ic=mass_flx_ic,
+            vn_traj=vn_traj,
+            dtime=dtime,
+            lprep_adv=lprep_adv,
+            clean_mflx=clean_mflx,
+            recompute=recompute,
+            linit=linit,
+            divdamp_fac_o2=initial_divdamp_fac,
+            ndyn_substeps=ndyn_substeps,
+            idyn_timestep=i_substep,
+            nnow=nnow,
+            nnew=nnew
+        )
+        linit = False
+        recompute = False
+        clean_mflx = False
+        if not is_last_substep:
+            ntemp = nnow
+            nnow = nnew
+            nnew = ntemp
+
+    cell_start_lb_plus2 = icon_grid.get_start_index(
+        CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+    )
+    edge_start_lb_plus4 = icon_grid.get_start_index(
+        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+    )
+
+    assert helpers.dallclose(
+        rho_ic.asnumpy()[cell_start_lb_plus2:, :],
+        savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
+    )
+
+    assert helpers.dallclose(
+        theta_v_ic.asnumpy()[cell_start_lb_plus2:, :],
+        savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
+    )
+
+    assert helpers.dallclose(
+        mass_fl_e.asnumpy()[edge_start_lb_plus4:, :],
+        savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
+        atol=5e-7,
+    )
+
+    assert helpers.dallclose(
+        mass_flx_me.asnumpy(),
+        savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
+        atol=5e-7,
+    )
+
+    assert helpers.dallclose(
+        vn_traj.asnumpy(),
+        savepoint_nonhydro_exit.vn_traj().asnumpy(),
+        atol=1e-12,
+    )
+
+    # we compare against _now fields as _new and _now are switched internally in the granule.
+    assert helpers.dallclose(
+        theta_v_now.asnumpy(),
+        sp_step_exit.theta_v_new().asnumpy(),
+        atol=5e-7,
+    )
+
+    assert helpers.dallclose(
+        rho_now.asnumpy(),
+        savepoint_nonhydro_exit.rho_new().asnumpy(),
+    )
+
+    assert helpers.dallclose(
+        exner_now.asnumpy(),
+        sp_step_exit.exner_new().asnumpy(),
+    )
+
+    assert helpers.dallclose(
+        w_now.asnumpy(),
+        savepoint_nonhydro_exit.w_new().asnumpy(),
+        atol=8e-14,
+    )
+
+    assert helpers.dallclose(
+        vn_now.asnumpy(),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
+        atol=5e-13,
+    )
+    assert helpers.dallclose(
+        exner_dyn_incr.asnumpy(),
+        savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
+        atol=1e-14,
     )

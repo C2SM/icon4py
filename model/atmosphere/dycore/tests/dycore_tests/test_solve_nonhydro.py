@@ -27,7 +27,6 @@ from icon4py.model.common.test_utils import (
     serialbox_utils as sb,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-
 from .utils import (
     construct_config,
     construct_interpolation_state_for_nonhydro,
@@ -837,10 +836,10 @@ def test_run_solve_nonhydro_single_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
-        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000"),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000"),
     ],
 )
 def test_run_solve_nonhydro_multi_step(
@@ -853,7 +852,6 @@ def test_run_solve_nonhydro_multi_step(
     stretch_factor,
     damping_height,
     grid_savepoint,
-    vn_only,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
