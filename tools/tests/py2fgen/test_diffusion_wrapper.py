@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # type: ignore
+import pytest
 from gt4py.next import as_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
 from icon4py.model.common import dimension as dims
@@ -16,7 +17,7 @@ from icon4py.model.common.test_utils.grid_utils import MCH_CH_R04B09_LEVELS
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 
 
-# todo: turn into a datatest
+@pytest.mark.skip(reason="Needs to be turned into a datatest")
 def test_diffusion_wrapper_interface():
     # grid parameters
     num_cells = 20896

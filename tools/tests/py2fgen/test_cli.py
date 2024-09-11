@@ -218,7 +218,6 @@ def test_py2fgen_compilation_and_profiling(
 
 
 @pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
-@pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_path):
     run_test_case(
         cli_runner,
@@ -264,7 +263,6 @@ def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path):
 
 
 @pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
-@pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path):
     run_test_case(
         cli_runner,
