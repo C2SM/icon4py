@@ -61,7 +61,7 @@ class Component(Protocol[Ins, Outs]):
     def inputs_properties(self) -> dict[Ins, model.FieldMetaData]:
         """Return a dictionary with the properties of the inputs expected by the component.
 
-        Each input key contains metadata with the CF name, units and dimension of the associated data field.
+        Each input key contains metadata with the standard CF name, units and dimension of the associated data field.
         """
         ...
 
@@ -70,7 +70,7 @@ class Component(Protocol[Ins, Outs]):
     def outputs_properties(self) -> dict[Outs, model.FieldMetaData]:
         """Return a dictionary with the properties of the outputs expected by the component.
 
-        Each input key contains metadata with the CF name, units and dimension of the associated data field.
+        Each input key contains metadata with the standard CF name, units and dimension of the associated data field.
 
         TODO (@halungge): is this too generic and we should split into separate properties for the different types of outputs: like
             tendencies, diagnostics, prognostics, etc?
