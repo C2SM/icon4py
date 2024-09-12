@@ -46,12 +46,20 @@ R02B04_GLOBAL_NUM_CELLS = 20480
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
-
 zero_base = gm.ToZeroBasedIndexTransformation()
 
 
 @pytest.fixture(scope="module")
 def simple_grid_gridfile(tmp_path_factory):
+    def _add_to_dataset(
+        dataset: netCDF4.Dataset,
+        data: np.ndarray,
+        var_name: str,
+        dims: tuple[gm.GridFileName, gm.GridFileName],
+    ):
+        var = dataset.createVariable(var_name, np.int32, dims)
+        var[:] = np.transpose(data)[:]
+
     path = tmp_path_factory.mktemp("simple_grid").joinpath(SIMPLE_GRID_NC).absolute()
     grid = simple.SimpleGrid()
 
@@ -207,16 +215,6 @@ def simple_grid_gridfile(tmp_path_factory):
     path.unlink()
 
 
-def _add_to_dataset(
-    dataset: netCDF4.Dataset,
-    data: np.ndarray,
-    var_name: str,
-    dims: tuple[gm.GridFileName, gm.GridFileName],
-):
-    var = dataset.createVariable(var_name, np.int32, dims)
-    var[:] = np.transpose(data)[:]
-
-
 @pytest.fixture(scope="module")
 def manager_for_simple_grid(simple_grid_gridfile):
     with gm.GridManager(
@@ -241,37 +239,51 @@ def grid_manager(name, num_levels=65, transformation=None) -> gm.GridManager:
 
 
 @pytest.mark.with_netcdf
-def test_gridfile_dimension(simple_grid_gridfile):
+def test_grid_file_dimension(simple_grid_gridfile):
     grid = simple.SimpleGrid()
 
-    with gm.GridFile(str(simple_grid_gridfile)) as parser:
+    parser = gm.GridFile(str(simple_grid_gridfile))
+    try:
+        parser.open()
         assert parser.dimension(gm.DimensionName.CELL_NAME) == grid.num_cells
         assert parser.dimension(gm.DimensionName.VERTEX_NAME) == grid.num_vertices
         assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid.num_edges
+    except Exception:
+        pytest.fail()
+    finally:
+        parser.close()
 
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
-    "parser, experiment",
+    "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, parser):
-    file = utils.resolve_file_from_gridfile_name(parser)
-    with gm.GridFile(str(file)) as parser:
+def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
+    file = utils.resolve_file_from_gridfile_name(grid_file)
+    parser = gm.GridFile(str(file))
+    try:
+        parser.open()
         assert parser.dimension(gm.DimensionName.CELL_NAME) == grid_savepoint.num(dims.CellDim)
-        assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid_savepoint.num(dims.EdgeDim)
         assert parser.dimension(gm.DimensionName.VERTEX_NAME) == grid_savepoint.num(dims.VertexDim)
+        assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid_savepoint.num(dims.EdgeDim)
+    except Exception:
+        pytest.fail()
+    finally:
+        parser.close()
 
 
 @pytest.mark.with_netcdf
-def test_gridfile_index_fields(simple_grid_gridfile, caplog):
+def test_grid_file_index_fields(simple_grid_gridfile, caplog):
     caplog.set_level(logging.DEBUG)
     simple_grid = simple.SimpleGrid()
-    with gm.GridFile(str(simple_grid_gridfile)) as parser:
+    parser = gm.GridFile(str(simple_grid_gridfile))
+    try:
+        parser.open()
         assert np.allclose(
             parser.int_variable(gm.ConnectivityName.C2E), simple_grid.connectivities[dims.C2EDim]
         )
@@ -284,6 +296,10 @@ def test_gridfile_index_fields(simple_grid_gridfile, caplog):
         assert np.allclose(
             parser.int_variable(gm.ConnectivityName.V2C), simple_grid.connectivities[dims.V2CDim]
         )
+    except Exception:
+        pytest.fail()
+    finally:
+        parser.close()
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -300,7 +316,7 @@ def test_gridfile_index_fields(simple_grid_gridfile, caplog):
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_v2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     manager = grid_manager(grid_file, zero_base)
     grid = manager.grid
@@ -325,7 +341,7 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
     ],
 )
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
-def test_refin_ctrl(grid_savepoint, grid_file, experiment, dim):
+def test_grid_manager_refin_ctrl(grid_savepoint, grid_file, experiment, dim):
     manager = grid_manager(grid_file, zero_base)
     refin_ctrl = manager.refinement
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
@@ -345,7 +361,7 @@ def test_refin_ctrl(grid_savepoint, grid_file, experiment, dim):
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_v2c(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_v2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = grid_manager(grid_file).grid
     serialized_v2c = grid_savepoint.v2c()
@@ -397,7 +413,7 @@ def reset_invalid_index(index_array: np.ndarray):
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_e2v(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_e2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = grid_manager(grid_file).grid
 
@@ -452,7 +468,7 @@ def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_e2c(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = grid_manager(grid_file).grid
     serialized_e2c = grid_savepoint.e2c()
@@ -472,7 +488,7 @@ def test_gridmanager_eval_e2c(caplog, grid_savepoint, grid_file):
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_c2e(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = grid_manager(grid_file).grid
 
@@ -495,7 +511,7 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, grid_file):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_c2e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = grid_manager(grid_file).grid
     assert np.allclose(
@@ -513,7 +529,7 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = grid_manager(grid_file).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
@@ -533,7 +549,7 @@ def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = grid_manager(grid_file).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
@@ -565,7 +581,7 @@ def assert_unless_invalid(table, serialized_ref):
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     gm = grid_manager(grid_file)
     grid = gm.grid
@@ -585,7 +601,7 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, grid_file):
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = grid_manager(grid_file).grid
     c2v = grid.get_offset_provider("C2V").table
@@ -594,8 +610,8 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
 
 @pytest.mark.parametrize("dim, size", [(dims.CellDim, 18), (dims.EdgeDim, 27), (dims.VertexDim, 9)])
 @pytest.mark.with_netcdf
-def test_grid_manager_get_dimension_size(manager_for_simple_grid, dim, size):
-    assert size == manager_for_simple_grid.dimension_size(dim)
+def test_grid_manager_grid_size(manager_for_simple_grid, dim, size):
+    assert size == manager_for_simple_grid.grid.size[dim]
 
 
 def assert_up_to_order(table, diamond_table):
@@ -639,11 +655,11 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
         (dt_utils.REGIONAL_EXPERIMENT, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
     ],
 )
-def test_grid_level_and_root(grid_file, global_num_cells):
+def test_grid_manager_grid_level_and_root(grid_file, global_num_cells):
     assert global_num_cells == grid_manager(grid_file, num_levels=1).grid.global_num_cells
 
 
-def test_grid_manager_eval_c2e2c2e(manager_for_simple_grid, caplog):
+def test_grid_manager_eval_c2e2c2e_on_simple_grid(manager_for_simple_grid, caplog):
     table = manager_for_simple_grid.grid.get_offset_provider("C2E2C2E").table
     assert_up_to_order(table, simple.SimpleGridData.c2e2c2e_table)
 
@@ -654,7 +670,7 @@ def test_grid_manager_eval_c2e2c2e(manager_for_simple_grid, caplog):
     "grid_file, experiment",
     [(utils.R02B04_GLOBAL, dt_utils.JABW_EXPERIMENT)],
 )
-def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
+def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = grid_manager(grid_file).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
@@ -675,7 +691,7 @@ def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
     ],
 )
 @pytest.mark.parametrize("dim", utils.horizontal_dim())
-def test_start_end_index(caplog, grid_file, experiment, dim, icon_grid):
+def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_grid):
     caplog.set_level(logging.INFO)
     serialized_grid = icon_grid
     manager = grid_manager(grid_file, zero_base)

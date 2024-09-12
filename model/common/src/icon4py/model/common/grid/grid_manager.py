@@ -18,6 +18,11 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
 )
+from icon4py.model.common.grid import (
+    base as base_grid,
+    icon as icon_grid,
+    vertical as v_grid,
+)
 
 
 try:
@@ -29,13 +34,6 @@ except ImportError:
 
         def __init__(self, *args, **kwargs):
             raise ModuleNotFoundError("NetCDF4 is not installed.")
-
-
-from icon4py.model.common.grid import (
-    base as base_grid,
-    icon as icon_grid,
-    vertical as v_grid,
-)
 
 
 _log = logging.getLogger(__name__)
@@ -59,10 +57,20 @@ class PropertyName(GridFileName):
 
 
 class LAMPropertyName(PropertyName):
+    """
+    Properties only present in the LAM file from MCH that we use in mch_ch_r04_b09_dsl.
+    The source of this file is currently unknown.
+    """
+
     GLOBAL_GRID = "global_grid"
 
 
 class MPIMPropertyName(PropertyName):
+    """
+    Properties only present in the [MPI-M generated](https://gitlab.dkrz.de/mpim-sw/grid-generator)
+    [grid files](http://icon-downloads.mpimet.mpg.de/mpim_grids.xml)
+    """
+
     REVISION = "revision"
     DATE = "date"
     USER = "user_name"
@@ -84,7 +92,11 @@ class MPIMPropertyName(PropertyName):
 
 
 class MandatoryPropertyName(PropertyName):
-    """File attributes present in all files."""
+    """
+    File attributes present in all files.
+    DWD generated (from [icon-tools](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools)
+    [grid files](http://icon-downloads.mpimet.mpg.de/dwd_grids.xml) contain only those properties.
+    """
 
     TITLE = "title"
     INSTITUTION = "institution"
@@ -176,11 +188,17 @@ class ConnectivityName(FieldName):
 
 
 class GeometryName(FieldName):
-    CELL_AREA = "cell_area"
-    EDGE_LENGTH = "edge_length"
+    CELL_AREA = "cell_area"  # steradian (DWD), m^2 (MPI-M)
+    EDGE_LENGTH = "edge_length"  # radians (DWD), m (MPI-M)
+    DUAL_EDGE_LENGTH = "dual_edge_length"  # radians (DWD), m (MPI-M)
 
 
 class CoordinateName(FieldName):
+    """
+    Coordinates of cell centers, edge midpoints and vertices.
+    Units: radianfor both MPI-M and DWD
+    """
+
     CELL_LONGITUDE = "clon"
     CELL_LATITUDE = "clat"
     EDGE_LONGITUDE = "elon"
@@ -227,21 +245,6 @@ class GridFile:
 
     def __init__(self, file_name: str):
         self._filename = file_name
-
-    def __enter__(self):
-        self.open()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
-            _log.debug(
-                f"Exception '{exc_type}: {exc_val}' while reading the grid file {self._filename}"
-            )
-        if exc_type is FileNotFoundError:
-            raise FileNotFoundError(f"gridfile {self._filename} not found, aborting")
-
-        _log.info(f"Closing dataset: {self._filename}")
-        self.close()
 
     def dimension(self, name: DimensionName) -> int:
         """Read a dimension with name 'name' from the grid file."""
@@ -333,6 +336,17 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
 
 
 class GridManager:
+    """
+    Read ICON grid file and set up grid topology, refinement information and geometry fields.
+
+    It handles the reading of the ICON grid file and extracts information such as:
+    - topology (connectivity arrays)
+    - refinement information: association of field positions to specific zones in the horizontal grid like boundaries, inner prognostic cells, etc.
+    - geometry fields present in the grid file
+
+
+    """
+
     def __init__(
         self,
         transformation: IndexTransformation,
@@ -341,23 +355,18 @@ class GridManager:
     ):
         self._transformation = transformation
         self._file_name = str(grid_file)
-        self._config = config
+        self._vertical_config = config
         self._grid: Optional[icon_grid.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
         self._reader = None
 
-    """
-    Read ICON grid file and set up  IconGrid.
-
-    Reads an ICON grid file and extracts connectivity arrays and start-, end-indices for horizontal
-    domain boundaries. Provides an IconGrid instance for further usage.
-    """
-
     def open(self):
+        """Open the gridfile resource for reading."""
         self._reader = GridFile(self._file_name)
         self._reader.open()
 
     def close(self):
+        """close the gridfile resource."""
         self._reader.close()
 
     def __enter__(self):
@@ -389,6 +398,11 @@ class GridManager:
         dict[dims.HorizontalDim : np.ndarray],
         dict[dims.HorizontalDim : gtx.int32],
     ]:
+        """ "
+        Read the start/end indices from the grid file.
+
+        This should be used for a single node run. In the case of a multi node distributed run the  start and end indices need to be reconstructed from the decomposed grid.
+        """
         _CHILD_DOM = 0
         grid_refinement_dimensions = {
             dims.CellDim: DimensionName.CELL_GRF,
@@ -434,7 +448,13 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self, decomposition_info: Optional[decomposition.DecompositionInfo] = None
-    ) -> tuple[dict[dims.HorizontalDim : np.ndarray],]:
+    ) -> tuple[dict[dims.HorizontalDim : np.ndarray]]:
+        """
+        Reads the refinement control fields from the grid file.
+
+        Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
+        see [refinement.py](refinement.py)
+        """
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
@@ -452,9 +472,20 @@ class GridManager:
 
     @property
     def refinement(self):
+        """
+        Refinement control fields.
+
+        TODO (@halungge) should those be added to the IconGrid?
+        """
         return self._refinement
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon_grid.IconGrid:
+        """Construct the grid topology from the icon grid file.
+
+        Reads connectivity fields from the grid file and constructs derived connectivities needed in
+        Icon4py from them. Adds constructed start/end index information to the grid.
+
+        """
         grid = self._initialize_global(limited_area, on_gpu)
 
         global_connectivities = {
@@ -477,25 +508,27 @@ class GridManager:
 
         return grid
 
-    def dimension_size(self, dim: dims.HorizontalDim) -> int:
-        match dim:
-            case dims.VertexDim:
-                return self._reader.dimension(DimensionName.VERTEX_NAME)
-            case dims.CellDim:
-                return self._reader.dimension(DimensionName.CELL_NAME)
-            case dims.EdgeDim:
-                return self._reader.dimension(DimensionName.EDGE_NAME)
-            case _:
-                _log.warning(f"cannot determine size of unknown dimension {dim}")
-                raise IconGridError(f"Unknown dimension {dim}")
-
     def _get_index_field(self, field: GridFileName, transpose=True, apply_offset=True):
         field = self._reader.int_variable(field, transpose=transpose)
         if apply_offset:
             field = field + self._transformation(field)
         return field
 
-    def _initialize_global(self, limited_area, on_gpu):
+    def _initialize_global(self, limited_area: bool, on_gpu: bool) -> icon_grid.IconGrid:
+        """
+        Read basic information from the grid file:
+        Mostly reads global grid file parameters and dimensions.
+
+        Args:
+            limited_area: bool whether or not the produced grid is a limited area grid.
+            # TODO (@halungge) this is not directly encoded in the grid, which is why we passed it in. It could be determined from the refinement fields though.
+
+            on_gpu: bool, whether or not we run on GPU. # TODO (@halungge) can this be removed and defined differently.
+
+        Returns:
+            IconGrid: basic grid, setup only with id and config information.
+
+        """
         num_cells = self._reader.dimension(DimensionName.CELL_NAME)
         num_edges = self._reader.dimension(DimensionName.EDGE_NAME)
         num_vertices = self._reader.dimension(DimensionName.VERTEX_NAME)
@@ -508,7 +541,7 @@ class GridManager:
         )
         config = base_grid.GridConfig(
             horizontal_config=grid_size,
-            vertical_size=self._config.num_levels,
+            vertical_size=self._vertical_config.num_levels,
             on_gpu=on_gpu,
             limited_area=limited_area,
         )
