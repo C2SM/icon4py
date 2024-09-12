@@ -51,7 +51,7 @@ def test_factory(grid_savepoint, metrics_savepoint):
 
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     rayleigh_w_full = factory.get("rayleigh_w", states_factory.RetrievalType.FIELD)
-    # assert helpers.dallclose(rayleigh_w_full.asnumpy(), rayleigh_w_ref.asnumpy())
+    assert helpers.dallclose(rayleigh_w_full.asnumpy(), rayleigh_w_ref.asnumpy())
 
     coeff1_dwdz_full_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_full_ref = metrics_savepoint.coeff2_dwdz()
@@ -59,6 +59,13 @@ def test_factory(grid_savepoint, metrics_savepoint):
     coeff2_dwdz_full = factory.get("coeff2_dwdz", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_full_ref.asnumpy())
     assert helpers.dallclose(coeff2_dwdz_full.asnumpy(), coeff2_dwdz_full_ref.asnumpy())
+
+    theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
+    exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
+    theta_ref_mc_full = factory.get("theta_ref_mc", states_factory.RetrievalType.FIELD)
+    exner_ref_mc_full = factory.get("exner_ref_mc", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(exner_ref_mc_ref.asnumpy(), exner_ref_mc_full.asnumpy())
+    assert helpers.dallclose(theta_ref_mc_ref.asnumpy(), theta_ref_mc_full.asnumpy())
 
     d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
     d2dexdz2_fac2_mc_ref = metrics_savepoint.d2dexdz2_fac2_mc()
@@ -68,26 +75,26 @@ def test_factory(grid_savepoint, metrics_savepoint):
     assert helpers.dallclose(d2dexdz2_fac2_mc_full.asnumpy(), d2dexdz2_fac2_mc_ref.asnumpy())
 
     ddxn_z_full_ref = metrics_savepoint.ddxn_z_full()
-    # ddxn_z_full = factory.get("ddxn_z_full", states_factory.RetrievalType.FIELD)
-    # assert helpers.dallclose(ddxn_z_full.asnumpy(), ddxn_z_full_ref.asnumpy())
+    ddxn_z_full = factory.get("ddxn_z_full", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(ddxn_z_full.asnumpy(), ddxn_z_full_ref.asnumpy())
 
-    # vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
-    # vwind_impl_wgt_full = factory.get("vwind_impl_wgt", states_factory.RetrievalType.FIELD)
+    vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
+    vwind_impl_wgt_full = factory.get("vwind_impl_wgt", states_factory.RetrievalType.FIELD)
     # assert helpers.dallclose(vwind_impl_wgt_full.asnumpy(), vwind_impl_wgt_ref.asnumpy())
 
     # vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
     # vwind_expl_wgt_full = factory.get("vwind_expl_wgt", states_factory.RetrievalType.FIELD)
     # assert helpers.dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
 
-    # exner_exfac_ref = metrics_savepoint.exner_exfac()
-    # exner_exfac_full = factory.get("exner_exfac", states_factory.RetrievalType.FIELD)
-    # assert helpers.dallclose(exner_exfac_full.asnumpy(), exner_exfac_ref.asnumpy())
+    exner_exfac_ref = metrics_savepoint.exner_exfac()
+    exner_exfac_full = factory.get("exner_exfac", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(exner_exfac_full.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
 
-    pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
+    # pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
     # pg_edgeidx_dsl_full = factory.get("pg_edgeidx_dsl", states_factory.RetrievalType.FIELD)
     # assert helpers.dallclose(pg_edgeidx_dsl_full.asnumpy(), pg_edgeidx_dsl_ref.asnumpy())
 
-    # pg_exdist_dsl_ref = metrics_savepoint.pg_exdist_dsl()
+    pg_exdist_dsl_ref = metrics_savepoint.pg_exdist()
     # pg_exdist_dsl_full = factory.get("pg_exdist_dsl", states_factory.RetrievalType.FIELD)
     # assert helpers.dallclose(pg_exdist_dsl_full.asnumpy(), pg_exdist_dsl_ref.asnumpy())
 
@@ -101,28 +108,28 @@ def test_factory(grid_savepoint, metrics_savepoint):
 
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
     hmask_dd3d_full = factory.get("hmask_dd3d", states_factory.RetrievalType.FIELD)
-    # assert helpers.dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
+    assert helpers.dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
 
+    zdiff_gradp_ref = metrics_savepoint.zdiff_gradp().asnumpy()
     # zdiff_gradp_full_field = factory.get("zdiff_gradp", states_factory.RetrievalType.FIELD)
-    # assert helpers.dallclose(
-    #     zdiff_gradp_full_field, metrics_savepoint.zdiff_gradp().asnumpy(), rtol=1.0e-5
-    # )
+    # assert helpers.dallclose(zdiff_gradp_full_field, zdiff_gradp_ref, rtol=1.0e-5)
 
     nudgecoeffs_e_full = factory.get("nudgecoeffs_e", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(
         nudgecoeffs_e_full.asnumpy(), interpolation_savepoint.nudgecoeff_e().asnumpy()
     )
 
-    # coeff_gradekin_full = factory.get(
-    #     "coeff_gradekin", states_factory.RetrievalType.FIELD
-    # )
-    # assert helpers.dallclose(coeff_gradekin_full, metrics_savepoint.coeff_gradekin().asnumpy())
+    coeff_gradekin_ref = metrics_savepoint.coeff_gradekin()
+    coeff_gradekin_full = factory.get("coeff_gradekin", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(coeff_gradekin_full.asnumpy(), coeff_gradekin_ref.asnumpy())
+
 
     wgtfacq_e = factory.get(
         "weighting_factor_for_quadratic_interpolation_to_edge_center",
         states_factory.RetrievalType.FIELD,
     )
-    assert helpers.dallclose(wgtfacq_e.asnumpy(), metrics_savepoint.wgtfacq_e_dsl(66).asnumpy())
+    wgtfacq_e_ref = metrics_savepoint.wgtfacq_e_dsl(wgtfacq_e.shape[1])
+    assert helpers.dallclose(wgtfacq_e.asnumpy(), wgtfacq_e_ref.asnumpy())
 
     mask_hdiff = factory.get("mask_hdiff", states_factory.RetrievalType.FIELD)
     zd_diffcoef_dsl = factory.get("zd_diffcoef_dsl", states_factory.RetrievalType.FIELD)

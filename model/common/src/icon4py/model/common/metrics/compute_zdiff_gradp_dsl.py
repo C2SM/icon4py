@@ -11,20 +11,21 @@ from gt4py.next import as_field
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import flatten_first_two_dims
+from icon4py.model.common.settings import xp
 
 
 def compute_zdiff_gradp_dsl(
-    e2c: np.ndarray,
-    z_me: np.ndarray,
-    z_mc: np.ndarray,
-    z_ifc: np.ndarray,
-    flat_idx: np.ndarray,
-    z_aux2: np.ndarray,
+    e2c: xp.ndarray,
+    z_me: xp.ndarray,
+    z_mc: xp.ndarray,
+    z_ifc: xp.ndarray,
+    flat_idx: xp.ndarray,
+    z_aux2: xp.ndarray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
     nedges: int,
-) -> np.ndarray:
+):
     zdiff_gradp = np.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
         np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
@@ -117,4 +118,4 @@ def compute_zdiff_gradp_dsl(
         field=as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp),
     )
 
-    return zdiff_gradp_full_field
+    return zdiff_gradp_full_field.asnumpy()

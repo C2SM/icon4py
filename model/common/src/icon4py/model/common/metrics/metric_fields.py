@@ -26,6 +26,8 @@ from gt4py.next import (
     sin,
     tanh,
     where,
+    log,
+    exp
 )
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
@@ -641,6 +643,9 @@ def compute_maxslp_maxhgtd(
         },
     )
 
+@field_operator
+def _exner_exfac_broadcast(exner_expol: wpfloat,) -> fa.CellKField[wpfloat]:
+    return broadcast(exner_expol, (CellDim, KDim))
 
 @field_operator
 def _compute_exner_exfac(
@@ -686,6 +691,10 @@ def compute_exner_exfac(
         vertical_end: vertical end index
 
     """
+    _exner_exfac_broadcast(
+        exner_expol,
+        out=exner_exfac
+    )
     _compute_exner_exfac(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
@@ -1131,12 +1140,12 @@ def _compute_hmask_dd3d(
         / (grf_nudgezone_width - 1)
         * (e_refin_ctrl - (grf_nudge_start_e + grf_nudgezone_width - 1))
     )
+    hmask_dd3d = where(e_refin_ctrl <= (grf_nudge_start_e + grf_nudgezone_width - 1), 0, hmask_dd3d)
     hmask_dd3d = where(
         (e_refin_ctrl <= 0) | (e_refin_ctrl >= (grf_nudge_start_e + 2 * (grf_nudgezone_width - 1))),
         1,
         hmask_dd3d,
     )
-    hmask_dd3d = where(e_refin_ctrl <= (grf_nudge_start_e + grf_nudgezone_width - 1), 0, hmask_dd3d)
     return astype(hmask_dd3d, wpfloat)
 
 
@@ -1330,6 +1339,61 @@ def compute_cell_2_vertex_interpolation(
         out=vert_out,
         domain={
             VertexDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+
+@field_operator
+def _compute_theta_exner_ref_mc(
+    z_mc: fa.CellKField[wpfloat],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    rd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+):
+    z_aux1 = p0sl_bg * exp(-grav / rd * h_scal_bg / (t0sl_bg - del_t_bg)
+                    * log((exp(z_mc / h_scal_bg) *(t0sl_bg - del_t_bg) + del_t_bg) / t0sl_bg))
+    exner_ref_mc = (z_aux1 / p0ref) ** rd_o_cpd
+    z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_mc / h_scal_bg)
+    theta_ref_mc = z_temp / exner_ref_mc
+    return exner_ref_mc, theta_ref_mc
+
+
+@program
+def compute_theta_exner_ref_mc(
+    z_mc: fa.CellKField[wpfloat],
+    exner_ref_mc: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[wpfloat],
+    t0sl_bg: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    grav: wpfloat,
+    rd: wpfloat,
+    p0sl_bg: wpfloat,
+    rd_o_cpd: wpfloat,
+    p0ref: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_theta_exner_ref_mc(
+        z_mc=z_mc,
+        t0sl_bg=t0sl_bg,
+        del_t_bg=del_t_bg,
+        h_scal_bg=h_scal_bg,
+        grav=grav,
+        rd=rd,
+        p0sl_bg=p0sl_bg,
+        rd_o_cpd=rd_o_cpd,
+        p0ref=p0ref,
+        out=(exner_ref_mc, theta_ref_mc),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )

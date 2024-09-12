@@ -73,14 +73,14 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 grid = grid_savepoint.global_grid_params
 
 # TODO: this will go in a future ConfigurationProvider
-experiment = dt_utils.GLOBAL_EXPERIMENT
+experiment = dt_utils.REGIONAL_EXPERIMENT
 global_exp = dt_utils.GLOBAL_EXPERIMENT
 vwind_offctr = 0.2
 divdamp_trans_start = 12500.0
 divdamp_trans_end = 17500.0
 divdamp_type = 3
-damping_height = 50000.0 if dt_utils.GLOBAL_EXPERIMENT else 12500.0
-rayleigh_coeff = 0.1 if dt_utils.GLOBAL_EXPERIMENT else 5.0
+damping_height = 50000.0 if experiment == dt_utils.GLOBAL_EXPERIMENT else 12500.0
+rayleigh_coeff = 0.1 if experiment == dt_utils.GLOBAL_EXPERIMENT else 5.0
 vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
 nudge_max_coeff = 0.375
 nudge_efold_width = 2.0
@@ -88,7 +88,7 @@ nudge_zone_width = 10
 thslp_zdiffu = 0.02
 thhgtd_zdiffu = 125
 rayleigh_type = 2
-exner_expol = 0.3333333333333
+exner_expol = 0.333
 
 
 interface_model_height = metrics_savepoint.z_ifc()
@@ -97,8 +97,6 @@ c_lin_e = interpolation_savepoint.c_lin_e()
 c_bln_avg = interpolation_savepoint.c_bln_avg()
 k_index = gtx.as_field((dims.KDim,), xp.arange(nlev + 1, dtype=gtx.int32))
 vct_a = grid_savepoint.vct_a()
-theta_ref_mc = metrics_savepoint.theta_ref_mc()  # TODO: implement
-exner_ref_mc = metrics_savepoint.exner_ref_mc()  # TODO: implement
 c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
 e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
 dual_edge_length = grid_savepoint.dual_edge_length()
@@ -125,8 +123,6 @@ fields_factory.register_provider(
             "c_bln_avg": c_bln_avg,
             cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index,
             "vct_a": vct_a,
-            "theta_ref_mc": theta_ref_mc,
-            "exner_ref_mc": exner_ref_mc,
             "c_refin_ctrl": c_refin_ctrl,
             "e_refin_ctrl": e_refin_ctrl,
             "dual_edge_length": dual_edge_length,
@@ -264,6 +260,35 @@ compute_coeff_dwdz_provider = factory.ProgramFieldProvider(
 )
 fields_factory.register_provider(compute_coeff_dwdz_provider)
 
+compute_theta_exner_ref_mc_provider = factory.ProgramFieldProvider(
+    func=mf.compute_theta_exner_ref_mc,
+    deps={
+        "z_mc": "height",
+    },
+    domain={
+        dims.CellDim: (
+            cell_domain(h_grid.Zone.LOCAL),
+            cell_domain(h_grid.Zone.LOCAL),
+        ),
+        dims.KDim: (
+            v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
+            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
+        ),
+    },
+    fields={"exner_ref_mc": "exner_ref_mc", "theta_ref_mc": "theta_ref_mc"},
+    params={
+        "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
+        "del_t_bg": constants.DELTA_TEMPERATURE,
+        "h_scal_bg": constants._H_SCAL_BG,
+        "grav": constants.GRAV,
+        "rd": constants.RD,
+        "p0sl_bg": constants.SEAL_LEVEL_PRESSURE,
+        "rd_o_cpd": constants.RD_O_CPD,
+        "p0ref": constants.REFERENCE_PRESSURE
+    },
+)
+fields_factory.register_provider(compute_theta_exner_ref_mc_provider)
+
 compute_d2dexdz2_fac_mc_provider = factory.ProgramFieldProvider(
     func=mf.compute_d2dexdz2_fac_mc,
     deps={
@@ -305,9 +330,9 @@ compute_cell_2_vertex_interpolation_provider = factory.ProgramFieldProvider(
             vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
             vertex_domain(h_grid.Zone.INTERIOR),
         ),
-        dims.KDim: (
-            v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
-            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),  # TODO: edit dimension - KHalfDim
+        dims.KHalfDim: (
+            v_grid.domain(dims.KHalfDim)(v_grid.Zone.TOP),
+            v_grid.domain(dims.KHalfDim)(v_grid.Zone.BOTTOM),
         ),
     },
     fields={"vert_out": "vert_out"},
@@ -319,7 +344,7 @@ compute_ddxt_z_half_e_provider = factory.ProgramFieldProvider(
     deps={
         "z_ifv": "vert_out",
         "inv_primal_edge_length": "inv_primal_edge_length",
-        "tangent_orientation": "inv_primal_edge_length",
+        "tangent_orientation": "tangent_orientation",
     },
     domain={
         dims.EdgeDim: (
@@ -327,19 +352,39 @@ compute_ddxt_z_half_e_provider = factory.ProgramFieldProvider(
             edge_domain(h_grid.Zone.INTERIOR),
         ),
         dims.KHalfDim: (
-            v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
-            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
-        ),  # TODO: edit dimension - KHalfDim
+            v_grid.domain(dims.KHalfDim)(v_grid.Zone.TOP),
+            v_grid.domain(dims.KHalfDim)(v_grid.Zone.BOTTOM),
+        ),
     },
     fields={"ddxt_z_half_e": "ddxt_z_half_e"},
 )
 fields_factory.register_provider(compute_ddxt_z_half_e_provider)
 
 
+compute_ddxn_z_half_e_provider = factory.ProgramFieldProvider(
+    func=mf.compute_ddxn_z_half_e,
+    deps={
+        "z_ifc": "height_on_interface_levels",
+        "inv_dual_edge_length": "inv_dual_edge_length",
+    },
+    domain={
+        dims.EdgeDim: (
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+            edge_domain(h_grid.Zone.INTERIOR),
+        ),
+        dims.KHalfDim: (
+            v_grid.domain(dims.KHalfDim)(v_grid.Zone.TOP),
+            v_grid.domain(dims.KHalfDim)(v_grid.Zone.BOTTOM),
+        ),
+    },
+    fields={"ddxn_z_half_e": "ddxn_z_half_e"},
+)
+fields_factory.register_provider(compute_ddxn_z_half_e_provider)
+
 compute_ddxn_z_full_provider = factory.ProgramFieldProvider(
     func=mf.compute_ddxn_z_full,
     deps={
-        "ddxnt_z_half_e": "ddxt_z_half_e",
+        "ddxnt_z_half_e": "ddxn_z_half_e",
     },
     domain={
         dims.EdgeDim: (
@@ -356,30 +401,12 @@ compute_ddxn_z_full_provider = factory.ProgramFieldProvider(
 fields_factory.register_provider(compute_ddxn_z_full_provider)
 
 
-compute_ddxn_z_half_e_provider = factory.ProgramFieldProvider(
-    func=mf.compute_ddxn_z_half_e,
-    deps={
-        "z_ifc": "height_on_interface_levels",
-        "inv_dual_edge_length": "inv_dual_edge_length",
-    },
-    domain={
-        dims.EdgeDim: (
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-            edge_domain(h_grid.Zone.INTERIOR),
-        ),
-        dims.KDim: (
-            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
-            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM1),  # TODO: edit dimension - KHalfDim
-        ),
-    },
-    fields={"ddxn_z_half_e": "ddxn_z_half_e"},
-)
-fields_factory.register_provider(compute_ddxn_z_half_e_provider)
-
-
 compute_vwind_impl_wgt_provider = factory.NumpyFieldsProvider(
     func=compute_vwind_impl_wgt.compute_vwind_impl_wgt,
-    domain={},
+    domain={dims.CellDim: (
+            cell_domain(h_grid.Zone.LOCAL),
+            cell_domain(h_grid.Zone.LOCAL),
+        )},
     fields=["vwind_impl_wgt"],
     deps={
         "vct_a": "vct_a",
@@ -391,10 +418,10 @@ compute_vwind_impl_wgt_provider = factory.NumpyFieldsProvider(
     params={
         "backend": helpers.backend,
         "icon_grid": icon_grid,
-        "global_exp": global_exp,
-        "experiment": experiment,
+        "global_exp": dt_utils.GLOBAL_EXPERIMENT,
+        "experiment": dt_utils.REGIONAL_EXPERIMENT,
         "vwind_offctr": vwind_offctr,
-        "horizontal_start_cell": cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+        "horizontal_start_cell": icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
     },
 )
 fields_factory.register_provider(compute_vwind_impl_wgt_provider)
@@ -477,7 +504,7 @@ compute_compute_z_aux2_provider = factory.ProgramFieldProvider(
     deps={"z_ifc_sliced": "z_ifc_sliced"},
     domain={
         dims.EdgeDim: (
-            edge_domain(h_grid.Zone.NUDGING),  # TODO: check if this is really end (also in mf)
+            edge_domain(h_grid.Zone.NUDGING_LEVEL_2),  # TODO: check if this is really end (also in mf)
             edge_domain(h_grid.Zone.LOCAL),
         )
     },
@@ -644,8 +671,6 @@ fields_factory.register_provider(compute_hmask_dd3d_provider)
 
 compute_zdiff_gradp_dsl_provider = factory.NumpyFieldsProvider(
     func=compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl,
-    domain={},
-    fields=["zdiff_gradp"],
     deps={
         "z_me": "z_me",
         "z_mc": "height",
@@ -654,6 +679,17 @@ compute_zdiff_gradp_dsl_provider = factory.NumpyFieldsProvider(
         "z_aux2": "z_aux2",
     },
     offsets={"e2c": dims.E2CDim},
+    domain={
+        dims.EdgeDim: (
+            edge_domain(h_grid.Zone.LOCAL),
+            edge_domain(h_grid.Zone.LOCAL),
+        ),
+        dims.KDim: (
+            v_grid.domain(dims.KDim)(v_grid.Zone.TOP),
+            v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
+        )
+    },
+    fields=["zdiff_gradp"],
     params={
         "nlev": icon_grid.num_levels,
         "horizontal_start": icon_grid.start_index(
