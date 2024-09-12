@@ -46,20 +46,11 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     sum_tmp = (
         theta_v * geofac_n2s_c
         + geofac_n2s_nbh(C2CEC[0])
-        * (
-            vcoef(C2CEC[0]) * theta_v_0
-            + (wpfloat("1.0") - vcoef(C2CEC[0])) * theta_v_0_m1
-        )
+        * (vcoef(C2CEC[0]) * theta_v_0 + (wpfloat("1.0") - vcoef(C2CEC[0])) * theta_v_0_m1)
         + geofac_n2s_nbh(C2CEC[1])
-        * (
-            vcoef(C2CEC[1]) * theta_v_1
-            + (wpfloat("1.0") - vcoef(C2CEC[1])) * theta_v_1_m1
-        )
+        * (vcoef(C2CEC[1]) * theta_v_1 + (wpfloat("1.0") - vcoef(C2CEC[1])) * theta_v_1_m1)
         + geofac_n2s_nbh(C2CEC[2])
-        * (
-            vcoef(C2CEC[2]) * theta_v_2
-            + (wpfloat("1.0") - vcoef(C2CEC[2])) * theta_v_2_m1
-        )
+        * (vcoef(C2CEC[2]) * theta_v_2 + (wpfloat("1.0") - vcoef(C2CEC[2])) * theta_v_2_m1)
     )
 
     z_temp_wp = where(
