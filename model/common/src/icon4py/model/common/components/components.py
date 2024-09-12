@@ -37,6 +37,13 @@ class Component(Protocol[Ins, Outs]):
         >>> RequiredInputs: TypeAlias = Literal["foo", "bar"]
         >>> ProducedOutputs: TypeAlias = Literal["baz"]
         >>> class AlphaComponent(Component[RequiredInputs, ProducedOutputs]):
+        ...     inputs_properties = {
+        ...         "foo": {"standard_name": "Foo", "units": "m"},
+        ...         "bar": {"standard_name": "BarBar", "units": "s"},
+        ...     }
+        ...
+        ...     outputs_properties = {"baz": {"standard_name": "BAZ", "units": "s"}}
+        ...
         ...     def __call__(
         ...         self, state: dict[RequiredInputs, model.DataField], time_step: datetime.datetime
         ...     ) -> dict[ProducedOutputs, model.DataField]:
@@ -51,7 +58,7 @@ class Component(Protocol[Ins, Outs]):
 
     @property
     @abc.abstractmethod
-    def input_properties(self) -> dict[Ins, model.FieldMetaData]:
+    def inputs_properties(self) -> dict[Ins, model.FieldMetaData]:
         """Return a dictionary with the properties of the inputs expected by the component.
 
         Each input key contains metadata with the CF name, units and dimension of the associated data field.
@@ -60,7 +67,7 @@ class Component(Protocol[Ins, Outs]):
 
     @property
     @abc.abstractmethod
-    def output_properties(self) -> dict[Outs, model.FieldMetaData]:
+    def outputs_properties(self) -> dict[Outs, model.FieldMetaData]:
         """Return a dictionary with the properties of the outputs expected by the component.
 
         Each input key contains metadata with the CF name, units and dimension of the associated data field.
