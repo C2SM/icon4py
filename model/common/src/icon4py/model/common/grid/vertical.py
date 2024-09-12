@@ -16,14 +16,14 @@ from typing import Final
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
 from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
 
 
-class Zone(enum.IntEnum):
+class Zone(enum.Enum):
     """
     Vertical zone markers to be used to select vertical domain indices.
 
@@ -42,11 +42,18 @@ class Domain:
     """
     Simple data class used to specify a vertical domain such that index lookup and domain specification can be separated.
     """
-
-    dim: dims.KDim
+    dim: dims.VerticalDim
     marker: Zone
-
-
+    offset: int = 0
+    
+    def __post_init__(self):
+        self._validate()
+    
+    def _validate(self):
+        assert self.dim.kind == gtx.DimensionKind.VERTICAL
+        if self.marker == Zone.TOP:
+            assert self.offset >= 0, f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+        
 @dataclasses.dataclass(frozen=True)
 class VerticalGridConfig:
     """
@@ -158,21 +165,28 @@ class VerticalGrid:
         )
 
     def index(self, domain: Domain) -> gtx.int32:
+        
         match domain.marker:
             case Zone.TOP:
-                return gtx.int32(0)
+                index =  gtx.int32(0)  
             case Zone.BOTTOM:
-                return (
-                    gtx.int32(self.config.num_levels)
+                index =  (
+                     gtx.int32(self.config.num_levels)
                     if domain.dim == dims.KDim
                     else gtx.int32(self.config.num_levels + 1)
                 )
             case Zone.MOIST:
-                return self._start_index_for_moist_physics
+                index =  self._start_index_for_moist_physics
             case Zone.FLAT:
-                return self._end_index_of_flat_layer
+                index =  self._end_index_of_flat_layer
             case Zone.DAMPING:
-                return self._end_index_of_damping_layer
+                index =  self._end_index_of_damping_layer
+            case _: 
+                raise exceptions.IconGridError(f"not a valid vertical zone: {domain.marker}")
+        
+        index += domain.offset
+        assert index >= 0 and index <= self.config.num_levels + 1, f"vertical index {index} outside of grid levels for {domain.dim}"
+        return index
 
     @property
     def interface_physical_height(self) -> fa.KField[float]:
@@ -185,7 +199,7 @@ class VerticalGrid:
 
     @functools.cached_property
     def nflatlev(self):
-        """Vertical index for bottommost level at which coordinate surfaces are flat."""
+        """Vertical index for bottom most level at which coordinate surfaces are flat."""
         return self.index(Domain(dims.KDim, Zone.FLAT))
 
     @functools.cached_property
