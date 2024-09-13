@@ -42,18 +42,22 @@ class Domain:
     """
     Simple data class used to specify a vertical domain such that index lookup and domain specification can be separated.
     """
+
     dim: dims.VerticalDim
     marker: Zone
     offset: int = 0
-    
+
     def __post_init__(self):
         self._validate()
-    
+
     def _validate(self):
         assert self.dim.kind == gtx.DimensionKind.VERTICAL
         if self.marker == Zone.TOP:
-            assert self.offset >= 0, f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
-        
+            assert (
+                self.offset >= 0
+            ), f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+
+
 @dataclasses.dataclass(frozen=True)
 class VerticalGridConfig:
     """
@@ -165,28 +169,28 @@ class VerticalGrid:
         )
 
     def index(self, domain: Domain) -> gtx.int32:
-        
         match domain.marker:
             case Zone.TOP:
-                index =  gtx.int32(0)  
+                index = gtx.int32(0)
             case Zone.BOTTOM:
-                index =  (
-                     gtx.int32(self.config.num_levels)
-                    if domain.dim == dims.KDim
-                    else gtx.int32(self.config.num_levels + 1)
-                )
+                index = self._bottom_level(domain)
             case Zone.MOIST:
-                index =  self._start_index_for_moist_physics
+                index = self._start_index_for_moist_physics
             case Zone.FLAT:
-                index =  self._end_index_of_flat_layer
+                index = self._end_index_of_flat_layer
             case Zone.DAMPING:
-                index =  self._end_index_of_damping_layer
-            case _: 
+                index = self._end_index_of_damping_layer
+            case _:
                 raise exceptions.IconGridError(f"not a valid vertical zone: {domain.marker}")
-        
+
         index += domain.offset
-        assert index >= 0 and index <= self.config.num_levels + 1, f"vertical index {index} outside of grid levels for {domain.dim}"
+        assert (
+            0 <= index <= self._bottom_level(domain)
+        ), f"vertical index {index} outside of grid levels for {domain.dim}"
         return index
+
+    def _bottom_level(self, domain: Domain):
+        return self.size(domain.dim)
 
     @property
     def interface_physical_height(self) -> fa.KField[float]:

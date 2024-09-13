@@ -117,7 +117,8 @@ def configure_vertical_grid(grid_savepoint, top_moist_threshold=22500.0):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, expected_moist_level", [(dt_utils.REGIONAL_EXPERIMENT, 0), (dt_utils.GLOBAL_EXPERIMENT, 25)]
+    "experiment, expected_moist_level",
+    [(dt_utils.REGIONAL_EXPERIMENT, 0), (dt_utils.GLOBAL_EXPERIMENT, 25)],
 )
 def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_level):
     threshold = 22500.0
@@ -148,20 +149,21 @@ def test_flat_level_calculation(grid_savepoint, experiment, flat_height):
 def offsets():
     for i in range(5):
         yield i
-        
+
+
 def vertical_zones():
     for z in v_grid.Zone.__members__.values():
         yield z
 
 
-
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("kind", (gtx.DimensionKind.LOCAL, gtx.DimensionKind.HORIZONTAL))
-def test_domain_raises_for_vertical_dim(zone, kind):
+def test_domain_raises_for_non_vertical_dim(zone, kind):
     dim = gtx.Dimension("I", kind=kind)
     with pytest.raises(AssertionError):
         v_grid.Domain(dim, zone)
-    
+
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
@@ -169,11 +171,12 @@ def test_grid_index_top(grid_savepoint, dim, offset):
     vertical_grid = configure_vertical_grid(grid_savepoint)
     assert offset == vertical_grid.index(v_grid.Domain(dim, v_grid.Zone.TOP, offset))
 
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
-@pytest.mark.parametrize("offset",offsets())
-def test_grid_index_damping(grid_savepoint,  experiment, levels,dim,offset):
+@pytest.mark.parametrize("offset", offsets())
+def test_grid_index_damping(grid_savepoint, experiment, levels, dim, offset):
     vertical_grid = configure_vertical_grid(grid_savepoint)
     upwards = -offset
     downwards = offset
@@ -183,11 +186,12 @@ def test_grid_index_damping(grid_savepoint,  experiment, levels,dim,offset):
     domain = v_grid.Domain(dim, zone, downwards)
     assert vertical_grid.end_index_of_damping_layer + downwards == vertical_grid.index(domain)
 
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
-@pytest.mark.parametrize("offset",offsets())
-def test_grid_index_moist(grid_savepoint,  experiment, levels,dim,offset):
+@pytest.mark.parametrize("offset", offsets())
+def test_grid_index_moist(grid_savepoint, experiment, levels, dim, offset):
     vertical_grid = configure_vertical_grid(grid_savepoint)
     upwards = -offset
     downwards = offset
@@ -201,8 +205,8 @@ def test_grid_index_moist(grid_savepoint,  experiment, levels,dim,offset):
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
-@pytest.mark.parametrize("offset",offsets())
-def test_grid_index_flat(grid_savepoint,  experiment, levels,dim,offset):
+@pytest.mark.parametrize("offset", offsets())
+def test_grid_index_flat(grid_savepoint, experiment, levels, dim, offset):
     vertical_grid = configure_vertical_grid(grid_savepoint)
     upwards = -offset
     downwards = offset
@@ -214,43 +218,50 @@ def test_grid_index_flat(grid_savepoint,  experiment, levels,dim,offset):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, levels", [(dt_utils.REGIONAL_EXPERIMENT, NUM_LEVELS), (dt_utils.GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize(
+    "experiment, levels",
+    [(dt_utils.REGIONAL_EXPERIMENT, NUM_LEVELS), (dt_utils.GLOBAL_EXPERIMENT, 60)],
+)
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
-def test_grid_index_bottom(grid_savepoint,  experiment, levels,dim, offset):
-    valid_offset = - offset
+def test_grid_index_bottom(grid_savepoint, experiment, levels, dim, offset):
+    valid_offset = -offset
     vertical_grid = configure_vertical_grid(grid_savepoint)
     num_levels = levels if dim == dims.KDim else levels + 1
     domain = v_grid.Domain(dim, v_grid.Zone.BOTTOM, valid_offset)
     assert num_levels + valid_offset == vertical_grid.index(domain)
-   
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
-def test_grid_index_bottom_raises_if_index_above_num_levels(grid_savepoint,  experiment, levels, zone, dim, offset):
-    invalid_offset = offset + levels + 2
+def test_grid_index_raises_if_index_above_num_levels(
+    grid_savepoint, experiment, levels, zone, dim, offset
+):
+    vertical_size = levels if dim == dims.KDim else levels + 1
+    invalid_offset = vertical_size + 1 + offset
     vertical_grid = configure_vertical_grid(grid_savepoint)
     domain = v_grid.Domain(dim, zone, invalid_offset)
     with pytest.raises(expected_exception=AssertionError):
         vertical_grid.index(domain)
 
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment, levels", [(dt_utils.GLOBAL_EXPERIMENT, 60)])
 @pytest.mark.parametrize("zone", vertical_zones())
 @pytest.mark.parametrize("dim", [dims.KDim, dims.KHalfDim])
 @pytest.mark.parametrize("offset", offsets())
-def test_grid_index_bottom_raises_if_index_below_zero(grid_savepoint,  experiment, levels, zone, dim, offset):
-    invalid_offset = - (offset + 2 + levels)
+def test_grid_index_raises_if_index_below_zero(
+    grid_savepoint, experiment, levels, zone, dim, offset
+):
+    vertical_size = levels if dim == dims.KDim else levels + 1
+    invalid_offset = -(vertical_size + 1 + offset)
     vertical_grid = configure_vertical_grid(grid_savepoint)
     with pytest.raises(expected_exception=AssertionError):
         domain = v_grid.Domain(dim, zone, invalid_offset)
         vertical_grid.index(domain)
-
-
-
 
 
 @pytest.mark.datatest
