@@ -142,7 +142,7 @@ class VerticalGrid:
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
 
-    def __str__(self):
+    def __str__(self) -> str:
         vertical_params_properties = ["Model interface height properties:"]
         for key, value in self.metadata_interface_physical_height.items():
             vertical_params_properties.append(f"    {key}: {value}")
@@ -159,7 +159,7 @@ class VerticalGrid:
         return "\n".join(vertical_params_properties)
 
     @property
-    def metadata_interface_physical_height(self):
+    def metadata_interface_physical_height(self) -> dict:
         return dict(
             standard_name="model_interface_height",
             long_name="height value of half levels without topography",
@@ -189,35 +189,35 @@ class VerticalGrid:
         ), f"vertical index {index} outside of grid levels for {domain.dim}"
         return index
 
-    def _bottom_level(self, domain: Domain):
-        return self.size(domain.dim)
+    def _bottom_level(self, domain: Domain) -> gtx.int32:
+        return gtx.int32(self.size(domain.dim))
 
     @property
     def interface_physical_height(self) -> fa.KField[float]:
         return self._vct_a
 
     @functools.cached_property
-    def kstart_moist(self):
+    def kstart_moist(self) -> gtx.int32:
         """Vertical index for start level of moist physics."""
         return self.index(Domain(dims.KDim, Zone.MOIST))
 
     @functools.cached_property
-    def nflatlev(self):
+    def nflatlev(self) -> gtx.int32:
         """Vertical index for bottom most level at which coordinate surfaces are flat."""
         return self.index(Domain(dims.KDim, Zone.FLAT))
 
     @functools.cached_property
-    def nrdmax(self):
+    def nrdmax(self) -> gtx.int32:
         """Vertical index where damping starts."""
         return self.end_index_of_damping_layer
 
     @functools.cached_property
-    def end_index_of_damping_layer(self):
+    def end_index_of_damping_layer(self) -> gtx.int32:
         """Vertical index where damping starts."""
         return self.index(Domain(dims.KDim, Zone.DAMPING))
 
     @property
-    def nflat_gradp(self):
+    def nflat_gradp(self) -> gtx.int32:
         return self._min_index_flat_horizontal_grad_pressure
 
     def size(self, dim: dims.VerticalDim) -> int:
@@ -239,7 +239,7 @@ class VerticalGrid:
         return gtx.int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
-    def _determine_damping_height_index(cls, vct_a: xp.ndarray, damping_height: float):
+    def _determine_damping_height_index(cls, vct_a: xp.ndarray, damping_height: float) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
         return (
             0
@@ -259,7 +259,9 @@ class VerticalGrid:
         )
 
 
-def _read_vct_a_and_vct_b_from_file(file_path: pathlib.Path, num_levels: int):
+def _read_vct_a_and_vct_b_from_file(
+    file_path: pathlib.Path, num_levels: int
+) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
     The file format should be as follows (the same format used for icon):
@@ -300,7 +302,7 @@ def _read_vct_a_and_vct_b_from_file(file_path: pathlib.Path, num_levels: int):
     return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
 
 
-def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
+def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
 
@@ -481,7 +483,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
     return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
 
 
-def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
+def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.
     vct_a is an array that contains the height of grid interfaces (or half levels) from model surface to model top, before terrain-following coordinates are applied.
