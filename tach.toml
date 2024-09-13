@@ -1,0 +1,83 @@
+exclude = []
+source_roots = [
+    "model/atmosphere/advection/src",
+    "model/atmosphere/diffusion/src",
+    "model/atmosphere/dycore/src",
+    "model/atmosphere/subgrid_scale_physics/microphysics/src",
+    "model/common/src",
+    "model/driver/src",
+    "tools/src",
+]
+
+[[modules]]
+path = "icon4py.model.atmosphere.advection"
+depends_on = [
+    { path = "icon4py.model.common" },
+]
+
+[[modules]]
+path = "icon4py.model.atmosphere.diffusion"
+depends_on = [
+    { path = "icon4py.model.common" },
+]
+
+[[modules]]
+path = "icon4py.model.atmosphere.dycore"
+depends_on = [
+    { path = "icon4py.model.common" },
+]
+
+[[modules]]
+path = "icon4py.model.atmosphere.subgrid_scale_physics.microphysics"
+depends_on = [
+    { path = "icon4py.model.common" },
+]
+
+[[modules]]
+path = "icon4py.model.common"
+depends_on = []
+
+[[modules]]
+path = "icon4py.model.driver"
+depends_on = [
+    { path = "icon4py.model.atmosphere.diffusion" },
+    { path = "icon4py.model.atmosphere.dycore" },
+    { path = "icon4py.model.common" },
+]
+
+[[modules]]
+path = "icon4pytools"
+depends_on = []
+
+[[modules]]
+path = "icon4pytools.common"
+depends_on = []
+
+[[modules]]
+path = "icon4pytools.f2ser"
+depends_on = [
+    { path = "icon4pytools.liskov" },
+]
+
+[[modules]]
+path = "icon4pytools.icon4pygen"
+depends_on = [
+    { path = "icon4py.model.common" },
+]
+
+[[modules]]
+path = "icon4pytools.liskov"
+depends_on = [
+    { path = "icon4pytools" },
+    { path = "icon4pytools.common" },
+    { path = "icon4pytools.icon4pygen" },
+]
+
+[[modules]]
+path = "icon4pytools.py2fgen"
+depends_on = [
+    { path = "icon4py.model.atmosphere.diffusion" },
+    { path = "icon4py.model.common" },
+    { path = "icon4pytools.common" },
+    { path = "icon4pytools.icon4pygen" },
+]
