@@ -12,18 +12,19 @@ from gt4py.next.ffront.fbuiltins import int32, where
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _compute_intermediate_horizontal_flux_from_linear_coefficients(
-    z_lsq_coeff_1_dsl: fa.CellKField[float],
-    z_lsq_coeff_2_dsl: fa.CellKField[float],
-    z_lsq_coeff_3_dsl: fa.CellKField[float],
-    distv_bary_1: fa.EdgeKField[float],
-    distv_bary_2: fa.EdgeKField[float],
-    p_mass_flx_e: fa.EdgeKField[float],
+    z_lsq_coeff_1_dsl: fa.CellKField[wpfloat],
+    z_lsq_coeff_2_dsl: fa.CellKField[wpfloat],
+    z_lsq_coeff_3_dsl: fa.CellKField[wpfloat],
+    distv_bary_1: fa.EdgeKField[vpfloat],
+    distv_bary_2: fa.EdgeKField[vpfloat],
+    p_mass_flx_e: fa.EdgeKField[wpfloat],
     cell_rel_idx_dsl: fa.EdgeKField[int32],
-) -> fa.EdgeKField[float]:
+) -> fa.EdgeKField[wpfloat]:
     z_tracer_mflx_dsl = (
         where(
             cell_rel_idx_dsl == 1,
@@ -49,14 +50,14 @@ def _compute_intermediate_horizontal_flux_from_linear_coefficients(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_intermediate_horizontal_flux_from_linear_coefficients(
-    z_lsq_coeff_1_dsl: fa.CellKField[float],
-    z_lsq_coeff_2_dsl: fa.CellKField[float],
-    z_lsq_coeff_3_dsl: fa.CellKField[float],
-    distv_bary_1: fa.EdgeKField[float],
-    distv_bary_2: fa.EdgeKField[float],
-    p_mass_flx_e: fa.EdgeKField[float],
+    z_lsq_coeff_1_dsl: fa.CellKField[wpfloat],
+    z_lsq_coeff_2_dsl: fa.CellKField[wpfloat],
+    z_lsq_coeff_3_dsl: fa.CellKField[wpfloat],
+    distv_bary_1: fa.EdgeKField[vpfloat],
+    distv_bary_2: fa.EdgeKField[vpfloat],
+    p_mass_flx_e: fa.EdgeKField[wpfloat],
     cell_rel_idx_dsl: fa.EdgeKField[int32],
-    z_tracer_mflx_dsl: fa.EdgeKField[float],
+    z_tracer_mflx_dsl: fa.EdgeKField[wpfloat],
 ):
     _compute_intermediate_horizontal_flux_from_linear_coefficients(
         z_lsq_coeff_1_dsl,

@@ -11,30 +11,31 @@ from gt4py.next.ffront.fbuiltins import minimum, where
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _apply_monotone_horizontal_multiplicative_flux_factors(
-    z_anti: fa.EdgeKField[float],
-    r_m: fa.CellKField[float],
-    r_p: fa.CellKField[float],
-    z_mflx_low: fa.EdgeKField[float],
-) -> fa.EdgeKField[float]:
+    z_anti: fa.EdgeKField[wpfloat],
+    r_m: fa.CellKField[wpfloat],
+    r_p: fa.CellKField[wpfloat],
+    z_mflx_low: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
     r_frac = where(
-        z_anti >= 0.0,
+        z_anti >= wpfloat(0.0),
         minimum(r_m(E2C[0]), r_p(E2C[1])),
         minimum(r_m(E2C[1]), r_p(E2C[0])),
     )
-    return z_mflx_low + minimum(1.0, r_frac) * z_anti
+    return z_mflx_low + minimum(wpfloat(1.0), r_frac) * z_anti
 
 
 @program
 def apply_monotone_horizontal_multiplicative_flux_factors(
-    z_anti: fa.EdgeKField[float],
-    r_m: fa.CellKField[float],
-    r_p: fa.CellKField[float],
-    z_mflx_low: fa.EdgeKField[float],
-    p_mflx_tracer_h: fa.EdgeKField[float],
+    z_anti: fa.EdgeKField[wpfloat],
+    r_m: fa.CellKField[wpfloat],
+    r_p: fa.CellKField[wpfloat],
+    z_mflx_low: fa.EdgeKField[wpfloat],
+    p_mflx_tracer_h: fa.EdgeKField[wpfloat],
 ):
     _apply_monotone_horizontal_multiplicative_flux_factors(
         z_anti, r_m, r_p, z_mflx_low, out=p_mflx_tracer_h

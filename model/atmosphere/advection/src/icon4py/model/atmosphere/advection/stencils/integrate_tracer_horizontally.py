@@ -13,18 +13,19 @@ from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CellDim, KDim
 from icon4py.model.common.settings import backend
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _integrate_tracer_horizontally(
-    p_mflx_tracer_h: fa.EdgeKField[float],
-    deepatmo_divh: fa.KField[float],
-    tracer_now: fa.CellKField[float],
-    rhodz_now: fa.CellKField[float],
-    rhodz_new: fa.CellKField[float],
-    geofac_div: Field[[dims.CEDim], float],
-    p_dtime: float,
-) -> fa.CellKField[float]:
+    p_mflx_tracer_h: fa.EdgeKField[wpfloat],
+    deepatmo_divh: fa.KField[wpfloat],
+    tracer_now: fa.CellKField[wpfloat],
+    rhodz_now: fa.CellKField[wpfloat],
+    rhodz_new: fa.CellKField[wpfloat],
+    geofac_div: Field[[dims.CEDim], wpfloat],
+    p_dtime: wpfloat,
+) -> fa.CellKField[wpfloat]:
     tracer_new_hor = (
         tracer_now * rhodz_now
         - p_dtime
@@ -37,14 +38,14 @@ def _integrate_tracer_horizontally(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def integrate_tracer_horizontally(
-    p_mflx_tracer_h: fa.EdgeKField[float],
-    deepatmo_divh: fa.KField[float],
-    tracer_now: fa.CellKField[float],
-    rhodz_now: fa.CellKField[float],
-    rhodz_new: fa.CellKField[float],
-    geofac_div: Field[[dims.CEDim], float],
-    tracer_new_hor: fa.CellKField[float],
-    p_dtime: float,
+    p_mflx_tracer_h: fa.EdgeKField[wpfloat],
+    deepatmo_divh: fa.KField[wpfloat],
+    tracer_now: fa.CellKField[wpfloat],
+    rhodz_now: fa.CellKField[wpfloat],
+    rhodz_new: fa.CellKField[wpfloat],
+    geofac_div: Field[[dims.CEDim], wpfloat],
+    tracer_new_hor: fa.CellKField[wpfloat],
+    p_dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

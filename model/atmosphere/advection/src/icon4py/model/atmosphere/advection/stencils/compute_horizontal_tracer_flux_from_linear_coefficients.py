@@ -12,18 +12,19 @@ from gt4py.next.ffront.fbuiltins import int32, where
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _compute_horizontal_tracer_flux_from_linear_coefficients(
-    z_lsq_coeff_1: fa.CellKField[float],
-    z_lsq_coeff_2: fa.CellKField[float],
-    z_lsq_coeff_3: fa.CellKField[float],
-    distv_bary_1: fa.EdgeKField[float],
-    distv_bary_2: fa.EdgeKField[float],
-    p_mass_flx_e: fa.EdgeKField[float],
+    z_lsq_coeff_1: fa.CellKField[wpfloat],
+    z_lsq_coeff_2: fa.CellKField[wpfloat],
+    z_lsq_coeff_3: fa.CellKField[wpfloat],
+    distv_bary_1: fa.EdgeKField[vpfloat],
+    distv_bary_2: fa.EdgeKField[vpfloat],
+    p_mass_flx_e: fa.EdgeKField[wpfloat],
     cell_rel_idx_dsl: fa.EdgeKField[int32],
-) -> fa.EdgeKField[float]:
+) -> fa.EdgeKField[wpfloat]:
     p_out_e = (
         where(cell_rel_idx_dsl == 1, z_lsq_coeff_1(E2C[1]), z_lsq_coeff_1(E2C[0]))
         + distv_bary_1 * where(cell_rel_idx_dsl == 1, z_lsq_coeff_2(E2C[1]), z_lsq_coeff_2(E2C[0]))
@@ -35,14 +36,14 @@ def _compute_horizontal_tracer_flux_from_linear_coefficients(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_horizontal_tracer_flux_from_linear_coefficients(
-    z_lsq_coeff_1: fa.CellKField[float],
-    z_lsq_coeff_2: fa.CellKField[float],
-    z_lsq_coeff_3: fa.CellKField[float],
-    distv_bary_1: fa.EdgeKField[float],
-    distv_bary_2: fa.EdgeKField[float],
-    p_mass_flx_e: fa.EdgeKField[float],
+    z_lsq_coeff_1: fa.CellKField[wpfloat],
+    z_lsq_coeff_2: fa.CellKField[wpfloat],
+    z_lsq_coeff_3: fa.CellKField[wpfloat],
+    distv_bary_1: fa.EdgeKField[vpfloat],
+    distv_bary_2: fa.EdgeKField[vpfloat],
+    p_mass_flx_e: fa.EdgeKField[wpfloat],
     cell_rel_idx_dsl: fa.EdgeKField[int32],
-    p_out_e: fa.EdgeKField[float],
+    p_out_e: fa.EdgeKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

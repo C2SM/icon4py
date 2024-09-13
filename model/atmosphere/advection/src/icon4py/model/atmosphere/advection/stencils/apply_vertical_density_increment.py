@@ -12,16 +12,17 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _apply_vertical_density_increment(
-    rhodz_ast: fa.CellKField[float],
-    p_mflx_contra_v: fa.CellKField[float],
-    deepatmo_divzl: fa.KField[float],
-    deepatmo_divzu: fa.KField[float],
-    p_dtime: float,
-) -> fa.CellKField[float]:
+    rhodz_ast: fa.CellKField[wpfloat],
+    p_mflx_contra_v: fa.CellKField[wpfloat],
+    deepatmo_divzl: fa.KField[wpfloat],
+    deepatmo_divzu: fa.KField[wpfloat],
+    p_dtime: wpfloat,
+) -> fa.CellKField[wpfloat]:
     k_offset_up_low = p_dtime * (
         p_mflx_contra_v(Koff[1]) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
@@ -30,12 +31,12 @@ def _apply_vertical_density_increment(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def apply_vertical_density_increment(
-    rhodz_ast: fa.CellKField[float],
-    p_mflx_contra_v: fa.CellKField[float],
-    deepatmo_divzl: fa.KField[float],
-    deepatmo_divzu: fa.KField[float],
-    p_dtime: float,
-    rhodz_ast2: fa.CellKField[float],
+    rhodz_ast: fa.CellKField[wpfloat],
+    p_mflx_contra_v: fa.CellKField[wpfloat],
+    deepatmo_divzl: fa.KField[wpfloat],
+    deepatmo_divzu: fa.KField[wpfloat],
+    p_dtime: wpfloat,
+    rhodz_ast2: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

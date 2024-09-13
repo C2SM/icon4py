@@ -12,14 +12,15 @@ from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_ppm_quadratic_face_values(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
-) -> fa.CellKField[float]:
-    p_face = p_cc * (1.0 - (p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))) + (
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    p_face = p_cc * (wpfloat(1.0) - (p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))) + (
         p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
     ) * ((p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1])) * p_cc + p_cc(Koff[-1]))
 
@@ -28,15 +29,15 @@ def _compute_ppm_quadratic_face_values(
 
 @field_operator
 def _compute_ppm_all_face_values(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
-    p_face_in: fa.CellKField[float],
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
+    p_face_in: fa.CellKField[wpfloat],
     k: fa.KField[int32],
     slev: int32,
     elev: int32,
     slevp1: int32,
     elevp1: int32,
-) -> fa.CellKField[float]:
+) -> fa.CellKField[wpfloat]:
     k = broadcast(k, (CellDim, KDim))
 
     p_face = where(
@@ -54,15 +55,15 @@ def _compute_ppm_all_face_values(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_ppm_all_face_values(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
-    p_face_in: fa.CellKField[float],
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
+    p_face_in: fa.CellKField[wpfloat],
     k: fa.KField[int32],
     slev: int32,
     elev: int32,
     slevp1: int32,
     elevp1: int32,
-    p_face: fa.CellKField[float],
+    p_face: fa.CellKField[wpfloat],
 ):
     _compute_ppm_all_face_values(
         p_cc,

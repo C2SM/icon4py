@@ -13,17 +13,18 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CEC, C2E2C, CellDim, KDim
 from icon4py.model.common.settings import backend
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _reconstruct_linear_coefficients_svd(
-    p_cc: fa.CellKField[float],
-    lsq_pseudoinv_1: Field[[dims.CECDim], float],
-    lsq_pseudoinv_2: Field[[dims.CECDim], float],
+    p_cc: fa.CellKField[wpfloat],
+    lsq_pseudoinv_1: Field[[dims.CECDim], wpfloat],
+    lsq_pseudoinv_2: Field[[dims.CECDim], wpfloat],
 ) -> tuple[
-    fa.CellKField[float],
-    fa.CellKField[float],
-    fa.CellKField[float],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
 ]:
     p_coeff_1_dsl = p_cc
     p_coeff_2_dsl = (
@@ -41,12 +42,12 @@ def _reconstruct_linear_coefficients_svd(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def reconstruct_linear_coefficients_svd(
-    p_cc: fa.CellKField[float],
-    lsq_pseudoinv_1: Field[[dims.CECDim], float],
-    lsq_pseudoinv_2: Field[[dims.CECDim], float],
-    p_coeff_1_dsl: fa.CellKField[float],
-    p_coeff_2_dsl: fa.CellKField[float],
-    p_coeff_3_dsl: fa.CellKField[float],
+    p_cc: fa.CellKField[wpfloat],
+    lsq_pseudoinv_1: Field[[dims.CECDim], wpfloat],
+    lsq_pseudoinv_2: Field[[dims.CECDim], wpfloat],
+    p_coeff_1_dsl: fa.CellKField[wpfloat],
+    p_coeff_2_dsl: fa.CellKField[wpfloat],
+    p_coeff_3_dsl: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

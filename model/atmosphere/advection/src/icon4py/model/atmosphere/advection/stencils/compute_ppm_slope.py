@@ -12,6 +12,7 @@ from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO: this will have to be removed once domain allows for imports
@@ -21,17 +22,17 @@ KDim = dims.KDim
 
 @field_operator
 def _compute_ppm_slope_a(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
-) -> fa.CellKField[float]:
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     zfac_m1 = (p_cc - p_cc(Koff[-1])) / (p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1]))
     zfac = (p_cc(Koff[+1]) - p_cc) / (p_cellhgt_mc_now(Koff[+1]) + p_cellhgt_mc_now)
     z_slope = (
         p_cellhgt_mc_now
         / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[+1]))
     ) * (
-        (2.0 * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now) * zfac
-        + (p_cellhgt_mc_now + 2.0 * p_cellhgt_mc_now(Koff[+1])) * zfac_m1
+        (wpfloat(2.0) * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now) * zfac
+        + (p_cellhgt_mc_now + wpfloat(2.0) * p_cellhgt_mc_now(Koff[+1])) * zfac_m1
     )
 
     return z_slope
@@ -39,16 +40,16 @@ def _compute_ppm_slope_a(
 
 @field_operator
 def _compute_ppm_slope_b(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
-) -> fa.CellKField[float]:
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     zfac_m1 = (p_cc - p_cc(Koff[-1])) / (p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1]))
     zfac = (p_cc - p_cc) / (p_cellhgt_mc_now + p_cellhgt_mc_now)
     z_slope = (
         p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now + p_cellhgt_mc_now)
     ) * (
-        (2.0 * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now) * zfac
-        + (p_cellhgt_mc_now + 2.0 * p_cellhgt_mc_now) * zfac_m1
+        (wpfloat(2.0) * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now) * zfac
+        + (p_cellhgt_mc_now + wpfloat(2.0) * p_cellhgt_mc_now) * zfac_m1
     )
 
     return z_slope
@@ -56,11 +57,11 @@ def _compute_ppm_slope_b(
 
 @field_operator
 def _compute_ppm_slope(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
     k: fa.KField[int32],
     elev: int32,
-) -> fa.CellKField[float]:
+) -> fa.CellKField[wpfloat]:
     k = broadcast(k, (CellDim, KDim))
 
     z_slope = where(
@@ -74,11 +75,11 @@ def _compute_ppm_slope(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_ppm_slope(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
     k: fa.KField[int32],
     elev: int32,
-    z_slope: fa.CellKField[float],
+    z_slope: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

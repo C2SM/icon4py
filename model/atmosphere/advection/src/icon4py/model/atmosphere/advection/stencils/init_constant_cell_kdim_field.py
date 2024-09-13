@@ -12,16 +12,17 @@ from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO (dastrm): move this highly generic stencil to common
 
 
 @field_operator
-def _init_constant_cell_kdim_field(value: float) -> fa.CellKField[float]:
+def _init_constant_cell_kdim_field(value: wpfloat) -> fa.CellKField[wpfloat]:
     return broadcast(value, (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def init_constant_cell_kdim_field(field: fa.CellKField[float], value: float):
+def init_constant_cell_kdim_field(field: fa.CellKField[wpfloat], value: wpfloat):
     _init_constant_cell_kdim_field(value, out=field)

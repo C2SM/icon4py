@@ -11,33 +11,34 @@ from gt4py.next.ffront.fbuiltins import minimum, where
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_05(
-    z_anti: fa.EdgeKField[float],
-    z_mflx_low: fa.EdgeKField[float],
-    r_m: fa.CellKField[float],
-    r_p: fa.CellKField[float],
-) -> fa.EdgeKField[float]:
-    z_signum = where((z_anti > 0.0), 1.0, -1.0)
+    z_anti: fa.EdgeKField[wpfloat],
+    z_mflx_low: fa.EdgeKField[wpfloat],
+    r_m: fa.CellKField[wpfloat],
+    r_p: fa.CellKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
+    z_signum = where((z_anti > wpfloat(0.0)), wpfloat(1.0), -wpfloat(1.0))
 
-    r_frac = 0.5 * (
-        (1.0 + z_signum) * minimum(r_m(E2C[0]), r_p(E2C[1]))
-        + (1.0 - z_signum) * minimum(r_m(E2C[1]), r_p(E2C[0]))
+    r_frac = wpfloat(0.5) * (
+        (wpfloat(1.0) + z_signum) * minimum(r_m(E2C[0]), r_p(E2C[1]))
+        + (wpfloat(1.0) - z_signum) * minimum(r_m(E2C[1]), r_p(E2C[0]))
     )
 
-    p_mflx_tracer_h = z_mflx_low + minimum(1.0, r_frac) * z_anti
+    p_mflx_tracer_h = z_mflx_low + minimum(wpfloat(1.0), r_frac) * z_anti
 
     return p_mflx_tracer_h
 
 
 @program
 def hflx_limiter_mo_stencil_05(
-    z_anti: fa.EdgeKField[float],
-    z_mflx_low: fa.EdgeKField[float],
-    r_m: fa.CellKField[float],
-    r_p: fa.CellKField[float],
-    p_mflx_tracer_h: fa.EdgeKField[float],
+    z_anti: fa.EdgeKField[wpfloat],
+    z_mflx_low: fa.EdgeKField[wpfloat],
+    r_m: fa.CellKField[wpfloat],
+    r_p: fa.CellKField[wpfloat],
+    p_mflx_tracer_h: fa.EdgeKField[wpfloat],
 ):
     _hflx_limiter_mo_stencil_05(z_anti, z_mflx_low, r_m, r_p, out=p_mflx_tracer_h)

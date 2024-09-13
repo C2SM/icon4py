@@ -12,24 +12,25 @@ from gt4py.next.ffront.fbuiltins import int32, maximum
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _apply_interpolated_tracer_time_tendency(
-    p_tracer_now: fa.CellKField[float],
-    p_grf_tend_tracer: fa.CellKField[float],
-    p_dtime: float,
-) -> fa.CellKField[float]:
-    p_tracer_new = maximum(0.0, p_tracer_now + p_dtime * p_grf_tend_tracer)
+    p_tracer_now: fa.CellKField[wpfloat],
+    p_grf_tend_tracer: fa.CellKField[wpfloat],
+    p_dtime: wpfloat,
+) -> fa.CellKField[wpfloat]:
+    p_tracer_new = maximum(wpfloat(0.0), p_tracer_now + p_dtime * p_grf_tend_tracer)
     return p_tracer_new
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def apply_interpolated_tracer_time_tendency(
-    p_tracer_now: fa.CellKField[float],
-    p_grf_tend_tracer: fa.CellKField[float],
-    p_tracer_new: fa.CellKField[float],
-    p_dtime: float,
+    p_tracer_now: fa.CellKField[wpfloat],
+    p_grf_tend_tracer: fa.CellKField[wpfloat],
+    p_tracer_new: fa.CellKField[wpfloat],
+    p_dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

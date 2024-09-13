@@ -521,7 +521,7 @@ class Advection:
             p_cell_blk=self.p_cell_blk,
             p_distv_bary_1=self.p_distv_bary_1,
             p_distv_bary_2=self.p_distv_bary_2,
-            p_dthalf=0.5 * dtime,
+            p_dthalf=wpfloat(0.5) * dtime,
             horizontal_start=self.start_edge_lateral_boundary_level_5,
             horizontal_end=self.end_edge_halo,
             vertical_start=0,

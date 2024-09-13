@@ -12,6 +12,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO: this will have to be removed once domain allows for imports
@@ -21,10 +22,10 @@ KDim = dims.KDim
 
 @field_operator
 def _compute_ppm_quadratic_face_values(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
-) -> fa.CellKField[float]:
-    p_face = p_cc * (1.0 - (p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))) + (
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    p_face = p_cc * (wpfloat(1.0) - (p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))) + (
         p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
     ) * ((p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1])) * p_cc + p_cc(Koff[-1]))
 
@@ -33,9 +34,9 @@ def _compute_ppm_quadratic_face_values(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_ppm_quadratic_face_values(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
-    p_face: fa.CellKField[float],
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
+    p_face: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

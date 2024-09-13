@@ -14,6 +14,7 @@ from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2EC, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 sys.setrecursionlimit(5500)
@@ -23,12 +24,12 @@ sys.setrecursionlimit(5500)
 # Checking turn when travelling along three points, used to check whether lines inters.
 @field_operator
 def ccw(
-    p0_lon: fa.EdgeKField[float],
-    p0_lat: fa.EdgeKField[float],
-    p1_lon: fa.EdgeKField[float],
-    p1_lat: fa.EdgeKField[float],
-    p2_lon: fa.EdgeKField[float],
-    p2_lat: fa.EdgeKField[float],
+    p0_lon: fa.EdgeKField[wpfloat],
+    p0_lat: fa.EdgeKField[wpfloat],
+    p1_lon: fa.EdgeKField[wpfloat],
+    p1_lat: fa.EdgeKField[wpfloat],
+    p2_lon: fa.EdgeKField[wpfloat],
+    p2_lat: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[int32]:
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
@@ -47,14 +48,14 @@ def ccw(
 # Checks whether two lines intersect
 @field_operator
 def lintersect(
-    line1_p1_lon: fa.EdgeKField[float],
-    line1_p1_lat: fa.EdgeKField[float],
-    line1_p2_lon: fa.EdgeKField[float],
-    line1_p2_lat: fa.EdgeKField[float],
-    line2_p1_lon: fa.EdgeKField[float],
-    line2_p1_lat: fa.EdgeKField[float],
-    line2_p2_lon: fa.EdgeKField[float],
-    line2_p2_lat: fa.EdgeKField[float],
+    line1_p1_lon: fa.EdgeKField[wpfloat],
+    line1_p1_lat: fa.EdgeKField[wpfloat],
+    line1_p2_lon: fa.EdgeKField[wpfloat],
+    line1_p2_lat: fa.EdgeKField[wpfloat],
+    line2_p1_lon: fa.EdgeKField[wpfloat],
+    line2_p1_lat: fa.EdgeKField[wpfloat],
+    line2_p2_lon: fa.EdgeKField[wpfloat],
+    line2_p2_lat: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[bool]:
     intersect1 = ccw(
         line1_p1_lon,
@@ -94,21 +95,21 @@ def lintersect(
 # Compute intersection point of two lines in 2D
 @field_operator
 def line_intersect(
-    line1_p1_lon: fa.EdgeKField[float],
-    line1_p1_lat: fa.EdgeKField[float],
-    line1_p2_lon: fa.EdgeKField[float],
-    line1_p2_lat: fa.EdgeKField[float],
-    line2_p1_lon: fa.EdgeKField[float],
-    line2_p1_lat: fa.EdgeKField[float],
-    line2_p2_lon: fa.EdgeKField[float],
-    line2_p2_lat: fa.EdgeKField[float],
-) -> tuple[fa.EdgeKField[float], fa.EdgeKField[float]]:
+    line1_p1_lon: fa.EdgeKField[wpfloat],
+    line1_p1_lat: fa.EdgeKField[wpfloat],
+    line1_p2_lon: fa.EdgeKField[wpfloat],
+    line1_p2_lat: fa.EdgeKField[wpfloat],
+    line2_p1_lon: fa.EdgeKField[wpfloat],
+    line2_p1_lat: fa.EdgeKField[wpfloat],
+    line2_p2_lon: fa.EdgeKField[wpfloat],
+    line2_p2_lat: fa.EdgeKField[wpfloat],
+) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     # avoid division with zero
     d1 = line1_p2_lon - line1_p1_lon
-    d1 = where(d1 != 0.0, d1, line1_p2_lon)
+    d1 = where(d1 != wpfloat(0.0), d1, line1_p2_lon)
 
     d2 = line2_p2_lon - line2_p1_lon
-    d2 = where(d2 != 0.0, d2, line2_p2_lon)
+    d2 = where(d2 != wpfloat(0.0), d2, line2_p2_lon)
 
     m1 = (line1_p2_lat - line1_p1_lat) / d1
     m2 = (line2_p2_lat - line2_p1_lat) / d2
@@ -122,43 +123,43 @@ def line_intersect(
 @field_operator
 def _prepare_ffsl_flux_area_patches_list(
     famask_int: fa.EdgeKField[int32],
-    p_vn: fa.EdgeKField[float],
-    ptr_v3_lon: Field[[dims.ECDim], float],
-    ptr_v3_lat: Field[[dims.ECDim], float],
-    tangent_orientation_dsl: fa.EdgeField[float],
-    dreg_patch0_1_lon_dsl: fa.EdgeKField[float],
-    dreg_patch0_1_lat_dsl: fa.EdgeKField[float],
-    dreg_patch0_2_lon_dsl: fa.EdgeKField[float],
-    dreg_patch0_2_lat_dsl: fa.EdgeKField[float],
-    dreg_patch0_3_lon_dsl: fa.EdgeKField[float],
-    dreg_patch0_3_lat_dsl: fa.EdgeKField[float],
-    dreg_patch0_4_lon_dsl: fa.EdgeKField[float],
-    dreg_patch0_4_lat_dsl: fa.EdgeKField[float],
+    p_vn: fa.EdgeKField[wpfloat],
+    ptr_v3_lon: Field[[dims.ECDim], wpfloat],
+    ptr_v3_lat: Field[[dims.ECDim], wpfloat],
+    tangent_orientation_dsl: fa.EdgeField[wpfloat],
+    dreg_patch0_1_lon_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_1_lat_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_2_lon_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_2_lat_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_3_lon_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_3_lat_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_4_lon_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_4_lat_dsl: fa.EdgeKField[vpfloat],
 ) -> tuple[
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
-    fa.EdgeKField[float],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     arrival_pts_1_lon_dsl = dreg_patch0_1_lon_dsl
     arrival_pts_1_lat_dsl = dreg_patch0_1_lat_dsl
@@ -169,7 +170,7 @@ def _prepare_ffsl_flux_area_patches_list(
     depart_pts_2_lon_dsl = dreg_patch0_3_lon_dsl
     depart_pts_2_lat_dsl = dreg_patch0_3_lat_dsl
 
-    lvn_pos = where(p_vn >= 0.0, True, False)
+    lvn_pos = where(p_vn >= wpfloat(0.0), True, False)
 
     # get flux area departure-line segment
     fl_line_p1_lon = depart_pts_1_lon_dsl
@@ -229,7 +230,7 @@ def _prepare_ffsl_flux_area_patches_list(
     )
 
     lvn_sys_pos = where(
-        (p_vn * broadcast(tangent_orientation_dsl, (EdgeDim, KDim))) >= 0.0, True, False
+        (p_vn * broadcast(tangent_orientation_dsl, (EdgeDim, KDim))) >= wpfloat(0.0), True, False
     )
     famask_bool = where(famask_int == 1, True, False)
     # ------------------------------------------------- Case 1
@@ -281,38 +282,38 @@ def _prepare_ffsl_flux_area_patches_list(
         dreg_patch0_4_lat_dsl,
     )
     # Case 1 - patch 1
-    dreg_patch1_1_lon_vmask = where(mask_case1, arrival_pts_1_lon_dsl, 0.0)
-    dreg_patch1_1_lat_vmask = where(mask_case1, arrival_pts_1_lat_dsl, 0.0)
-    dreg_patch1_4_lon_vmask = where(mask_case1, arrival_pts_1_lon_dsl, 0.0)
-    dreg_patch1_4_lat_vmask = where(mask_case1, arrival_pts_1_lat_dsl, 0.0)
+    dreg_patch1_1_lon_vmask = where(mask_case1, arrival_pts_1_lon_dsl, vpfloat(0.0))
+    dreg_patch1_1_lat_vmask = where(mask_case1, arrival_pts_1_lat_dsl, vpfloat(0.0))
+    dreg_patch1_4_lon_vmask = where(mask_case1, arrival_pts_1_lon_dsl, vpfloat(0.0))
+    dreg_patch1_4_lat_vmask = where(mask_case1, arrival_pts_1_lat_dsl, vpfloat(0.0))
     dreg_patch1_2_lon_vmask = where(
-        mask_case1, where(lvn_sys_pos, ps1_x, depart_pts_1_lon_dsl), 0.0
+        mask_case1, where(lvn_sys_pos, ps1_x, depart_pts_1_lon_dsl), vpfloat(0.0)
     )
     dreg_patch1_2_lat_vmask = where(
-        mask_case1, where(lvn_sys_pos, ps1_y, depart_pts_1_lat_dsl), 0.0
+        mask_case1, where(lvn_sys_pos, ps1_y, depart_pts_1_lat_dsl), vpfloat(0.0)
     )
     dreg_patch1_3_lon_vmask = where(
-        mask_case1, where(lvn_sys_pos, depart_pts_1_lon_dsl, ps1_x), 0.0
+        mask_case1, where(lvn_sys_pos, depart_pts_1_lon_dsl, ps1_x), vpfloat(0.0)
     )
     dreg_patch1_3_lat_vmask = where(
-        mask_case1, where(lvn_sys_pos, depart_pts_1_lat_dsl, ps1_y), 0.0
+        mask_case1, where(lvn_sys_pos, depart_pts_1_lat_dsl, ps1_y), vpfloat(0.0)
     )
     # Case 1 - patch 2
-    dreg_patch2_1_lon_vmask = where(mask_case1, arrival_pts_2_lon_dsl, 0.0)
-    dreg_patch2_1_lat_vmask = where(mask_case1, arrival_pts_2_lat_dsl, 0.0)
-    dreg_patch2_4_lon_vmask = where(mask_case1, arrival_pts_2_lon_dsl, 0.0)
-    dreg_patch2_4_lat_vmask = where(mask_case1, arrival_pts_2_lat_dsl, 0.0)
+    dreg_patch2_1_lon_vmask = where(mask_case1, arrival_pts_2_lon_dsl, vpfloat(0.0))
+    dreg_patch2_1_lat_vmask = where(mask_case1, arrival_pts_2_lat_dsl, vpfloat(0.0))
+    dreg_patch2_4_lon_vmask = where(mask_case1, arrival_pts_2_lon_dsl, vpfloat(0.0))
+    dreg_patch2_4_lat_vmask = where(mask_case1, arrival_pts_2_lat_dsl, vpfloat(0.0))
     dreg_patch2_2_lon_vmask = where(
-        mask_case1, where(lvn_sys_pos, depart_pts_2_lon_dsl, ps2_x), 0.0
+        mask_case1, where(lvn_sys_pos, depart_pts_2_lon_dsl, ps2_x), vpfloat(0.0)
     )
     dreg_patch2_2_lat_vmask = where(
-        mask_case1, where(lvn_sys_pos, depart_pts_2_lat_dsl, ps2_y), 0.0
+        mask_case1, where(lvn_sys_pos, depart_pts_2_lat_dsl, ps2_y), vpfloat(0.0)
     )
     dreg_patch2_3_lon_vmask = where(
-        mask_case1, where(lvn_sys_pos, ps2_x, depart_pts_2_lon_dsl), 0.0
+        mask_case1, where(lvn_sys_pos, ps2_x, depart_pts_2_lon_dsl), vpfloat(0.0)
     )
     dreg_patch2_3_lat_vmask = where(
-        mask_case1, where(lvn_sys_pos, ps2_y, depart_pts_2_lat_dsl), 0.0
+        mask_case1, where(lvn_sys_pos, ps2_y, depart_pts_2_lat_dsl), vpfloat(0.0)
     )
 
     # ------------------------------------------------- Case 2a
@@ -368,14 +369,14 @@ def _prepare_ffsl_flux_area_patches_list(
         dreg_patch1_3_lat_vmask,
     )
     # Case 2a - patch 2
-    dreg_patch2_1_lon_vmask = where(mask_case2a, 0.0, dreg_patch2_1_lon_vmask)
-    dreg_patch2_1_lat_vmask = where(mask_case2a, 0.0, dreg_patch2_1_lat_vmask)
-    dreg_patch2_2_lon_vmask = where(mask_case2a, 0.0, dreg_patch2_2_lon_vmask)
-    dreg_patch2_2_lat_vmask = where(mask_case2a, 0.0, dreg_patch2_2_lat_vmask)
-    dreg_patch2_3_lon_vmask = where(mask_case2a, 0.0, dreg_patch2_3_lon_vmask)
-    dreg_patch2_3_lat_vmask = where(mask_case2a, 0.0, dreg_patch2_3_lat_vmask)
-    dreg_patch2_4_lon_vmask = where(mask_case2a, 0.0, dreg_patch2_4_lon_vmask)
-    dreg_patch2_4_lat_vmask = where(mask_case2a, 0.0, dreg_patch2_4_lat_vmask)
+    dreg_patch2_1_lon_vmask = where(mask_case2a, vpfloat(0.0), dreg_patch2_1_lon_vmask)
+    dreg_patch2_1_lat_vmask = where(mask_case2a, vpfloat(0.0), dreg_patch2_1_lat_vmask)
+    dreg_patch2_2_lon_vmask = where(mask_case2a, vpfloat(0.0), dreg_patch2_2_lon_vmask)
+    dreg_patch2_2_lat_vmask = where(mask_case2a, vpfloat(0.0), dreg_patch2_2_lat_vmask)
+    dreg_patch2_3_lon_vmask = where(mask_case2a, vpfloat(0.0), dreg_patch2_3_lon_vmask)
+    dreg_patch2_3_lat_vmask = where(mask_case2a, vpfloat(0.0), dreg_patch2_3_lat_vmask)
+    dreg_patch2_4_lon_vmask = where(mask_case2a, vpfloat(0.0), dreg_patch2_4_lon_vmask)
+    dreg_patch2_4_lat_vmask = where(mask_case2a, vpfloat(0.0), dreg_patch2_4_lat_vmask)
 
     # -------------------------------------------------- Case 2b
     mask_case2b = lintersect_line2 & (not lintersect_line1) & famask_bool
@@ -405,14 +406,14 @@ def _prepare_ffsl_flux_area_patches_list(
         dreg_patch0_4_lat_dsl,
     )
     # Case 2b - patch 1
-    dreg_patch1_1_lon_vmask = where(mask_case2b, 0.0, dreg_patch1_1_lon_vmask)
-    dreg_patch1_1_lat_vmask = where(mask_case2b, 0.0, dreg_patch1_1_lat_vmask)
-    dreg_patch1_2_lon_vmask = where(mask_case2b, 0.0, dreg_patch1_2_lon_vmask)
-    dreg_patch1_2_lat_vmask = where(mask_case2b, 0.0, dreg_patch1_2_lat_vmask)
-    dreg_patch1_3_lon_vmask = where(mask_case2b, 0.0, dreg_patch1_3_lon_vmask)
-    dreg_patch1_3_lat_vmask = where(mask_case2b, 0.0, dreg_patch1_3_lat_vmask)
-    dreg_patch1_4_lon_vmask = where(mask_case2b, 0.0, dreg_patch1_4_lon_vmask)
-    dreg_patch1_4_lat_vmask = where(mask_case2b, 0.0, dreg_patch1_4_lat_vmask)
+    dreg_patch1_1_lon_vmask = where(mask_case2b, vpfloat(0.0), dreg_patch1_1_lon_vmask)
+    dreg_patch1_1_lat_vmask = where(mask_case2b, vpfloat(0.0), dreg_patch1_1_lat_vmask)
+    dreg_patch1_2_lon_vmask = where(mask_case2b, vpfloat(0.0), dreg_patch1_2_lon_vmask)
+    dreg_patch1_2_lat_vmask = where(mask_case2b, vpfloat(0.0), dreg_patch1_2_lat_vmask)
+    dreg_patch1_3_lon_vmask = where(mask_case2b, vpfloat(0.0), dreg_patch1_3_lon_vmask)
+    dreg_patch1_3_lat_vmask = where(mask_case2b, vpfloat(0.0), dreg_patch1_3_lat_vmask)
+    dreg_patch1_4_lon_vmask = where(mask_case2b, vpfloat(0.0), dreg_patch1_4_lon_vmask)
+    dreg_patch1_4_lat_vmask = where(mask_case2b, vpfloat(0.0), dreg_patch1_4_lat_vmask)
     # Case 2b - patch 2
     dreg_patch2_1_lon_vmask = where(mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask)
     dreg_patch2_1_lat_vmask = where(mask_case2b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask)
@@ -523,14 +524,14 @@ def _prepare_ffsl_flux_area_patches_list(
         dreg_patch1_4_lat_vmask,
     )
     # Case 3a - patch 2
-    dreg_patch2_1_lon_vmask = where(mask_case3a, 0.0, dreg_patch2_1_lon_vmask)
-    dreg_patch2_1_lat_vmask = where(mask_case3a, 0.0, dreg_patch2_1_lat_vmask)
-    dreg_patch2_2_lon_vmask = where(mask_case3a, 0.0, dreg_patch2_2_lon_vmask)
-    dreg_patch2_2_lat_vmask = where(mask_case3a, 0.0, dreg_patch2_2_lat_vmask)
-    dreg_patch2_3_lon_vmask = where(mask_case3a, 0.0, dreg_patch2_3_lon_vmask)
-    dreg_patch2_3_lat_vmask = where(mask_case3a, 0.0, dreg_patch2_3_lat_vmask)
-    dreg_patch2_4_lon_vmask = where(mask_case3a, 0.0, dreg_patch2_4_lon_vmask)
-    dreg_patch2_4_lat_vmask = where(mask_case3a, 0.0, dreg_patch2_4_lat_vmask)
+    dreg_patch2_1_lon_vmask = where(mask_case3a, vpfloat(0.0), dreg_patch2_1_lon_vmask)
+    dreg_patch2_1_lat_vmask = where(mask_case3a, vpfloat(0.0), dreg_patch2_1_lat_vmask)
+    dreg_patch2_2_lon_vmask = where(mask_case3a, vpfloat(0.0), dreg_patch2_2_lon_vmask)
+    dreg_patch2_2_lat_vmask = where(mask_case3a, vpfloat(0.0), dreg_patch2_2_lat_vmask)
+    dreg_patch2_3_lon_vmask = where(mask_case3a, vpfloat(0.0), dreg_patch2_3_lon_vmask)
+    dreg_patch2_3_lat_vmask = where(mask_case3a, vpfloat(0.0), dreg_patch2_3_lat_vmask)
+    dreg_patch2_4_lon_vmask = where(mask_case3a, vpfloat(0.0), dreg_patch2_4_lon_vmask)
+    dreg_patch2_4_lat_vmask = where(mask_case3a, vpfloat(0.0), dreg_patch2_4_lat_vmask)
 
     # ------------------------------------------------ Case 3b
     # Check whether flux area edge 1 intersects with triangle edge 2
@@ -581,14 +582,14 @@ def _prepare_ffsl_flux_area_patches_list(
         dreg_patch0_3_lat_dsl,
     )
     # Case 3b - patch 1
-    dreg_patch1_1_lon_vmask = where(mask_case3b, 0.0, dreg_patch1_1_lon_vmask)
-    dreg_patch1_1_lat_vmask = where(mask_case3b, 0.0, dreg_patch1_1_lat_vmask)
-    dreg_patch1_2_lon_vmask = where(mask_case3b, 0.0, dreg_patch1_2_lon_vmask)
-    dreg_patch1_2_lat_vmask = where(mask_case3b, 0.0, dreg_patch1_2_lat_vmask)
-    dreg_patch1_3_lon_vmask = where(mask_case3b, 0.0, dreg_patch1_3_lon_vmask)
-    dreg_patch1_3_lat_vmask = where(mask_case3b, 0.0, dreg_patch1_3_lat_vmask)
-    dreg_patch1_4_lon_vmask = where(mask_case3b, 0.0, dreg_patch1_4_lon_vmask)
-    dreg_patch1_4_lat_vmask = where(mask_case3b, 0.0, dreg_patch1_4_lat_vmask)
+    dreg_patch1_1_lon_vmask = where(mask_case3b, vpfloat(0.0), dreg_patch1_1_lon_vmask)
+    dreg_patch1_1_lat_vmask = where(mask_case3b, vpfloat(0.0), dreg_patch1_1_lat_vmask)
+    dreg_patch1_2_lon_vmask = where(mask_case3b, vpfloat(0.0), dreg_patch1_2_lon_vmask)
+    dreg_patch1_2_lat_vmask = where(mask_case3b, vpfloat(0.0), dreg_patch1_2_lat_vmask)
+    dreg_patch1_3_lon_vmask = where(mask_case3b, vpfloat(0.0), dreg_patch1_3_lon_vmask)
+    dreg_patch1_3_lat_vmask = where(mask_case3b, vpfloat(0.0), dreg_patch1_3_lat_vmask)
+    dreg_patch1_4_lon_vmask = where(mask_case3b, vpfloat(0.0), dreg_patch1_4_lon_vmask)
+    dreg_patch1_4_lat_vmask = where(mask_case3b, vpfloat(0.0), dreg_patch1_4_lat_vmask)
     # Case 3b - patch 2
     dreg_patch2_1_lon_vmask = where(mask_case3b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask)
     dreg_patch2_1_lat_vmask = where(mask_case3b, arrival_pts_2_lat_dsl, dreg_patch2_1_lat_vmask)
@@ -623,23 +624,23 @@ def _prepare_ffsl_flux_area_patches_list(
     mask_case4 = famask_bool & (not indices_previously_matched)
     # Case 4 - patch 0 - no change
     # Case 4 - patch 1
-    dreg_patch1_1_lon_vmask = where(mask_case4, 0.0, dreg_patch1_1_lon_vmask)
-    dreg_patch1_1_lat_vmask = where(mask_case4, 0.0, dreg_patch1_1_lat_vmask)
-    dreg_patch1_2_lon_vmask = where(mask_case4, 0.0, dreg_patch1_2_lon_vmask)
-    dreg_patch1_2_lat_vmask = where(mask_case4, 0.0, dreg_patch1_2_lat_vmask)
-    dreg_patch1_3_lon_vmask = where(mask_case4, 0.0, dreg_patch1_3_lon_vmask)
-    dreg_patch1_3_lat_vmask = where(mask_case4, 0.0, dreg_patch1_3_lat_vmask)
-    dreg_patch1_4_lon_vmask = where(mask_case4, 0.0, dreg_patch1_4_lon_vmask)
-    dreg_patch1_4_lat_vmask = where(mask_case4, 0.0, dreg_patch1_4_lat_vmask)
+    dreg_patch1_1_lon_vmask = where(mask_case4, vpfloat(0.0), dreg_patch1_1_lon_vmask)
+    dreg_patch1_1_lat_vmask = where(mask_case4, vpfloat(0.0), dreg_patch1_1_lat_vmask)
+    dreg_patch1_2_lon_vmask = where(mask_case4, vpfloat(0.0), dreg_patch1_2_lon_vmask)
+    dreg_patch1_2_lat_vmask = where(mask_case4, vpfloat(0.0), dreg_patch1_2_lat_vmask)
+    dreg_patch1_3_lon_vmask = where(mask_case4, vpfloat(0.0), dreg_patch1_3_lon_vmask)
+    dreg_patch1_3_lat_vmask = where(mask_case4, vpfloat(0.0), dreg_patch1_3_lat_vmask)
+    dreg_patch1_4_lon_vmask = where(mask_case4, vpfloat(0.0), dreg_patch1_4_lon_vmask)
+    dreg_patch1_4_lat_vmask = where(mask_case4, vpfloat(0.0), dreg_patch1_4_lat_vmask)
     # Case 4 - patch 2
-    dreg_patch2_1_lon_vmask = where(mask_case4, 0.0, dreg_patch2_1_lon_vmask)
-    dreg_patch2_1_lat_vmask = where(mask_case4, 0.0, dreg_patch2_1_lat_vmask)
-    dreg_patch2_2_lon_vmask = where(mask_case4, 0.0, dreg_patch2_2_lon_vmask)
-    dreg_patch2_2_lat_vmask = where(mask_case4, 0.0, dreg_patch2_2_lat_vmask)
-    dreg_patch2_3_lon_vmask = where(mask_case4, 0.0, dreg_patch2_3_lon_vmask)
-    dreg_patch2_3_lat_vmask = where(mask_case4, 0.0, dreg_patch2_3_lat_vmask)
-    dreg_patch2_4_lon_vmask = where(mask_case4, 0.0, dreg_patch2_4_lon_vmask)
-    dreg_patch2_4_lat_vmask = where(mask_case4, 0.0, dreg_patch2_4_lat_vmask)
+    dreg_patch2_1_lon_vmask = where(mask_case4, vpfloat(0.0), dreg_patch2_1_lon_vmask)
+    dreg_patch2_1_lat_vmask = where(mask_case4, vpfloat(0.0), dreg_patch2_1_lat_vmask)
+    dreg_patch2_2_lon_vmask = where(mask_case4, vpfloat(0.0), dreg_patch2_2_lon_vmask)
+    dreg_patch2_2_lat_vmask = where(mask_case4, vpfloat(0.0), dreg_patch2_2_lat_vmask)
+    dreg_patch2_3_lon_vmask = where(mask_case4, vpfloat(0.0), dreg_patch2_3_lon_vmask)
+    dreg_patch2_3_lat_vmask = where(mask_case4, vpfloat(0.0), dreg_patch2_3_lat_vmask)
+    dreg_patch2_4_lon_vmask = where(mask_case4, vpfloat(0.0), dreg_patch2_4_lon_vmask)
+    dreg_patch2_4_lat_vmask = where(mask_case4, vpfloat(0.0), dreg_patch2_4_lat_vmask)
 
     return (
         dreg_patch0_1_lon_dsl,
@@ -672,34 +673,34 @@ def _prepare_ffsl_flux_area_patches_list(
 @program(grid_type=GridType.UNSTRUCTURED)
 def prepare_ffsl_flux_area_patches_list(
     famask_int: fa.EdgeKField[int32],
-    p_vn: fa.EdgeKField[float],
-    ptr_v3_lon: Field[[dims.ECDim], float],
-    ptr_v3_lat: Field[[dims.ECDim], float],
-    tangent_orientation_dsl: fa.EdgeField[float],
-    dreg_patch0_1_lon_dsl: fa.EdgeKField[float],
-    dreg_patch0_1_lat_dsl: fa.EdgeKField[float],
-    dreg_patch0_2_lon_dsl: fa.EdgeKField[float],
-    dreg_patch0_2_lat_dsl: fa.EdgeKField[float],
-    dreg_patch0_3_lon_dsl: fa.EdgeKField[float],
-    dreg_patch0_3_lat_dsl: fa.EdgeKField[float],
-    dreg_patch0_4_lon_dsl: fa.EdgeKField[float],
-    dreg_patch0_4_lat_dsl: fa.EdgeKField[float],
-    dreg_patch1_1_lon_vmask: fa.EdgeKField[float],
-    dreg_patch1_1_lat_vmask: fa.EdgeKField[float],
-    dreg_patch1_2_lon_vmask: fa.EdgeKField[float],
-    dreg_patch1_2_lat_vmask: fa.EdgeKField[float],
-    dreg_patch1_3_lon_vmask: fa.EdgeKField[float],
-    dreg_patch1_3_lat_vmask: fa.EdgeKField[float],
-    dreg_patch1_4_lon_vmask: fa.EdgeKField[float],
-    dreg_patch1_4_lat_vmask: fa.EdgeKField[float],
-    dreg_patch2_1_lon_vmask: fa.EdgeKField[float],
-    dreg_patch2_1_lat_vmask: fa.EdgeKField[float],
-    dreg_patch2_2_lon_vmask: fa.EdgeKField[float],
-    dreg_patch2_2_lat_vmask: fa.EdgeKField[float],
-    dreg_patch2_3_lon_vmask: fa.EdgeKField[float],
-    dreg_patch2_3_lat_vmask: fa.EdgeKField[float],
-    dreg_patch2_4_lon_vmask: fa.EdgeKField[float],
-    dreg_patch2_4_lat_vmask: fa.EdgeKField[float],
+    p_vn: fa.EdgeKField[wpfloat],
+    ptr_v3_lon: Field[[dims.ECDim], wpfloat],
+    ptr_v3_lat: Field[[dims.ECDim], wpfloat],
+    tangent_orientation_dsl: fa.EdgeField[wpfloat],
+    dreg_patch0_1_lon_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_1_lat_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_2_lon_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_2_lat_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_3_lon_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_3_lat_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_4_lon_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch0_4_lat_dsl: fa.EdgeKField[vpfloat],
+    dreg_patch1_1_lon_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch1_1_lat_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch1_2_lon_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch1_2_lat_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch1_3_lon_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch1_3_lat_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch1_4_lon_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch1_4_lat_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch2_1_lon_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch2_1_lat_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch2_2_lon_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch2_2_lat_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch2_3_lon_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch2_3_lat_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch2_4_lon_vmask: fa.EdgeKField[vpfloat],
+    dreg_patch2_4_lat_vmask: fa.EdgeKField[vpfloat],
 ):
     _prepare_ffsl_flux_area_patches_list(
         famask_int,

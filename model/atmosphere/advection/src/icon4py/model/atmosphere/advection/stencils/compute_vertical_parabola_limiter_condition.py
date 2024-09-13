@@ -16,6 +16,7 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import wpfloat
 
 
 Koff = FieldOffset("Koff", source=dims.KDim, target=(dims.KDim,))
@@ -23,21 +24,21 @@ Koff = FieldOffset("Koff", source=dims.KDim, target=(dims.KDim,))
 
 @field_operator
 def _compute_vertical_parabola_limiter_condition(
-    p_face: fa.CellKField[float],
-    p_cc: fa.CellKField[float],
+    p_face: fa.CellKField[wpfloat],
+    p_cc: fa.CellKField[wpfloat],
 ) -> fa.CellKField[int32]:
     z_delta = p_face - p_face(Koff[1])
-    z_a6i = 6.0 * (p_cc - 0.5 * (p_face + p_face(Koff[1])))
+    z_a6i = wpfloat(6.0) * (p_cc - wpfloat(0.5) * (p_face + p_face(Koff[1])))
 
-    l_limit = where(abs(z_delta) < -1.0 * z_a6i, 1, 0)
+    l_limit = where(abs(z_delta) < -wpfloat(1.0) * z_a6i, 1, 0)
 
     return l_limit
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_vertical_parabola_limiter_condition(
-    p_face: fa.CellKField[float],
-    p_cc: fa.CellKField[float],
+    p_face: fa.CellKField[wpfloat],
+    p_cc: fa.CellKField[wpfloat],
     l_limit: fa.CellKField[int32],
 ):
     _compute_vertical_parabola_limiter_condition(

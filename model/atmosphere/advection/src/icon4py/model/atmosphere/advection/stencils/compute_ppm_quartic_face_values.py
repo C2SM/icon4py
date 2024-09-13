@@ -10,6 +10,7 @@ import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
+from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO: this will have to be removed once domain allows for imports
@@ -19,22 +20,22 @@ KDim = dims.KDim
 
 @gtx.field_operator
 def _compute_ppm_quartic_face_values(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
-    z_slope: fa.CellKField[float],
-) -> fa.CellKField[float]:
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
+    z_slope: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     zgeo1 = p_cellhgt_mc_now(Koff[-1]) / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
-    zgeo2 = 1.0 / (
+    zgeo2 = wpfloat(1.0) / (
         p_cellhgt_mc_now(Koff[-2])
         + p_cellhgt_mc_now(Koff[-1])
         + p_cellhgt_mc_now
         + p_cellhgt_mc_now(Koff[1])
     )
     zgeo3 = (p_cellhgt_mc_now(Koff[-2]) + p_cellhgt_mc_now(Koff[-1])) / (
-        2.0 * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now
+        wpfloat(2.0) * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now
     )
     zgeo4 = (p_cellhgt_mc_now(Koff[1]) + p_cellhgt_mc_now) / (
-        2.0 * p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1])
+        wpfloat(2.0) * p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1])
     )
 
     p_face = (
@@ -42,7 +43,7 @@ def _compute_ppm_quartic_face_values(
         + zgeo1 * (p_cc - p_cc(Koff[-1]))
         + zgeo2
         * (
-            (2.0 * p_cellhgt_mc_now * zgeo1) * (zgeo3 - zgeo4) * (p_cc - p_cc(Koff[-1]))
+            (wpfloat(2.0) * p_cellhgt_mc_now * zgeo1) * (zgeo3 - zgeo4) * (p_cc - p_cc(Koff[-1]))
             - zgeo3 * p_cellhgt_mc_now(Koff[-1]) * z_slope
             + zgeo4 * p_cellhgt_mc_now * z_slope(Koff[-1])
         )
@@ -53,10 +54,10 @@ def _compute_ppm_quartic_face_values(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_ppm_quartic_face_values(
-    p_cc: fa.CellKField[float],
-    p_cellhgt_mc_now: fa.CellKField[float],
-    z_slope: fa.CellKField[float],
-    p_face: fa.CellKField[float],
+    p_cc: fa.CellKField[wpfloat],
+    p_cellhgt_mc_now: fa.CellKField[wpfloat],
+    z_slope: fa.CellKField[wpfloat],
+    p_face: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

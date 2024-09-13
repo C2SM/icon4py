@@ -11,31 +11,32 @@ from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum, neig
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _compute_antidiffusive_cell_fluxes_and_min_max(
-    geofac_div: Field[[dims.CEDim], float],
-    p_rhodz_now: fa.CellKField[float],
-    p_rhodz_new: fa.CellKField[float],
-    z_mflx_low: fa.EdgeKField[float],
-    z_anti: fa.EdgeKField[float],
-    p_cc: fa.CellKField[float],
-    p_dtime: float,
+    geofac_div: Field[[dims.CEDim], wpfloat],
+    p_rhodz_now: fa.CellKField[wpfloat],
+    p_rhodz_new: fa.CellKField[wpfloat],
+    z_mflx_low: fa.EdgeKField[wpfloat],
+    z_anti: fa.EdgeKField[wpfloat],
+    p_cc: fa.CellKField[wpfloat],
+    p_dtime: wpfloat,
 ) -> tuple[
-    fa.CellKField[float],
-    fa.CellKField[float],
-    fa.CellKField[float],
-    fa.CellKField[float],
-    fa.CellKField[float],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
-    zero = broadcast(0.0, (CellDim, KDim))
+    zero = broadcast(vpfloat(0.0), (CellDim, KDim))
 
     z_mflx_anti_1 = p_dtime * geofac_div(C2CE[0]) / p_rhodz_new * z_anti(C2E[0])
     z_mflx_anti_2 = p_dtime * geofac_div(C2CE[1]) / p_rhodz_new * z_anti(C2E[1])
     z_mflx_anti_3 = p_dtime * geofac_div(C2CE[2]) / p_rhodz_new * z_anti(C2E[2])
 
-    z_mflx_anti_in = -1.0 * (
+    z_mflx_anti_in = -vpfloat(1.0) * (
         minimum(zero, z_mflx_anti_1) + minimum(zero, z_mflx_anti_2) + minimum(zero, z_mflx_anti_3)
     )
 
@@ -60,18 +61,18 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
 
 @program
 def compute_antidiffusive_cell_fluxes_and_min_max(
-    geofac_div: Field[[dims.CEDim], float],
-    p_rhodz_now: fa.CellKField[float],
-    p_rhodz_new: fa.CellKField[float],
-    z_mflx_low: fa.EdgeKField[float],
-    z_anti: fa.EdgeKField[float],
-    p_cc: fa.CellKField[float],
-    p_dtime: float,
-    z_mflx_anti_in: fa.CellKField[float],
-    z_mflx_anti_out: fa.CellKField[float],
-    z_tracer_new_low: fa.CellKField[float],
-    z_tracer_max: fa.CellKField[float],
-    z_tracer_min: fa.CellKField[float],
+    geofac_div: Field[[dims.CEDim], wpfloat],
+    p_rhodz_now: fa.CellKField[wpfloat],
+    p_rhodz_new: fa.CellKField[wpfloat],
+    z_mflx_low: fa.EdgeKField[wpfloat],
+    z_anti: fa.EdgeKField[wpfloat],
+    p_cc: fa.CellKField[wpfloat],
+    p_dtime: wpfloat,
+    z_mflx_anti_in: fa.CellKField[vpfloat],
+    z_mflx_anti_out: fa.CellKField[vpfloat],
+    z_tracer_new_low: fa.CellKField[wpfloat],
+    z_tracer_max: fa.CellKField[vpfloat],
+    z_tracer_min: fa.CellKField[vpfloat],
 ):
     _compute_antidiffusive_cell_fluxes_and_min_max(
         geofac_div,
