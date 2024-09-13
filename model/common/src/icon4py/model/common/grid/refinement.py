@@ -55,11 +55,12 @@ _MIN_ORDERED: Final[dict[dims.Dimension, int]] = {
 }
 """For coarse parent grids the overlapping boundary regions are counted with negative values, from -1 to max -3, (as -4 is used to mark interior points)"""
 
-_NUDGING_START:Final[dict[gtx.Dimension: int]] = {
+_NUDGING_START: Final[dict[gtx.Dimension : int]] = {
     dims.CellDim: h_grid._GRF_BOUNDARY_WIDTH_CELL + 1,
-    dims.EdgeDim: h_grid._GRF_BOUNDARY_WIDTH_EDGES +1,
- }
+    dims.EdgeDim: h_grid._GRF_BOUNDARY_WIDTH_EDGES + 1,
+}
 """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
+
 
 @dataclasses.dataclass(frozen=True)
 class RefinementValue:
@@ -79,7 +80,6 @@ class RefinementValue:
         return self.value not in _UNORDERED[self.dim]
 
 
-
 def is_unordered_field(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
     assert field.dtype == xp.int32 or field.dtype == xp.int64, f"not an integer type {field.dtype}"
     return xp.where(
@@ -96,13 +96,14 @@ def convert_to_unnested_refinement_values(field: xp.ndarray, dim: dims.Dimension
     assert field.dtype == xp.int32 or field.dtype == xp.int64, f"not an integer type {field.dtype}"
     return xp.where(field == _UNORDERED[dim][1], 0, xp.where(field < 0, -field, field))
 
-def refine_control_value(dim: gtx.Dimension, zone: h_grid.Zone)-> RefinementValue:
-    assert dim.kind == gtx.DimensionKind.HORIZONTAL, f"dim = {dim=} refinement control values only exist for horizontal dimensions"
-    match(zone):
+
+def refine_control_value(dim: gtx.Dimension, zone: h_grid.Zone) -> RefinementValue:
+    assert (
+        dim.kind == gtx.DimensionKind.HORIZONTAL
+    ), f"dim = {dim=} refinement control values only exist for horizontal dimensions"
+    match zone:
         case zone.NUDGING:
             assert dim in (dims.EdgeDim, dims.CellDim), "no nudging on vertices!"
-            return RefinementValue(dim,_NUDGING_START[dim])
+            return RefinementValue(dim, _NUDGING_START[dim])
         case _:
             raise NotImplementedError
-            
-

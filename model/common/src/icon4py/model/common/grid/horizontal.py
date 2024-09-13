@@ -454,10 +454,8 @@ class CellDomain(Domain):
         )
 
 
-
 @dataclasses.dataclass(frozen=True)
 class HorizontalGridSize:
     num_vertices: int
     num_edges: int
     num_cells: int
-
