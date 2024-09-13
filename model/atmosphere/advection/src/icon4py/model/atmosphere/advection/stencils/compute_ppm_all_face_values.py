@@ -10,21 +10,12 @@ from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 
+from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_values import (
+    _compute_ppm_quadratic_face_values,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
-
-
-@field_operator
-def _compute_ppm_quadratic_face_values(
-    p_cc: fa.CellKField[wpfloat],
-    p_cellhgt_mc_now: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
-    p_face = p_cc * (wpfloat(1.0) - (p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))) + (
-        p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
-    ) * ((p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1])) * p_cc + p_cc(Koff[-1]))
-
-    return p_face
 
 
 @field_operator

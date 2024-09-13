@@ -15,7 +15,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _hflx_limiter_mo_stencil_05(
+def _apply_monotone_horizontal_multiplicative_flux_factors_alt(
     z_anti: fa.EdgeKField[wpfloat],
     z_mflx_low: fa.EdgeKField[wpfloat],
     r_m: fa.CellKField[wpfloat],
@@ -34,7 +34,7 @@ def _hflx_limiter_mo_stencil_05(
 
 
 @program
-def hflx_limiter_mo_stencil_05(
+def apply_monotone_horizontal_multiplicative_flux_factors_alt(
     z_anti: fa.EdgeKField[wpfloat],
     z_mflx_low: fa.EdgeKField[wpfloat],
     r_m: fa.CellKField[wpfloat],
@@ -45,7 +45,7 @@ def hflx_limiter_mo_stencil_05(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _hflx_limiter_mo_stencil_05(
+    _apply_monotone_horizontal_multiplicative_flux_factors_alt(
         z_anti,
         z_mflx_low,
         r_m,

@@ -39,12 +39,10 @@ def _compute_ppm_slope_b(
     p_cellhgt_mc_now: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
     zfac_m1 = (p_cc - p_cc(Koff[-1])) / (p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1]))
-    zfac = (p_cc - p_cc) / (p_cellhgt_mc_now + p_cellhgt_mc_now)
     z_slope = (
-        p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now + p_cellhgt_mc_now)
-    ) * (
-        (wpfloat(2.0) * p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now) * zfac
-        + (p_cellhgt_mc_now + wpfloat(2.0) * p_cellhgt_mc_now) * zfac_m1
+        (p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now + p_cellhgt_mc_now))
+        * (p_cellhgt_mc_now + wpfloat(2.0) * p_cellhgt_mc_now)
+        * zfac_m1
     )
 
     return z_slope

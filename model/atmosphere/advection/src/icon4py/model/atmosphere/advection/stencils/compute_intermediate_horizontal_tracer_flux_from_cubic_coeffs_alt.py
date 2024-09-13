@@ -16,7 +16,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _upwind_hflux_miura3_stencil_01(
+def _compute_intermediate_horizontal_tracer_flux_from_cubic_coeffs_alt(
     z_lsq_coeff_1: fa.CellKField[wpfloat],
     z_lsq_coeff_2: fa.CellKField[wpfloat],
     z_lsq_coeff_3: fa.CellKField[wpfloat],
@@ -112,7 +112,7 @@ def _upwind_hflux_miura3_stencil_01(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def upwind_hflux_miura3_stencil_01(
+def compute_intermediate_horizontal_tracer_flux_from_cubic_coeffs_alt(
     z_lsq_coeff_1: fa.CellKField[wpfloat],
     z_lsq_coeff_2: fa.CellKField[wpfloat],
     z_lsq_coeff_3: fa.CellKField[wpfloat],
@@ -142,7 +142,7 @@ def upwind_hflux_miura3_stencil_01(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _upwind_hflux_miura3_stencil_01(
+    _compute_intermediate_horizontal_tracer_flux_from_cubic_coeffs_alt(
         z_lsq_coeff_1,
         z_lsq_coeff_2,
         z_lsq_coeff_3,
