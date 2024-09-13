@@ -30,31 +30,22 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
 ) -> fa.CellKField[vpfloat]:
     z_temp_wp = astype(z_temp, wpfloat)
 
-    theta_v_0 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0])))
-    theta_v_1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1])))
-    theta_v_2 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2])))
+    theta_v_0 = theta_v(C2E2C[0])(as_offset(Koff, zd_vertoffset(C2CEC[0])))
+    theta_v_1 = theta_v(C2E2C[1])(as_offset(Koff, zd_vertoffset(C2CEC[1])))
+    theta_v_2 = theta_v(C2E2C[2])(as_offset(Koff, zd_vertoffset(C2CEC[2])))
 
-    theta_v_0_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0]) + 1))
-    theta_v_1_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[1]) + 1))
-    theta_v_2_m1 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[2]) + 1))
+    theta_v_0_m1 = theta_v(C2E2C[0])(as_offset(Koff, zd_vertoffset(C2CEC[0]) + 1))
+    theta_v_1_m1 = theta_v(C2E2C[1])(as_offset(Koff, zd_vertoffset(C2CEC[1]) + 1))
+    theta_v_2_m1 = theta_v(C2E2C[2])(as_offset(Koff, zd_vertoffset(C2CEC[2]) + 1))
 
     sum_tmp = (
         theta_v * geofac_n2s_c
         + geofac_n2s_nbh(C2CEC[0])
-        * (
-            vcoef(C2CEC[0]) * theta_v_0(C2E2C[0])
-            + (wpfloat("1.0") - vcoef(C2CEC[0])) * theta_v_0_m1(C2E2C[0])
-        )
+        * (vcoef(C2CEC[0]) * theta_v_0 + (wpfloat("1.0") - vcoef(C2CEC[0])) * theta_v_0_m1)
         + geofac_n2s_nbh(C2CEC[1])
-        * (
-            vcoef(C2CEC[1]) * theta_v_1(C2E2C[1])
-            + (wpfloat("1.0") - vcoef(C2CEC[1])) * theta_v_1_m1(C2E2C[1])
-        )
+        * (vcoef(C2CEC[1]) * theta_v_1 + (wpfloat("1.0") - vcoef(C2CEC[1])) * theta_v_1_m1)
         + geofac_n2s_nbh(C2CEC[2])
-        * (
-            vcoef(C2CEC[2]) * theta_v_2(C2E2C[2])
-            + (wpfloat("1.0") - vcoef(C2CEC[2])) * theta_v_2_m1(C2E2C[2])
-        )
+        * (vcoef(C2CEC[2]) * theta_v_2 + (wpfloat("1.0") - vcoef(C2CEC[2])) * theta_v_2_m1)
     )
 
     z_temp_wp = where(
