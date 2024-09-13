@@ -16,6 +16,7 @@ from typing import Final
 
 import gt4py.next as gtx
 
+import icon4py.model.common.states.metadata as data
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import xp
 
@@ -157,13 +158,7 @@ class VerticalGrid:
 
     @property
     def metadata_interface_physical_height(self):
-        return dict(
-            standard_name="model_interface_height",
-            long_name="height value of half levels without topography",
-            units="m",
-            positive="up",
-            icon_var_name="vct_a",
-        )
+        return data.attrs["model_interface_height"]
 
     @property
     def num_levels(self):
