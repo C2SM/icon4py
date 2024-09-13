@@ -8,13 +8,11 @@
 
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import FieldOffset, int32, minimum, where
+from gt4py.next.ffront.fbuiltins import int32, minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
-
-
-Koff = FieldOffset("Koff", source=dims.KDim, target=(dims.KDim,))
 
 
 @field_operator
@@ -47,10 +45,18 @@ def limit_vertical_parabola_semi_monotonically(
     p_cc: fa.CellKField[wpfloat],
     p_face_up: fa.CellKField[wpfloat],
     p_face_low: fa.CellKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _limit_vertical_parabola_semi_monotonically(
         l_limit,
         p_face,
         p_cc,
         out=(p_face_up, p_face_low),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

@@ -82,7 +82,7 @@ class TestComputePpmSlope(StencilTest):
             elev=elev,
             z_slope=z_slope,
             horizontal_start=0,
-            horizontal_end=grid.num_cells,
+            horizontal_end=int32(grid.num_cells),
             vertical_start=1,
-            vertical_end=grid.num_levels - 1,
+            vertical_end=int32(grid.num_levels - 1),
         )

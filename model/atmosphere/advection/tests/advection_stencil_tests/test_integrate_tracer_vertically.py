@@ -81,4 +81,8 @@ class TestIntegrateTracerVertically(StencilTest):
             ivadv_tracer=ivadv_tracer,
             iadv_slev_jt=iadv_slev_jt,
             tracer_new=tracer_new,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

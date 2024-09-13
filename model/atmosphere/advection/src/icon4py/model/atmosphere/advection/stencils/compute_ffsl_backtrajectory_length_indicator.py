@@ -39,7 +39,19 @@ def compute_ffsl_backtrajectory_length_indicator(
     edge_cell_length: Field[[dims.ECDim], wpfloat],
     p_dt: wpfloat,
     opt_famask_dsl: fa.EdgeKField[int32],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _compute_ffsl_backtrajectory_length_indicator(
-        p_vn, p_vt, edge_cell_length, p_dt, out=opt_famask_dsl
+        p_vn,
+        p_vt,
+        edge_cell_length,
+        p_dt,
+        out=opt_famask_dsl,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

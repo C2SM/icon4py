@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
@@ -76,7 +77,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(StencilTest)
             dbl_eps=dbl_eps,
             r_m=r_m,
             horizontal_start=0,
-            horizontal_end=grid.num_cells,
+            horizontal_end=int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=grid.num_levels,
+            vertical_end=int32(grid.num_levels),
         )

@@ -8,8 +8,9 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -32,5 +33,18 @@ def compute_ppm4gpu_parabola_coefficients(
     p_cc: fa.CellKField[wpfloat],
     z_delta_q: fa.CellKField[wpfloat],
     z_a1: fa.CellKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _compute_ppm4gpu_parabola_coefficients(z_face_up, z_face_low, p_cc, out=(z_delta_q, z_a1))
+    _compute_ppm4gpu_parabola_coefficients(
+        z_face_up,
+        z_face_low,
+        p_cc,
+        out=(z_delta_q, z_a1),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )

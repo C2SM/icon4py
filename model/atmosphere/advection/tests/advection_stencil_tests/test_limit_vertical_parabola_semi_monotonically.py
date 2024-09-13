@@ -51,5 +51,13 @@ class TestLimitVerticalParabolaSemiMonotonically(StencilTest):
         p_face_up = zero_field(grid, dims.CellDim, dims.KDim)
         p_face_low = zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
-            l_limit=l_limit, p_cc=p_cc, p_face=p_face, p_face_up=p_face_up, p_face_low=p_face_low
+            l_limit=l_limit,
+            p_cc=p_cc,
+            p_face=p_face,
+            p_face_up=p_face_up,
+            p_face_low=p_face_low,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

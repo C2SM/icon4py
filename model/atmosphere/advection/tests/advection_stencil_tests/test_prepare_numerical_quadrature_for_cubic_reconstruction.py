@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_for_cubic_reconstruction import (
     prepare_numerical_quadrature_for_cubic_reconstruction,
@@ -583,4 +584,8 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(StencilTest):
             p_quad_vector_sum_9=p_quad_vector_sum_9,
             p_quad_vector_sum_10=p_quad_vector_sum_10,
             p_dreg_area_out=p_dreg_area_out,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

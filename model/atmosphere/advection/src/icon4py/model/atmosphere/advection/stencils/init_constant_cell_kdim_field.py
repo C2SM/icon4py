@@ -8,7 +8,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast
+from gt4py.next.ffront.fbuiltins import broadcast, int32
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
@@ -23,5 +23,19 @@ def _init_constant_cell_kdim_field(value: wpfloat) -> fa.CellKField[wpfloat]:
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def init_constant_cell_kdim_field(field: fa.CellKField[wpfloat], value: wpfloat):
-    _init_constant_cell_kdim_field(value, out=field)
+def init_constant_cell_kdim_field(
+    field: fa.CellKField[wpfloat],
+    value: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _init_constant_cell_kdim_field(
+        value,
+        out=field,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )

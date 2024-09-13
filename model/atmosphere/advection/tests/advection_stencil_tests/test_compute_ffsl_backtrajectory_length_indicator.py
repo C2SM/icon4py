@@ -60,4 +60,8 @@ class TestComputeFfslBacktrajectoryLengthIndicator(StencilTest):
             edge_cell_length=edge_cell_length_new,
             p_dt=p_dt,
             opt_famask_dsl=opt_famask_dsl,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

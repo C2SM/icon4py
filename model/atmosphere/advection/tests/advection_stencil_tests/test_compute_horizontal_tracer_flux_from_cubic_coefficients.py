@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_cubic_coefficients import (
     compute_horizontal_tracer_flux_from_cubic_coefficients,
@@ -41,4 +42,8 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(StencilTest):
             p_mass_flx_e=p_mass_flx_e,
             z_dreg_area=z_dreg_area,
             p_out_e_hybrid_2=p_out_e_hybrid_2,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

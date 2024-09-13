@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, maximum, minimum, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CE, C2E
@@ -73,6 +73,10 @@ def compute_antidiffusive_cell_fluxes_and_min_max(
     z_tracer_new_low: fa.CellKField[wpfloat],
     z_tracer_max: fa.CellKField[vpfloat],
     z_tracer_min: fa.CellKField[vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _compute_antidiffusive_cell_fluxes_and_min_max(
         geofac_div,
@@ -89,4 +93,8 @@ def compute_antidiffusive_cell_fluxes_and_min_max(
             z_tracer_max,
             z_tracer_min,
         ),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

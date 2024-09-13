@@ -228,4 +228,8 @@ class TestComputeFfslBacktrajectory(StencilTest):
             p_coords_dreg_v_2_lat_dsl=p_coords_dreg_v_2_lat_dsl,
             p_coords_dreg_v_3_lat_dsl=p_coords_dreg_v_3_lat_dsl,
             p_coords_dreg_v_4_lat_dsl=p_coords_dreg_v_4_lat_dsl,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

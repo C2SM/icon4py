@@ -70,4 +70,8 @@ class TestComputePpmAllFaceValues(StencilTest):
             slevp1=slevp1,
             elevp1=elevp1,
             p_face=p_face,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

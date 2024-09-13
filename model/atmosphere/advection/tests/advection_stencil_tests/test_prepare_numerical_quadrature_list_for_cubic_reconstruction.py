@@ -628,4 +628,8 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(StencilTest):
             p_quad_vector_sum_9=p_quad_vector_sum_9,
             p_quad_vector_sum_10=p_quad_vector_sum_10,
             p_dreg_area=p_dreg_area,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

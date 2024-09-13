@@ -703,6 +703,10 @@ def prepare_ffsl_flux_area_patches_list(
     dreg_patch2_3_lat_vmask: fa.EdgeKField[vpfloat],
     dreg_patch2_4_lon_vmask: fa.EdgeKField[vpfloat],
     dreg_patch2_4_lat_vmask: fa.EdgeKField[vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _prepare_ffsl_flux_area_patches_list(
         famask_int,
@@ -744,4 +748,8 @@ def prepare_ffsl_flux_area_patches_list(
             dreg_patch2_4_lon_vmask,
             dreg_patch2_4_lat_vmask,
         ),
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

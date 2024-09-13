@@ -69,6 +69,9 @@ def _integrate_tracer_vertically(
     return tracer_new
 
 
+# TODO (dastrm): k/iadv_slev_jt and vertical_start/end are redundant
+
+
 @program(grid_type=GridType.UNSTRUCTURED)
 def integrate_tracer_vertically(
     tracer_now: fa.CellKField[wpfloat],
@@ -82,6 +85,10 @@ def integrate_tracer_vertically(
     ivadv_tracer: int32,
     iadv_slev_jt: int32,
     tracer_new: fa.CellKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _integrate_tracer_vertically(
         tracer_now,
@@ -95,4 +102,8 @@ def integrate_tracer_vertically(
         ivadv_tracer,
         iadv_slev_jt,
         out=tracer_new,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

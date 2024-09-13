@@ -7,9 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import minimum, where
+from gt4py.next.ffront.fbuiltins import int32, minimum, where
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import wpfloat
 
@@ -40,5 +40,19 @@ def hflx_limiter_mo_stencil_05(
     r_m: fa.CellKField[wpfloat],
     r_p: fa.CellKField[wpfloat],
     p_mflx_tracer_h: fa.EdgeKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _hflx_limiter_mo_stencil_05(z_anti, z_mflx_low, r_m, r_p, out=p_mflx_tracer_h)
+    _hflx_limiter_mo_stencil_05(
+        z_anti,
+        z_mflx_low,
+        r_m,
+        r_p,
+        out=p_mflx_tracer_h,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )

@@ -8,9 +8,9 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import abs, maximum, where
+from gt4py.next.ffront.fbuiltins import abs, int32, maximum, where
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -338,6 +338,10 @@ def prepare_numerical_quadrature_for_cubic_reconstruction(
     p_quad_vector_sum_9: fa.EdgeKField[vpfloat],
     p_quad_vector_sum_10: fa.EdgeKField[vpfloat],
     p_dreg_area_out: fa.EdgeKField[vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _prepare_numerical_quadrature_for_cubic_reconstruction(
         p_coords_dreg_v_1_x,
@@ -391,4 +395,8 @@ def prepare_numerical_quadrature_for_cubic_reconstruction(
             p_quad_vector_sum_10,
             p_dreg_area_out,
         ),
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

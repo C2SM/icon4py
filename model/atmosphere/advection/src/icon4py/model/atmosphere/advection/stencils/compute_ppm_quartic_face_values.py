@@ -6,14 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import gt4py.next as gtx
+from gt4py.next.common import GridType
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
-@gtx.field_operator
+@field_operator
 def _compute_ppm_quartic_face_values(
     p_cc: fa.CellKField[wpfloat],
     p_cellhgt_mc_now: fa.CellKField[wpfloat],
@@ -47,16 +49,16 @@ def _compute_ppm_quartic_face_values(
     return p_face
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_ppm_quartic_face_values(
     p_cc: fa.CellKField[wpfloat],
     p_cellhgt_mc_now: fa.CellKField[wpfloat],
     z_slope: fa.CellKField[wpfloat],
     p_face: fa.CellKField[wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _compute_ppm_quartic_face_values(
         p_cc,

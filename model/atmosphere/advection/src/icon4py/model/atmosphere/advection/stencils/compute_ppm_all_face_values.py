@@ -53,6 +53,9 @@ def _compute_ppm_all_face_values(
     return p_face
 
 
+# TODO (dastrm): slev/elev and vertical_start/end are redundant
+
+
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_ppm_all_face_values(
     p_cc: fa.CellKField[wpfloat],
@@ -64,6 +67,10 @@ def compute_ppm_all_face_values(
     slevp1: int32,
     elevp1: int32,
     p_face: fa.CellKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _compute_ppm_all_face_values(
         p_cc,
@@ -75,4 +82,8 @@ def compute_ppm_all_face_values(
         slevp1,
         elevp1,
         out=p_face,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

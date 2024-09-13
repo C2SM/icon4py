@@ -85,7 +85,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(StencilTest):
             cell_rel_idx_dsl=cell_rel_idx_dsl,
             p_out_e=p_out_e,
             horizontal_start=0,
-            horizontal_end=grid.num_edges,
+            horizontal_end=int32(grid.num_edges),
             vertical_start=0,
-            vertical_end=grid.num_levels,
+            vertical_end=int32(grid.num_levels),
         )

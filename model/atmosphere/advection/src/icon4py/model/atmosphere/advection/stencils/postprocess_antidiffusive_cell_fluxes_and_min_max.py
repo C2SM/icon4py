@@ -10,7 +10,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, minimum, where
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -53,6 +53,10 @@ def postprocess_antidiffusive_cell_fluxes_and_min_max(
     z_tracer_new_low_out: fa.CellKField[wpfloat],
     z_tracer_max_out: fa.CellKField[vpfloat],
     z_tracer_min_out: fa.CellKField[vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _postprocess_antidiffusive_cell_fluxes_and_min_max(
         refin_ctrl,
@@ -63,4 +67,8 @@ def postprocess_antidiffusive_cell_fluxes_and_min_max(
         lo_bound,
         hi_bound,
         out=(z_tracer_new_low_out, z_tracer_max_out, z_tracer_min_out),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

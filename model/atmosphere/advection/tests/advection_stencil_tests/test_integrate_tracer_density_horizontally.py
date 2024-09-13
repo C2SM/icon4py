@@ -85,4 +85,8 @@ class TestIntegrateTracerDensityHorizontally(StencilTest):
             z_fluxdiv_c_dsl=z_fluxdiv_c_dsl,
             z_rho_new_dsl=z_rho_new_dsl,
             z_tracer_new_dsl=z_tracer_new_dsl,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

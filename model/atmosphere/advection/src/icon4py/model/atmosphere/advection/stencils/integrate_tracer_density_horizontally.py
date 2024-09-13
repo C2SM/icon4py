@@ -60,6 +60,10 @@ def integrate_tracer_density_horizontally(
     z_fluxdiv_c_dsl: fa.CellKField[vpfloat],
     z_rho_new_dsl: fa.CellKField[wpfloat],
     z_tracer_new_dsl: fa.CellKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _integrate_tracer_density_horizontally(
         nsub,
@@ -71,4 +75,8 @@ def integrate_tracer_density_horizontally(
         z_tracer_now,
         z_dtsub,
         out=(z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

@@ -8,6 +8,7 @@
 
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C
@@ -204,6 +205,10 @@ def reconstruct_cubic_coefficients_svd(
     p_coeff_8_dsl: fa.CellKField[wpfloat],
     p_coeff_9_dsl: fa.CellKField[wpfloat],
     p_coeff_10_dsl: fa.CellKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _reconstruct_cubic_coefficients_svd(
         p_cc,
@@ -237,4 +242,8 @@ def reconstruct_cubic_coefficients_svd(
             p_coeff_9_dsl,
             p_coeff_10_dsl,
         ),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

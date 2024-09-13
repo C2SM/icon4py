@@ -10,7 +10,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -58,6 +58,10 @@ def compute_intermediate_horizontal_flux_from_linear_coefficients(
     p_mass_flx_e: fa.EdgeKField[wpfloat],
     cell_rel_idx_dsl: fa.EdgeKField[int32],
     z_tracer_mflx_dsl: fa.EdgeKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _compute_intermediate_horizontal_flux_from_linear_coefficients(
         z_lsq_coeff_1_dsl,
@@ -68,4 +72,8 @@ def compute_intermediate_horizontal_flux_from_linear_coefficients(
         p_mass_flx_e,
         cell_rel_idx_dsl,
         out=(z_tracer_mflx_dsl),
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

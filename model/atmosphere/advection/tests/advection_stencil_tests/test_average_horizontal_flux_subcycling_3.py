@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.average_horizontal_flux_subcycling_3 import (
     average_horizontal_flux_subcycling_3,
@@ -42,4 +43,8 @@ class TestAverageHorizontalFluxSubcycling3(StencilTest):
             z_tracer_mflx_2_dsl=z_tracer_mflx_2_dsl,
             z_tracer_mflx_3_dsl=z_tracer_mflx_3_dsl,
             p_out_e=p_out_e,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

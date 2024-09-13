@@ -80,4 +80,8 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(StencilTest):
             z_tracer_new_low_out=z_tracer_new_low_out,
             z_tracer_max_out=z_tracer_max_out,
             z_tracer_min_out=z_tracer_min_out,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

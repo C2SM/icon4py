@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_values import (
     compute_ppm_quadratic_face_values,
@@ -43,7 +44,7 @@ class TestComputePpmQuadraticFaceValues(StencilTest):
             p_cellhgt_mc_now=p_cellhgt_mc_now,
             p_face=p_face,
             horizontal_start=0,
-            horizontal_end=grid.num_cells,
+            horizontal_end=int32(grid.num_cells),
             vertical_start=1,
-            vertical_end=grid.num_levels,
+            vertical_end=int32(grid.num_levels),
         )

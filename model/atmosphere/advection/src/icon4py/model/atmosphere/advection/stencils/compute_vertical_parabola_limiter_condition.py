@@ -10,7 +10,7 @@ from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import abs, int32, where
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
@@ -33,9 +33,17 @@ def compute_vertical_parabola_limiter_condition(
     p_face: fa.CellKField[wpfloat],
     p_cc: fa.CellKField[wpfloat],
     l_limit: fa.CellKField[int32],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _compute_vertical_parabola_limiter_condition(
         p_face,
         p_cc,
         out=l_limit,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.compute_antidiffusive_cell_fluxes_and_min_max import (
     compute_antidiffusive_cell_fluxes_and_min_max,
@@ -112,4 +113,8 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(StencilTest):
             z_tracer_new_low=z_tracer_new_low,
             z_tracer_max=z_tracer_max,
             z_tracer_min=z_tracer_min,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

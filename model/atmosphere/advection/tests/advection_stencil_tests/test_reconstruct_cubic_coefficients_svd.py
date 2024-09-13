@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.reconstruct_cubic_coefficients_svd import (
     reconstruct_cubic_coefficients_svd,
@@ -310,4 +311,8 @@ class TestReconstructCubicCoefficientsSvd(StencilTest):
             p_coeff_8_dsl=p_coeff_8_dsl,
             p_coeff_9_dsl=p_coeff_9_dsl,
             p_coeff_10_dsl=p_coeff_10_dsl,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

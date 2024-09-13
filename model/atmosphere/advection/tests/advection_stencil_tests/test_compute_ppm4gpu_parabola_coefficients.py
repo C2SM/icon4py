@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_parabola_coefficients import (
     compute_ppm4gpu_parabola_coefficients,
@@ -36,5 +37,13 @@ class TestComputePpm4gpuParabolaCoefficients(StencilTest):
         z_delta_q = zero_field(grid, dims.CellDim, dims.KDim)
         z_a1 = zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
-            z_face_up=z_face_up, z_face_low=z_face_low, p_cc=p_cc, z_delta_q=z_delta_q, z_a1=z_a1
+            z_face_up=z_face_up,
+            z_face_low=z_face_low,
+            p_cc=p_cc,
+            z_delta_q=z_delta_q,
+            z_a1=z_a1,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

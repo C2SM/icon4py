@@ -1543,4 +1543,8 @@ class TestPrepareFfslFluxAreaPatchesList(StencilTest):
             dreg_patch2_3_lat_vmask=dreg_patch2_3_lat_vmask,
             dreg_patch2_4_lon_vmask=dreg_patch2_4_lon_vmask,
             dreg_patch2_4_lat_vmask=dreg_patch2_4_lat_vmask,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

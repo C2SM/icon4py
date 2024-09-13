@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
@@ -69,7 +70,7 @@ class TestIntegrateTracerHorizontally(StencilTest):
             p_dtime=p_dtime,
             tracer_new_hor=tracer_new_hor,
             horizontal_start=0,
-            horizontal_end=grid.num_cells,
+            horizontal_end=int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=grid.num_levels,
+            vertical_end=int32(grid.num_levels),
         )

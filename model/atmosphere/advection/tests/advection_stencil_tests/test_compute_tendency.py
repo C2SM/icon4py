@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.stencils.compute_tendency import (
     compute_tendency,
@@ -43,4 +44,8 @@ class TestComputeTendency(StencilTest):
             p_tracer_new=p_tracer_new,
             p_dtime=p_dtime,
             opt_ddt_tracer_adv=opt_ddt_tracer_adv,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )

@@ -33,4 +33,12 @@ class TestComputeVerticalParabolaLimiterCondition(StencilTest):
         p_cc = random_field(grid, dims.CellDim, dims.KDim)
         p_face = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         l_limit = zero_field(grid, dims.CellDim, dims.KDim, dtype=int32)
-        return dict(p_face=p_face, p_cc=p_cc, l_limit=l_limit)
+        return dict(
+            p_face=p_face,
+            p_cc=p_cc,
+            l_limit=l_limit,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
+        )

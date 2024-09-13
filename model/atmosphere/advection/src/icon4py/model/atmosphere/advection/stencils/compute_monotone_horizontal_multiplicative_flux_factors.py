@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import max_over, maximum, min_over, minimum
+from gt4py.next.ffront.fbuiltins import int32, max_over, maximum, min_over, minimum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2E2C
@@ -93,6 +93,10 @@ def compute_monotone_horizontal_multiplicative_flux_factors(
     dbl_eps: wpfloat,
     r_p: fa.CellKField[wpfloat],
     r_m: fa.CellKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _compute_monotone_horizontal_multiplicative_flux_factors(
         z_tracer_max,
@@ -104,4 +108,8 @@ def compute_monotone_horizontal_multiplicative_flux_factors(
         z_tracer_new_low,
         dbl_eps,
         out=(r_p, r_m),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

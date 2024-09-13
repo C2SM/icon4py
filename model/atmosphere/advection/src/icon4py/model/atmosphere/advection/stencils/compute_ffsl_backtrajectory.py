@@ -157,6 +157,10 @@ def compute_ffsl_backtrajectory(
     p_coords_dreg_v_2_lat_dsl: fa.EdgeKField[vpfloat],
     p_coords_dreg_v_3_lat_dsl: fa.EdgeKField[vpfloat],
     p_coords_dreg_v_4_lat_dsl: fa.EdgeKField[vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _compute_ffsl_backtrajectory(
         p_vn,
@@ -190,4 +194,8 @@ def compute_ffsl_backtrajectory(
             p_coords_dreg_v_3_lat_dsl,
             p_coords_dreg_v_4_lat_dsl,
         ),
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

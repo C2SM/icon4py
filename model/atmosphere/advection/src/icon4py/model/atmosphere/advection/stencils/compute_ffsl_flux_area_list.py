@@ -208,6 +208,10 @@ def compute_ffsl_flux_area_list(
     patch1_cell_blk_vmask: fa.EdgeKField[int32],
     patch2_cell_idx_vmask: fa.EdgeKField[int32],
     patch2_cell_blk_vmask: fa.EdgeKField[int32],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _compute_ffsl_flux_area_list(
         famask_int,
@@ -262,4 +266,8 @@ def compute_ffsl_flux_area_list(
             patch2_cell_idx_vmask,
             patch2_cell_blk_vmask,
         ),
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
