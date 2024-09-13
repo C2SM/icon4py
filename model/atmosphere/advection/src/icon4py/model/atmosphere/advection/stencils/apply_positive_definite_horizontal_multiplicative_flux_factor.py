@@ -9,8 +9,8 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -40,5 +40,8 @@ def apply_positive_definite_horizontal_multiplicative_flux_factor(
         r_m,
         p_mflx_tracer_h,
         out=p_mflx_tracer_h,
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

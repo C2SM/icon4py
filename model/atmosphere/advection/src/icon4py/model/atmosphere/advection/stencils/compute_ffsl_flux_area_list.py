@@ -13,7 +13,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2EC, EdgeDim, KDim
+from icon4py.model.common.dimension import E2EC
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -119,14 +119,14 @@ def _compute_ffsl_flux_area_list(
 
     # Store global index of the underlying grid cell
     # Adapt dimensions to fit ofr multiple levels
-    butterfly_idx_patch1_vnpos_3d = broadcast(butterfly_idx_patch1_vnpos, (EdgeDim, KDim))
-    butterfly_idx_patch1_vnneg_3d = broadcast(butterfly_idx_patch1_vnneg, (EdgeDim, KDim))
-    butterfly_idx_patch2_vnpos_3d = broadcast(butterfly_idx_patch2_vnpos, (EdgeDim, KDim))
-    butterfly_idx_patch2_vnneg_3d = broadcast(butterfly_idx_patch2_vnneg, (EdgeDim, KDim))
-    butterfly_blk_patch1_vnpos_3d = broadcast(butterfly_blk_patch1_vnpos, (EdgeDim, KDim))
-    butterfly_blk_patch1_vnneg_3d = broadcast(butterfly_blk_patch1_vnneg, (EdgeDim, KDim))
-    butterfly_blk_patch2_vnpos_3d = broadcast(butterfly_blk_patch2_vnpos, (EdgeDim, KDim))
-    butterfly_blk_patch2_vnneg_3d = broadcast(butterfly_blk_patch2_vnneg, (EdgeDim, KDim))
+    butterfly_idx_patch1_vnpos_3d = broadcast(butterfly_idx_patch1_vnpos, (dims.EdgeDim, dims.KDim))
+    butterfly_idx_patch1_vnneg_3d = broadcast(butterfly_idx_patch1_vnneg, (dims.EdgeDim, dims.KDim))
+    butterfly_idx_patch2_vnpos_3d = broadcast(butterfly_idx_patch2_vnpos, (dims.EdgeDim, dims.KDim))
+    butterfly_idx_patch2_vnneg_3d = broadcast(butterfly_idx_patch2_vnneg, (dims.EdgeDim, dims.KDim))
+    butterfly_blk_patch1_vnpos_3d = broadcast(butterfly_blk_patch1_vnpos, (dims.EdgeDim, dims.KDim))
+    butterfly_blk_patch1_vnneg_3d = broadcast(butterfly_blk_patch1_vnneg, (dims.EdgeDim, dims.KDim))
+    butterfly_blk_patch2_vnpos_3d = broadcast(butterfly_blk_patch2_vnpos, (dims.EdgeDim, dims.KDim))
+    butterfly_blk_patch2_vnneg_3d = broadcast(butterfly_blk_patch2_vnneg, (dims.EdgeDim, dims.KDim))
     patch1_cell_idx_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_idx_patch1_vnpos_3d, butterfly_idx_patch1_vnneg_3d),

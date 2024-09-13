@@ -10,8 +10,7 @@ from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -21,7 +20,7 @@ def _compute_ffsl_backtrajectory_counterclockwise_indicator(
     p_vn: fa.EdgeKField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
 ) -> fa.EdgeKField[bool]:
-    tangent_orientation = broadcast(tangent_orientation, (EdgeDim, KDim))
+    tangent_orientation = broadcast(tangent_orientation, (dims.EdgeDim, dims.KDim))
     return where(p_vn * tangent_orientation >= wpfloat(0.0), lcounterclock, False)
 
 

@@ -15,11 +15,6 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_ppm_slope_a(
     p_cc: fa.CellKField[wpfloat],
@@ -62,7 +57,7 @@ def _compute_ppm_slope(
     k: fa.KField[int32],
     elev: int32,
 ) -> fa.CellKField[wpfloat]:
-    k = broadcast(k, (CellDim, KDim))
+    k = broadcast(k, (dims.CellDim, dims.KDim))
 
     z_slope = where(
         k == elev,
@@ -92,7 +87,7 @@ def compute_ppm_slope(
         elev,
         out=z_slope,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

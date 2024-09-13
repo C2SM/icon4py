@@ -13,7 +13,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2EC, EdgeDim, KDim
+from icon4py.model.common.dimension import E2EC
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -183,13 +183,13 @@ def _prepare_ffsl_flux_area_patches_list(
     tri_line1_p1_lat = arrival_pts_1_lat_dsl
     tri_line1_p2_lon = where(
         lvn_pos,
-        broadcast(ptr_v3_lon(E2EC[0]), (EdgeDim, KDim)),
-        broadcast(ptr_v3_lon(E2EC[1]), (EdgeDim, KDim)),
+        broadcast(ptr_v3_lon(E2EC[0]), (dims.EdgeDim, dims.KDim)),
+        broadcast(ptr_v3_lon(E2EC[1]), (dims.EdgeDim, dims.KDim)),
     )
     tri_line1_p2_lat = where(
         lvn_pos,
-        broadcast(ptr_v3_lat(E2EC[0]), (EdgeDim, KDim)),
-        broadcast(ptr_v3_lat(E2EC[1]), (EdgeDim, KDim)),
+        broadcast(ptr_v3_lat(E2EC[0]), (dims.EdgeDim, dims.KDim)),
+        broadcast(ptr_v3_lat(E2EC[1]), (dims.EdgeDim, dims.KDim)),
     )
 
     # get triangle edge 2 (A2V3)
@@ -197,13 +197,13 @@ def _prepare_ffsl_flux_area_patches_list(
     tri_line2_p1_lat = arrival_pts_2_lat_dsl
     tri_line2_p2_lon = where(
         lvn_pos,
-        broadcast(ptr_v3_lon(E2EC[0]), (EdgeDim, KDim)),
-        broadcast(ptr_v3_lon(E2EC[1]), (EdgeDim, KDim)),
+        broadcast(ptr_v3_lon(E2EC[0]), (dims.EdgeDim, dims.KDim)),
+        broadcast(ptr_v3_lon(E2EC[1]), (dims.EdgeDim, dims.KDim)),
     )
     tri_line2_p2_lat = where(
         lvn_pos,
-        broadcast(ptr_v3_lat(E2EC[0]), (EdgeDim, KDim)),
-        broadcast(ptr_v3_lat(E2EC[1]), (EdgeDim, KDim)),
+        broadcast(ptr_v3_lat(E2EC[0]), (dims.EdgeDim, dims.KDim)),
+        broadcast(ptr_v3_lat(E2EC[1]), (dims.EdgeDim, dims.KDim)),
     )
 
     # Create first mask does departure-line segment intersects with A1V3
@@ -230,7 +230,9 @@ def _prepare_ffsl_flux_area_patches_list(
     )
 
     lvn_sys_pos = where(
-        (p_vn * broadcast(tangent_orientation_dsl, (EdgeDim, KDim))) >= wpfloat(0.0), True, False
+        (p_vn * broadcast(tangent_orientation_dsl, (dims.EdgeDim, dims.KDim))) >= wpfloat(0.0),
+        True,
+        False,
     )
     famask_bool = where(famask_int == 1, True, False)
     # ------------------------------------------------- Case 1

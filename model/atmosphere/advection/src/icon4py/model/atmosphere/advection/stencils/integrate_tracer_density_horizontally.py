@@ -11,7 +11,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2E, C2EDim
+from icon4py.model.common.dimension import C2E
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _integrate_tracer_density_horizontally(
     nsub: int32,
     p_mass_flx_e: fa.EdgeKField[wpfloat],
-    geofac_div: Field[[dims.CellDim, C2EDim], wpfloat],
+    geofac_div: Field[[dims.CellDim, dims.C2EDim], wpfloat],
     z_rhofluxdiv_c: fa.CellKField[vpfloat],
     z_tracer_mflx: fa.EdgeKField[wpfloat],
     z_rho_now: fa.CellKField[wpfloat],
@@ -32,10 +32,12 @@ def _integrate_tracer_density_horizontally(
     fa.CellKField[wpfloat],
 ]:
     z_rhofluxdiv_c_out = (
-        neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=C2EDim) if nsub == 1 else z_rhofluxdiv_c
+        neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=dims.C2EDim)
+        if nsub == 1
+        else z_rhofluxdiv_c
     )
 
-    z_fluxdiv_c_dsl = neighbor_sum(z_tracer_mflx(C2E) * geofac_div, axis=C2EDim)
+    z_fluxdiv_c_dsl = neighbor_sum(z_tracer_mflx(C2E) * geofac_div, axis=dims.C2EDim)
 
     z_rho_new_dsl = z_rho_now - z_dtsub * z_rhofluxdiv_c_out
 
@@ -48,7 +50,7 @@ def _integrate_tracer_density_horizontally(
 def integrate_tracer_density_horizontally(
     nsub: int32,
     p_mass_flx_e: fa.EdgeKField[wpfloat],
-    geofac_div: Field[[dims.CellDim, C2EDim], wpfloat],
+    geofac_div: Field[[dims.CellDim, dims.C2EDim], wpfloat],
     z_rhofluxdiv_c: fa.CellKField[vpfloat],
     z_tracer_mflx: fa.EdgeKField[wpfloat],
     z_rho_now: fa.CellKField[wpfloat],

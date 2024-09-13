@@ -8,18 +8,11 @@
 
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import (
-    FieldOffset,
-    abs,
-    int32,
-    where,
-)
+from gt4py.next.ffront.fbuiltins import abs, int32, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
-
-
-Koff = FieldOffset("Koff", source=dims.KDim, target=(dims.KDim,))
 
 
 @field_operator

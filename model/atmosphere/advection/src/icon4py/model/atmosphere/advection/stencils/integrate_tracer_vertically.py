@@ -10,8 +10,8 @@ from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -46,7 +46,7 @@ def _integrate_tracer_vertically(
     ivadv_tracer: int32,
     iadv_slev_jt: int32,
 ) -> fa.CellKField[wpfloat]:
-    k = broadcast(k, (CellDim, KDim))
+    k = broadcast(k, (dims.CellDim, dims.KDim))
 
     tracer_new = (
         where(

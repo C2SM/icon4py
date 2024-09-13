@@ -13,11 +13,6 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @gtx.field_operator
 def _compute_ppm_quartic_face_values(
     p_cc: fa.CellKField[wpfloat],
@@ -69,7 +64,7 @@ def compute_ppm_quartic_face_values(
         z_slope,
         out=p_face,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

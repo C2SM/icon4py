@@ -9,8 +9,8 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import max_over, maximum, min_over, minimum
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2C, C2E2CDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2E2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -21,8 +21,8 @@ def _compute_monotone_horizontal_multiplicative_flux_factors_min_max(
     beta_fct: wpfloat,
     r_beta_fct: wpfloat,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
-    z_max = beta_fct * maximum(max_over(z_tracer_max(C2E2C), axis=C2E2CDim), z_tracer_max)
-    z_min = r_beta_fct * minimum(min_over(z_tracer_min(C2E2C), axis=C2E2CDim), z_tracer_min)
+    z_max = beta_fct * maximum(max_over(z_tracer_max(C2E2C), axis=dims.C2E2CDim), z_tracer_max)
+    z_min = r_beta_fct * minimum(min_over(z_tracer_min(C2E2C), axis=dims.C2E2CDim), z_tracer_min)
     return z_max, z_min
 
 

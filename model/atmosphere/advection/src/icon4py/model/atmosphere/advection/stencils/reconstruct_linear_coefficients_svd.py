@@ -11,7 +11,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2CEC, C2E2C, CellDim, KDim
+from icon4py.model.common.dimension import C2CEC, C2E2C
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
@@ -58,5 +58,8 @@ def reconstruct_linear_coefficients_svd(
         lsq_pseudoinv_1,
         lsq_pseudoinv_2,
         out=(p_coeff_1_dsl, p_coeff_2_dsl, p_coeff_3_dsl),
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

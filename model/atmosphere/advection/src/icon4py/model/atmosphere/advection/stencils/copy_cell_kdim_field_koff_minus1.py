@@ -9,8 +9,8 @@
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -34,5 +34,8 @@ def copy_cell_kdim_field_koff_minus1(
     _copy_cell_kdim_field_koff_minus1(
         field_in,
         out=field_out,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

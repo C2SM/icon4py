@@ -11,7 +11,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CellDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
@@ -30,7 +30,7 @@ def _integrate_tracer_horizontally(
         tracer_now * rhodz_now
         - p_dtime
         * deepatmo_divh
-        * neighbor_sum(p_mflx_tracer_h(C2E) * geofac_div(C2CE), axis=C2EDim)
+        * neighbor_sum(p_mflx_tracer_h(C2E) * geofac_div(C2CE), axis=dims.C2EDim)
     ) / rhodz_new
 
     return tracer_new_hor
@@ -60,5 +60,8 @@ def integrate_tracer_horizontally(
         geofac_div,
         p_dtime,
         out=tracer_new_hor,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

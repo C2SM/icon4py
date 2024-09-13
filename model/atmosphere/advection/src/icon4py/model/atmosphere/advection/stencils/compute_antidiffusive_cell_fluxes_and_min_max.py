@@ -10,7 +10,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CellDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -30,7 +30,7 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    zero = broadcast(vpfloat(0.0), (CellDim, KDim))
+    zero = broadcast(vpfloat(0.0), (dims.CellDim, dims.KDim))
 
     z_mflx_anti_1 = p_dtime * geofac_div(C2CE[0]) / p_rhodz_new * z_anti(C2E[0])
     z_mflx_anti_2 = p_dtime * geofac_div(C2CE[1]) / p_rhodz_new * z_anti(C2E[1])
@@ -44,7 +44,7 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
         maximum(zero, z_mflx_anti_1) + maximum(zero, z_mflx_anti_2) + maximum(zero, z_mflx_anti_3)
     )
 
-    z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div(C2CE), axis=C2EDim)
+    z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div(C2CE), axis=dims.C2EDim)
 
     z_tracer_new_low = (p_cc * p_rhodz_now - p_dtime * z_fluxdiv_c) / p_rhodz_new
     z_tracer_max = maximum(p_cc, z_tracer_new_low)

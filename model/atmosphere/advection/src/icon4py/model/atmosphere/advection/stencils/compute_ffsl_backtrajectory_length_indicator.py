@@ -11,7 +11,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, sqrt, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2EC, EdgeDim, KDim
+from icon4py.model.common.dimension import E2EC
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -26,7 +26,7 @@ def _compute_ffsl_backtrajectory_length_indicator(
     traj_length = sqrt(p_vn * p_vn + p_vt * p_vt) * p_dt
     e2c_length = where(lvn_pos, edge_cell_length(E2EC[0]), edge_cell_length(E2EC[1]))
     opt_famask_dsl = where(
-        traj_length > wpfloat(1.25) * broadcast(e2c_length, (EdgeDim, KDim)), 1, 0
+        traj_length > wpfloat(1.25) * broadcast(e2c_length, (dims.EdgeDim, dims.KDim)), 1, 0
     )
 
     return opt_famask_dsl

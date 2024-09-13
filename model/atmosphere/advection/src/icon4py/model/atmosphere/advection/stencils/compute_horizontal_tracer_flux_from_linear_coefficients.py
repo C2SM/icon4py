@@ -10,8 +10,8 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -58,5 +58,8 @@ def compute_horizontal_tracer_flux_from_linear_coefficients(
         p_mass_flx_e,
         cell_rel_idx_dsl,
         out=(p_out_e),
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

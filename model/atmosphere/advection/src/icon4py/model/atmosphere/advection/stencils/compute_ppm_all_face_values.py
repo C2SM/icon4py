@@ -10,8 +10,8 @@ from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -38,7 +38,7 @@ def _compute_ppm_all_face_values(
     slevp1: int32,
     elevp1: int32,
 ) -> fa.CellKField[wpfloat]:
-    k = broadcast(k, (CellDim, KDim))
+    k = broadcast(k, (dims.CellDim, dims.KDim))
 
     p_face = where(
         (k == slevp1) | (k == elev),

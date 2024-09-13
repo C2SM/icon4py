@@ -11,7 +11,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2E, E2C2EDim, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C2E
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
@@ -19,16 +19,16 @@ from icon4py.model.common.type_alias import wpfloat
 @field_operator
 def _compute_edge_tangential(
     p_vn_in: fa.EdgeKField[wpfloat],
-    ptr_coeff: Field[[dims.EdgeDim, E2C2EDim], wpfloat],
+    ptr_coeff: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
-    p_vt_out = neighbor_sum(p_vn_in(E2C2E) * ptr_coeff, axis=E2C2EDim)
+    p_vt_out = neighbor_sum(p_vn_in(E2C2E) * ptr_coeff, axis=dims.E2C2EDim)
     return p_vt_out
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_edge_tangential(
     p_vn_in: fa.EdgeKField[wpfloat],
-    ptr_coeff: Field[[dims.EdgeDim, E2C2EDim], wpfloat],
+    ptr_coeff: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     p_vt_out: fa.EdgeKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
@@ -39,5 +39,8 @@ def compute_edge_tangential(
         p_vn_in,
         ptr_coeff,
         out=p_vt_out,
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
