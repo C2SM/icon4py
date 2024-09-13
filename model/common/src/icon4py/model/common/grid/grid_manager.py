@@ -382,14 +382,11 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def run(self, on_gpu: bool = False, limited_area=True):
+    def __call__(self, on_gpu: bool = False, limited_area=True):
         if not self._reader:
             self.open()
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields()
-
-    def __call__(self, on_gpu: bool = False, limited_area=True):
-        self.run(on_gpu=on_gpu, limited_area=limited_area)
 
     def _read_start_end_indices(
         self,
