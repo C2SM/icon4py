@@ -17,7 +17,6 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 import cProfile
-import os
 import pstats
 
 from gt4py.next.common import Field
@@ -36,15 +35,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid import geometry
+from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import device, limited_area
+from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
-
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
-
 
 logger = setup_logger(__name__)
 
@@ -66,7 +62,9 @@ def profile_disable():
 
 
 def diffusion_init(
+    icon_grid,
     vct_a: Field[[dims.KHalfDim], float64],
+    vct_b: Field[[dims.KHalfDim], float64],
     theta_ref_mc: Field[[dims.CellDim, dims.KDim], float64],
     wgtfac_c: Field[[dims.CellDim, dims.KHalfDim], float64],
     e_bln_c_s: Field[[dims.CellDim, dims.C2EDim], float64],
@@ -81,11 +79,8 @@ def diffusion_init(
     zd_diffcoef: Field[[dims.CellDim, dims.KDim], float64],
     zd_vertoffset: Field[[dims.CellDim, dims.E2CDim, dims.KDim], int32],
     zd_intcoef: Field[[dims.CellDim, dims.E2CDim, dims.KDim], float64],
-    num_levels: int32,
-    mean_cell_area: float64,
     ndyn_substeps: int32,
     rayleigh_damping_height: float64,
-    nflatlev: int32,
     nflat_gradp: int32,
     diffusion_type: int32,
     hdiff_w: bool,
@@ -107,6 +102,8 @@ def diffusion_init(
     inv_vert_vert_length: Field[[dims.EdgeDim], float64],
     edge_areas: Field[[dims.EdgeDim], float64],
     f_e: Field[[dims.EdgeDim], float64],
+    cell_center_lat: Field[[dims.CellDim], float64],
+    cell_center_lon: Field[[dims.CellDim], float64],
     cell_areas: Field[[dims.CellDim], float64],
     primal_normal_vert_x: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
     primal_normal_vert_y: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
@@ -116,23 +113,33 @@ def diffusion_init(
     primal_normal_cell_y: Field[[dims.EdgeDim, dims.E2CDim], float64],
     dual_normal_cell_x: Field[[dims.EdgeDim, dims.E2CDim], float64],
     dual_normal_cell_y: Field[[dims.EdgeDim, dims.E2CDim], float64],
+    edge_center_lat: Field[[dims.EdgeDim], float64],
+    edge_center_lon: Field[[dims.EdgeDim], float64],
+    primal_normal_x: Field[[dims.EdgeDim], float64],
+    primal_normal_y: Field[[dims.EdgeDim], float64],
+    global_root: int32,
+    global_level: int32,
+    lowest_layer_thickness: float64,
+    model_top_height: float64,
+    stretch_factor: float64,
 ):
     logger.info(f"Using Device = {device}")
 
-    # ICON grid
-    if device.name == "GPU":
-        on_gpu = True
-    else:
-        on_gpu = False
+    # todo: instantiate own grid
+    # # Determine if running on GPU
+    # on_gpu = device.name == "GPU"
+    #
+    # # Load the ICON grid
+    # grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
+    #
+    # icon_grid = load_grid_from_file(
+    #     grid_file=grid_file_path,
+    #     num_levels=num_levels,
+    #     on_gpu=on_gpu,
+    #     limited_area=limited_area,
+    # )
 
-    grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
-
-    icon_grid = load_grid_from_file(
-        grid_file=grid_file_path,
-        num_levels=num_levels,
-        on_gpu=on_gpu,
-        limited_area=True if limited_area else False,
-    )
+    global_grid_params = GlobalGridParams(root=global_root, level=global_level)
 
     # Edge geometry
     edge_params = geometry.EdgeParams(
@@ -144,18 +151,28 @@ def diffusion_init(
         primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim),
         dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim),
         dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim),
-        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, dims.ECVDim),
-        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, dims.ECVDim),
-        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, dims.ECVDim),
-        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, dims.ECVDim),
+        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, dims.ECDim),
+        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, dims.ECDim),
+        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, dims.ECDim),
+        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, dims.ECDim),
         edge_areas=edge_areas,
         f_e=f_e,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y
     )
 
-    # cell geometry
-    cell_params = geometry.CellParams(area=cell_areas, mean_cell_area=mean_cell_area)
+    # Cell geometry
+    cell_params = geometry.CellParams.from_global_num_cells(
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        area=cell_areas,
+        global_num_cells=global_grid_params.num_cells,
+        length_rescale_factor=1.0,
+    )
 
-    # diffusion parameters
+    # Diffusion parameters
     config = DiffusionConfig(
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
@@ -171,38 +188,40 @@ def diffusion_init(
         thhgtd_zdiffu=thhgtd_zdiffu,
         velocity_boundary_diffusion_denom=denom_diffu_v,
         max_nudging_coeff=nudge_max_coeff
-        / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,  # ICON already scales this, we
-        # need to unscale it as it will be rescaled in diffusion.py
+        / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         shear_type=TurbulenceShearForcingType(itype_sher),
     )
 
     diffusion_params = DiffusionParams(config)
 
-    # vertical grid config
+    # Vertical grid config
     vertical_config = VerticalGridConfig(
-        num_levels=num_levels,
+        num_levels=icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=rayleigh_damping_height,
     )
 
-    # vertical parameters
+    # Vertical parameters
     vertical_params = VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
-        vct_b=None,
+        vct_b=vct_b,
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
-    # metric state
+    # Metric state
     metric_state = DiffusionMetricState(
         mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        zd_intcoef=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
-        zd_vertoffset=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset),
+        zd_intcoef=zd_intcoef,  # todo: for icon integration? flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
+        zd_vertoffset=zd_vertoffset,  # todo: for icon integration? flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset),
         zd_diffcoef=zd_diffcoef,
     )
 
-    # interpolation state
+    # Interpolation state
     interpolation_state = DiffusionInterpolationState(
         e_bln_c_s=as_1D_sparse_field(e_bln_c_s, dims.CEDim),
         rbf_coeff_1=rbf_coeff_1,
@@ -213,6 +232,8 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
+
+    # Initialize the diffusion granule
     diffusion_granule.init(
         grid=icon_grid,
         config=config,
@@ -223,7 +244,6 @@ def diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
     )
-
 
 def diffusion_run(
     w: Field[[dims.CellDim, dims.KHalfDim], float64],

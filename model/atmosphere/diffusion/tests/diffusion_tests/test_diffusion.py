@@ -103,7 +103,7 @@ def vertical_grid(vertical_config: v_grid.VerticalGridConfig, grid_savepoint: sb
 
 @pytest.mark.datatest
 def test_diffusion_init(
-    diffusion_savepoint_init,
+    savepoint_diffusion_init,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
@@ -128,7 +128,7 @@ def test_diffusion_init(
     )
     vertical_params = vertical_grid(vertical_config, grid_savepoint)
 
-    meta = diffusion_savepoint_init.get_metadata("linit", "date")
+    meta = savepoint_diffusion_init.get_metadata("linit", "date")
 
     assert meta["linit"] is False
     assert meta["date"] == step_date_init
@@ -235,7 +235,7 @@ def test_verify_diffusion_init_against_savepoint(
     icon_grid,
     interpolation_savepoint,
     metrics_savepoint,
-    diffusion_savepoint_init,
+    savepoint_diffusion_init,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -269,7 +269,7 @@ def test_verify_diffusion_init_against_savepoint(
         cell_params,
     )
 
-    _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion_granule)
+    _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule)
 
 
 @pytest.mark.datatest
@@ -282,8 +282,8 @@ def test_verify_diffusion_init_against_savepoint(
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_run_diffusion_single_step(
-    diffusion_savepoint_init,
-    diffusion_savepoint_exit,
+    savepoint_diffusion_init,
+    savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
@@ -295,13 +295,13 @@ def test_run_diffusion_single_step(
     damping_height,
     ndyn_substeps,
 ):
-    dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state(metrics_savepoint)
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
-    prognostic_state = diffusion_savepoint_init.construct_prognostics()
+    diagnostic_state = construct_diagnostics(savepoint_diffusion_init)
+    prognostic_state = savepoint_diffusion_init.construct_prognostics()
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -325,8 +325,8 @@ def test_run_diffusion_single_step(
         cell_params=cell_geometry,
     )
 
-    verify_diffusion_fields(config, diagnostic_state, prognostic_state, diffusion_savepoint_init)
-    assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
+    verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
+    assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
     diffusion_granule.run(
         diagnostic_state=diagnostic_state,
@@ -334,7 +334,7 @@ def test_run_diffusion_single_step(
         dtime=dtime,
     )
 
-    verify_diffusion_fields(config, diagnostic_state, prognostic_state, diffusion_savepoint_exit)
+    verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
 
 
 @pytest.mark.datatest
@@ -345,20 +345,20 @@ def test_run_diffusion_initial_step(
     model_top_height,
     stretch_factor,
     damping_height,
-    diffusion_savepoint_init,
-    diffusion_savepoint_exit,
+    savepoint_diffusion_init,
+    savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
     icon_grid,
 ):
-    dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state(metrics_savepoint)
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
-    prognostic_state = diffusion_savepoint_init.construct_prognostics()
+    diagnostic_state = construct_diagnostics(savepoint_diffusion_init)
+    prognostic_state = savepoint_diffusion_init.construct_prognostics()
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -381,7 +381,7 @@ def test_run_diffusion_initial_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
     )
-    assert diffusion_savepoint_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
+    assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
     diffusion_granule.initial_run(
         diagnostic_state=diagnostic_state,
@@ -393,5 +393,5 @@ def test_run_diffusion_initial_step(
         config=config,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        diffusion_savepoint=diffusion_savepoint_exit,
+        diffusion_savepoint=savepoint_diffusion_exit,
     )
