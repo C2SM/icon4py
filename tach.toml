@@ -40,6 +40,8 @@ depends_on = []
 [[modules]]
 path = "icon4py.model.driver"
 depends_on = [
+{path = "icon4py.model.atmosphere.advection`},
+{path = "icon4py.model.atmosphere.subgrid_scale_physics.microphysics"}
     { path = "icon4py.model.atmosphere.diffusion" },
     { path = "icon4py.model.atmosphere.dycore" },
     { path = "icon4py.model.common" },
