@@ -8,9 +8,9 @@
 
 import enum
 import logging
-import numpy as np
+from icon4py.model.common.settings import xp
 
-from gt4py.next.ffront.fbuiltins import int32
+import gt4py.next as gtx
 
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.advection.stencils import (
@@ -48,7 +48,7 @@ Advection module ported from ICON mo_advection_stepping.f90.
 log = logging.getLogger(__name__)
 
 
-class HorizontalAdvectionType(int, enum.Enum):
+class HorizontalAdvectionType(enum.Enum):
     """
     Horizontal operator scheme for advection.
     """
@@ -57,16 +57,17 @@ class HorizontalAdvectionType(int, enum.Enum):
     LINEAR_2ND_ORDER = 2  #: 2nd order MIURA with linear reconstruction
 
 
-class HorizontalAdvectionLimiterType(int, enum.Enum):
+class HorizontalAdvectionLimiterType(enum.Enum):
     """
     Limiter for horizontal advection operator.
     """
 
-    NO_LIMITER = 0  #: no horizontal limiter
+    #: no horizontal limiter
+    NO_LIMITER = 0  
     POSITIVE_DEFINITE = 4  #: positive definite horizontal limiter
 
 
-class VerticalAdvectionType(int, enum.Enum):
+class VerticalAdvectionType(enum.Enum):
     """
     Vertical operator scheme for advection.
     """
@@ -74,7 +75,15 @@ class VerticalAdvectionType(int, enum.Enum):
     NO_ADVECTION = 0  #: no vertical advection
 
 
+@dataclasses.dataclass(frozen = True) 
 class AdvectionConfig:
+    horizontal_advection_type: HorizontalAdvectionType
+    horizontal_advection_limiter: HorizontalAdvectionLimiterType
+    vertical_advection_type: VerticalAdvectionType
+    
+    
+def __post_init__(self):
+     self._validate()
     """
     Contains necessary parameters to configure an advection run.
 
@@ -97,7 +106,8 @@ class AdvectionConfig:
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
-        if self.horizontal_advection_type != 0 and self.horizontal_advection_type != 2:
+        assert self.horizontal_advection_type not in HorizontalAdvectionType.__members__, f"vertical advection type {self.vertical_advection_type} not implemented"
+              
             raise NotImplementedError(
                 "Only horizontal advection type 2 = `2nd order MIURA with linear reconstruction` is implemented"
             )
