@@ -41,6 +41,8 @@ from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 from icon4pytools.common.logger import setup_logger
+from icon4py.model.common import settings
+from icon4pytools.py2fgen.wrappers.common import construct_icon_grid
 
 logger = setup_logger(__name__)
 
@@ -49,6 +51,9 @@ diffusion_granule: Diffusion = Diffusion()
 
 # global profiler object
 profiler = cProfile.Profile()
+
+# global grid object
+icon_grid = None
 
 
 def profile_enable():
@@ -61,8 +66,62 @@ def profile_disable():
     stats.dump_stats(f"{__name__}.profile")
 
 
+def grid_init(
+    cell_starts: Field[[dims.CellIndexDim], int32],
+    cell_ends: Field[[dims.CellIndexDim], int32],
+    vertex_starts: Field[[dims.VertexIndexDim], int32],
+    vertex_ends: Field[[dims.VertexIndexDim], int32],
+    edge_starts: Field[[dims.EdgeIndexDim], int32],
+    edge_ends: Field[[dims.EdgeIndexDim], int32],
+    c2e: Field[[dims.CellDim, dims.C2EDim], int32],
+    e2c: Field[[dims.EdgeDim, dims.E2CDim], int32],
+    c2e2c: Field[[dims.CellDim, dims.C2E2CDim], int32],
+    e2c2e: Field[[dims.EdgeDim, dims.E2C2EDim], int32],
+    e2v: Field[[dims.EdgeDim, dims.E2VDim], int32],
+    v2e: Field[[dims.VertexDim, dims.V2EDim], int32],
+    v2c: Field[[dims.VertexDim, dims.V2CDim], int32],
+    e2c2v: Field[[dims.EdgeDim, dims.E2C2VDim], int32],
+    c2v: Field[[dims.CellDim, dims.C2VDim], int32],
+    global_root: int32,
+    global_level: int32,
+    num_vertices: int32,
+    num_cells: int32,
+    num_edges: int32,
+    vertical_size: int32,
+    limited_area: bool,
+):
+    global icon_grid
+
+    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
+
+    icon_grid = construct_icon_grid(
+        grid_id="icon_grid",
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+    )
+
+
 def diffusion_init(
-    icon_grid,
     vct_a: Field[[dims.KHalfDim], float64],
     vct_b: Field[[dims.KHalfDim], float64],
     theta_ref_mc: Field[[dims.CellDim, dims.KDim], float64],
@@ -124,20 +183,6 @@ def diffusion_init(
     stretch_factor: float64,
 ):
     logger.info(f"Using Device = {device}")
-
-    # todo: instantiate own grid
-    # # Determine if running on GPU
-    # on_gpu = device.name == "GPU"
-    #
-    # # Load the ICON grid
-    # grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
-    #
-    # icon_grid = load_grid_from_file(
-    #     grid_file=grid_file_path,
-    #     num_levels=num_levels,
-    #     on_gpu=on_gpu,
-    #     limited_area=limited_area,
-    # )
 
     global_grid_params = GlobalGridParams(root=global_root, level=global_level)
 

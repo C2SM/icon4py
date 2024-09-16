@@ -60,3 +60,6 @@ KHalfOff = FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
 
 
 VerticalDim: TypeAlias = Union[KDim, KHalfDim]
+CellIndexDim = Dimension("CellIndex")
+EdgeIndexDim = Dimension("EdgeIndex")
+VertexIndexDim = Dimension("VertexIndex")

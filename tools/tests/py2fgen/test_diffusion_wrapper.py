@@ -8,11 +8,13 @@
 
 import pytest
 
+import gt4py.next as gtx
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType, TurbulenceShearForcingType
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.test_utils import helpers, datatest_utils as dt_utils
 from icon4py.model.common.test_utils.datatest_utils import get_global_grid_params
-from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
+from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run, grid_init
 
 
 @pytest.mark.datatest
@@ -29,7 +31,6 @@ def test_diffusion_wrapper_single_step(
     interpolation_savepoint,
     metrics_savepoint,
     grid_savepoint,
-    icon_grid,
     experiment,
     lowest_layer_thickness,
     model_top_height,
@@ -118,9 +119,57 @@ def test_diffusion_wrapper_single_step(
 
     dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
 
+    # grid params
+    num_vertices = grid_savepoint.num(dims.VertexDim)
+    num_cells = grid_savepoint.num(dims.CellDim)
+    num_edges = grid_savepoint.num(dims.EdgeDim)
+    vertical_size = grid_savepoint.num(dims.KDim)
+    limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
+
+    cell_starts = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_start_index())
+    cell_ends = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_end_index())
+    vertex_starts = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_start_index())
+    vertex_ends = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_end_index())
+    edge_starts = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_start_index())
+    edge_ends = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_end_index())
+
+    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint.c2e())
+    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint.e2c())
+    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint.c2e2c())
+    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint.e2c2e())
+    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint.e2v())
+    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint.v2e())
+    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
+    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
+    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
+
+    grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+        global_root=global_root,
+        global_level=global_level,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+    )
+
     # Call diffusion_init
     diffusion_init(
-        icon_grid=icon_grid,
         vct_a=vct_a,
         vct_b=vct_b,
         theta_ref_mc=theta_ref_mc,
