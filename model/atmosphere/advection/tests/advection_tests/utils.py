@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_state
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, constant_field
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -31,7 +30,7 @@ def construct_interpolation_state(
     savepoint: sb.InterpolationSavepoint,
 ) -> advection_states.AdvectionInterpolationState:
     return advection_states.AdvectionInterpolationState(
-        geofac_div=as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
+        geofac_div=helpers.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
@@ -53,7 +52,7 @@ def construct_metric_state(
     if deepatmo:
         raise NotImplementedError("Data for deep atmosphere runs has not been serialized yet.")
     return advection_states.AdvectionMetricState(
-        deepatmo_divh=constant_field(icon_grid, 1.0, dims.KDim),
+        deepatmo_divh=helpers.constant_field(icon_grid, 1.0, dims.KDim),
         deepatmo_divzl=constant_field(icon_grid, 1.0, dims.KDim),
         deepatmo_divzu=constant_field(icon_grid, 1.0, dims.KDim),
     )

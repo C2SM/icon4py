@@ -18,13 +18,13 @@ from icon4py.model.common.type_alias import wpfloat
 class AdvectionDiagnosticState:
     """Represents the diagnostic fields needed in advection."""
 
-    # mass of air in layer at physics time step now [kg/m^2] (nproma,nlev,nblks_c)
+    #: mass of air in layer at physics time step now [kg/m^2]
     airmass_now: fa.CellKField[wpfloat]
 
-    # mass of air in layer at physics time step new [kg/m^2] (nproma,nlev,nblks_c)
+    #: mass of air in layer at physics time step new [kg/m^2] 
     airmass_new: fa.CellKField[wpfloat]
 
-    # tracer tendency field for use in grid refinement [kg/kg/s] (nproma,nlev,nblks_c)
+    #: tracer tendency field for use in grid refinement [kg/kg/s] 
     grf_tend_tracer: fa.CellKField[wpfloat]
 
     # horizontal tracer flux at edges [kg/m/s] (nproma,nlev,nblks_e)
@@ -39,16 +39,16 @@ class AdvectionDiagnosticState:
 class AdvectionInterpolationState:
     """Represents the interpolation state needed in advection."""
 
-    # factor for divergence (nproma,cell_type,nblks_c)
+    #: factor for divergence 
     geofac_div: gtx.Field[[dims.CEDim], wpfloat]
 
-    # coefficients used for rbf interpolation of the tangential velocity component (rbf_vec_dim_e,nproma,nblks_e)
+    #: coefficients used for rbf interpolation of the tangential velocity component
     rbf_vec_coeff_e: gtx.Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat]
 
-    # x-components of positions of various points on local plane tangential to the edge midpoint (nproma,4,nblks_e)
+    #: x-components of positions of various points on local plane tangential to the edge midpoint 
     pos_on_tplane_e_1: gtx.Field[[dims.ECDim], wpfloat]
 
-    # y-components of positions of various points on local plane tangential to the edge midpoint (nproma,4,nblks_e)
+    #: y-components of positions of various points on local plane tangential to the edge midpoint
     pos_on_tplane_e_2: gtx.Field[[dims.ECDim], wpfloat]
 
 
@@ -56,7 +56,7 @@ class AdvectionInterpolationState:
 class AdvectionLeastSquaresState:
     """Represents the least squares state needed in advection."""
 
-    # pseudo (or Moore-Penrose) inverse of lsq design matrix A, originally (nproma,lsq_dim_unk,lsq_dim_c,nblks_c)
+    #: pseudo (or Moore-Penrose) inverse of lsq design matrix A
     lsq_pseudoinv_1: gtx.Field[[dims.CECDim], wpfloat]
     lsq_pseudoinv_2: gtx.Field[[dims.CECDim], wpfloat]
 
@@ -65,11 +65,11 @@ class AdvectionLeastSquaresState:
 class AdvectionMetricState:
     """Represents the metric fields needed in advection."""
 
-    # metrical modification factor for horizontal part of divergence at full levels (nlev)
+    #: metrical modification factor for horizontal part of divergence at full levels (KDim)
     deepatmo_divh: fa.KField[wpfloat]
 
-    # metrical modification factor for vertical part of divergence at full levels (nlev)
+    #: metrical modification factor for vertical part of divergence at full levels (KDim)
     deepatmo_divzl: fa.KField[wpfloat]
 
-    # metrical modification factor for vertical part of divergence at full levels (nlev)
+    #: metrical modification factor for vertical part of divergence at full levels (KDim)
     deepatmo_divzu: fa.KField[wpfloat]
