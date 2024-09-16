@@ -6,9 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import dataclasses
 import enum
 import logging
-from icon4py.model.common.settings import xp
 
 import gt4py.next as gtx
 
@@ -26,11 +26,10 @@ from icon4py.model.atmosphere.advection.stencils import (
     compute_horizontal_tracer_flux_from_linear_coefficients,
     copy_cell_kdim_field,
 )
-from icon4py.model.atmosphere.dycore import compute_tangential_wind
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     constant_field,
@@ -53,18 +52,21 @@ class HorizontalAdvectionType(enum.Enum):
     Horizontal operator scheme for advection.
     """
 
-    NO_ADVECTION = 0  #: no horizontal advection
-    LINEAR_2ND_ORDER = 2  #: 2nd order MIURA with linear reconstruction
+    #: no horizontal advection
+    NO_ADVECTION = 0
+    #: 2nd order MIURA with linear reconstruction
+    LINEAR_2ND_ORDER = 2
 
 
-class HorizontalAdvectionLimiterType(enum.Enum):
+class HorizontalAdvectionLimiter(enum.Enum):
     """
     Limiter for horizontal advection operator.
     """
 
     #: no horizontal limiter
-    NO_LIMITER = 0  
-    POSITIVE_DEFINITE = 4  #: positive definite horizontal limiter
+    NO_LIMITER = 0
+    #: positive definite horizontal limiter
+    POSITIVE_DEFINITE = 4
 
 
 class VerticalAdvectionType(enum.Enum):
@@ -72,53 +74,48 @@ class VerticalAdvectionType(enum.Enum):
     Vertical operator scheme for advection.
     """
 
-    NO_ADVECTION = 0  #: no vertical advection
+    #: no vertical advection
+    NO_ADVECTION = 0
 
 
-@dataclasses.dataclass(frozen = True) 
+class VerticalAdvectionLimiter(enum.Enum):
+    """
+    Limiter for vertical advection operator.
+    """
+
+    #: no vertical limiter
+    NO_LIMITER = 0
+
+
+@dataclasses.dataclass(frozen=True)
 class AdvectionConfig:
     horizontal_advection_type: HorizontalAdvectionType
-    horizontal_advection_limiter: HorizontalAdvectionLimiterType
+    horizontal_advection_limiter: HorizontalAdvectionLimiter
     vertical_advection_type: VerticalAdvectionType
-    
-    
-def __post_init__(self):
-     self._validate()
+    vertical_advection_limiter: VerticalAdvectionLimiter
+
     """
     Contains necessary parameters to configure an advection run.
-
-    Default values match a basic implementation.
     """
 
-    def __init__(
-        self,
-        horizontal_advection_type: HorizontalAdvectionType = HorizontalAdvectionType.LINEAR_2ND_ORDER,
-        horizontal_advection_limiter: HorizontalAdvectionLimiterType = HorizontalAdvectionLimiterType.POSITIVE_DEFINITE,
-        vertical_advection_type: VerticalAdvectionType = HorizontalAdvectionType.NO_ADVECTION,
-    ):
-        """Set the default values according to a basic implementation."""
-
-        self.horizontal_advection_type: int = horizontal_advection_type
-        self.horizontal_advection_limiter: int = horizontal_advection_limiter
-        self.vertical_advection_type: int = vertical_advection_type
-
+    def __post_init__(self):
         self._validate()
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
-        assert self.horizontal_advection_type not in HorizontalAdvectionType.__members__, f"vertical advection type {self.vertical_advection_type} not implemented"
-              
-            raise NotImplementedError(
-                "Only horizontal advection type 2 = `2nd order MIURA with linear reconstruction` is implemented"
-            )
-        if self.horizontal_advection_limiter != 0 and self.horizontal_advection_limiter != 4:
-            raise NotImplementedError(
-                "Only horizontal advection limiter 4 = `positive definite limiter` is implemented"
-            )
-        if self.vertical_advection_type != 0:
-            raise NotImplementedError(
-                "Only vertical advection type 0 = `no vertical advection` is implemented"
-            )
+
+        assert (
+            self.horizontal_advection_type not in HorizontalAdvectionType.__members__
+        ), f"Horizontal advection type {self.horizontal_advection_type} not implemented."
+        assert (
+            self.horizontal_advection_limiter not in HorizontalAdvectionLimiter.__members__
+        ), f"Horizontal advection limiter {self.horizontal_advection_limiter} not implemented."
+        assert (
+            self.vertical_advection_type not in VerticalAdvectionType.__members__
+        ), f"Vertical advection type {self.vertical_advection_type} not implemented."
+        assert (
+            self.vertical_advection_limiter not in VerticalAdvectionLimiter.__members__
+        ), f"Vertical advection limiter {self.vertical_advection_limiter} not implemented."
 
 
 class Advection:
@@ -188,29 +185,25 @@ class Advection:
         log.debug("advection class init - end")
 
     def _allocate_temporary_fields(self):
-        # density field
-        self.rhodz_ast2 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid
-        )  # intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2] (nproma,nlev,nblks_c)
+        #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
+        self.rhodz_ast2 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
 
         # backtrajectory fields
-        self.z_real_vt = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid
-        )  # unweighted tangential velocity component at edges (nproma,nlev,nblks_e)
+        self.z_real_vt = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
         self.cell_idx = numpy_to_1D_sparse_field(
-            np.asarray(self.grid.connectivities[dims.E2CDim], dtype=int32), dims.ECDim
+            xp.asarray(self.grid.connectivities[dims.E2CDim], dtype=gtx.int32), dims.ECDim
         )
         self.cell_blk = as_1D_sparse_field(
-            constant_field(self.grid, 1, dims.EdgeDim, dims.E2CDim, dtype=int32), dims.ECDim
+            constant_field(self.grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32), dims.ECDim
         )
         self.p_cell_idx = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=int32
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=gtx.int32
         )
         self.p_cell_rel_idx = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=int32
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=gtx.int32
         )
         self.p_cell_blk = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=int32
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=gtx.int32
         )
         self.p_distv_bary_1 = field_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
@@ -228,7 +221,7 @@ class Advection:
     def run(
         self,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[wpfloat],
         p_tracer_new: fa.CellKField[wpfloat],
         dtime: wpfloat,
@@ -378,7 +371,7 @@ class Advection:
 
     def _run_horizontal_advection(
         self,
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[wpfloat],
         p_tracer_new: fa.CellKField[wpfloat],
         rhodz_now: fa.CellKField[wpfloat],
@@ -440,7 +433,7 @@ class Advection:
     def _run_vertical_advection(
         self,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[wpfloat],
         p_tracer_new: fa.CellKField[wpfloat],
         rhodz_now: fa.CellKField[wpfloat],
@@ -486,7 +479,7 @@ class Advection:
 
     def _compute_horizontal_tracer_flux(
         self,
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[wpfloat],
         rhodz_now: fa.CellKField[wpfloat],
         p_mflx_tracer_h: fa.EdgeKField[wpfloat],
@@ -584,10 +577,7 @@ class Advection:
             )
 
         # apply flux limiter
-        if (
-            self.config.horizontal_advection_limiter
-            == HorizontalAdvectionLimiterType.POSITIVE_DEFINITE
-        ):
+        if self.config.horizontal_advection_limiter == HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
             # compute multiplicative flux factor to guarantee no undershoot
             log.debug(
                 "running stencil compute_positive_definite_horizontal_multiplicative_flux_factor - start"

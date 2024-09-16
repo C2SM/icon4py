@@ -21,31 +21,44 @@ class AdvectionDiagnosticState:
     #: mass of air in layer at physics time step now [kg/m^2]
     airmass_now: fa.CellKField[wpfloat]
 
-    #: mass of air in layer at physics time step new [kg/m^2] 
+    #: mass of air in layer at physics time step new [kg/m^2]
     airmass_new: fa.CellKField[wpfloat]
 
-    #: tracer tendency field for use in grid refinement [kg/kg/s] 
+    #: tracer tendency field for use in grid refinement [kg/kg/s]
     grf_tend_tracer: fa.CellKField[wpfloat]
 
-    # horizontal tracer flux at edges [kg/m/s] (nproma,nlev,nblks_e)
+    #: horizontal tracer flux at edges [kg/m/s]
     hfl_tracer: fa.EdgeKField[wpfloat]
 
-    # vertical tracer flux at cells [kg/m/s] (nproma,nlevp1,nblks_c)
-    # TODO (dastrm): should be KHalfDim
-    vfl_tracer: fa.CellKField[wpfloat]
+    #: vertical tracer flux at cells [kg/m/s]
+    vfl_tracer: fa.CellKField[wpfloat]  # TODO (dastrm): should be KHalfDim
+
+
+@dataclasses.dataclass(frozen=True)
+class AdvectionPrepAdvState:
+    """Represents the prepare advection state needed in advection."""
+
+    #: horizontal velocity at edges for computation of backward trajectories averaged over dynamics substeps [m/s]
+    vn_traj: fa.EdgeKField[wpfloat]
+
+    #: mass flux at full level edges averaged over dynamics substeps [kg/m^2/s]
+    mass_flx_me: fa.EdgeKField[wpfloat]
+
+    #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
+    mass_flx_ic: fa.CellKField[wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
 class AdvectionInterpolationState:
     """Represents the interpolation state needed in advection."""
 
-    #: factor for divergence 
+    #: factor for divergence
     geofac_div: gtx.Field[[dims.CEDim], wpfloat]
 
     #: coefficients used for rbf interpolation of the tangential velocity component
     rbf_vec_coeff_e: gtx.Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat]
 
-    #: x-components of positions of various points on local plane tangential to the edge midpoint 
+    #: x-components of positions of various points on local plane tangential to the edge midpoint
     pos_on_tplane_e_1: gtx.Field[[dims.ECDim], wpfloat]
 
     #: y-components of positions of various points on local plane tangential to the edge midpoint

@@ -25,15 +25,36 @@ from .utils import (
 )
 
 
+# note about ntracer: The first tracer is always dry air which is not advected. Thus, originally
+# ntracer=2 is the first tracer in transport_nml, ntracer=3 the second, and so on.
+# Here though, ntracer=1 corresponds to the first tracer in transport_nml.
+
+
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "date, even_timestep",
+    "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
     [
-        ("2021-06-20T12:00:10.000", False),
-        ("2021-06-20T12:00:20.000", True),
+        (
+            "2021-06-20T12:00:10.000",
+            False,
+            2,  # originally ihadv_tracer = 2, itype_hlimit = 3
+            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            advection.VerticalAdvectionType.NO_ADVECTION,
+            advection.VerticalAdvectionLimiter.NO_LIMITER,
+        ),
+        (
+            "2021-06-20T12:00:20.000",
+            True,
+            2,  # originally ihadv_tracer = 2, itype_hlimit = 3
+            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            advection.VerticalAdvectionType.NO_ADVECTION,
+            advection.VerticalAdvectionLimiter.NO_LIMITER,
+        ),
     ],
 )
-def test_advection_run_single_horizontal_step(
+def test_advection_run_single_step(
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -43,8 +64,18 @@ def test_advection_run_single_horizontal_step(
     data_provider,
     data_provider_advection,
     even_timestep,
+    ntracer,
+    horizontal_advection_type,
+    horizontal_advection_limiter,
+    vertical_advection_type,
+    vertical_advection_limiter,
 ):
-    config = construct_config()
+    config = construct_config(
+        horizontal_advection_type=horizontal_advection_type,
+        horizontal_advection_limiter=horizontal_advection_limiter,
+        vertical_advection_type=vertical_advection_type,
+        vertical_advection_limiter=vertical_advection_limiter,
+    )
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     least_squares_state = construct_least_squares_state(least_squares_savepoint)
     metric_state = construct_metric_state(icon_grid)
@@ -61,11 +92,6 @@ def test_advection_run_single_horizontal_step(
         cell_params=cell_geometry,
     )
     advection_granule.even_timestep = even_timestep
-
-    # note: The first tracer is always dry air which is not advected. Thus, originally
-    # ntracer=2 is the first tracer in transport_nml, ntracer=3 the second, and so on.
-    # Here though, ntracer=1 corresponds to the first tracer in transport_nml.
-    ntracer = 2  # originally ihadv_tracer = 2, itype_hlimit = 3
 
     diagnostic_state = construct_diagnostic_init_state(icon_grid, advection_init_savepoint, ntracer)
     prep_adv = construct_prep_adv(icon_grid, advection_init_savepoint)

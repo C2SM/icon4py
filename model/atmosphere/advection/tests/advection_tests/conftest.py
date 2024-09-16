@@ -39,12 +39,11 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
 def least_squares_savepoint(
     data_provider,  # noqa: F811 # imported fixtures data_provider
     data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection
-    jg=1,
 ):
     """
     Load data from least squares ICON savepoint.
     """
-    return data_provider_advection.from_least_squares_savepoint(size=data_provider.grid_size, jg=jg)
+    return data_provider_advection.from_least_squares_savepoint(size=data_provider.grid_size)
 
 
 @pytest.fixture
@@ -52,7 +51,6 @@ def advection_init_savepoint(
     data_provider,  # noqa: F811 # imported fixtures data_provider
     data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection
     date,
-    jg=1,
 ):
     """
     Load data from advection init ICON savepoint.
@@ -61,7 +59,7 @@ def advection_init_savepoint(
     fixture, passing 'date=<iso_string>'.
     """
     return data_provider_advection.from_advection_init_savepoint(
-        size=data_provider.grid_size, jg=jg, date=date
+        size=data_provider.grid_size, date=date
     )
 
 
@@ -70,7 +68,6 @@ def advection_exit_savepoint(
     data_provider,  # noqa: F811 # imported fixtures data_provider
     data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection
     date,
-    jg=1,
 ):
     """
     Load data from advection exit ICON savepoint.
@@ -79,5 +76,5 @@ def advection_exit_savepoint(
     fixture, passing 'date=<iso_string>'.
     """
     return data_provider_advection.from_advection_exit_savepoint(
-        size=data_provider.grid_size, jg=jg, date=date
+        size=data_provider.grid_size, date=date
     )

@@ -1875,20 +1875,16 @@ class IconSerialDataProvider:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
         return MetricSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_least_squares_savepoint(self, size: dict, jg: int) -> LeastSquaresSavepoint:
-        savepoint = self.serializer.savepoint["least_squares_state"].jg[jg].as_savepoint()
+    def from_least_squares_savepoint(self, size: dict) -> LeastSquaresSavepoint:
+        savepoint = self.serializer.savepoint["least_squares_state"].jg[1].as_savepoint()
         return LeastSquaresSavepoint(savepoint, self.serializer, size=size)
 
-    def from_advection_init_savepoint(
-        self, size: dict, jg: int, date: str
-    ) -> AdvectionInitSavepoint:
-        savepoint = self.serializer.savepoint["advection_init"].jg[jg].date[date].as_savepoint()
+    def from_advection_init_savepoint(self, size: dict, date: str) -> AdvectionInitSavepoint:
+        savepoint = self.serializer.savepoint["advection_init"].jg[1].date[date].as_savepoint()
         return AdvectionInitSavepoint(savepoint, self.serializer, size=size)
 
-    def from_advection_exit_savepoint(
-        self, size: dict, jg: int, date: str
-    ) -> AdvectionExitSavepoint:
-        savepoint = self.serializer.savepoint["advection_exit"].jg[jg].date[date].as_savepoint()
+    def from_advection_exit_savepoint(self, size: dict, date: str) -> AdvectionExitSavepoint:
+        savepoint = self.serializer.savepoint["advection_exit"].jg[1].date[date].as_savepoint()
         return AdvectionExitSavepoint(savepoint, self.serializer, size=size)
 
     def from_savepoint_diffusion_exit(self, linit: bool, date: str) -> IconDiffusionExitSavepoint:

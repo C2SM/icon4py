@@ -10,7 +10,6 @@ import logging
 
 
 from icon4py.model.atmosphere.advection import advection, advection_states
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
@@ -22,8 +21,18 @@ from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 log = logging.getLogger(__name__)
 
 
-def construct_config():
-    return advection.AdvectionConfig()
+def construct_config(
+    horizontal_advection_type: advection.HorizontalAdvectionType,
+    horizontal_advection_limiter: advection.HorizontalAdvectionLimiter,
+    vertical_advection_type: advection.VerticalAdvectionType,
+    vertical_advection_limiter: advection.VerticalAdvectionLimiter,
+) -> advection.AdvectionConfig:
+    return advection.AdvectionConfig(
+        horizontal_advection_type=horizontal_advection_type,
+        horizontal_advection_limiter=horizontal_advection_limiter,
+        vertical_advection_type=vertical_advection_type,
+        vertical_advection_limiter=vertical_advection_limiter,
+    )
 
 
 def construct_interpolation_state(
@@ -46,15 +55,11 @@ def construct_least_squares_state(
     )
 
 
-def construct_metric_state(
-    icon_grid, deepatmo: bool = False
-) -> advection_states.AdvectionMetricState:
-    if deepatmo:
-        raise NotImplementedError("Data for deep atmosphere runs has not been serialized yet.")
+def construct_metric_state(icon_grid) -> advection_states.AdvectionMetricState:
     return advection_states.AdvectionMetricState(
         deepatmo_divh=helpers.constant_field(icon_grid, 1.0, dims.KDim),
-        deepatmo_divzl=constant_field(icon_grid, 1.0, dims.KDim),
-        deepatmo_divzu=constant_field(icon_grid, 1.0, dims.KDim),
+        deepatmo_divzl=helpers.constant_field(icon_grid, 1.0, dims.KDim),
+        deepatmo_divzu=helpers.constant_field(icon_grid, 1.0, dims.KDim),
     )
 
 
@@ -94,14 +99,11 @@ def construct_diagnostic_exit_state(
 
 def construct_prep_adv(
     icon_grid, savepoint: sb.AdvectionInitSavepoint
-) -> solve_nh_states.PrepAdvection:
-    return solve_nh_states.PrepAdvection(
+) -> advection_states.AdvectionPrepAdvState:
+    return advection_states.AdvectionPrepAdvState(
         vn_traj=savepoint.vn_traj(),
         mass_flx_me=savepoint.mass_flx_me(),
         mass_flx_ic=savepoint.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=icon_grid
-        ),  # unused in advection
     )
 
 
@@ -111,7 +113,7 @@ def log_dbg(field, name=""):
 
 def log_serialized(
     diagnostic_state: advection_states.AdvectionDiagnosticState,
-    prep_adv: solve_nh_states.PrepAdvection,
+    prep_adv: advection_states.AdvectionPrepAdvState,
     p_tracer_now: fa.CellKField[wpfloat],
     dtime: wpfloat,
 ):
