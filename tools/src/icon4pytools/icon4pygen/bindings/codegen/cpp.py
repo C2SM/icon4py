@@ -23,7 +23,7 @@ from icon4pytools.icon4pygen.bindings.codegen.header import (
 )
 from icon4pytools.icon4pygen.bindings.codegen.render.offset import GpuTriMeshOffsetRenderer
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
-from icon4pytools.icon4pygen.bindings.utils import write_string
+from icon4pytools.common.utils import write_string
 
 
 class CppDefGenerator(TemplatedGenerator):

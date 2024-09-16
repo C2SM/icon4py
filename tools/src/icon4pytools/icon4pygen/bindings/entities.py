@@ -26,8 +26,7 @@ from icon4pytools.icon4pygen.bindings.locations import (
     Edge,
     Vertex,
 )
-from icon4pytools.icon4pygen.bindings.utils import calc_num_neighbors
-from icon4pytools.icon4pygen.metadata import FieldInfo
+from icon4pytools.common.metadata import FieldInfo, _calc_num_neighbors
 
 
 def chain_from_str(chain: list[str] | str) -> list[BasicLocation]:
@@ -51,7 +50,7 @@ class Offset(Node, OffsetEntity):
         return isinstance(self.source, CompoundLocation)
 
     def get_num_neighbors(self) -> int:
-        return calc_num_neighbors(self.target[1].to_dim_list(), self.includes_center)
+        return _calc_num_neighbors(self.target[1].to_dim_list(), self.includes_center)
 
     def _split_chain(self, chain: str) -> list:
         chain_ls = chain.split("2")
@@ -135,7 +134,7 @@ class Field(Node, FieldEntity):
                 "num nbh only defined for sparse or compound fields"
             )
         location = cast(ChainedLocation | CompoundLocation, self.location)
-        return calc_num_neighbors(location.to_dim_list(), self.includes_center)
+        return _calc_num_neighbors(location.to_dim_list(), self.includes_center)
 
     @staticmethod
     def _extract_field_type(field: past.DataSymbol) -> ts.ScalarKind:

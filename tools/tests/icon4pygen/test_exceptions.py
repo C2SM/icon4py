@@ -18,7 +18,7 @@ from icon4pytools.icon4pygen.bindings.exceptions import (
     BindingsTypeConsistencyException,
 )
 from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
-from icon4pytools.icon4pygen.metadata import get_stencil_info
+from icon4pytools.common.metadata import get_stencil_info
 
 
 def test_invalid_offset():

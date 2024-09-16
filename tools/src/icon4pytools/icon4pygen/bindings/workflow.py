@@ -13,7 +13,7 @@ from icon4pytools.icon4pygen.bindings.codegen.f90 import generate_f90_file
 from icon4pytools.icon4pygen.bindings.codegen.header import generate_cpp_header
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
 from icon4pytools.icon4pygen.bindings.utils import check_dir_exists
-from icon4pytools.icon4pygen.metadata import StencilInfo
+from icon4pytools.common.metadata import StencilInfo
 
 
 class PyBindGen:

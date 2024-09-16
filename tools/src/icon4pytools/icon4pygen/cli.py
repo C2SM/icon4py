@@ -85,7 +85,8 @@ def main(
     """
     from icon4pytools.icon4pygen.backend import GTHeader
     from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
-    from icon4pytools.icon4pygen.metadata import get_stencil_info, import_definition
+    from icon4pytools.common.metadata import get_stencil_info
+    from icon4pytools.icon4pygen.metadata import import_definition
 
     os.environ["FLOAT_PRECISION"] = "mixed" if enable_mixed_precision else "double"
     program = import_definition(fencil)
