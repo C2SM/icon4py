@@ -8,8 +8,8 @@
 
 import pytest
 
+from icon4pytools.common.metadata import _provide_offset
 from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
-from icon4pytools.icon4pygen.metadata import provide_offset
 
 
 # TODO (halungge) that test is in the wrong file: should go to test_metadata.py
@@ -37,7 +37,7 @@ from icon4pytools.icon4pygen.metadata import provide_offset
     ],
 )
 def test_chainsize_neighbors(chain, expected):
-    actual = provide_offset(chain)
+    actual = _provide_offset(chain)
     assert actual.max_neighbors == expected
 
 
@@ -46,4 +46,4 @@ def test_chainsize_neighbors(chain, expected):
 )
 def test_unsupported_connectivity_type():
     with pytest.raises(InvalidConnectivityException):
-        provide_offset("E2X")
+        _provide_offset("E2X")
