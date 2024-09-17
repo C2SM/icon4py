@@ -217,7 +217,7 @@ def test_py2fgen_compilation_and_profiling(
     )
 
 
-@pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
+@pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
 def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_path):
     run_test_case(
         cli_runner,
@@ -234,6 +234,7 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
     )
 
 
+@pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
 def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
     run_test_case(
         cli_runner,

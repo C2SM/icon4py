@@ -35,7 +35,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid import geometry
-from icon4py.model.common.grid.icon import GlobalGridParams
+from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -53,7 +53,7 @@ diffusion_granule: Diffusion = Diffusion()
 profiler = cProfile.Profile()
 
 # global grid object
-icon_grid = None
+icon_grid: IconGrid = None
 
 
 def profile_enable():
