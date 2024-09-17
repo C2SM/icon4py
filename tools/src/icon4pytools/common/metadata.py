@@ -6,7 +6,6 @@ from typing import Any, TypeGuard
 
 import icon4py.model.common.dimension
 from gt4py import eve
-from gt4py.next import Dimension
 from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
@@ -15,7 +14,7 @@ from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.common import dimension as dims
-from icon4pytools.icon4pygen.icochainsize import IcoChainSize
+from icon4pytools.common import icochainsize as ico
 
 H_START = "horizontal_start"
 H_END = "horizontal_end"
@@ -213,4 +212,4 @@ def get_stencil_info(
 
 
 def _calc_num_neighbors(dim_list: list[Dimension], includes_center: bool) -> int:
-    return IcoChainSize.get(dim_list) + int(includes_center)
+    return ico.IcoChainSize.get(dim_list) + int(includes_center)
