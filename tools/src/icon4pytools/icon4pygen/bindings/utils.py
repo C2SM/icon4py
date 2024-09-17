@@ -6,9 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import shutil
-import subprocess
-import sys
 from pathlib import Path
 
 from gt4py.next.common import Dimension
