@@ -64,15 +64,6 @@ if dace:
 
         dace_structure_dict = {}
 
-        # Define DaCe Symbols: Field Sizes and Strides
-        dace_symbols = {
-            stride_symbol_name_from_field(cls, member, stride): dace.symbol(
-                stride_symbol_name_from_field(cls, member, stride)
-            )
-            for member in cls.__dataclass_fields__.keys()
-            for stride in [0, 1]
-        }
-
         for member_name, dataclass_field in cls.__dataclass_fields__.items():
             if not hasattr(dataclass_field, "type"):
                 continue
@@ -98,6 +89,14 @@ if dace:
                     dace_dims.append(KDim_sym)
                 else:
                     raise ValueError(f"The dimension [{dim_}] is not supported.")
+
+            # Define DaCe Symbols: Field Sizes and Strides
+            dace_symbols = {
+                stride_symbol_name_from_field(cls, member_name, stride): dace.symbol(
+                    stride_symbol_name_from_field(cls, member_name, stride)
+                )
+                for stride in range(len(dims_))
+            }
 
             # TODO(kotsaloscv): how about StorageType (?)
             dace_structure_dict[member_name] = dace.data.Array(

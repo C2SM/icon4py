@@ -96,7 +96,7 @@ def orchestration(method=True):
                         grid = getattr(self, attr_name)
 
                 if not has_exchange or not has_grid:
-                    raise ValueError("No exchnage/grid object found.")
+                    raise ValueError("No exchange/grid object found.")
 
                 compile_time_args_kwargs = {}
                 all_args_kwargs = list(args) + list(kwargs.values())
@@ -497,7 +497,7 @@ if dace:
                 if k_v[0] is not dace_cls:
                     continue
                 for member in orig_cls.__dataclass_fields__.keys():
-                    for stride in [0, 1]:
+                    for stride in range(getattr(k_v[1], member).ndarray.ndim):
                         concretized_symbols[
                             orchestration_dtypes.stride_symbol_name_from_field(
                                 orig_cls, member, stride
