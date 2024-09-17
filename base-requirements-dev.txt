@@ -16,6 +16,7 @@ pytest-xdist[psutil]>=2.2
 pytest-mpi>=0.6
 ruff>=0.2.2
 setuptools>=40.8.0
+tach>=0.10.7
 tox >= 3.25
 typing-extensions>=4.6.0
 types-cffi>=1.15
