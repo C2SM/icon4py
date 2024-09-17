@@ -32,7 +32,6 @@ test_model_stencils_aarch64:
 
 benchmark_model_stencils:
   extends: .test_template
-.benchmark_model_stencils:
   stage: benchmark
   script:
     - pip install dace==$DACE_VERSION
