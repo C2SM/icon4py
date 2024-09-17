@@ -53,7 +53,6 @@ depends_on = []
 path = "icon4pytools.common"
 depends_on = [
     { path = "icon4py.model.common" },
-    { path = "icon4pytools.icon4pygen" },
 ]
 
 [[modules]]
@@ -66,6 +65,7 @@ depends_on = [
 path = "icon4pytools.icon4pygen"
 depends_on = [
     { path = "icon4py.model.common" },
+    { path = "icon4pytools.common" },
 ]
 
 [[modules]]
@@ -73,7 +73,6 @@ path = "icon4pytools.liskov"
 depends_on = [
     { path = "icon4pytools" },
     { path = "icon4pytools.common" },
-    { path = "icon4pytools.icon4pygen" },
 ]
 
 [[modules]]
