@@ -227,9 +227,9 @@ def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit):
 
 @pytest.fixture
 def savepoint_diffusion_init(
-    data_provider,  # noqa: F811 # imported fixtures data_provider
-    linit,  # noqa: F811 # imported fixtures linit
-    step_date_init,  # noqa: F811 # imported fixtures data_provider
+    data_provider,  # imported fixtures data_provider
+    linit,  # imported fixtures linit
+    step_date_init,  # imported fixtures data_provider
 ):
     """
     Load data from ICON savepoint at start of diffusion module.
@@ -244,9 +244,9 @@ def savepoint_diffusion_init(
 
 @pytest.fixture
 def savepoint_diffusion_exit(
-    data_provider,  # noqa: F811 # imported fixtures data_provider`
-    linit,  # noqa: F811 # imported fixtures linit`
-    step_date_exit,  # noqa: F811 # imported fixtures step_date_exit`
+    data_provider,  # imported fixtures data_provider`
+    linit,  # imported fixtures linit`
+    step_date_exit,  # imported fixtures step_date_exit`
 ):
     """
     Load data from ICON savepoint at exist of diffusion module.

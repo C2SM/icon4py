@@ -32,7 +32,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid import geometry
 from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
@@ -40,9 +40,10 @@ from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
+
 from icon4pytools.common.logger import setup_logger
-from icon4py.model.common import settings
 from icon4pytools.py2fgen.wrappers.common import construct_icon_grid
+
 
 logger = setup_logger(__name__)
 
@@ -205,7 +206,7 @@ def diffusion_init(
         edge_center_lat=edge_center_lat,
         edge_center_lon=edge_center_lon,
         primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y
+        primal_normal_y=primal_normal_y,
     )
 
     # Cell geometry
@@ -232,8 +233,7 @@ def diffusion_init(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         velocity_boundary_diffusion_denom=denom_diffu_v,
-        max_nudging_coeff=nudge_max_coeff
-        / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+        max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         shear_type=TurbulenceShearForcingType(itype_sher),
     )
 
@@ -289,6 +289,7 @@ def diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
     )
+
 
 def diffusion_run(
     w: Field[[dims.CellDim, dims.KHalfDim], float64],

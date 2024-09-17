@@ -6,14 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import pytest
-
 import gt4py.next as gtx
+import pytest
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType, TurbulenceShearForcingType
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-from icon4py.model.common.test_utils import helpers, datatest_utils as dt_utils
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.test_utils.datatest_utils import get_global_grid_params
+
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run, grid_init
 
 
@@ -38,7 +38,7 @@ def test_diffusion_wrapper_single_step(
     damping_height,
     ndyn_substeps,
     step_date_init,
-    step_date_exit
+    step_date_exit,
 ):
     # Hardcoded DiffusionConfig parameters
     diffusion_type = DiffusionType.SMAGORINSKY_4TH_ORDER
@@ -53,7 +53,9 @@ def test_diffusion_wrapper_single_step(
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
-    nudge_max_coeff = 0.075 * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO  # this is done in ICON, so we replicate it here
+    nudge_max_coeff = (
+        0.075 * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+    )  # this is done in ICON, so we replicate it here
     itype_sher = TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
     nflat_gradp = 27
 
@@ -228,7 +230,7 @@ def test_diffusion_wrapper_single_step(
         edge_center_lat=edge_center_lat,
         edge_center_lon=edge_center_lon,
         primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y
+        primal_normal_y=primal_normal_y,
     )
 
     # Call diffusion_run
