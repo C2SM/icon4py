@@ -11,7 +11,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from icon4py.model.common import dimension as dims
 
-from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
+from icon4pytools.common.metadata import _get_field_infos, _provide_neighbor_table
 
 
 chain_false_skipvalues = [
@@ -43,7 +43,7 @@ chain_true_skipvalues = [
 )
 def test_provide_neighbor_table_local(chain):
     expected = False
-    actual = provide_neighbor_table(chain, is_global=False)
+    actual = _provide_neighbor_table(chain, is_global=False)
     assert actual.has_skip_values == expected
 
 
@@ -53,7 +53,7 @@ def test_provide_neighbor_table_local(chain):
 )
 def test_provide_neighbor_table_global_false_skipvalues(chain):
     expected = False
-    actual = provide_neighbor_table(chain, is_global=True)
+    actual = _provide_neighbor_table(chain, is_global=True)
     assert actual.has_skip_values == expected
 
 
@@ -63,7 +63,7 @@ def test_provide_neighbor_table_global_false_skipvalues(chain):
 )
 def test_provide_neighbor_table_global_true_skipvalues(chain):
     expected = True
-    actual = provide_neighbor_table(chain, is_global=True)
+    actual = _provide_neighbor_table(chain, is_global=True)
     assert actual.has_skip_values == expected
 
 
