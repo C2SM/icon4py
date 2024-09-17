@@ -40,8 +40,14 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
     grid_savepoint,
 )
 
+
 @pytest.fixture
 def cli():
     yield CliRunner()
     os.environ["FLOAT_PRECISION"] = type_alias.DEFAULT_PRECISION
     reload(type_alias)
+
+
+@pytest.fixture
+def test_temp_dir():
+    return os.getenv('CI_PROJECT_PATH', None)
