@@ -16,7 +16,6 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 def compute_vwind_impl_wgt(
-    backend,
     icon_grid: grid.BaseGrid,
     vct_a: fa.KField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
@@ -28,24 +27,17 @@ def compute_vwind_impl_wgt(
     vwind_offctr: float,
     horizontal_start_cell: int,
 ) -> np.ndarray:
-    backend = None
     init_val = 0.65 if experiment == global_exp else 0.7
     vwind_impl_wgt_full = np.full(z_ifc.shape[0], 0.5 + vwind_offctr)
     vwind_impl_wgt_k = np.full(z_ifc.shape, init_val)
 
     z_ddxn_z_half_e = gtx.as_field(
-        [
-            dims.EdgeDim,
-        ],
-        z_ddxn_z_half_e[:, icon_grid.num_levels],
+        [dims.EdgeDim], z_ddxn_z_half_e[:, icon_grid.num_levels],
     )
     z_ddxt_z_half_e = gtx.as_field(
-        [
-            dims.EdgeDim,
-        ],
-        z_ddxt_z_half_e[:, icon_grid.num_levels],
+        [dims.EdgeDim], z_ddxt_z_half_e[:, icon_grid.num_levels],
     )
-    compute_vwind_impl_wgt_partial.with_backend(backend)(
+    compute_vwind_impl_wgt_partial(
         z_ddxn_z_half_e=z_ddxn_z_half_e,
         z_ddxt_z_half_e=z_ddxt_z_half_e,
         dual_edge_length=gtx.as_field([dims.EdgeDim], dual_edge_length),
