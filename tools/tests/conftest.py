@@ -19,3 +19,8 @@ def cli():
     yield CliRunner()
     os.environ["FLOAT_PRECISION"] = type_alias.DEFAULT_PRECISION
     reload(type_alias)
+
+
+@pytest.fixture
+def test_temp_dir():
+    return os.getenv('TEST_TEMP_DIR', None)
