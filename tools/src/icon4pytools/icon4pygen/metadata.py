@@ -5,8 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import types
 import importlib
+import types
 from typing import Optional
 
 from gt4py import eve

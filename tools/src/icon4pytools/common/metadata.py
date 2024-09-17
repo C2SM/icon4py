@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from __future__ import annotations
 
 import types
@@ -14,7 +22,9 @@ from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.common import dimension as dims
+
 from icon4pytools.common import icochainsize as ico
+
 
 H_START = "horizontal_start"
 H_END = "horizontal_end"
@@ -80,8 +90,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     assert all(
         _is_list_of_names(body.args) for body in fvprog.past_stage.past_node.body
     ), "Found unsupported expression in input arguments."
-    input_arg_ids = set(arg.id for body in fvprog.past_stage.past_node.body for arg in
-                        body.args)  # type: ignore[attr-defined] # Checked in the assert
+    input_arg_ids = set(arg.id for body in fvprog.past_stage.past_node.body for arg in body.args)  # type: ignore[attr-defined] # Checked in the assert
 
     out_args = (body.kwargs["out"] for body in fvprog.past_stage.past_node.body)
     output_fields = []
@@ -143,8 +152,7 @@ def _provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     map_to_dim = {
         d: list(dims.global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)
     }
-    location_chain: list[Dimension] = [map_to_dim.get(c) for c in chain if
-                                       c not in ("2", "O")]  # type: ignore[misc] # type specified
+    location_chain: list[Dimension] = [map_to_dim.get(c) for c in chain if c not in ("2", "O")]  # type: ignore[misc] # type specified
 
     return DummyConnectivity(
         max_neighbors=_calc_num_neighbors(location_chain, include_center),

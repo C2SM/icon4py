@@ -83,9 +83,9 @@ def main(
         LEVELS_PER_THREAD: how many k-levels to process per thread.
         OUTPATH: represents a path to the folder in which to write all generated code.
     """
+    from icon4pytools.common.metadata import get_stencil_info
     from icon4pytools.icon4pygen.backend import GTHeader
     from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
-    from icon4pytools.common.metadata import get_stencil_info
     from icon4pytools.icon4pygen.metadata import import_definition
 
     os.environ["FLOAT_PRECISION"] = "mixed" if enable_mixed_precision else "double"

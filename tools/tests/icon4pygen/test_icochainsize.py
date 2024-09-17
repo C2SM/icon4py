@@ -8,8 +8,8 @@
 
 import pytest
 
-from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
 from icon4pytools.common.metadata import _provide_offset
+from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
 
 
 # TODO (halungge) that test is in the wrong file: should go to test_metadata.py
