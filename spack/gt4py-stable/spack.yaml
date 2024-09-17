@@ -1,10 +1,10 @@
 spack:
     specs:
-        - py-icon4py@main%gcc ^py-gt4py@1.0.3.8%gcc
+        - py-icon4py@main%gcc ^py-gt4py@1.0.3.9%gcc
     view: false
     concretizer:
         unify: true
     develop:
         py-icon4py:
-            spec: py-icon4py@main%gcc ^py-gt4py@1.0.3.8%gcc
+            spec: py-icon4py@main%gcc ^py-gt4py@1.0.3.9%gcc
             path: ../../
