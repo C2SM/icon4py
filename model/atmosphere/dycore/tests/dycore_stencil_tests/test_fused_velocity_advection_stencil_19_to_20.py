@@ -13,16 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_19_to_20 import (
     fused_velocity_advection_stencil_19_to_20,
 )
-from icon4py.model.common.dimension import (
-    CellDim,
-    E2C2EODim,
-    E2CDim,
-    ECDim,
-    EdgeDim,
-    KDim,
-    V2EDim,
-    VertexDim,
-)
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
@@ -122,29 +113,29 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
 
-        z_kin_hor_e = random_field(grid, EdgeDim, KDim)
-        coeff_gradekin = random_field(grid, EdgeDim, E2CDim)
-        coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)
-        z_ekinh = random_field(grid, CellDim, KDim)
-        vt = random_field(grid, EdgeDim, KDim)
-        f_e = random_field(grid, EdgeDim)
-        c_lin_e = random_field(grid, EdgeDim, E2CDim)
-        z_w_con_c_full = random_field(grid, CellDim, KDim)
-        vn_ie = random_field(grid, EdgeDim, KDim, extend={KDim: 1})
-        ddqz_z_full_e = random_field(grid, EdgeDim, KDim)
-        ddt_vn_apc = zero_field(grid, EdgeDim, KDim)
-        levelmask = random_mask(grid, KDim, extend={KDim: 1})
-        area_edge = random_field(grid, EdgeDim)
-        tangent_orientation = random_field(grid, EdgeDim)
-        inv_primal_edge_length = random_field(grid, EdgeDim)
-        geofac_grdiv = random_field(grid, EdgeDim, E2C2EODim)
-        vn = random_field(grid, EdgeDim, KDim)
-        geofac_rot = random_field(grid, VertexDim, V2EDim)
+        z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        coeff_gradekin = random_field(grid, dims.EdgeDim, dims.E2CDim)
+        coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, dims.ECDim)
+        z_ekinh = random_field(grid, dims.CellDim, dims.KDim)
+        vt = random_field(grid, dims.EdgeDim, dims.KDim)
+        f_e = random_field(grid, dims.EdgeDim)
+        c_lin_e = random_field(grid, dims.EdgeDim, dims.E2CDim)
+        z_w_con_c_full = random_field(grid, dims.CellDim, dims.KDim)
+        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        ddqz_z_full_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        ddt_vn_apc = zero_field(grid, dims.EdgeDim, dims.KDim)
+        levelmask = random_mask(grid, dims.KDim, extend={dims.KDim: 1})
+        area_edge = random_field(grid, dims.EdgeDim)
+        tangent_orientation = random_field(grid, dims.EdgeDim)
+        inv_primal_edge_length = random_field(grid, dims.EdgeDim)
+        geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim)
+        geofac_rot = random_field(grid, dims.VertexDim, dims.V2EDim)
         cfl_w_limit = 4.0
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        k = zero_field(grid, KDim, dtype=int32)
+        k = zero_field(grid, dims.KDim, dtype=int32)
         nlev = grid.num_levels
 
         for level in range(nlev):

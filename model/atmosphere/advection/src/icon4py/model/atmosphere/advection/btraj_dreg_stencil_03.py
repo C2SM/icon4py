@@ -10,16 +10,16 @@ from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2EC, ECDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2EC
 
 
 @field_operator
 def _btraj_dreg_stencil_03(
     p_vn: fa.EdgeKField[float],
     p_vt: fa.EdgeKField[float],
-    cell_idx: Field[[ECDim], int32],
-    cell_blk: Field[[ECDim], int32],
+    cell_idx: Field[[dims.ECDim], int32],
+    cell_blk: Field[[dims.ECDim], int32],
     edge_verts_1_x: fa.EdgeField[float],
     edge_verts_2_x: fa.EdgeField[float],
     edge_verts_1_y: fa.EdgeField[float],
@@ -28,10 +28,10 @@ def _btraj_dreg_stencil_03(
     pos_on_tplane_e_2_x: fa.EdgeField[float],
     pos_on_tplane_e_1_y: fa.EdgeField[float],
     pos_on_tplane_e_2_y: fa.EdgeField[float],
-    primal_normal_cell_x: Field[[ECDim], float],
-    primal_normal_cell_y: Field[[ECDim], float],
-    dual_normal_cell_x: Field[[ECDim], float],
-    dual_normal_cell_y: Field[[ECDim], float],
+    primal_normal_cell_x: Field[[dims.ECDim], float],
+    primal_normal_cell_y: Field[[dims.ECDim], float],
+    dual_normal_cell_x: Field[[dims.ECDim], float],
+    dual_normal_cell_y: Field[[dims.ECDim], float],
     lvn_sys_pos: fa.EdgeKField[bool],
     p_dt: float,
 ) -> tuple[
@@ -129,8 +129,8 @@ def _btraj_dreg_stencil_03(
 def btraj_dreg_stencil_03(
     p_vn: fa.EdgeKField[float],
     p_vt: fa.EdgeKField[float],
-    cell_idx: Field[[ECDim], int32],
-    cell_blk: Field[[ECDim], int32],
+    cell_idx: Field[[dims.ECDim], int32],
+    cell_blk: Field[[dims.ECDim], int32],
     edge_verts_1_x: fa.EdgeField[float],
     edge_verts_2_x: fa.EdgeField[float],
     edge_verts_1_y: fa.EdgeField[float],
@@ -139,10 +139,10 @@ def btraj_dreg_stencil_03(
     pos_on_tplane_e_2_x: fa.EdgeField[float],
     pos_on_tplane_e_1_y: fa.EdgeField[float],
     pos_on_tplane_e_2_y: fa.EdgeField[float],
-    primal_normal_cell_x: Field[[ECDim], float],
-    primal_normal_cell_y: Field[[ECDim], float],
-    dual_normal_cell_x: Field[[ECDim], float],
-    dual_normal_cell_y: Field[[ECDim], float],
+    primal_normal_cell_x: Field[[dims.ECDim], float],
+    primal_normal_cell_y: Field[[dims.ECDim], float],
+    dual_normal_cell_x: Field[[dims.ECDim], float],
+    dual_normal_cell_y: Field[[dims.ECDim], float],
     lvn_sys_pos: fa.EdgeKField[bool],
     p_dt: float,
     p_cell_idx: fa.EdgeKField[int32],

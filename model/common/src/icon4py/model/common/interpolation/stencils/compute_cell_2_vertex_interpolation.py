@@ -11,23 +11,29 @@ from gt4py.next import neighbor_sum
 
 import icon4py.model.common.settings as settings
 import icon4py.model.common.type_alias as types
-from icon4py.model.common.dimension import V2C, CellDim, KDim, V2CDim, VertexDim
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import V2C, V2CDim
+
+
+# TODO: this will have to be removed once domain allows for imports
+VertexDim = dims.VertexDim
+KDim = dims.KDim
 
 
 @gtx.field_operator
 def _compute_cell_2_vertex_interpolation(
-    cell_in: gtx.Field[[CellDim, KDim], types.wpfloat],
-    c_int: gtx.Field[[VertexDim, V2CDim], types.wpfloat],
-) -> gtx.Field[[VertexDim, KDim], types.wpfloat]:
+    cell_in: gtx.Field[[dims.CellDim, dims.KDim], types.wpfloat],
+    c_int: gtx.Field[[dims.VertexDim, V2CDim], types.wpfloat],
+) -> gtx.Field[[dims.VertexDim, dims.KDim], types.wpfloat]:
     vert_out = neighbor_sum(c_int * cell_in(V2C), axis=V2CDim)
     return vert_out
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=settings.backend)
 def compute_cell_2_vertex_interpolation(
-    cell_in: gtx.Field[[CellDim, KDim], types.wpfloat],
-    c_int: gtx.Field[[VertexDim, V2CDim], types.wpfloat],
-    vert_out: gtx.Field[[VertexDim, KDim], types.wpfloat],
+    cell_in: gtx.Field[[dims.CellDim, dims.KDim], types.wpfloat],
+    c_int: gtx.Field[[dims.VertexDim, V2CDim], types.wpfloat],
+    vert_out: gtx.Field[[dims.VertexDim, dims.KDim], types.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

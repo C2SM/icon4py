@@ -11,7 +11,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02c import face_val_ppm_stencil_02c
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
@@ -36,8 +36,8 @@ class TestFaceValPpmStencil02c(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_cc = random_field(grid, CellDim, KDim)
-        p_face = random_field(grid, CellDim, KDim)
+        p_cc = random_field(grid, dims.CellDim, dims.KDim)
+        p_face = random_field(grid, dims.CellDim, dims.KDim)
         return dict(
             p_cc=p_cc,
             p_face=p_face,

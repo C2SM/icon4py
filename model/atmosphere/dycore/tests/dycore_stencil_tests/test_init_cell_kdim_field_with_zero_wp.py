@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
@@ -29,7 +29,7 @@ class TestInitCellKdimFieldWithZeroWp(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        field_with_zero_wp = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        field_with_zero_wp = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             field_with_zero_wp=field_with_zero_wp,

@@ -6,10 +6,21 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common import constants as phy_const
-from icon4py.model.common.dimension import EdgeDim
+import gt4py.next as gtx
+
+from icon4py.model.common import (
+    constants as phy_const,
+    dimension as dims,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.settings import xp
+from icon4py.model.common.settings import backend, xp
+
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
 
 
 def hydrostatic_adjustment_numpy(
@@ -122,7 +133,7 @@ def zonalwind_2_normalwind_numpy(
 
     mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
-        0 : grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1),
+        0 : grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         :,
     ] = False
     edge_lat = xp.repeat(xp.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
@@ -149,3 +160,47 @@ def zonalwind_2_normalwind_numpy(
     vn = u * primal_normal_x
 
     return vn
+
+
+# TODO (Chia Rui): Can this kind of simple arithmetic operation be replaced by a more general stencil that does the same operation on a general field?
+@gtx.field_operator
+def _compute_perturbed_exner(
+    exner: fa.CellKField[ta.wpfloat],
+    exner_ref: fa.CellKField[ta.vpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the perturbed exner function (exner_pr).
+        exner_pr = exner - exner_ref
+    This stencil is copied from subroutine compute_exner_pert in mo_nh_init_utils in ICON. It should be called
+    during the initialization to initialize exner_pr of DiagnosticStateHydro if the model does not restart from
+    a restart file.
+
+    Args:
+        exner: exner function
+        exner_ref: reference exner function
+    Returns:
+        Perturbed exner function
+    """
+    exner_pr = exner - exner_ref
+    return exner_pr
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+def compute_perturbed_exner(
+    exner: fa.CellKField[ta.wpfloat],
+    exner_ref: fa.CellKField[ta.vpfloat],
+    exner_pr: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _compute_perturbed_exner(
+        exner,
+        exner_ref,
+        out=exner_pr,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

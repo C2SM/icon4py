@@ -11,8 +11,7 @@ from dataclasses import dataclass
 from gt4py.next import as_field
 from gt4py.next.common import Field
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2C2EDim, CellDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
 @dataclass
@@ -23,24 +22,28 @@ class DiagnosticState:
     Corresponds to ICON t_nh_diag
     """
 
-    pressure: fa.CellKField[float]
-    # pressure at half levels
-    pressure_ifc: fa.CellKField[float]
-    temperature: fa.CellKField[float]
-    # zonal wind speed
-    u: fa.CellKField[float]
-    # meridional wind speed
-    v: fa.CellKField[float]
+    #: air pressure [Pa] at cell center and full levels, originally defined as pres in ICON
+    pressure: fa.CellKField[ta.wpfloat]
+    #: air pressure [Pa] at cell center and half levels, originally defined as pres_ifc and pres_sfc for surface pressure in ICON.
+    pressure_ifc: fa.CellKField[ta.wpfloat]
+    #: air temperature [K] at cell center, originally defined as temp in ICON
+    temperature: fa.CellKField[ta.wpfloat]
+    #: air virtual temperature [K] at cell center, originally defined as tempv in ICON
+    virtual_temperature: fa.CellKField[ta.wpfloat]
+    #: zonal wind speed [m/s] at cell center
+    u: fa.CellKField[ta.wpfloat]
+    #: meridional wind speed [m/s] at cell center
+    v: fa.CellKField[ta.wpfloat]
 
     @property
-    def pressure_sfc(self) -> fa.CellField[float]:
-        return as_field((CellDim,), self.pressure_ifc.ndarray[:, -1])
+    def surface_pressure(self) -> fa.CellField[ta.wpfloat]:
+        return as_field((dims.CellDim,), self.pressure_ifc.ndarray[:, -1])
 
 
 @dataclass
 class DiagnosticMetricState:
     """Class that contains the diagnostic metric state for computing the diagnostic state."""
 
-    ddqz_z_full: fa.CellKField[float]
-    rbf_vec_coeff_c1: Field[[CellDim, C2E2C2EDim], float]
-    rbf_vec_coeff_c2: Field[[CellDim, C2E2C2EDim], float]
+    ddqz_z_full: fa.CellKField[ta.wpfloat]
+    rbf_vec_coeff_c1: Field[[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
+    rbf_vec_coeff_c2: Field[[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
