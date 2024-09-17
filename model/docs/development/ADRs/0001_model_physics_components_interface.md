@@ -4,10 +4,10 @@ tags: [physics components, tendencies, model state]
 
 # Physics components interface: return values
 
-- **Status**: valid ~~| superseded | deprecated~~
+- **Status**: valid
 - **Authors**: Magdalena Luz (@halungge), Ong Chia Rui (@ongchia)
 - **Created**: 2024-07-23
-- **Updated**: YYYY-MM-DD
+- **Updated**: 2024-09-11
 
 In the context of a modular python driven model, facing the question of standardizing components interfaces
 we decided for physics modules always returning *tendencies* and 
@@ -17,16 +17,16 @@ with the coupling of components.
 ## Context
 We aim at making `icon4py` a flexible model code which endorses modularity and extensibility, and makes it
 easy for future users and developers to add new components and replace existing ones. This includes the 
-possibility of experimenting with the coupling of different physics components, revising 
-the order in which they are run and whether or not there result should be applied to the model state.
+possibility of experimenting with the coupling of different physics components, revisiting 
+the order in which they are run and whether or not their result should be applied to the model state.
 
-In the original [ICON code](https://gitlab.dkrz.de/icon/icon-model) physics components may do both: compute tendencies and as well as
-update the model state (update diagnostic and prognostic variables directly). More precisely, there are physcis
+In the original [ICON code](https://gitlab.dkrz.de/icon/icon-model) physics components may do both: compute tendencies as well as
+update the model state (update diagnostic and prognostic variables directly). More precisely, physics
 processes are split in fast physics (runs every timestep) and slow physics (runs every n-th timestep, n > 1). Fast physics update model state directly
 while slow physics return tendendencies. The distinction is somewhat arbitrary and probably largely dictated by
 computational efficiency of a component. 
 
-We believe that this distinction is intransparent, makes the code inflexible and the individual components and their application order tightly coupled.
+We believe that this distinction is not really transparent, makes the code inflexible and the individual components and their application order tightly coupled.
 
 We want to provide a cleaner and more transparent structure that treats all physics components in the same way and allows
 the user to decide which update should be applied to the model state prior to the next dynamics step.
