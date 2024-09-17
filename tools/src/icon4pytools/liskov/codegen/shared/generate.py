@@ -12,7 +12,7 @@ from typing import Any, Optional, Sequence, Type
 import gt4py.eve as eve
 from gt4py.eve.codegen import TemplatedGenerator
 
-from icon4pytools.icon4pygen.bindings.utils import format_fortran_code
+from icon4pytools.common.utils import format_fortran_code
 from icon4pytools.liskov.codegen.integration.template import InsertStatement
 from icon4pytools.liskov.codegen.shared.types import CodeGenInput, GeneratedCode
 from icon4pytools.liskov.pipeline.definition import Step
