@@ -10,31 +10,23 @@ import dataclasses
 import enum
 import logging
 
-import gt4py.next as gtx
-
 from icon4py.model.atmosphere.advection import advection_states
 from icon4py.model.atmosphere.advection.stencils import (
-    compute_positive_definite_horizontal_multiplicative_flux_factor,
-    apply_positive_definite_horizontal_multiplicative_flux_factor,
-    integrate_tracer_horizontally,
-    compute_barycentric_backtrajectory,
-    compute_edge_tangential,
-    reconstruct_linear_coefficients_svd,
-    apply_vertical_density_increment,
     apply_horizontal_density_increment,
     apply_interpolated_tracer_time_tendency,
-    compute_horizontal_tracer_flux_from_linear_coefficients,
+    apply_positive_definite_horizontal_multiplicative_flux_factor,
+    apply_vertical_density_increment,
+    compute_barycentric_backtrajectory_alt,
+    compute_edge_tangential,
+    compute_horizontal_tracer_flux_from_linear_coefficients_alt,
+    compute_positive_definite_horizontal_multiplicative_flux_factor,
     copy_cell_kdim_field,
+    integrate_tracer_horizontally,
+    reconstruct_linear_coefficients_svd,
 )
 from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
-from icon4py.model.common.settings import xp
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    constant_field,
-    numpy_to_1D_sparse_field,
-)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -190,21 +182,6 @@ class Advection:
 
         # backtrajectory fields
         self.z_real_vt = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
-        self.cell_idx = numpy_to_1D_sparse_field(
-            xp.asarray(self.grid.connectivities[dims.E2CDim], dtype=gtx.int32), dims.ECDim
-        )
-        self.cell_blk = as_1D_sparse_field(
-            constant_field(self.grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32), dims.ECDim
-        )
-        self.p_cell_idx = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=gtx.int32
-        )
-        self.p_cell_rel_idx = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=gtx.int32
-        )
-        self.p_cell_blk = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=gtx.int32
-        )
         self.p_distv_bary_1 = field_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
         )
@@ -507,21 +484,16 @@ class Advection:
         log.debug("running stencil compute_edge_tangential - end")
 
         # backtrajectory calculation
-        log.debug("running stencil compute_barycentric_backtrajectory - start")
-        compute_barycentric_backtrajectory.compute_barycentric_backtrajectory(
+        log.debug("running stencil compute_barycentric_backtrajectory_alt - start")
+        compute_barycentric_backtrajectory_alt.compute_barycentric_backtrajectory_alt(
             p_vn=prep_adv.vn_traj,
             p_vt=self.z_real_vt,
-            cell_idx=self.cell_idx,
-            cell_blk=self.cell_blk,
             pos_on_tplane_e_1=self.interpolation_state.pos_on_tplane_e_1,
             pos_on_tplane_e_2=self.interpolation_state.pos_on_tplane_e_2,
             primal_normal_cell_1=self.edge_params.primal_normal_cell[0],
             dual_normal_cell_1=self.edge_params.dual_normal_cell[0],
             primal_normal_cell_2=self.edge_params.primal_normal_cell[1],
             dual_normal_cell_2=self.edge_params.dual_normal_cell[1],
-            p_cell_idx=self.p_cell_idx,
-            p_cell_rel_idx_dsl=self.p_cell_rel_idx,
-            p_cell_blk=self.p_cell_blk,
             p_distv_bary_1=self.p_distv_bary_1,
             p_distv_bary_2=self.p_distv_bary_2,
             p_dthalf=wpfloat(0.5) * dtime,
@@ -531,7 +503,7 @@ class Advection:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
-        log.debug("running stencil compute_barycentric_backtrajectory - end")
+        log.debug("running stencil compute_barycentric_backtrajectory_alt - end")
 
         ## tracer-specific part
 
@@ -555,16 +527,16 @@ class Advection:
 
             # compute reconstructed tracer value at each barycenter and corresponding flux at each edge
             log.debug(
-                "running stencil compute_horizontal_tracer_flux_from_linear_coefficients - start"
+                "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - start"
             )
-            compute_horizontal_tracer_flux_from_linear_coefficients.compute_horizontal_tracer_flux_from_linear_coefficients(
+            compute_horizontal_tracer_flux_from_linear_coefficients_alt.compute_horizontal_tracer_flux_from_linear_coefficients_alt(
                 z_lsq_coeff_1=self.p_coeff_1,
                 z_lsq_coeff_2=self.p_coeff_2,
                 z_lsq_coeff_3=self.p_coeff_3,
                 distv_bary_1=self.p_distv_bary_1,
                 distv_bary_2=self.p_distv_bary_2,
                 p_mass_flx_e=prep_adv.mass_flx_me,
-                cell_rel_idx_dsl=self.p_cell_rel_idx,
+                p_vn=prep_adv.vn_traj,
                 p_out_e=p_mflx_tracer_h,
                 horizontal_start=self.start_edge_lateral_boundary_level_5,
                 horizontal_end=self.end_edge_halo,
@@ -573,7 +545,7 @@ class Advection:
                 offset_provider=self.grid.offset_providers,
             )
             log.debug(
-                "running stencil compute_horizontal_tracer_flux_from_linear_coefficients - end"
+                "running stencil compute_horizontal_tracer_flux_from_linear_coefficients_alt - end"
             )
 
         # apply flux limiter
