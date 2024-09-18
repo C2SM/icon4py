@@ -12,6 +12,7 @@ from typing import Any, Sequence
 from gt4py import eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, Node, TemplatedGenerator, format_source
 
+from icon4pytools.common.utils import write_string
 from icon4pytools.icon4pygen.bindings.codegen.header import (
     CppFreeFunc,
     CppRunAndVerifyFuncDeclaration,
@@ -23,7 +24,6 @@ from icon4pytools.icon4pygen.bindings.codegen.header import (
 )
 from icon4pytools.icon4pygen.bindings.codegen.render.offset import GpuTriMeshOffsetRenderer
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
-from icon4pytools.icon4pygen.bindings.utils import write_string
 
 
 class CppDefGenerator(TemplatedGenerator):

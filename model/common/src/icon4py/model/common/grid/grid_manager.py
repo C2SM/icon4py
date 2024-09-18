@@ -14,7 +14,7 @@ from typing import Optional, Protocol, Union
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
 )
@@ -293,7 +293,7 @@ class GridFile:
             msg = f"{name} does not exist in dataset"
             _log.warning(msg)
             _log.debug(f"Error: {err}")
-            raise IconGridError(msg) from err
+            raise exceptions.IconGridError(msg) from err
 
     def close(self):
         self._dataset.close()
