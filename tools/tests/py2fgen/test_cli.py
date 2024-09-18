@@ -183,7 +183,7 @@ def test_py2fgen_compilation_and_execution_gpu(
     samples_path,
     square_wrapper_module,
     extra_flags,
-    test_temp_dir
+    test_temp_dir,
 ):
     run_test_case(
         cli_runner,

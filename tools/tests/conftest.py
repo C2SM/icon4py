@@ -23,4 +23,4 @@ def cli():
 
 @pytest.fixture
 def test_temp_dir():
-    return os.getenv('TEST_TEMP_DIR', None)
+    return os.getenv("TEST_TEMP_DIR", None)
