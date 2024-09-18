@@ -228,7 +228,7 @@ class CellParams:
             # is constant.
             mean_cell_area = area.asnumpy().mean()
         else:
-            mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
+            mean_cell_area = compute_mean_cell_area_for_sphere(constants.EARTH_RADIUS, global_num_cells)
         return cls(
             cell_center_lat=cell_center_lat,
             cell_center_lon=cell_center_lon,
@@ -245,17 +245,18 @@ class CellParams:
     def mean_cell_area(self):
         return self.mean_cell_area
 
-    @staticmethod
-    def _compute_mean_cell_area(radius, num_cells):
-        """
-        Compute the mean cell area.
+def compute_mean_cell_area_for_sphere(radius, num_cells):
+    """
+    Compute the mean cell area.
 
-        Computes the mean cell area by dividing the sphere by the number of cells in the
-        global grid.
+    Computes the mean cell area by dividing the sphere by the number of cells in the
+    global grid.
 
-        Args:
-            radius: average earth radius, might be rescaled by a scaling parameter
-            num_cells: number of cells on the global grid
-        Returns: mean area of one cell [m^2]
-        """
-        return 4.0 * math.pi * radius**2 / num_cells
+    Args:
+        radius: average earth radius, might be rescaled by a scaling parameter
+        num_cells: number of cells on the global grid
+    Returns: mean area of one cell [m^2]
+    """
+    return 4.0 * math.pi * radius**2 / num_cells
+
+
