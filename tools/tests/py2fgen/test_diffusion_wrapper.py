@@ -57,7 +57,7 @@ def test_diffusion_wrapper_single_step(
         0.075 * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
     )  # this is done in ICON, so we replicate it here
     itype_sher = TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
-    nflat_gradp = 27
+    nflat_gradp = grid_savepoint.nflat_gradp()
 
     # global grid parameters
     global_root, global_level = get_global_grid_params(experiment)
