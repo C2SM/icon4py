@@ -17,19 +17,14 @@ def compute_flat_idx_max(
     horizontal_lower: int,
     horizontal_upper: int,
 ) -> np.array:
-    z_ifc_e_0 = z_ifc[e2c[horizontal_lower:horizontal_upper, 0]]
-    z_ifc_e_k_0 = z_ifc_e_0[:, 1:]
-    z_ifc_e_1 = z_ifc[e2c[horizontal_lower:horizontal_upper, 1]]
-    z_ifc_e_k_1 = z_ifc_e_1[:, 1:]
-    zero_f = np.zeros_like(z_ifc_e_k_0)
-    k_lev_new = np.repeat(k_lev[:65], z_ifc_e_k_0.shape[0]).reshape(z_ifc_e_k_0.shape)
-    flat_idx = np.where(
-        (z_me[horizontal_lower:horizontal_upper, :65] <= z_ifc_e_0[:, :65])
-        & (z_me[horizontal_lower:horizontal_upper, :65] >= z_ifc_e_k_0[:, :65])
-        & (z_me[horizontal_lower:horizontal_upper, :65] <= z_ifc_e_1[:, :65])
-        & (z_me[horizontal_lower:horizontal_upper, :65] >= z_ifc_e_k_1[:, :65]),
-        k_lev_new,
-        zero_f,
-    )
+    z_ifc_e_0 = z_ifc[e2c[:, 0]]
+    z_ifc_e_k_0 = np.roll(z_ifc_e_0, -1, axis=1)
+    z_ifc_e_1 = z_ifc[e2c[:, 1]]
+    z_ifc_e_k_1 = np.roll(z_ifc_e_1, -1, axis=1)
+    flat_idx = np.zeros_like(z_me)
+    for je in range(horizontal_lower, horizontal_upper):
+        for jk in range(k_lev.shape[0] - 1):
+            if (z_me[je, jk] <= z_ifc_e_0[je, jk]) and (z_me[je, jk] >= z_ifc_e_k_0[je, jk]) and (z_me[je, jk] <= z_ifc_e_1[je, jk]) and (z_me[je, jk] >= z_ifc_e_k_1[je, jk]):
+                flat_idx[je, jk] = k_lev[jk]
     flat_idx_max = np.amax(flat_idx, axis=1)
     return np.astype(flat_idx_max, np.int32)

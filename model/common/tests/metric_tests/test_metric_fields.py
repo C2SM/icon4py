@@ -594,7 +594,6 @@ def test_compute_vwind_impl_wgt(
     vwind_offctr = 0.2
 
     vwind_impl_wgt = compute_vwind_impl_wgt(
-        backend=backend,
         icon_grid=icon_grid,
         vct_a=grid_savepoint.vct_a().asnumpy(),
         z_ifc=metrics_savepoint.z_ifc().asnumpy(),

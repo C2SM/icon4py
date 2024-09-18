@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from gt4py.next import (
+    Dims,
     Field,
     GridType,
     abs,
@@ -40,7 +41,7 @@ from icon4py.model.common.dimension import (
     C2E2CODim,
     Koff,
     V2CDim,
-    VertexDim,
+    VertexDim, KHalfDim,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -104,14 +105,15 @@ def compute_z_mc(
         },
     )
 
-
+# TODO(@nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
+# TODO(@nfarabullini): change dimension type hint for ddqz_z_half to cell, khalf
 @field_operator
 def _compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
     k: fa.KField[int32],
     nlev: int32,
-):
+): #-> Field[Dims[dims.CellDim, dims.KHalfDim], wpfloat]:
     # TODO: change this to concat_where once it's merged
     ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
     ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
@@ -119,12 +121,12 @@ def _compute_ddqz_z_half(
     return ddqz_z_half
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
+@program
 def compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
     k: fa.KField[int32],
-    ddqz_z_half: fa.CellKField[wpfloat],
+    ddqz_z_half: fa.CellKField[wpfloat], #Field[Dims[dims.CellDim, dims.KHalfDim], wpfloat],
     nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -539,7 +541,7 @@ def compute_ddxt_z_half_e(
     )
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_ddxn_z_full(
     ddxnt_z_half_e: fa.EdgeKField[wpfloat],
     ddxn_z_full: fa.EdgeKField[wpfloat],
@@ -596,18 +598,18 @@ def _compute_maxslp_maxhgtd(
     dual_edge_length: fa.EdgeField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     z_maxslp_0_1 = maximum(abs(ddxn_z_full(C2E[0])), abs(ddxn_z_full(C2E[1])))
-    z_maxslp = maximum(z_maxslp_0_1, abs(ddxn_z_full(C2E[2])))
+    maxslp = maximum(z_maxslp_0_1, abs(ddxn_z_full(C2E[2])))
 
     z_maxhgtd_0_1 = maximum(
         abs(ddxn_z_full(C2E[0]) * dual_edge_length(C2E[0])),
         abs(ddxn_z_full(C2E[1]) * dual_edge_length(C2E[1])),
     )
 
-    z_maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
-    return z_maxslp, z_maxhgtd
+    maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
+    return maxslp, maxhgtd
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_maxslp_maxhgtd(
     ddxn_z_full: Field[[dims.EdgeDim, dims.KDim], wpfloat],
     dual_edge_length: Field[[dims.EdgeDim], wpfloat],
@@ -799,7 +801,7 @@ def compute_vwind_impl_wgt_partial(
     )
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_wgtfac_e(
     wgtfac_c: fa.CellKField[wpfloat],
     c_lin_e: Field[[dims.EdgeDim, dims.E2CDim], float],
@@ -853,7 +855,7 @@ def _compute_flat_idx(
     return flat_idx
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_flat_idx(
     z_me: fa.EdgeKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],
@@ -887,7 +889,7 @@ def _compute_z_aux2(
     return z_aux2
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_z_aux2(
     z_ifc_sliced: fa.CellField[wpfloat],
     z_aux2: fa.EdgeField[wpfloat],
@@ -924,7 +926,7 @@ def _compute_pg_edgeidx_vertidx(
     return pg_edgeidx, pg_vertidx
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_pg_edgeidx_vertidx(
     c_lin_e: Field[[dims.EdgeDim, dims.E2CDim], float],
     z_ifc: fa.CellKField[wpfloat],
@@ -973,7 +975,7 @@ def _compute_pg_exdist_dsl(
     return pg_exdist_dsl
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_pg_exdist_dsl(
     z_aux2: fa.EdgeField[wpfloat],
     z_me: fa.EdgeKField[wpfloat],
@@ -1027,7 +1029,7 @@ def _compute_pg_edgeidx_dsl(
     return pg_edgeidx_dsl
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_pg_edgeidx_dsl(
     pg_edgeidx: fa.EdgeKField[int32],
     pg_vertidx: fa.EdgeKField[int32],
@@ -1099,9 +1101,8 @@ def compute_mask_prog_halo_c(
 @field_operator
 def _compute_bdy_halo_c(
     c_refin_ctrl: fa.CellField[int32],
-    bdy_halo_c: fa.CellField[bool],
 ) -> fa.CellField[bool]:
-    bdy_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), True, bdy_halo_c)
+    bdy_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), True, False)
     return bdy_halo_c
 
 
@@ -1125,7 +1126,6 @@ def compute_bdy_halo_c(
     """
     _compute_bdy_halo_c(
         c_refin_ctrl,
-        bdy_halo_c,
         out=bdy_halo_c,
         domain={CellDim: (horizontal_start, horizontal_end)},
     )
@@ -1189,7 +1189,7 @@ def _compute_weighted_cell_neighbor_sum(
     return field_avg
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_weighted_cell_neighbor_sum(
     maxslp: Field[[dims.CellDim, dims.KDim], wpfloat],
     maxhgtd: Field[[dims.CellDim, dims.KDim], wpfloat],
@@ -1248,7 +1248,7 @@ def _compute_max_nbhgt(
     return max_nbhgt
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_max_nbhgt(
     z_mc_nlev: Field[[dims.CellDim], wpfloat],
     max_nbhgt: Field[[dims.CellDim], wpfloat],
@@ -1308,10 +1308,7 @@ def _compute_cell_2_vertex_interpolation(
     return vert_out
 
 
-program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
-
-
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_cell_2_vertex_interpolation(
     cell_in: Field[[dims.CellDim, dims.KDim], wpfloat],
     c_int: Field[[dims.VertexDim, V2CDim], wpfloat],
@@ -1363,7 +1360,7 @@ def _compute_theta_exner_ref_mc(
     return exner_ref_mc, theta_ref_mc
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_theta_exner_ref_mc(
     z_mc: fa.CellKField[wpfloat],
     exner_ref_mc: fa.CellKField[wpfloat],

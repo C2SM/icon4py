@@ -117,6 +117,39 @@ attrs = {
         icon_var_name="c_lin_e",
         long_name="coefficients for cell to edge interpolation",
     ),
+    "scaling_factor_for_3d_divergence_damping": dict(
+        standard_name="scaling_factor_for_3d_divergence_damping",
+        units="",
+        dims=(dims.KDim),
+        dtype=ta.wpfloat,
+        icon_var_name="scalfac_dd3d",
+        long_name="Scaling factor for 3D divergence damping terms",
+    ),
+    "model_interface_height": dict(
+        standard_name="model_interface_height",
+        long_name="height value of half levels without topography",
+        units="m",
+        dims=(dims.KHalfDim,),
+        dtype=ta.wpfloat,
+        positive="up",
+        icon_var_name="vct_a",
+    ),
+    "nudging_coefficient_on_edges": dict(
+        standard_name="nudging_coefficient_on_edges",
+        long_name="nudging coefficients on edges",
+        units="",
+        dtype=ta.wpfloat,
+        dims=(dims.EdgeDim,),
+        icon_var_name="nudgecoeff_e",
+    ),
+    "refin_e_ctrl": dict(
+        standard_name="refin_e_ctrl",
+        long_name="grid refinement control on edgeds",
+        units="",
+        dtype=int,
+        dims=(dims.EdgeDim,),
+        icon_var_name="refin_e_ctrl",
+    ),
     ### Nikki fields
     "c_bln_avg": dict(
         standard_name="c_bln_avg",
@@ -401,7 +434,7 @@ attrs = {
     "pg_exdist_dsl": dict(
         standard_name="pg_exdist_dsl",
         units="",
-        dims=(dims.CellDim, dims.KDim),
+        dims=(dims.EdgeDim, dims.KDim),
         dtype=ta.wpfloat,
         icon_var_name="pg_exdist_dsl",
         long_name="metrics field",
@@ -428,14 +461,6 @@ attrs = {
         dims=(dims.EdgeDim, dims.KDim),
         dtype=ta.wpfloat,
         icon_var_name="zdiff_gradp",
-        long_name="metrics field",
-    ),
-    "nudgecoeffs_e": dict(
-        standard_name="nudgecoeffs_e",
-        units="",
-        dims=(dims.EdgeDim),
-        dtype=ta.wpfloat,
-        icon_var_name="nudgecoeffs_e",
         long_name="metrics field",
     ),
     "coeff_gradekin": dict(

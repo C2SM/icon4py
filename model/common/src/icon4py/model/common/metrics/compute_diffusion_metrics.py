@@ -11,8 +11,8 @@ import numpy as np
 
 def compute_max_nbhgt_np(c2e2c: np.array, z_mc: np.ndarray, nlev: int) -> np.array:
     z_mc_nlev = z_mc[:, nlev - 1]
-    max_nbhgt_0_1 = np.maximum(z_mc_nlev[c2e2c[0]], z_mc_nlev[c2e2c[1]])
-    max_nbhgt = np.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[2]])
+    max_nbhgt_0_1 = np.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
+    max_nbhgt = np.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
     return max_nbhgt
 
 

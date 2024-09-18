@@ -163,6 +163,30 @@ class ProgramFieldProvider(FieldProvider):
             for k in self._fields.keys()
         }
 
+    # TODO (@halungge) this can be simplified when completely disentangling vertical and horizontal grid.
+    #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
+    def _get_offset_providers(
+        self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid
+    ) -> dict[str, gtx.FieldOffset]:
+        offset_providers = {}
+        for dim in self._compute_domain.keys():
+            if dim.kind == gtx.DimensionKind.HORIZONTAL:
+                horizontal_offsets = {
+                    k: v
+                    for k, v in grid.offset_providers.items()
+                    if isinstance(v, gtx.NeighborTableOffsetProvider)
+                    and v.origin_axis.kind == gtx.DimensionKind.HORIZONTAL
+                }
+                offset_providers.update(horizontal_offsets)
+            if dim.kind == gtx.DimensionKind.VERTICAL:
+                vertical_offsets = {
+                    k: v
+                    for k, v in grid.offset_providers.items()
+                    if isinstance(v, gtx.Dimension) and v.kind == gtx.DimensionKind.VERTICAL
+                }
+                offset_providers.update(vertical_offsets)
+        return offset_providers
+
     def _domain_args(
         self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid
     ) -> dict[str : gtx.int32]:
@@ -194,7 +218,7 @@ class ProgramFieldProvider(FieldProvider):
         deps.update({k: self._fields[v] for k, v in self._output.items()})
         dims = self._domain_args(factory.grid, factory.vertical_grid)
         deps.update(dims)
-        self._func(**deps, offset_provider=factory.grid.offset_providers)
+        self._func.with_backend(factory.backend)(**deps, offset_provider=factory.grid.offset_providers)
 
     def fields(self) -> Iterable[str]:
         return self._output.values()
@@ -297,6 +321,7 @@ class FieldsFactory:
         self._vertical = vertical_grid
         self._providers: dict[str, "FieldProvider"] = {}
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+        self._backend = backend
 
     def validate(self):
         return self._grid is not None
@@ -307,8 +332,13 @@ class FieldsFactory:
         self._vertical = vertical_grid
 
     @builder.builder
-    def with_allocator(self, backend=settings.backend):
+    def with_backend(self, backend=settings.backend):
+        self._backend = backend
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+
+    @property
+    def backend(self):
+        return self._backend
 
     @property
     def grid(self):
@@ -339,7 +369,10 @@ class FieldsFactory:
         if type_ == RetrievalType.METADATA:
             return metadata.attrs[field_name]
         if type_ == RetrievalType.FIELD:
-            return self._providers[field_name](field_name, self)
+            try:
+                return self._providers[field_name](field_name, self)
+            except:
+                return self._providers[field_name](field_name, self)
         if type_ == RetrievalType.DATA_ARRAY:
             return state_utils.to_data_array(
                 self._providers[field_name](field_name, self), metadata.attrs[field_name]

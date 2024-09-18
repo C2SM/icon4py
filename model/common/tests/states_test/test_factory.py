@@ -9,11 +9,14 @@
 import gt4py.next as gtx
 import pytest
 
+from model.common.tests.metric_tests.test_metric_fields import edge_domain
+
+
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.io import cf_utils
-from icon4py.model.common.metrics import metric_fields as mf
+from icon4py.model.common.metrics import compute_nudgecoeffs, metric_fields as mf
 from icon4py.model.common.metrics.compute_wgtfacq import (
     compute_wgtfacq_c_dsl,
     compute_wgtfacq_e_dsl,
@@ -75,7 +78,7 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
     )
     fields_factory = factory.FieldsFactory()
     fields_factory.register_provider(pre_computed_fields)
-    fields_factory.with_grid(grid, vertical).with_allocator(backend)
+    fields_factory.with_grid(grid, vertical).with_backend(backend)
     field = fields_factory.get("height_on_interface_levels", factory.RetrievalType.FIELD)
     assert field.ndarray.shape == (grid.num_cells, num_levels + 1)
     meta = fields_factory.get("height_on_interface_levels", factory.RetrievalType.METADATA)
@@ -94,6 +97,7 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
 
 @pytest.mark.datatest
 def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
+    backend = None
     horizontal_grid = grid_savepoint.construct_icon_grid(
         on_gpu=False
     )  # TODO: determine from backend
@@ -148,7 +152,7 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
         params={"nlev": vertical_grid.num_levels},
     )
     fields_factory.register_provider(functional_determinant_provider)
-    fields_factory.with_grid(horizontal_grid, vertical_grid).with_allocator(backend)
+    fields_factory.with_grid(horizontal_grid, vertical_grid).with_backend(backend)
     data = fields_factory.get(
         "functional_determinant_of_metrics_on_interface_levels", type_=factory.RetrievalType.FIELD
     )
@@ -239,3 +243,72 @@ def test_field_provider_for_numpy_function_with_offsets(
     )
 
     assert helpers.dallclose(wgtfacq_e.asnumpy(), wgtfacq_e_ref.asnumpy())
+
+
+def test_factory_for_k_only_field(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    fields_factory = factory.FieldsFactory()
+    vct_a = grid_savepoint.vct_a()
+    divdamp_trans_start = 12500.0
+    divdamp_trans_end = 17500.0
+    divdamp_type = 3
+    pre_computed_fields = factory.PrecomputedFieldsProvider({"model_interface_height": vct_a})
+    fields_factory.register_provider(pre_computed_fields)
+    vertical_grid = v_grid.VerticalGrid(
+        v_grid.VerticalGridConfig(grid_savepoint.num(dims.KDim)),
+        grid_savepoint.vct_a(),
+        grid_savepoint.vct_b(),
+    )
+    provider = factory.ProgramFieldProvider(
+        func=mf.compute_scalfac_dd3d,
+        domain={
+            dims.KDim: (full_level(v_grid.Zone.TOP), full_level(v_grid.Zone.BOTTOM)),
+        },
+        deps={"vct_a": "model_interface_height"},
+        fields={"scalfac_dd3d": "scaling_factor_for_3d_divergence_damping"},
+        params={
+            "divdamp_trans_start": divdamp_trans_start,
+            "divdamp_trans_end": divdamp_trans_end,
+            "divdamp_type": divdamp_type,
+        },
+    )
+    fields_factory.register_provider(provider)
+    fields_factory.with_grid(icon_grid, vertical_grid).with_backend(backend)
+    helpers.dallclose(
+        fields_factory.get("scaling_factor_for_3d_divergence_damping").asnumpy(),
+        metrics_savepoint.scalfac_dd3d().asnumpy(),
+    )
+
+
+def test_horizontal_only_field(icon_grid, interpolation_savepoint, grid_savepoint, backend):
+    fields_factory = factory.FieldsFactory()
+    refin_ctl = grid_savepoint.refin_ctrl(dims.EdgeDim)
+    pre_computed_fields = factory.PrecomputedFieldsProvider({"refin_e_ctrl": refin_ctl})
+    fields_factory.register_provider(pre_computed_fields)
+    vertical_grid = v_grid.VerticalGrid(
+        v_grid.VerticalGridConfig(grid_savepoint.num(dims.KDim)),
+        grid_savepoint.vct_a(),
+        grid_savepoint.vct_b(),
+    )
+    provider = factory.ProgramFieldProvider(
+        func=compute_nudgecoeffs.compute_nudgecoeffs,
+        domain={
+            dims.EdgeDim: (
+                edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
+                edge_domain(h_grid.Zone.LOCAL),
+            ),
+        },
+        deps={"refin_ctrl": "refin_e_ctrl"},
+        fields={"nudgecoeffs_e": "nudging_coefficient_on_edges"},
+        params={
+            "grf_nudge_start_e": 10,
+            "nudge_max_coeffs": 0.375,
+            "nudge_efold_width": 2.0,
+            "nudge_zone_width": 10,
+        },
+    )
+    fields_factory.register_provider(provider)
+    fields_factory.with_grid(icon_grid, vertical_grid).with_backend(backend)
+    helpers.dallclose(
+        fields_factory.get("nudging_coefficient_on_edges").asnumpy(),
+        interpolation_savepoint.nudgecoeff_e().asnumpy(),
+    )
