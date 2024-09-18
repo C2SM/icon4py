@@ -29,6 +29,16 @@ from .utils import (
 # ntracer=2 is the first tracer in transport_nml, ntracer=3 the second, and so on.
 # Here though, ntracer=1 corresponds to the first tracer in transport_nml.
 
+# ntracer legend for the serialization data used here in test_advection:
+# ------------------------------------
+# ntracer          |  1, 2, 3, 4, 5 |
+# ------------------------------------
+# ivadv_tracer     |  3, 0, 0, 2, 3 |
+# itype_hlimit     |  3, 3, 4, 0, 0 |
+# itype_vlimit     |  1, 0, 0, 1, 2 |
+# ihadv_tracer     | 52, 2, 2, 0, 0 |
+# ------------------------------------
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -37,7 +47,7 @@ from .utils import (
         (
             "2021-06-20T12:00:10.000",
             False,
-            2,  # originally ihadv_tracer = 2, itype_hlimit = 3
+            2,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
             advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             advection.VerticalAdvectionType.NO_ADVECTION,
@@ -46,7 +56,7 @@ from .utils import (
         (
             "2021-06-20T12:00:20.000",
             True,
-            2,  # originally ihadv_tracer = 2, itype_hlimit = 3
+            2,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
             advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             advection.VerticalAdvectionType.NO_ADVECTION,
