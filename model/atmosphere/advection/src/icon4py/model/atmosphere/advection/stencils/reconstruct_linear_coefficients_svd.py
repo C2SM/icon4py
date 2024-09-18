@@ -16,6 +16,9 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO (dastrm): this stencil has no test
+
+
 @field_operator
 def _reconstruct_linear_coefficients_svd(
     p_cc: fa.CellKField[wpfloat],

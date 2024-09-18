@@ -14,6 +14,9 @@ from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO (dastrm): this stencil has no test
+
+
 @field_operator
 def _apply_monotone_horizontal_multiplicative_flux_factors(
     z_anti: fa.EdgeKField[wpfloat],

@@ -471,7 +471,7 @@ class Advection:
 
         # compute tangential velocity
         log.debug("running stencil compute_edge_tangential - start")
-        compute_edge_tangential.compute_edge_tangential(  # TODO (dastrm): duplicate stencil of compute_tangential_wind
+        compute_edge_tangential.compute_edge_tangential(
             p_vn_in=prep_adv.vn_traj,
             ptr_coeff=self.interpolation_state.rbf_vec_coeff_e,
             p_vt_out=self.z_real_vt,

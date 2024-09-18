@@ -14,6 +14,9 @@ from icon4py.model.common.dimension import C2E2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO (dastrm): this stencil has no test
+
+
 @field_operator
 def _compute_monotone_horizontal_multiplicative_flux_factors_min_max(
     z_tracer_max: fa.CellKField[vpfloat],

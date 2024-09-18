@@ -17,6 +17,9 @@ from icon4py.model.common.dimension import E2EC
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO (dastrm): this stencil has no test
+
+
 sys.setrecursionlimit(5500)
 
 

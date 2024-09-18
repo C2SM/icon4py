@@ -16,6 +16,10 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO (dastrm): this stencil is a duplicate of compute_tangential_wind
+# TODO (dastrm): this stencil has no test
+
+
 @field_operator
 def _compute_edge_tangential(
     p_vn_in: fa.EdgeKField[wpfloat],

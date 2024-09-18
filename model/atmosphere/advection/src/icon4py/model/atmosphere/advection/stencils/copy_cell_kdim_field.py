@@ -14,6 +14,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO (dastrm): move this highly generic stencil to common
+# TODO (dastrm): this stencil has no test
 
 
 @field_operator

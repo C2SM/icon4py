@@ -15,6 +15,10 @@ from icon4py.model.common.dimension import E2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO (dastrm): this stencil is unused
+# TODO (dastrm): this stencil has no test
+
+
 @field_operator
 def _compute_intermediate_horizontal_tracer_flux_from_cubic_coeffs_alt(
     z_lsq_coeff_1: fa.CellKField[wpfloat],

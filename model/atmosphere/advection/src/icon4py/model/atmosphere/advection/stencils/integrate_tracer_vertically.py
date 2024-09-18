@@ -15,6 +15,9 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO (dastrm): k/iadv_slev_jt and vertical_start/end are redundant
+
+
 @field_operator
 def _integrate_tracer_vertically_a(
     tracer_now: fa.CellKField[wpfloat],
@@ -67,9 +70,6 @@ def _integrate_tracer_vertically(
     )
 
     return tracer_new
-
-
-# TODO (dastrm): k/iadv_slev_jt and vertical_start/end are redundant
 
 
 @program(grid_type=GridType.UNSTRUCTURED)

@@ -18,6 +18,10 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO (dastrm): this stencil is imported but never called
+# TODO (dastrm): slev/elev and vertical_start/end are redundant
+
+
 @field_operator
 def _compute_ppm_all_face_values(
     p_cc: fa.CellKField[wpfloat],
@@ -42,9 +46,6 @@ def _compute_ppm_all_face_values(
     p_face = where((k == elevp1), p_cc(Koff[-1]), p_face)
 
     return p_face
-
-
-# TODO (dastrm): slev/elev and vertical_start/end are redundant
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
