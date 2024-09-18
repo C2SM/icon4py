@@ -17,7 +17,7 @@ from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RAT
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-from icon4py.model.common.test_utils.datatest_utils import get_global_grid_params
+from icon4py.model.common.test_utils.datatest_utils import GRID_IDS, get_global_grid_params
 from model.atmosphere.diffusion.tests.diffusion_tests.test_diffusion import vertical_grid
 from model.atmosphere.diffusion.tests.diffusion_tests.utils import (
     construct_config,
@@ -128,6 +128,7 @@ def test_diffusion_wrapper_granule_inputs(
     dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
 
     # --- Set Up Grid Parameters ---
+    grid_id = GRID_IDS[experiment]
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
     num_edges = grid_savepoint.num(dims.EdgeDim)
@@ -150,6 +151,7 @@ def test_diffusion_wrapper_granule_inputs(
     v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
+    c2e2c2e = gtx.as_field((dims.CellDim, dims.C2E2C2EDim), grid_savepoint.c2e2c2e())
 
     # --- Expected objects that form inputs into init and run functions
     expected_icon_grid = icon_grid
@@ -173,6 +175,7 @@ def test_diffusion_wrapper_granule_inputs(
 
     # --- Initialize the Grid ---
     grid_init(
+        grid_id=grid_id,
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -188,6 +191,7 @@ def test_diffusion_wrapper_granule_inputs(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
+        c2e2c2e=c2e2c2e,
         global_root=global_root,
         global_level=global_level,
         num_vertices=num_vertices,
@@ -421,6 +425,7 @@ def test_diffusion_wrapper_single_step(
     v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
+    c2e2c2e = gtx.as_field((dims.CellDim, dims.C2E2C2EDim), grid_savepoint.c2e2c2e())
 
     grid_init(
         cell_starts=cell_starts,
@@ -438,6 +443,7 @@ def test_diffusion_wrapper_single_step(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
+        c2e2c2e=c2e2c2e,
         global_root=global_root,
         global_level=global_level,
         num_vertices=num_vertices,

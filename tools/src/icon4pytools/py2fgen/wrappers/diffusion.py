@@ -68,6 +68,7 @@ def profile_disable():
 
 
 def grid_init(
+    grid_id: str,
     cell_starts: Field[[dims.CellIndexDim], int32],
     cell_ends: Field[[dims.CellIndexDim], int32],
     vertex_starts: Field[[dims.VertexIndexDim], int32],
@@ -83,6 +84,7 @@ def grid_init(
     v2c: Field[[dims.VertexDim, dims.V2CDim], int32],
     e2c2v: Field[[dims.EdgeDim, dims.E2C2VDim], int32],
     c2v: Field[[dims.CellDim, dims.C2VDim], int32],
+    c2e2c2e: Field[[dims.CellDim, dims.C2E2C2EDim], int32],
     global_root: int32,
     global_level: int32,
     num_vertices: int32,
@@ -96,7 +98,7 @@ def grid_init(
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
     icon_grid = construct_icon_grid(
-        grid_id="icon_grid",
+        grid_id=grid_id,
         global_grid_params=global_grid_params,
         num_vertices=num_vertices,
         num_cells=num_cells,
@@ -119,6 +121,7 @@ def grid_init(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
+        c2e2c2e=c2e2c2e,
     )
 
 
