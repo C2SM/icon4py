@@ -26,7 +26,7 @@ except ImportError:
             raise ModuleNotFoundError("NetCDF4 is not installed.")
 
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.grid import (
     base as grid_def,
     icon as icon_grid,
@@ -46,7 +46,7 @@ class GridFileField:
 
 def _validate_shape(data: np.array, field_definition: GridFileField):
     if data.shape != field_definition.shape:
-        raise IconGridError(
+        raise exceptions.IconGridError(
             f"invalid grid file field {field_definition.name} does not have dimension {field_definition.shape}"
         )
 
@@ -174,11 +174,7 @@ class GridFile:
         except KeyError as err:
             msg = f"{name} does not exist in dataset"
             self._log.warning(msg)
-            raise IconGridError(msg) from err
-
-
-class IconGridError(RuntimeError):
-    pass
+            raise exceptions.IconGridError(msg) from err
 
 
 class IndexTransformation:
@@ -292,13 +288,13 @@ class GridManager:
         if dim.kind != gtx.DimensionKind.HORIZONTAL:
             msg = f"getting start index in horizontal domain with non - horizontal dimension {dim}"
             self._log.warning(msg)
-            raise IconGridError(msg)
+            raise exceptions.IconGridError(msg)
         try:
             return index_dict[dim][start_marker]
         except KeyError as err:
             msg = f"start, end indices for dimension {dim} not present"
             self._log.error(msg)
-            raise IconGridError(msg) from err
+            raise exceptions.IconGridError(msg) from err
 
     def _construct_grid(
         self, dataset: Dataset, on_gpu: bool, limited_area: bool
@@ -314,7 +310,7 @@ class GridManager:
             return self._grid.config.num_edges
         else:
             self._log.warning(f"cannot determine size of unknown dimension {dim}")
-            raise IconGridError(f"Unknown dimension {dim}")
+            raise exceptions.IconGridError(f"Unknown dimension {dim}")
 
     def _get_index_field(
         self,
