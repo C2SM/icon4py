@@ -58,7 +58,7 @@ class Component(Protocol[Ins, Outs]):
 
     @property
     @abc.abstractmethod
-    def inputs_properties(self) -> dict[Ins, model.FieldMetaData]:
+    def input_properties(self) -> dict[Ins, model.FieldMetaData]:
         """Return a dictionary with the properties of the inputs expected by the component.
 
         Each input key contains metadata with the standard CF name, units and dimension of the associated data field.
@@ -67,7 +67,7 @@ class Component(Protocol[Ins, Outs]):
 
     @property
     @abc.abstractmethod
-    def outputs_properties(self) -> dict[Outs, model.FieldMetaData]:
+    def output_properties(self) -> dict[Outs, model.FieldMetaData]:
         """Return a dictionary with the properties of the outputs expected by the component.
 
         Each input key contains metadata with the standard CF name, units and dimension of the associated data field.
