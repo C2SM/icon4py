@@ -19,8 +19,13 @@ from icon4py.model.common.test_utils import (
     reference_funcs as ref_funcs,
     serialbox_utils as sb,
 )
-from icon4py.model.common.test_utils.datatest_utils import vertical_grid, construct_diagnostics, construct_metric_state, \
-    construct_interpolation_state, construct_config
+from icon4py.model.common.test_utils.datatest_utils import (
+    construct_config,
+    construct_diagnostics,
+    construct_interpolation_state,
+    construct_metric_state,
+    vertical_grid,
+)
 
 from .utils import (
     diff_multfac_vn_numpy,

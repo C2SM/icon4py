@@ -60,5 +60,3 @@ def smag_limit_numpy(func, *args):
 def diff_multfac_vn_numpy(shape, k4, substeps):
     factor = min(1.0 / 128.0, k4 * substeps / 3.0)
     return factor * np.ones(shape)
-
-

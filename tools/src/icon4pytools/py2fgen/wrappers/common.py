@@ -5,11 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# type: ignore
+
 import cProfile
 import logging
 import pstats
-
-import numpy as np
 
 from gt4py.next import Dimension
 from gt4py.next.common import Field
@@ -20,13 +20,10 @@ from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.settings import xp
 
+
 log = logging.getLogger(__name__)
 
-GLOBAL_STATE = {
-    "diffusion_granule": Diffusion(),
-    "icon_grid": None,
-    "profiler": cProfile.Profile()
-}
+GLOBAL_STATE = {"diffusion_granule": Diffusion(), "icon_grid": None, "profiler": cProfile.Profile()}
 
 # extra dimensions
 CellIndexDim = Dimension("CellIndex")
@@ -43,6 +40,7 @@ def profile_disable():
     GLOBAL_STATE["profiler"].disable()
     stats = pstats.Stats(GLOBAL_STATE["profiler"])
     stats.dump_stats(f"{__name__}.profile")
+
 
 # initialising the grid
 def grid_init(
@@ -101,7 +99,7 @@ def grid_init(
     )
 
 
-def offset_fortran_indices_return_numpy(inp) -> np.ndarray:
+def offset_fortran_indices_return_numpy(inp) -> xp.ndarray:
     # todo: maybe needed in Fortran? (breaks datatest)
     #   return xp.subtract(inp.ndarray, 1)  # noqa: ERA001
     return inp.ndarray
@@ -220,5 +218,3 @@ def construct_icon_grid(
     )
 
     return grid
-
-

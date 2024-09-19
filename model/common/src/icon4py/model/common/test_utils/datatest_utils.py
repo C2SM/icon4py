@@ -11,11 +11,12 @@ import pathlib
 import re
 import uuid
 
-from icon4py.model.atmosphere.diffusion import diffusion_states, diffusion
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.test_utils import serialbox_utils as sb, helpers
+from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
+
 
 DEFAULT_TEST_DATA_FOLDER = "testdata"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"

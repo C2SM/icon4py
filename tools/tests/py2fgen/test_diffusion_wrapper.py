@@ -18,12 +18,17 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.test_utils.datatest_utils import (
-    GRID_IDS, get_global_grid_params, vertical_grid, construct_config,
-    construct_diagnostics, construct_interpolation_state, construct_metric_state,
+    GRID_IDS,
+    construct_config,
+    construct_diagnostics,
+    construct_interpolation_state,
+    construct_metric_state,
+    get_global_grid_params,
+    vertical_grid,
 )
 
-from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 from icon4pytools.py2fgen.wrappers import common
+from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 
 from .conftest import compare_objects
 
