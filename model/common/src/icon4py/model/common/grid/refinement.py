@@ -48,7 +48,7 @@ _UNORDERED: Final[dict[gtx.Dimension : tuple[int, int]]] = {
     dims.EdgeDim: (0, -8),
     dims.VertexDim: (0, -4),
 }
-"""Value indicating a point is int the unordered interior (fully prognostic) region: this is encoded by 0 or -4 in coarser parent grid."""
+"""Value indicating a point is in the unordered interior (fully prognostic) region: this is encoded by 0 or -4 in coarser parent grid."""
 
 _MIN_ORDERED: Final[dict[dims.Dimension, int]] = {
     dim: value[1] + 1 for dim, value in _UNORDERED.items()
