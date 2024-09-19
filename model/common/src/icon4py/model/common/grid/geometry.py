@@ -327,63 +327,11 @@ def edge_normals():
 
 
 
-def edge_lengths():
-    """compute
-    - primal_edge_length:
 
-    Algorithm-
-    for all edges:
-        get lat, lon of its neighboring vertices
-        convert them to carteisan coordinates
-        compute NORM2(difference of x component these two cartesian coordinates)
-
-     F90 grid_manager:  mo_model_domain.f90
-    gc2cc: geographical_coordinate to cartesian_coordinate
-    cc1 = gc2cc(edges%ptr_tri%verts%vertex(edges%vertex_idx(je,jb,1), edges%vertex_blk(je,jb,1)))
-    cc2 = gc2cc(edges%ptr_tri%verts%vertex(edges%vertex_idx(je,jb,2), edges%vertex_blk(je,jb,2)))
-    res = NORM2( cc1%x - cc2%x )
-
-
-    - dual_edge_length:
-
-    Algorithm:
-    for all edges:
-       get lat, lon of its neighboring cell centers
-       convert lat lon to cartesian coordinates
-       take NORM2 of the difference of the x components
-
-    grid_manager:  mo_model_domain.f90
-    ! TODO: Outer halo edge might have no cell neighbor --> leads to out-of-bounds error
-    icon handles this by a refin_ctrl1 != 1 mask
-    cc1 = gc2cc(edges%ptr_tri%cells%center(edges%cell_idx(je,jb,1), edges%cell_blk(je,jb,1)))
-    cc2 = gc2cc(edges%ptr_tri%cells%center(edges%cell_idx(je,jb,2), edges%cell_blk(je,jb,2)))
-    res = NORM2( cc1%x - cc2%x )
-
-
-    - area_edge:
-    for all edges that are owned:
-       area_edge = primal_edge_length * dual_edge_length
-    
-    - inv_vert_vert_length
-    inverse of vertex_vertex_length (where ICON only has the inverse) but is is 1.0/vertex_vertex_length (mo_intp_coeffs.f90)
-    for all edges
-        vertex_coordinates vertex_lat(E2C2V[2:]), vertex_long(E2C2V[2:]) the _far_ vertices
-        n1 = x1, x2, x3 = spherical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
-        n2 = x1, x2, x3 = spherical_to_cartesian_on_vertices(vertex_lat, vertex_lon)
-        v2 =   n1 * n2
-        
-    vertex_vertex_length = 
-     
-     
-    ICON (mo_intp_coeffs) 
-    ptr_patch%edges%inv_vert_vert_length(je,jb) = 1._wp/&
-            & (grid_sphere_radius*arc_length(cc_ev3,cc_ev4,ptr_patch%geometry_info))
-    """
-    ...
 
 
 @gtx.field_operator(grid_type = gtx.GridType.UNSTRUCTURED)
-def dual_egde_length(cell_lon:fa.CellField[ta.wpfloat], cell_lat:fa.CellField[ta.wpfloat], 
+def dual_edge_length(cell_lon:fa.CellField[ta.wpfloat], cell_lat:fa.CellField[ta.wpfloat],
                      subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
     x, y, z = spherical_to_cartesian_on_cells(cell_lat, cell_lon, 1.0)
     x = neighbor_sum(subtract_coeff * x(E2C), axis=E2CDim )
@@ -421,10 +369,11 @@ def vertex_vertex_length(vertex_lat: fa.VertexField[fa.wpfloat], vertex_lon:fa.V
 @gtx.field_operator
 def edge_control_area(
     owner_mask: fa.EdgeField[bool],
-    primal_egdge_length: fa.EdgeField[fa.wpfloat],
+    primal_egde_length: fa.EdgeField[fa.wpfloat],
     dual_edge_length: fa.EdgeField[ta.wpfloat],
 ) -> fa.EdgeField[ta.wpfloat]:
-    return where(owner_mask, primal_egdge_length * dual_edge_length, 0.0)
+    """compute the edge_area"""
+    return where(owner_mask, primal_egde_length * dual_edge_length, 0.0)
    
 
 
@@ -445,6 +394,8 @@ def compute_zonal_and_meridional_components(lat: fa.CellField[ta.wpfloat], lon: 
     norm = sqrt(u * u + v * v)
     return u/norm, v/norm
 
+
 @gtx.field_operator
 def coriolis_parameter_on_edges(edge_center_lat: fa.EdgeField[ta.wpfloat], angular_velocity:ta.wpfloat)-> fa.EdgeField[ta.wpfloat]:
+    """Compute the coriolis force on edges: f_e"""
     return 2.0 * angular_velocity * sin(edge_center_lat)
