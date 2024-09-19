@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _calculate_horizontal_gradients_for_turbulence(
     w: fa.CellKField[wpfloat],
@@ -50,7 +45,7 @@ def calculate_horizontal_gradients_for_turbulence(
         geofac_grg_y,
         out=(dwdx, dwdy),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

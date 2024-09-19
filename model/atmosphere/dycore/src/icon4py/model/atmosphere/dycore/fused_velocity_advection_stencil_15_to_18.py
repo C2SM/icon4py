@@ -27,11 +27,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _fused_velocity_advection_stencil_16_to_18(
     z_w_con_c: fa.CellKField[vpfloat],
@@ -58,7 +53,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     nrdmax: int32,
     extra_diffu: bool,
 ) -> fa.CellKField[vpfloat]:
-    k = broadcast(k, (CellDim, KDim))
+    k = broadcast(k, (dims.CellDim, dims.KDim))
 
     ddt_w_adv = where(
         (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),

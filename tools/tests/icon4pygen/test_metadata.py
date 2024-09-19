@@ -74,11 +74,6 @@ def _add(
     return field1 + field2
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @program
 def with_domain(
     a: Field[[dims.CellDim, dims.KDim], float],
@@ -94,8 +89,8 @@ def with_domain(
         b,
         out=result,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -115,7 +110,7 @@ def with_constant_domain(
     b: Field[[dims.CellDim, dims.KDim], float],
     result: Field[[dims.CellDim, dims.KDim], float],
 ):
-    _add(a, b, out=result, domain={CellDim: (0, 3), KDim: (1, 8)})
+    _add(a, b, out=result, domain={dims.CellDim: (0, 3), dims.KDim: (1, 8)})
 
 
 @pytest.mark.parametrize("program", [with_domain, without_domain, with_constant_domain])
