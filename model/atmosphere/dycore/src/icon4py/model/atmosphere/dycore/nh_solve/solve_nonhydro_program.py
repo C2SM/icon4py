@@ -424,8 +424,8 @@ def compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
             theta_v_ic,
         ),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 

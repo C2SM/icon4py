@@ -842,10 +842,9 @@ class SolveNonhydro:
             d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
-            k_field=self.k_field,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
-            vertical_start=0,
+            vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
