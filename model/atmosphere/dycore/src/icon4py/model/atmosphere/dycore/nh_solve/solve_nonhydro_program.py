@@ -46,9 +46,9 @@ from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
 )
 from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
-    _compute_virtual_potential_temperatures_and_pressure_gradient,
-    _compute_only_virtual_potential_temperatures,
     _compute_only_pressure_gradient,
+    _compute_only_virtual_potential_temperatures,
+    _compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (

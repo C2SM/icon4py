@@ -236,22 +236,16 @@ class VerticalGrid:
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
-        print(interface_height.device)
         return gtx.int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
     def _determine_damping_height_index(cls, vct_a: xp.ndarray, damping_height: float) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
-        if damping_height > vct_a[0]:
-            return 0
-        else:
-            print(vct_a.device)
-            return gtx.int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
-        # return (
-        #     0
-        #     if damping_height > vct_a[0]
-        #     else gtx.int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
-        # )
+        return (
+            0
+            if damping_height > vct_a[0]
+            else gtx.int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
+        )
 
     @classmethod
     def _determine_end_index_of_flat_layers(

@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as np
+
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
@@ -25,7 +25,8 @@ KDim = dims.KDim
 
 # TODO (Chia Rui): Convert all numpy computations to cupy
 
-def hydrostatic_adjustment_numpy(
+
+def hydrostatic_adjustment_ndarray(
     wgtfac_c: xp.ndarray,
     ddqz_z_half: xp.ndarray,
     exner_ref_mc: xp.ndarray,
@@ -54,7 +55,7 @@ def hydrostatic_adjustment_numpy(
         )
         quadratic_c = -(fac2 * fac3 / ddqz_z_half[:, k + 1] + fac2 * d_exner_dz_ref_ic[:, k + 1])
 
-        exner[:, k] = (quadratic_b + np.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
+        exner[:, k] = (quadratic_b + xp.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
             2.0 * quadratic_a
         )
         theta_v[:, k] = temp_v[:, k] / exner[:, k]
@@ -65,7 +66,7 @@ def hydrostatic_adjustment_numpy(
     return rho, exner, theta_v
 
 
-def hydrostatic_adjustment_constant_thetav_numpy(
+def hydrostatic_adjustment_constant_thetav_ndarray(
     wgtfac_c: xp.ndarray,
     ddqz_z_half: xp.ndarray,
     exner_ref_mc: xp.ndarray,
@@ -79,7 +80,7 @@ def hydrostatic_adjustment_constant_thetav_numpy(
 ) -> tuple[xp.ndarray, xp.ndarray]:
     """
     Computes a hydrostatically balanced profile. In constrast to the above
-    hydrostatic_adjustment_numpy, the virtual temperature is kept (assumed)
+    hydrostatic_adjustment_ndarray, the virtual temperature is kept (assumed)
     constant during the adjustment, leading to a simpler formula.
     """
 
@@ -105,7 +106,7 @@ def hydrostatic_adjustment_constant_thetav_numpy(
     return rho, exner
 
 
-def zonalwind_2_normalwind_numpy(
+def zonalwind_2_normalwind_ndarray(
     grid: icon_grid.IconGrid,
     jw_u0: float,
     jw_up: float,
@@ -133,27 +134,27 @@ def zonalwind_2_normalwind_numpy(
     """
     # TODO (Chia Rui) this function needs a test
 
-    mask = np.ones((grid.num_edges, grid.num_levels), dtype=bool)
+    mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
         0 : grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         :,
     ] = False
-    edge_lat = np.repeat(np.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
-    edge_lon = np.repeat(np.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
-    primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
-    u = np.where(mask, jw_u0 * (np.cos(eta_v_e) ** 1.5) * (np.sin(2.0 * edge_lat) ** 2), 0.0)
+    edge_lat = xp.repeat(xp.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
+    edge_lon = xp.repeat(xp.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
+    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
+    u = xp.where(mask, jw_u0 * (xp.cos(eta_v_e) ** 1.5) * (xp.sin(2.0 * edge_lat) ** 2), 0.0)
     if jw_up > 1.0e-20:
-        u = np.where(
+        u = xp.where(
             mask,
             u
             + jw_up
-            * np.exp(
+            * xp.exp(
                 -10.0
-                * np.arccos(
-                    np.sin(lat_perturbation_center) * np.sin(edge_lat)
-                    + np.cos(lat_perturbation_center)
-                    * np.cos(edge_lat)
-                    * np.cos(edge_lon - lon_perturbation_center)
+                * xp.arccos(
+                    xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
+                    + xp.cos(lat_perturbation_center)
+                    * xp.cos(edge_lat)
+                    * xp.cos(edge_lon - lon_perturbation_center)
                 )
                 ** 2
             ),

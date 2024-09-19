@@ -18,8 +18,8 @@ import numpy as np
 import numpy.ma as ma
 from gt4py.next import Dimension
 
-from icon4py.model.common.utils import builder
 from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import builder
 
 
 log = logging.getLogger(__name__)
