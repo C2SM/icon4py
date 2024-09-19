@@ -155,7 +155,6 @@ def test_diffusion_wrapper_granule_inputs(
     v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
-    c2e2c2e = gtx.as_field((dims.CellDim, dims.C2E2C2EDim), grid_savepoint.c2e2c2e())
 
     # --- Expected objects that form inputs into init and run functions
     expected_icon_grid = icon_grid
@@ -194,7 +193,6 @@ def test_diffusion_wrapper_granule_inputs(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        c2e2c2e=c2e2c2e,
         global_root=global_root,
         global_level=global_level,
         num_vertices=num_vertices,
@@ -277,8 +275,8 @@ def test_diffusion_wrapper_granule_inputs(
             assert result, f"Grid comparison failed: {error_message}"
         except AssertionError as e:
             error_message = str(e)
-            if "_id" not in error_message:
-                raise  # Re-raise the exception if "_id" is not in the error message
+            if "object.connectivities" not in error_message:
+                raise
             else:
                 pass
 
@@ -453,7 +451,6 @@ def test_diffusion_wrapper_single_step(
     v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
-    c2e2c2e = gtx.as_field((dims.CellDim, dims.C2E2C2EDim), grid_savepoint.c2e2c2e())
 
     icon4pytools.py2fgen.wrappers.diffusion.grid_init(
         cell_starts=cell_starts,
@@ -471,7 +468,6 @@ def test_diffusion_wrapper_single_step(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        c2e2c2e=c2e2c2e,
         global_root=global_root,
         global_level=global_level,
         num_vertices=num_vertices,

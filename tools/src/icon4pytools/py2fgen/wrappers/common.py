@@ -68,7 +68,6 @@ def construct_icon_grid(
     v2c,
     e2c2v,
     c2v,
-    c2e2c2e,
 ):
     num_levels = vertical_size
     log.debug("Constructing icon grid in py")
@@ -90,7 +89,6 @@ def construct_icon_grid(
     v2c_loc = offset_squeeze_fortran_indices_return_xp(v2c)
     e2v_loc = offset_squeeze_fortran_indices_return_xp(e2v)
     c2e2c_loc = offset_squeeze_fortran_indices_return_xp(c2e2c)
-    c2e2c2e_loc = offset_squeeze_fortran_indices_return_xp(c2e2c2e)
     v2e_loc = offset_squeeze_fortran_indices_return_xp(v2e)
     e2c2v_loc = offset_squeeze_fortran_indices_return_xp(e2c2v)
     e2c_loc = offset_squeeze_fortran_indices_return_xp(e2c)
@@ -128,7 +126,6 @@ def construct_icon_grid(
                 dims.C2E2CDim: c2e2c_loc,
                 dims.C2E2CODim: c2e2c0,
                 dims.E2C2EODim: e2c2e0,
-                dims.C2E2C2EDim: c2e2c2e_loc,
             }
         )
         .with_connectivities(
