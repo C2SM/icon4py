@@ -218,7 +218,8 @@ class ProgramFieldProvider(FieldProvider):
         deps.update({k: self._fields[v] for k, v in self._output.items()})
         dims = self._domain_args(factory.grid, factory.vertical_grid)
         deps.update(dims)
-        self._func.with_backend(factory.backend)(**deps, offset_provider=factory.grid.offset_providers)
+        offset_providers = self._get_offset_providers(factory.grid, factory.vertical_grid)
+        self._func.with_backend(factory.backend)(**deps, offset_provider=offset_providers)
 
     def fields(self) -> Iterable[str]:
         return self._output.values()
@@ -273,22 +274,22 @@ class NumpyFieldsProvider(FieldProvider):
         parameters = func_signature.parameters
         for dep_key in self._dependencies.keys():
             parameter_definition = parameters.get(dep_key)
-            # TODO: put this back suck that it also works for icon_grid
-            # assert parameter_definition.annotation == xp.ndarray, (
-            #     f"Dependency {dep_key} in function {self._func.__name__}:  does not exist or has "
-            #     f"or has wrong type ('expected np.ndarray') in {func_signature}."
-            # )
+            assert parameter_definition.annotation == xp.ndarray, (
+                f"Dependency {dep_key} in function {self._func.__name__}:  does not exist or has "
+                f"or has wrong type ('expected np.ndarray') in {func_signature}."
+            )
 
         for param_key, param_value in self._params.items():
             parameter_definition = parameters.get(param_key)
-            checked = _check(
-                parameter_definition, param_value, union=state_utils.IntegerType
-            ) or _check(parameter_definition, param_value, union=state_utils.FloatType)
-            # TODO: put this back suck that it also works for icon_grid
-            # assert checked, (
-            #     f"Parameter {param_key} in function {self._func.__name__} does not "
-            #     f"exist or has the wrong type: {type(param_value)}."
-            # )
+            checked = (
+                _check(parameter_definition, param_value, union=state_utils.IntegerType)
+                or _check(parameter_definition, param_value, union=state_utils.FloatType)
+                or _check_str(parameter_definition, param_value)
+            )
+            assert checked, (
+                f"Parameter {param_key} in function {self._func.__name__} does not "
+                f"exist or has the wrong type: {type(param_value)}."
+            )
 
 
 def _check(
@@ -302,6 +303,13 @@ def _check(
         and parameter_definition.annotation in members
         and type(value) in members
     )
+
+
+def _check_str(
+    parameter_definition: inspect.Parameter,
+    value: Union[state_utils.Scalar, gtx.Field],
+):
+    return parameter_definition is not None and isinstance(value, str)
 
 
 class FieldsFactory:
@@ -369,10 +377,7 @@ class FieldsFactory:
         if type_ == RetrievalType.METADATA:
             return metadata.attrs[field_name]
         if type_ == RetrievalType.FIELD:
-            try:
-                return self._providers[field_name](field_name, self)
-            except:
-                return self._providers[field_name](field_name, self)
+            return self._providers[field_name](field_name, self)
         if type_ == RetrievalType.DATA_ARRAY:
             return state_utils.to_data_array(
                 self._providers[field_name](field_name, self), metadata.attrs[field_name]

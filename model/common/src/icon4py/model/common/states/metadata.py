@@ -311,22 +311,6 @@ attrs = {
         icon_var_name="d2dexdz2_fac1_mc",
         long_name="metrics field",
     ),
-    "theta_ref_mc": dict(
-        standard_name="theta_ref_mc",
-        units="",
-        dims=(dims.CellDim, dims.KDim),
-        dtype=ta.wpfloat,
-        icon_var_name="theta_ref_mc",
-        long_name="metrics field",
-    ),
-    "exner_ref_mc": dict(
-        standard_name="exner_ref_mc",
-        units="",
-        dims=(dims.CellDim, dims.KDim),
-        dtype=ta.wpfloat,
-        icon_var_name="exner_ref_mc",
-        long_name="metrics field",
-    ),
     "d2dexdz2_fac2_mc": dict(
         standard_name="d2dexdz2_fac2_mc",
         units="",

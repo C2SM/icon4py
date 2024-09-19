@@ -37,7 +37,7 @@ class Zone(enum.IntEnum):
     MOIST = 3
     FLAT = 4
     TOP1 = 5
-    NRDMAX = 6
+    NRDMAX1 = 6
     BOTTOM1 = 7
 
 
@@ -186,7 +186,7 @@ class VerticalGrid:
                 return self._end_index_of_damping_layer
             case Zone.TOP1:
                 return gtx.int32(1)
-            case Zone.NRDMAX:
+            case Zone.NRDMAX1:
                 return gtx.int32(self.config.nrdmax + 1)
             case Zone.BOTTOM1:
                 return gtx.int32(self.config.num_levels + 1)

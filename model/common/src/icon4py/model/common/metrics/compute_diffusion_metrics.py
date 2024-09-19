@@ -8,8 +8,10 @@
 
 import numpy as np
 
+from icon4py.model.common.settings import xp
 
-def compute_max_nbhgt_np(c2e2c: np.array, z_mc: np.ndarray, nlev: int) -> np.array:
+
+def compute_max_nbhgt_np(c2e2c: xp.ndarray, z_mc: xp.ndarray, nlev: int) -> np.array:
     z_mc_nlev = z_mc[:, nlev - 1]
     max_nbhgt_0_1 = np.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
     max_nbhgt = np.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
@@ -134,12 +136,12 @@ def _compute_k_start_end(
 
 
 def compute_diffusion_metrics(
-    c2e2c: np.ndarray,
-    z_mc: np.ndarray,
-    max_nbhgt: np.ndarray,
-    c_owner_mask: np.ndarray,
-    z_maxslp_avg: np.ndarray,
-    z_maxhgtd_avg: np.ndarray,
+    c2e2c: xp.ndarray,
+    z_mc: xp.ndarray,
+    max_nbhgt: xp.ndarray,
+    c_owner_mask: xp.ndarray,
+    z_maxslp_avg: xp.ndarray,
+    z_maxhgtd_avg: xp.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     n_c2e2c: int,

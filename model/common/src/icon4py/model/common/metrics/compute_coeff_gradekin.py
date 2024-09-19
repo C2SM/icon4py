@@ -9,12 +9,13 @@
 import numpy as np
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.helpers import numpy_to_1D_sparse_field
 
 
 def compute_coeff_gradekin(
-    edge_cell_length: np.array,
-    inv_dual_edge_length: np.array,
+    edge_cell_length: xp.ndarray,
+    inv_dual_edge_length: xp.ndarray,
     horizontal_start: float,
     horizontal_end: float,
 ):

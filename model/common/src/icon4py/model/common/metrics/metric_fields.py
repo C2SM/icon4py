@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from typing import Final
 
 from gt4py.next import (
-    Dims,
     Field,
     GridType,
     abs,
@@ -19,6 +18,7 @@ from gt4py.next import (
     exp,
     field_operator,
     int32,
+    log,
     maximum,
     minimum,
     neighbor_sum,
@@ -27,8 +27,6 @@ from gt4py.next import (
     sin,
     tanh,
     where,
-    log,
-    exp
 )
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
@@ -41,7 +39,7 @@ from icon4py.model.common.dimension import (
     C2E2CODim,
     Koff,
     V2CDim,
-    VertexDim, KHalfDim,
+    VertexDim,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -105,6 +103,7 @@ def compute_z_mc(
         },
     )
 
+
 # TODO(@nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
 # TODO(@nfarabullini): change dimension type hint for ddqz_z_half to cell, khalf
 @field_operator
@@ -113,7 +112,7 @@ def _compute_ddqz_z_half(
     z_mc: fa.CellKField[wpfloat],
     k: fa.KField[int32],
     nlev: int32,
-): #-> Field[Dims[dims.CellDim, dims.KHalfDim], wpfloat]:
+):  # -> Field[Dims[dims.CellDim, dims.KHalfDim], wpfloat]:
     # TODO: change this to concat_where once it's merged
     ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
     ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
@@ -126,7 +125,7 @@ def compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
     k: fa.KField[int32],
-    ddqz_z_half: fa.CellKField[wpfloat], #Field[Dims[dims.CellDim, dims.KHalfDim], wpfloat],
+    ddqz_z_half: fa.CellKField[wpfloat],  # Field[Dims[dims.CellDim, dims.KHalfDim], wpfloat],
     nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -645,9 +644,13 @@ def compute_maxslp_maxhgtd(
         },
     )
 
+
 @field_operator
-def _exner_exfac_broadcast(exner_expol: wpfloat,) -> fa.CellKField[wpfloat]:
+def _exner_exfac_broadcast(
+    exner_expol: wpfloat,
+) -> fa.CellKField[wpfloat]:
     return broadcast(exner_expol, (CellDim, KDim))
+
 
 @field_operator
 def _compute_exner_exfac(
@@ -693,10 +696,7 @@ def compute_exner_exfac(
         vertical_end: vertical end index
 
     """
-    _exner_exfac_broadcast(
-        exner_expol,
-        out=exner_exfac
-    )
+    _exner_exfac_broadcast(exner_expol, out=exner_exfac)
     _compute_exner_exfac(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
@@ -1340,6 +1340,7 @@ def compute_cell_2_vertex_interpolation(
         },
     )
 
+
 @field_operator
 def _compute_theta_exner_ref_mc(
     z_mc: fa.CellKField[wpfloat],
@@ -1352,8 +1353,13 @@ def _compute_theta_exner_ref_mc(
     rd_o_cpd: wpfloat,
     p0ref: wpfloat,
 ):
-    z_aux1 = p0sl_bg * exp(-grav / rd * h_scal_bg / (t0sl_bg - del_t_bg)
-                    * log((exp(z_mc / h_scal_bg) *(t0sl_bg - del_t_bg) + del_t_bg) / t0sl_bg))
+    z_aux1 = p0sl_bg * exp(
+        -grav
+        / rd
+        * h_scal_bg
+        / (t0sl_bg - del_t_bg)
+        * log((exp(z_mc / h_scal_bg) * (t0sl_bg - del_t_bg) + del_t_bg) / t0sl_bg)
+    )
     exner_ref_mc = (z_aux1 / p0ref) ** rd_o_cpd
     z_temp = (t0sl_bg - del_t_bg) + del_t_bg * exp(-z_mc / h_scal_bg)
     theta_ref_mc = z_temp / exner_ref_mc

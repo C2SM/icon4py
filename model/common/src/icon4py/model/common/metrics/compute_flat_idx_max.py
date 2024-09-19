@@ -8,12 +8,14 @@
 
 import numpy as np
 
+from icon4py.model.common.settings import xp
+
 
 def compute_flat_idx_max(
-    e2c: np.array,
-    z_me: np.array,
-    z_ifc: np.array,
-    k_lev: np.array,
+    e2c: xp.ndarray,
+    z_me: xp.ndarray,
+    z_ifc: xp.ndarray,
+    k_lev: xp.ndarray,
     horizontal_lower: int,
     horizontal_upper: int,
 ) -> np.array:
@@ -24,7 +26,12 @@ def compute_flat_idx_max(
     flat_idx = np.zeros_like(z_me)
     for je in range(horizontal_lower, horizontal_upper):
         for jk in range(k_lev.shape[0] - 1):
-            if (z_me[je, jk] <= z_ifc_e_0[je, jk]) and (z_me[je, jk] >= z_ifc_e_k_0[je, jk]) and (z_me[je, jk] <= z_ifc_e_1[je, jk]) and (z_me[je, jk] >= z_ifc_e_k_1[je, jk]):
+            if (
+                (z_me[je, jk] <= z_ifc_e_0[je, jk])
+                and (z_me[je, jk] >= z_ifc_e_k_0[je, jk])
+                and (z_me[je, jk] <= z_ifc_e_1[je, jk])
+                and (z_me[je, jk] >= z_ifc_e_k_1[je, jk])
+            ):
                 flat_idx[je, jk] = k_lev[jk]
     flat_idx_max = np.amax(flat_idx, axis=1)
     return np.astype(flat_idx_max, np.int32)

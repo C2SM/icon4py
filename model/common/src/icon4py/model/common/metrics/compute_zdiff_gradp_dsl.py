@@ -10,8 +10,8 @@ import numpy as np
 from gt4py.next import as_field
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import flatten_first_two_dims
 from icon4py.model.common.settings import xp
+from icon4py.model.common.test_utils.helpers import flatten_first_two_dims
 
 
 def compute_zdiff_gradp_dsl(

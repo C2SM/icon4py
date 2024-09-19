@@ -8,9 +8,7 @@
 
 import gt4py.next as gtx
 import pytest
-
 from model.common.tests.metric_tests.test_metric_fields import edge_domain
-
 
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims, exceptions
@@ -97,7 +95,6 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
 
 @pytest.mark.datatest
 def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
-    backend = None
     horizontal_grid = grid_savepoint.construct_icon_grid(
         on_gpu=False
     )  # TODO: determine from backend
