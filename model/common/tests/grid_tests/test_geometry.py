@@ -22,7 +22,7 @@ def test_dual_edge_length(grid_savepoint, icon_grid):
     subtract_coeff = gtx.as_field((dims.EdgeDim, dims.E2CDim), data = buffer)
 
     geometry.dual_edge_length.with_backend(None)(cell_center_lon, cell_center_lat, subtract_coeff, offset_provider = {"E2C": icon_grid.get_offset_provider("E2C")}, out = result)
-    helpers.dallclose(result.asnumpy(), expected.asnumpy())
+    assert helpers.dallclose(result.asnumpy(), expected.asnumpy())
     
     
 @pytest.mark.datatest
@@ -34,7 +34,7 @@ def test_primal_edge_length(grid_savepoint, icon_grid):
     buffer = np.vstack((np.ones(icon_grid.num_edges), -1 * np.ones(icon_grid.num_edges))).T
     subtract_coeff = gtx.as_field((dims.EdgeDim, dims.E2VDim), data = buffer)
     geometry.primal_edge_length.with_backend(None)(vertex_lat, vertex_lon, subtract_coeff, offset_provider = {"E2V": icon_grid.get_offset_provider("E2V")}, out = result)
-    helpers.dallclose(result.asnumpy(), expected.asnumpy())
+    assert helpers.dallclose(result.asnumpy(), expected.asnumpy())
     
     
 @pytest.mark.datatest
@@ -55,7 +55,7 @@ def test_vertex_vertex_length(grid_savepoint, icon_grid):
                                                      domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
                                                      )
     icon4py.model.common.math.helpers.invert(length, offset_provider = {}, out = inverse)
-    helpers.dallclose(expected.asnumpy(), inverse.asnumpy())
+    assert helpers.dallclose(expected.asnumpy(), inverse.asnumpy())
     
     
 @pytest.mark.datatest
@@ -64,7 +64,7 @@ def test_coriolis_parameter(grid_savepoint, icon_grid):
     edge_latitude = grid_savepoint.edges_center_lat()
     result = helpers.zero_field(icon_grid, dims.EdgeDim)
     geometry.coriolis_parameter_on_edges(edge_latitude, 2.0,offset_provider = {}, out= result)
-    helpers.dallclose(expected.asnumpy(), result.asnumpy())
+    assert helpers.dallclose(expected.asnumpy(), result.asnumpy())
     
 @pytest.mark.datatest
 def test_edge_control_area(grid_savepoint, icon_grid):
@@ -74,4 +74,4 @@ def test_edge_control_area(grid_savepoint, icon_grid):
     dual_edge_length = grid_savepoint.dual_edge_length()
     result = helpers.zero_field(icon_grid, dims.EdgeDim)
     geometry.edge_control_area(owner_mask,primal_edge_length, dual_edge_length, offset_provider = {}, out=result)
-    helpers.dallclose(expected.asnumpy(), result.asnumpy())
+    assert helpers.dallclose(expected.asnumpy(), result.asnumpy())
