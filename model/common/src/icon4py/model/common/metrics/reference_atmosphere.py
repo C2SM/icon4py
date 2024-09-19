@@ -13,12 +13,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_reference_atmosphere_edge_fields(
     z_me: fa.EdgeKField[wpfloat],
@@ -72,8 +66,8 @@ def compute_reference_atmosphere_edge_fields(
         del_t_bg,
         out=(rho_ref_me, theta_ref_me),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -195,8 +189,8 @@ def compute_reference_atmosphere_cell_fields(
         del_t_bg,
         out=(theta_ref_mc, exner_ref_mc, rho_ref_mc),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 

@@ -15,11 +15,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _apply_nabla2_and_nabla4_global_to_vn(
     area_edge: fa.EdgeField[wpfloat],
@@ -59,7 +54,7 @@ def apply_nabla2_and_nabla4_global_to_vn(
         vn,
         out=vn,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
