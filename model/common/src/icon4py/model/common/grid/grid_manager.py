@@ -244,6 +244,7 @@ class GridFile:
 
     def __init__(self, file_name: str):
         self._filename = file_name
+        self._dataset = None
 
     def dimension(self, name: DimensionName) -> int:
         """Read a dimension with name 'name' from the grid file."""
