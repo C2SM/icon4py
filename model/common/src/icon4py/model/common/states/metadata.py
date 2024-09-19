@@ -150,7 +150,6 @@ attrs = {
         dims=(dims.EdgeDim,),
         icon_var_name="refin_e_ctrl",
     ),
-    ### Nikki fields
     "c_bln_avg": dict(
         standard_name="c_bln_avg",
         units="",

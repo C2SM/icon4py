@@ -38,7 +38,6 @@ class Zone(enum.IntEnum):
     FLAT = 4
     TOP1 = 5
     NRDMAX1 = 6
-    BOTTOM1 = 7
 
 
 @dataclasses.dataclass(frozen=True)
@@ -188,8 +187,6 @@ class VerticalGrid:
                 return gtx.int32(1)
             case Zone.NRDMAX1:
                 return gtx.int32(self.config.nrdmax + 1)
-            case Zone.BOTTOM1:
-                return gtx.int32(self.config.num_levels + 1)
 
     @property
     def interface_physical_height(self) -> fa.KField[float]:
