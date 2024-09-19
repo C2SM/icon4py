@@ -4,6 +4,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.geometry as geometry
+import icon4py.model.common.math.helpers
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.test_utils import helpers
 
@@ -53,7 +54,7 @@ def test_vertex_vertex_length(grid_savepoint, icon_grid):
                                                      out = length,
                                                      domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
                                                      )
-    geometry.invert(length, offset_provider = {}, out = inverse)
+    icon4py.model.common.math.helpers.invert(length, offset_provider = {}, out = inverse)
     helpers.dallclose(expected.asnumpy(), inverse.asnumpy())
     
     

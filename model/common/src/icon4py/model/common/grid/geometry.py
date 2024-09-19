@@ -20,16 +20,19 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, E2CDim, E2VDim, EdgeDim
+from icon4py.model.common.math.helpers import (
+    dot_product,
+    norm2,
+    spherical_to_cartesian_on_cells,
+    spherical_to_cartesian_on_vertex,
+)
 
 
 """
-Cells:
-cell_center_lat: "clat" from gridfile
-cell_center_lon: "clon" from gridfile
-cell_ares: "cell_area" from grid file DWD units : steradian
+
 
 Edges:
-edge_center_lat: "elat" or "lat_edge_center" (DWD units radians), what is the difference between those two?
+: "elat" or "lat_edge_center" (DWD units radians), what is the difference between those two?
 edge_center_lon: "elat" or "lat_edge_center" (DWD units radians), what is the difference between those two?
 tangent_orientation: "edge_system_orientation" from grid file
 edge_orientation: "orientation_of_normal"  from grid file
@@ -378,24 +381,6 @@ def edge_lengths():
     """
     ...
 
-@gtx.field_operator
-def spherical_to_cartesian_on_cells(
-    lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat], r: ta.wpfloat
-) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
-    x = r * cos(lat) * cos(lon)
-    y = r * sin(lat) * cos(lon)
-    z = r * sin(lon)
-    return x, y, z
-
-
-@gtx.field_operator
-def spherical_to_cartesian_on_edges(
-    lat: fa.EdgeField[ta.wpfloat], lon: fa.EdgeField[ta.wpfloat], r: ta.wpfloat
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
-    x = r * cos(lat) * cos(lon)
-    y = r * sin(lat) * cos(lon)
-    z = r * sin(lon)
-    return x, y, z
 
 @gtx.field_operator(grid_type = gtx.GridType.UNSTRUCTURED)
 def dual_egde_length(cell_lon:fa.CellField[ta.wpfloat], cell_lat:fa.CellField[ta.wpfloat], 
@@ -407,22 +392,6 @@ def dual_egde_length(cell_lon:fa.CellField[ta.wpfloat], cell_lat:fa.CellField[ta
 
     return sqrt(x*x + y*y + z*z)
 
-@gtx.field_operator
-def spherical_to_cartesian_on_vertex(
-    lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat], r: ta.wpfloat
-) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
-    x = r * cos(lat) * cos(lon)
-    y = r * sin(lat) * cos(lon)
-    z = r * sin(lon)
-    return x, y, z
-
-@gtx.field_operator
-def norm2(x:fa.EdgeField[ta.wpfloat], y:fa.EdgeField[ta.wpfloat], z:fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
-    return sqrt(x*x + y*y + z*z)
-
-@gtx.field_operator
-def dot_product(x1:fa.EdgeField[ta.wpfloat], x2:fa.EdgeField[ta.wpfloat], y1:fa.EdgeField[ta.wpfloat], y2:fa.EdgeField[ta.wpfloat], z1:fa.EdgeField[ta.wpfloat], z2:fa.EdgeField[ta.wpfloat])->fa.EdgeField[ta.wpfloat]:
-     return x1 *x2 + y1 * y2 + z1 *z2
 
 @gtx.field_operator(grid_type = gtx.GridType.UNSTRUCTURED)
 def primal_edge_length(vertex_lat: fa.VertexField[fa.wpfloat], vertex_lon:fa.VertexField[ta.wpfloat], subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat])-> fa.EdgeField[ta.wpfloat]:
@@ -447,12 +416,6 @@ def vertex_vertex_length(vertex_lat: fa.VertexField[fa.wpfloat], vertex_lon:fa.V
     
     length = dot_product(x1, x2, y1, y2, z1, z2) / norm
     return arccos(length)
-    
-    
-
-@gtx.field_operator
-def invert(f:fa.EdgeField[ta.wpfloat])-> fa.EdgeField[ta.wpfloat]:
-    return 1.0 / f
 
 
 @gtx.field_operator

@@ -5,10 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+from gt4py import next as gtx
 from gt4py.next import Field, field_operator
+from gt4py.next.ffront.fbuiltins import cos, sin, sqrt
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2V, Koff
 from icon4py.model.common.type_alias import wpfloat
 
@@ -113,3 +114,48 @@ def _grad_fd_tang(
 ) -> fa.EdgeKField[float]:
     grad_tang_psi_e = tangent_orientation * (psi_v(E2V[1]) - psi_v(E2V[0])) * inv_primal_edge_length
     return grad_tang_psi_e
+
+
+@gtx.field_operator
+def spherical_to_cartesian_on_cells(
+    lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat], r: ta.wpfloat
+) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+    x = r * cos(lat) * cos(lon)
+    y = r * sin(lat) * cos(lon)
+    z = r * sin(lon)
+    return x, y, z
+
+
+@gtx.field_operator
+def spherical_to_cartesian_on_edges(
+    lat: fa.EdgeField[ta.wpfloat], lon: fa.EdgeField[ta.wpfloat], r: ta.wpfloat
+) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    x = r * cos(lat) * cos(lon)
+    y = r * sin(lat) * cos(lon)
+    z = r * sin(lon)
+    return x, y, z
+
+
+@gtx.field_operator
+def spherical_to_cartesian_on_vertex(
+    lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat], r: ta.wpfloat
+) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
+    x = r * cos(lat) * cos(lon)
+    y = r * sin(lat) * cos(lon)
+    z = r * sin(lon)
+    return x, y, z
+
+
+@gtx.field_operator
+def norm2(x:fa.EdgeField[ta.wpfloat], y:fa.EdgeField[ta.wpfloat], z:fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
+    return sqrt(x*x + y*y + z*z)
+
+
+@gtx.field_operator
+def dot_product(x1:fa.EdgeField[ta.wpfloat], x2:fa.EdgeField[ta.wpfloat], y1:fa.EdgeField[ta.wpfloat], y2:fa.EdgeField[ta.wpfloat], z1:fa.EdgeField[ta.wpfloat], z2:fa.EdgeField[ta.wpfloat])->fa.EdgeField[ta.wpfloat]:
+     return x1 *x2 + y1 * y2 + z1 *z2
+
+
+@gtx.field_operator
+def invert(f:fa.EdgeField[ta.wpfloat])-> fa.EdgeField[ta.wpfloat]:
+    return 1.0 / f
