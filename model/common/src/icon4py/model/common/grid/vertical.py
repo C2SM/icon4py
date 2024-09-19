@@ -179,7 +179,6 @@ class VerticalGrid:
             icon_var_name="vct_a",
         )
 
-
     def index(self, domain: Domain) -> gtx.int32:
         match domain.marker:
             case Zone.TOP:
