@@ -81,7 +81,7 @@ class RefinementValue:
 
 
 def is_unordered_field(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
-    assert field.dtype == xp.int32 or field.dtype == xp.int64, f"not an integer type {field.dtype}"
+    assert field.dtype in (xp.int32, xp.int64), f"not an integer type {field.dtype}"
     return xp.where(
         field == _UNORDERED[dim][0], True, xp.where(field == _UNORDERED[dim][1], True, False)
     )
@@ -93,7 +93,7 @@ def convert_to_unnested_refinement_values(field: xp.ndarray, dim: dims.Dimension
 
     The nested values are used for example in the radiation grids.
     """
-    assert field.dtype == xp.int32 or field.dtype == xp.int64, f"not an integer type {field.dtype}"
+    assert field.dtype in (xp.int32, xp.int64), f"not an integer type {field.dtype}"
     return xp.where(field == _UNORDERED[dim][1], 0, xp.where(field < 0, -field, field))
 
 

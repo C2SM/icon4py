@@ -49,7 +49,7 @@ class OptionalPropertyName(GridFileName):
     HISTORY = "history"
     GRID_ID = "grid_ID"
     PARENT_GRID_ID = "parent_grid_ID"
-    MAX_CHILD_DOMAINS = "max_childdom"
+    MAX_CHILD_DOMAINS = "max_child_dom"
 
 
 class PropertyName(GridFileName):
@@ -498,6 +498,7 @@ class GridManager:
         }
         grid.with_connectivities({o.target[1]: c for o, c in global_connectivities.items()})
         _add_derived_connectivities(grid)
+        _update_size_for_1d_sparse_dims(grid)
         start, end, _ = self._read_start_end_indices()
         for dim in dims.global_dimensions.values():
             grid.with_start_end_indices(dim, start[dim], end[dim])
@@ -617,7 +618,7 @@ def _construct_diamond_vertices(e2v: xp.ndarray, c2v: xp.ndarray, e2c: xp.ndarra
     Returns: xp.ndarray containing the connectivity table for edge-to-vertex on the diamond
     """
     dummy_c2v = _patch_with_dummy_lastline(c2v)
-    expanded = dummy_c2v[e2c[:, :], :]
+    expanded = dummy_c2v[e2c, :]
     sh = expanded.shape
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
     far_indices = xp.zeros_like(e2v)
@@ -690,7 +691,7 @@ def _construct_triangle_edges(c2e2c, c2e):
             edges of its cell neighbors
     """
     dummy_c2e = _patch_with_dummy_lastline(c2e)
-    table = xp.reshape(dummy_c2e[c2e2c[:, :], :], (c2e2c.shape[0], 9))
+    table = xp.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
     return table
 
 
