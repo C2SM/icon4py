@@ -44,6 +44,7 @@ class DiagnosticStateNonHydro:
     vn_incr: fa.EdgeKField[float]  # normal velocity increment [m/s]
     exner_incr: fa.EdgeKField[float]  # exner increment [- ]
     exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
+    exner_dyn_incr_final: fa.CellKField[float]  # exner pressure dynamics increment
 
     @property
     def ddt_vn_apc_pc(

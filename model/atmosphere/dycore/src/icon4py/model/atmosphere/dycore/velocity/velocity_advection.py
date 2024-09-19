@@ -43,6 +43,7 @@ from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.common.settings import xp
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -407,7 +408,7 @@ class VelocityAdvection:
 
     def _update_levmask_from_cfl_clipping(self):
         self.levmask = gtx.as_field(
-            domain=(dims.KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
+            domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):

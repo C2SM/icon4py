@@ -19,6 +19,7 @@ import numpy.ma as ma
 from gt4py.next import Dimension
 
 from icon4py.model.common.utils import builder
+from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
@@ -69,6 +70,7 @@ class DecompositionInfo:
     @builder.builder
     def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
         masked_global_index = ma.array(global_index, mask=owner_mask)
+        masked_global_index = xp.asarray(masked_global_index)
         self._global_index[dim] = masked_global_index
 
     def __init__(self, klevels: int):
