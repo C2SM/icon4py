@@ -33,7 +33,6 @@ from icon4py.model.driver.test_cases import utils as testcases_utils
 log = logging.getLogger(__name__)
 
 
-# TODO (Chia Rui): Convert all numpy computations to cupy
 def model_initialization_jabw(
     grid: icon_grid.IconGrid,
     cell_param: geometry.CellParams,

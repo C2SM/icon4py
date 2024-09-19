@@ -18,14 +18,6 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.settings import backend, xp
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
-# TODO (Chia Rui): Convert all numpy computations to cupy
-
-
 def hydrostatic_adjustment_ndarray(
     wgtfac_c: xp.ndarray,
     ddqz_z_half: xp.ndarray,
@@ -203,7 +195,7 @@ def compute_perturbed_exner(
         exner_ref,
         out=exner_pr,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

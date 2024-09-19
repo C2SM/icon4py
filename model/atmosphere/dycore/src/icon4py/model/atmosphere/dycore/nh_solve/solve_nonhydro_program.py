@@ -46,8 +46,7 @@ from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
 )
 from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
-    _compute_only_pressure_gradient,
-    _compute_only_virtual_potential_temperatures,
+    _compute_virtual_potential_temperatures,
     _compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
@@ -347,7 +346,7 @@ def predictor_stencils_7_8_9(
 
 
 @gtx.field_operator
-def _predictor_stencils_7_8_9_firststep(
+def _compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
     rho: fa.CellKField[float],
     z_rth_pr_1: fa.CellKField[float],
     z_rth_pr_2: fa.CellKField[float],
@@ -382,7 +381,7 @@ def _predictor_stencils_7_8_9_firststep(
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field >= 1,
-        _compute_only_virtual_potential_temperatures(
+        _compute_virtual_potential_temperatures(
             wgtfac_c,
             z_rth_pr_2,
             theta_v,
@@ -394,7 +393,7 @@ def _predictor_stencils_7_8_9_firststep(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def predictor_stencils_7_8_9_firststep(
+def compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
     rho: fa.CellKField[float],
     rho_ref_mc: fa.CellKField[float],
     theta_v: fa.CellKField[float],
@@ -411,7 +410,7 @@ def predictor_stencils_7_8_9_firststep(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _predictor_stencils_7_8_9_firststep(
+    _compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
         rho,
         z_rth_pr_1,
         z_rth_pr_2,
@@ -430,65 +429,6 @@ def predictor_stencils_7_8_9_firststep(
             z_theta_v_pr_ic,
             theta_v_ic,
         ),
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _predictor_stencils_7_8_9_secondstep(
-    vwind_expl_wgt: fa.CellField[float],
-    theta_v_ic: fa.CellKField[float],
-    z_theta_v_pr_ic: fa.CellKField[float],
-    exner_pr: fa.CellKField[float],
-    d_exner_dz_ref_ic: fa.CellKField[float],
-    ddqz_z_half: fa.CellKField[float],
-    z_th_ddz_exner_c: fa.CellKField[float],
-    k_field: fa.KField[gtx.int32],
-) -> fa.CellKField[float]:
-    z_th_ddz_exner_c = where(
-        k_field >= 1,
-        _compute_only_pressure_gradient(
-            vwind_expl_wgt,
-            theta_v_ic,
-            z_theta_v_pr_ic,
-            exner_pr,
-            d_exner_dz_ref_ic,
-            ddqz_z_half,
-        ),
-        z_th_ddz_exner_c,
-    )
-
-    return z_th_ddz_exner_c
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def predictor_stencils_7_8_9_secondstep(
-    vwind_expl_wgt: fa.CellField[float],
-    theta_v_ic: fa.CellKField[float],
-    z_theta_v_pr_ic: fa.CellKField[float],
-    exner_pr: fa.CellKField[float],
-    d_exner_dz_ref_ic: fa.CellKField[float],
-    ddqz_z_half: fa.CellKField[float],
-    z_th_ddz_exner_c: fa.CellKField[float],
-    k_field: fa.KField[gtx.int32],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _predictor_stencils_7_8_9_secondstep(
-        vwind_expl_wgt,
-        theta_v_ic,
-        z_theta_v_pr_ic,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
-        z_th_ddz_exner_c,
-        k_field,
-        out=z_th_ddz_exner_c,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

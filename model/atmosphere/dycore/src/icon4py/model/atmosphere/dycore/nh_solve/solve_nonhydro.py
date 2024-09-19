@@ -18,7 +18,9 @@ from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
-
+from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
+    compute_pressure_gradient,
+)
 from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
@@ -813,7 +815,7 @@ class SolveNonhydro:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
-        nhsolve_prog.predictor_stencils_7_8_9_firststep(
+        nhsolve_prog.compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,
@@ -832,7 +834,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        nhsolve_prog.predictor_stencils_7_8_9_secondstep(
+        compute_pressure_gradient(
             vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_theta_v_pr_ic=self.z_theta_v_pr_ic,
