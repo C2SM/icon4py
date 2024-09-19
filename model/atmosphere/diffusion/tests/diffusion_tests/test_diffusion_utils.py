@@ -15,7 +15,8 @@ from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import helpers
 
-from .utils import construct_config, diff_multfac_vn_numpy, smag_limit_numpy
+from .utils import diff_multfac_vn_numpy, smag_limit_numpy
+from icon4py.model.common.test_utils.datatest_utils import construct_config
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):

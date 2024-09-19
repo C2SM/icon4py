@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from .utils import construct_interpolation_state
+from icon4py.model.common.test_utils.datatest_utils import construct_interpolation_state
 
 
 @pytest.mark.datatest

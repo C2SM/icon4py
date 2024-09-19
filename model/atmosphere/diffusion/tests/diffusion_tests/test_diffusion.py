@@ -19,12 +19,10 @@ from icon4py.model.common.test_utils import (
     reference_funcs as ref_funcs,
     serialbox_utils as sb,
 )
+from icon4py.model.common.test_utils.datatest_utils import vertical_grid, construct_diagnostics, construct_metric_state, \
+    construct_interpolation_state, construct_config
 
 from .utils import (
-    construct_config,
-    construct_diagnostics,
-    construct_interpolation_state,
-    construct_metric_state,
     diff_multfac_vn_numpy,
     smag_limit_numpy,
     verify_diffusion_fields,
@@ -90,15 +88,6 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
-
-
-def vertical_grid(vertical_config: v_grid.VerticalGridConfig, grid_savepoint: sb.IconGridSavepoint):
-    return v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
-    )
 
 
 @pytest.mark.datatest

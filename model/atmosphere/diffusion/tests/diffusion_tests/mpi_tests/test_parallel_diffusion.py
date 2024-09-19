@@ -8,6 +8,7 @@
 
 import pytest
 
+import icon4py.model.common.test_utils.datatest_utils
 from icon4py.model.atmosphere.diffusion import diffusion as diffusion_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -58,10 +59,10 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = utils.construct_metric_state(metrics_savepoint)
+    metric_state = icon4py.model.common.test_utils.datatest_utils.construct_metric_state(metrics_savepoint)
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    interpolation_state = icon4py.model.common.test_utils.datatest_utils.construct_interpolation_state(interpolation_savepoint)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -69,7 +70,7 @@ def test_parallel_diffusion(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    config = utils.construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = icon4py.model.common.test_utils.datatest_utils.construct_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = diffusion_.DiffusionParams(config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     print(
@@ -92,7 +93,7 @@ def test_parallel_diffusion(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state = utils.construct_diagnostics(diffusion_savepoint_init)
+    diagnostic_state = icon4py.model.common.test_utils.datatest_utils.construct_diagnostics(diffusion_savepoint_init)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     if linit:
         diffusion.initial_run(
