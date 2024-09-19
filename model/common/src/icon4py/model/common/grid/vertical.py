@@ -220,15 +220,15 @@ class VerticalGrid:
     def nflat_gradp(self) -> gtx.int32:
         return self._min_index_flat_horizontal_grad_pressure
 
-    def size(self, dim: dims.VerticalDim) -> int:
-        assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
+    def size(self, dim: gtx.Dimension) -> int:
+        assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported."
         match dim:
             case dims.KDim:
                 return self.config.num_levels
             case dims.KHalfDim:
                 return self.config.num_levels + 1
             case _:
-                raise ValueError(f"Unkown dimension {dim}.")
+                raise ValueError(f"Unknown dimension {dim}.")
 
     @classmethod
     def _determine_start_level_of_moist_physics(
