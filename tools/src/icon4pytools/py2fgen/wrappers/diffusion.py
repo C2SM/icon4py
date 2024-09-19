@@ -16,9 +16,11 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
-
+from gt4py.next import Field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
+from numpy import int32
+
 from icon4py.model.atmosphere.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
@@ -29,10 +31,10 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid import geometry
-from icon4py.model.common.grid.icon import GlobalGridParams
+from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -40,10 +42,11 @@ from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common
-
+from icon4pytools.py2fgen.wrappers.wrapper_dimension import CellIndexDim, VertexIndexDim, EdgeIndexDim
 
 logger = setup_logger(__name__)
 
+icon_grid: IconGrid = None
 
 def diffusion_init(
     vct_a: Field[[dims.KHalfDim], float64],
@@ -164,7 +167,7 @@ def diffusion_init(
 
     # Vertical grid config
     vertical_config = VerticalGridConfig(
-        num_levels=common.GLOBAL_STATE["icon_grid"].num_levels,
+        num_levels=icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
@@ -205,7 +208,7 @@ def diffusion_init(
 
     # Initialize the diffusion granule
     common.GLOBAL_STATE["diffusion_granule"].init(
-        grid=common.GLOBAL_STATE["icon_grid"],
+        grid=icon_grid,
         config=config,
         params=diffusion_params,
         vertical_grid=vertical_params,
@@ -255,3 +258,60 @@ def diffusion_run(
         common.GLOBAL_STATE["diffusion_granule"].run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )
+
+
+def grid_init(
+    cell_starts: Field[[CellIndexDim], int32],
+    cell_ends: Field[[CellIndexDim], int32],
+    vertex_starts: Field[[VertexIndexDim], int32],
+    vertex_ends: Field[[VertexIndexDim], int32],
+    edge_starts: Field[[EdgeIndexDim], int32],
+    edge_ends: Field[[EdgeIndexDim], int32],
+    c2e: Field[[dims.CellDim, dims.C2EDim], int32],
+    e2c: Field[[dims.EdgeDim, dims.E2CDim], int32],
+    c2e2c: Field[[dims.CellDim, dims.C2E2CDim], int32],
+    e2c2e: Field[[dims.EdgeDim, dims.E2C2EDim], int32],
+    e2v: Field[[dims.EdgeDim, dims.E2VDim], int32],
+    v2e: Field[[dims.VertexDim, dims.V2EDim], int32],
+    v2c: Field[[dims.VertexDim, dims.V2CDim], int32],
+    e2c2v: Field[[dims.EdgeDim, dims.E2C2VDim], int32],
+    c2v: Field[[dims.CellDim, dims.C2VDim], int32],
+    c2e2c2e: Field[[dims.CellDim, dims.C2E2C2EDim], int32],
+    global_root: int32,
+    global_level: int32,
+    num_vertices: int32,
+    num_cells: int32,
+    num_edges: int32,
+    vertical_size: int32,
+    limited_area: bool,
+):
+    global icon_grid
+
+    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
+
+    icon_grid = common.construct_icon_grid(
+        grid_id="icon_grid",
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+        c2e2c2e=c2e2c2e,
+    )

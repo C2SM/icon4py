@@ -10,6 +10,8 @@ from unittest import mock
 
 import gt4py.next as gtx
 import pytest
+
+import icon4pytools.py2fgen.wrappers.diffusion
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType, TurbulenceShearForcingType
 from icon4py.model.common import dimension as dims
@@ -27,7 +29,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
     vertical_grid,
 )
 
-from icon4pytools.py2fgen.wrappers import common
+from icon4pytools.py2fgen.wrappers import wrapper_dimension
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 
 from .conftest import compare_objects
@@ -137,12 +139,12 @@ def test_diffusion_wrapper_granule_inputs(
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field((common.CellIndexDim,), grid_savepoint.cells_start_index())
-    cell_ends = gtx.as_field((common.CellIndexDim,), grid_savepoint.cells_end_index())
-    vertex_starts = gtx.as_field((common.VertexIndexDim,), grid_savepoint.vertex_start_index())
-    vertex_ends = gtx.as_field((common.VertexIndexDim,), grid_savepoint.vertex_end_index())
-    edge_starts = gtx.as_field((common.EdgeIndexDim,), grid_savepoint.edge_start_index())
-    edge_ends = gtx.as_field((common.EdgeIndexDim,), grid_savepoint.edge_end_index())
+    cell_starts = gtx.as_field((wrapper_dimension.CellIndexDim,), grid_savepoint.cells_start_index())
+    cell_ends = gtx.as_field((wrapper_dimension.CellIndexDim,), grid_savepoint.cells_end_index())
+    vertex_starts = gtx.as_field((wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_start_index())
+    vertex_ends = gtx.as_field((wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_end_index())
+    edge_starts = gtx.as_field((wrapper_dimension.EdgeIndexDim,), grid_savepoint.edge_start_index())
+    edge_ends = gtx.as_field((wrapper_dimension.EdgeIndexDim,), grid_savepoint.edge_end_index())
 
     c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint.c2e())
     e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint.e2c())
@@ -176,8 +178,7 @@ def test_diffusion_wrapper_granule_inputs(
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Initialize the Grid ---
-    common.grid_init(
-        grid_id=grid_id,
+    icon4pytools.py2fgen.wrappers.diffusion.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -269,14 +270,38 @@ def test_diffusion_wrapper_granule_inputs(
 
         # Check input arguments to diffusion_granule.init
         captured_args, captured_kwargs = mock_init.call_args
-        assert compare_objects(captured_kwargs["grid"], expected_icon_grid)
-        assert compare_objects(captured_kwargs["config"], expected_config)
-        assert compare_objects(captured_kwargs["params"], expected_additional_parameters)
-        assert compare_objects(captured_kwargs["vertical_grid"], expected_vertical_params)
-        assert compare_objects(captured_kwargs["metric_state"], expected_metric_state)
-        assert compare_objects(captured_kwargs["interpolation_state"], expected_interpolation_state)
-        assert compare_objects(captured_kwargs["edge_params"], expected_edge_geometry)
-        assert compare_objects(captured_kwargs["cell_params"], expected_cell_geometry)
+
+        # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
+        try:
+            result, error_message = compare_objects(captured_kwargs["grid"], expected_icon_grid)
+            assert result, f"Grid comparison failed: {error_message}"
+        except AssertionError as e:
+            error_message = str(e)
+            if "_id" not in error_message:
+                raise  # Re-raise the exception if "_id" is not in the error message
+            else:
+                pass
+
+        result, error_message = compare_objects(captured_kwargs["config"], expected_config)
+        assert result, f"Config comparison failed: {error_message}"
+
+        result, error_message = compare_objects(captured_kwargs["params"], expected_additional_parameters)
+        assert result, f"Params comparison failed: {error_message}"
+
+        result, error_message = compare_objects(captured_kwargs["vertical_grid"], expected_vertical_params)
+        assert result, f"Vertical Grid comparison failed: {error_message}"
+
+        result, error_message = compare_objects(captured_kwargs["metric_state"], expected_metric_state)
+        assert result, f"Metric State comparison failed: {error_message}"
+
+        result, error_message = compare_objects(captured_kwargs["interpolation_state"], expected_interpolation_state)
+        assert result, f"Interpolation State comparison failed: {error_message}"
+
+        result, error_message = compare_objects(captured_kwargs["edge_params"], expected_edge_geometry)
+        assert result, f"Edge Params comparison failed: {error_message}"
+
+        result, error_message = compare_objects(captured_kwargs["cell_params"], expected_cell_geometry)
+        assert result, f"Cell Params comparison failed: {error_message}"
 
     # --- Mock and Test diffusion_granule.run ---
     with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.run") as mock_run:
@@ -412,12 +437,12 @@ def test_diffusion_wrapper_single_step(
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field((common.CellIndexDim,), grid_savepoint.cells_start_index())
-    cell_ends = gtx.as_field((common.CellIndexDim,), grid_savepoint.cells_end_index())
-    vertex_starts = gtx.as_field((common.VertexIndexDim,), grid_savepoint.vertex_start_index())
-    vertex_ends = gtx.as_field((common.VertexIndexDim,), grid_savepoint.vertex_end_index())
-    edge_starts = gtx.as_field((common.EdgeIndexDim,), grid_savepoint.edge_start_index())
-    edge_ends = gtx.as_field((common.EdgeIndexDim,), grid_savepoint.edge_end_index())
+    cell_starts = gtx.as_field((wrapper_dimension.CellIndexDim,), grid_savepoint.cells_start_index())
+    cell_ends = gtx.as_field((wrapper_dimension.CellIndexDim,), grid_savepoint.cells_end_index())
+    vertex_starts = gtx.as_field((wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_start_index())
+    vertex_ends = gtx.as_field((wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_end_index())
+    edge_starts = gtx.as_field((wrapper_dimension.EdgeIndexDim,), grid_savepoint.edge_start_index())
+    edge_ends = gtx.as_field((wrapper_dimension.EdgeIndexDim,), grid_savepoint.edge_end_index())
 
     c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint.c2e())
     e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint.e2c())
@@ -430,8 +455,7 @@ def test_diffusion_wrapper_single_step(
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
     c2e2c2e = gtx.as_field((dims.CellDim, dims.C2E2C2EDim), grid_savepoint.c2e2c2e())
 
-    common.grid_init(
-        grid_id=grid_id,
+    icon4pytools.py2fgen.wrappers.diffusion.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,

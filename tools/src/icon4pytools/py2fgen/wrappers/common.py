@@ -11,25 +11,14 @@ import cProfile
 import logging
 import pstats
 
-from gt4py.next import Dimension
-from gt4py.next.common import Field
-from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion
-from icon4py.model.common import dimension as dims, settings
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
-from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.settings import xp
-
 
 log = logging.getLogger(__name__)
 
-GLOBAL_STATE = {"diffusion_granule": Diffusion(), "icon_grid": None, "profiler": cProfile.Profile()}
-
-# extra dimensions
-CellIndexDim = Dimension("CellIndex")
-EdgeIndexDim = Dimension("EdgeIndex")
-VertexIndexDim = Dimension("VertexIndex")
-
+GLOBAL_STATE = {"diffusion_granule": Diffusion(), "profiler": cProfile.Profile()}
 
 # profiling utils
 def profile_enable():
@@ -40,63 +29,6 @@ def profile_disable():
     GLOBAL_STATE["profiler"].disable()
     stats = pstats.Stats(GLOBAL_STATE["profiler"])
     stats.dump_stats(f"{__name__}.profile")
-
-
-# initialising the grid
-def grid_init(
-    grid_id: str,
-    cell_starts: Field[[CellIndexDim], int32],
-    cell_ends: Field[[CellIndexDim], int32],
-    vertex_starts: Field[[VertexIndexDim], int32],
-    vertex_ends: Field[[VertexIndexDim], int32],
-    edge_starts: Field[[EdgeIndexDim], int32],
-    edge_ends: Field[[EdgeIndexDim], int32],
-    c2e: Field[[dims.CellDim, dims.C2EDim], int32],
-    e2c: Field[[dims.EdgeDim, dims.E2CDim], int32],
-    c2e2c: Field[[dims.CellDim, dims.C2E2CDim], int32],
-    e2c2e: Field[[dims.EdgeDim, dims.E2C2EDim], int32],
-    e2v: Field[[dims.EdgeDim, dims.E2VDim], int32],
-    v2e: Field[[dims.VertexDim, dims.V2EDim], int32],
-    v2c: Field[[dims.VertexDim, dims.V2CDim], int32],
-    e2c2v: Field[[dims.EdgeDim, dims.E2C2VDim], int32],
-    c2v: Field[[dims.CellDim, dims.C2VDim], int32],
-    c2e2c2e: Field[[dims.CellDim, dims.C2E2C2EDim], int32],
-    global_root: int32,
-    global_level: int32,
-    num_vertices: int32,
-    num_cells: int32,
-    num_edges: int32,
-    vertical_size: int32,
-    limited_area: bool,
-):
-    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
-
-    GLOBAL_STATE["icon_grid"] = construct_icon_grid(
-        grid_id=grid_id,
-        global_grid_params=global_grid_params,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        c2e=c2e,
-        e2c=e2c,
-        c2e2c=c2e2c,
-        e2c2e=e2c2e,
-        e2v=e2v,
-        v2e=v2e,
-        v2c=v2c,
-        e2c2v=e2c2v,
-        c2v=c2v,
-        c2e2c2e=c2e2c2e,
-    )
 
 
 def offset_fortran_indices_return_numpy(inp) -> xp.ndarray:

@@ -115,14 +115,22 @@ def get_uninitialised_arrays(limited_area: bool):
 def build_array_size_args() -> dict[str, str]:
     array_size_args = {}
     from icon4py.model.common import dimension
+    from icon4pytools.py2fgen.wrappers import wrapper_dimension
 
-    for var_name, var in vars(dimension).items():
-        if isinstance(var, Dimension):
-            dim_name = var_name.replace(
-                "Dim", ""
-            )  # Assumes we keep suffixing each Dimension with Dim in icon4py.common.dimension module
-            size_name = f"n_{dim_name}"
-            array_size_args[dim_name] = size_name
+    # Function to process the dimensions
+    def process_dimensions(module):
+        for var_name, var in vars(module).items():
+            if isinstance(var, Dimension):
+                dim_name = var_name.replace(
+                    "Dim", ""
+                )  # Assumes we keep suffixing each Dimension with Dim
+                size_name = f"n_{dim_name}"
+                array_size_args[dim_name] = size_name
+
+    # Process dimensions in both modules
+    process_dimensions(dimension)
+    process_dimensions(wrapper_dimension)
+
     return array_size_args
 
 
