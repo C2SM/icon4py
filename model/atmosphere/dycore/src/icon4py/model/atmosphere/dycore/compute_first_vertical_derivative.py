@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_first_vertical_derivative(
     z_exner_ic: fa.CellKField[vpfloat],
@@ -46,7 +41,7 @@ def compute_first_vertical_derivative(
         inv_ddqz_z_full,
         out=z_dexner_dz_c_1,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

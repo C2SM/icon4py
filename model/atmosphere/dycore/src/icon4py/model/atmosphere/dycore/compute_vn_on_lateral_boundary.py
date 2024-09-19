@@ -15,11 +15,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_vn_on_lateral_boundary(
     grf_tend_vn: fa.EdgeKField[wpfloat],
@@ -48,7 +43,7 @@ def compute_vn_on_lateral_boundary(
         dtime,
         out=vn_new,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

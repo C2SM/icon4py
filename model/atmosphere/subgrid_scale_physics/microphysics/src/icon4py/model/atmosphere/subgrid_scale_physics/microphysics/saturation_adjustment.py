@@ -19,6 +19,7 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
+import icon4py.model.common.dimension as dims
 from icon4py.model.common import (
     constants as phy_const,
     field_type_aliases as fa,
@@ -243,72 +244,72 @@ class SaturationAdjustment:
     def _allocate_tendencies(self):
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
         self._temperature1 = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         #: it was originally named as twork in ICON. New temperature before iteration.
         self._temperature2 = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         #: A mask that indicates whether the grid cell is subsaturated or not.
         self._subsaturated_mask = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=bool
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool
         )
         #: A mask that indicates whether next Newton iteration is required.
         self._newton_iteration_mask = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=bool
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool
         )
         #: latent heat vaporization / dry air heat capacity at constant volume
         self._lwdocvd = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self._k_field = field_alloc.allocate_indices(
-            KDim, grid=self.grid, is_halfdim=True, dtype=gtx.int32
+            dims.KDim, grid=self.grid, is_halfdim=True, dtype=gtx.int32
         )
         # TODO (Chia Rui): remove local pressure and pressire_ifc when scan operator can be called along with pressure tendency computation
         self._pressure = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self._pressure_ifc = field_alloc.allocate_zero_field(
-            CellDim,
-            KDim,
+            dims.CellDim,
+            dims.KDim,
             grid=self.grid,
             is_halfdim=True,
             dtype=ta.wpfloat,
         )
         self._pressure_ifc = field_alloc.allocate_zero_field(
-            CellDim,
-            KDim,
+            dims.CellDim,
+            dims.KDim,
             grid=self.grid,
             is_halfdim=True,
             dtype=ta.wpfloat,
         )
         self._new_exner = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self._new_virtual_temperature = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         # TODO (Chia Rui): remove the tendency terms below when architecture of the entire phyiscs component is ready to use.
         self.temperature_tendency = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self.qv_tendency = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self.qc_tendency = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self.virtual_temperature_tendency = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self.exner_tendency = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self.pressure_tendency = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self.pressure_ifc_tendency = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, is_halfdim=True, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, dtype=ta.wpfloat
         )
 
     def run(
@@ -333,7 +334,7 @@ class SaturationAdjustment:
         """
 
         # TODO (Chia Rui): move this to initialization following the style in dycore granules
-        cell_domain = h_grid.domain(CellDim)
+        cell_domain = h_grid.domain(dims.CellDim)
         start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
@@ -471,13 +472,13 @@ class SaturationAdjustment:
                 horizontal_end=end_cell_local,
                 vertical_start=self.grid.num_levels,
                 vertical_end=self.grid.num_levels + gtx.int32(1),
-                offset_provider={"Koff": KDim},
+                offset_provider={"Koff": dims.KDim},
             )
 
             pressure.diagnose_pressure(
                 self.metric_state.ddqz_z_full,
                 self._new_virtual_temperature,
-                gtx.as_field((CellDim,), self._pressure_ifc.ndarray[:, -1]),
+                gtx.as_field((dims.CellDim,), self._pressure_ifc.ndarray[:, -1]),
                 self._pressure,
                 self._pressure_ifc,
                 phy_const.GRAV_O_RD,
@@ -665,8 +666,8 @@ def update_temperature_by_newton_iteration(
         new_temperature2,
         out=new_temperature1,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -740,8 +741,8 @@ def update_temperature_qv_qc_tendencies(
         subsaturated_mask,
         out=(temperature_tendency, qv_tendency, qc_tendency),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -828,8 +829,8 @@ def compute_subsaturated_case_and_initialize_newton_iterations(
         rho,
         out=(subsaturated_mask, lwdocvd, new_temperature1, new_temperature2, newton_iteration_mask),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -860,8 +861,8 @@ def compute_newton_iteration_mask(
         temperature_next,
         out=newton_iteration_mask,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -899,8 +900,8 @@ def copy_temperature(
         temperature_current,
         out=temperature_next,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -950,7 +951,7 @@ def _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
     """
     qsum = where(
         k_field < kstart_moist,
-        broadcast(0.0, (CellDim, KDim)),
+        broadcast(0.0, (CellDim, KDim)),  # TODO: use dims module import when ready in gt4px
         qc + qc_tendency * dtime + qi + qr + qs + qg,
     )
 
@@ -1021,8 +1022,8 @@ def compute_temperature_and_exner_tendencies_after_saturation_adjustment(
             new_virtual_temperature,
         ),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1063,7 +1064,10 @@ def compute_pressure_tendency_after_saturation_adjustment(
         old_pressure,
         new_pressure,
         out=pressure_tendency,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -1102,5 +1106,8 @@ def compute_pressure_ifc_tendency_after_saturation_adjustment(
         old_pressure_ifc,
         new_pressure_ifc,
         out=pressure_ifc_tendency,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
