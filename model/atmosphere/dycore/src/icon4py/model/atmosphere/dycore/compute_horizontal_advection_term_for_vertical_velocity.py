@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_horizontal_advection_term_for_vertical_velocity(
     vn_ie: fa.EdgeKField[vpfloat],
@@ -67,7 +62,7 @@ def compute_horizontal_advection_term_for_vertical_velocity(
         z_w_v,
         out=z_v_grad_w,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

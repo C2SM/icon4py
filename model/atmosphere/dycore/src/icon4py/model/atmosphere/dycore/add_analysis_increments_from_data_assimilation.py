@@ -15,11 +15,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _add_analysis_increments_from_data_assimilation(
     z_rho_expl: fa.CellKField[wpfloat],
@@ -56,7 +51,7 @@ def add_analysis_increments_from_data_assimilation(
         iau_wgt_dyn,
         out=(z_rho_expl, z_exner_expl),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

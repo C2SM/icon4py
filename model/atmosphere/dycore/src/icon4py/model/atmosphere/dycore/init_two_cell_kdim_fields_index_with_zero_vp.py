@@ -18,11 +18,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _init_two_cell_kdim_fields_index_with_zero_vp(
     field_index_with_zero_1: fa.CellKField[vpfloat],
@@ -32,7 +27,7 @@ def _init_two_cell_kdim_fields_index_with_zero_vp(
     k2: int32,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_45 and _mo_solve_nonhydro_stencil_45_b."""
-    k = broadcast(k, (CellDim, KDim))
+    k = broadcast(k, (dims.CellDim, dims.KDim))
 
     field_index_with_zero_1 = where(
         (k == k1), _init_cell_kdim_field_with_zero_vp(), field_index_with_zero_1
@@ -64,7 +59,7 @@ def init_two_cell_kdim_fields_index_with_zero_vp(
         k2,
         out=(field_index_with_zero_1, field_index_with_zero_2),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

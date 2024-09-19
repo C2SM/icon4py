@@ -26,11 +26,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13_predictor(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
@@ -235,8 +230,8 @@ def fused_velocity_advection_stencil_8_to_13(
         nflatlev,
         out=(z_ekinh, w_concorr_c, z_w_con_c),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end - 1),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
     _fused_velocity_advection_stencil_8_to_13_restricted(
@@ -254,7 +249,7 @@ def fused_velocity_advection_stencil_8_to_13(
         nflatlev,
         out=z_w_con_c,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )

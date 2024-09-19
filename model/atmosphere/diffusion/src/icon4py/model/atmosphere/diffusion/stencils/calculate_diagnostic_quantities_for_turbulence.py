@@ -21,11 +21,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: fa.EdgeKField[vpfloat],
@@ -66,7 +61,7 @@ def calculate_diagnostic_quantities_for_turbulence(
         wgtfac_c,
         out=(div_ic, hdef_ic),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

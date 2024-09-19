@@ -15,11 +15,6 @@ from icon4py.model.common.dimension import E2C, E2CDim
 from icon4py.model.common.settings import backend
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _cell_2_edge_interpolation(
     in_field: fa.CellKField[ta.wpfloat], coeff: Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
@@ -50,7 +45,7 @@ def cell_2_edge_interpolation(
         coeff,
         out=out_field,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
