@@ -1,0 +1,66 @@
+import gt4py.next as gtx
+import numpy as np
+import pytest
+
+import icon4py.model.common.dimension as dims
+import icon4py.model.common.grid.geometry as geometry
+from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.test_utils import helpers
+
+
+#@pytest.mark.parametrize("experiment", (dt_utils.GLOBAL_EXPERIMENT))
+@pytest.mark.datatest
+def test_dual_edge_length(grid_savepoint, icon_grid):
+    expected = grid_savepoint.dual_edge_length()
+
+
+    cell_center_lat = grid_savepoint.cell_center_lat()
+    cell_center_lon = grid_savepoint.cell_center_lon()
+    result = helpers.zero_field(icon_grid, dims.EdgeDim)
+    buffer = np.vstack((np.ones(icon_grid.num_edges), -1 * np.ones(icon_grid.num_edges))).T
+    subtract_coeff = gtx.as_field((dims.EdgeDim, dims.E2CDim), data = buffer)
+
+    geometry.dual_egde_length.with_backend(None)(cell_center_lon, cell_center_lat, subtract_coeff, offset_provider = {"E2C": icon_grid.get_offset_provider("E2C")}, out = result)
+    helpers.dallclose(result.asnumpy(), expected.asnumpy())
+    
+    
+@pytest.mark.datatest
+def test_primal_edge_length(grid_savepoint, icon_grid):
+    expected = grid_savepoint.primal_edge_length()
+    vertex_lat = grid_savepoint.verts_vertex_lat()
+    vertex_lon = grid_savepoint.verts_vertex_lon()
+    result = helpers.zero_field(icon_grid, dims.EdgeDim)
+    buffer = np.vstack((np.ones(icon_grid.num_edges), -1 * np.ones(icon_grid.num_edges))).T
+    subtract_coeff = gtx.as_field((dims.EdgeDim, dims.E2VDim), data = buffer)
+    geometry.primal_edge_length.with_backend(None)(vertex_lat, vertex_lon, subtract_coeff, offset_provider = {"E2V": icon_grid.get_offset_provider("E2V")}, out = result)
+    helpers.dallclose(result.asnumpy(), expected.asnumpy())
+    
+    
+@pytest.mark.datatest
+def test_vertex_vertex_length(grid_savepoint, icon_grid):
+    expected = grid_savepoint.inv_vert_vert_length()
+
+    vertex_lat = grid_savepoint.verts_vertex_lat()
+    vertex_lon = grid_savepoint.verts_vertex_lon()
+    length = helpers.zero_field(icon_grid, dims.EdgeDim)
+    inverse = helpers.zero_field(icon_grid, dims.EdgeDim)
+    domain = h_grid.domain(dims.EdgeDim)
+    horizontal_start = icon_grid.start_index(domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    horizontal_end = icon_grid.end_index(domain(h_grid.Zone.LOCAL))
+    
+    geometry.vertex_vertex_length.with_backend(None)(vertex_lat, vertex_lon, 
+                                                     offset_provider = {"E2C2V":icon_grid.get_offset_provider("E2C2V")}, 
+                                                     out = length,
+                                                     domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
+                                                     )
+    geometry.invert(length, offset_provider = {}, out = inverse)
+    helpers.dallclose(expected.asnumpy(), inverse.asnumpy())
+    
+    
+@pytest.mark.datatest
+def test_coriolis_parameter(grid_savepoint, icon_grid):
+    expected = grid_savepoint.f_e()
+    edge_latitude = grid_savepoint.edges_center_lat()
+    result = helpers.zero_field(icon_grid, dims.EdgeDim)
+    geometry.coriolis_parameter_on_edges(edge_latitude, 2.0,offset_provider = {}, out= result)
+    helpers.dallclose(expected.asnumpy(), result.asnumpy())

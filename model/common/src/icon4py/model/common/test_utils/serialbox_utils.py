@@ -129,9 +129,11 @@ class IconGridSavepoint(IconSavepoint):
         self.global_grid_params = icon.GlobalGridParams(root, level)
 
     def verts_vertex_lat(self):
+        """vertex latituted"""
         return self._get_field("verts_vertex_lat", dims.VertexDim)
 
     def verts_vertex_lon(self):
+        """vertex longitude"""
         return self._get_field("verts_vertex_lon", dims.VertexDim)
 
     def primal_normal_v1(self):
@@ -147,18 +149,15 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_field("dual_normal_v2", dims.EdgeDim)
 
     def edges_center_lat(self):
+        """edge center latitude"""
         return self._get_field("edges_center_lat", dims.EdgeDim)
 
     def edges_center_lon(self):
+        """edge center longitude"""
         return self._get_field("edges_center_lon", dims.EdgeDim)
 
-    def v_num_edges(self):
-        return self._get_field("v_num_edges", dims.VertexDim)
-
-    def v_dual_area(self):
-        return self._get_field("v_dual_area", dims.VertexDim)
-
     def edge_vert_length(self):
+        """length of edge midpoint to vertex"""
         return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2C2VDim)
 
     def vct_a(self):
@@ -255,6 +254,7 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_field("dual_edge_length", dims.EdgeDim)
 
     def edge_cell_length(self):
+        """length of edge midpoint to cell center"""
         return self._get_field("edge_cell_length", dims.EdgeDim, dims.E2CDim)
 
     def cells_start_index(self):
