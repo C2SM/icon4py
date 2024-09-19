@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import logging
 from dataclasses import dataclass
@@ -15,7 +16,6 @@ from enum import IntEnum
 from typing import Any, Protocol
 
 import numpy as np
-import numpy.ma as ma
 from gt4py.next import Dimension
 
 from icon4py.model.common.utils import builder
@@ -59,8 +59,26 @@ class DomainDescriptorIdGenerator:
             self._counter = self._counter + 1
         return next_id
 
+@dataclasses.dataclass(frozen = True)
+class MaskedArray:
+    data: np.ndarray
+    mask: np.ndarray
+    
+    def __post__init__(self, ):
+        assert self.mask.shape == self.data.shape, "mask and value must have the same shape"
+        assert self.mask.dtype == bool, "maks should be a boolean array"
+    
+    def get_masked(self):
+        return self.data[self.mask]
+    
+    def get_unmasked(self):
+        return self.data[~self.mask]
 
 class DecompositionInfo:
+    def __init__(self, klevels: int):
+        self._global_index:dict[Dimension, MaskedArray] = {}
+        self._klevels = klevels
+        
     class EntryType(IntEnum):
         ALL = 0
         OWNED = 1
@@ -68,12 +86,10 @@ class DecompositionInfo:
 
     @builder.builder
     def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
-        masked_global_index = ma.array(global_index, mask=owner_mask)
+        masked_global_index = MaskedArray(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index
 
-    def __init__(self, klevels: int):
-        self._global_index = {}
-        self._klevels = klevels
+
 
     @property
     def klevels(self):
@@ -93,7 +109,7 @@ class DecompositionInfo:
                 return index[mask]
 
     def _to_local_index(self, dim):
-        data = ma.getdata(self._global_index[dim], subok=False)
+        data = self._global_index[dim].data
         assert data.ndim == 1
         return np.arange(data.shape[0])
 
@@ -103,13 +119,11 @@ class DecompositionInfo:
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
-                return ma.getdata(self._global_index[dim], subok=False)
+                return self._global_index[dim].data
             case DecompositionInfo.EntryType.OWNED:
-                global_index = self._global_index[dim]
-                return ma.getdata(global_index[global_index.mask])
+                return self._global_index[dim].get_masked()
             case DecompositionInfo.EntryType.HALO:
-                global_index = self._global_index[dim]
-                return ma.getdata(global_index[~global_index.mask])
+                return self._global_index[dim].get_unmasked()
             case _:
                 raise NotImplementedError()
 
