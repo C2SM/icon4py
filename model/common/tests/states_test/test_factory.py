@@ -8,7 +8,6 @@
 
 import gt4py.next as gtx
 import pytest
-from model.common.tests.metric_tests.test_metric_fields import edge_domain
 
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims, exceptions
@@ -24,6 +23,7 @@ from icon4py.model.common.states import factory
 
 
 cell_domain = h_grid.domain(dims.CellDim)
+edge_domain = h_grid.domain(dims.EdgeDim)
 full_level = v_grid.domain(dims.KDim)
 interface_level = v_grid.domain(dims.KHalfDim)
 
