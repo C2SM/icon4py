@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_approx_of_2nd_vertical_derivative_of_exner(
     z_theta_v_pr_ic: fa.CellKField[vpfloat],
@@ -55,7 +50,7 @@ def compute_approx_of_2nd_vertical_derivative_of_exner(
         z_rth_pr_2,
         out=z_dexner_dz_c_2,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

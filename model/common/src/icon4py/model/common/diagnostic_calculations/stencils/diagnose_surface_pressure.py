@@ -15,11 +15,6 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.settings import backend
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _diagnose_surface_pressure(
     exner: fa.CellKField[ta.wpfloat],
@@ -64,7 +59,7 @@ def diagnose_surface_pressure(
         grav_o_rd,
         out=surface_pressure,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
