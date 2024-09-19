@@ -1,0 +1,173 @@
+2024-09-19 15:22:08,484 icon4py_driver.py    (306 ) : initialize          :  INFO     initialize parallel runtime
+2024-09-19 15:22:08,484 icon4py_driver.py    (307 ) : initialize          :  INFO     reading configuration: experiment jabw
+2024-09-19 15:22:09,834 icon4py_driver.py    (314 ) : initialize          :  INFO     initializing the grid from '/scratch/mch/cong/data/jw_exclaim_node1_r2b5_nproma150000'
+2024-09-19 15:22:09,966 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity c2e2c : (81920, 3)
+2024-09-19 15:22:09,991 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity e2c2e : (122880, 4)
+2024-09-19 15:22:10,086 icon.py              (93  ) : with_start_end_indices:  DEBUG    Using start_indices Vertex[horizontal] [40962 40962 40962    -1    -1    -1    -1     0     0     0     0     0
+     0], end_indices Vertex[horizontal] [40962 40962 40962 40962 40962 40962 40962 40962     0     0     0     0
+     0]
+2024-09-19 15:22:10,087 icon.py              (93  ) : with_start_end_indices:  DEBUG    Using start_indices Edge[horizontal] [122880 122880 122880 122880 122880     -1     -1     -1     -1     -1
+     -1     -1     -1      0      0      0      0      0      0      0
+      0      0      0      0], end_indices Edge[horizontal] [122880 122880 122880 122880 122880 122880 122880 122880 122880 122880
+ 122880 122880 122880 122880      0      0      0      0      0      0
+      0      0      0      0]
+2024-09-19 15:22:10,087 icon.py              (93  ) : with_start_end_indices:  DEBUG    Using start_indices Cell[horizontal] [81920 81920 81920 81920    -1    -1    -1    -1     0     0     0     0
+     0     0], end_indices Cell[horizontal] [81920 81920 81920 81920 81920 81920 81920 81920 81920     0     0     0
+     0     0]
+2024-09-19 15:22:10,132 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity c2e : (81920, 3)
+2024-09-19 15:22:10,152 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity e2c : (122880, 2)
+2024-09-19 15:22:10,192 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity c2e2c2e : (81920, 9)
+2024-09-19 15:22:10,204 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity c2e2c2e : (81920, 9)
+2024-09-19 15:22:10,239 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity e2v : (122880, 4)
+2024-09-19 15:22:10,239 serialbox_utils.py   (338 ) : e2v                 :  DEBUG    real e2v (122880, 2)
+2024-09-19 15:22:10,273 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity v2e : (40962, 6)
+2024-09-19 15:22:10,306 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity v2c : (40962, 6)
+2024-09-19 15:22:10,311 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity e2v : (122880, 4)
+2024-09-19 15:22:10,345 serialbox_utils.py   (313 ) : _get_connectivity_array:  DEBUG     connectivity c2v : (81920, 3)
+2024-09-19 15:22:10,348 icon4py_driver.py    (323 ) : initialize          :  INFO     reading input fields from '/scratch/mch/cong/data/jw_exclaim_node1_r2b5_nproma150000'
+2024-09-19 15:22:10,387 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    primal_normal_vert_x (122880, 4)
+2024-09-19 15:22:10,428 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    primal_normal_vert_y (122880, 4)
+2024-09-19 15:22:10,463 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    dual_normal_vert_x (122880, 4)
+2024-09-19 15:22:10,531 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    dual_normal_vert_y (122880, 4)
+2024-09-19 15:22:10,561 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    primal_normal_cell_x (122880, 2)
+2024-09-19 15:22:10,587 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    primal_normal_cell_y (122880, 2)
+2024-09-19 15:22:10,619 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    dual_normal_cell_x (122880, 2)
+2024-09-19 15:22:10,649 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    dual_normal_cell_y (122880, 2)
+2024-09-19 15:22:10,666 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    tangent_orientation (122880,)
+2024-09-19 15:22:10,712 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    inv_primal_edge_length (122880,)
+2024-09-19 15:22:10,738 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    inv_dual_edge_length (122880,)
+2024-09-19 15:22:10,767 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    inv_vert_vert_length (122880,)
+2024-09-19 15:22:10,793 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    edge_areas (122880,)
+2024-09-19 15:22:10,812 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    f_e (122880,)
+2024-09-19 15:22:10,837 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    edges_center_lat (122880,)
+2024-09-19 15:22:10,872 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    edges_center_lon (122880,)
+2024-09-19 15:22:10,895 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    primal_normal_v1 (122880,)
+2024-09-19 15:22:10,955 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    primal_normal_v2 (122880,)
+2024-09-19 15:22:10,985 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    cell_center_lat (81920,)
+2024-09-19 15:22:11,008 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    cell_center_lon (81920,)
+2024-09-19 15:22:11,036 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    cell_areas (81920,)
+2024-09-19 15:22:11,095 vertical.py          (142 ) : __post_init__       :  INFO     computation of moist physics start on layer: 1
+2024-09-19 15:22:11,096 vertical.py          (143 ) : __post_init__       :  INFO     end index of Rayleigh damping layer for w: 0 
+2024-09-19 15:22:11,097 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    c_owner_mask (81920,)
+2024-09-19 15:22:11,197 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    e_bln_c_s (81920, 3)
+2024-09-19 15:22:11,239 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    rbf_vec_coeff_v1 (40962, 6)
+2024-09-19 15:22:11,275 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    rbf_vec_coeff_v2 (40962, 6)
+2024-09-19 15:22:11,338 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    geofac_div (81920, 3)
+2024-09-19 15:22:11,367 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    geofac_n2s (81920, 4)
+2024-09-19 15:22:11,386 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    nudgecoeff_e (122880,)
+2024-09-19 15:22:11,441 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    mask_hdiff (81920, 35)
+2024-09-19 15:22:11,594 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    theta_ref_mc (81920, 35)
+2024-09-19 15:22:11,726 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    wgtfac_c (81920, 36)
+2024-09-19 15:22:12,703 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    zd_diffcoef (81920, 35)
+2024-09-19 15:22:12,756 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    c_lin_e (122880, 2)
+2024-09-19 15:22:12,790 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    c_intp (40962, 6)
+2024-09-19 15:22:12,862 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    e_flx_avg (122880, 5)
+2024-09-19 15:22:12,901 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    geofac_grdiv (122880, 5)
+2024-09-19 15:22:12,942 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    geofac_rot (40962, 6)
+2024-09-19 15:22:12,979 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    pos_on_tplane_e_x (122880, 4)
+2024-09-19 15:22:13,014 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    pos_on_tplane_e_y (122880, 4)
+2024-09-19 15:22:13,057 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    e_bln_c_s (81920, 3)
+2024-09-19 15:22:13,065 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    rbf_vec_coeff_v1 (40962, 6)
+2024-09-19 15:22:13,073 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    rbf_vec_coeff_v2 (40962, 6)
+2024-09-19 15:22:13,078 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    geofac_div (81920, 3)
+2024-09-19 15:22:13,084 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    geofac_n2s (81920, 4)
+2024-09-19 15:22:13,086 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    nudgecoeff_e (122880,)
+2024-09-19 15:22:13,106 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    bdy_halo_c (81920,)
+2024-09-19 15:22:13,129 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    mask_prog_halo_c (81920,)
+2024-09-19 15:22:13,139 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    rayleigh_w (36,)
+2024-09-19 15:22:13,294 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    exner_exfac (81920, 35)
+2024-09-19 15:22:13,422 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    exner_ref_mc (81920, 35)
+2024-09-19 15:22:13,488 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    wgtfac_c (81920, 36)
+2024-09-19 15:22:13,611 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    wgtfacq_c_dsl (81920, 35)
+2024-09-19 15:22:13,737 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    inv_ddqz_z_full (81920, 35)
+2024-09-19 15:22:13,865 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    rho_ref_mc (81920, 35)
+2024-09-19 15:22:13,934 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    theta_ref_mc (81920, 35)
+2024-09-19 15:22:13,953 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    vwind_expl_wgt (81920,)
+2024-09-19 15:22:14,068 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    d_exner_dz_ref_ic (81920, 36)
+2024-09-19 15:22:14,185 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    ddqz_z_half (81920, 36)
+2024-09-19 15:22:14,323 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    theta_ref_ic (81920, 36)
+2024-09-19 15:22:14,452 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    d2dexdz2_fac1_mc (81920, 35)
+2024-09-19 15:22:14,592 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    d2dexdz2_fac2_mc (81920, 35)
+2024-09-19 15:22:14,722 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    rho_ref_me (122880, 35)
+2024-09-19 15:22:14,860 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    theta_ref_me (122880, 35)
+2024-09-19 15:22:14,981 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    ddxn_z_full (122880, 35)
+2024-09-19 15:22:15,183 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    zdiff_gradp_dsl (122880, 2, 35)
+2024-09-19 15:22:15,426 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    vertoffset_gradp_dsl (122880, 2, 35)
+2024-09-19 15:22:15,476 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    ipeidx_dsl (122880, 35)
+2024-09-19 15:22:15,596 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    pg_exdist_dsl (122880, 35)
+2024-09-19 15:22:15,739 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    ddqz_z_full_e (122880, 35)
+2024-09-19 15:22:15,877 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    ddxt_z_full (122880, 35)
+2024-09-19 15:22:16,009 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    wgtfac_e (122880, 36)
+2024-09-19 15:22:16,066 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    vwind_impl_wgt (81920,)
+2024-09-19 15:22:16,091 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    hmask_dd3d (122880,)
+2024-09-19 15:22:16,109 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    scalfac_dd3d (35,)
+2024-09-19 15:22:16,229 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    coeff1_dwdz (81920, 35)
+2024-09-19 15:22:16,424 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    coeff2_dwdz (81920, 35)
+2024-09-19 15:22:16,434 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    coeff_gradekin (122880, 2)
+2024-09-19 15:22:16,559 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    ddqz_z_full (81920, 35)
+2024-09-19 15:22:16,649 icon4py_driver.py    (351 ) : initialize          :  INFO     initializing diffusion
+2024-09-19 15:22:20,538 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    wgtfac_c (81920, 36)
+2024-09-19 15:22:20,604 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    ddqz_z_half (81920, 36)
+2024-09-19 15:22:20,672 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    theta_ref_mc (81920, 35)
+2024-09-19 15:22:20,736 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    theta_ref_ic (81920, 36)
+2024-09-19 15:22:20,800 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    exner_ref_mc (81920, 35)
+2024-09-19 15:22:20,860 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    d_exner_dz_ref_ic (81920, 36)
+2024-09-19 15:22:20,991 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    geopot (81920, 35)
+2024-09-19 15:22:20,996 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    c_lin_e (122880, 2)
+2024-09-19 15:22:21,031 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 34
+2024-09-19 15:22:21,164 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 33
+2024-09-19 15:22:21,284 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 32
+2024-09-19 15:22:21,403 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 31
+2024-09-19 15:22:21,528 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 30
+2024-09-19 15:22:21,650 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 29
+2024-09-19 15:22:21,777 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 28
+2024-09-19 15:22:21,896 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 27
+2024-09-19 15:22:22,016 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 26
+2024-09-19 15:22:22,135 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 25
+2024-09-19 15:22:22,253 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 24
+2024-09-19 15:22:22,372 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 23
+2024-09-19 15:22:22,491 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 22
+2024-09-19 15:22:22,610 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 21
+2024-09-19 15:22:22,729 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 20
+2024-09-19 15:22:22,847 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 19
+2024-09-19 15:22:22,966 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 18
+2024-09-19 15:22:23,085 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 17
+2024-09-19 15:22:23,204 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 16
+2024-09-19 15:22:23,322 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 15
+2024-09-19 15:22:23,441 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 14
+2024-09-19 15:22:23,560 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 13
+2024-09-19 15:22:23,678 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 12
+2024-09-19 15:22:23,797 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 11
+2024-09-19 15:22:23,916 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 10
+2024-09-19 15:22:24,035 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 9
+2024-09-19 15:22:24,154 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 8
+2024-09-19 15:22:24,272 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 7
+2024-09-19 15:22:24,391 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 6
+2024-09-19 15:22:24,510 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 5
+2024-09-19 15:22:24,630 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 4
+2024-09-19 15:22:24,748 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 3
+2024-09-19 15:22:24,867 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 2
+2024-09-19 15:22:24,985 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 1
+2024-09-19 15:22:25,104 jablonowski_williamson.py (134 ) : model_initialization_jabw:  INFO     In Newton iteration, k = 0
+2024-09-19 15:22:25,223 jablonowski_williamson.py (196 ) : model_initialization_jabw:  INFO     Newton iteration completed!
+2024-09-19 15:22:25,675 jablonowski_williamson.py (210 ) : model_initialization_jabw:  INFO     Cell-to-edge eta_v computation completed.
+2024-09-19 15:22:25,681 jablonowski_williamson.py (224 ) : model_initialization_jabw:  INFO     U2vn computation completed.
+2024-09-19 15:22:25,710 jablonowski_williamson.py (238 ) : model_initialization_jabw:  INFO     Hydrostatic adjustment computation completed.
+2024-09-19 15:22:26,519 jablonowski_williamson.py (273 ) : model_initialization_jabw:  INFO     U, V computation completed.
+2024-09-19 15:22:26,587 serialbox_utils.py   (64  ) : _get_field          :  DEBUG    exner_ref_mc (81920, 35)
+2024-09-19 15:22:26,892 jablonowski_williamson.py (286 ) : model_initialization_jabw:  INFO     exner_pr initialization completed.
+2024-09-19 15:22:26,904 jablonowski_williamson.py (363 ) : model_initialization_jabw:  INFO     Initialization completed.
+2024-09-19 15:22:26,904 icon4py_driver.py    (502 ) : icon4py_driver      :  INFO     Starting ICON dycore run: 0001-01-01T00:00:00
+2024-09-19 15:22:26,905 icon4py_driver.py    (503 ) : icon4py_driver      :  INFO     input args: input_path=/scratch/mch/cong/data/jw_exclaim_node1_r2b5_nproma150000/, n_time_steps=6, ending date=0001-01-01 00:30:00
+2024-09-19 15:22:26,905 icon4py_driver.py    (507 ) : icon4py_driver      :  INFO     input args: input_path=/scratch/mch/cong/data/jw_exclaim_node1_r2b5_nproma150000/, n_time_steps=6
+2024-09-19 15:22:26,905 icon4py_driver.py    (509 ) : icon4py_driver      :  INFO     dycore configuring: DONE
+2024-09-19 15:22:26,905 icon4py_driver.py    (510 ) : icon4py_driver      :  INFO     timeloop: START
+2024-09-19 15:22:26,905 icon4py_driver.py    (139 ) : time_integration    :  INFO     starting time loop for dtime=300.0 s and n_timesteps=6
+2024-09-19 15:22:26,905 icon4py_driver.py    (142 ) : time_integration    :  INFO     apply_to_horizontal_wind=True initial_stabilization=False dtime=300.0 s, substep_timestep=60.0
+2024-09-19 15:22:26,905 icon4py_driver.py    (163 ) : time_integration    :  INFO     starting real time loop for dtime=300.0 n_timesteps=6
+2024-09-19 15:22:26,905 icon4py_driver.py    (168 ) : time_integration    :  INFO     simulation date : 0001-01-01 00:00:00 run timestep : 0
+2024-09-19 15:22:26,906 icon4py_driver.py    (169 ) : time_integration    :  INFO      MAX VN: 3.497907928241368e+01 , MAX W: 0.000000000000000e+00
+2024-09-19 15:22:26,906 icon4py_driver.py    (172 ) : time_integration    :  INFO      MAX RHO: 1.533539831046145e+00 , MAX THETA_V: 6.484434591603749e+02
+2024-09-19 15:22:26,906 icon4py_driver.py    (241 ) : _do_dyn_substepping :  INFO     simulation date : 0001-01-01 00:05:00 substep / n_substeps : 0 / 5 , is_first_step_in_simulation : True, nnow: 0, nnew : 1
+2024-09-19 15:22:26,906 solve_nonhydro.py    (634 ) : time_step           :  INFO     running timestep: dtime = 60.0, init = True, recompute = True, prep_adv = False  clean_mflx=True 
+2024-09-19 15:22:27,357 solve_nonhydro.py    (739 ) : run_predictor_step  :  INFO     running predictor step: dtime = 60.0, init = True, recompute = True 

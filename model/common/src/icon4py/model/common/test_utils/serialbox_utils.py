@@ -306,10 +306,8 @@ class IconGridSavepoint(IconSavepoint):
             connectivity = xp.asarray(
                 xp.transpose(self._read_int32(name, offset=1))[: self.sizes[target_dim], :]
             )
-            print("debug reverse", connectivity.device)
         else:
             connectivity = xp.asarray(self._read_int32(name, offset=1)[: self.sizes[target_dim], :])
-            print("debug normal", connectivity.device)
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 

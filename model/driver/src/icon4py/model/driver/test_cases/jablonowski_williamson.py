@@ -209,7 +209,6 @@ def model_initialization_jabw(
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
-    print("debug: ", eta_v_e.ndarray.device)
     vn_ndarray = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid,
         jw_u0,
