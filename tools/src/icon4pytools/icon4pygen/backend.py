@@ -17,8 +17,8 @@ from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.common import dimension as dims
 
-from icon4pytools.icon4pygen.bindings.utils import write_string
-from icon4pytools.icon4pygen.metadata import StencilInfo
+from icon4pytools.common.metadata import StencilInfo
+from icon4pytools.common.utils import write_string
 
 
 H_START = "horizontal_start"
