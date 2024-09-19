@@ -15,11 +15,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _apply_nabla2_and_nabla4_to_vn(
     area_edge: fa.EdgeField[wpfloat],
@@ -34,7 +29,7 @@ def _apply_nabla2_and_nabla4_to_vn(
     kh_smag_e_wp, z_nabla4_e2_wp, nudgezone_diff_wp = astype(
         (kh_smag_e, z_nabla4_e2, nudgezone_diff), wpfloat
     )
-    area_edge_broadcast = broadcast(area_edge, (EdgeDim, KDim))
+    area_edge_broadcast = broadcast(area_edge, (dims.EdgeDim, dims.KDim))
 
     vn_wp = vn + area_edge * (
         maximum(nudgezone_diff_wp * nudgecoeff_e, kh_smag_e_wp) * z_nabla2_e
@@ -69,7 +64,7 @@ def apply_nabla2_and_nabla4_to_vn(
         nudgezone_diff,
         out=vn,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

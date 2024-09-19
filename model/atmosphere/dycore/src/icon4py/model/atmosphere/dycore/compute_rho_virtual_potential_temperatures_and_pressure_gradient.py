@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     w: fa.CellKField[wpfloat],
@@ -134,7 +129,7 @@ def compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             z_th_ddz_exner_c,
         ),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
