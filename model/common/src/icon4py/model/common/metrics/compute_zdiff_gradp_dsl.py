@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
 from gt4py.next import as_field
 
 from icon4py.model.common import dimension as dims
@@ -26,9 +25,9 @@ def compute_zdiff_gradp_dsl(
     horizontal_start_1: int,
     nedges: int,
 ):
-    zdiff_gradp = np.zeros_like(z_mc[e2c])
+    zdiff_gradp = xp.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
-        np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
+        xp.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
     )
     """
     First part for loop implementation with gt4py code
@@ -71,7 +70,7 @@ def compute_zdiff_gradp_dsl(
                 ):
                     param[jk1] = True
 
-            zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], np.where(param)[0][0]]
+            zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], xp.where(param)[0][0]]
 
         jk_start = int(flat_idx[je])
         for jk in range(int(flat_idx[je]) + 1, nlev):

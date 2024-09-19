@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
-
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.helpers import numpy_to_1D_sparse_field
@@ -28,8 +26,8 @@ def compute_coeff_gradekin(
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
     """
-    coeff_gradekin_0 = np.zeros_like(inv_dual_edge_length)
-    coeff_gradekin_1 = np.zeros_like(inv_dual_edge_length)
+    coeff_gradekin_0 = xp.zeros_like(inv_dual_edge_length)
+    coeff_gradekin_1 = xp.zeros_like(inv_dual_edge_length)
     for e in range(horizontal_start, horizontal_end):
         coeff_gradekin_0[e] = (
             edge_cell_length[e, 1] / edge_cell_length[e, 0] * inv_dual_edge_length[e]
@@ -37,6 +35,6 @@ def compute_coeff_gradekin(
         coeff_gradekin_1[e] = (
             edge_cell_length[e, 0] / edge_cell_length[e, 1] * inv_dual_edge_length[e]
         )
-    coeff_gradekin_full = np.column_stack((coeff_gradekin_0, coeff_gradekin_1))
+    coeff_gradekin_full = xp.column_stack((coeff_gradekin_0, coeff_gradekin_1))
     coeff_gradekin = numpy_to_1D_sparse_field(coeff_gradekin_full, dims.ECDim)
     return coeff_gradekin.asnumpy()
