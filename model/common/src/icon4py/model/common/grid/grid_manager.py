@@ -390,9 +390,9 @@ class GridManager:
     def _read_start_end_indices(
         self,
     ) -> tuple[
-        dict[dims.HorizontalDim : xp.ndarray],
-        dict[dims.HorizontalDim : xp.ndarray],
-        dict[dims.HorizontalDim : gtx.int32],
+        dict[dims.Dimension : xp.ndarray],
+        dict[dims.Dimension : xp.ndarray],
+        dict[dims.Dimension : gtx.int32],
     ]:
         """ "
         Read the start/end indices from the grid file.
@@ -444,7 +444,7 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self, decomposition_info: Optional[decomposition.DecompositionInfo] = None
-    ) -> tuple[dict[dims.HorizontalDim : xp.ndarray]]:
+    ) -> tuple[dict[dims.Dimension : xp.ndarray]]:
         """
         Reads the refinement control fields from the grid file.
 

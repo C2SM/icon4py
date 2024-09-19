@@ -43,7 +43,7 @@ class Domain:
     Simple data class used to specify a vertical domain such that index lookup and domain specification can be separated.
     """
 
-    dim: dims.VerticalDim
+    dim: gtx.Dimension
     marker: Zone
     offset: int = 0
 
