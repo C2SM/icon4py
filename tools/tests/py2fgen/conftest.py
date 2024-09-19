@@ -73,4 +73,3 @@ def compare_objects(obj1, obj2, obj_name="object"):
             return False, error_message
 
     return True, None
-

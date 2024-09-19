@@ -10,8 +10,6 @@ from unittest import mock
 
 import gt4py.next as gtx
 import pytest
-
-import icon4pytools.py2fgen.wrappers.diffusion
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType, TurbulenceShearForcingType
 from icon4py.model.common import dimension as dims
@@ -20,7 +18,6 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.test_utils.datatest_utils import (
-    GRID_IDS,
     construct_config,
     construct_diagnostics,
     construct_interpolation_state,
@@ -29,6 +26,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
     vertical_grid,
 )
 
+import icon4pytools.py2fgen.wrappers.diffusion
 from icon4pytools.py2fgen.wrappers import wrapper_dimension
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 
@@ -132,17 +130,22 @@ def test_diffusion_wrapper_granule_inputs(
     dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
 
     # --- Set Up Grid Parameters ---
-    grid_id = GRID_IDS[experiment]
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
     num_edges = grid_savepoint.num(dims.EdgeDim)
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field((wrapper_dimension.CellIndexDim,), grid_savepoint.cells_start_index())
+    cell_starts = gtx.as_field(
+        (wrapper_dimension.CellIndexDim,), grid_savepoint.cells_start_index()
+    )
     cell_ends = gtx.as_field((wrapper_dimension.CellIndexDim,), grid_savepoint.cells_end_index())
-    vertex_starts = gtx.as_field((wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_start_index())
-    vertex_ends = gtx.as_field((wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_end_index())
+    vertex_starts = gtx.as_field(
+        (wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_start_index()
+    )
+    vertex_ends = gtx.as_field(
+        (wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_end_index()
+    )
     edge_starts = gtx.as_field((wrapper_dimension.EdgeIndexDim,), grid_savepoint.edge_start_index())
     edge_ends = gtx.as_field((wrapper_dimension.EdgeIndexDim,), grid_savepoint.edge_end_index())
 
@@ -283,22 +286,34 @@ def test_diffusion_wrapper_granule_inputs(
         result, error_message = compare_objects(captured_kwargs["config"], expected_config)
         assert result, f"Config comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["params"], expected_additional_parameters)
+        result, error_message = compare_objects(
+            captured_kwargs["params"], expected_additional_parameters
+        )
         assert result, f"Params comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["vertical_grid"], expected_vertical_params)
+        result, error_message = compare_objects(
+            captured_kwargs["vertical_grid"], expected_vertical_params
+        )
         assert result, f"Vertical Grid comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["metric_state"], expected_metric_state)
+        result, error_message = compare_objects(
+            captured_kwargs["metric_state"], expected_metric_state
+        )
         assert result, f"Metric State comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["interpolation_state"], expected_interpolation_state)
+        result, error_message = compare_objects(
+            captured_kwargs["interpolation_state"], expected_interpolation_state
+        )
         assert result, f"Interpolation State comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["edge_params"], expected_edge_geometry)
+        result, error_message = compare_objects(
+            captured_kwargs["edge_params"], expected_edge_geometry
+        )
         assert result, f"Edge Params comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["cell_params"], expected_cell_geometry)
+        result, error_message = compare_objects(
+            captured_kwargs["cell_params"], expected_cell_geometry
+        )
         assert result, f"Cell Params comparison failed: {error_message}"
 
     # --- Mock and Test diffusion_granule.run ---
@@ -428,17 +443,22 @@ def test_diffusion_wrapper_single_step(
     dtime = savepoint_diffusion_init.get_metadata("dtime")["dtime"]
 
     # grid params
-    grid_id = GRID_IDS[experiment]
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
     num_edges = grid_savepoint.num(dims.EdgeDim)
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field((wrapper_dimension.CellIndexDim,), grid_savepoint.cells_start_index())
+    cell_starts = gtx.as_field(
+        (wrapper_dimension.CellIndexDim,), grid_savepoint.cells_start_index()
+    )
     cell_ends = gtx.as_field((wrapper_dimension.CellIndexDim,), grid_savepoint.cells_end_index())
-    vertex_starts = gtx.as_field((wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_start_index())
-    vertex_ends = gtx.as_field((wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_end_index())
+    vertex_starts = gtx.as_field(
+        (wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_start_index()
+    )
+    vertex_ends = gtx.as_field(
+        (wrapper_dimension.VertexIndexDim,), grid_savepoint.vertex_end_index()
+    )
     edge_starts = gtx.as_field((wrapper_dimension.EdgeIndexDim,), grid_savepoint.edge_start_index())
     edge_ends = gtx.as_field((wrapper_dimension.EdgeIndexDim,), grid_savepoint.edge_end_index())
 

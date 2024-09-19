@@ -16,9 +16,11 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.settings import xp
 
+
 log = logging.getLogger(__name__)
 
 GLOBAL_STATE = {"diffusion_granule": Diffusion(), "profiler": cProfile.Profile()}
+
 
 # profiling utils
 def profile_enable():

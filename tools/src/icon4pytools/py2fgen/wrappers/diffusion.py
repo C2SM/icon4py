@@ -17,10 +17,7 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 from gt4py.next import Field
-from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
-from numpy import int32
-
 from icon4py.model.atmosphere.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
@@ -42,11 +39,17 @@ from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common
-from icon4pytools.py2fgen.wrappers.wrapper_dimension import CellIndexDim, VertexIndexDim, EdgeIndexDim
+from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
+    CellIndexDim,
+    EdgeIndexDim,
+    VertexIndexDim,
+)
+
 
 logger = setup_logger(__name__)
 
 icon_grid: IconGrid = None
+
 
 def diffusion_init(
     vct_a: Field[[dims.KHalfDim], float64],
