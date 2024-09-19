@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 import dataclasses
 from typing import Any, Callable, Optional
 
@@ -130,6 +132,6 @@ class CachedProgram:
         # todo(samkellerhals): if we merge gt4py PR we can also pass connectivity args here conn_args=self.conn_args
         return self.compiled_program(*program_args, offset_provider=offset_provider)
 
-    def with_connectivities(self, connectivities: dict[str, Connectivity]) -> "CachedProgram":
+    def with_connectivities(self, connectivities: dict[str, Connectivity]) -> CachedProgram:
         """Used ONLY in DaCe Orchestration for ahead-of-time compilation."""
         return self

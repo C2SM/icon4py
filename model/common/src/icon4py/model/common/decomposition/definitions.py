@@ -162,6 +162,12 @@ class SingleNodeExchange:
         return 1
 
     def __call__(self, *args, **kwargs):
+        """Performs a halo exchange operation.
+        args: The fields to be exchanged.
+        kwargs:
+            dim: The dimension along which the exchange is performed.
+            wait: If True, the operation will block until the exchange is completed.
+        """
         dim = kwargs.get("dim", None)
         wait = kwargs.get("wait", True)
 
@@ -173,6 +179,7 @@ class SingleNodeExchange:
 
     if dace:
         # Implementation of DaCe SDFGConvertible interface
+        # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
         def dace__sdfg__(self, *args, **kwargs):
             sdfg = DummyNestedSDFG().__sdfg__()
             sdfg.name = "_halo_exchange_"
@@ -210,16 +217,22 @@ class SingleNodeExchange:
 
 
 class HaloExchangeWaitRuntime(Protocol):
+    """Protocol for halo exchange wait."""
+
     def __call__(self, communication_handle: ExchangeResult):
+        """Wait on the communication handle."""
         ...
 
     def __sdfg__(self, *args, **kwargs):
+        """DaCe related: SDFGConvertible interface."""
         ...
 
     def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
+        """DaCe related: SDFGConvertible interface."""
         ...
 
     def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+        """DaCe related: SDFGConvertible interface."""
         ...
 
 

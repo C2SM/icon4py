@@ -13,7 +13,6 @@ from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
 from icon4py.model.common import settings
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
-from icon4py.model.common.orchestration.decorator import dace_orchestration
 from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
@@ -362,7 +361,7 @@ def test_run_diffusion_multiple_steps(
     damping_height,
     ndyn_substeps,
 ):
-    if not dace_orchestration():
+    if settings.dace_orchestration is not None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################

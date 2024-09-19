@@ -6,22 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Final, Optional, Type
 
-from typing import Optional, Type
-
-from gt4py.next import Field
+from gt4py.next import Field, common
 from gt4py.next.ffront.fbuiltins import int32, int64
 
 from icon4py.model.common import type_alias
@@ -41,8 +28,15 @@ if dace:
     VertexDim_sym = dace.symbol("VertexDim_sym")
     KDim_sym = dace.symbol("KDim_sym")
 
-    icon4py_primitive_dtypes = (type_alias.wpfloat, type_alias.vpfloat, float, bool, int32, int64)
-    dace_primitive_dtypes = (
+    ICON4PY_PRIMITIVE_DTYPES: Final = (
+        type_alias.wpfloat,
+        type_alias.vpfloat,
+        float,
+        bool,
+        int32,
+        int64,
+    )
+    DACE_PRIMITIVE_DTYPES: Final = (
         dace.float64,
         dace.float64 if type_alias.precision == "double" else dace.float32,
         dace.float64,
@@ -54,7 +48,21 @@ if dace:
     def stride_symbol_name_from_field(cls: Type, field_name: str, stride: int) -> str:
         return f"{cls.__name__}_{field_name}_s{stride}_sym"
 
-    def dace_structure_dict(cls):
+    def gt4py_dim_to_dace_symbol(dim: common.Dimension) -> dace.symbol:
+        # See dims.global_dimensions.values()
+        # TODO(kotsaloscv): generalize this
+        if "cell" in dim.value.lower():
+            return CellDim_sym
+        elif "edge" in dim.value.lower():
+            return EdgeDim_sym
+        elif "vertex" in dim.value.lower():
+            return VertexDim_sym
+        elif "k" == dim.value.lower():
+            return KDim_sym
+        else:
+            raise ValueError(f"The dimension [{dim}] is not supported.")
+
+    def dace_structure_dict(cls: Type) -> dict[str, dace.data.Array]:
         """
         Function that returns a dictionary to be used to define DaCe Structures based on the provided data class.
         The function extracts the GT4Py field members of the data class and builds the dictionary accordingly.
@@ -77,18 +85,7 @@ if dace:
             dims_ = type_.__args__[0].__args__  # dimensions of the field
             dtype_ = type_.__args__[1]  # data type of the field
 
-            dace_dims = []
-            for dim_ in dims_:
-                if "cell" in dim_.value.lower():
-                    dace_dims.append(CellDim_sym)
-                elif "edge" in dim_.value.lower():
-                    dace_dims.append(EdgeDim_sym)
-                elif "vertex" in dim_.value.lower():
-                    dace_dims.append(VertexDim_sym)
-                elif "k" == dim_.value.lower():
-                    dace_dims.append(KDim_sym)
-                else:
-                    raise ValueError(f"The dimension [{dim_}] is not supported.")
+            dace_dims = [gt4py_dim_to_dace_symbol(dim_) for dim_ in dims_]
 
             # Define DaCe Symbols: Field Sizes and Strides
             dace_symbols = {
@@ -100,7 +97,7 @@ if dace:
 
             # TODO(kotsaloscv): how about StorageType (?)
             dace_structure_dict[member_name] = dace.data.Array(
-                dtype=dace_primitive_dtypes[icon4py_primitive_dtypes.index(dtype_)],
+                dtype=DACE_PRIMITIVE_DTYPES[ICON4PY_PRIMITIVE_DTYPES.index(dtype_)],
                 shape=dace_dims,
                 strides=[
                     dace_symbols[f"{cls.__name__}_{member_name}_s{0}_sym"],

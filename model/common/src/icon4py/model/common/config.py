@@ -65,6 +65,7 @@ class Icon4PyConfig:
 
     @cached_property
     def icon4py_dace_orchestration(self):
+        # Any value other than None will be considered as True
         return os.environ.get("ICON4PY_DACE_ORCHESTRATION", None)
 
     @cached_property
@@ -84,13 +85,12 @@ class Icon4PyConfig:
             GT4PyBackend.ROUNDTRIP.name: run_roundtrip,
         }
         if dace:
-            dace_backend_map = {
+            backend_map |= {
                 GT4PyBackend.DACE_CPU.name: run_dace_cpu,
                 GT4PyBackend.DACE_GPU.name: run_dace_gpu,
                 GT4PyBackend.DACE_CPU_NOOPT.name: run_dace_cpu_noopt,
                 GT4PyBackend.DACE_GPU_NOOPT.name: run_dace_gpu_noopt,
             }
-            backend_map.update(dace_backend_map)
         return backend_map[self.icon4py_backend]
 
     @cached_property
@@ -101,13 +101,12 @@ class Icon4PyConfig:
             GT4PyBackend.ROUNDTRIP.name: Device.CPU,
         }
         if dace:
-            dace_device_map = {
+            device_map |= {
                 GT4PyBackend.DACE_CPU.name: Device.CPU,
                 GT4PyBackend.DACE_GPU.name: Device.GPU,
                 GT4PyBackend.DACE_CPU_NOOPT.name: Device.CPU,
                 GT4PyBackend.DACE_GPU_NOOPT.name: Device.GPU,
             }
-            device_map.update(dace_device_map)
         device = device_map[self.icon4py_backend]
         return device
 

@@ -36,14 +36,14 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner as update_theta_and_exner_orig,
 )
+from icon4py.model.common import settings
 from icon4py.model.common.caching import CachedProgram
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex as mo_intp_rbf_rbf_vec_interpol_vertex_orig,
 )
-from icon4py.model.common.orchestration.decorator import dace_orchestration
 
 
-if dace_orchestration():
+if settings.dace_orchestration is not None:
     # Skip caching since there is a caching mechanism in DaCe orchestration
     CachedProgram = lambda stencil, with_domain=True: stencil  # noqa: E731
 
