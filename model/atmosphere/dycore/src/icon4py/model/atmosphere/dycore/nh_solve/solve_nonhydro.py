@@ -154,6 +154,11 @@ from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.common import field_type_aliases as fa
 import enum
 
+from icon4py.model.common.orchestration.decorator import (
+    orchestrate,
+    build_compile_time_connectivities,
+)
+
 # flake8: noqa
 log = logging.getLogger(__name__)
 
@@ -493,6 +498,10 @@ class SolveNonhydro:
         self.p_test_run = True
         self._initialized = True
 
+        self.compile_time_connectivities = build_compile_time_connectivities(
+            self.grid.offset_providers
+        )
+
     @property
     def initialized(self):
         return self._initialized
@@ -724,6 +733,7 @@ class SolveNonhydro:
         )
 
     # flake8: noqa: C901
+    # @orchestrate(method=True)
     def run_predictor_step(
         self,
         diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,

@@ -162,36 +162,35 @@ def compare_dace_orchestration_multiple_steps(
     non_orch_field: diffusion_states.DiffusionDiagnosticState | prognostics.PrognosticState,
     orch_field: diffusion_states.DiffusionDiagnosticState | prognostics.PrognosticState,
 ):
-    match non_orch_field:
-        case diffusion_states.DiffusionDiagnosticState:
-            div_ic_dace_non_orch = non_orch_field.div_ic.asnumpy()
-            hdef_ic_dace_non_orch = non_orch_field.hdef_ic.asnumpy()
-            dwdx_dace_non_orch = non_orch_field.dwdx.asnumpy()
-            dwdy_dace_non_orch = non_orch_field.dwdy.asnumpy()
+    if isinstance(non_orch_field, diffusion_states.DiffusionDiagnosticState):
+        div_ic_dace_non_orch = non_orch_field.div_ic.asnumpy()
+        hdef_ic_dace_non_orch = non_orch_field.hdef_ic.asnumpy()
+        dwdx_dace_non_orch = non_orch_field.dwdx.asnumpy()
+        dwdy_dace_non_orch = non_orch_field.dwdy.asnumpy()
 
-            div_ic_dace_orch = orch_field.div_ic.asnumpy()
-            hdef_ic_dace_orch = orch_field.hdef_ic.asnumpy()
-            dwdx_dace_orch = orch_field.dwdx.asnumpy()
-            dwdy_dace_orch = orch_field.dwdy.asnumpy()
+        div_ic_dace_orch = orch_field.div_ic.asnumpy()
+        hdef_ic_dace_orch = orch_field.hdef_ic.asnumpy()
+        dwdx_dace_orch = orch_field.dwdx.asnumpy()
+        dwdy_dace_orch = orch_field.dwdy.asnumpy()
 
-            assert np.allclose(div_ic_dace_non_orch, div_ic_dace_orch)
-            assert np.allclose(hdef_ic_dace_non_orch, hdef_ic_dace_orch)
-            assert np.allclose(dwdx_dace_non_orch, dwdx_dace_orch)
-            assert np.allclose(dwdy_dace_non_orch, dwdy_dace_orch)
-        case prognostics.PrognosticState:
-            w_dace_orch = non_orch_field.w.asnumpy()
-            theta_v_dace_orch = non_orch_field.theta_v.asnumpy()
-            exner_dace_orch = non_orch_field.exner.asnumpy()
-            vn_dace_orch = non_orch_field.vn.asnumpy()
+        assert np.allclose(div_ic_dace_non_orch, div_ic_dace_orch)
+        assert np.allclose(hdef_ic_dace_non_orch, hdef_ic_dace_orch)
+        assert np.allclose(dwdx_dace_non_orch, dwdx_dace_orch)
+        assert np.allclose(dwdy_dace_non_orch, dwdy_dace_orch)
+    elif isinstance(non_orch_field, prognostics.PrognosticState):
+        w_dace_orch = non_orch_field.w.asnumpy()
+        theta_v_dace_orch = non_orch_field.theta_v.asnumpy()
+        exner_dace_orch = non_orch_field.exner.asnumpy()
+        vn_dace_orch = non_orch_field.vn.asnumpy()
 
-            w_dace_non_orch = orch_field.w.asnumpy()
-            theta_v_dace_non_orch = orch_field.theta_v.asnumpy()
-            exner_dace_non_orch = orch_field.exner.asnumpy()
-            vn_dace_non_orch = orch_field.vn.asnumpy()
+        w_dace_non_orch = orch_field.w.asnumpy()
+        theta_v_dace_non_orch = orch_field.theta_v.asnumpy()
+        exner_dace_non_orch = orch_field.exner.asnumpy()
+        vn_dace_non_orch = orch_field.vn.asnumpy()
 
-            assert np.allclose(w_dace_non_orch, w_dace_orch)
-            assert np.allclose(theta_v_dace_non_orch, theta_v_dace_orch)
-            assert np.allclose(exner_dace_non_orch, exner_dace_orch)
-            assert np.allclose(vn_dace_non_orch, vn_dace_orch)
-        case _:
-            raise ValueError("Field type not recognized")
+        assert np.allclose(w_dace_non_orch, w_dace_orch)
+        assert np.allclose(theta_v_dace_non_orch, theta_v_dace_orch)
+        assert np.allclose(exner_dace_non_orch, exner_dace_orch)
+        assert np.allclose(vn_dace_non_orch, vn_dace_orch)
+    else:
+        raise ValueError("Field type not recognized")
