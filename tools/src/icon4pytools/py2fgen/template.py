@@ -67,7 +67,7 @@ class FuncParameter(Node):
         self.gtdims = [
             dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
         ]
-        self.gtdims = ["dims." + gtdim for gtdim in self.gtdims if gtdim not in dir(wrapper_dimension)]
+        self.gtdims = ["dims." + gtdim if gtdim not in dir(wrapper_dimension) else gtdim for gtdim in self.gtdims]
         self.np_type = to_np_type(self.d_type)
 
 
