@@ -1,5 +1,6 @@
 # VCS
--e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
+--extra-index-url https://test.pypi.org/simple/
+gt4py==1.0.4
 git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
 
 # PyPI
