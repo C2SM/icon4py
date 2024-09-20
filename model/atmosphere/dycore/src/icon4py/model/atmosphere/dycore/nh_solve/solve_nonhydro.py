@@ -493,10 +493,6 @@ class SolveNonhydro:
         self.p_test_run = True
         self._initialized = True
 
-        self.compile_time_connectivities = build_compile_time_connectivities(
-            self.grid.offset_providers
-        )
-
     @property
     def initialized(self):
         return self._initialized
