@@ -44,6 +44,9 @@ from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     EdgeIndexDim,
     VertexIndexDim,
 )
+from icon4py.model.common.test_utils.helpers import (
+    flatten_first_two_dims, # todo: move away from test_utils
+)
 
 
 logger = setup_logger(__name__)
@@ -190,12 +193,14 @@ def diffusion_init(
         mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        zd_intcoef=zd_intcoef,
-        # todo: for icon integration? flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
-        zd_vertoffset=zd_vertoffset,
-        # todo: for icon integration? flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset),
+        zd_intcoef=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
+        zd_vertoffset=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset),
         zd_diffcoef=zd_diffcoef,
     )
+
+    #   when testing for icon4py, these should not be flattened as they are already flattend in the serialised data, unless we can get unflattened data as input
+    #   - Expected argument 'zd_vertoffset' to be of type 'Field[[CEC, K], int32]', got 'Field[[Cell, E2C, K], int32]'.
+    #   - Expected argument 'vcoef' to be of type 'Field[[CEC, K], float64]', got 'Field[[Cell, E2C, K], float64]'.
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
@@ -288,6 +293,10 @@ def grid_init(
     limited_area: bool,
 ):
     global icon_grid
+
+    # todo: write this logic into template.py
+    if isinstance(limited_area, int):
+        limited_area = bool(limited_area)
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
