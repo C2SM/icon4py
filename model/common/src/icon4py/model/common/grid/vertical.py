@@ -187,7 +187,7 @@ class VerticalGrid:
         assert (
             0 <= index <= self._bottom_level(domain)
         ), f"vertical index {index} outside of grid levels for {domain.dim}"
-        return index
+        return gtx.int32(index)
 
     def _bottom_level(self, domain: Domain) -> gtx.int32:
         return gtx.int32(self.size(domain.dim))
