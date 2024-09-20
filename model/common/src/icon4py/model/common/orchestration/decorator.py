@@ -109,8 +109,8 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                     unique_id = hash(tuple([id(e) for e in compile_time_args_kwargs.values()]))
 
                 default_build_folder = (
-                    Path(dace.config.Config().get("default_build_folder"))
-                    / f"MPI_rank_{exchange_obj.my_rank()}"
+                    # Path(dace.config.Config().get("default_build_folder")) # noqa: ERA001
+                    Path(".dacecache") / f"MPI_rank_{exchange_obj.my_rank()}"
                 )
 
                 parse_compile_cache_sdfg(

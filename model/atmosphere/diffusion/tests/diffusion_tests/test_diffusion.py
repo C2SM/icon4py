@@ -361,7 +361,7 @@ def test_run_diffusion_multiple_steps(
     damping_height,
     ndyn_substeps,
 ):
-    if settings.dace_orchestration is not None:
+    if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################

@@ -148,7 +148,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
 ):
     caplog.set_level("INFO")
-    if settings.dace_orchestration is not None:
+    if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
