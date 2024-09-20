@@ -11,8 +11,6 @@ from unittest import mock
 import gt4py.next as gtx
 import numpy as np
 import pytest
-
-import icon4pytools.py2fgen.wrappers.diffusion
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType, TurbulenceShearForcingType
 from icon4py.model.common import dimension as dims
@@ -28,8 +26,11 @@ from icon4py.model.common.test_utils.datatest_utils import (
     get_global_grid_params,
     vertical_grid,
 )
+
+import icon4pytools.py2fgen.wrappers.diffusion
 from icon4pytools.py2fgen.wrappers import wrapper_dimension
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
+
 from .conftest import compare_objects
 
 
@@ -105,8 +106,14 @@ def test_diffusion_wrapper_granule_inputs(
     wgtfac_c = metrics_savepoint.wgtfac_c()
     mask_hdiff = metrics_savepoint.mask_hdiff()
     zd_diffcoef = metrics_savepoint.zd_diffcoef()
-    zd_vertoffset = gtx.as_field((dims.CellDim, dims.E2CDim, dims.KDim), np.squeeze(metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)))
-    zd_intcoef = gtx.as_field((dims.CellDim, dims.E2CDim, dims.KDim), np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint)))
+    zd_vertoffset = gtx.as_field(
+        (dims.CellDim, dims.E2CDim, dims.KDim),
+        np.squeeze(metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)),
+    )
+    zd_intcoef = gtx.as_field(
+        (dims.CellDim, dims.E2CDim, dims.KDim),
+        np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint)),
+    )
 
     # --- Extract Interpolation State Parameters ---
     e_bln_c_s = interpolation_savepoint.e_bln_c_s()
@@ -414,10 +421,14 @@ def test_diffusion_wrapper_single_step(
     wgtfac_c = metrics_savepoint.wgtfac_c()
     mask_hdiff = metrics_savepoint.mask_hdiff()
     zd_diffcoef = metrics_savepoint.zd_diffcoef()
-    zd_vertoffset = gtx.as_field((dims.CellDim, dims.E2CDim, dims.KDim), np.squeeze(
-        metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)))
-    zd_intcoef = gtx.as_field((dims.CellDim, dims.E2CDim, dims.KDim),
-                              np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint)))
+    zd_vertoffset = gtx.as_field(
+        (dims.CellDim, dims.E2CDim, dims.KDim),
+        np.squeeze(metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)),
+    )
+    zd_intcoef = gtx.as_field(
+        (dims.CellDim, dims.E2CDim, dims.KDim),
+        np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint)),
+    )
 
     # Interpolation state parameters
     e_bln_c_s = interpolation_savepoint.e_bln_c_s()

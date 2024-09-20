@@ -24,6 +24,7 @@ from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 from icon4pytools.py2fgen.wrappers import wrapper_dimension
 
+
 # these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
 # therefore unpacking needs to be skipped as otherwise it will trigger an error.
 UNINITIALISED_ARRAYS = [
@@ -67,7 +68,10 @@ class FuncParameter(Node):
         self.gtdims = [
             dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
         ]
-        self.gtdims = ["dims." + gtdim if gtdim not in dir(wrapper_dimension) else gtdim for gtdim in self.gtdims]
+        self.gtdims = [
+            "dims." + gtdim if gtdim not in dir(wrapper_dimension) else gtdim
+            for gtdim in self.gtdims
+        ]
         self.np_type = to_np_type(self.d_type)
 
 
