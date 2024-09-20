@@ -48,13 +48,13 @@ except ImportError:
 if dace:
     from dace import hooks
     from dace.transformation.passes.simplify import SimplifyPass
-    from gt4py.next.program_processors.runners.dace_iterator.utility import (
+    from gt4py.next.program_processors.runners.dace_common.utility import (
         connectivity_identifier,
     )
 
 
-def orchestration(method=True):
-    def decorator(fuse_func):
+def orchestrate(func: Callable | None = None, *, method: bool | None = None):
+    def _decorator(fuse_func: Callable):
         compiled_sdfgs = {}  # Caching
 
         def wrapper(*args, **kwargs):
@@ -159,7 +159,7 @@ def orchestration(method=True):
 
         return wrapper
 
-    return decorator
+    return _decorator(func) if func else _decorator
 
 
 def dace_inhibitor(f: Callable):
@@ -274,6 +274,7 @@ if dace:
 
             cache_sanitization(default_build_folder, exchange_obj)
 
+            # export DACE_ORCH_CACHE_FROM_DISK=(True or 1) if you want to activate it
             cache_from_disk = get_env_bool("DACE_ORCH_CACHE_FROM_DISK", default=False)
             dace_program_location = Path(
                 default_build_folder

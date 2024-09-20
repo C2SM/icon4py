@@ -32,7 +32,7 @@ import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.common.settings import xp
 
 from icon4py.model.common.orchestration.decorator import (
-    orchestration,
+    orchestrate,
     build_compile_time_connectivities,
 )
 
@@ -558,7 +558,7 @@ class Diffusion:
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
-    @orchestration(method=True)
+    @orchestrate(method=True)
     def _do_diffusion_step(
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
