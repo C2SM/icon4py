@@ -71,7 +71,7 @@ def _compute_ls_params(
     z_maxhgtd_avg: xp.ndarray,
     c_owner_mask: xp.ndarray,
     thslp_zdiffu: float,
-    thhgtd_zdiffu: float,
+    thhgtd_zdiffu: int,
     cell_nudging: int,
     n_cells: int,
     nlev: int,

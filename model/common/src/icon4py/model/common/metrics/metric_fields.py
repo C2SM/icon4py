@@ -116,7 +116,7 @@ def _compute_ddqz_z_half(
     return ddqz_z_half
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
@@ -1071,7 +1071,7 @@ def _compute_mask_prog_halo_c(
     return mask_prog_halo_c
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_mask_prog_halo_c(
     c_refin_ctrl: fa.CellField[int32],
     mask_prog_halo_c: fa.CellField[bool],
@@ -1105,7 +1105,7 @@ def _compute_bdy_halo_c(
     return bdy_halo_c
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_bdy_halo_c(
     c_refin_ctrl: fa.CellField[int32],
     bdy_halo_c: fa.CellField[bool],
@@ -1115,7 +1115,7 @@ def compute_bdy_halo_c(
     """
     Compute bdy_halo_c.
 
-    See mo_vertical_grid.f90. mask_prog_halo_c_dsl_low_refin in ICON
+    See mo_vertical_grid.f90. bdy_halo_c_dsl_low_refin in ICON
 
     Args:
         c_refin_ctrl: Cell field of refin_ctrl
@@ -1148,7 +1148,7 @@ def _compute_hmask_dd3d(
     return astype(hmask_dd3d, wpfloat)
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_hmask_dd3d(
     e_refin_ctrl: fa.EdgeField[int32],
     hmask_dd3d: fa.EdgeField[wpfloat],

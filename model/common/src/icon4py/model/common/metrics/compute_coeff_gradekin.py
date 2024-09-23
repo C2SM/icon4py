@@ -14,8 +14,8 @@ from icon4py.model.common.test_utils.helpers import numpy_to_1D_sparse_field
 def compute_coeff_gradekin(
     edge_cell_length: xp.ndarray,
     inv_dual_edge_length: xp.ndarray,
-    horizontal_start: float,
-    horizontal_end: float,
+    horizontal_start: int,
+    horizontal_end: int,
 ):
     """
     Compute coefficients for improved calculation of kinetic energy gradient
