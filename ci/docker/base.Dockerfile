@@ -1,5 +1,4 @@
-ARG BASE_IMAGE=ubuntu:20.04
-FROM ${BASE_IMAGE}
+FROM ubuntu:20.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -49,7 +48,9 @@ RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 ARG ARCH=x86_64
 ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
 # The variable CUDA_PATH is used by cupy to find the cuda toolchain
-ENV CUDA_PATH=${HPC_SDK_PATH}/cuda
+ENV CUDA_PATH=${HPC_SDK_PATH}/cuda \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
     MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
