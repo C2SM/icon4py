@@ -33,17 +33,8 @@ def profile_disable():
     stats.dump_stats(f"{__name__}.profile")
 
 
-def offset_fortran_indices_return_numpy(inp) -> xp.ndarray:
-    # todo: maybe needed in Fortran? (breaks datatest)
-    #   return xp.subtract(inp.ndarray, 1)  # noqa: ERA001
-    return inp.ndarray
-
-
-def offset_squeeze_fortran_indices_return_xp(inp) -> xp.ndarray:
-    # todo: maybe needed in Fortran? (breaks datatest)
-    #   return xp.squeeze(xp.subtract(inp.ndarray, 1))  # noqa: ERA001
-    #   might only be needed for Fortran
-    return inp.ndarray
+def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
+    return xp.subtract(inp.ndarray, offset)
 
 
 def construct_icon_grid(
@@ -71,30 +62,36 @@ def construct_icon_grid(
     e2c2v,
     c2v,
 ):
-    num_levels = vertical_size
-    log.debug("Constructing icon grid in py")
+    log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
     log.debug("num_edges:%s", num_edges)
     log.debug("num_vertices:%s", num_vertices)
-    log.debug("num_levels:%s", num_levels)
+    log.debug("num_levels:%s", vertical_size)
 
-    cells_start_index_np = offset_fortran_indices_return_numpy(cell_starts)
-    vertex_start_index_np = offset_fortran_indices_return_numpy(vertex_starts)
-    edge_start_index_np = offset_fortran_indices_return_numpy(edge_starts)
+    log.debug("Offsetting Fortran connectivitity arrays by 1")
+    offset = 1
 
-    cells_end_index_np = cell_ends.ndarray
-    vertex_end_index_np = vertex_ends.ndarray
-    edge_end_index_np = edge_ends.ndarray
+    cells_start_index = adjust_fortran_indices(cell_starts, offset)
+    vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
+    edge_start_index = adjust_fortran_indices(edge_starts, offset)
 
-    c2e_loc = offset_squeeze_fortran_indices_return_xp(c2e)
-    c2v_loc = offset_squeeze_fortran_indices_return_xp(c2v)
-    v2c_loc = offset_squeeze_fortran_indices_return_xp(v2c)
-    e2v_loc = offset_squeeze_fortran_indices_return_xp(e2v)
-    c2e2c_loc = offset_squeeze_fortran_indices_return_xp(c2e2c)
-    v2e_loc = offset_squeeze_fortran_indices_return_xp(v2e)
-    e2c2v_loc = offset_squeeze_fortran_indices_return_xp(e2c2v)
-    e2c_loc = offset_squeeze_fortran_indices_return_xp(e2c)
-    e2c2e_loc = offset_squeeze_fortran_indices_return_xp(e2c2e)
+    cells_end_index = cell_ends.ndarray
+    vertex_end_index = vertex_ends.ndarray
+    edge_end_index = edge_ends.ndarray
+
+    c2e = adjust_fortran_indices(c2e, offset)
+    c2v = adjust_fortran_indices(c2v, offset)
+    v2c = adjust_fortran_indices(v2c, offset)
+    e2v = adjust_fortran_indices(e2v, offset)
+    c2e2c = adjust_fortran_indices(c2e2c, offset)
+    v2e = adjust_fortran_indices(v2e, offset)
+    e2c2v = adjust_fortran_indices(e2c2v, offset)
+    e2c = adjust_fortran_indices(e2c, offset)
+    e2c2e = adjust_fortran_indices(e2c2e, offset)
+
+    # stacked arrays
+    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c))
+    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
 
     config = base.GridConfig(
         horizontal_config=horizontal.HorizontalGridSize(
@@ -106,36 +103,31 @@ def construct_icon_grid(
         limited_area=limited_area,
         on_gpu=on_gpu,
     )
-    log.debug(" c2e2c.shape[0] %s", c2e2c_loc.shape[0])
-    log.debug(" xp.asarray(range(c2e2c.shape[0]))) %s", xp.asarray(range(c2e2c_loc.shape[0])).shape)
-    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c_loc.shape[0])), c2e2c_loc))
-
-    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e_loc.shape[0])), e2c2e_loc))
 
     grid = (
         icon.IconGrid(id_=grid_id)
         .with_config(config)
         .with_global_params(global_grid_params)
-        .with_start_end_indices(dims.VertexDim, vertex_start_index_np, vertex_end_index_np)
-        .with_start_end_indices(dims.EdgeDim, edge_start_index_np, edge_end_index_np)
-        .with_start_end_indices(dims.CellDim, cells_start_index_np, cells_end_index_np)
+        .with_start_end_indices(dims.VertexDim, vertex_start_index, vertex_end_index)
+        .with_start_end_indices(dims.EdgeDim, edge_start_index, edge_end_index)
+        .with_start_end_indices(dims.CellDim, cells_start_index, cells_end_index)
         .with_connectivities(
             {
-                dims.C2EDim: c2e_loc,
-                dims.C2VDim: c2v_loc,
-                dims.E2CDim: e2c_loc,
-                dims.E2C2EDim: e2c2e_loc,
-                dims.C2E2CDim: c2e2c_loc,
+                dims.C2EDim: c2e,
+                dims.C2VDim: c2v,
+                dims.E2CDim: e2c,
+                dims.E2C2EDim: e2c2e,
+                dims.C2E2CDim: c2e2c,
                 dims.C2E2CODim: c2e2c0,
                 dims.E2C2EODim: e2c2e0,
             }
         )
         .with_connectivities(
             {
-                dims.V2EDim: v2e_loc,
-                dims.E2VDim: e2v_loc,
-                dims.E2C2VDim: e2c2v_loc,
-                dims.V2CDim: v2c_loc,
+                dims.V2EDim: v2e,
+                dims.E2VDim: e2v,
+                dims.E2C2VDim: e2c2v,
+                dims.V2CDim: v2c,
             }
         )
     )
