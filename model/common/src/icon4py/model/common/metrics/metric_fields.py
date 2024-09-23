@@ -37,9 +37,10 @@ from icon4py.model.common.dimension import (
     E2C,
     V2C,
     C2E2CODim,
+    CellDim,
+    KDim,
     Koff,
     V2CDim,
-    VertexDim,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -548,8 +549,8 @@ def compute_ddxn_z_full(
         ddxnt_z_half_e,
         out=ddxn_z_full,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -948,7 +949,10 @@ def compute_pg_edgeidx_vertidx(
         pg_edgeidx=pg_edgeidx,
         pg_vertidx=pg_vertidx,
         out=(pg_edgeidx, pg_vertidx),
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -1330,8 +1334,8 @@ def compute_cell_2_vertex_interpolation(
         c_int,
         out=vert_out,
         domain={
-            VertexDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.VertexDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1391,7 +1395,7 @@ def compute_theta_exner_ref_mc(
         p0ref=p0ref,
         out=(exner_ref_mc, theta_ref_mc),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
