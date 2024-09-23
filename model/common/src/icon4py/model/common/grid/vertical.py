@@ -189,11 +189,11 @@ class VerticalGrid:
             case Zone.FLAT:
                 index = self._end_index_of_flat_layer
             case Zone.DAMPING:
-                return self._end_index_of_damping_layer
+                index = self._end_index_of_damping_layer
             case Zone.TOP1:
-                return gtx.int32(1)
+                index = gtx.int32(1)
             case Zone.NRDMAX1:
-                return gtx.int32(self.config.nrdmax + 1)
+                index = gtx.int32(self.config.nrdmax + 1)
             case _:
                 raise exceptions.IconGridError(f"not a valid vertical zone: {domain.marker}")
 
