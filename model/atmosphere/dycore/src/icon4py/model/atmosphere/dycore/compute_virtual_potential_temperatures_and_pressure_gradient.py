@@ -66,10 +66,8 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
     fa.CellKField[vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_09."""
-    wgtfac_c_wp, ddqz_z_half_wp = astype((wgtfac_c, ddqz_z_half), wpfloat)
-
     z_theta_v_pr_ic_vp, theta_v_ic_wp = _compute_virtual_potential_temperatures(
-        wgtfac_c_wp, z_rth_pr_2, theta_v
+        wgtfac_c, z_rth_pr_2, theta_v
     )
     z_th_ddz_exner_c_wp = _compute_pressure_gradient(
         vwind_expl_wgt,
@@ -77,7 +75,7 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
         z_theta_v_pr_ic_vp,
         exner_pr,
         d_exner_dz_ref_ic,
-        ddqz_z_half_wp,
+        ddqz_z_half,
     )
     return z_theta_v_pr_ic_vp, theta_v_ic_wp, astype(z_th_ddz_exner_c_wp, vpfloat)
 
