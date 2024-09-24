@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_btraj(
     p_vn: fa.EdgeKField[wpfloat],
@@ -223,7 +218,7 @@ def compute_horizontal_advection_of_rho_and_theta(
         z_rth_pr_2,
         out=(z_rho_e, z_theta_v_e),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

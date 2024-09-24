@@ -54,11 +54,6 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
 """
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
 
 @dataclass(frozen=True)
 class MetricsConfig:
@@ -94,8 +89,8 @@ def compute_z_mc(
         z_ifc,
         out=z_mc,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -149,8 +144,8 @@ def compute_ddqz_z_half(
         nlev,
         out=ddqz_z_half,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -194,8 +189,8 @@ def compute_ddqz_z_full_and_inverse(
         z_ifc,
         out=(ddqz_z_full, inv_ddqz_z_full),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -207,7 +202,7 @@ def _compute_scalfac_dd3d(
     divdamp_trans_end: wpfloat,
     divdamp_type: int32,
 ) -> fa.KField[wpfloat]:
-    scalfac_dd3d = broadcast(1.0, (KDim,))
+    scalfac_dd3d = broadcast(1.0, (dims.KDim,))
     if divdamp_type == 32:
         zf = 0.5 * (vct_a + vct_a(Koff[1]))  # depends on nshift_total, assumed to be always 0
         scalfac_dd3d = where(zf >= divdamp_trans_end, 0.0, scalfac_dd3d)
@@ -249,7 +244,7 @@ def compute_scalfac_dd3d(
         divdamp_trans_end,
         divdamp_type,
         out=scalfac_dd3d,
-        domain={KDim: (vertical_start, vertical_end)},
+        domain={dims.KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -264,7 +259,7 @@ def _compute_rayleigh_w(
     vct_a_1: wpfloat,
     pi_const: wpfloat,
 ) -> fa.KField[wpfloat]:
-    rayleigh_w = broadcast(0.0, (KDim,))
+    rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
     if rayleigh_type == rayleigh_classic:
@@ -322,7 +317,7 @@ def compute_rayleigh_w(
         vct_a_1,
         pi_const,
         out=rayleigh_w,
-        domain={KDim: (vertical_start, vertical_end)},
+        domain={dims.KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -368,8 +363,8 @@ def compute_coeff_dwdz(
         z_ifc,
         out=(coeff1_dwdz, coeff2_dwdz),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -466,8 +461,8 @@ def compute_d2dexdz2_fac_mc(
         igradp_constant,
         out=d2dexdz2_fac1_mc,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -484,8 +479,8 @@ def compute_d2dexdz2_fac_mc(
         igradp_constant,
         out=d2dexdz2_fac2_mc,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -505,8 +500,8 @@ def compute_ddxn_z_half_e(
         inv_dual_edge_length,
         out=ddxn_z_half_e,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -528,8 +523,8 @@ def compute_ddxt_z_half_e(
         tangent_orientation,
         out=ddxt_z_half_e,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -569,7 +564,7 @@ def compute_vwind_expl_wgt(
     _compute_vwind_expl_wgt(
         vwind_impl_wgt=vwind_impl_wgt,
         out=vwind_expl_wgt,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -621,8 +616,8 @@ def compute_maxslp_maxhgtd(
         dual_edge_length=dual_edge_length,
         out=(z_maxslp, z_maxhgtd),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -677,8 +672,8 @@ def compute_exner_exfac(
         exner_expol=exner_expol,
         out=exner_exfac,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -760,7 +755,7 @@ def compute_vwind_impl_wgt_partial(
         dual_edge_length=dual_edge_length,
         vwind_offctr=vwind_offctr,
         out=vwind_impl_wgt,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
     _compute_vwind_impl_wgt_2(
@@ -769,8 +764,8 @@ def compute_vwind_impl_wgt_partial(
         vwind_impl_wgt=vwind_impl_wgt,
         out=vwind_impl_wgt_k,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -805,8 +800,8 @@ def compute_wgtfac_e(
         coeff=c_lin_e,
         out=wgtfac_e,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -852,8 +847,8 @@ def _compute_pg_edgeidx_vertidx(
     pg_edgeidx: fa.EdgeKField[int32],
     pg_vertidx: fa.EdgeKField[int32],
 ) -> tuple[fa.EdgeKField[int32], fa.EdgeKField[int32]]:
-    e_lev = broadcast(e_lev, (EdgeDim, KDim))
-    k_lev = broadcast(k_lev, (EdgeDim, KDim))
+    e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
+    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     z_mc = average_cell_kdim_level_up(z_ifc)
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     pg_edgeidx = where(
@@ -874,7 +869,7 @@ def _compute_pg_exdist_dsl(
     k_lev: fa.KField[int32],
     pg_exdist_dsl: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
-    k_lev = broadcast(k_lev, (EdgeDim, KDim))
+    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     pg_exdist_dsl = where(
         (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux2) & e_owner_mask,
         z_me - z_aux2,
@@ -922,8 +917,8 @@ def compute_pg_exdist_dsl(
         pg_exdist_dsl=pg_exdist_dsl,
         out=pg_exdist_dsl,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -966,8 +961,8 @@ def compute_pg_edgeidx_dsl(
         pg_vertidx=pg_vertidx,
         out=pg_edgeidx_dsl,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1002,7 +997,7 @@ def compute_mask_prog_halo_c(
         c_refin_ctrl,
         mask_prog_halo_c,
         out=mask_prog_halo_c,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -1037,7 +1032,7 @@ def compute_bdy_halo_c(
         c_refin_ctrl,
         bdy_halo_c,
         out=bdy_halo_c,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -1086,7 +1081,7 @@ def compute_hmask_dd3d(
         grf_nudge_start_e=grf_nudge_start_e,
         grf_nudgezone_width=grf_nudgezone_width,
         out=hmask_dd3d,
-        domain={EdgeDim: (horizontal_start, horizontal_end)},
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -1133,8 +1128,8 @@ def compute_weighted_cell_neighbor_sum(
         c_bln_avg=c_bln_avg,
         out=z_maxslp_avg,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1143,8 +1138,8 @@ def compute_weighted_cell_neighbor_sum(
         c_bln_avg=c_bln_avg,
         out=z_maxhgtd_avg,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1179,7 +1174,7 @@ def compute_max_nbhgt(
     _compute_max_nbhgt(
         z_mc_nlev=z_mc_nlev,
         out=max_nbhgt,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 

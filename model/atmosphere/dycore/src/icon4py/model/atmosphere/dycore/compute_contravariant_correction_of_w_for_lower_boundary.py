@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_contravariant_correction_of_w_for_lower_boundary(
     e_bln_c_s: Field[[dims.CEDim], wpfloat],
@@ -67,7 +62,7 @@ def compute_contravariant_correction_of_w_for_lower_boundary(
         wgtfacq_c,
         out=w_concorr_c,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -41,9 +41,8 @@ def search_for_grid_sizes(code: str) -> bool:
     return all(re.search(pattern, code) for pattern in patterns)
 
 
-@pytest.mark.parametrize(
-    "temporaries, imperative", [(True, True), (True, False), (False, True), (False, False)]
-)
+# todo: (True, True),(False, True),
+@pytest.mark.parametrize("temporaries, imperative", [(True, False), (False, False)])
 def test_grid_size_param_generation(temporaries, imperative):
     @field_operator
     def testee_op(

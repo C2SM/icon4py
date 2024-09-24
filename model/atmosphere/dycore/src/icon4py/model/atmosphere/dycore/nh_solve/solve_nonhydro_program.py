@@ -84,12 +84,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 # TODO: abishekg7 move this to tests
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def init_test_fields(
@@ -106,11 +100,11 @@ def init_test_fields(
 ):
     _broadcast_zero_to_three_edge_kdim_fields_wp(
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
-        domain={EdgeDim: (edges_start, edges_end), KDim: (vertical_start, vertical_end)},
+        domain={dims.EdgeDim: (edges_start, edges_end), dims.KDim: (vertical_start, vertical_end)},
     )
     _init_cell_kdim_field_with_zero_wp(
         out=z_dwdz_dd,
-        domain={CellDim: (cells_start, cells_end), KDim: (vertical_start, vertical_end)},
+        domain={dims.CellDim: (cells_start, cells_end), dims.KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -158,8 +152,8 @@ def predictor_stencils_2_3(
         nlev,
         out=(z_exner_ex_pr, exner_pr),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -225,8 +219,8 @@ def predictor_stencils_4_5_6(
         nlev,
         out=(z_exner_ic, z_dexner_dz_c_1),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -340,8 +334,8 @@ def predictor_stencils_7_8_9(
             z_th_ddz_exner_c,
         ),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -444,8 +438,8 @@ def predictor_stencils_7_8_9_firststep(
             theta_v_ic,
         ),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -506,8 +500,8 @@ def predictor_stencils_7_8_9_secondstep(
         nlev,
         out=z_th_ddz_exner_c,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -556,8 +550,8 @@ def predictor_stencils_11_lower_upper(
         nlev,
         out=(z_theta_v_pr_ic, theta_v_ic),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -608,8 +602,8 @@ def compute_horizontal_advection_of_rho_and_theta(
         z_rth_pr_2,
         out=(z_rho_e, z_theta_v_e),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -678,8 +672,8 @@ def predictor_stencils_35_36(
         nflatlev_startindex,
         out=(z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -702,8 +696,8 @@ def predictor_stencils_37_38(
         vt,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_start + 1),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_start + 1),
         },
     )
     _extrapolate_at_top(
@@ -711,8 +705,8 @@ def predictor_stencils_37_38(
         wgtfacq_e_dsl,
         out=vn_ie,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
 
@@ -771,8 +765,8 @@ def stencils_39_40(
         nlev,
         out=w_concorr_c,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -914,8 +908,8 @@ def stencils_42_44_45_45b(
         nlev,
         out=(z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1044,8 +1038,8 @@ def stencils_43_44_45_45b(
         nlev,
         out=(z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1141,8 +1135,8 @@ def stencils_47_48_49(
         nlev,
         out=(w_nnew, z_contr_w_fl_l, z_rho_expl, z_exner_expl),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1215,7 +1209,7 @@ def stencils_61_62(
         nlev,
         out=(rho_new, exner_new, w_new),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
