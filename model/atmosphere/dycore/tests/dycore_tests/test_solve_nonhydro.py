@@ -840,11 +840,12 @@ def test_run_solve_nonhydro_single_step(
         atol=8e-14,
     )
 
-    assert helpers.dallclose(
-        diagnostic_state_nh.exner_dyn_incr_lastsubstep.asnumpy(),
-        savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
-        atol=1e-14,
-    )
+    if jstep_init == ndyn_substeps - 1:
+        assert helpers.dallclose(
+            diagnostic_state_nh.exner_dyn_incr_lastsubstep.asnumpy(),
+            savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
+            atol=1e-14,
+        )
 
 
 @pytest.mark.slow_tests
