@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _mo_math_gradients_grad_green_gauss_cell_dsl(
     p_ccpr1: fa.CellKField[vpfloat],
@@ -64,7 +59,7 @@ def mo_math_gradients_grad_green_gauss_cell_dsl(
         geofac_grg_y,
         out=(p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
