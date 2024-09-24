@@ -37,7 +37,7 @@ import dataclasses
 import enum
 import functools
 from abc import abstractmethod
-from typing import ClassVar, Final, Protocol
+from typing import Final, Protocol
 
 import gt4py.next as gtx
 
@@ -346,11 +346,15 @@ class Domain(Protocol):
     _index: int
 
     def __str__(self):
-        return f"{self.dim}: {self._marker} /[ {self._index}]"
+        return f"Domain (dim = {self.dim}: zone = {self._marker} /[ {self._index}])"
 
     @abstractmethod
     def _valid(self, marker: Zone) -> bool:
         ...
+
+    @property
+    def zone(self) -> Zone:
+        return self._marker
 
     def marker(self, marker: Zone):
         assert self._valid(marker), f" Domain `{marker}` not a valid zone for use with '{self.dim}'"
@@ -450,27 +454,8 @@ class CellDomain(Domain):
         )
 
 
-# TODO (@ halungge): maybe this should to a separate module
 @dataclasses.dataclass(frozen=True)
 class HorizontalGridSize:
     num_vertices: int
     num_edges: int
     num_cells: int
-
-
-# TODO (@ halungge): maybe this should to a separate module
-class RefinCtrlLevel:
-    _boundary_nudging_start: ClassVar = {
-        dims.EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
-        dims.CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
-    }
-
-    @classmethod
-    def boundary_nudging_start(cls, dim: gtx.Dimension) -> int:
-        """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
-        try:
-            return cls._boundary_nudging_start[dim]
-        except KeyError as err:
-            raise ValueError(
-                f"nudging start level only exists for {dims.CellDim} and {dims.EdgeDim}"
-            ) from err
