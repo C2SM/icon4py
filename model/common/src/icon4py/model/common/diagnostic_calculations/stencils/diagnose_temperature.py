@@ -12,12 +12,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.settings import backend
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @gtx.field_operator
 def _diagnose_virtual_temperature_and_temperature(
     qv: fa.CellKField[ta.wpfloat],
@@ -67,7 +61,7 @@ def diagnose_virtual_temperature_and_temperature(
         rv_o_rd_minus1,
         out=(virtual_temperature, temperature),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

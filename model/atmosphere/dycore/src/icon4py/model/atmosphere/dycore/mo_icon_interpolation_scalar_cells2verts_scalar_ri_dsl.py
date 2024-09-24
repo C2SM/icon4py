@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-VertexDim = dims.VertexDim
-KDim = dims.KDim
-
-
 @field_operator
 def _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     p_cell_in: fa.CellKField[wpfloat],
@@ -45,7 +40,7 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
         c_intp,
         out=p_vert_out,
         domain={
-            VertexDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.VertexDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

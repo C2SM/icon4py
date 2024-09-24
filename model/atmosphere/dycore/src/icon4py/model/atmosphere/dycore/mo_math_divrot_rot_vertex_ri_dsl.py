@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-VertexDim = dims.VertexDim
-KDim = dims.KDim
-
-
 @field_operator
 def _mo_math_divrot_rot_vertex_ri_dsl(
     vec_e: fa.EdgeKField[wpfloat],
@@ -45,7 +40,7 @@ def mo_math_divrot_rot_vertex_ri_dsl(
         geofac_rot,
         out=rot_vec,
         domain={
-            VertexDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.VertexDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
