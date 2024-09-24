@@ -181,7 +181,7 @@ def build_compile_time_connectivities(
     connectivities = {}
     for k, v in offset_providers.items():
         if hasattr(v, "table"):
-            connectivities[k] = gtx.CompileTimeConnectivity(
+            connectivities[k] = gtx.otf.arguments.CompileTimeConnectivity(
                 v.max_neighbors, v.has_skip_values, v.origin_axis, v.neighbor_axis, v.table.dtype
             )
         else:
