@@ -49,7 +49,7 @@ def test_compute_diffusion_metrics(
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125
+    thhgtd_zdiffu = 125.0
     cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
 
     cell_lateral = icon_grid.start_index(

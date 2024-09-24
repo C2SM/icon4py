@@ -84,7 +84,7 @@ nudge_max_coeff = 0.375
 nudge_efold_width = 2.0
 nudge_zone_width = 10
 thslp_zdiffu = 0.02
-thhgtd_zdiffu = 125
+thhgtd_zdiffu = 125.0
 rayleigh_type = 2
 exner_expol = 0.333
 
