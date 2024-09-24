@@ -19,11 +19,13 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.test_utils.datatest_utils import (
+    get_global_grid_params,
+)
+from icon4py.model.common.test_utils.diffusion_utils import (
     construct_config,
     construct_diagnostics,
     construct_interpolation_state,
     construct_metric_state,
-    get_global_grid_params,
     vertical_grid,
 )
 

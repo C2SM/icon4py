@@ -14,7 +14,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import helpers
-from icon4py.model.common.test_utils.datatest_utils import construct_config
+from icon4py.model.common.test_utils.diffusion_utils import construct_config
 
 from .utils import diff_multfac_vn_numpy, smag_limit_numpy
 
