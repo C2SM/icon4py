@@ -35,9 +35,7 @@ depends_on = [
 
 [[modules]]
 path = "icon4py.model.common"
-depends_on = [
-    { path = "icon4py.model.atmosphere.dycore" },
-]
+depends_on = []
 
 [[modules]]
 path = "icon4py.model.driver"

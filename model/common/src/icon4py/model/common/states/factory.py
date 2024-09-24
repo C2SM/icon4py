@@ -217,9 +217,9 @@ class ProgramFieldProvider(FieldProvider):
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
         dims = self._domain_args(factory.grid, factory.vertical_grid)
-        deps.update(dims)
         offset_providers = self._get_offset_providers(factory.grid, factory.vertical_grid)
-        self._func.with_backend(factory.backend)(**deps, offset_provider=offset_providers)
+        deps.update(dims)
+        self._func.with_backend(factory._backend)(**deps, offset_provider=offset_providers)
 
     def fields(self) -> Iterable[str]:
         return self._output.values()
