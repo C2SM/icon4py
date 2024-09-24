@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import pytest
+
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
@@ -296,6 +298,8 @@ def test_factory_bdy_halo_c(
 def test_factory_hmask_dd3d(
     grid_savepoint, icon_grid, metrics_savepoint, interpolation_savepoint, backend
 ):
+    if backend == "gtfn_cpu":
+        pytest.skip("CPU compilation does not work here because of domain only on edges")
     factory = mf.fields_factory
     num_levels = grid_savepoint.num(dims.KDim)
     vct_a = grid_savepoint.vct_a()
