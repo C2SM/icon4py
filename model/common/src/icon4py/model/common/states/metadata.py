@@ -5,12 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Final
 
 import gt4py.next as gtx
 
-import icon4py.model.common.io.cf_utils as cf_utils
 from icon4py.model.common import dimension as dims, type_alias as ta
 
+
+INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
+INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
 
 attrs = {
     "theta_ref_mc": dict(
@@ -85,8 +88,8 @@ attrs = {
         icon_var_name="k_index",
         dtype=gtx.int32,
     ),
-    cf_utils.INTERFACE_LEVEL_STANDARD_NAME: dict(
-        standard_name=cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
+    INTERFACE_LEVEL_STANDARD_NAME: dict(
+        standard_name=INTERFACE_LEVEL_STANDARD_NAME,
         long_name="model interface level number",
         units="",
         dims=(dims.KHalfDim,),

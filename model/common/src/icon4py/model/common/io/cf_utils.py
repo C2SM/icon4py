@@ -11,6 +11,8 @@ from typing import Final
 import cftime
 import xarray
 
+from icon4py.model.common.states import metadata
+
 
 #: from standard name table https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
 SLEVE_COORD_STANDARD_NAME: Final[str] = "atmosphere_sleve_coordinate"
@@ -20,9 +22,7 @@ LEVEL_STANDARD_NAME: Final[str] = "model_level_number"
 DEFAULT_CALENDAR: Final[str] = "proleptic_gregorian"
 DEFAULT_TIME_UNIT: Final[str] = "seconds since 1970-01-01 00:00:00"
 
-#: icon4py specific CF extensions:
-INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
-INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
+
 
 
 COARDS_T_POS: Final[int] = 0
@@ -58,7 +58,7 @@ def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray:
     dims = data.dims
     if len(dims) >= 2:
         if dims[0] in ("cell", "edge", "vertex") and dims[1] in (
-            INTERFACE_LEVEL_HEIGHT_STANDARD_NAME,
+            metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME,
             "level",
             "interface_level",
         ):
