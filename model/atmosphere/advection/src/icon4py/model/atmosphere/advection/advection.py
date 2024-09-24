@@ -125,7 +125,7 @@ class Advection:
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         """
-        Initialize advection granule with configuration.
+        Initialize advection class with configuration.
         """
         log.debug("advection class init - start")
 
@@ -155,18 +155,7 @@ class Advection:
         )
         self.start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self.end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-        self.end_cell_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
         self.end_cell_end = self.grid.end_index(cell_domain(h_grid.Zone.END))
-
-        # edge indices
-        edge_domain = h_grid.domain(dims.EdgeDim)
-        self.start_edge_lateral_boundary_level_2 = self.grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        )
-        self.start_edge_lateral_boundary_level_5 = self.grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
-        )
-        self.end_edge_halo = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # fields
         self._allocate_temporary_fields()
@@ -174,26 +163,35 @@ class Advection:
         # misc
         self.even_timestep = False  # originally jstep_adv(:)%marchuk_order = 1 in integrate_nh
 
+        # standalone horizontal advection
+        self.horizontal_advection = HorizontalAdvection(
+            grid=self.grid,
+            config=self.config,
+            interpolation_state=self.interpolation_state,
+            least_squares_state=self.least_squares_state,
+            metric_state=self.metric_state,
+            edge_params=self.edge_params,
+            cell_params=self.cell_params,
+            exchange=self.exchange,
+        )
+
+        # standalone vertical advection
+        self.vertical_advection = VerticalAdvection(
+            grid=self.grid,
+            config=self.config,
+            interpolation_state=self.interpolation_state,
+            least_squares_state=self.least_squares_state,
+            metric_state=self.metric_state,
+            edge_params=self.edge_params,
+            cell_params=self.cell_params,
+            exchange=self.exchange,
+        )
+
         log.debug("advection class init - end")
 
     def _allocate_temporary_fields(self):
         #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
         self.rhodz_ast2 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
-
-        # backtrajectory fields
-        self.z_real_vt = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
-        self.p_distv_bary_1 = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
-        )
-        self.p_distv_bary_2 = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
-        )
-
-        # reconstruction fields
-        self.p_coeff_1 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
-        self.p_coeff_2 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
-        self.p_coeff_3 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
-        self.r_m = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
 
     def run(
         self,
@@ -214,7 +212,7 @@ class Advection:
             dtime: input argument, the time step
 
         """
-        log.debug("advection class run - start")
+        log.debug("advection run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
         self.exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
@@ -236,7 +234,7 @@ class Advection:
             )
             log.debug("running stencil copy_cell_kdim_field - end")
 
-            log.debug("advection class run - early end")
+            log.debug("advection run - early end")
             return
 
         # Godunov splitting
@@ -259,18 +257,19 @@ class Advection:
             log.debug("running stencil apply_vertical_density_increment - end")
 
             # vertical transport
-            self._run_vertical_advection(
-                diagnostic_state=diagnostic_state,
+            self.vertical_advection.run(
                 prep_adv=prep_adv,
                 p_tracer_now=p_tracer_now,
                 p_tracer_new=p_tracer_new,
                 rhodz_now=diagnostic_state.airmass_now,
                 rhodz_new=self.rhodz_ast2,
+                p_mflx_tracer_v=diagnostic_state.vfl_tracer,
                 dtime=dtime,
+                even_timestep=self.even_timestep,
             )
 
             # horizontal transport
-            self._run_horizontal_advection(
+            self.horizontal_advection.run(
                 prep_adv=prep_adv,
                 p_tracer_now=p_tracer_new,
                 p_tracer_new=p_tracer_new,
@@ -299,7 +298,7 @@ class Advection:
             log.debug("running stencil apply_horizontal_density_increment - end")
 
             # horizontal transport
-            self._run_horizontal_advection(
+            self.horizontal_advection.run(
                 prep_adv=prep_adv,
                 p_tracer_now=p_tracer_now,
                 p_tracer_new=p_tracer_new,
@@ -310,14 +309,15 @@ class Advection:
             )
 
             # vertical transport
-            self._run_vertical_advection(
-                diagnostic_state=diagnostic_state,
+            self.vertical_advection.run(
                 prep_adv=prep_adv,
                 p_tracer_now=p_tracer_new,
                 p_tracer_new=p_tracer_new,
                 rhodz_now=self.rhodz_ast2,
                 rhodz_new=diagnostic_state.airmass_new,
+                p_mflx_tracer_v=diagnostic_state.vfl_tracer,
                 dtime=dtime,
+                even_timestep=self.even_timestep,
             )
 
         # update lateral boundaries with interpolated time tendencies
@@ -344,9 +344,79 @@ class Advection:
         # finalize step
         self.even_timestep = not self.even_timestep
 
-        log.debug("advection class run - end")
+        log.debug("advection run - end")
 
-    def _run_horizontal_advection(
+
+class HorizontalAdvection:
+    """Class that configures horizontal advection and does one horizontal advection step."""
+
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        config: AdvectionConfig,
+        interpolation_state: advection_states.AdvectionInterpolationState,
+        least_squares_state: advection_states.AdvectionLeastSquaresState,
+        metric_state: advection_states.AdvectionMetricState,
+        edge_params: geometry.EdgeParams,
+        cell_params: geometry.CellParams,
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+    ):
+        """
+        Initialize horizontal advection class with configuration.
+        """
+        log.debug("horizontal advection class init - start")
+
+        # input arguments
+        self.grid = grid
+        self.config = config
+        self.interpolation_state = interpolation_state
+        self.least_squares_state = least_squares_state
+        self.metric_state = metric_state
+        self.edge_params = edge_params
+        self.cell_params = cell_params
+        self.exchange = exchange
+
+        # cell indices
+        cell_domain = h_grid.domain(dims.CellDim)
+        self.start_cell_lateral_boundary_level_2 = self.grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self.start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self.end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        self.end_cell_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
+
+        # edge indices
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        self.start_edge_lateral_boundary_level_2 = self.grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self.start_edge_lateral_boundary_level_5 = self.grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        self.end_edge_halo = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+        # fields
+        self._allocate_temporary_fields()
+
+        log.debug("horizontal advection class init - end")
+
+    def _allocate_temporary_fields(self):
+        # backtrajectory fields
+        self.z_real_vt = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
+        self.p_distv_bary_1 = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
+        )
+        self.p_distv_bary_2 = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
+        )
+
+        # reconstruction fields
+        self.p_coeff_1 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.p_coeff_2 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.p_coeff_3 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.r_m = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+
+    def run(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[wpfloat],
@@ -358,6 +428,16 @@ class Advection:
     ):
         """
         Run a horizontal advection step.
+
+        Args:
+            prep_adv: input argument, data class that contains precalculated advection fields
+            p_tracer_now: input argument, field that contains current tracer mass fraction
+            p_tracer_new: output argument, field that contains new tracer mass fraction
+            rhodz_now: input argument, field that contains current air mass in each layer
+            rhodz_new: input argument, field that contains new air mass in each layer
+            p_mflx_tracer_h: output argument, field that contains new horizontal tracer mass flux
+            dtime: input argument, the time step
+
         """
         log.debug("horizontal advection run - start")
 
@@ -406,53 +486,6 @@ class Advection:
         log.debug("running stencil integrate_tracer_horizontally - end")
 
         log.debug("horizontal advection run - end")
-
-    def _run_vertical_advection(
-        self,
-        diagnostic_state: advection_states.AdvectionDiagnosticState,
-        prep_adv: advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[wpfloat],
-        p_tracer_new: fa.CellKField[wpfloat],
-        rhodz_now: fa.CellKField[wpfloat],
-        rhodz_new: fa.CellKField[wpfloat],
-        dtime: wpfloat,
-    ):
-        """
-        Run a vertical advection step.
-        """
-        log.debug("vertical advection run - start")
-
-        # TODO (dastrm): maybe change how the indices are handled here? originally:
-        # if even step, vertical transport includes all halo points in order to avoid an additional synchronization step, i.e.
-        #    if lstep_even: i_rlstart  = 2,                i_rlend = min_rlcell
-        #    else:          i_rlstart  = grf_bdywidth_c+1, i_rlend = min_rlcell_int
-        # note: horizontal advection is always called with the same indices, i.e. i_rlstart = grf_bdywidth_c+1, i_rlend = min_rlcell_int
-
-        if self.config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION:
-            log.debug("running stencil copy_cell_kdim_field - start")
-            copy_cell_kdim_field.copy_cell_kdim_field(
-                p_tracer_now,
-                p_tracer_new,
-                horizontal_start=(
-                    self.start_cell_lateral_boundary_level_2
-                    if self.even_timestep
-                    else self.start_cell_nudging
-                ),
-                horizontal_end=(self.end_cell_end if self.even_timestep else self.end_cell_local),
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
-            log.debug("running stencil copy_cell_kdim_field - end")
-
-            log.debug("vertical advection run - early end")
-            return
-
-        # get the vertical numerical tracer flux
-
-        # update tracer mass fraction
-
-        log.debug("vertical advection run - end")
 
     def _compute_horizontal_tracer_flux(
         self,
@@ -594,3 +627,103 @@ class Advection:
             )
 
         log.debug("horizontal tracer flux computation - end")
+
+
+class VerticalAdvection:
+    """Class that configures vertical advection and does one vertical advection step."""
+
+    def __init__(
+        self,
+        grid: icon_grid.IconGrid,
+        config: AdvectionConfig,
+        interpolation_state: advection_states.AdvectionInterpolationState,
+        least_squares_state: advection_states.AdvectionLeastSquaresState,
+        metric_state: advection_states.AdvectionMetricState,
+        edge_params: geometry.EdgeParams,
+        cell_params: geometry.CellParams,
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+    ):
+        """
+        Initialize vertical advection class with configuration.
+        """
+        log.debug("vertical advection class init - start")
+
+        # input arguments
+        self.grid = grid
+        self.config = config
+        self.interpolation_state = interpolation_state
+        self.least_squares_state = least_squares_state
+        self.metric_state = metric_state
+        self.edge_params = edge_params
+        self.cell_params = cell_params
+        self.exchange = exchange
+
+        # cell indices
+        cell_domain = h_grid.domain(dims.CellDim)
+        self.start_cell_lateral_boundary_level_2 = self.grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        self.start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self.end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        self.end_cell_end = self.grid.end_index(cell_domain(h_grid.Zone.END))
+
+        log.debug("vertical advection class init - end")
+
+    def run(
+        self,
+        prep_adv: advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[wpfloat],
+        p_tracer_new: fa.CellKField[wpfloat],
+        rhodz_now: fa.CellKField[wpfloat],
+        rhodz_new: fa.CellKField[wpfloat],
+        p_mflx_tracer_v: fa.CellKField[wpfloat],  # TODO (dastrm): should be KHalfDim
+        dtime: wpfloat,
+        even_timestep: bool = False,
+    ):
+        """
+        Run a vertical advection step.
+
+        Args:
+            prep_adv: input argument, data class that contains precalculated advection fields
+            p_tracer_now: input argument, field that contains current tracer mass fraction
+            p_tracer_new: output argument, field that contains new tracer mass fraction
+            rhodz_now: input argument, field that contains current air mass in each layer
+            rhodz_new: input argument, field that contains new air mass in each layer
+            p_mflx_tracer_v: output argument, field that contains new vertical tracer mass flux
+            dtime: input argument, the time step
+            even_timestep: input argument, determines whether halo points are included
+
+        """
+        log.debug("vertical advection run - start")
+
+        # TODO (dastrm): maybe change how the indices are handled here? originally:
+        # if even step, vertical transport includes all halo points in order to avoid an additional synchronization step, i.e.
+        #    if lstep_even: i_rlstart  = 2,                i_rlend = min_rlcell
+        #    else:          i_rlstart  = grf_bdywidth_c+1, i_rlend = min_rlcell_int
+        # note: horizontal advection is always called with the same indices, i.e. i_rlstart = grf_bdywidth_c+1, i_rlend = min_rlcell_int
+
+        if self.config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION:
+            log.debug("running stencil copy_cell_kdim_field - start")
+            copy_cell_kdim_field.copy_cell_kdim_field(
+                p_tracer_now,
+                p_tracer_new,
+                horizontal_start=(
+                    self.start_cell_lateral_boundary_level_2
+                    if even_timestep
+                    else self.start_cell_nudging
+                ),
+                horizontal_end=(self.end_cell_end if even_timestep else self.end_cell_local),
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
+                offset_provider=self.grid.offset_providers,
+            )
+            log.debug("running stencil copy_cell_kdim_field - end")
+
+            log.debug("vertical advection run - early end")
+            return
+
+        # get the vertical numerical tracer flux
+
+        # update tracer mass fraction
+
+        log.debug("vertical advection run - end")
