@@ -6,18 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
 
 import dataclasses
 import functools
 import logging
-from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Protocol
 
-import numpy as np
 from gt4py.next import Dimension
 
+from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
 
 
@@ -31,7 +29,7 @@ class ProcessProperties(Protocol):
     comm_size: int
 
 
-@dataclass(frozen=True, init=False)
+@dataclasses.dataclass(frozen=True, init=False)
 class SingleNodeProcessProperties(ProcessProperties):
     def __init__(self):
         object.__setattr__(self, "comm", None)
@@ -61,10 +59,10 @@ class DomainDescriptorIdGenerator:
 
 @dataclasses.dataclass(frozen = True)
 class MaskedArray:
-    data: np.ndarray
-    mask: np.ndarray
+    data: xp.ndarray
+    mask: xp.ndarray
     
-    def __post__init__(self, ):
+    def __post_init__(self, ):
         assert self.mask.shape == self.data.shape, "mask and value must have the same shape"
         assert self.mask.dtype == bool, "maks should be a boolean array"
     
@@ -85,7 +83,7 @@ class DecompositionInfo:
         HALO = 2
 
     @builder.builder
-    def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
+    def with_dimension(self, dim: Dimension, global_index: xp.ndarray, owner_mask: xp.ndarray):
         masked_global_index = MaskedArray(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index
 
@@ -111,9 +109,9 @@ class DecompositionInfo:
     def _to_local_index(self, dim):
         data = self._global_index[dim].data
         assert data.ndim == 1
-        return np.arange(data.shape[0])
+        return xp.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> np.ndarray:
+    def owner_mask(self, dim: Dimension) -> xp.ndarray:
         return self._global_index[dim].mask
 
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
@@ -156,7 +154,7 @@ class ExchangeRuntime(Protocol):
         return True
 
 
-@dataclass
+@dataclasses.dataclass
 class SingleNodeExchange:
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
