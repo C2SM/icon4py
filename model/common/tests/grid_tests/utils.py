@@ -1,17 +1,15 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from pathlib import Path
 
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.datatest_utils import (
     GRIDS_PATH,
@@ -52,3 +50,45 @@ def resolve_file_from_gridfile_name(name: str) -> Path:
         return gridfile
     else:
         raise ValueError(f"invalid name: use one of {R02B04_GLOBAL, REGIONAL_EXPERIMENT}")
+
+
+def horizontal_dim():
+    for dim in (dims.VertexDim, dims.EdgeDim, dims.CellDim):
+        yield dim
+
+
+def global_grid_domains(dim: dims.Dimension):
+    zones = [
+        h_grid.Zone.END,
+        h_grid.Zone.LOCAL,
+        h_grid.Zone.INTERIOR,
+        h_grid.Zone.HALO,
+        h_grid.Zone.HALO_LEVEL_2,
+    ]
+
+    yield from _domain(dim, zones)
+
+
+def _domain(dim, zones):
+    domain = h_grid.domain(dim)
+    for zone in zones:
+        try:
+            yield domain(zone)
+        except AssertionError:
+            ...
+
+
+def valid_boundary_zones_for_dim(dim: dims.Dimension):
+    zones = [
+        h_grid.Zone.LATERAL_BOUNDARY,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_6,
+        h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7,
+        h_grid.Zone.NUDGING,
+        h_grid.Zone.NUDGING_LEVEL_2,
+    ]
+
+    yield from _domain(dim, zones)

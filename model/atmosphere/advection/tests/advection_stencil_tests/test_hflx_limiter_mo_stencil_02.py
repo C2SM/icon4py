@@ -1,21 +1,17 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import numpy as np
 import pytest
 from numpy import int32
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import hflx_limiter_mo_stencil_02
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     constant_field,
@@ -61,15 +57,15 @@ class TestHflxLimiterMoStencil02(StencilTest):
     @pytest.fixture()
     def input_data(self, grid):
         hi_bound, lo_bound = 3, 1
-        refin_ctrl = constant_field(grid, 2, CellDim, dtype=int32)
-        p_cc = random_field(grid, CellDim, KDim)
-        z_tracer_new_low_in = random_field(grid, CellDim, KDim)
-        z_tracer_max_in = random_field(grid, CellDim, KDim)
-        z_tracer_min_in = random_field(grid, CellDim, KDim)
+        refin_ctrl = constant_field(grid, 2, dims.CellDim, dtype=int32)
+        p_cc = random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_low_in = random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_max_in = random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_min_in = random_field(grid, dims.CellDim, dims.KDim)
 
-        z_tracer_new_low_out = zero_field(grid, CellDim, KDim)
-        z_tracer_max_out = zero_field(grid, CellDim, KDim)
-        z_tracer_min_out = zero_field(grid, CellDim, KDim)
+        z_tracer_new_low_out = zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_max_out = zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_min_out = zero_field(grid, dims.CellDim, dims.KDim)
 
         return dict(
             refin_ctrl=refin_ctrl,

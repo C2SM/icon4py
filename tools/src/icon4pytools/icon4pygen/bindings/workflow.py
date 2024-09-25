@@ -1,24 +1,19 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from pathlib import Path
 
+from icon4pytools.common.metadata import StencilInfo
 from icon4pytools.icon4pygen.bindings.codegen.cpp import generate_cpp_definition
 from icon4pytools.icon4pygen.bindings.codegen.f90 import generate_f90_file
 from icon4pytools.icon4pygen.bindings.codegen.header import generate_cpp_header
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
 from icon4pytools.icon4pygen.bindings.utils import check_dir_exists
-from icon4pytools.icon4pygen.metadata import StencilInfo
 
 
 class PyBindGen:

@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import math
 
 import numpy as np
@@ -19,7 +15,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
-from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
@@ -30,7 +26,7 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
 
     @staticmethod
     def reference(grid, kh_smag_e: np.array, enh_diffu_3d: np.array, **kwargs) -> np.array:
-        e2c = grid.connectivities[E2CDim]
+        e2c = grid.connectivities[dims.E2CDim]
         kh_smag_e = np.maximum(
             kh_smag_e,
             np.max(np.where((e2c != -1)[:, :, np.newaxis], enh_diffu_3d[e2c], -math.inf), axis=1),
@@ -39,8 +35,8 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        enh_diffu_3d = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        enh_diffu_3d = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,

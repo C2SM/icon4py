@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 # type: ignore
 
 """
@@ -37,25 +33,10 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-from icon4py.model.common.dimension import (
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    CECDim,
-    CEDim,
-    CellDim,
-    E2C2VDim,
-    E2CDim,
-    ECVDim,
-    EdgeDim,
-    KDim,
-    KHalfDim,
-    V2EDim,
-    VertexDim,
-)
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.grid import geometry
+from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import device, limited_area
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
@@ -85,21 +66,21 @@ def profile_disable():
 
 
 def diffusion_init(
-    vct_a: Field[[KHalfDim], float64],
-    theta_ref_mc: Field[[CellDim, KDim], float64],
-    wgtfac_c: Field[[CellDim, KHalfDim], float64],
-    e_bln_c_s: Field[[CellDim, C2EDim], float64],
-    geofac_div: Field[[CellDim, C2EDim], float64],
-    geofac_grg_x: Field[[CellDim, C2E2CODim], float64],
-    geofac_grg_y: Field[[CellDim, C2E2CODim], float64],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float64],
-    nudgecoeff_e: Field[[EdgeDim], float64],
-    rbf_coeff_1: Field[[VertexDim, V2EDim], float64],
-    rbf_coeff_2: Field[[VertexDim, V2EDim], float64],
-    mask_hdiff: Field[[CellDim, KDim], bool],
-    zd_diffcoef: Field[[CellDim, KDim], float64],
-    zd_vertoffset: Field[[CellDim, C2E2CDim, KDim], int32],
-    zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float64],
+    vct_a: Field[[dims.KHalfDim], float64],
+    theta_ref_mc: Field[[dims.CellDim, dims.KDim], float64],
+    wgtfac_c: Field[[dims.CellDim, dims.KHalfDim], float64],
+    e_bln_c_s: Field[[dims.CellDim, dims.C2EDim], float64],
+    geofac_div: Field[[dims.CellDim, dims.C2EDim], float64],
+    geofac_grg_x: Field[[dims.CellDim, dims.C2E2CODim], float64],
+    geofac_grg_y: Field[[dims.CellDim, dims.C2E2CODim], float64],
+    geofac_n2s: Field[[dims.CellDim, dims.C2E2CODim], float64],
+    nudgecoeff_e: Field[[dims.EdgeDim], float64],
+    rbf_coeff_1: Field[[dims.VertexDim, dims.V2EDim], float64],
+    rbf_coeff_2: Field[[dims.VertexDim, dims.V2EDim], float64],
+    mask_hdiff: Field[[dims.CellDim, dims.KDim], bool],
+    zd_diffcoef: Field[[dims.CellDim, dims.KDim], float64],
+    zd_vertoffset: Field[[dims.CellDim, dims.E2CDim, dims.KDim], int32],
+    zd_intcoef: Field[[dims.CellDim, dims.E2CDim, dims.KDim], float64],
     num_levels: int32,
     mean_cell_area: float64,
     ndyn_substeps: int32,
@@ -120,21 +101,21 @@ def diffusion_init(
     denom_diffu_v: float,
     nudge_max_coeff: float,
     itype_sher: int32,
-    tangent_orientation: Field[[EdgeDim], float64],
-    inverse_primal_edge_lengths: Field[[EdgeDim], float64],
-    inv_dual_edge_length: Field[[EdgeDim], float64],
-    inv_vert_vert_length: Field[[EdgeDim], float64],
-    edge_areas: Field[[EdgeDim], float64],
-    f_e: Field[[EdgeDim], float64],
-    cell_areas: Field[[CellDim], float64],
-    primal_normal_vert_x: Field[[EdgeDim, E2C2VDim], float64],
-    primal_normal_vert_y: Field[[EdgeDim, E2C2VDim], float64],
-    dual_normal_vert_x: Field[[EdgeDim, E2C2VDim], float64],
-    dual_normal_vert_y: Field[[EdgeDim, E2C2VDim], float64],
-    primal_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
-    primal_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
-    dual_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
-    dual_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
+    tangent_orientation: Field[[dims.EdgeDim], float64],
+    inverse_primal_edge_lengths: Field[[dims.EdgeDim], float64],
+    inv_dual_edge_length: Field[[dims.EdgeDim], float64],
+    inv_vert_vert_length: Field[[dims.EdgeDim], float64],
+    edge_areas: Field[[dims.EdgeDim], float64],
+    f_e: Field[[dims.EdgeDim], float64],
+    cell_areas: Field[[dims.CellDim], float64],
+    primal_normal_vert_x: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
+    primal_normal_vert_y: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
+    dual_normal_vert_x: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
+    dual_normal_vert_y: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
+    primal_normal_cell_x: Field[[dims.EdgeDim, dims.E2CDim], float64],
+    primal_normal_cell_y: Field[[dims.EdgeDim, dims.E2CDim], float64],
+    dual_normal_cell_x: Field[[dims.EdgeDim, dims.E2CDim], float64],
+    dual_normal_cell_y: Field[[dims.EdgeDim, dims.E2CDim], float64],
 ):
     logger.info(f"Using Device = {device}")
 
@@ -154,25 +135,25 @@ def diffusion_init(
     )
 
     # Edge geometry
-    edge_params = EdgeParams(
+    edge_params = geometry.EdgeParams(
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=as_1D_sparse_field(primal_normal_vert_x, ECVDim),
-        primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, ECVDim),
-        dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, ECVDim),
-        dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, ECVDim),
-        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, ECVDim),
-        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, ECVDim),
-        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, ECVDim),
-        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, ECVDim),
+        primal_normal_vert_x=as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim),
+        primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim),
+        dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim),
+        dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim),
+        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, dims.ECVDim),
+        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, dims.ECVDim),
+        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, dims.ECVDim),
+        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, dims.ECVDim),
         edge_areas=edge_areas,
         f_e=f_e,
     )
 
     # cell geometry
-    cell_params = CellParams(area=cell_areas, mean_cell_area=mean_cell_area)
+    cell_params = geometry.CellParams(area=cell_areas, mean_cell_area=mean_cell_area)
 
     # diffusion parameters
     config = DiffusionConfig(
@@ -204,8 +185,8 @@ def diffusion_init(
     )
 
     # vertical parameters
-    vertical_params = VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = VerticalGrid(
+        config=vertical_config,
         vct_a=vct_a,
         vct_b=None,
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
@@ -216,17 +197,17 @@ def diffusion_init(
         mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        zd_intcoef=flatten_first_two_dims(CECDim, KDim, field=zd_intcoef),
-        zd_vertoffset=flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset),
+        zd_intcoef=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
+        zd_vertoffset=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset),
         zd_diffcoef=zd_diffcoef,
     )
 
     # interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
+        e_bln_c_s=as_1D_sparse_field(e_bln_c_s, dims.CEDim),
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=as_1D_sparse_field(geofac_div, CEDim),
+        geofac_div=as_1D_sparse_field(geofac_div, dims.CEDim),
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
@@ -236,7 +217,7 @@ def diffusion_init(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_params,
@@ -245,15 +226,15 @@ def diffusion_init(
 
 
 def diffusion_run(
-    w: Field[[CellDim, KHalfDim], float64],
-    vn: Field[[EdgeDim, KDim], float64],
-    exner: Field[[CellDim, KDim], float64],
-    theta_v: Field[[CellDim, KDim], float64],
-    rho: Field[[CellDim, KDim], float64],
-    hdef_ic: Field[[CellDim, KHalfDim], float64],
-    div_ic: Field[[CellDim, KHalfDim], float64],
-    dwdx: Field[[CellDim, KHalfDim], float64],
-    dwdy: Field[[CellDim, KHalfDim], float64],
+    w: Field[[dims.CellDim, dims.KHalfDim], float64],
+    vn: Field[[dims.EdgeDim, dims.KDim], float64],
+    exner: Field[[dims.CellDim, dims.KDim], float64],
+    theta_v: Field[[dims.CellDim, dims.KDim], float64],
+    rho: Field[[dims.CellDim, dims.KDim], float64],
+    hdef_ic: Field[[dims.CellDim, dims.KHalfDim], float64],
+    div_ic: Field[[dims.CellDim, dims.KHalfDim], float64],
+    dwdx: Field[[dims.CellDim, dims.KHalfDim], float64],
+    dwdy: Field[[dims.CellDim, dims.KHalfDim], float64],
     dtime: float64,
     linit: bool,
 ):

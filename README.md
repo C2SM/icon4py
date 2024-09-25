@@ -8,26 +8,18 @@ ICON4Py hosts Python implementations of various components from the ICON climate
 
 The repository is organized into directories, each containing independent Python namespace packages for different ICON components or utility packages. These packages can be installed independently. Since these packages are not available from a package repository (yet), you need to specify the location of dependencies within this repository. This can be done by installing the required dependencies first. Refer to the [Installation instructions](#installation-instructions) below.
 
+## License
+
+ICON4Py is licensed under the terms of the BSD-3-Clause.
+
 ## Installation instructions
+### Dependencies
+A minimal installation of ICON4Py needs 
+- Python 3.10
+- boost >= 1.85.0
 
-We recommend to use [tox](https://tox.wiki/en/latest/) for the automatic installation of all packages in development mode in a single step:
-The `tox.ini` files are located in the `model` and `tools` directories so `tox` needs to be run from there.
-
-```bash
-# Clone the repository
-git clone git@github.com:C2SM/icon4py.git
-cd icon4py
-
-# Use tox to create and set up a development environment (usually at `.venv`) in verbose mode
-python -m tox -vv -c model/tox.ini -e dev --devenv .venv
-
-# Activate the virtual environment and check that everything works
-source .venv/bin/activate
-pytest -v
-```
-
-If you want to proceed manually, you should install all packages at once by using the provided `requirements.txt` or `requirements-dev.txt` files in the root of the repository. For example:
-
+You can install all packages at once by using the provided `requirements.txt` or `requirements-dev.txt` files in the root of the repository. For example:
+The `-dev.txt` file installs ICON4Py packages and GT4Py in editable mode, such that source changes are immediatly picked up and used in the virtual environment. 
 ```bash
 # Clone the repository
 git clone git@github.com:C2SM/icon4py.git
@@ -49,6 +41,25 @@ pytest -v
 ```
 
 The `--src _external_src` option tells `pip` to use a specific folder as the base path for checked out sources, which is very convenient for development tasks involving changes in external dependencies like `gt4py`. For convenience, `./_external_src` has been already added to the repository `.gitignore`.
+
+You can also use [tox](https://tox.wiki/en/latest/) for the automatic installation of all packages in development mode in a single step:
+
+
+```bash
+# Clone the repository
+git clone git@github.com:C2SM/icon4py.git
+cd icon4py
+
+# Use tox to create and set up a development environment (usually at `.venv`) in verbose mode
+pip install tox
+python -m tox -vv -e dev --devenv .venv
+
+# Activate the virtual environment and check that everything works
+source .venv/bin/activate
+pytest -v
+```
+
+
 
 ### Installation of specific subpackages
 

@@ -1,29 +1,24 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
-from icon4py.model.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.dimension import E2C, E2CDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _cell_2_edge_interpolation(
-    in_field: Field[[CellDim, KDim], vpfloat], coeff: Field[[EdgeDim, E2CDim], vpfloat]
-) -> Field[[EdgeDim, KDim], vpfloat]:
+    in_field: fa.CellKField[ta.wpfloat], coeff: Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat]
+) -> fa.EdgeKField[ta.wpfloat]:
     """
     Interpolate a Cell Field to Edges.
 
@@ -37,9 +32,9 @@ def _cell_2_edge_interpolation(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def cell_2_edge_interpolation(
-    in_field: Field[[CellDim, KDim], vpfloat],
-    coeff: Field[[EdgeDim, E2CDim], wpfloat],
-    out_field: Field[[EdgeDim, KDim], vpfloat],
+    in_field: fa.CellKField[ta.wpfloat],
+    coeff: Field[[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
+    out_field: fa.EdgeKField[ta.wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -49,5 +44,8 @@ def cell_2_edge_interpolation(
         in_field,
         coeff,
         out=out_field,
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

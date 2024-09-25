@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 """Utilities for generating icon stencils."""
 
@@ -88,9 +83,10 @@ def main(
         LEVELS_PER_THREAD: how many k-levels to process per thread.
         OUTPATH: represents a path to the folder in which to write all generated code.
     """
+    from icon4pytools.common.metadata import get_stencil_info
     from icon4pytools.icon4pygen.backend import GTHeader
     from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
-    from icon4pytools.icon4pygen.metadata import get_stencil_info, import_definition
+    from icon4pytools.icon4pygen.metadata import import_definition
 
     os.environ["FLOAT_PRECISION"] = "mixed" if enable_mixed_precision else "double"
     program = import_definition(fencil)

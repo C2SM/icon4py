@@ -6,7 +6,7 @@ git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serial
 bump2version>=1.0.1
 coverage[toml]>=5.0
 mypy>=1.7.0
-pre-commit~=2.15
+pre-commit~=3.8.0
 pytest>=6.1
 pytest-benchmark>=4.0.0
 pytest-cache>=1.0
@@ -16,6 +16,7 @@ pytest-xdist[psutil]>=2.2
 pytest-mpi>=0.6
 ruff>=0.2.2
 setuptools>=40.8.0
+tach>=0.10.7
 tox >= 3.25
 typing-extensions>=4.6.0
 types-cffi>=1.15

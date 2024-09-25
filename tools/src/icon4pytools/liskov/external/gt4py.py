@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import importlib
 from inspect import getmembers
@@ -19,7 +14,7 @@ from gt4py.next.ffront.decorator import Program
 
 from icon4pytools.common import ICON4PY_MODEL_QUALIFIED_NAME
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.icon4pygen.metadata import get_stencil_info
+from icon4pytools.common.metadata import get_stencil_info
 from icon4pytools.liskov.codegen.integration.interface import (
     BaseStartStencilData,
     IntegrationCodeInterface,

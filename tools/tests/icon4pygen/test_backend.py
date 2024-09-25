@@ -1,22 +1,19 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import re
 
 import pytest
 from gt4py.next import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.iterator import ir as itir
-from icon4py.model.common.dimension import E2V, EdgeDim, KDim, VertexDim
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import E2V
 from icon4py.model.common.grid.simple import SimpleGrid
 
 from icon4pytools.icon4pygen import backend
@@ -44,20 +41,21 @@ def search_for_grid_sizes(code: str) -> bool:
     return all(re.search(pattern, code) for pattern in patterns)
 
 
-@pytest.mark.parametrize(
-    "temporaries, imperative", [(True, True), (True, False), (False, True), (False, False)]
-)
+# FIXME[#1582](tehrengruber): implement new temporary pass, then add (False, True), (True, True) cases
+@pytest.mark.parametrize("temporaries, imperative", [(True, False), (False, False)])
 def test_grid_size_param_generation(temporaries, imperative):
     @field_operator
-    def testee_op(a: Field[[VertexDim, KDim], float]) -> Field[[EdgeDim, KDim], float]:
+    def testee_op(
+        a: Field[[dims.VertexDim, dims.KDim], float],
+    ) -> Field[[dims.EdgeDim, dims.KDim], float]:
         amul = a * 2.0
         return amul(E2V[0]) + amul(E2V[1])
 
     @program
     def testee_prog(
-        a: Field[[VertexDim, KDim], float],
-        out: Field[[EdgeDim, KDim], float],
-    ) -> Field[[EdgeDim, KDim], float]:
+        a: Field[[dims.VertexDim, dims.KDim], float],
+        out: Field[[dims.EdgeDim, dims.KDim], float],
+    ) -> Field[[dims.EdgeDim, dims.KDim], float]:
         testee_op(a, out=out)
 
     grid = SimpleGrid()
