@@ -120,9 +120,9 @@ def _grad_fd_tang(
 def spherical_to_cartesian_on_cells(
     lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat], r: ta.wpfloat
 ) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
-    x = r * cos(lat) * cos(lon)
-    y = r * sin(lat) * cos(lon)
-    z = r * sin(lon)
+    x = r * cos(lat)* cos(lon)
+    y = r * cos(lat) * sin(lon)
+    z = r * sin(lat)
     return x, y, z
 
 
@@ -131,8 +131,8 @@ def spherical_to_cartesian_on_edges(
     lat: fa.EdgeField[ta.wpfloat], lon: fa.EdgeField[ta.wpfloat], r: ta.wpfloat
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     x = r * cos(lat) * cos(lon)
-    y = r * sin(lat) * cos(lon)
-    z = r * sin(lon)
+    y = r * cos(lat) * sin(lon)
+    z = r * sin(lat)
     return x, y, z
 
 
@@ -141,8 +141,8 @@ def spherical_to_cartesian_on_vertex(
     lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat], r: ta.wpfloat
 ) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
     x = r * cos(lat) * cos(lon)
-    y = r * sin(lat) * cos(lon)
-    z = r * sin(lon)
+    y = r * cos(lat) * sin(lon)
+    z = r * sin(lat)
     return x, y, z
 
 
