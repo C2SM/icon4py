@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
 
 import dataclasses
 import enum
@@ -14,7 +13,7 @@ import functools
 import logging
 from typing import Any, Protocol
 
-from gt4py.next import Dimension
+import gt4py.next as gtx
 
 from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
@@ -64,9 +63,7 @@ class MaskedArray:
     data: xp.ndarray
     mask: xp.ndarray
 
-    def __post_init__(
-        self,
-    ):
+    def __post_init__(self):
         assert self.mask.shape == self.data.shape, "mask and value must have the same shape"
         assert self.mask.dtype == bool, "maks should be a boolean array"
 
@@ -79,16 +76,16 @@ class MaskedArray:
 
 class DecompositionInfo:
     def __init__(self, klevels: int):
-        self._global_index: dict[Dimension, MaskedArray] = {}
+        self._global_index: dict[gtx.Dimension, MaskedArray] = {}
         self._klevels = klevels
 
-    class EntryType(enum.IntEnum):
+    class EntryType(enum.Enum):
         ALL = 0
         OWNED = 1
         HALO = 2
 
     @builder.builder
-    def with_dimension(self, dim: Dimension, global_index: xp.ndarray, owner_mask: xp.ndarray):
+    def with_dimension(self, dim: gtx.Dimension, global_index: xp.ndarray, owner_mask: xp.ndarray):
         masked_global_index = MaskedArray(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index
 
@@ -96,7 +93,7 @@ class DecompositionInfo:
     def klevels(self):
         return self._klevels
 
-    def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def local_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)
@@ -114,10 +111,10 @@ class DecompositionInfo:
         assert data.ndim == 1
         return xp.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> xp.ndarray:
+    def owner_mask(self, dim: gtx.Dimension) -> xp.ndarray:
         return self._global_index[dim].mask
 
-    def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
+    def global_index(self, dim: gtx.Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._global_index[dim].data
@@ -138,10 +135,10 @@ class ExchangeResult(Protocol):
 
 
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
         ...
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
         ...
 
     def get_size(self):
@@ -159,10 +156,10 @@ class ExchangeRuntime(Protocol):
 
 @dataclasses.dataclass
 class SingleNodeExchange:
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
 
-    def exchange_and_wait(self, dim: Dimension, *fields: tuple):
+    def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
         return
 
     def my_rank(self):

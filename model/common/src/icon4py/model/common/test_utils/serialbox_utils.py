@@ -110,8 +110,9 @@ class IconSavepoint:
     def _read_bool(self, name: str):
         return self._read(name, offset=0, dtype=bool)
 
-    def _read(self, name: str, offset=0, dtype=int):
-        return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
+    def _read(self, name: str, offset=0, dtype=int) -> xp.ndarray:
+        buffer = (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
+        return xp.asarray(buffer)
 
 
 class IconGridSavepoint(IconSavepoint):
@@ -406,8 +407,7 @@ class IconGridSavepoint(IconSavepoint):
     def _get_decomp_fields(self, dim: gtx.Dimension):
         global_index = self.global_index(dim)
         mask = self.owner_mask(dim)[0 : self.num(dim)]
-        # TODO (Chia Rui): global_index is not on device, so host update is done for mask
-        return dim, global_index, mask.get()
+        return dim, global_index, mask
 
     def construct_icon_grid(self, on_gpu: bool) -> icon.IconGrid:
         cell_starts = self.cells_start_index()
