@@ -87,7 +87,7 @@ class IconSavepoint:
 
     def _read_int32_shift1(self, name: str) -> xp.ndarray:
         """
-        Read an indices field.
+        Read an index field.
 
         use for start indices: the shift accounts for the zero based python
         values are converted to int32
@@ -355,7 +355,7 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_connectivity_array("c2v", dims.CellDim)
 
     def nrdmax(self):
-        return self._read_int32("nrdmax", offset=1)
+        return self._read_int32_shift1("nrdmax")
 
     def refin_ctrl(self, dim: gtx.Dimension):
         field_name = "refin_ctl"
