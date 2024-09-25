@@ -14,7 +14,6 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, float64
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.caching import CachedProgram
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.settings import backend
 
@@ -50,14 +49,11 @@ def square(
     _square(inp, out=result)
 
 
-square_cached = CachedProgram(square, with_domain=False)
-
-
 def square_from_function(
     inp: Field[[dims.CEDim, dims.KDim], float64],
     result: Field[[dims.CEDim, dims.KDim], float64],
 ):
-    square_cached(inp, result, offset_provider={})
+    square(inp, result, offset_provider={})
 
 
 def square_error(
