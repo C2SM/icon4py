@@ -57,26 +57,28 @@ class DomainDescriptorIdGenerator:
             self._counter = self._counter + 1
         return next_id
 
-@dataclasses.dataclass(frozen = True)
+
+@dataclasses.dataclass(frozen=True)
 class MaskedArray:
     data: xp.ndarray
     mask: xp.ndarray
-    
-    def __post_init__(self, ):
+
+    def __post_init__(self):
         assert self.mask.shape == self.data.shape, "mask and value must have the same shape"
         assert self.mask.dtype == bool, "maks should be a boolean array"
-    
+
     def get_masked(self):
         return self.data[self.mask]
-    
+
     def get_unmasked(self):
         return self.data[~self.mask]
 
+
 class DecompositionInfo:
     def __init__(self, klevels: int):
-        self._global_index:dict[gtx.Dimension, MaskedArray] = {}
+        self._global_index: dict[gtx.Dimension, MaskedArray] = {}
         self._klevels = klevels
-        
+
     class EntryType(enum.Enum):
         ALL = 0
         OWNED = 1
@@ -86,10 +88,6 @@ class DecompositionInfo:
     def with_dimension(self, dim: gtx.Dimension, global_index: xp.ndarray, owner_mask: xp.ndarray):
         masked_global_index = MaskedArray(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index
-
-    def __init__(self, klevels: int):
-        self._global_index = {}
-        self._klevels = klevels
 
     @property
     def klevels(self):
@@ -137,7 +135,7 @@ class ExchangeResult(Protocol):
 
 
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
         ...
 
     def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):
