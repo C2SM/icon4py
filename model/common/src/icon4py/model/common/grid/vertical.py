@@ -497,8 +497,8 @@ def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
 
 def init_vert_coord(
     vct_a: fa.KField[ta.wpfloat],
-    topo: fa.CellField[ta.wpfloat],
-    topo_smooth: fa.CellField[ta.wpfloat],
+    topography: fa.CellField[ta.wpfloat],
+    topography_smoothed: fa.CellField[ta.wpfloat],
     grid: icon_grid.IconGrid,
     vertical_config: VerticalGridConfig,
     vertical_geometry: VerticalGrid,
@@ -516,7 +516,7 @@ def init_vert_coord(
     dvct2   = 500.0
     minrat2 = 0.5 # minimum relative layer thickness for a nominal thickness of dvct2
 
-    z3d_i[:, grid.num_levels+1] = topo
+    z3d_i[:, grid.num_levels+1] = topography
     ktop_thicklimit = grid.num_levels
 
     for k in range(vertical_geometry.nflatlev):
@@ -530,9 +530,9 @@ def init_vert_coord(
         z_fac2 = xp.sinh((vertical_config.model_top_height/vertical_config.decay_scale_2)**vertical_config.decay_exponent - (vct_a[k1]/vertical_config.decay_scale_2)**vertical_config.decay_exponent)/ xp.sinh((vertical_config.model_top_height/vertical_config.decay_scale_2)**vertical_config.decay_exponent)
 
         # Small-scale topography (i.e. full topo - smooth topo)
-        topo_deviation = topo - topo_smooth
+        topo_deviation = topography - topography_smoothed
 
-        z3d_i[:, k] = vct_a[k1] + topo_smooth*z_fac1 + topo_deviation*z_fac2
+        z3d_i[:, k] = vct_a[k1] + topography_smoothed*z_fac1 + topo_deviation*z_fac2
     
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
