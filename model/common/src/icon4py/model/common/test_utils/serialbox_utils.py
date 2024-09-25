@@ -11,6 +11,7 @@ import logging
 import uuid
 
 import gt4py.next as gtx
+import numpy as np
 import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -80,39 +81,42 @@ class IconSavepoint:
         buffer = buffer[tuple(map(slice, buffer_size))]
         return buffer
 
-    def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
-        ar = self._reduce_to_dim_size(ar, dimensions)
-        return gtx.as_field(dimensions, ar)
-
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()
         return {n: metadata[n] for n in names if n in metadata}
 
-    def _read_int32_shift1(self, name: str):
+    def _read_int32_shift1(self, name: str) -> xp.ndarray:
         """
-        Read a start indices field.
+        Read an indices field.
 
         use for start indices: the shift accounts for the zero based python
         values are converted to int32
         """
         return self._read_int32(name, offset=1)
 
-    def _read_int32(self, name: str, offset=0):
+    def _read_int32(self, name: str, offset=0) -> xp.ndarray:
         """
-        Read an end indices field.
+        Read an index field.
 
-        use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
-        this accounts for being exclusive python exclusive bounds: [from:to)
-        field values are convert to int32
+        Field values are convert to int32.
+
+        Args:
+            name: str the fieldname
+            offset: int to be applied to the values in the field
         """
-        return self._read(name, offset, dtype=gtx.int32)
+        return xp.asarray(self._read_on_host(name, offset, dtype=gtx.int32))
 
-    def _read_bool(self, name: str):
-        return self._read(name, offset=0, dtype=bool)
+    def _read_bool(self, name: str) -> xp.ndarray:
+        return xp.asarray(self._read_on_host(name, offset=0, dtype=bool))
 
-    def _read(self, name: str, offset=0, dtype=int) -> xp.ndarray:
-        buffer = (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
-        return xp.asarray(buffer)
+    def _read_on_host(self, name: str, offset=0, dtype=gtx.int32) -> np.ndarray:
+        """
+        Read data from serializer and return a host array, numpy array.
+
+        Contrary to the other functions this does not do a potentila host to device copy for the
+        resulting array but returns the host (numpy) arrays.
+        """
+        return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
 
 
 class IconGridSavepoint(IconSavepoint):
@@ -258,31 +262,31 @@ class IconGridSavepoint(IconSavepoint):
     def edge_cell_length(self):
         return self._get_field("edge_cell_length", dims.EdgeDim, dims.E2CDim)
 
-    def cells_start_index(self):
-        return self._read_int32_shift1("c_start_index")
+    def cells_start_index(self) -> np.ndarray:
+        return self._read_on_host("c_start_index", offset=1)
 
-    def cells_end_index(self):
-        return self._read_int32("c_end_index")
+    def cells_end_index(self) -> np.ndarray:
+        return self._read_on_host("c_end_index")
 
-    def vertex_start_index(self):
-        return self._read_int32_shift1("v_start_index")
+    def vertex_start_index(self) -> np.ndarray:
+        return self._read_on_host("v_start_index", offset=1)
 
-    def vertex_end_index(self):
-        return self._read_int32("v_end_index")
+    def vertex_end_index(self) -> np.ndarray:
+        return self._read_on_host("v_end_index")
+
+    def edge_end_index(self) -> np.ndarray:
+        # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
+        # one off accounts for being exclusive [from:to)
+        return self._read_on_host("e_end_index")
 
     def edge_start_index(self):
-        return self._read_int32_shift1("e_start_index")
+        return self._read_on_host("e_start_index", offset=1)
 
     def nflatlev(self):
         return self._read_int32_shift1("nflatlev")[0]
 
     def nflat_gradp(self):
         return self._read_int32_shift1("nflat_gradp")[0]
-
-    def edge_end_index(self):
-        # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
-        # one off accounts for being exclusive [from:to)
-        return self.serializer.read("e_end_index", self.savepoint)
 
     def v_owner_mask(self):
         return self._get_field("v_owner_mask", dims.VertexDim, dtype=bool)
@@ -351,7 +355,7 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_connectivity_array("c2v", dims.CellDim)
 
     def nrdmax(self):
-        return self._read_int32_shift1("nrdmax")
+        return self._read_int32("nrdmax", offset=1)
 
     def refin_ctrl(self, dim: gtx.Dimension):
         field_name = "refin_ctl"
@@ -730,7 +734,9 @@ class MetricSavepoint(IconSavepoint):
         ar = xp.asarray(xp.squeeze(self.serializer.read("wgtfacq_e", self.savepoint)))
         k = k_level - 3
         ar = xp.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
-        return self._get_field_from_ndarray(ar, dims.EdgeDim, dims.KDim)
+        dimensions = (dims.EdgeDim, dims.KDim)
+        ar = self._reduce_to_dim_size(ar, dimensions)
+        return gtx.as_field(dimensions, ar)
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
     def zd_diffcoef(self):
