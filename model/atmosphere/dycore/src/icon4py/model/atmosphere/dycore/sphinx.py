@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 """Sphinx documentation plugin used to document decorators.
 
 Introduction
@@ -23,31 +31,30 @@ automodule directive) and generate the correct (as well as add a
 import inspect
 
 from docutils import nodes
+from gt4py.next.ffront.decorator import FieldOperator, Program
+from gt4py.next.ffront.field_operator_ast import ScanOperator
 from sphinx.domains import python as sphinx_python
 from sphinx.ext import autodoc
-
-from gt4py.next.ffront.decorator import Program, FieldOperator
-from gt4py.next.ffront.field_operator_ast import ScanOperator
 
 
 class Gt4pydecorDocumenter(autodoc.FunctionDocumenter):
     """Document gt4pydecor definitions."""
 
-    objtype = 'gt4pydecor'
+    objtype = "gt4pydecor"
     member_order = 11
 
     @classmethod
     def can_document_member(cls, member, membername, isattr, parent):
-        return isinstance(member, (Program, FieldOperator, ScanOperator)) and getattr(member, '__wrapped__')
+        return isinstance(member, (Program, FieldOperator, ScanOperator)) and member.__wrapped__
 
     def format_args(self):
-        wrapped = getattr(self.object, '__wrapped__', None)
+        wrapped = getattr(self.object, "__wrapped__", None)
         if wrapped is not None:
             sig = inspect.signature(wrapped)
             if "self" in sig.parameters or "cls" in sig.parameters:
                 sig = sig.replace(parameters=list(sig.parameters.values())[1:])
             return str(sig)
-        return ''
+        return ""
 
     def document_members(self, all_members=False):
         pass
@@ -56,8 +63,8 @@ class Gt4pydecorDocumenter(autodoc.FunctionDocumenter):
         # Normally checks if *self.object* is really defined in the module
         # given by *self.modname*. But we have to check the wrapped function
         # instead.
-        wrapped = getattr(self.object, '__wrapped__', None)
-        if wrapped and getattr(wrapped, '__module__') == self.modname:
+        wrapped = getattr(self.object, "__wrapped__", None)
+        if wrapped and wrapped.__module__ == self.modname:
             return True
         return super().check_module()
 
@@ -75,7 +82,7 @@ def autodoc_skip_member_handler(app, what, name, obj, skip, options):
     # *obj.__class__.__doc__* are equal, which trips up the logic in
     # sphinx.ext.autodoc that is supposed to suppress repetition of class
     # documentation in an instance of the class. This overrides that behavior.
-    if isinstance(obj, (Program, FieldOperator, ScanOperator)) and getattr(obj, '__wrapped__'):
+    if isinstance(obj, (Program, FieldOperator, ScanOperator)) and obj.__wrapped__:
         if skip:
             return False
     return None
@@ -83,12 +90,10 @@ def autodoc_skip_member_handler(app, what, name, obj, skip, options):
 
 def setup(app):
     """Setup Sphinx extension."""
-    app.setup_extension('sphinx.ext.autodoc')
+    app.setup_extension("sphinx.ext.autodoc")
     app.add_autodocumenter(Gt4pydecorDocumenter)
-    app.add_directive_to_domain('py', 'gt4pydecor', Gt4pydecorDirective)
-    app.add_config_value('gt4py_gt4pydecor_prefix', '(gt4pydecor)', True)
-    app.connect('autodoc-skip-member', autodoc_skip_member_handler)
+    app.add_directive_to_domain("py", "gt4pydecor", Gt4pydecorDirective)
+    app.add_config_value("gt4py_gt4pydecor_prefix", "(gt4pydecor)", True)
+    app.connect("autodoc-skip-member", autodoc_skip_member_handler)
 
-    return {
-        'parallel_read_safe': True
-    }
+    return {"parallel_read_safe": True}
