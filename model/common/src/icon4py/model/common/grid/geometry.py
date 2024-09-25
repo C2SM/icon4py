@@ -39,16 +39,18 @@ edge_orientation: "orientation_of_normal"  from grid file
 vertex_edge_orientation:
 edge_vert_length:
 v_dual_area or vertex_dual_area:
-f_e: coriolis force: computed -> see below
+
+reading is done in mo_domimp_patches.f90, computation of derived fields in mo_grid_tools.f90, mo_intp_coeffs.f90
+
 """
 
 class EdgeParams:
     def __init__(
         self,
-        tangent_orientation=None,
-        primal_edge_lengths=None,  # computed, see below
+        tangent_orientation=None, # from grid file
+        primal_edge_lengths=None,  # computed, see below (computed does not match, from grid file matches serialized)
         inverse_primal_edge_lengths=None, # computed, inverse
-        dual_edge_lengths=None,  # computed, see below
+        dual_edge_lengths=None,  # computed, see below (computed does not match, from grid file matches serialized)
         inverse_dual_edge_lengths=None,# computed, inverse
         inverse_vertex_vertex_lengths=None, # computed inverse , see below
         primal_normal_vert_x=None,  # computed
@@ -59,12 +61,12 @@ class EdgeParams:
         dual_normal_cell_x=None,  # computed
         primal_normal_cell_y=None,  # computed
         dual_normal_cell_y=None,  # computed
-        edge_areas=None,  # computed, see below
-        f_e=None,
+        edge_areas=None,  # computed, verifies
+        f_e=None, # computed, verifies
         edge_center_lat=None,  # coordinate in gridfile - "lat_edge_center" units:radians (what is the difference to elat?)
         edge_center_lon=None,  # coordinate in gridfile - "lon_edge_center" units:radians (what is the difference to elon?
-        primal_normal_x=None, # computed
-        primal_normal_y=None, # computed
+        primal_normal_x=None, # from gridfile (computed in bridge code?
+        primal_normal_y=None, # from gridfile (computed in bridge code?)
     ):
         self.tangent_orientation: fa.EdgeField[float] = tangent_orientation
         """
@@ -331,19 +333,26 @@ def edge_normals():
 
 
 @gtx.field_operator(grid_type = gtx.GridType.UNSTRUCTURED)
-def dual_edge_length(cell_lon:fa.CellField[ta.wpfloat], cell_lat:fa.CellField[ta.wpfloat],
-                     subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
-    x, y, z = spherical_to_cartesian_on_cells(cell_lat, cell_lon, 1.0)
+def dual_edge_length(cell_lat:fa.CellField[ta.wpfloat], 
+                     cell_lon:fa.CellField[ta.wpfloat],
+                     subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat],
+                     radius: ta.wpfloat
+                     ) -> fa.EdgeField[ta.wpfloat]:
+    x, y, z = spherical_to_cartesian_on_cells(cell_lat, cell_lon, radius)
     x = neighbor_sum(subtract_coeff * x(E2C), axis=E2CDim )
     y = neighbor_sum(subtract_coeff * y(E2C), axis=E2CDim)
     z = neighbor_sum(subtract_coeff * z(E2C), axis=E2CDim)
 
-    return sqrt(x*x + y*y + z*z)
+    return norm2(x, y, z)
 
 
 @gtx.field_operator(grid_type = gtx.GridType.UNSTRUCTURED)
-def primal_edge_length(vertex_lat: fa.VertexField[fa.wpfloat], vertex_lon:fa.VertexField[ta.wpfloat], subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat])-> fa.EdgeField[ta.wpfloat]:
-    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
+def primal_edge_length(vertex_lat: fa.VertexField[ta.wpfloat], 
+                       vertex_lon:fa.VertexField[ta.wpfloat], 
+                       subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat],
+                       radius: ta.wpfloat,
+                       )-> fa.EdgeField[ta.wpfloat]:
+    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, radius)
     x = neighbor_sum(subtract_coeff * x(E2V), axis=E2VDim)
     y = neighbor_sum(subtract_coeff * y(E2V), axis=E2VDim)
     z = neighbor_sum(subtract_coeff * z(E2V), axis=E2VDim)
@@ -352,8 +361,8 @@ def primal_edge_length(vertex_lat: fa.VertexField[fa.wpfloat], vertex_lon:fa.Ver
     
     
 @gtx.field_operator(grid_type = gtx.GridType.UNSTRUCTURED)
-def vertex_vertex_length(vertex_lat: fa.VertexField[fa.wpfloat], vertex_lon:fa.VertexField[ta.wpfloat])->fa.EdgeField[ta.wpfloat]:
-    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
+def vertex_vertex_length(vertex_lat: fa.VertexField[fa.wpfloat], vertex_lon:fa.VertexField[ta.wpfloat], radius: ta.wpfloat)->fa.EdgeField[ta.wpfloat]:
+    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, radius)
     x1 = x(E2C2V[2])
     x2 = x(E2C2V[3])
     y1 = y(E2C2V[2])
