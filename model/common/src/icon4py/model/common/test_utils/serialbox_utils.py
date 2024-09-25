@@ -113,7 +113,7 @@ class IconSavepoint:
         """
         Read data from serializer and return a host array, numpy array.
 
-        Contrary to the other functions this does not do a potentila host to device copy for the
+        Contrary to the other functions this does not do a potential host to device copy for the
         resulting array but returns the host (numpy) arrays.
         """
         return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
@@ -283,10 +283,10 @@ class IconGridSavepoint(IconSavepoint):
         return self._read_on_host("e_start_index", offset=1)
 
     def nflatlev(self):
-        return self._read_int32_shift1("nflatlev")[0]
+        return self._read_on_host("nflatlev", offset=1)[0]
 
     def nflat_gradp(self):
-        return self._read_int32_shift1("nflat_gradp")[0]
+        return self._read_on_host("nflat_gradp", offset=1)[0]
 
     def v_owner_mask(self):
         return self._get_field("v_owner_mask", dims.VertexDim, dtype=bool)
@@ -308,11 +308,11 @@ class IconGridSavepoint(IconSavepoint):
 
     def _get_connectivity_array(self, name: str, target_dim: gtx.Dimension, reverse: bool = False):
         if reverse:
-            connectivity = xp.asarray(
-                xp.transpose(self._read_int32(name, offset=1))[: self.sizes[target_dim], :]
-            )
+            connectivity = xp.transpose(self._read_int32(name, offset=1))[
+                : self.sizes[target_dim], :
+            ]
         else:
-            connectivity = xp.asarray(self._read_int32(name, offset=1)[: self.sizes[target_dim], :])
+            connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
@@ -355,14 +355,12 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_connectivity_array("c2v", dims.CellDim)
 
     def nrdmax(self):
-        return self._read_int32_shift1("nrdmax")
+        return self._read_on_host("nrdmax", offset=1)
 
     def refin_ctrl(self, dim: gtx.Dimension):
         field_name = "refin_ctl"
-        buffer = xp.asarray(
-            xp.squeeze(
-                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
-            )
+        buffer = xp.squeeze(
+            self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
         )
         return gtx.as_field(
             (dim,),
@@ -389,7 +387,7 @@ class IconGridSavepoint(IconSavepoint):
     def owner_mask(self, dim: gtx.Dimension):
         field_name = "owner_mask"
         mask = self._read_field_for_dim(field_name, self._read_bool, dim)
-        buffer = xp.asarray(xp.squeeze(mask))
+        buffer = xp.squeeze(mask)
         return buffer
 
     def global_index(self, dim: gtx.Dimension):
