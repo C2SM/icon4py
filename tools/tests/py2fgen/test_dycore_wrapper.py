@@ -37,6 +37,11 @@ from icon4py.model.common.test_utils import (
 )
 
 from icon4pytools.py2fgen.wrappers.dycore import grid_init, solve_nh_init, solve_nh_run
+from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
+    CellIndexDim,
+    EdgeIndexDim,
+    VertexIndexDim,
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -74,6 +79,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
     caplog,
+    icon_grid,
 ):
     caplog.set_level(logging.DEBUG)
 
@@ -213,41 +219,36 @@ def test_granule_solve_nonhydro_single_step_regional(
     # other params
     c_owner_mask = grid_savepoint.c_owner_mask()
 
-    # grid params
+    # --- Set Up Grid Parameters ---
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
     num_edges = grid_savepoint.num(dims.EdgeDim)
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_start_index())
-    cell_ends = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_end_index())
-    vertex_starts = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_start_index())
-    vertex_ends = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_end_index())
-    edge_starts = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_start_index())
-    edge_ends = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_end_index())
+    # raw serialised data which is not yet offset
+    cell_starts = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
+    cell_ends = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
+    vertex_starts = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_start_index"))
+    vertex_ends = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
+    edge_starts = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
+    edge_ends = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
 
-    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint.c2e())
-    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint.e2c())
-    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint.c2e2c())
-    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint.e2c2e())
-    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint.e2v())
-    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint.v2e())
-    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
-    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
-    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
+    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
+    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
+    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint._read_int32("c2e2c"))
+    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint._read_int32("e2c2e"))
+    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint._read_int32("e2v"))
+    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint._read_int32("v2e"))
+    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint._read_int32("v2c"))
+    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
+    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
     # global grid params
     global_root = 4
     global_level = 9
 
     grid_init(
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -257,6 +258,12 @@ def test_granule_solve_nonhydro_single_step_regional(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         global_root=global_root,
         global_level=global_level,
         num_vertices=num_vertices,
@@ -505,6 +512,9 @@ def test_granule_solve_nonhydro_single_step_regional(
 def test_granule_solve_nonhydro_multi_step_regional(
     step_date_init,
     step_date_exit,
+    istep_exit,
+    jstep_init,
+    jstep_exit,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -662,22 +672,22 @@ def test_granule_solve_nonhydro_multi_step_regional(
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_start_index())
-    cell_ends = gtx.as_field((dims.CellIndexDim,), grid_savepoint.cells_end_index())
-    vertex_starts = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_start_index())
-    vertex_ends = gtx.as_field((dims.VertexIndexDim,), grid_savepoint.vertex_end_index())
-    edge_starts = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_start_index())
-    edge_ends = gtx.as_field((dims.EdgeIndexDim,), grid_savepoint.edge_end_index())
+    cell_starts = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
+    cell_ends = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
+    vertex_starts = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_start_index"))
+    vertex_ends = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
+    edge_starts = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
+    edge_ends = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
 
-    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint.c2e())
-    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint.e2c())
-    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint.c2e2c())
-    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint.e2c2e())
-    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint.e2v())
-    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint.v2e())
-    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint.v2c())
-    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint.e2c2v())
-    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint.c2v())
+    c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
+    e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
+    c2e2c = gtx.as_field((dims.CellDim, dims.C2E2CDim), grid_savepoint._read_int32("c2e2c"))
+    e2c2e = gtx.as_field((dims.EdgeDim, dims.E2C2EDim), grid_savepoint._read_int32("e2c2e"))
+    e2v = gtx.as_field((dims.EdgeDim, dims.E2VDim), grid_savepoint._read_int32("e2v"))
+    v2e = gtx.as_field((dims.VertexDim, dims.V2EDim), grid_savepoint._read_int32("v2e"))
+    v2c = gtx.as_field((dims.VertexDim, dims.V2CDim), grid_savepoint._read_int32("v2c"))
+    e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
+    c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
     # global grid params
     global_root = 4

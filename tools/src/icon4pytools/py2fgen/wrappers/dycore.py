@@ -28,15 +28,12 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
-import cProfile
-import pstats
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
-    SolveNonhydro,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -44,33 +41,27 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.common import settings
+from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.dimension import (
-    C2E2CDim,
     C2E2CODim,
     C2EDim,
-    C2VDim,
     CEDim,
     CellDim,
-    CellIndexDim,
     E2C2EDim,
     E2C2EODim,
     E2C2VDim,
     E2CDim,
-    E2VDim,
     ECDim,
     ECVDim,
     EdgeDim,
-    EdgeIndexDim,
     KDim,
     KHalfDim,
     V2CDim,
     V2EDim,
     VertexDim,
-    VertexIndexDim,
 )
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
-from icon4py.model.common.grid.icon import GlobalGridParams
+from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
@@ -80,84 +71,17 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.wrappers.common import construct_icon_grid
+from icon4pytools.py2fgen.wrappers import common
+from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
+    CellIndexDim,
+    EdgeIndexDim,
+    VertexIndexDim,
+)
 
 
-log = setup_logger(__name__)
+logger = setup_logger(__name__)
 
-# global diffusion object
-solve_nonhydro: SolveNonhydro = SolveNonhydro()
-
-# global grid object
-icon_grid = None
-
-# global profiler object
-profiler = cProfile.Profile()
-
-
-def profile_enable():
-    profiler.enable()
-
-
-def profile_disable():
-    profiler.disable()
-    stats = pstats.Stats(profiler)
-    stats.dump_stats(f"{__name__}.profile")
-
-
-def grid_init(
-    cell_starts: Field[[CellIndexDim], int32],
-    cell_ends: Field[[CellIndexDim], int32],
-    vertex_starts: Field[[VertexIndexDim], int32],
-    vertex_ends: Field[[VertexIndexDim], int32],
-    edge_starts: Field[[EdgeIndexDim], int32],
-    edge_ends: Field[[EdgeIndexDim], int32],
-    c2e: Field[[CellDim, C2EDim], int32],
-    e2c: Field[[EdgeDim, E2CDim], int32],
-    c2e2c: Field[[CellDim, C2E2CDim], int32],
-    e2c2e: Field[[EdgeDim, E2C2EDim], int32],
-    e2v: Field[[EdgeDim, E2VDim], int32],
-    v2e: Field[[VertexDim, V2EDim], int32],
-    v2c: Field[[VertexDim, V2CDim], int32],
-    e2c2v: Field[[EdgeDim, E2C2VDim], int32],
-    c2v: Field[[CellDim, C2VDim], int32],
-    global_root: int32,
-    global_level: int32,
-    num_vertices: int32,
-    num_cells: int32,
-    num_edges: int32,
-    vertical_size: int32,
-    limited_area: bool,
-):
-    global icon_grid
-
-    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
-
-    icon_grid = construct_icon_grid(
-        grid_id="icon_grid",
-        global_grid_params=global_grid_params,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        c2e=c2e,
-        e2c=e2c,
-        c2e2c=c2e2c,
-        e2c2e=e2c2e,
-        e2v=e2v,
-        v2e=v2e,
-        v2c=v2c,
-        e2c2v=e2c2v,
-        c2v=c2v,
-    )
+icon_grid: IconGrid = None
 
 
 def solve_nh_init(
@@ -396,7 +320,7 @@ def solve_nh_init(
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
-    solve_nonhydro.init(
+    common.GLOBAL_STATE["dycore_granule"].init(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -452,7 +376,7 @@ def solve_nh_run(
     nnew: int32,
     nnow: int32,
 ):
-    log.info(f"Using Device = {settings.device}")
+    logger.info(f"Using Device = {settings.device}")
 
     prep_adv = PrepAdvection(
         vn_traj=vn_traj,
@@ -505,7 +429,7 @@ def solve_nh_run(
     nnow = nnow - 1
     nnew = nnew - 1
 
-    solve_nonhydro.time_step(
+    common.GLOBAL_STATE["dycore_granule"].time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
@@ -519,4 +443,63 @@ def solve_nh_run(
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps - 1),
+    )
+
+
+def grid_init(
+    c2e: Field[[dims.CellDim, dims.C2EDim], int32],
+    e2c: Field[[dims.EdgeDim, dims.E2CDim], int32],
+    c2e2c: Field[[dims.CellDim, dims.C2E2CDim], int32],
+    e2c2e: Field[[dims.EdgeDim, dims.E2C2EDim], int32],
+    e2v: Field[[dims.EdgeDim, dims.E2VDim], int32],
+    v2e: Field[[dims.VertexDim, dims.V2EDim], int32],
+    v2c: Field[[dims.VertexDim, dims.V2CDim], int32],
+    e2c2v: Field[[dims.EdgeDim, dims.E2C2VDim], int32],
+    c2v: Field[[dims.CellDim, dims.C2VDim], int32],
+    cell_starts: Field[[CellIndexDim], int32],
+    cell_ends: Field[[CellIndexDim], int32],
+    vertex_starts: Field[[VertexIndexDim], int32],
+    vertex_ends: Field[[VertexIndexDim], int32],
+    edge_starts: Field[[EdgeIndexDim], int32],
+    edge_ends: Field[[EdgeIndexDim], int32],
+    global_root: int32,
+    global_level: int32,
+    num_vertices: int32,
+    num_cells: int32,
+    num_edges: int32,
+    vertical_size: int32,
+    limited_area: bool,
+):
+    global icon_grid
+
+    # todo: write this logic into template.py
+    if isinstance(limited_area, int):
+        limited_area = bool(limited_area)
+
+    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
+
+    icon_grid = common.construct_icon_grid(
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
+        grid_id="icon_grid",
     )

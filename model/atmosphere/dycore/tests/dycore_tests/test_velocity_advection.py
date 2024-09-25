@@ -15,8 +15,10 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-
-from .utils import construct_interpolation_state_for_nonhydro, construct_nh_metric_state
+from icon4py.model.common.test_utils.dycore_utils import (
+    construct_interpolation_state_for_nonhydro,
+    construct_nh_metric_state,
+)
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
