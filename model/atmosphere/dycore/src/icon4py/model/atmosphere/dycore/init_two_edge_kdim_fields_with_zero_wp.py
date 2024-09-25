@@ -15,17 +15,14 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _init_two_edge_kdim_fields_with_zero_wp() -> (
     tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]
 ):
     """Formerly know as _mo_solve_nonhydro_stencil_14, _mo_solve_nonhydro_stencil_15, or _mo_solve_nonhydro_stencil_33."""
-    return broadcast(wpfloat("0.0"), (EdgeDim, KDim)), broadcast(wpfloat("0.0"), (EdgeDim, KDim))
+    return broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)), broadcast(
+        wpfloat("0.0"), (dims.EdgeDim, dims.KDim)
+    )
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -40,7 +37,7 @@ def init_two_edge_kdim_fields_with_zero_wp(
     _init_two_edge_kdim_fields_with_zero_wp(
         out=(edge_kdim_field_with_zero_wp_1, edge_kdim_field_with_zero_wp_2),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

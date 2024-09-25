@@ -66,18 +66,18 @@ def model_initialization_jabw(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
 
-    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().asnumpy()
-    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().asnumpy()
-    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().asnumpy()
-    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().asnumpy()
-    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().asnumpy()
-    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().asnumpy()
-    geopot = data_provider.from_metrics_savepoint().geopot().asnumpy()
+    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
+    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
+    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
+    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
+    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
+    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
+    geopot = data_provider.from_metrics_savepoint().geopot().ndarray
 
-    cell_lat = cell_param.cell_center_lat.asnumpy()
-    edge_lat = edge_param.edge_center[0].asnumpy()
-    edge_lon = edge_param.edge_center[1].asnumpy()
-    primal_normal_x = edge_param.primal_normal[0].asnumpy()
+    cell_lat = cell_param.cell_center_lat.ndarray
+    edge_lat = edge_param.edge_center[0].ndarray
+    edge_lon = edge_param.edge_center[1].ndarray
+    primal_normal_x = edge_param.primal_normal[0].ndarray
 
     cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
@@ -111,13 +111,13 @@ def model_initialization_jabw(
     lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
     ps_o_p0ref = p_sfc / phy_const.P0REF
 
-    w_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
-    exner_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    rho_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    temperature_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    pressure_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    theta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    eta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    temperature_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
 
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
@@ -133,9 +133,9 @@ def model_initialization_jabw(
         log.info(f"In Newton iteration, k = {k_index}")
         # Newton iteration to determine zeta
         for _ in range(100):
-            eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
-            cos_etav = xp.cos(eta_v_numpy[:, k_index])
-            sin_etav = xp.sin(eta_v_numpy[:, k_index])
+            eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
+            cos_etav = xp.cos(eta_v_ndarray[:, k_index])
+            sin_etav = xp.sin(eta_v_ndarray[:, k_index])
 
             temperature_avg = jw_temp0 * (eta_old**lapse_rate)
             geopot_avg = jw_temp0 * phy_const.GRAV / gamma * (1.0 - eta_old**lapse_rate)
@@ -177,22 +177,24 @@ def model_initialization_jabw(
             eta_old = eta_old - newton_function / newton_function_prime
 
         # Final update for zeta_v
-        eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
+        eta_v_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
         # Use analytic expressions at all model level
-        exner_numpy[:, k_index] = (eta_old * ps_o_p0ref) ** phy_const.RD_O_CPD
-        theta_v_numpy[:, k_index] = temperature_jw / exner_numpy[:, k_index]
-        rho_numpy[:, k_index] = (
-            exner_numpy[:, k_index] ** phy_const.CVD_O_RD
+        exner_ndarray[:, k_index] = (eta_old * ps_o_p0ref) ** phy_const.RD_O_CPD
+        theta_v_ndarray[:, k_index] = temperature_jw / exner_ndarray[:, k_index]
+        rho_ndarray[:, k_index] = (
+            exner_ndarray[:, k_index] ** phy_const.CVD_O_RD
             * phy_const.P0REF
             / phy_const.RD
-            / theta_v_numpy[:, k_index]
+            / theta_v_ndarray[:, k_index]
         )
         # initialize diagnose pressure and temperature variables
-        pressure_numpy[:, k_index] = phy_const.P0REF * exner_numpy[:, k_index] ** phy_const.CPD_O_RD
-        temperature_numpy[:, k_index] = temperature_jw
+        pressure_ndarray[:, k_index] = (
+            phy_const.P0REF * exner_ndarray[:, k_index] ** phy_const.CPD_O_RD
+        )
+        temperature_ndarray[:, k_index] = temperature_jw
     log.info("Newton iteration completed!")
 
-    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_numpy)
+    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray)
     eta_v_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid)
     cell_2_edge_interpolation.cell_2_edge_interpolation(
         eta_v,
@@ -206,7 +208,7 @@ def model_initialization_jabw(
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
-    vn_numpy = testcases_utils.zonalwind_2_normalwind_numpy(
+    vn_ndarray = testcases_utils.zonalwind_2_normalwind_ndarray(
         grid,
         jw_u0,
         jw_up,
@@ -215,41 +217,41 @@ def model_initialization_jabw(
         edge_lat,
         edge_lon,
         primal_normal_x,
-        eta_v_e.asnumpy(),
+        eta_v_e.ndarray,
     )
     log.info("U2vn computation completed.")
 
-    rho_numpy, exner_numpy, theta_v_numpy = testcases_utils.hydrostatic_adjustment_numpy(
+    rho_ndarray, exner_ndarray, theta_v_ndarray = testcases_utils.hydrostatic_adjustment_ndarray(
         wgtfac_c,
         ddqz_z_half,
         exner_ref_mc,
         d_exner_dz_ref_ic,
         theta_ref_mc,
         theta_ref_ic,
-        rho_numpy,
-        exner_numpy,
-        theta_v_numpy,
+        rho_ndarray,
+        exner_ndarray,
+        theta_v_ndarray,
         num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_numpy)
-    w = gtx.as_field((dims.CellDim, dims.KDim), w_numpy)
-    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_numpy)
-    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_numpy)
-    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_numpy)
-    virutal_temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_numpy)
-    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_numpy)
-    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_numpy)
-    pressure_ifc_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
-    pressure_ifc_numpy[:, -1] = p_sfc
-    pressure_ifc = gtx.as_field((dims.CellDim, dims.KDim), pressure_ifc_numpy)
+    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray)
+    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray)
+    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray)
+    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray)
+    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray)
+    virutal_temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray)
+    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray)
+    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray)
+    pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    pressure_ifc_ndarray[:, -1] = p_sfc
+    pressure_ifc = gtx.as_field((dims.CellDim, dims.KDim), pressure_ifc_ndarray)
 
-    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_numpy)
-    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_numpy)
-    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_numpy)
-    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_numpy)
-    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_numpy)
+    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray)
+    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray)
+    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray)
+    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray)
+    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray)
 
     u = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
     v = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
@@ -345,6 +347,9 @@ def model_initialization_jabw(
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
         exner_dyn_incr=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        exner_dyn_incr_lastsubstep=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid
+        ),
     )
 
     prep_adv = solve_nh_states.PrepAdvection(

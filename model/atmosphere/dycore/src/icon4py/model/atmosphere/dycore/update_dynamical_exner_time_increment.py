@@ -15,11 +15,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _update_dynamical_exner_time_increment(
     exner: fa.CellKField[wpfloat],
@@ -31,8 +26,10 @@ def _update_dynamical_exner_time_increment(
     """Formerly known as _mo_solve_nonhydro_stencil_60."""
     exner_dyn_incr_wp, ddt_exner_phy_wp = astype((exner_dyn_incr, ddt_exner_phy), wpfloat)
 
-    exner_dyn_incr_wp = exner - (exner_dyn_incr_wp + ndyn_substeps_var * dtime * ddt_exner_phy_wp)
-    return astype(exner_dyn_incr_wp, vpfloat)
+    exner_dyn_incr_lastsubstep_wp = exner - (
+        exner_dyn_incr_wp + ndyn_substeps_var * dtime * ddt_exner_phy_wp
+    )
+    return astype(exner_dyn_incr_lastsubstep_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -40,6 +37,7 @@ def update_dynamical_exner_time_increment(
     exner: fa.CellKField[wpfloat],
     ddt_exner_phy: fa.CellKField[vpfloat],
     exner_dyn_incr: fa.CellKField[vpfloat],
+    exner_dyn_incr_lastsubstep: fa.CellKField[vpfloat],
     ndyn_substeps_var: wpfloat,
     dtime: wpfloat,
     horizontal_start: int32,
@@ -53,9 +51,9 @@ def update_dynamical_exner_time_increment(
         exner_dyn_incr,
         ndyn_substeps_var,
         dtime,
-        out=exner_dyn_incr,
+        out=exner_dyn_incr_lastsubstep,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

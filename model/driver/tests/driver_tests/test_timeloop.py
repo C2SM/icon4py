@@ -283,6 +283,9 @@ def test_run_timeloop_single_step(
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=sp.exner_dyn_incr(),
+        exner_dyn_incr_lastsubstep=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=icon_grid
+        ),
     )
 
     timeloop = icon4py_driver.TimeLoop(icon4pyrun_config, diffusion_granule, solve_nonhydro_granule)
@@ -324,29 +327,29 @@ def test_run_timeloop_single_step(
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
-        vn_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].vn.ndarray,
+        vn_sp.ndarray,
         atol=6e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
-        w_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].w.ndarray,
+        w_sp.ndarray,
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
-        exner_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].exner.ndarray,
+        exner_sp.ndarray,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
-        theta_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].theta_v.ndarray,
+        theta_sp.ndarray,
         atol=4e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
-        rho_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].rho.ndarray,
+        rho_sp.ndarray,
     )

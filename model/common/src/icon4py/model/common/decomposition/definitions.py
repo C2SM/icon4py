@@ -87,7 +87,9 @@ class DecompositionInfo:
         masked_global_index = MaskedArray(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index
 
-
+    def __init__(self, klevels: int):
+        self._global_index = {}
+        self._klevels = klevels
 
     @property
     def klevels(self):
@@ -135,7 +137,7 @@ class ExchangeResult(Protocol):
 
 
 class ExchangeRuntime(Protocol):
-    def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
+    def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         ...
 
     def exchange_and_wait(self, dim: gtx.Dimension, *fields: tuple):

@@ -11,7 +11,7 @@ from icon4py.model.common.test_utils import helpers
 from icon4py.model.driver.test_cases import utils
 
 
-def test_hydrostatic_adjustment_numpy():
+def test_hydrostatic_adjustment_ndarray():
     # TODO (Jacopo / Chia Rui) these tests could be better
     num_cells = 10
     num_levels = 10
@@ -31,7 +31,7 @@ def test_hydrostatic_adjustment_numpy():
     theta_v = theta_v0 * xp.ones((num_cells, num_levels))
 
     # Call the function
-    r_rho, r_exner, r_theta_v = utils.hydrostatic_adjustment_numpy(
+    r_rho, r_exner, r_theta_v = utils.hydrostatic_adjustment_ndarray(
         wgtfac_c,
         ddqz_z_half,
         exner_ref_mc,
@@ -66,7 +66,7 @@ def test_hydrostatic_adjustment_numpy():
     )
 
 
-def test_hydrostatic_adjustment_constant_thetav_numpy():
+def test_hydrostatic_adjustment_constant_thetav_ndarray():
     # TODO (Jacopo / Chia Rui) these tests could be better
     num_cells = 10
     num_levels = 10
@@ -86,7 +86,7 @@ def test_hydrostatic_adjustment_constant_thetav_numpy():
     theta_v = theta_v0 * xp.ones((num_cells, num_levels))
 
     # Call the function
-    r_rho, r_exner = utils.hydrostatic_adjustment_constant_thetav_numpy(
+    r_rho, r_exner = utils.hydrostatic_adjustment_constant_thetav_ndarray(
         wgtfac_c,
         ddqz_z_half,
         exner_ref_mc,

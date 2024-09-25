@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-VertexDim = dims.VertexDim
-KDim = dims.KDim
-
-
 @field_operator
 def _mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: fa.EdgeKField[wpfloat],
@@ -52,7 +47,7 @@ def mo_intp_rbf_rbf_vec_interpol_vertex(
         ptr_coeff_2,
         out=(p_u_out, p_v_out),
         domain={
-            VertexDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.VertexDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

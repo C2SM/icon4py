@@ -187,4 +187,7 @@ class IconGrid(base.BaseGrid):
         For a given dimension, returns the end index of the
         horizontal region in a field given by the marker.
         """
+        if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
+            # special treatment because this value is not set properly in the underlying data, for a global grid
+            return self.size[domain.dim]
         return self._end_indices[domain.dim][domain()]
