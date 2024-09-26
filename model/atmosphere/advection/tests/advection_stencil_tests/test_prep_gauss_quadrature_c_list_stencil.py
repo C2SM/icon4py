@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_list_stencil import (
     prep_gauss_quadrature_c_list_stencil,
@@ -525,7 +524,7 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        famask_int = constant_field(grid, 1, dims.EdgeDim, dims.KDim, dtype=int32)
+        famask_int = constant_field(grid, 1, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_coords_dreg_v_1_x = random_field(grid, dims.EdgeDim, dims.KDim)
         p_coords_dreg_v_2_x = random_field(grid, dims.EdgeDim, dims.KDim)
         p_coords_dreg_v_3_x = random_field(grid, dims.EdgeDim, dims.KDim)

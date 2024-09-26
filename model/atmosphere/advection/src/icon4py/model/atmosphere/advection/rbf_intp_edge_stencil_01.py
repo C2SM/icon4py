@@ -5,9 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2E, E2C2EDim
@@ -16,7 +16,7 @@ from icon4py.model.common.dimension import E2C2E, E2C2EDim
 @field_operator
 def _rbf_intp_edge_stencil_01(
     p_vn_in: fa.EdgeKField[float],
-    ptr_coeff: Field[[dims.EdgeDim, E2C2EDim], float],
+    ptr_coeff: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EDim], float],
 ) -> fa.EdgeKField[float]:
     p_vt_out = neighbor_sum(p_vn_in(E2C2E) * ptr_coeff, axis=E2C2EDim)
     return p_vt_out
@@ -25,7 +25,7 @@ def _rbf_intp_edge_stencil_01(
 @program
 def rbf_intp_edge_stencil_01(
     p_vn_in: fa.EdgeKField[float],
-    ptr_coeff: Field[[dims.EdgeDim, E2C2EDim], float],
+    ptr_coeff: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EDim], float],
     p_vt_out: fa.EdgeKField[float],
 ):
     _rbf_intp_edge_stencil_01(p_vn_in, ptr_coeff, out=p_vt_out)

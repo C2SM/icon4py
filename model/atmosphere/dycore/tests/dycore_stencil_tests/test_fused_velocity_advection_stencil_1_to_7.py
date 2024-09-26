@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import gtx
 
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 import (
     fused_velocity_advection_stencil_1_to_7,
@@ -228,7 +227,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         k = field_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
 
-        edge = zero_field(grid, dims.EdgeDim, dtype=int32)
+        edge = zero_field(grid, dims.EdgeDim, dtype=gtx.int32)
         for e in range(grid.num_edges):
             edge[e] = e
 

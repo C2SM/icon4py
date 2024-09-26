@@ -5,12 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import math
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import gtx
 
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
@@ -42,7 +41,7 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
             kh_smag_e=kh_smag_e,
             enh_diffu_3d=enh_diffu_3d,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_edges),
+            horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

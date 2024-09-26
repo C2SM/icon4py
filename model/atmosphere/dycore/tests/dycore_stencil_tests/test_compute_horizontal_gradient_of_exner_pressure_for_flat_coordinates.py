@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import gtx
 
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
@@ -46,7 +45,7 @@ class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest
             z_exner_ex_pr=z_exner_ex_pr,
             z_gradh_exner=z_gradh_exner,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_edges),
+            horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

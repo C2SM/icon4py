@@ -5,11 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py.next import as_field
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import vert_adv_stencil_01
 from icon4py.model.common import dimension as dims
@@ -30,8 +29,8 @@ class TestVertAdvStencil01(StencilTest):
         deepatmo_divzu: np.array,
         rhodz_new: np.array,
         k: np.array,
-        ivadv_tracer: int32,
-        iadv_slev_jt: int32,
+        ivadv_tracer: gtx.int32,
+        iadv_slev_jt: gtx.int32,
         p_dtime: float,
         **kwargs,
     ) -> np.array:
@@ -62,7 +61,7 @@ class TestVertAdvStencil01(StencilTest):
         deepatmo_divzl = random_field(grid, dims.KDim)
         deepatmo_divzu = random_field(grid, dims.KDim)
         rhodz_new = random_field(grid, dims.CellDim, dims.KDim)
-        k = as_field((dims.KDim,), np.arange(grid.num_levels, dtype=int32))
+        k = as_field((dims.KDim,), np.arange(grid.num_levels, dtype=gtx.int32))
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4

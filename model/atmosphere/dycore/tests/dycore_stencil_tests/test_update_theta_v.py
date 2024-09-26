@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import gtx
 
 from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
 from icon4py.model.common import dimension as dims
@@ -63,7 +62,7 @@ class TestUpdateThetaV(StencilTest):
             theta_v_new=theta_v_new,
             cvd_o_rd=cvd_o_rd,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

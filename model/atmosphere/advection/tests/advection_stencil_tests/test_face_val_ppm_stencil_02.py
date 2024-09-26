@@ -5,11 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py.next import as_field
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02 import face_val_ppm_stencil_02
 from icon4py.model.common import dimension as dims
@@ -27,10 +26,10 @@ class TestFaceValPpmStencil02(StencilTest):
         p_cellhgt_mc_now: np.array,
         p_face_in: np.array,
         k: np.array,
-        slev: int32,
-        elev: int32,
-        slevp1: int32,
-        elevp1: int32,
+        slev: gtx.int32,
+        elev: gtx.int32,
+        slevp1: gtx.int32,
+        elevp1: gtx.int32,
         **kwargs,
     ):
         p_face_a = p_face_in
@@ -52,11 +51,11 @@ class TestFaceValPpmStencil02(StencilTest):
         p_face_in = random_field(grid, dims.CellDim, dims.KDim)
         p_face = zero_field(grid, dims.CellDim, dims.KDim)
 
-        k = as_field((dims.KDim,), np.arange(0, _shape(grid, dims.KDim)[0], dtype=int32))
-        slev = int32(1)
-        slevp1 = slev + int32(1)
-        elev = int32(k[-3].as_scalar())
-        elevp1 = elev + int32(1)
+        k = as_field((dims.KDim,), np.arange(0, _shape(grid, dims.KDim)[0], dtype=gtx.int32))
+        slev = gtx.int32(1)
+        slevp1 = slev + gtx.int32(1)
+        elev = gtx.int32(k[-3].as_scalar())
+        elevp1 = elev + gtx.int32(1)
 
         return dict(
             p_cc=p_cc,

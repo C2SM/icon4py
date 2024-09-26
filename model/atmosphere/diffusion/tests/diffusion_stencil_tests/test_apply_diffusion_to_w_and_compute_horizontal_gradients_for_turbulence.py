@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import gtx
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
@@ -81,11 +80,11 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @pytest.fixture
     def input_data(self, grid):
-        k = zero_field(grid, dims.KDim, dtype=int32)
+        k = zero_field(grid, dims.KDim, dtype=gtx.int32)
         for lev in range(grid.num_levels):
             k[lev] = lev
 
-        cell = zero_field(grid, dims.CellDim, dtype=int32)
+        cell = zero_field(grid, dims.CellDim, dtype=gtx.int32)
         for c in range(grid.num_cells):
             cell[c] = c
 

@@ -8,8 +8,8 @@
 
 import re
 
+import gt4py.next as gtx
 import pytest
-from gt4py.next import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.iterator import ir as itir
 from icon4py.model.common import dimension as dims
@@ -47,16 +47,16 @@ def search_for_grid_sizes(code: str) -> bool:
 def test_grid_size_param_generation(temporaries, imperative):
     @field_operator
     def testee_op(
-        a: Field[[dims.VertexDim, dims.KDim], float],
-    ) -> Field[[dims.EdgeDim, dims.KDim], float]:
+        a: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], float],
+    ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], float]:
         amul = a * 2.0
         return amul(E2V[0]) + amul(E2V[1])
 
     @program
     def testee_prog(
-        a: Field[[dims.VertexDim, dims.KDim], float],
-        out: Field[[dims.EdgeDim, dims.KDim], float],
-    ) -> Field[[dims.EdgeDim, dims.KDim], float]:
+        a: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], float],
+        out: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], float],
+    ) -> gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], float]:
         testee_op(a, out=out)
 
     grid = SimpleGrid()

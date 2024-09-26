@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_02 import btraj_dreg_stencil_02
 from icon4py.model.common import dimension as dims
@@ -50,7 +49,7 @@ class TestBtrajDregStencil02(StencilTest):
         edge_cell_length = np.asarray(grid.connectivities[dims.E2CDim], dtype=float)
         edge_cell_length_new = numpy_to_1D_sparse_field(edge_cell_length, dims.ECDim)
         p_dt = 1.0
-        opt_famask_dsl = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=int32)
+        opt_famask_dsl = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
 
         return dict(
             p_vn=p_vn,

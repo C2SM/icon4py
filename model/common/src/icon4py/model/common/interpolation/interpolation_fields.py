@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next import where
@@ -27,12 +26,12 @@ def compute_c_lin_e(
     Compute E2C average inverse distance.
 
     Args:
-        edge_cell_length: numpy array, representing a Field[[EdgeDim, E2CDim], ta.wpfloat]
-        inv_dual_edge_length: inverse dual edge length, numpy array representing a Field[[EdgeDim], ta.wpfloat]
-        owner_mask: numpy array, representing a Field[[EdgeDim], bool]boolean field, True for all edges owned by this compute node
+        edge_cell_length: numpy array, representing a Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        inv_dual_edge_length: inverse dual edge length, numpy array representing a Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        owner_mask: numpy array, representing a Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
 
-    Returns: c_lin_e: numpy array, representing Field[[EdgeDim, E2CDim], ta.wpfloat]
+    Returns: c_lin_e: numpy array, representing Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
@@ -96,11 +95,11 @@ def compute_geofac_n2s(
     Compute geometric factor for nabla2-scalar.
 
     Args:
-        dual_edge_length: numpy array, representing a Field[[EdgeDim], ta.wpfloat]
-        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        c2e2c: numpy array, representing a Field[[CellDim, C2E2CDim], int32]
+        dual_edge_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
         horizontal_start:
 
     Returns:
@@ -148,15 +147,15 @@ def compute_primal_normal_ec(
     Compute primal_normal_ec.
 
     Args:
-        primal_normal_cell_x: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        primal_normal_cell_y: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        primal_normal_cell_x: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        primal_normal_cell_y: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        primal_normal_ec: numpy array, representing a Field[[CellDim, C2EDim, 2], ta.wpfloat]
+        primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
     """
     llb = horizontal_start
     primal_normal_ec = np.zeros([c2e.shape[0], c2e.shape[1], 2])
@@ -193,16 +192,16 @@ def compute_geofac_grg(
     Compute geometrical factor for Green-Gauss gradient.
 
     Args:
-        primal_normal_ec: numpy array, representing a Field[[CellDim, C2EDim, 2], ta.wpfloat]
-        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        c_lin_e: numpy array, representing a Field[[EdgeDim, E2CDim], ta.wpfloat]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        c2e2c: numpy array, representing a Field[[CellDim, C2E2CDim], int32]
+        primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
+        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        c_lin_e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        geofac_grg: numpy array, representing a Field[[CellDim, C2EDim + 1, 2], ta.wpfloat]
+        geofac_grg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim + 1, 2], ta.wpfloat]
     """
     llb = horizontal_start
     num_cells = c2e.shape[0]
@@ -250,16 +249,16 @@ def compute_geofac_grdiv(
     Compute geometrical factor for gradient of divergence (triangles only).
 
     Args:
-        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        inv_dual_edge_length: numpy array, representing a Field[[EdgeDim], ta.wpfloat]
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        e2c2e: numpy array, representing a Field[[EdgeDim, E2C2EDim], int32]
+        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        inv_dual_edge_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        e2c2e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        geofac_grdiv: numpy array, representing a Field[[EdgeDim, E2C2EODim], ta.wpfloat]
+        geofac_grdiv: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
     llb = horizontal_start
     num_edges = e2c.shape[0]
@@ -405,14 +404,14 @@ def compute_c_bln_avg(
 
     Args:
         divavg_cntrwgt:
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e2c: numpy array, representing a Field[[EdgeDim, C2E2CDim], int32]
-        lat: \\ numpy array, representing a Field[[CellDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, C2E2CDim], gtx.int32]
+        lat: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         lon: //
         horizontal_start:
 
     Returns:
-        c_bln_avg: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
+        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     llb = horizontal_start
     num_cells = c2e2c.shape[0]
@@ -463,17 +462,17 @@ def compute_force_mass_conservation_to_c_bln_avg(
 
     force_mass_conservation_to_bilinear_cellavg_wgt
     Args:
-        c_bln_avg: bilinear cellavg wgt, numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
+        c_bln_avg: bilinear cellavg wgt, numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
         divavg_cntrwgt:
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e2c: numpy array, representing a Field[[EdgeDim, C2E2CDim], int32]
-        cell_areas: numpy array, representing a Field[[CellDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, C2E2CDim], gtx.int32]
+        cell_areas: numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         horizontal_start:
         horizontal_start_p3:
         niter: number of iterations until convergence is assumed
 
     Returns:
-        c_bln_avg: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
+        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     llb = horizontal_start
     llb2 = horizontal_start_p3
@@ -544,19 +543,19 @@ def compute_e_flx_avg(
     Compute edge flux average
 
     Args:
-        c_bln_avg: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        owner_mask: numpy array, representing a Field[[EdgeDim], bool]
-        primal_cart_normal: numpy array, representing a Field[[EdgeDim], ta.wpfloat]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        c2e2c: numpy array, representing a Field[[CellDim, C2E2CDim], int32]
-        e2c2e: numpy array, representing a Field[[EdgeDim, E2C2EDim], int32]
+        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
+        primal_cart_normal: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
+        e2c2e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start_p3:
         horizontal_start_p4:
 
     Returns:
-        e_flx_avg: numpy array, representing a Field[[EdgeDim, E2C2EODim], ta.wpfloat]
+        e_flx_avg: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
     llb = 0
     e_flx_avg = np.zeros([e2c.shape[0], 5])
@@ -685,18 +684,18 @@ def compute_cells_aw_verts(
     Compute cells_aw_verts.
 
     Args:
-        dual_area: numpy array, representing a Field[[VertexDim], ta.wpfloat]
-        edge_vert_length: \\ numpy array, representing a Field[[EdgeDim, E2CDim], ta.wpfloat]
+        dual_area: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
+        edge_vert_length: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         edge_cell_length: //
-        owner_mask: numpy array, representing a Field[[VertexDim], bool]
-        v2e: numpy array, representing a Field[[VertexDim, V2EDim], int32]
-        e2v: numpy array, representing a Field[[EdgeDim, E2VDim], int32]
-        v2c: numpy array, representing a Field[[VertexDim, V2CDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], bool]
+        v2e: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2EDim], gtx.int32]
+        e2v: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.int32]
+        v2c: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2CDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        aw_verts: numpy array, representing a Field[[VertexDim, 6], ta.wpfloat]
+        aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
     llb = horizontal_start
     cells_aw_verts = np.zeros([v2e.shape[0], 6])
@@ -734,15 +733,15 @@ def compute_e_bln_c_s(
     Compute e_bln_c_s.
 
     Args:
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        cells_lat: \\ numpy array, representing a Field[[CellDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        cells_lat: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         cells_lon: //
-        edges_lat: \\ numpy array, representing a Field[[EdgeDim], ta.wpfloat]
+        edges_lat: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edges_lon: //
 
     Returns:
-        e_bln_c_s: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
+        e_bln_c_s: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     llb = 0
     num_cells = c2e.shape[0]
@@ -799,23 +798,23 @@ def compute_pos_on_tplane_e_x_y(
     Args:
         grid_sphere_radius:
         primal_normal_v1: \\
-        primal_normal_v2:  \\ numpy array, representing a Field[[EdgeDim], ta.wpfloat]
+        primal_normal_v2:  \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         dual_normal_v1:    //
         dual_normal_v2:   //
-        cells_lon: \\ numpy array, representing a Field[[CellDim], ta.wpfloat]
+        cells_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         cells_lat: //
-        edges_lon: \\ numpy array, representing a Field[[EdgeDim], ta.wpfloat]
+        edges_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edges_lat: //
-        vertex_lon: \\ numpy array, representing a Field[[VertexDim], ta.wpfloat]
+        vertex_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
         vertex_lat: //
-        owner_mask: numpy array, representing a Field[[EdgeDim], bool]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        e2v: numpy array, representing a Field[[EdgeDim, E2VDim], int32]
-        e2c2e: numpy array, representing a Field[[EdgeDim, E2C2EDim], int32]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        e2v: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.int32]
+        e2c2e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        pos_on_tplane_e_x: \\ numpy array, representing a Field[[EdgeDim, E2CDim], ta.wpfloat]
+        pos_on_tplane_e_x: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         pos_on_tplane_e_y: //
     """
     llb = horizontal_start

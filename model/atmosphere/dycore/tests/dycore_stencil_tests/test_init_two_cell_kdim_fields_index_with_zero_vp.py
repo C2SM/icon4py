@@ -5,11 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import numpy as np
 import pytest as pytest
-from gt4py.next import as_field
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import as_field, gtx
 
 from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_index_with_zero_vp import (
     init_two_cell_kdim_fields_index_with_zero_vp,
@@ -29,8 +27,8 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
         field_index_with_zero_1: np.array,
         field_index_with_zero_2: np.array,
         k: np.array,
-        k1: int32,
-        k2: int32,
+        k1: gtx.int32,
+        k2: gtx.int32,
         **kwargs,
     ) -> tuple[np.array]:
         field_index_with_zero_1 = np.where(
@@ -49,9 +47,9 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
         field_index_with_zero_1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         field_index_with_zero_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
-        k = as_field((dims.KDim,), np.arange(0, _shape(grid, dims.KDim)[0], dtype=int32))
+        k = as_field((dims.KDim,), np.arange(0, _shape(grid, dims.KDim)[0], dtype=gtx.int32))
         k1 = 1
-        k2 = int32(grid.num_levels)
+        k2 = gtx.int32(grid.num_levels)
 
         return dict(
             field_index_with_zero_1=field_index_with_zero_1,
@@ -60,7 +58,7 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
             k1=k1,
             k2=k2,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CE, C2E, C2EDim
@@ -18,7 +18,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _add_interpolated_horizontal_advection_of_w(
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
@@ -30,13 +30,13 @@ def _add_interpolated_horizontal_advection_of_w(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_interpolated_horizontal_advection_of_w(
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _add_interpolated_horizontal_advection_of_w(
         e_bln_c_s,

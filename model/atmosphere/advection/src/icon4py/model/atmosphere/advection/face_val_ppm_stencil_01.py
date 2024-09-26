@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
@@ -53,8 +53,8 @@ def _face_val_ppm_stencil_01b(
 def _face_val_ppm_stencil_01(
     p_cc: fa.CellKField[float],
     p_cellhgt_mc_now: fa.CellKField[float],
-    k: fa.KField[int32],
-    elev: int32,
+    k: fa.KField[gtx.int32],
+    elev: gtx.int32,
 ) -> fa.CellKField[float]:
     k = broadcast(k, (dims.CellDim, dims.KDim))
 
@@ -71,13 +71,13 @@ def _face_val_ppm_stencil_01(
 def face_val_ppm_stencil_01(
     p_cc: fa.CellKField[float],
     p_cellhgt_mc_now: fa.CellKField[float],
-    k: fa.KField[int32],
-    elev: int32,
+    k: fa.KField[gtx.int32],
+    elev: gtx.int32,
     z_slope: fa.CellKField[float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _face_val_ppm_stencil_01(
         p_cc,

@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_stencil_01 import (
     upwind_hflux_miura_stencil_01,
@@ -73,7 +72,7 @@ class TestUpwindHfluxMiuraStencil01(StencilTest):
         distv_bary_1 = random_field(grid, dims.EdgeDim, dims.KDim)
         distv_bary_2 = random_field(grid, dims.EdgeDim, dims.KDim)
         p_mass_flx_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_rel_idx_dsl = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=int32)
+        cell_rel_idx_dsl = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_out_e = zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             z_lsq_coeff_1=z_lsq_coeff_1,

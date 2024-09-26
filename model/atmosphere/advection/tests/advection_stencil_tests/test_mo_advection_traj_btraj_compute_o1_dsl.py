@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.mo_advection_traj_btraj_compute_o1_dsl import (
     mo_advection_traj_btraj_compute_o1_dsl,
@@ -102,9 +101,9 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
     def input_data(self, grid):
         p_vn = random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_idx = np.asarray(grid.connectivities[dims.E2CDim], dtype=int32)
+        cell_idx = np.asarray(grid.connectivities[dims.E2CDim], dtype=gtx.int32)
         cell_idx_new = numpy_to_1D_sparse_field(cell_idx, dims.ECDim)
-        cell_blk = constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=int32)
+        cell_blk = constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
         cell_blk_new = as_1D_sparse_field(cell_blk, dims.ECDim)
         pos_on_tplane_e_1 = random_field(grid, dims.EdgeDim, dims.E2CDim)
         pos_on_tplane_e_1_new = as_1D_sparse_field(pos_on_tplane_e_1, dims.ECDim)
@@ -118,9 +117,9 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         primal_normal_cell_2_new = as_1D_sparse_field(primal_normal_cell_2, dims.ECDim)
         dual_normal_cell_2 = random_field(grid, dims.EdgeDim, dims.E2CDim)
         dual_normal_cell_2_new = as_1D_sparse_field(dual_normal_cell_2, dims.ECDim)
-        p_cell_idx = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=int32)
-        p_cell_rel_idx_dsl = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=int32)
-        p_cell_blk = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=int32)
+        p_cell_idx = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_rel_idx_dsl = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_blk = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_distv_bary_1 = random_field(grid, dims.EdgeDim, dims.KDim)
         p_distv_bary_2 = random_field(grid, dims.EdgeDim, dims.KDim)
         p_dthalf = 2.0
@@ -143,7 +142,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
             p_distv_bary_2=p_distv_bary_2,
             p_dthalf=p_dthalf,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_edges),
+            horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import gtx
 
 from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
 from icon4py.model.common import dimension as dims
@@ -50,7 +49,7 @@ class TestComputeMassFlux(StencilTest):
             mass_fl_e=mass_fl_e,
             z_theta_v_fl_e=z_theta_v_fl_e,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_edges),
+            horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

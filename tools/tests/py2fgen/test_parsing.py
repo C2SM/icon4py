@@ -18,7 +18,7 @@ source = """
 import foo
 import bar
 
-def test_function(x: Field[[EdgeDim, KDim], float64], y: int):
+def test_function(x: gtx.Field[gtx.Dims[EdgeDim, KDim], float64], y: int):
     return x * y
 """
 

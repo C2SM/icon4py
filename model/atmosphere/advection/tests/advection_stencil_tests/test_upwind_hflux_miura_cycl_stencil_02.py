@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_02 import (
     upwind_hflux_miura_cycl_stencil_02,
@@ -29,7 +28,7 @@ class TestUpwindHfluxMiuraCyclStencil02(StencilTest):
     @staticmethod
     def reference(
         grid,
-        nsub: int32,
+        nsub: gtx.int32,
         p_mass_flx_e: np.array,
         geofac_div: np.array,
         z_rhofluxdiv_c: np.array,

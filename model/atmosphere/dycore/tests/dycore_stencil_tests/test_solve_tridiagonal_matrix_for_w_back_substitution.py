@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import gtx
 
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution,
@@ -38,9 +37,9 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
         z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         h_start = 0
-        h_end = int32(grid.num_cells)
+        h_end = gtx.int32(grid.num_cells)
         v_start = 1
-        v_end = int32(grid.num_levels)
+        v_end = gtx.int32(grid.num_levels)
         return dict(
             z_q=z_q,
             w=w,

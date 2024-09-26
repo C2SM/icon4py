@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import gt4py.next as gtx
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program

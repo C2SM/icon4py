@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_03 import btraj_dreg_stencil_03
 from icon4py.model.common import dimension as dims
@@ -161,9 +160,9 @@ class TestBtrajDregStencil03(StencilTest):
     def input_data(self, grid):
         p_vn = random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_idx = np.asarray(grid.connectivities[dims.E2CDim], dtype=int32)
+        cell_idx = np.asarray(grid.connectivities[dims.E2CDim], dtype=gtx.int32)
         cell_idx_new = numpy_to_1D_sparse_field(cell_idx, dims.ECDim)
-        cell_blk = constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=int32)
+        cell_blk = constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
         cell_blk_new = as_1D_sparse_field(cell_blk, dims.ECDim)
 
         edge_verts_1_x = random_field(grid, dims.EdgeDim)
@@ -184,9 +183,9 @@ class TestBtrajDregStencil03(StencilTest):
         dual_normal_cell_y_new = as_1D_sparse_field(dual_normal_cell_y, dims.ECDim)
         lvn_sys_pos = constant_field(grid, True, dims.EdgeDim, dims.KDim, dtype=bool)
         p_dt = 2.0
-        p_cell_idx = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=int32)
-        p_cell_rel_idx_dsl = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=int32)
-        p_cell_blk = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=int32)
+        p_cell_idx = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_rel_idx_dsl = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_blk = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_coords_dreg_v_1_lon_dsl = random_field(grid, dims.EdgeDim, dims.KDim)
         p_coords_dreg_v_2_lon_dsl = random_field(grid, dims.EdgeDim, dims.KDim)
         p_coords_dreg_v_3_lon_dsl = random_field(grid, dims.EdgeDim, dims.KDim)

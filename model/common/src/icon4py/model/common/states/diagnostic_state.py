@@ -5,11 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 from dataclasses import dataclass
 
+import gt4py.next as gtx
 from gt4py.next import as_field
-from gt4py.next.common import Field
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
@@ -45,5 +44,5 @@ class DiagnosticMetricState:
     """Class that contains the diagnostic metric state for computing the diagnostic state."""
 
     ddqz_z_full: fa.CellKField[ta.wpfloat]
-    rbf_vec_coeff_c1: Field[[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
-    rbf_vec_coeff_c2: Field[[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
+    rbf_vec_coeff_c1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
+    rbf_vec_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]

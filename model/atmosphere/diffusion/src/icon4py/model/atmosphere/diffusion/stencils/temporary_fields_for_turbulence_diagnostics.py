@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CE, C2E, C2EDim
@@ -20,9 +20,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _temporary_fields_for_turbulence_diagnostics(
     kh_smag_ec: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
-    geofac_div: Field[[dims.CEDim], wpfloat],
-    diff_multfac_smag: Field[[dims.KDim], vpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     kh_smag_ec_wp, diff_multfac_smag_wp = astype((kh_smag_ec, diff_multfac_smag), wpfloat)
 
@@ -35,15 +35,15 @@ def _temporary_fields_for_turbulence_diagnostics(
 def temporary_fields_for_turbulence_diagnostics(
     kh_smag_ec: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
-    geofac_div: Field[[dims.CEDim], wpfloat],
-    diff_multfac_smag: Field[[dims.KDim], vpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     kh_c: fa.CellKField[vpfloat],
     div: fa.CellKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _temporary_fields_for_turbulence_diagnostics(
         kh_smag_ec,

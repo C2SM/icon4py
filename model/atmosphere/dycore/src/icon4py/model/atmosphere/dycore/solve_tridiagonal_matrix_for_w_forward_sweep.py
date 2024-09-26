@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+from gt4py.next import gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
-from gt4py.next.ffront.fbuiltins import astype, int32
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
@@ -77,10 +77,10 @@ def solve_tridiagonal_matrix_for_w_forward_sweep(
     w: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _solve_tridiagonal_matrix_for_w_forward_sweep(
         vwind_impl_wgt,

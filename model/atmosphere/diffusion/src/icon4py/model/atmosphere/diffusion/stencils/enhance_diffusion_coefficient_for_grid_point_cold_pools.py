@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+from gt4py.next import gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, max_over, maximum
+from gt4py.next.ffront.fbuiltins import max_over, maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2CDim
@@ -29,10 +29,10 @@ def _enhance_diffusion_coefficient_for_grid_point_cold_pools(
 def enhance_diffusion_coefficient_for_grid_point_cold_pools(
     kh_smag_e: fa.EdgeKField[vpfloat],
     enh_diffu_3d: fa.CellKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _enhance_diffusion_coefficient_for_grid_point_cold_pools(
         kh_smag_e,

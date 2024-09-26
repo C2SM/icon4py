@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import broadcast, where
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim, Koff
@@ -40,10 +40,10 @@ def _vert_adv_stencil_01(
     deepatmo_divzl: fa.KField[float],
     deepatmo_divzu: fa.KField[float],
     rhodz_new: fa.CellKField[float],
-    k: fa.KField[int32],
+    k: fa.KField[gtx.int32],
     p_dtime: float,
-    ivadv_tracer: int32,
-    iadv_slev_jt: int32,
+    ivadv_tracer: gtx.int32,
+    iadv_slev_jt: gtx.int32,
 ) -> fa.CellKField[float]:
     k = broadcast(k, (CellDim, KDim))
 
@@ -76,10 +76,10 @@ def vert_adv_stencil_01(
     deepatmo_divzl: fa.KField[float],
     deepatmo_divzu: fa.KField[float],
     rhodz_new: fa.CellKField[float],
-    k: fa.KField[int32],
+    k: fa.KField[gtx.int32],
     p_dtime: float,
-    ivadv_tracer: int32,
-    iadv_slev_jt: int32,
+    ivadv_tracer: gtx.int32,
+    iadv_slev_jt: gtx.int32,
     tracer_new: fa.CellKField[float],
 ):
     _vert_adv_stencil_01(

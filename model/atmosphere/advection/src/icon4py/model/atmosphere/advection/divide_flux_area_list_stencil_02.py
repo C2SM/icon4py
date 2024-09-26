@@ -5,12 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import sys
 
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2EC, EdgeDim, KDim
@@ -21,20 +21,20 @@ sys.setrecursionlimit(5500)
 
 @field_operator
 def _divide_flux_area_list_stencil_02(
-    famask_int: fa.EdgeKField[int32],
+    famask_int: fa.EdgeKField[gtx.int32],
     p_vn: fa.EdgeKField[float],
-    bf_cc_patch1_lon: Field[[dims.ECDim], float],
-    bf_cc_patch1_lat: Field[[dims.ECDim], float],
-    bf_cc_patch2_lon: Field[[dims.ECDim], float],
-    bf_cc_patch2_lat: Field[[dims.ECDim], float],
-    butterfly_idx_patch1_vnpos: fa.EdgeField[int32],
-    butterfly_idx_patch1_vnneg: fa.EdgeField[int32],
-    butterfly_blk_patch1_vnpos: fa.EdgeField[int32],
-    butterfly_blk_patch1_vnneg: fa.EdgeField[int32],
-    butterfly_idx_patch2_vnpos: fa.EdgeField[int32],
-    butterfly_idx_patch2_vnneg: fa.EdgeField[int32],
-    butterfly_blk_patch2_vnpos: fa.EdgeField[int32],
-    butterfly_blk_patch2_vnneg: fa.EdgeField[int32],
+    bf_cc_patch1_lon: gtx.Field[gtx.Dims[dims.ECDim], float],
+    bf_cc_patch1_lat: gtx.Field[gtx.Dims[dims.ECDim], float],
+    bf_cc_patch2_lon: gtx.Field[gtx.Dims[dims.ECDim], float],
+    bf_cc_patch2_lat: gtx.Field[gtx.Dims[dims.ECDim], float],
+    butterfly_idx_patch1_vnpos: fa.EdgeField[gtx.int32],
+    butterfly_idx_patch1_vnneg: fa.EdgeField[gtx.int32],
+    butterfly_blk_patch1_vnpos: fa.EdgeField[gtx.int32],
+    butterfly_blk_patch1_vnneg: fa.EdgeField[gtx.int32],
+    butterfly_idx_patch2_vnpos: fa.EdgeField[gtx.int32],
+    butterfly_idx_patch2_vnneg: fa.EdgeField[gtx.int32],
+    butterfly_blk_patch2_vnpos: fa.EdgeField[gtx.int32],
+    butterfly_blk_patch2_vnneg: fa.EdgeField[gtx.int32],
     dreg_patch1_1_lon_vmask: fa.EdgeKField[float],
     dreg_patch1_1_lat_vmask: fa.EdgeKField[float],
     dreg_patch1_2_lon_vmask: fa.EdgeKField[float],
@@ -68,10 +68,10 @@ def _divide_flux_area_list_stencil_02(
     fa.EdgeKField[float],
     fa.EdgeKField[float],
     fa.EdgeKField[float],
-    fa.EdgeKField[int32],
-    fa.EdgeKField[int32],
-    fa.EdgeKField[int32],
-    fa.EdgeKField[int32],
+    fa.EdgeKField[gtx.int32],
+    fa.EdgeKField[gtx.int32],
+    fa.EdgeKField[gtx.int32],
+    fa.EdgeKField[gtx.int32],
 ]:
     famask_bool = where(famask_int == 1, True, False)
     lvn_pos = where(p_vn >= 0.0, True, False)
@@ -173,20 +173,20 @@ def _divide_flux_area_list_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def divide_flux_area_list_stencil_02(
-    famask_int: fa.EdgeKField[int32],
+    famask_int: fa.EdgeKField[gtx.int32],
     p_vn: fa.EdgeKField[float],
-    bf_cc_patch1_lon: Field[[dims.ECDim], float],
-    bf_cc_patch1_lat: Field[[dims.ECDim], float],
-    bf_cc_patch2_lon: Field[[dims.ECDim], float],
-    bf_cc_patch2_lat: Field[[dims.ECDim], float],
-    butterfly_idx_patch1_vnpos: fa.EdgeField[int32],
-    butterfly_idx_patch1_vnneg: fa.EdgeField[int32],
-    butterfly_blk_patch1_vnpos: fa.EdgeField[int32],
-    butterfly_blk_patch1_vnneg: fa.EdgeField[int32],
-    butterfly_idx_patch2_vnpos: fa.EdgeField[int32],
-    butterfly_idx_patch2_vnneg: fa.EdgeField[int32],
-    butterfly_blk_patch2_vnpos: fa.EdgeField[int32],
-    butterfly_blk_patch2_vnneg: fa.EdgeField[int32],
+    bf_cc_patch1_lon: gtx.Field[gtx.Dims[dims.ECDim], float],
+    bf_cc_patch1_lat: gtx.Field[gtx.Dims[dims.ECDim], float],
+    bf_cc_patch2_lon: gtx.Field[gtx.Dims[dims.ECDim], float],
+    bf_cc_patch2_lat: gtx.Field[gtx.Dims[dims.ECDim], float],
+    butterfly_idx_patch1_vnpos: fa.EdgeField[gtx.int32],
+    butterfly_idx_patch1_vnneg: fa.EdgeField[gtx.int32],
+    butterfly_blk_patch1_vnpos: fa.EdgeField[gtx.int32],
+    butterfly_blk_patch1_vnneg: fa.EdgeField[gtx.int32],
+    butterfly_idx_patch2_vnpos: fa.EdgeField[gtx.int32],
+    butterfly_idx_patch2_vnneg: fa.EdgeField[gtx.int32],
+    butterfly_blk_patch2_vnpos: fa.EdgeField[gtx.int32],
+    butterfly_blk_patch2_vnneg: fa.EdgeField[gtx.int32],
     dreg_patch1_1_lon_vmask: fa.EdgeKField[float],
     dreg_patch1_1_lat_vmask: fa.EdgeKField[float],
     dreg_patch1_2_lon_vmask: fa.EdgeKField[float],
@@ -203,10 +203,10 @@ def divide_flux_area_list_stencil_02(
     dreg_patch2_3_lat_vmask: fa.EdgeKField[float],
     dreg_patch2_4_lon_vmask: fa.EdgeKField[float],
     dreg_patch2_4_lat_vmask: fa.EdgeKField[float],
-    patch1_cell_idx_vmask: fa.EdgeKField[int32],
-    patch1_cell_blk_vmask: fa.EdgeKField[int32],
-    patch2_cell_idx_vmask: fa.EdgeKField[int32],
-    patch2_cell_blk_vmask: fa.EdgeKField[int32],
+    patch1_cell_idx_vmask: fa.EdgeKField[gtx.int32],
+    patch1_cell_blk_vmask: fa.EdgeKField[gtx.int32],
+    patch2_cell_idx_vmask: fa.EdgeKField[gtx.int32],
+    patch2_cell_blk_vmask: fa.EdgeKField[gtx.int32],
 ):
     _divide_flux_area_list_stencil_02(
         famask_int,

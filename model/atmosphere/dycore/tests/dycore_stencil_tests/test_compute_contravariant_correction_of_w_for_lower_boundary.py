@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import gtx
 
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
     compute_contravariant_correction_of_w_for_lower_boundary,
@@ -74,7 +73,7 @@ class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
             wgtfacq_c=wgtfacq_c,
             w_concorr_c=w_concorr_c,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(grid.num_levels - 1),
-            vertical_end=int32(grid.num_levels),
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=gtx.int32(grid.num_levels - 1),
+            vertical_end=gtx.int32(grid.num_levels),
         )
