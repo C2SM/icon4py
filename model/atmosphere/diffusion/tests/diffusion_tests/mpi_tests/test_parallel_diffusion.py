@@ -130,14 +130,12 @@ def test_parallel_diffusion(
 )
 def test_parallel_diffusion_multiple_steps(
     experiment,
-    step_date_init,
     linit,
     ndyn_substeps,
     processor_props,  # fixture
     decomposition_info,
     icon_grid,
     diffusion_savepoint_init,
-    diffusion_savepoint_exit,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
