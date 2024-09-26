@@ -19,7 +19,6 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
-from icon4py.model.common.io import cf_utils
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
@@ -31,6 +30,7 @@ from icon4py.model.common.metrics import (
     metric_fields as mf,
 )
 from icon4py.model.common.settings import xp
+from icon4py.model.common.states.metadata import INTERFACE_LEVEL_STANDARD_NAME
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     serialbox_utils as sb,
@@ -119,7 +119,7 @@ fields_factory.register_provider(
             "z_ifc_sliced": z_ifc_sliced,
             "cell_to_edge_interpolation_coefficient": c_lin_e,
             "c_bln_avg": c_bln_avg,
-            cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index,
+            INTERFACE_LEVEL_STANDARD_NAME: k_index,
             "vct_a": vct_a,
             "c_refin_ctrl": c_refin_ctrl,
             "e_refin_ctrl": e_refin_ctrl,
@@ -167,7 +167,7 @@ compute_ddqz_z_half_provider = factory.ProgramFieldProvider(
     deps={
         "z_ifc": "height_on_interface_levels",
         "z_mc": "height",
-        "k": cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
+        "k": INTERFACE_LEVEL_STANDARD_NAME,
     },
     params={"nlev": icon_grid.num_levels},
 )
@@ -470,7 +470,7 @@ compute_wgtfac_c_provider = factory.ProgramFieldProvider(
     func=compute_wgtfac_c.compute_wgtfac_c,
     deps={
         "z_ifc": "height_on_interface_levels",
-        "k": cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
+        "k": INTERFACE_LEVEL_STANDARD_NAME,
     },
     domain={
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
@@ -544,7 +544,7 @@ compute_flat_idx_max_provider = factory.NumpyFieldsProvider(
     deps={
         "z_me": "z_me",
         "z_ifc": "height_on_interface_levels",
-        "k_lev": cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
+        "k_lev": INTERFACE_LEVEL_STANDARD_NAME,
     },
     offsets={"e2c": dims.E2CDim},
     params={
@@ -565,7 +565,7 @@ compute_pg_edgeidx_vertidx_provider = factory.ProgramFieldProvider(
         "e_owner_mask": "e_owner_mask",
         "flat_idx_max": "flat_idx_max",
         "e_lev": "e_lev",
-        "k_lev": cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
+        "k_lev": INTERFACE_LEVEL_STANDARD_NAME,
     },
     domain={
         dims.EdgeDim: (
@@ -609,7 +609,7 @@ compute_pg_exdist_dsl_provider = factory.ProgramFieldProvider(
         "z_me": "z_me",
         "e_owner_mask": "e_owner_mask",
         "flat_idx_max": "flat_idx_max",
-        "k_lev": cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
+        "k_lev": INTERFACE_LEVEL_STANDARD_NAME,
     },
     domain={
         dims.EdgeDim: (

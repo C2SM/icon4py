@@ -11,11 +11,11 @@ import pytest
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.io import cf_utils
 from icon4py.model.common.metrics import metrics_factory as mf
 
 # TODO: mf is metrics_fields in metrics_factory.py. We should change `mf` either here or there
 from icon4py.model.common.states import factory as states_factory
+from icon4py.model.common.states.metadata import INTERFACE_LEVEL_STANDARD_NAME
 
 
 def test_factory_inv_ddqz_z(
@@ -29,7 +29,7 @@ def test_factory_inv_ddqz_z(
     factory.with_grid(icon_grid, vertical_grid).with_backend(backend)
 
     factory.get("height_on_interface_levels", states_factory.RetrievalType.FIELD)
-    factory.get(cf_utils.INTERFACE_LEVEL_STANDARD_NAME, states_factory.RetrievalType.FIELD)
+    factory.get(INTERFACE_LEVEL_STANDARD_NAME, states_factory.RetrievalType.FIELD)
 
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
     inv_ddqz_z_full = factory.get("inv_ddqz_z_full", states_factory.RetrievalType.FIELD)
@@ -48,7 +48,7 @@ def test_factory_ddq_z_half(
 
     factory.get("height_on_interface_levels", states_factory.RetrievalType.FIELD)
     factory.get("height", states_factory.RetrievalType.FIELD)
-    factory.get(cf_utils.INTERFACE_LEVEL_STANDARD_NAME, states_factory.RetrievalType.FIELD)
+    factory.get(INTERFACE_LEVEL_STANDARD_NAME, states_factory.RetrievalType.FIELD)
 
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     # check TODOs in stencil
@@ -254,7 +254,7 @@ def test_factory_pg_exdist_dsl(
     factory.get("z_me", states_factory.RetrievalType.FIELD)
     factory.get("e_owner_mask", states_factory.RetrievalType.FIELD)
     factory.get("flat_idx_max", states_factory.RetrievalType.FIELD)
-    factory.get(cf_utils.INTERFACE_LEVEL_STANDARD_NAME, states_factory.RetrievalType.FIELD)
+    factory.get(INTERFACE_LEVEL_STANDARD_NAME, states_factory.RetrievalType.FIELD)
 
     pg_exdist_dsl_ref = metrics_savepoint.pg_exdist()
     pg_exdist_dsl_full = factory.get("pg_exdist_dsl", states_factory.RetrievalType.FIELD)
