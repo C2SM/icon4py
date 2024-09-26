@@ -5,12 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-from model.atmosphere.dycore.tests.dycore_tests.utils import (
-    exclaim_ape_nonhydrostatic_config,
-    mch_ch_r04b09_dsl_nonhydrostatic_config,
-)
-
+from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
@@ -141,3 +136,24 @@ def create_prognostic_states(sp):
     )
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
     return prognostic_state_ls
+
+
+def mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
+    """Create configuration matching the mch_chR04b09_dsl experiment."""
+    config = solve_nh.NonHydrostaticConfig(
+        ndyn_substeps_var=ndyn_substeps,
+        divdamp_order=24,
+        iau_wgt_dyn=1.0,
+        divdamp_fac=0.004,
+        max_nudging_coeff=0.075,
+    )
+    return config
+
+
+def exclaim_ape_nonhydrostatic_config(ndyn_substeps):
+    """Create configuration for EXCLAIM APE experiment."""
+    return solve_nh.NonHydrostaticConfig(
+        rayleigh_coeff=0.1,
+        divdamp_order=24,
+        ndyn_substeps_var=ndyn_substeps,
+    )
