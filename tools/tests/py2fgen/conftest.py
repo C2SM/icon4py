@@ -31,12 +31,10 @@ def compare_values_shallow(value1, value2, obj_name="value"):
     if isinstance(value1, dict) and isinstance(value2, dict):
         if value1.keys() != value2.keys():
             return False, f"Dict keys mismatch for {obj_name}: {value1.keys()} != {value2.keys()}"
-        for key in value1:
-            result, error_message = compare_values_shallow(
-                value1[key], value2[key], f"{obj_name}[{key}]"
-            )
-            if not result:
-                return False, error_message
+        result, error_message = compare_objects(value1, value2, obj_name)
+        if not result:
+            return False, error_message
+
         return True, None
 
     # Handle comparison of tuples
