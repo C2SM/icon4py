@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from gt4py.next import GridType, gtx
+import gt4py.next as gtx
 from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -22,7 +22,7 @@ def _compute_airmass(
     return rho_in * ddqz_z_full_in * deepatmo_t1mc_in
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_airmass(
     rho_in: fa.CellKField[wpfloat],
     ddqz_z_full_in: fa.CellKField[wpfloat],

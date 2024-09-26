@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from gt4py.next import GridType, gtx
+import gt4py.next as gtx
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
     FieldOffset,
@@ -32,7 +32,7 @@ def _v_limit_prbl_sm_stencil_01(
     return l_limit
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=gtx.GridType.UNSTRUCTURED)
 def v_limit_prbl_sm_stencil_01(
     p_face: fa.CellKField[float],
     p_cc: fa.CellKField[float],
