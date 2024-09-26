@@ -7,9 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import math
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import gtx
 
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     enhance_diffusion_coefficient_for_grid_point_cold_pools,

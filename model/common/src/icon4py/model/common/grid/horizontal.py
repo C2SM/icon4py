@@ -39,7 +39,7 @@ import functools
 from abc import abstractmethod
 from typing import Final, Protocol
 
-from gt4py.next import gtx
+import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims
 

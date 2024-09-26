@@ -5,9 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import gtx
 
 from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     set_theta_v_prime_ic_at_lower_boundary,
