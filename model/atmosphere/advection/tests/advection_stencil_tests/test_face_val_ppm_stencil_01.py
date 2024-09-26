@@ -8,7 +8,6 @@
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import as_field
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
 from icon4py.model.common import dimension as dims
@@ -67,7 +66,7 @@ class TestFaceValPpmStencil01(StencilTest):
         z_slope = zero_field(grid, dims.CellDim, dims.KDim)
         p_cc = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         p_cellhgt_mc_now = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        k = as_field(
+        k = gtx.as_field(
             (dims.KDim,),
             np.arange(0, _shape(grid, dims.KDim, extend={dims.KDim: 1})[0], dtype=gtx.int32),
         )

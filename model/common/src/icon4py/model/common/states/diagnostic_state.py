@@ -8,7 +8,6 @@
 from dataclasses import dataclass
 
 import gt4py.next as gtx
-from gt4py.next import as_field
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
@@ -36,7 +35,7 @@ class DiagnosticState:
 
     @property
     def surface_pressure(self) -> fa.CellField[ta.wpfloat]:
-        return as_field((dims.CellDim,), self.pressure_ifc.ndarray[:, -1])
+        return gtx.as_field((dims.CellDim,), self.pressure_ifc.ndarray[:, -1])
 
 
 @dataclass
