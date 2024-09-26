@@ -665,13 +665,14 @@ def test_granule_solve_nonhydro_multi_step_regional(
     # other params
     c_owner_mask = grid_savepoint.c_owner_mask()
 
-    # grid params
+    # --- Set Up Grid Parameters ---
     num_vertices = grid_savepoint.num(dims.VertexDim)
     num_cells = grid_savepoint.num(dims.CellDim)
     num_edges = grid_savepoint.num(dims.EdgeDim)
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
+    # raw serialised data which is not yet offset
     cell_starts = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
     cell_ends = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
     vertex_starts = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_start_index"))
@@ -694,12 +695,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
     global_level = 9
 
     grid_init(
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -709,6 +704,12 @@ def test_granule_solve_nonhydro_multi_step_regional(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         global_root=global_root,
         global_level=global_level,
         num_vertices=num_vertices,
