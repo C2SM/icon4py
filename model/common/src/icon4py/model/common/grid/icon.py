@@ -168,6 +168,11 @@ class IconGrid(base.BaseGrid):
     def lvert_nest(self):
         return True if self.config.lvertnest else False
 
+
+    @staticmethod
+    def decay_array(val):
+        return val.item() if hasattr(val, "item") else val
+
     def start_index(self, domain: h_grid.Domain):
         """
         Use to specify lower end of domains of a field for field_operators.
@@ -178,7 +183,7 @@ class IconGrid(base.BaseGrid):
         if domain.local:
             # special treatment because this value is not set properly in the underlying data.
             return 0
-        return self._start_indices[domain.dim][domain()]
+        return self.decay_array(self._start_indices[domain.dim][domain()])
 
     def end_index(self, domain: h_grid.Domain):
         """
@@ -189,5 +194,5 @@ class IconGrid(base.BaseGrid):
         """
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
-            return self.size[domain.dim]
-        return self._end_indices[domain.dim][domain()]
+            return self.decay_array(self.size[domain.dim])
+        return self.decay_array(self._end_indices[domain.dim][domain()])

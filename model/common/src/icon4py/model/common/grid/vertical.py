@@ -187,7 +187,7 @@ class VerticalGrid:
         assert (
             0 <= index <= self._bottom_level(domain)
         ), f"vertical index {index} outside of grid levels for {domain.dim}"
-        return index
+        return gtx.int32(index)
 
     def _bottom_level(self, domain: Domain) -> gtx.int32:
         return gtx.int32(self.size(domain.dim))
@@ -218,7 +218,7 @@ class VerticalGrid:
 
     @property
     def nflat_gradp(self) -> gtx.int32:
-        return self._min_index_flat_horizontal_grad_pressure
+        return self._min_index_flat_horizontal_grad_pressure.item() if hasattr(self._min_index_flat_horizontal_grad_pressure, "item") else self._min_index_flat_horizontal_grad_pressure
 
     def size(self, dim: gtx.Dimension) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported."
