@@ -53,7 +53,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
     def _set_in_out_field(self, startStencil: Sequence[BaseStartStencilData]) -> None:
         for s in startStencil:
             gt4py_program = self._collect_icon4py_stencil(s.name)
-            gt4py_stencil_info = get_stencil_info(gt4py_program)
+            gt4py_stencil_info = get_stencil_info(gt4py_program,is_dace_backend=True)
             gt4py_fields = gt4py_stencil_info.fields
             for f in s.fields:
                 try:
