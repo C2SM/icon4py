@@ -29,9 +29,8 @@ from icon4py.model.common.test_utils.diffusion_utils import (
     vertical_grid,
 )
 
-import icon4pytools.py2fgen.wrappers.diffusion
 from icon4pytools.py2fgen.wrappers import wrapper_dimension
-from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
+from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run, grid_init
 
 from .conftest import compare_objects
 
@@ -108,13 +107,26 @@ def test_diffusion_wrapper_granule_inputs(
     wgtfac_c = metrics_savepoint.wgtfac_c()
     mask_hdiff = metrics_savepoint.mask_hdiff()
     zd_diffcoef = metrics_savepoint.zd_diffcoef()
+
+    # todo: special handling, determine if this is necessary for Fortran arrays too
+    zd_vertoffset = np.squeeze(
+        metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
+    )
+    zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
+        zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
+    )
     zd_vertoffset = gtx.as_field(
         (dims.CellDim, dims.E2CDim, dims.KDim),
-        np.squeeze(metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)),
+        zd_vertoffset,
+    )
+
+    zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
+    zd_intcoef = metrics_savepoint._reduce_to_dim_size(
+        zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
     zd_intcoef = gtx.as_field(
         (dims.CellDim, dims.E2CDim, dims.KDim),
-        np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint)),
+        zd_intcoef,
     )
 
     # --- Extract Interpolation State Parameters ---
@@ -195,7 +207,7 @@ def test_diffusion_wrapper_granule_inputs(
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Initialize the Grid ---
-    icon4pytools.py2fgen.wrappers.diffusion.grid_init(
+    grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -429,13 +441,26 @@ def test_diffusion_wrapper_single_step(
     wgtfac_c = metrics_savepoint.wgtfac_c()
     mask_hdiff = metrics_savepoint.mask_hdiff()
     zd_diffcoef = metrics_savepoint.zd_diffcoef()
+
+    # todo: special handling, determine if this is necessary for Fortran arrays too
+    zd_vertoffset = np.squeeze(
+        metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
+    )
+    zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
+        zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
+    )
     zd_vertoffset = gtx.as_field(
         (dims.CellDim, dims.E2CDim, dims.KDim),
-        np.squeeze(metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)),
+        zd_vertoffset,
+    )
+
+    zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
+    zd_intcoef = metrics_savepoint._reduce_to_dim_size(
+        zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
     zd_intcoef = gtx.as_field(
         (dims.CellDim, dims.E2CDim, dims.KDim),
-        np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint)),
+        zd_intcoef,
     )
 
     # Interpolation state parameters
@@ -499,7 +524,7 @@ def test_diffusion_wrapper_single_step(
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
-    icon4pytools.py2fgen.wrappers.diffusion.grid_init(
+    grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
