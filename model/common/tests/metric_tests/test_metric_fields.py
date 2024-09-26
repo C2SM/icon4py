@@ -776,7 +776,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backend):
-    if backend == "gtfn_cpu":
+    if backend.executor.name == "gtfn_cpu":
         pytest.skip("CPU compilation does not work here because of domain only on edges")
     hmask_dd3d_full = zero_field(icon_grid, dims.EdgeDim)
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
