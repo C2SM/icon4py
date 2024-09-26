@@ -108,13 +108,26 @@ def test_diffusion_wrapper_granule_inputs(
     wgtfac_c = metrics_savepoint.wgtfac_c()
     mask_hdiff = metrics_savepoint.mask_hdiff()
     zd_diffcoef = metrics_savepoint.zd_diffcoef()
+
+    # todo: special handling, determine if this is necessary for Fortran arrays too
+    zd_vertoffset = np.squeeze(
+        metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
+    )
+    zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
+        zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
+    )
     zd_vertoffset = gtx.as_field(
         (dims.CellDim, dims.E2CDim, dims.KDim),
-        np.squeeze(metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)),
+        zd_vertoffset,
+    )
+
+    zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
+    zd_intcoef = metrics_savepoint._reduce_to_dim_size(
+        zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
     zd_intcoef = gtx.as_field(
         (dims.CellDim, dims.E2CDim, dims.KDim),
-        np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint)),
+        zd_intcoef,
     )
 
     # --- Extract Interpolation State Parameters ---
@@ -429,13 +442,26 @@ def test_diffusion_wrapper_single_step(
     wgtfac_c = metrics_savepoint.wgtfac_c()
     mask_hdiff = metrics_savepoint.mask_hdiff()
     zd_diffcoef = metrics_savepoint.zd_diffcoef()
+
+    # todo: special handling, determine if this is necessary for Fortran arrays too
+    zd_vertoffset = np.squeeze(
+        metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)
+    )
+    zd_vertoffset = metrics_savepoint._reduce_to_dim_size(
+        zd_vertoffset, (dims.CellDim, dims.C2E2CDim, dims.KDim)
+    )
     zd_vertoffset = gtx.as_field(
         (dims.CellDim, dims.E2CDim, dims.KDim),
-        np.squeeze(metrics_savepoint.serializer.read("zd_vertoffset", metrics_savepoint.savepoint)),
+        zd_vertoffset,
+    )
+
+    zd_intcoef = np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint))
+    zd_intcoef = metrics_savepoint._reduce_to_dim_size(
+        zd_intcoef, (dims.CellDim, dims.C2E2CDim, dims.KDim)
     )
     zd_intcoef = gtx.as_field(
         (dims.CellDim, dims.E2CDim, dims.KDim),
-        np.squeeze(metrics_savepoint.serializer.read("vcoef", metrics_savepoint.savepoint)),
+        zd_intcoef,
     )
 
     # Interpolation state parameters
