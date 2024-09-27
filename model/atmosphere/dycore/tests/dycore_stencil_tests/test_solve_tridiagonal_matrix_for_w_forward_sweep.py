@@ -8,13 +8,11 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -54,9 +52,8 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
         w[:, k] = (w[:, k] - z_a[:, k] * w[:, k - 1]) * z_g[:, k]
     return z_q, w
 
-
-def test_solve_tridiagonal_matrix_for_w_forward_sweep():
-    grid = SimpleGrid()
+def test_solve_tridiagonal_matrix_for_w_forward_sweep(backend, grid):
+    
     vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
     theta_v_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
     ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
@@ -87,8 +84,7 @@ def test_solve_tridiagonal_matrix_for_w_forward_sweep():
     h_end = int32(grid.num_cells)
     v_start = 1
     v_end = int32(grid.num_levels)
-    # TODO we run this test with the C++ backend as the `embedded` backend doesn't handle this pattern
-    solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(run_gtfn)(
+    solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)(
         vwind_impl_wgt=vwind_impl_wgt,
         theta_v_ic=theta_v_ic,
         ddqz_z_half=ddqz_z_half,
