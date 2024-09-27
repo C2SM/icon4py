@@ -72,7 +72,7 @@ Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 log = logging.getLogger(__name__)
 
 
-class DiffusionType(int, enum.Enum):
+class DiffusionType(enum.Enum):
     """
     Order of nabla operator for diffusion.
 
@@ -80,30 +80,43 @@ class DiffusionType(int, enum.Enum):
     Note: We currently only support type 5.
     """
 
-    NO_DIFFUSION = -1  #: no diffusion
-    LINEAR_2ND_ORDER = 2  #: 2nd order linear diffusion on all vertical levels
-    SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
-    LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
-    SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
+    #: no diffusion
+    NO_DIFFUSION = -1
+
+    #: 2nd order linear diffusion on all vertical levels
+    LINEAR_2ND_ORDER = 2
+
+    #: Smagorinsky diffusion without background diffusion
+    SMAGORINSKY_NO_BACKGROUND = 3
+
+    #: 4th order linear diffusion on all vertical levels
+    LINEAR_4TH_ORDER = 4
+
+    #: Smagorinsky diffusion with fourth-order background diffusion
+    SMAGORINSKY_4TH_ORDER = 5
 
 
-class TurbulenceShearForcingType(int, enum.Enum):
+class TurbulenceShearForcingType(enum.Enum):
     """
     Type of shear forcing used in turbulance.
 
     Note: called `itype_sher` in `mo_turbdiff_nml.f90`
     """
 
-    VERTICAL_OF_HORIZONTAL_WIND = 0  #: only vertical shear of horizontal wind
-    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND = (
-        1  #: as `VERTICAL_ONLY` plus horizontal shar correction
-    )
-    VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND = (
-        2  #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
-    )
-    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
+    #: only vertical shear of horizontal wind
+    VERTICAL_OF_HORIZONTAL_WIND = 0
+
+    #: as `VERTICAL_ONLY` plus horizontal shar correction
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND = 1
+
+    #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND = 2
+
+    #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3
 
 
+@dataclasses.dataclass(frozen=True)
 class DiffusionConfig:
     """
     Contains necessary parameter to configure a diffusion run.
@@ -111,145 +124,112 @@ class DiffusionConfig:
     Encapsulates namelist parameters and derived parameters.
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
+
+     # TODO(Magdalena):  handle dependencies on other namelists (see below...)
     """
 
-    # TODO(Magdalena): to be read from config
-    # TODO(Magdalena):  handle dependencies on other namelists (see below...)
+    diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER
 
-    def __init__(
-        self,
-        diffusion_type: DiffusionType = DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        hdiff_temp=True,
-        type_vn_diffu: int = 1,
-        smag_3d: bool = False,
-        type_t_diffu: int = 2,
-        hdiff_efdt_ratio: float = 36.0,
-        hdiff_w_efdt_ratio: float = 15.0,
-        smagorinski_scaling_factor: float = 0.015,
-        n_substeps: int = 5,
-        zdiffu_t: bool = True,
-        thslp_zdiffu: float = 0.025,
-        thhgtd_zdiffu: float = 200.0,
-        velocity_boundary_diffusion_denom: float = 200.0,
-        temperature_boundary_diffusion_denom: float = 135.0,
-        max_nudging_coeff: float = 0.02,
-        nudging_decay_rate: float = 2.0,
-        shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
-    ):
-        """Set the diffusion configuration parameters with the ICON default values."""
-        # parameters from namelist diffusion_nml
+    #: If True, apply diffusion on the vertical wind field
+    #: Called `lhdiff_w` in mo_diffusion_nml.f90
+    apply_to_vertical_wind: bool = True
 
-        self.diffusion_type: int = diffusion_type
+    #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
+    #: Called `lhdiff_vn` in mo_diffusion_nml.f90
+    apply_to_horizontal_wind: bool = True
 
-        #: If True, apply diffusion on the vertical wind field
-        #: Called `lhdiff_w` in mo_diffusion_nml.f90
-        self.apply_to_vertical_wind: bool = hdiff_w
+    #:  If True, apply horizontal diffusion to temperature field
+    #: Called `lhdiff_temp` in mo_diffusion_nml.f90
+    apply_to_temperature: bool = True
 
-        #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
-        #: Called `lhdiff_vn` in mo_diffusion_nml.f90
-        self.apply_to_horizontal_wind = hdiff_vn
+    #: Options for discretizing the Smagorinsky momentum diffusion
+    #: Called `itype_vn_diffu` in mo_diffusion_nml.f90
+    type_vn_diffu: int = 1
 
-        #:  If True, apply horizontal diffusion to temperature field
-        #: Called `lhdiff_temp` in mo_diffusion_nml.f90
-        self.apply_to_temperature: bool = hdiff_temp
+    #: If True, compute 3D Smagorinsky diffusion coefficient
+    #: Called `lsmag_3d` in mo_diffusion_nml.f90
+    compute_3d_smag_coeff: bool = False
 
-        #: If True, compute 3D Smagorinsky diffusion coefficient
-        #: Called `lsmag_3d` in mo_diffusion_nml.f90
-        self.compute_3d_smag_coeff: bool = smag_3d
+    #: Options for discretizing the Smagorinsky temperature diffusion
+    #: Called `itype_t_diffu` inmo_diffusion_nml.f90
+    type_t_diffu: int = 2
 
-        #: Options for discretizing the Smagorinsky momentum diffusion
-        #: Called `itype_vn_diffu` in mo_diffusion_nml.f90
-        self.type_vn_diffu: int = type_vn_diffu
+    #: Ratio of e-folding time to (2*)time step
+    #: Called `hdiff_efdt_ratio` inmo_diffusion_nml.f90
+    hdiff_efdt_ratio: float = 36.0
 
-        #: Options for discretizing the Smagorinsky temperature diffusion
-        #: Called `itype_t_diffu` inmo_diffusion_nml.f90
-        self.type_t_diffu = type_t_diffu
+    #: Ratio of e-folding time to time step for w diffusion (NH only)
+    #: Called `hdiff_w_efdt_ratio` inmo_diffusion_nml.f90.
+    hdiff_w_efdt_ratio: float = 15.0
 
-        #: Ratio of e-folding time to (2*)time step
-        #: Called `hdiff_efdt_ratio` inmo_diffusion_nml.f90
-        self.hdiff_efdt_ratio: float = hdiff_efdt_ratio
+    #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
+    #: Called `hdiff_smag_fac` in mo_diffusion_nml.f90
+    smagorinski_scaling_factor: float = 0.015
 
-        #: Ratio of e-folding time to time step for w diffusion (NH only)
-        #: Called `hdiff_w_efdt_ratio` inmo_diffusion_nml.f90.
-        self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
+    #: Number of dynamics substeps per fast-physics step
+    #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
+    # TODO (magdalena) ndyn_substeps may dynamically increase during a model run in order to
+    #       reduce instabilities. Need to figure out whether the parameter is the configured
+    #       (constant!) one or the dynamical one. In the latter case it should be removed from
+    #       DiffusionConfig and init()
+    ndyn_substeps: int = 5
 
-        #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
-        #: Called `hdiff_smag_fac` in mo_diffusion_nml.f90
-        self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
+    #: If True, apply truly horizontal temperature diffusion over steep slopes
+    #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
+    apply_zdiffusion_t: bool = True
 
-        #: If True, apply truly horizontal temperature diffusion over steep slopes
-        #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
-        self.apply_zdiffusion_t: bool = zdiffu_t
+    #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f90
+    thslp_zdiffu: float = 0.025
 
-        #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f89
-        self.thslp_zdiffu = thslp_zdiffu
-        #: threshold [m] for height difference between adjacent grid points, defaults to 200m (temperature diffusion)
-        self.thhgtd_zdiffu = thhgtd_zdiffu
+    #: threshold [m] for height difference between adjacent grid points, defaults to 200m (temperature diffusion)
+    thhgtd_zdiffu: float = 200.0
 
-        # from other namelists:
-        # from parent namelist mo_nonhydrostatic_nml
+    #: Denominator for velocity boundary diffusion
+    #: Called 'denom_diffu_v' in mo_gridref_nml.f90
+    velocity_boundary_diffusion_denominator: float = 200.0
 
-        #: Number of dynamics substeps per fast-physics step
-        #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
+    #: Denominator for temperature boundary diffusion
+    #: Called 'denom_diffu_t' in mo_gridref_nml.f90
+    temperature_boundary_diffusion_denominator: float = 135.0
 
-        # TODO (magdalena) ndyn_substeps may dynamically increase during a model run in order to
-        #       reduce instabilities. Need to figure out whether the parameter is the configured
-        #       (constant!) one or the dynamical one. In the latter case it should be removed from
-        #       DiffusionConfig and init()
-        self.ndyn_substeps: int = n_substeps
+    #: Parameter describing the lateral boundary nudging in limited area mode.
+    #:
+    #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
+    #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
+    #: Called `nudge_max_coeff` in mo_interpol_nml.f90
+    max_nudging_coefficient: float = 0.02
 
-        # namelist mo_gridref_nml.f90
+    #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
+    #: Called `nudge_efold_width` in mo_interpol_nml.f90
+    nudge_efold_width: float = 2.0
 
-        #: Denominator for temperature boundary diffusion
-        #: Called 'denom_diffu_t' in mo_gridref_nml.f90
-        self.temperature_boundary_diffusion_denominator: float = (
-            temperature_boundary_diffusion_denom
-        )
+    #: Type of shear forcing used in turbulence
+    #: Called itype_shear in `mo_turbdiff_nml.f90
+    shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND
 
-        #: Denominator for velocity boundary diffusion
-        #: Called 'denom_diffu_v' in mo_gridref_nml.f90
-        self.velocity_boundary_diffusion_denominator: float = velocity_boundary_diffusion_denom
-
-        # parameters from namelist: mo_interpol_nml.f90
-
-        #: Parameter describing the lateral boundary nudging in limited area mode.
-        #:
-        #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
-        #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called `nudge_max_coeff` in mo_interpol_nml.f90
-        self.nudge_max_coeff: float = max_nudging_coeff
-
-        #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
-        #: Called `nudge_efold_width` in mo_interpol_nml.f90
-        self.nudge_efold_width: float = nudging_decay_rate
-
-        #: Type of shear forcing used in turbulence
-        #: Called itype_shear in `mo_turbdiff_nml.f90
-        self.shear_type = shear_type
-
+    def __post_init__(self):
         self._validate()
 
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
-        if self.diffusion_type != 5:
+        if self.diffusion_type != DiffusionType.SMAGORINSKY_4TH_ORDER:
             raise NotImplementedError(
                 "Only diffusion type 5 = `Smagorinsky diffusion with fourth-order background "
                 "diffusion` is implemented"
             )
-
-        if self.diffusion_type < 0:
-            self.apply_to_temperature = False
-            self.apply_to_horizontal_wind = False
-            self.apply_to_vertical_wind = False
+        if self.diffusion_type == DiffusionType.NO_DIFFUSION:
+            assert (
+                not self.apply_to_temperature
+                and not self.apply_to_horizontal_wind
+                and not self.apply_to_vertical_wind
+            ), f"Inconsistent configuration: DiffusionType = {self.diffusion_type} - but application flags are set to:  horizontal wind = '{self.apply_to_horizontal_wind}', vertical wind = '{self.apply_to_vertical_wind}', temperature = '{self.apply_to_temperature}' "
 
         if self.shear_type not in (
             TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
             TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
         ):
             raise NotImplementedError(
-                f"Turbulence Shear only {TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND} "
+                f"Turbulence Shear: only {TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND} "
                 f"and {TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND} "
                 f"implemented"
             )
@@ -296,7 +276,7 @@ class DiffusionParams:
         object.__setattr__(
             self,
             "scaled_nudge_max_coeff",
-            config.nudge_max_coeff * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+            config.max_nudging_coefficient * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         )
 
     def _determine_smagorinski_factor(self, config: DiffusionConfig):
@@ -308,12 +288,12 @@ class DiffusionParams:
         It is calculated/used only in the case of diffusion_type 3 or 5
         """
         match config.diffusion_type:
-            case 5:
+            case DiffusionType.SMAGORINSKY_4TH_ORDER:
                 (
                     smagorinski_factor,
                     smagorinski_height,
                 ) = diffusion_type_5_smagorinski_factor(config)
-            case 4:
+            case DiffusionType.LINEAR_4TH_ORDER:
                 # according to mo_nh_diffusion.f90 this isn't used anywhere the factor is only
                 # used for diffusion_type (3,5) but the defaults are only defined for iequations=3
                 smagorinski_factor = (
@@ -648,10 +628,7 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
-        if (
-            self.config.shear_type
-            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-        ):
+        if self.config.shear_type != TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND:
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
             )

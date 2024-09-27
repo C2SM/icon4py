@@ -7,11 +7,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
+import omegaconf
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
+from icon4py.model.common.test_utils import (
+    datatest_utils as dt_utils,
+    helpers,
+    serialbox_utils as sb,
+)
 
 
 def exclaim_ape_diffusion_config(ndyn_substeps):
@@ -22,15 +27,16 @@ def exclaim_ape_diffusion_config(ndyn_substeps):
     """
     return diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
-        zdiffu_t=False,
+        apply_to_vertical_wind=True,
+        apply_to_horizontal_wind=True,
+        apply_zdiffusion_t=False,
         type_t_diffu=2,
         type_vn_diffu=1,
         hdiff_efdt_ratio=24.0,
         smagorinski_scaling_factor=0.025,
-        hdiff_temp=True,
-        n_substeps=ndyn_substeps,
+        apply_to_temperature=True,
+        ndyn_substeps=ndyn_substeps,
+        shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
     )
 
 
@@ -45,26 +51,29 @@ def r04b09_diffusion_config(
     """
     return diffusion.DiffusionConfig(
         diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
-        hdiff_w=True,
-        hdiff_vn=True,
+        apply_to_vertical_wind=True,
+        apply_to_horizontal_wind=True,
         type_t_diffu=2,
         type_vn_diffu=1,
         hdiff_efdt_ratio=24.0,
         hdiff_w_efdt_ratio=15.0,
         smagorinski_scaling_factor=0.025,
-        zdiffu_t=True,
+        apply_zdiffusion_t=True,
         thslp_zdiffu=0.02,
         thhgtd_zdiffu=125.0,
-        velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
-        n_substeps=ndyn_substeps,
+        velocity_boundary_diffusion_denominator=150.0,
+        max_nudging_coefficient=0.075,
+        ndyn_substeps=ndyn_substeps,
         shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
 
 def construct_config(name: str, ndyn_substeps: int = 5):
     if name.lower() in "mch_ch_r04b09_dsl":
-        return r04b09_diffusion_config(ndyn_substeps)
+        file = dt_utils.get_test_data_root_path().joinpath("config").joinpath(name.lower()).joinpath("diffusion.yaml")
+        
+        return omegaconf.OmegaConf.load(file)
+        #return r04b09_diffusion_config(ndyn_substeps)
     elif name.lower() in "exclaim_ape_r02b04":
         return exclaim_ape_diffusion_config(ndyn_substeps)
 
@@ -85,9 +94,9 @@ def verify_diffusion_fields(
     val_vn = prognostic_state.vn.asnumpy()
 
     validate_diagnostics = (
-        config.shear_type
-        >= diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+        config.shear_type != diffusion.TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND
     )
+
     if validate_diagnostics:
         ref_div_ic = diffusion_savepoint.div_ic().asnumpy()
         val_div_ic = diagnostic_state.div_ic.asnumpy()
