@@ -298,7 +298,7 @@ def test_factory_bdy_halo_c(
 def test_factory_hmask_dd3d(
     grid_savepoint, icon_grid, metrics_savepoint, interpolation_savepoint, backend
 ):
-    if backend == "gtfn_cpu":
+    if "gtfn_cpu" in backend.executor.name:
         pytest.skip("CPU compilation does not work here because of domain only on edges")
     factory = mf.fields_factory
     num_levels = grid_savepoint.num(dims.KDim)
