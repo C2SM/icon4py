@@ -52,8 +52,8 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
         w[:, k] = (w[:, k] - z_a[:, k] * w[:, k - 1]) * z_g[:, k]
     return z_q, w
 
+
 def test_solve_tridiagonal_matrix_for_w_forward_sweep(backend, grid):
-    
     vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
     theta_v_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
     ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
