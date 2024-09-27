@@ -8,13 +8,11 @@
 
 import pytest
 
-import icon4py.model.common.test_utils.datatest_utils
-import icon4py.model.common.test_utils.diffusion_utils
-from icon4py.model.atmosphere.diffusion import diffusion as diffusion_
+from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils, parallel_helpers
+from icon4py.model.common.test_utils import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
 
@@ -60,16 +58,28 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = icon4py.model.common.test_utils.diffusion_utils.construct_metric_state(
-        metrics_savepoint
+    metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = (
-        icon4py.model.common.test_utils.diffusion_utils.construct_interpolation_state(
-            interpolation_savepoint
-        )
+
+    interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
+
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -77,9 +87,7 @@ def test_parallel_diffusion(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    config = icon4py.model.common.test_utils.diffusion_utils.construct_config(
-        experiment, ndyn_substeps=ndyn_substeps
-    )
+    config = utils.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = diffusion_.DiffusionParams(config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     print(
@@ -102,9 +110,14 @@ def test_parallel_diffusion(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state = icon4py.model.common.test_utils.diffusion_utils.construct_diagnostics(
-        diffusion_savepoint_init
+
+    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=diffusion_savepoint_init.hdef_ic(),
+        div_ic=diffusion_savepoint_init.div_ic(),
+        dwdx=diffusion_savepoint_init.dwdx(),
+        dwdy=diffusion_savepoint_init.dwdy(),
     )
+
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     if linit:
         diffusion.initial_run(
