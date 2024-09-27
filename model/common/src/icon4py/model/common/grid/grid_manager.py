@@ -17,7 +17,7 @@ from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
 )
-from icon4py.model.common.grid import icon, vertical as v_grid
+from icon4py.model.common.grid import base, icon, vertical as v_grid
 from icon4py.model.common.settings import xp
 
 
@@ -363,7 +363,9 @@ class GridManager:
         self._vertical_config = config
         self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
+        self._geometry = {}
         self._reader = None
+        self._coordinates = {}
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -392,6 +394,35 @@ class GridManager:
             self.open()
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields()
+        self._coordinates = self._read_coordinates()
+        self._geometry = self._read_geometry_fields()
+    
+    def _read_coordinates(self):
+
+        return {
+            dims.CellDim : {
+            "lat": self._reader.variable(CoordinateName.CELL_LATITUDE), 
+            "lon": self._reader.variable(CoordinateName.CELL_LONGITUDE)
+            },
+            dims.EdgeDim:{
+            "lat": self._reader.variable(CoordinateName.EDGE_LATITUDE),
+            "lon": self._reader.variable(CoordinateName.EDGE_LONGITUDE)
+            },
+            dims.VertexDim: {
+                "lat": self._reader.variable(CoordinateName.VERTEX_LATITUDE),
+                "lon": self._reader.variable(CoordinateName.VERTEX_LONGITUDE)
+            }
+        }
+
+    def _read_geometry_fields(self):
+        return {
+        GeometryName.EDGE_LENGTH.value:self._reader.variable(GeometryName.EDGE_LENGTH),
+        GeometryName.DUAL_EDGE_LENGTH.value: self._reader.variable(GeometryName.DUAL_EDGE_LENGTH),
+        GeometryName.CELL_AREA_P.value:self._reader.variable(GeometryName.CELL_AREA_P),
+        GeometryName.CELL_AREA.value: self._reader.variable(GeometryName.CELL_AREA),
+        GeometryName.TANGENT_ORIENTATION.value: self._reader.variable(GeometryName.TANGENT_ORIENTATION)
+            
+        }
 
     def _read_start_end_indices(
         self,
@@ -480,6 +511,13 @@ class GridManager:
         TODO (@halungge) should those be added to the IconGrid?
         """
         return self._refinement
+    
+    @property
+    def geometry(self):
+        return self._geometry
+    
+    def coordinates(self, dim:gtx.Dimension):
+        return self._coordinates.get(dim)
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) ->icon.IconGrid :
         """Construct the grid topology from the icon grid file.

@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from gt4py import next as gtx
 from gt4py.next import Field, field_operator
-from gt4py.next.ffront.fbuiltins import cos, sin, sqrt
+from gt4py.next.ffront.fbuiltins import cos, sin, sqrt, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2V, Koff
@@ -158,4 +158,4 @@ def dot_product(x1:fa.EdgeField[ta.wpfloat], x2:fa.EdgeField[ta.wpfloat], y1:fa.
 
 @gtx.field_operator
 def invert(f:fa.EdgeField[ta.wpfloat])-> fa.EdgeField[ta.wpfloat]:
-    return 1.0 / f
+    return where(f != 0.0, 1.0 / f, f)

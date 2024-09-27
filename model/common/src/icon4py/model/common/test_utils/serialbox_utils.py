@@ -228,7 +228,29 @@ class IconGridSavepoint(IconSavepoint):
 
     def cell_areas(self):
         return self._get_field("cell_areas", dims.CellDim)
-
+    
+    def lat(self, dim:gtx.Dimension):
+        match dim :
+            case dims.CellDim:
+                return self.cell_center_lat()
+            case dims.EdgeDim:
+                return self.edges_center_lat()
+            case dims.VertexDim:
+                return self.verts_vertex_lat()
+            case _:
+             raise ValueError
+        
+    def lon(self, dim:gtx.Dimension):
+        match dim :
+            case dims.CellDim:
+                return self.cell_center_lon()
+            case dims.EdgeDim:
+                return self.edges_center_lon()
+            case dims.VertexDim:
+                return self.verts_vertex_lon()
+            case _:
+             raise ValueError
+        
     def cell_center_lat(self):
         return self._get_field("cell_center_lat", dims.CellDim)
 

@@ -26,6 +26,7 @@ from icon4py.model.common.math.helpers import (
     spherical_to_cartesian_on_cells,
     spherical_to_cartesian_on_vertex,
 )
+from icon4py.model.common.type_alias import wpfloat
 
 
 """
@@ -337,14 +338,26 @@ def dual_edge_length(cell_lat:fa.CellField[ta.wpfloat],
                      cell_lon:fa.CellField[ta.wpfloat],
                      subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat],
                      radius: ta.wpfloat
-                     ) -> fa.EdgeField[ta.wpfloat]:
-    x, y, z = spherical_to_cartesian_on_cells(cell_lat, cell_lon, radius)
-    x = neighbor_sum(subtract_coeff * x(E2C), axis=E2CDim )
-    y = neighbor_sum(subtract_coeff * y(E2C), axis=E2CDim)
-    z = neighbor_sum(subtract_coeff * z(E2C), axis=E2CDim)
+                     ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    x, y, z = spherical_to_cartesian_on_cells(cell_lat, cell_lon, wpfloat(1.0))
+    
+    # that is the "Bogensehne"
+    dx = neighbor_sum(subtract_coeff * x(E2C), axis=E2CDim)
+    dy = neighbor_sum(subtract_coeff * y(E2C), axis=E2CDim)
+    dz = neighbor_sum(subtract_coeff * z(E2C), axis=E2CDim)
+    tendon =  radius * norm2(dx, dy, dz)
 
-    return norm2(x, y, z)
-
+    x0 = x(E2C[0])
+    x1 = x(E2C[1])
+    y0 = y(E2C[0])
+    y1 = y(E2C[1])
+    z0 = z(E2C[0])
+    z1 = z(E2C[1])
+    norms = norm2(x0, y0, z0) * norm2(x1, y1, z1)
+    prod = dot_product(x0, x1, y0, y1, z0, z1)/norms
+    arc = radius * arccos(prod)
+    return arc, tendon
+    
 
 @gtx.field_operator(grid_type = gtx.GridType.UNSTRUCTURED)
 def primal_edge_length(vertex_lat: fa.VertexField[ta.wpfloat], 
@@ -361,8 +374,9 @@ def primal_edge_length(vertex_lat: fa.VertexField[ta.wpfloat],
     
     
 @gtx.field_operator(grid_type = gtx.GridType.UNSTRUCTURED)
-def vertex_vertex_length(vertex_lat: fa.VertexField[fa.wpfloat], vertex_lon:fa.VertexField[ta.wpfloat], radius: ta.wpfloat)->fa.EdgeField[ta.wpfloat]:
-    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, radius)
+def vertex_vertex_length(vertex_lat: fa.VertexField[fa.wpfloat], 
+                         vertex_lon:fa.VertexField[ta.wpfloat], radius: ta.wpfloat)->fa.EdgeField[ta.wpfloat]:
+    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
     x1 = x(E2C2V[2])
     x2 = x(E2C2V[3])
     y1 = y(E2C2V[2])
@@ -371,8 +385,8 @@ def vertex_vertex_length(vertex_lat: fa.VertexField[fa.wpfloat], vertex_lon:fa.V
     z2 = z(E2C2V[3])
     norm = norm2(x1, y1, z1) * norm2(x2, y2, z2)
     
-    length = dot_product(x1, x2, y1, y2, z1, z2) / norm
-    return arccos(length)
+    alpha = dot_product(x1, x2, y1, y2, z1, z2) / norm
+    return arccos(alpha)
 
 
 @gtx.field_operator

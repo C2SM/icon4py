@@ -316,7 +316,7 @@ class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
     def __init__(
-        self, exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()
+        self, exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
         self._initialized = False
@@ -407,7 +407,6 @@ class Diffusion:
             nrdmax=self.vertical_grid.end_index_of_damping_layer,
         )
         self._determine_horizontal_domains()
-
         self._initialized = True
 
     @property
