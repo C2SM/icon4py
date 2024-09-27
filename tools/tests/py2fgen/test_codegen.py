@@ -249,7 +249,6 @@ import numpy as np
 import cupy as cp
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.ffront.fbuiltins
 from icon4py.model.common.settings import xp
 from icon4py.model.common import dimension as dims
 
@@ -327,7 +326,7 @@ def int_array_to_bool_array(int_array: NDArray) -> NDArray:
     return bool_array
 
 @ffi.def_extern()
-def foo_wrapper(one: gtx.int32, two: Field[dims.CellDim, dims.KDim], float64], n_Cell: gtx.int32, n_K: gtx.int32):
+def foo_wrapper(one: int32, two: Field[dims.CellDim, dims.KDim], float64], n_Cell: gtx.int32, n_K: gtx.int32):
     try:
         # Unpack pointers into Ndarrays
         two = unpack_gpu(two, n_Cell, n_K)
@@ -344,14 +343,13 @@ def foo_wrapper(one: gtx.int32, two: Field[dims.CellDim, dims.KDim], float64], n
     return 0
 
 @ffi.def_extern()
-def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: gtx.int32, n_Cell: gtx.int32, n_K: gtx.int32):
+def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: int32, n_Cell: gtx.int32, n_K: gtx.int32):
     try:
         # Unpack pointers into Ndarrays
         one = unpack_gpu(one, n_Cell, n_K)
 
         # Allocate GT4Py Fields
         one = np_as_located_field(dims.CellDim, dims.KDim)(one)
-
         bar(one, two)
 
     except Exception as e:
