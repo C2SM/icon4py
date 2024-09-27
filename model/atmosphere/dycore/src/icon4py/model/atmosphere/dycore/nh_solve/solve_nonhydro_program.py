@@ -116,9 +116,6 @@ def _predictor_stencils_2_3(
     k_field: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
-    """
-    Temporary docstring to see if this field_operator is picked up
-    """
     (z_exner_ex_pr, exner_pr) = where(
         (k_field >= 0) & (k_field < nlev),
         _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
@@ -143,9 +140,6 @@ def predictor_stencils_2_3(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """
-    Temporary docstring to see if this program is picked up
-    """
     _predictor_stencils_2_3(
         exner_exfac,
         exner,
