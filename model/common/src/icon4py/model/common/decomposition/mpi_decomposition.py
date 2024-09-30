@@ -224,6 +224,12 @@ class GHexMultiNodeExchange:
         res.wait()
 
     def __call__(self, *args, **kwargs):
+        """Performs a halo exchange operation.
+        args: The fields to be exchanged.
+        kwargs:
+            dim: The dimension along which the exchange is performed.
+            wait: If True, the operation will block until the exchange is completed.
+        """
         dim = kwargs.get("dim", None)
         if dim is None:
             raise ValueError("Need to define a dimension.")
@@ -307,6 +313,7 @@ class HaloExchangeWait:
     buffer_name: ClassVar[str] = "communication_handle"  # DaCe-related
 
     def __call__(self, communication_handle: MultiNodeResult):
+        """Wait on the communication handle."""
         communication_handle.wait()
 
     if dace:
