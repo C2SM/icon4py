@@ -412,7 +412,7 @@ def test_config(experiment):
     import omegaconf
     file = dt_utils.get_test_data_root_path().joinpath("config").joinpath(experiment.lower()).joinpath(
         "diffusion.yaml")
-    config = omegaconf.OmegaConf
+    config = omegaconf.OmegaConf.structured(diffusion.DiffusionConfig)
     config = omegaconf.OmegaConf.load(file)
 
     assert config == r04b09_diffusion_config(ndyn_substeps=5)
