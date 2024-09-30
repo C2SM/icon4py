@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 from gt4py.next.embedded.nd_array_field import NdArrayField
+from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.common.settings import xp
 
 
@@ -75,18 +76,6 @@ def compare_values_shallow(value1, value2, obj_name="value"):
     return True, None
 
 
-def compare_dicts_shallow(dict1, dict2, obj_name="dict"):
-    if dict1.keys() != dict2.keys():
-        return False, f"Dict keys mismatch for {obj_name}: {dict1.keys()} != {dict2.keys()}"
-    return True, None
-
-
-def compare_tuples_shallow(tuple1, tuple2, obj_name="tuple"):
-    if len(tuple1) != len(tuple2):
-        return False, f"Tuple length mismatch for {obj_name}: {len(tuple1)} != {len(tuple2)}"
-    return True, None
-
-
 def compare_objects(obj1, obj2, obj_name="object"):
     # Check if both objects are instances of numpy scalar types
     if isinstance(obj1, xp.ScalarType) and isinstance(obj2, xp.ScalarType):
@@ -119,3 +108,59 @@ def compare_objects(obj1, obj2, obj_name="object"):
             return False, error_message
 
     return True, None
+
+
+# TODO: this code is replicated across the codebase currently. The configuration should be read from an external file.
+def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
+    if name.lower() in "mch_ch_r04b09_dsl":
+        return r04b09_diffusion_config(ndyn_substeps)
+    elif name.lower() in "exclaim_ape_r02b04":
+        return exclaim_ape_diffusion_config(ndyn_substeps)
+
+
+def r04b09_diffusion_config(
+    ndyn_substeps,  # imported `ndyn_substeps` fixture
+) -> diffusion.DiffusionConfig:
+    """
+    Create DiffusionConfig matching MCH_CH_r04b09_dsl.
+
+    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
+    from the default.
+    """
+    return diffusion.DiffusionConfig(
+        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        hdiff_w=True,
+        hdiff_vn=True,
+        type_t_diffu=2,
+        type_vn_diffu=1,
+        hdiff_efdt_ratio=24.0,
+        hdiff_w_efdt_ratio=15.0,
+        smagorinski_scaling_factor=0.025,
+        zdiffu_t=True,
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
+        velocity_boundary_diffusion_denom=150.0,
+        max_nudging_coeff=0.075,
+        n_substeps=ndyn_substeps,
+        shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+    )
+
+
+def exclaim_ape_diffusion_config(ndyn_substeps):
+    """Create DiffusionConfig matching EXCLAIM_APE_R04B02.
+
+    Set values to the ones used in the  EXCLAIM_APE_R04B02 experiment where they differ
+    from the default.
+    """
+    return diffusion.DiffusionConfig(
+        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        hdiff_w=True,
+        hdiff_vn=True,
+        zdiffu_t=False,
+        type_t_diffu=2,
+        type_vn_diffu=1,
+        hdiff_efdt_ratio=24.0,
+        smagorinski_scaling_factor=0.025,
+        hdiff_temp=True,
+        n_substeps=ndyn_substeps,
+    )

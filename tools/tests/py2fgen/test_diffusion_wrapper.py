@@ -11,7 +11,7 @@ from unittest import mock
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType, TurbulenceShearForcingType
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
@@ -21,19 +21,11 @@ from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.test_utils.datatest_utils import (
     get_global_grid_params,
 )
-from icon4py.model.common.test_utils.diffusion_utils import (
-    construct_config,
-    construct_diagnostics,
-    construct_interpolation_state,
-    construct_metric_state,
-    vertical_grid,
-)
 
-import icon4pytools.py2fgen.wrappers.diffusion
 from icon4pytools.py2fgen.wrappers import wrapper_dimension
-from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
+from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run, grid_init
 
-from .conftest import compare_objects
+from .conftest import compare_objects, construct_diffusion_config
 
 
 @pytest.mark.datatest
@@ -192,9 +184,30 @@ def test_diffusion_wrapper_granule_inputs(
     expected_dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     expected_edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    expected_interpolation_state = construct_interpolation_state(interpolation_savepoint)
-    expected_metric_state = construct_metric_state(metrics_savepoint)
-    expected_diagnostic_state = construct_diagnostics(savepoint_diffusion_init)
+    expected_interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+    )
+    expected_metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+    )
+    expected_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=savepoint_diffusion_init.hdef_ic(),
+        div_ic=savepoint_diffusion_init.div_ic(),
+        dwdx=savepoint_diffusion_init.dwdx(),
+        dwdy=savepoint_diffusion_init.dwdy(),
+    )
     expected_prognostic_state = savepoint_diffusion_init.construct_prognostics()
     expected_vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -203,12 +216,17 @@ def test_diffusion_wrapper_granule_inputs(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    expected_vertical_params = vertical_grid(expected_vertical_config, grid_savepoint)
-    expected_config = construct_config(experiment, ndyn_substeps)
+    expected_vertical_params = v_grid.VerticalGrid(
+        config=expected_vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
+    expected_config = construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Initialize the Grid ---
-    icon4pytools.py2fgen.wrappers.diffusion.grid_init(
+    grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -525,7 +543,7 @@ def test_diffusion_wrapper_single_step(
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
-    icon4pytools.py2fgen.wrappers.diffusion.grid_init(
+    grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
