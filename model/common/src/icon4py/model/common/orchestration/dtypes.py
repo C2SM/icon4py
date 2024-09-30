@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import sys
 from typing import Final, Optional, Type
 
 from gt4py.next import Field, common
@@ -35,6 +36,7 @@ if dace:
         bool,
         int32,
         int64,
+        int,
     )
     DACE_PRIMITIVE_DTYPES: Final = (
         dace.float64,
@@ -43,6 +45,7 @@ if dace:
         dace.bool,
         dace.int32,
         dace.int64,
+        dace.int64 if sys.maxsize > 2**32 else dace.int32,
     )
 
     def stride_symbol_name_from_field(cls: Type, field_name: str, stride: int) -> str:

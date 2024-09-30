@@ -45,6 +45,12 @@ try:
 except ImportError:
     ghex: Optional[ModuleType] = None  # type: ignore[no-redef]
 
+try:
+    import mpi4py
+    from mpi4py import MPI
+except ImportError:
+    mpi4py: Optional[ModuleType] = None
+
 if dace:
     from dace import hooks
     from dace.transformation.passes.simplify import SimplifyPass
@@ -82,6 +88,7 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
 
                 has_exchange = False
                 has_grid = False
+                exchange_obj = None
                 for attr_name, attr_value in self.__dict__.items():
                     if isinstance(attr_value, decomposition.ExchangeRuntime) and not has_exchange:
                         has_exchange = True
@@ -90,8 +97,6 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                         has_grid = True
                         grid = getattr(self, attr_name)
 
-                if not has_exchange:
-                    raise ValueError("No exchange object found.")
                 if not has_grid:
                     raise ValueError("No grid object found.")
 
@@ -110,9 +115,13 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                     # i.e. the same orchestrated function with different compile time args/kwargs gives different SDFGs.
                     unique_id = hash(tuple([id(e) for e in compile_time_args_kwargs.values()]))
 
+                if exchange_obj:
+                    my_rank = exchange_obj.my_rank()
+                else:
+                    my_rank = 0 if not mpi4py else MPI.COMM_WORLD.Get_rank()
                 default_build_folder = (
                     # Path(dace.config.Config().get("default_build_folder")) # noqa: ERA001
-                    Path(".dacecache") / f"MPI_rank_{exchange_obj.my_rank()}"
+                    Path(".dacecache") / f"MPI_rank_{my_rank}"
                 )
 
                 parse_compile_cache_sdfg(
@@ -253,7 +262,7 @@ if dace:
         unique_id: int,
         compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG],
         default_build_folder: str,
-        exchange_obj: decomposition.ExchangeRuntime,
+        exchange_obj: Optional[decomposition.ExchangeRuntime],
         fuse_func: Callable,
         compile_time_args_kwargs: dict[str, Any],
         self_name: Optional[str] = None,
@@ -342,7 +351,10 @@ if dace:
                     # Alternatively:
                     # sdfg.simplify(validate=True) # noqa: ERA001
 
-                exchange_obj.num_of_halo_tasklets = 0  # reset the counter for the next fused SDFG
+                if exchange_obj:
+                    exchange_obj.num_of_halo_tasklets = (
+                        0  # reset the counter for the next fused SDFG
+                    )
 
                 sdfg.save(Path(dace_program_location) / "program.sdfg")
 
@@ -364,13 +376,17 @@ if dace:
 
     def cache_sanitization(
         default_build_folder: str,
-        exchange_obj: decomposition.ExchangeRuntime,
+        exchange_obj: Optional[decomposition.ExchangeRuntime],
     ) -> None:
         # remove the cache if the number of folders in the cache is different from the number of halo exchanges
         normalized_path = os.path.normpath(default_build_folder)
         parts = normalized_path.split(os.sep)
         dacecache = next(part for part in parts if part)  # normally .dacecache
-        if count_folders_in_directory(dacecache) != exchange_obj.get_size():
+        if exchange_obj:
+            mpi_size = exchange_obj.my_rank()
+        else:
+            mpi_size = 1 if not mpi4py else MPI.COMM_WORLD.Get_size()
+        if count_folders_in_directory(dacecache) != mpi_size:
             try:
                 shutil.rmtree(dacecache)
             except Exception as e:
@@ -412,7 +428,7 @@ if dace:
         return numpy_array.strides[axis] // numpy_array.itemsize
 
     def dace_specific_kwargs(
-        exchange_obj: decomposition.ExchangeRuntime,
+        exchange_obj: Optional[decomposition.ExchangeRuntime],
         offset_providers: dict[str, gtx.common.Connectivity],
     ) -> dict[str, Any]:
         return {
