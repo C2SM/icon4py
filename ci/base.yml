@@ -63,6 +63,7 @@ build_image_aarch64:
     - python -c "import cupy"
     - cd /icon4py
     - ls "${TEST_DATA_PATH}"
+    - export TEST_TEMP_DIR=$(pwd)
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
@@ -75,6 +76,7 @@ build_image_aarch64:
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+    TEST_TEMP_DIR: $TEST_TEMP_DIR
 .test_template_x86_64:
   extends: [.container-runner-daint-gpu-f7t, .test_template]
   needs: [build_image_x86_64]
