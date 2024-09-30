@@ -90,8 +90,10 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                         has_grid = True
                         grid = getattr(self, attr_name)
 
-                if not (has_exchange or has_grid):
-                    raise ValueError("No exchange/grid object found.")
+                if not has_exchange:
+                    raise ValueError("No exchange object found.")
+                if not has_grid:
+                    raise ValueError("No grid object found.")
 
                 compile_time_args_kwargs = {}
                 all_args_kwargs = [*args, *kwargs.values()]

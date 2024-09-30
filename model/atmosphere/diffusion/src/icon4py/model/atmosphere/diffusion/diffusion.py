@@ -768,14 +768,16 @@ class Diffusion:
             geofac_grg_y=self.interpolation_state.geofac_grg_y,
             w_old=self.w_tmp,
             w=prognostic_state.w,
-            type_shear=int32(self.config.shear_type.value),
+            type_shear=int32(
+                self.config.shear_type.value
+            ),  # TODO(kotsaloscv): if gtx.int32 is used, it breaks DaCe orchestration
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
             k=self.vertical_index,
             cell=self.horizontal_cell_index,
-            nrdmax=int32(
+            nrdmax=int32(  # TODO(kotsaloscv): if gtx.int32 is used, it breaks DaCe orchestration
                 self.vertical_grid.end_index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
             interior_idx=self._cell_start_interior,
