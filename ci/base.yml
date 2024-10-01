@@ -77,7 +77,7 @@ build_image_aarch64:
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
     TEST_TEMP_DIR: $TEST_TEMP_DIR
-    GT4PY_BUILD_CACHE_DIR: $TEST_TEMP_DIR
+    GT4PY_BUILD_CACHE_DIR: "${TEST_TEMP_DIR}"
     GT4PY_BUILD_CACHE_LIFETIME: PERSISTENT
 .test_template_x86_64:
   extends: [.container-runner-daint-gpu-f7t, .test_template]
