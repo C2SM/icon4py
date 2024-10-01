@@ -135,32 +135,34 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                 sdfg = compiled_sdfgs[unique_id]["sdfg"]
                 compiled_sdfg = compiled_sdfgs[unique_id]["compiled_sdfg"]
 
+                updated_args, updated_kwargs = mod_xargs_for_dace_structures(
+                    fuse_func, fuse_func_orig_annotations, args, kwargs
+                )
+
+                updated_kwargs = {
+                    **updated_kwargs,
+                    **dace_specific_kwargs(exchange_obj, grid.offset_providers),
+                }
+
+                updated_kwargs = {
+                    **updated_kwargs,
+                    **dace_symbols_concretization(
+                        grid, fuse_func, fuse_func_orig_annotations, args, kwargs
+                    ),
+                }
+
+                sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
+                if method:
+                    del sdfg_args[self_name]
+
+                fuse_func.__annotations__ = (
+                    fuse_func_orig_annotations  # restore the original annotations
+                )
+
                 with dace.config.temporary_config():
-                    configure_dace_temp_env(default_build_folder)
-
-                    updated_args, updated_kwargs = mod_xargs_for_dace_structures(
-                        fuse_func, fuse_func_orig_annotations, args, kwargs
-                    )
-
-                    updated_kwargs = {
-                        **updated_kwargs,
-                        **dace_specific_kwargs(exchange_obj, grid.offset_providers),
-                    }
-
-                    updated_kwargs = {
-                        **updated_kwargs,
-                        **dace_symbols_concretization(
-                            grid, fuse_func, fuse_func_orig_annotations, args, kwargs
-                        ),
-                    }
-
-                    sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
-                    if method:
-                        del sdfg_args[self_name]
-
-                    fuse_func.__annotations__ = (
-                        fuse_func_orig_annotations  # restore the original annotations
-                    )
+                    dace.config.Config.set(
+                                "compiler", "allow_view_arguments", value=True
+                            )  # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)                    
                     return compiled_sdfg(**sdfg_args)
             else:
                 return fuse_func(*args, **kwargs)
