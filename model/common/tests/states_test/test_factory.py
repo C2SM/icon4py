@@ -12,7 +12,6 @@ import pytest
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
-from icon4py.model.common.io import cf_utils
 from icon4py.model.common.metrics import compute_nudgecoeffs, metric_fields as mf
 from icon4py.model.common.metrics.compute_wgtfacq import (
     compute_wgtfacq_c_dsl,
@@ -20,6 +19,7 @@ from icon4py.model.common.metrics.compute_wgtfacq import (
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory
+from icon4py.model.common.states.metadata import INTERFACE_LEVEL_STANDARD_NAME
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -51,7 +51,7 @@ def test_factory_raise_error_if_no_grid_is_set(metrics_savepoint):
     z_ifc = metrics_savepoint.z_ifc()
     k_index = gtx.as_field((dims.KDim,), xp.arange(1, dtype=gtx.int32))
     pre_computed_fields = factory.PrecomputedFieldsProvider(
-        {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
+        {"height_on_interface_levels": z_ifc, INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
     fields_factory = factory.FieldsFactory(grid=None)
     fields_factory.register_provider(pre_computed_fields)
@@ -72,7 +72,7 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
     )
     k_index = gtx.as_field((dims.KDim,), xp.arange(num_levels + 1, dtype=gtx.int32))
     pre_computed_fields = factory.PrecomputedFieldsProvider(
-        {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
+        {"height_on_interface_levels": z_ifc, INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
     fields_factory = factory.FieldsFactory()
     fields_factory.register_provider(pre_computed_fields)
@@ -113,7 +113,7 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
     end_cell_domain = cell_domain(h_grid.Zone.END)
 
     pre_computed_fields = factory.PrecomputedFieldsProvider(
-        {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
+        {"height_on_interface_levels": z_ifc, INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
 
     fields_factory.register_provider(pre_computed_fields)
@@ -144,7 +144,7 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
         deps={
             "z_ifc": "height_on_interface_levels",
             "z_mc": "height",
-            "k": cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
+            "k": INTERFACE_LEVEL_STANDARD_NAME,
         },
         params={"nlev": vertical_grid.num_levels},
     )
@@ -166,7 +166,7 @@ def test_field_provider_for_numpy_function(
     wgtfacq_c_ref = metrics_savepoint.wgtfacq_c_dsl()
 
     pre_computed_fields = factory.PrecomputedFieldsProvider(
-        {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
+        {"height_on_interface_levels": z_ifc, INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
     fields_factory.register_provider(pre_computed_fields)
     func = compute_wgtfacq_c_dsl
@@ -203,7 +203,7 @@ def test_field_provider_for_numpy_function_with_offsets(
     pre_computed_fields = factory.PrecomputedFieldsProvider(
         {
             "height_on_interface_levels": z_ifc,
-            cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index,
+            INTERFACE_LEVEL_STANDARD_NAME: k_index,
             "cell_to_edge_interpolation_coefficient": c_lin_e,
         }
     )
