@@ -88,7 +88,9 @@ def construct_icon_grid(
     c2e = adjust_fortran_indices(c2e, offset)
     c2v = adjust_fortran_indices(c2v, offset)
     v2c = adjust_fortran_indices(v2c, offset)
-    e2v = adjust_fortran_indices(e2v, offset)
+    e2v = adjust_fortran_indices(e2v, offset)[
+        :, 0:2
+    ]  # slicing required for e2v as input data is actually e2c2v
     c2e2c = adjust_fortran_indices(c2e2c, offset)
     v2e = adjust_fortran_indices(v2e, offset)
     e2c2v = adjust_fortran_indices(e2c2v, offset)
