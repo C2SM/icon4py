@@ -16,14 +16,10 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
-import cProfile
-import os
-import pstats
 
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import float64
 from icon4py.model.atmosphere.diffusion.diffusion import (
-    Diffusion,
     DiffusionConfig,
     DiffusionParams,
     TurbulenceShearForcingType,
@@ -33,36 +29,30 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid import geometry
+from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import device, limited_area
+from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    flatten_first_two_dims,  # todo: move away from test_utils
+)
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
+from icon4pytools.py2fgen.wrappers import common
+from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
+    CellIndexDim,
+    EdgeIndexDim,
+    VertexIndexDim,
+)
 
 
 logger = setup_logger(__name__)
 
-# global diffusion object
-diffusion_granule: Diffusion = Diffusion()
-
-# global profiler object
-profiler = cProfile.Profile()
-
-
-def profile_enable():
-    profiler.enable()
-
-
-def profile_disable():
-    profiler.disable()
-    stats = pstats.Stats(profiler)
-    stats.dump_stats(f"{__name__}.profile")
+icon_grid: IconGrid = None
 
 
 def diffusion_init(
@@ -81,8 +71,6 @@ def diffusion_init(
     zd_diffcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float64],
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.int32],
     zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], float64],
-    num_levels: gtx.int32,
-    mean_cell_area: float64,
     ndyn_substeps: gtx.int32,
     rayleigh_damping_height: float64,
     nflatlev: gtx.int32,
@@ -107,6 +95,8 @@ def diffusion_init(
     inv_vert_vert_length: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
     edge_areas: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
     f_e: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
+    cell_center_lat: gtx.FieldField[gtx.Dims[dims.CellDim], float64],
+    cell_center_lon: gtx.FieldField[gtx.Dims[dims.CellDim], float64],
     cell_areas: gtx.Field[gtx.Dims[dims.CellDim], float64],
     primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float64],
     primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], float64],
@@ -116,23 +106,19 @@ def diffusion_init(
     primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float64],
     dual_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float64],
     dual_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float64],
+    edge_center_lat: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
+    edge_center_lon: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
+    primal_normal_x: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
+    primal_normal_y: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
+    global_root: gtx.int32,
+    global_level: gtx.int32,
+    lowest_layer_thickness: float64,
+    model_top_height: float64,
+    stretch_factor: float64,
 ):
     logger.info(f"Using Device = {device}")
 
-    # ICON grid
-    if device.name == "GPU":
-        on_gpu = True
-    else:
-        on_gpu = False
-
-    grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
-
-    icon_grid = load_grid_from_file(
-        grid_file=grid_file_path,
-        num_levels=num_levels,
-        on_gpu=on_gpu,
-        limited_area=True if limited_area else False,
-    )
+    global_grid_params = GlobalGridParams(root=global_root, level=global_level)
 
     # Edge geometry
     edge_params = geometry.EdgeParams(
@@ -144,18 +130,28 @@ def diffusion_init(
         primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim),
         dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim),
         dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim),
-        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, dims.ECVDim),
-        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, dims.ECVDim),
-        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, dims.ECVDim),
-        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, dims.ECVDim),
+        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, dims.ECDim),
+        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, dims.ECDim),
+        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, dims.ECDim),
+        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, dims.ECDim),
         edge_areas=edge_areas,
         f_e=f_e,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
     )
 
-    # cell geometry
-    cell_params = geometry.CellParams(area=cell_areas, mean_cell_area=mean_cell_area)
+    # Cell geometry
+    cell_params = geometry.CellParams.from_global_num_cells(
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        area=cell_areas,
+        global_num_cells=global_grid_params.num_cells,
+        length_rescale_factor=1.0,
+    )
 
-    # diffusion parameters
+    # Diffusion parameters
     config = DiffusionConfig(
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
@@ -170,29 +166,30 @@ def diffusion_init(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         velocity_boundary_diffusion_denom=denom_diffu_v,
-        max_nudging_coeff=nudge_max_coeff
-        / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,  # ICON already scales this, we
-        # need to unscale it as it will be rescaled in diffusion.py
+        max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         shear_type=TurbulenceShearForcingType(itype_sher),
     )
 
     diffusion_params = DiffusionParams(config)
 
-    # vertical grid config
+    # Vertical grid config
     vertical_config = VerticalGridConfig(
-        num_levels=num_levels,
+        num_levels=icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=rayleigh_damping_height,
     )
 
-    # vertical parameters
+    # Vertical parameters
     vertical_params = VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
-        vct_b=None,
+        vct_b=vct_b,
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
-    # metric state
+    # Metric state
     metric_state = DiffusionMetricState(
         mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
@@ -202,7 +199,7 @@ def diffusion_init(
         zd_diffcoef=zd_diffcoef,
     )
 
-    # interpolation state
+    # Interpolation state
     interpolation_state = DiffusionInterpolationState(
         e_bln_c_s=as_1D_sparse_field(e_bln_c_s, dims.CEDim),
         rbf_coeff_1=rbf_coeff_1,
@@ -213,7 +210,9 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
-    diffusion_granule.init(
+
+    # Initialize the diffusion granule
+    common.GLOBAL_STATE["diffusion_granule"].init(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -255,12 +254,71 @@ def diffusion_run(
     )
 
     if linit:
-        diffusion_granule.initial_run(
+        common.GLOBAL_STATE["diffusion_granule"].initial_run(
             diagnostic_state,
             prognostic_state,
             dtime,
         )
     else:
-        diffusion_granule.run(
+        common.GLOBAL_STATE["diffusion_granule"].run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )
+
+
+def grid_init(
+    cell_starts: Field[[CellIndexDim], int32],
+    cell_ends: Field[[CellIndexDim], int32],
+    vertex_starts: Field[[VertexIndexDim], int32],
+    vertex_ends: Field[[VertexIndexDim], int32],
+    edge_starts: Field[[EdgeIndexDim], int32],
+    edge_ends: Field[[EdgeIndexDim], int32],
+    c2e: Field[[dims.CellDim, dims.C2EDim], int32],
+    e2c: Field[[dims.EdgeDim, dims.E2CDim], int32],
+    c2e2c: Field[[dims.CellDim, dims.C2E2CDim], int32],
+    e2c2e: Field[[dims.EdgeDim, dims.E2C2EDim], int32],
+    e2v: Field[[dims.EdgeDim, dims.E2VDim], int32],
+    v2e: Field[[dims.VertexDim, dims.V2EDim], int32],
+    v2c: Field[[dims.VertexDim, dims.V2CDim], int32],
+    e2c2v: Field[[dims.EdgeDim, dims.E2C2VDim], int32],
+    c2v: Field[[dims.CellDim, dims.C2VDim], int32],
+    global_root: int32,
+    global_level: int32,
+    num_vertices: int32,
+    num_cells: int32,
+    num_edges: int32,
+    vertical_size: int32,
+    limited_area: bool,
+):
+    global icon_grid
+
+    # todo: write this logic into template.py
+    if isinstance(limited_area, int):
+        limited_area = bool(limited_area)
+
+    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
+
+    icon_grid = common.construct_icon_grid(
+        grid_id="icon_grid",
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+    )
