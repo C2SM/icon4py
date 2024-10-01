@@ -6,21 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, minimum, where
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import minimum, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _limit_vertical_parabola_semi_monotonically(
-    l_limit: fa.CellKField[int32],
-    p_face: fa.CellKField[wpfloat],
-    p_cc: fa.CellKField[wpfloat],
-) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+    l_limit: fa.CellKField[gtx.int32],
+    p_face: fa.CellKField[ta.wpfloat],
+    p_cc: fa.CellKField[ta.wpfloat],
+) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     q_face_up, q_face_low = where(
         l_limit != 0,
         where(
@@ -28,8 +26,8 @@ def _limit_vertical_parabola_semi_monotonically(
             (p_cc, p_cc),
             where(
                 p_face > p_face(Koff[1]),
-                (wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face(Koff[1]), p_face(Koff[1])),
-                (p_face, wpfloat(3.0) * p_cc - wpfloat(2.0) * p_face),
+                (3.0 * p_cc - 2.0 * p_face(Koff[1]), p_face(Koff[1])),
+                (p_face, 3.0 * p_cc - 2.0 * p_face),
             ),
         ),
         (p_face, p_face(Koff[1])),
@@ -38,17 +36,17 @@ def _limit_vertical_parabola_semi_monotonically(
     return q_face_up, q_face_low
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def limit_vertical_parabola_semi_monotonically(
-    l_limit: fa.CellKField[int32],
-    p_face: fa.CellKField[wpfloat],
-    p_cc: fa.CellKField[wpfloat],
-    p_face_up: fa.CellKField[wpfloat],
-    p_face_low: fa.CellKField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    l_limit: fa.CellKField[gtx.int32],
+    p_face: fa.CellKField[ta.wpfloat],
+    p_cc: fa.CellKField[ta.wpfloat],
+    p_face_up: fa.CellKField[ta.wpfloat],
+    p_face_low: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _limit_vertical_parabola_semi_monotonically(
         l_limit,

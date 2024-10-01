@@ -6,38 +6,37 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, where
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
-from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO (dastrm): this stencil has no test
 
 
-@field_operator
+@gtx.field_operator
 def _apply_positive_definite_horizontal_multiplicative_flux_factor(
-    r_m: fa.CellKField[wpfloat],
-    p_mflx_tracer_h: fa.EdgeKField[wpfloat],
-) -> fa.EdgeKField[wpfloat]:
+    r_m: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+) -> fa.EdgeKField[ta.wpfloat]:
     p_mflx_tracer_h_out = where(
-        p_mflx_tracer_h >= wpfloat(0.0),
+        p_mflx_tracer_h >= 0.0,
         p_mflx_tracer_h * r_m(E2C[0]),
         p_mflx_tracer_h * r_m(E2C[1]),
     )
     return p_mflx_tracer_h_out
 
 
-@program
+@gtx.program
 def apply_positive_definite_horizontal_multiplicative_flux_factor(
-    r_m: fa.CellKField[wpfloat],
-    p_mflx_tracer_h: fa.EdgeKField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    r_m: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _apply_positive_definite_horizontal_multiplicative_flux_factor(
         r_m,

@@ -6,23 +6,23 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_values import (
     compute_ppm_quadratic_face_values,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import Output, StencilTest, random_field
 
 
 outslice = (slice(None), slice(1, None))
 
 
-class TestComputePpmQuadraticFaceValues(StencilTest):
+class TestComputePpmQuadraticFaceValues(helpers.StencilTest):
     PROGRAM = compute_ppm_quadratic_face_values
-    OUTPUTS = (Output("p_face", refslice=outslice, gtslice=outslice),)
+    OUTPUTS = (helpers.Output("p_face", refslice=outslice, gtslice=outslice),)
 
     @staticmethod
     def reference(grid, p_cc: np.array, p_cellhgt_mc_now: np.array, **kwargs):
@@ -36,15 +36,15 @@ class TestComputePpmQuadraticFaceValues(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_face = random_field(grid, dims.CellDim, dims.KDim)
-        p_cc = random_field(grid, dims.CellDim, dims.KDim)
-        p_cellhgt_mc_now = random_field(grid, dims.CellDim, dims.KDim)
+        p_face = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        p_cellhgt_mc_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
         return dict(
             p_cc=p_cc,
             p_cellhgt_mc_now=p_cellhgt_mc_now,
             p_face=p_face,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=1,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

@@ -6,31 +6,29 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import broadcast
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
 # TODO (dastrm): move this highly generic stencil to common
 # TODO (dastrm): this stencil has no test
 
 
-@field_operator
-def _init_constant_cell_kdim_field(value: wpfloat) -> fa.CellKField[wpfloat]:
+@gtx.field_operator
+def _init_constant_cell_kdim_field(value: ta.wpfloat) -> fa.CellKField[ta.wpfloat]:
     return broadcast(value, (dims.CellDim, dims.KDim))
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_constant_cell_kdim_field(
-    field: fa.CellKField[wpfloat],
-    value: wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    field: fa.CellKField[ta.wpfloat],
+    value: ta.wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _init_constant_cell_kdim_field(
         value,

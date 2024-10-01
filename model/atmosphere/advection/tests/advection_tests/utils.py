@@ -10,10 +10,9 @@ import logging
 
 
 from icon4py.model.atmosphere.advection import advection, advection_states
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
@@ -114,8 +113,8 @@ def log_dbg(field, name=""):
 def log_serialized(
     diagnostic_state: advection_states.AdvectionDiagnosticState,
     prep_adv: advection_states.AdvectionPrepAdvState,
-    p_tracer_now: fa.CellKField[wpfloat],
-    dtime: wpfloat,
+    p_tracer_now: fa.CellKField[ta.wpfloat],
+    dtime: ta.wpfloat,
 ):
     log_dbg(diagnostic_state.airmass_now.asnumpy(), "airmass_now")
     log_dbg(diagnostic_state.airmass_new.asnumpy(), "airmass_new")
@@ -131,8 +130,8 @@ def verify_advection_fields(
     grid: icon_grid.IconGrid,
     diagnostic_state: advection_states.AdvectionDiagnosticState,
     diagnostic_state_ref: advection_states.AdvectionDiagnosticState,
-    p_tracer_new: fa.CellKField[wpfloat],
-    p_tracer_new_ref: fa.CellKField[wpfloat],
+    p_tracer_new: fa.CellKField[ta.wpfloat],
+    p_tracer_new_ref: fa.CellKField[ta.wpfloat],
 ):
     # cell indices
     cell_domain = h_grid.domain(dims.CellDim)

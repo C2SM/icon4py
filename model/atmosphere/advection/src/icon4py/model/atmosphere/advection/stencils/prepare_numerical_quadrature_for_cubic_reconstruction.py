@@ -6,209 +6,240 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import abs, int32, maximum, where
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import abs, astype, maximum, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _prepare_numerical_quadrature_for_cubic_reconstruction(
-    p_coords_dreg_v_1_x: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_2_x: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_3_x: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_4_x: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_1_y: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_2_y: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_3_y: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_4_y: fa.EdgeKField[vpfloat],
-    shape_func_1_1: wpfloat,
-    shape_func_2_1: wpfloat,
-    shape_func_3_1: wpfloat,
-    shape_func_4_1: wpfloat,
-    shape_func_1_2: wpfloat,
-    shape_func_2_2: wpfloat,
-    shape_func_3_2: wpfloat,
-    shape_func_4_2: wpfloat,
-    shape_func_1_3: wpfloat,
-    shape_func_2_3: wpfloat,
-    shape_func_3_3: wpfloat,
-    shape_func_4_3: wpfloat,
-    shape_func_1_4: wpfloat,
-    shape_func_2_4: wpfloat,
-    shape_func_3_4: wpfloat,
-    shape_func_4_4: wpfloat,
-    zeta_1: wpfloat,
-    zeta_2: wpfloat,
-    zeta_3: wpfloat,
-    zeta_4: wpfloat,
-    eta_1: wpfloat,
-    eta_2: wpfloat,
-    eta_3: wpfloat,
-    eta_4: wpfloat,
-    wgt_zeta_1: wpfloat,
-    wgt_zeta_2: wpfloat,
-    wgt_eta_1: wpfloat,
-    wgt_eta_2: wpfloat,
-    dbl_eps: wpfloat,
-    eps: wpfloat,
+    p_coords_dreg_v_1_x: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_2_x: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_3_x: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_4_x: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_1_y: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_2_y: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_3_y: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_4_y: fa.EdgeKField[ta.vpfloat],
+    shape_func_1_1: ta.wpfloat,
+    shape_func_2_1: ta.wpfloat,
+    shape_func_3_1: ta.wpfloat,
+    shape_func_4_1: ta.wpfloat,
+    shape_func_1_2: ta.wpfloat,
+    shape_func_2_2: ta.wpfloat,
+    shape_func_3_2: ta.wpfloat,
+    shape_func_4_2: ta.wpfloat,
+    shape_func_1_3: ta.wpfloat,
+    shape_func_2_3: ta.wpfloat,
+    shape_func_3_3: ta.wpfloat,
+    shape_func_4_3: ta.wpfloat,
+    shape_func_1_4: ta.wpfloat,
+    shape_func_2_4: ta.wpfloat,
+    shape_func_3_4: ta.wpfloat,
+    shape_func_4_4: ta.wpfloat,
+    zeta_1: ta.wpfloat,
+    zeta_2: ta.wpfloat,
+    zeta_3: ta.wpfloat,
+    zeta_4: ta.wpfloat,
+    eta_1: ta.wpfloat,
+    eta_2: ta.wpfloat,
+    eta_3: ta.wpfloat,
+    eta_4: ta.wpfloat,
+    wgt_zeta_1: ta.wpfloat,
+    wgt_zeta_2: ta.wpfloat,
+    wgt_eta_1: ta.wpfloat,
+    wgt_eta_2: ta.wpfloat,
+    dbl_eps: ta.wpfloat,
+    eps: ta.wpfloat,
 ) -> tuple[
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
 ]:
-    z_wgt_1 = wpfloat(0.0625) * wgt_zeta_1 * wgt_eta_1
-    z_wgt_2 = wpfloat(0.0625) * wgt_zeta_1 * wgt_eta_2
-    z_wgt_3 = wpfloat(0.0625) * wgt_zeta_2 * wgt_eta_1
-    z_wgt_4 = wpfloat(0.0625) * wgt_zeta_2 * wgt_eta_2
+    z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
+    z_wgt_2 = 0.0625 * wgt_zeta_1 * wgt_eta_2
+    z_wgt_3 = 0.0625 * wgt_zeta_2 * wgt_eta_1
+    z_wgt_4 = 0.0625 * wgt_zeta_2 * wgt_eta_2
 
-    z_eta_1_1 = wpfloat(1.0) - eta_1
-    z_eta_2_1 = wpfloat(1.0) - eta_2
-    z_eta_3_1 = wpfloat(1.0) - eta_3
-    z_eta_4_1 = wpfloat(1.0) - eta_4
-    z_eta_1_2 = wpfloat(1.0) + eta_1
-    z_eta_2_2 = wpfloat(1.0) + eta_2
-    z_eta_3_2 = wpfloat(1.0) + eta_3
-    z_eta_4_2 = wpfloat(1.0) + eta_4
-    z_eta_1_3 = wpfloat(1.0) - zeta_1
-    z_eta_2_3 = wpfloat(1.0) - zeta_2
-    z_eta_3_3 = wpfloat(1.0) - zeta_3
-    z_eta_4_3 = wpfloat(1.0) - zeta_4
-    z_eta_1_4 = wpfloat(1.0) + zeta_1
-    z_eta_2_4 = wpfloat(1.0) + zeta_2
-    z_eta_3_4 = wpfloat(1.0) + zeta_3
-    z_eta_4_4 = wpfloat(1.0) + zeta_4
+    z_eta_1_1 = 1.0 - eta_1
+    z_eta_2_1 = 1.0 - eta_2
+    z_eta_3_1 = 1.0 - eta_3
+    z_eta_4_1 = 1.0 - eta_4
+    z_eta_1_2 = 1.0 + eta_1
+    z_eta_2_2 = 1.0 + eta_2
+    z_eta_3_2 = 1.0 + eta_3
+    z_eta_4_2 = 1.0 + eta_4
+    z_eta_1_3 = 1.0 - zeta_1
+    z_eta_2_3 = 1.0 - zeta_2
+    z_eta_3_3 = 1.0 - zeta_3
+    z_eta_4_3 = 1.0 - zeta_4
+    z_eta_1_4 = 1.0 + zeta_1
+    z_eta_2_4 = 1.0 + zeta_2
+    z_eta_3_4 = 1.0 + zeta_3
+    z_eta_4_4 = 1.0 + zeta_4
 
     wgt_t_detjac_1 = dbl_eps + z_wgt_1 * (
         (
-            z_eta_1_1 * (p_coords_dreg_v_2_x - p_coords_dreg_v_1_x)
-            + z_eta_1_2 * (p_coords_dreg_v_3_x - p_coords_dreg_v_4_x)
+            z_eta_1_1
+            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
+            + z_eta_1_2
+            * (astype(p_coords_dreg_v_3_x, wpfloat) - astype(p_coords_dreg_v_4_x, wpfloat))
         )
         * (
-            z_eta_1_3 * (p_coords_dreg_v_4_y - p_coords_dreg_v_1_y)
-            - z_eta_1_4 * (p_coords_dreg_v_2_y - p_coords_dreg_v_3_y)
+            z_eta_1_3
+            * (astype(p_coords_dreg_v_4_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
+            - z_eta_1_4
+            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_3_y, wpfloat))
         )
         - (
-            z_eta_1_1 * (p_coords_dreg_v_2_y - p_coords_dreg_v_1_y)
-            + z_eta_1_2 * (p_coords_dreg_v_3_y - p_coords_dreg_v_4_y)
+            z_eta_1_1
+            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
+            + z_eta_1_2
+            * (astype(p_coords_dreg_v_3_y, wpfloat) - astype(p_coords_dreg_v_4_y, wpfloat))
         )
         * (
-            z_eta_1_3 * (p_coords_dreg_v_4_x - p_coords_dreg_v_1_x)
-            - z_eta_1_4 * (p_coords_dreg_v_2_x - p_coords_dreg_v_3_x)
+            z_eta_1_3
+            * (astype(p_coords_dreg_v_4_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
+            - z_eta_1_4
+            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_3_x, wpfloat))
         )
     )
     wgt_t_detjac_2 = dbl_eps + z_wgt_2 * (
         (
-            z_eta_2_1 * (p_coords_dreg_v_2_x - p_coords_dreg_v_1_x)
-            + z_eta_2_2 * (p_coords_dreg_v_3_x - p_coords_dreg_v_4_x)
+            z_eta_2_1
+            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
+            + z_eta_2_2
+            * (astype(p_coords_dreg_v_3_x, wpfloat) - astype(p_coords_dreg_v_4_x, wpfloat))
         )
         * (
-            z_eta_2_3 * (p_coords_dreg_v_4_y - p_coords_dreg_v_1_y)
-            - z_eta_2_4 * (p_coords_dreg_v_2_y - p_coords_dreg_v_3_y)
+            z_eta_2_3
+            * (astype(p_coords_dreg_v_4_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
+            - z_eta_2_4
+            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_3_y, wpfloat))
         )
         - (
-            z_eta_2_1 * (p_coords_dreg_v_2_y - p_coords_dreg_v_1_y)
-            + z_eta_2_2 * (p_coords_dreg_v_3_y - p_coords_dreg_v_4_y)
+            z_eta_2_1
+            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
+            + z_eta_2_2
+            * (astype(p_coords_dreg_v_3_y, wpfloat) - astype(p_coords_dreg_v_4_y, wpfloat))
         )
         * (
-            z_eta_2_3 * (p_coords_dreg_v_4_x - p_coords_dreg_v_1_x)
-            - z_eta_2_4 * (p_coords_dreg_v_2_x - p_coords_dreg_v_3_x)
+            z_eta_2_3
+            * (astype(p_coords_dreg_v_4_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
+            - z_eta_2_4
+            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_3_x, wpfloat))
         )
     )
     wgt_t_detjac_3 = dbl_eps + z_wgt_3 * (
         (
-            z_eta_3_1 * (p_coords_dreg_v_2_x - p_coords_dreg_v_1_x)
-            + z_eta_3_2 * (p_coords_dreg_v_3_x - p_coords_dreg_v_4_x)
+            z_eta_3_1
+            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
+            + z_eta_3_2
+            * (astype(p_coords_dreg_v_3_x, wpfloat) - astype(p_coords_dreg_v_4_x, wpfloat))
         )
         * (
-            z_eta_3_3 * (p_coords_dreg_v_4_y - p_coords_dreg_v_1_y)
-            - z_eta_3_4 * (p_coords_dreg_v_2_y - p_coords_dreg_v_3_y)
+            z_eta_3_3
+            * (astype(p_coords_dreg_v_4_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
+            - z_eta_3_4
+            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_3_y, wpfloat))
         )
         - (
-            z_eta_3_1 * (p_coords_dreg_v_2_y - p_coords_dreg_v_1_y)
-            + z_eta_3_2 * (p_coords_dreg_v_3_y - p_coords_dreg_v_4_y)
+            z_eta_3_1
+            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
+            + z_eta_3_2
+            * (astype(p_coords_dreg_v_3_y, wpfloat) - astype(p_coords_dreg_v_4_y, wpfloat))
         )
         * (
-            z_eta_3_3 * (p_coords_dreg_v_4_x - p_coords_dreg_v_1_x)
-            - z_eta_3_4 * (p_coords_dreg_v_2_x - p_coords_dreg_v_3_x)
+            z_eta_3_3
+            * (astype(p_coords_dreg_v_4_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
+            - z_eta_3_4
+            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_3_x, wpfloat))
         )
     )
     wgt_t_detjac_4 = dbl_eps + z_wgt_4 * (
         (
-            z_eta_4_1 * (p_coords_dreg_v_2_x - p_coords_dreg_v_1_x)
-            + z_eta_4_2 * (p_coords_dreg_v_3_x - p_coords_dreg_v_4_x)
+            z_eta_4_1
+            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
+            + z_eta_4_2
+            * (astype(p_coords_dreg_v_3_x, wpfloat) - astype(p_coords_dreg_v_4_x, wpfloat))
         )
         * (
-            z_eta_4_3 * (p_coords_dreg_v_4_y - p_coords_dreg_v_1_y)
-            - z_eta_4_4 * (p_coords_dreg_v_2_y - p_coords_dreg_v_3_y)
+            z_eta_4_3
+            * (astype(p_coords_dreg_v_4_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
+            - z_eta_4_4
+            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_3_y, wpfloat))
         )
         - (
-            z_eta_4_1 * (p_coords_dreg_v_2_y - p_coords_dreg_v_1_y)
-            + z_eta_4_2 * (p_coords_dreg_v_3_y - p_coords_dreg_v_4_y)
+            z_eta_4_1
+            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
+            + z_eta_4_2
+            * (astype(p_coords_dreg_v_3_y, wpfloat) - astype(p_coords_dreg_v_4_y, wpfloat))
         )
         * (
-            z_eta_4_3 * (p_coords_dreg_v_4_x - p_coords_dreg_v_1_x)
-            - z_eta_4_4 * (p_coords_dreg_v_2_x - p_coords_dreg_v_3_x)
+            z_eta_4_3
+            * (astype(p_coords_dreg_v_4_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
+            - z_eta_4_4
+            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_3_x, wpfloat))
         )
     )
 
     z_gauss_pts_1_x = (
-        shape_func_1_1 * p_coords_dreg_v_1_x
-        + shape_func_2_1 * p_coords_dreg_v_2_x
-        + shape_func_3_1 * p_coords_dreg_v_3_x
-        + shape_func_4_1 * p_coords_dreg_v_4_x
+        shape_func_1_1 * astype(p_coords_dreg_v_1_x, wpfloat)
+        + shape_func_2_1 * astype(p_coords_dreg_v_2_x, wpfloat)
+        + shape_func_3_1 * astype(p_coords_dreg_v_3_x, wpfloat)
+        + shape_func_4_1 * astype(p_coords_dreg_v_4_x, wpfloat)
     )
     z_gauss_pts_1_y = (
-        shape_func_1_1 * p_coords_dreg_v_1_y
-        + shape_func_2_1 * p_coords_dreg_v_2_y
-        + shape_func_3_1 * p_coords_dreg_v_3_y
-        + shape_func_4_1 * p_coords_dreg_v_4_y
+        shape_func_1_1 * astype(p_coords_dreg_v_1_y, wpfloat)
+        + shape_func_2_1 * astype(p_coords_dreg_v_2_y, wpfloat)
+        + shape_func_3_1 * astype(p_coords_dreg_v_3_y, wpfloat)
+        + shape_func_4_1 * astype(p_coords_dreg_v_4_y, wpfloat)
     )
     z_gauss_pts_2_x = (
-        shape_func_1_2 * p_coords_dreg_v_1_x
-        + shape_func_2_2 * p_coords_dreg_v_2_x
-        + shape_func_3_2 * p_coords_dreg_v_3_x
-        + shape_func_4_2 * p_coords_dreg_v_4_x
+        shape_func_1_2 * astype(p_coords_dreg_v_1_x, wpfloat)
+        + shape_func_2_2 * astype(p_coords_dreg_v_2_x, wpfloat)
+        + shape_func_3_2 * astype(p_coords_dreg_v_3_x, wpfloat)
+        + shape_func_4_2 * astype(p_coords_dreg_v_4_x, wpfloat)
     )
     z_gauss_pts_2_y = (
-        shape_func_1_2 * p_coords_dreg_v_1_y
-        + shape_func_2_2 * p_coords_dreg_v_2_y
-        + shape_func_3_2 * p_coords_dreg_v_3_y
-        + shape_func_4_2 * p_coords_dreg_v_4_y
+        shape_func_1_2 * astype(p_coords_dreg_v_1_y, wpfloat)
+        + shape_func_2_2 * astype(p_coords_dreg_v_2_y, wpfloat)
+        + shape_func_3_2 * astype(p_coords_dreg_v_3_y, wpfloat)
+        + shape_func_4_2 * astype(p_coords_dreg_v_4_y, wpfloat)
     )
     z_gauss_pts_3_x = (
-        shape_func_1_3 * p_coords_dreg_v_1_x
-        + shape_func_2_3 * p_coords_dreg_v_2_x
-        + shape_func_3_3 * p_coords_dreg_v_3_x
-        + shape_func_4_3 * p_coords_dreg_v_4_x
+        shape_func_1_3 * astype(p_coords_dreg_v_1_x, wpfloat)
+        + shape_func_2_3 * astype(p_coords_dreg_v_2_x, wpfloat)
+        + shape_func_3_3 * astype(p_coords_dreg_v_3_x, wpfloat)
+        + shape_func_4_3 * astype(p_coords_dreg_v_4_x, wpfloat)
     )
     z_gauss_pts_3_y = (
-        shape_func_1_3 * p_coords_dreg_v_1_y
-        + shape_func_2_3 * p_coords_dreg_v_2_y
-        + shape_func_3_3 * p_coords_dreg_v_3_y
-        + shape_func_4_3 * p_coords_dreg_v_4_y
+        shape_func_1_3 * astype(p_coords_dreg_v_1_y, wpfloat)
+        + shape_func_2_3 * astype(p_coords_dreg_v_2_y, wpfloat)
+        + shape_func_3_3 * astype(p_coords_dreg_v_3_y, wpfloat)
+        + shape_func_4_3 * astype(p_coords_dreg_v_4_y, wpfloat)
     )
     z_gauss_pts_4_x = (
-        shape_func_1_4 * p_coords_dreg_v_1_x
-        + shape_func_2_4 * p_coords_dreg_v_2_x
-        + shape_func_3_4 * p_coords_dreg_v_3_x
-        + shape_func_4_4 * p_coords_dreg_v_4_x
+        shape_func_1_4 * astype(p_coords_dreg_v_1_x, wpfloat)
+        + shape_func_2_4 * astype(p_coords_dreg_v_2_x, wpfloat)
+        + shape_func_3_4 * astype(p_coords_dreg_v_3_x, wpfloat)
+        + shape_func_4_4 * astype(p_coords_dreg_v_4_x, wpfloat)
     )
     z_gauss_pts_4_y = (
-        shape_func_1_4 * p_coords_dreg_v_1_y
-        + shape_func_2_4 * p_coords_dreg_v_2_y
-        + shape_func_3_4 * p_coords_dreg_v_3_y
-        + shape_func_4_4 * p_coords_dreg_v_4_y
+        shape_func_1_4 * astype(p_coords_dreg_v_1_y, wpfloat)
+        + shape_func_2_4 * astype(p_coords_dreg_v_2_y, wpfloat)
+        + shape_func_3_4 * astype(p_coords_dreg_v_3_y, wpfloat)
+        + shape_func_4_4 * astype(p_coords_dreg_v_4_y, wpfloat)
     )
 
     p_quad_vector_sum_1 = wgt_t_detjac_1 + wgt_t_detjac_2 + wgt_t_detjac_3 + wgt_t_detjac_4
@@ -268,80 +299,78 @@ def _prepare_numerical_quadrature_for_cubic_reconstruction(
     )
 
     z_area = p_quad_vector_sum_1
-    p_dreg_area_out = where(
-        z_area >= vpfloat(0.0), maximum(eps, abs(z_area)), -maximum(eps, abs(z_area))
-    )
+    p_dreg_area_out = where(z_area >= 0.0, maximum(eps, abs(z_area)), -maximum(eps, abs(z_area)))
 
     return (
-        p_quad_vector_sum_1,
-        p_quad_vector_sum_2,
-        p_quad_vector_sum_3,
-        p_quad_vector_sum_4,
-        p_quad_vector_sum_5,
-        p_quad_vector_sum_6,
-        p_quad_vector_sum_7,
-        p_quad_vector_sum_8,
-        p_quad_vector_sum_9,
-        p_quad_vector_sum_10,
-        p_dreg_area_out,
+        astype(p_quad_vector_sum_1, vpfloat),
+        astype(p_quad_vector_sum_2, vpfloat),
+        astype(p_quad_vector_sum_3, vpfloat),
+        astype(p_quad_vector_sum_4, vpfloat),
+        astype(p_quad_vector_sum_5, vpfloat),
+        astype(p_quad_vector_sum_6, vpfloat),
+        astype(p_quad_vector_sum_7, vpfloat),
+        astype(p_quad_vector_sum_8, vpfloat),
+        astype(p_quad_vector_sum_9, vpfloat),
+        astype(p_quad_vector_sum_10, vpfloat),
+        astype(p_dreg_area_out, vpfloat),
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def prepare_numerical_quadrature_for_cubic_reconstruction(
-    p_coords_dreg_v_1_x: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_2_x: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_3_x: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_4_x: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_1_y: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_2_y: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_3_y: fa.EdgeKField[vpfloat],
-    p_coords_dreg_v_4_y: fa.EdgeKField[vpfloat],
-    shape_func_1_1: wpfloat,
-    shape_func_2_1: wpfloat,
-    shape_func_3_1: wpfloat,
-    shape_func_4_1: wpfloat,
-    shape_func_1_2: wpfloat,
-    shape_func_2_2: wpfloat,
-    shape_func_3_2: wpfloat,
-    shape_func_4_2: wpfloat,
-    shape_func_1_3: wpfloat,
-    shape_func_2_3: wpfloat,
-    shape_func_3_3: wpfloat,
-    shape_func_4_3: wpfloat,
-    shape_func_1_4: wpfloat,
-    shape_func_2_4: wpfloat,
-    shape_func_3_4: wpfloat,
-    shape_func_4_4: wpfloat,
-    zeta_1: wpfloat,
-    zeta_2: wpfloat,
-    zeta_3: wpfloat,
-    zeta_4: wpfloat,
-    eta_1: wpfloat,
-    eta_2: wpfloat,
-    eta_3: wpfloat,
-    eta_4: wpfloat,
-    wgt_zeta_1: wpfloat,
-    wgt_zeta_2: wpfloat,
-    wgt_eta_1: wpfloat,
-    wgt_eta_2: wpfloat,
-    dbl_eps: wpfloat,
-    eps: wpfloat,
-    p_quad_vector_sum_1: fa.EdgeKField[vpfloat],
-    p_quad_vector_sum_2: fa.EdgeKField[vpfloat],
-    p_quad_vector_sum_3: fa.EdgeKField[vpfloat],
-    p_quad_vector_sum_4: fa.EdgeKField[vpfloat],
-    p_quad_vector_sum_5: fa.EdgeKField[vpfloat],
-    p_quad_vector_sum_6: fa.EdgeKField[vpfloat],
-    p_quad_vector_sum_7: fa.EdgeKField[vpfloat],
-    p_quad_vector_sum_8: fa.EdgeKField[vpfloat],
-    p_quad_vector_sum_9: fa.EdgeKField[vpfloat],
-    p_quad_vector_sum_10: fa.EdgeKField[vpfloat],
-    p_dreg_area_out: fa.EdgeKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    p_coords_dreg_v_1_x: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_2_x: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_3_x: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_4_x: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_1_y: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_2_y: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_3_y: fa.EdgeKField[ta.vpfloat],
+    p_coords_dreg_v_4_y: fa.EdgeKField[ta.vpfloat],
+    shape_func_1_1: ta.wpfloat,
+    shape_func_2_1: ta.wpfloat,
+    shape_func_3_1: ta.wpfloat,
+    shape_func_4_1: ta.wpfloat,
+    shape_func_1_2: ta.wpfloat,
+    shape_func_2_2: ta.wpfloat,
+    shape_func_3_2: ta.wpfloat,
+    shape_func_4_2: ta.wpfloat,
+    shape_func_1_3: ta.wpfloat,
+    shape_func_2_3: ta.wpfloat,
+    shape_func_3_3: ta.wpfloat,
+    shape_func_4_3: ta.wpfloat,
+    shape_func_1_4: ta.wpfloat,
+    shape_func_2_4: ta.wpfloat,
+    shape_func_3_4: ta.wpfloat,
+    shape_func_4_4: ta.wpfloat,
+    zeta_1: ta.wpfloat,
+    zeta_2: ta.wpfloat,
+    zeta_3: ta.wpfloat,
+    zeta_4: ta.wpfloat,
+    eta_1: ta.wpfloat,
+    eta_2: ta.wpfloat,
+    eta_3: ta.wpfloat,
+    eta_4: ta.wpfloat,
+    wgt_zeta_1: ta.wpfloat,
+    wgt_zeta_2: ta.wpfloat,
+    wgt_eta_1: ta.wpfloat,
+    wgt_eta_2: ta.wpfloat,
+    dbl_eps: ta.wpfloat,
+    eps: ta.wpfloat,
+    p_quad_vector_sum_1: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_2: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_3: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_4: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_5: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_6: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_7: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_8: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_9: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_10: fa.EdgeKField[ta.vpfloat],
+    p_dreg_area_out: fa.EdgeKField[ta.vpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _prepare_numerical_quadrature_for_cubic_reconstruction(
         p_coords_dreg_v_1_x,

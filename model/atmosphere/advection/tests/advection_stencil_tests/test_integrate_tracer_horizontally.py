@@ -6,24 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_horizontally import (
     integrate_tracer_horizontally,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    as_1D_sparse_field,
-    random_field,
-    reshape,
-    zero_field,
-)
 
 
-class TestIntegrateTracerHorizontally(StencilTest):
+class TestIntegrateTracerHorizontally(helpers.StencilTest):
     PROGRAM = integrate_tracer_horizontally
     OUTPUTS = ("tracer_new_hor",)
 
@@ -39,7 +33,7 @@ class TestIntegrateTracerHorizontally(StencilTest):
         p_dtime,
         **kwargs,
     ) -> np.array:
-        geofac_div = reshape(geofac_div, grid.connectivities[dims.C2EDim].shape)
+        geofac_div = helpers.reshape(geofac_div, grid.connectivities[dims.C2EDim].shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         tracer_new_hor = (
             tracer_now * rhodz_now
@@ -51,15 +45,15 @@ class TestIntegrateTracerHorizontally(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_mflx_tracer_h = random_field(grid, dims.EdgeDim, dims.KDim)
-        deepatmo_divh = random_field(grid, dims.KDim)
-        tracer_now = random_field(grid, dims.CellDim, dims.KDim)
-        rhodz_now = random_field(grid, dims.CellDim, dims.KDim)
-        rhodz_new = random_field(grid, dims.CellDim, dims.KDim)
-        geofac_div = random_field(grid, dims.CellDim, dims.C2EDim)
-        geofac_div_new = as_1D_sparse_field(geofac_div, dims.CEDim)
+        p_mflx_tracer_h = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        deepatmo_divh = helpers.random_field(grid, dims.KDim)
+        tracer_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        rhodz_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        rhodz_new = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        geofac_div = helpers.random_field(grid, dims.CellDim, dims.C2EDim)
+        geofac_div_new = helpers.as_1D_sparse_field(geofac_div, dims.CEDim)
         p_dtime = np.float64(5.0)
-        tracer_new_hor = zero_field(grid, dims.CellDim, dims.KDim)
+        tracer_new_hor = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,
             deepatmo_divh=deepatmo_divh,
@@ -70,7 +64,7 @@ class TestIntegrateTracerHorizontally(StencilTest):
             p_dtime=p_dtime,
             tracer_new_hor=tracer_new_hor,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

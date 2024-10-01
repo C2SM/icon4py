@@ -6,24 +6,19 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_list_for_cubic_reconstruction import (
     prepare_numerical_quadrature_list_for_cubic_reconstruction,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    constant_field,
-    random_field,
-    zero_field,
-)
 
 
 @pytest.mark.slow_tests
-class TestPrepareNumericalQuadratureListForCubicReconstruction(StencilTest):
+class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTest):
     PROGRAM = prepare_numerical_quadrature_list_for_cubic_reconstruction
     OUTPUTS = (
         "p_quad_vector_sum_1",
@@ -525,15 +520,15 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        famask_int = constant_field(grid, 1, dims.EdgeDim, dims.KDim, dtype=int32)
-        p_coords_dreg_v_1_x = random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_x = random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_x = random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_x = random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_1_y = random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_y = random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_y = random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_y = random_field(grid, dims.EdgeDim, dims.KDim)
+        famask_int = helpers.constant_field(grid, 1, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_coords_dreg_v_1_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_1_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         shape_func_1_1 = 0.001
         shape_func_2_1 = 0.001
         shape_func_3_1 = 0.001
@@ -564,18 +559,18 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(StencilTest):
         wgt_eta_2 = 0.007
         dbl_eps = np.float64(0.1)
         eps = 0.1
-        p_dreg_area_in = random_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_1 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_2 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_3 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_4 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_5 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_6 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_7 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_8 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_9 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_10 = zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_dreg_area = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_dreg_area_in = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_1 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_2 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_3 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_4 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_5 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_6 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_7 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_8 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_9 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_10 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_dreg_area = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             famask_int=famask_int,
             p_coords_dreg_v_1_x=p_coords_dreg_v_1_x,
@@ -629,7 +624,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(StencilTest):
             p_quad_vector_sum_10=p_quad_vector_sum_10,
             p_dreg_area=p_dreg_area,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_edges),
+            horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

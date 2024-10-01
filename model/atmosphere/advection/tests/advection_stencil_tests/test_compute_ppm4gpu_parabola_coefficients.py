@@ -6,18 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_parabola_coefficients import (
     compute_ppm4gpu_parabola_coefficients,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-class TestComputePpm4gpuParabolaCoefficients(StencilTest):
+class TestComputePpm4gpuParabolaCoefficients(helpers.StencilTest):
     PROGRAM = compute_ppm4gpu_parabola_coefficients
     OUTPUTS = ("z_delta_q", "z_a1")
 
@@ -31,11 +31,11 @@ class TestComputePpm4gpuParabolaCoefficients(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_face_up = random_field(grid, dims.CellDim, dims.KDim)
-        z_face_low = random_field(grid, dims.CellDim, dims.KDim)
-        p_cc = random_field(grid, dims.CellDim, dims.KDim)
-        z_delta_q = zero_field(grid, dims.CellDim, dims.KDim)
-        z_a1 = zero_field(grid, dims.CellDim, dims.KDim)
+        z_face_up = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        z_face_low = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        z_delta_q = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        z_a1 = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             z_face_up=z_face_up,
             z_face_low=z_face_low,
@@ -43,7 +43,7 @@ class TestComputePpm4gpuParabolaCoefficients(StencilTest):
             z_delta_q=z_delta_q,
             z_a1=z_a1,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

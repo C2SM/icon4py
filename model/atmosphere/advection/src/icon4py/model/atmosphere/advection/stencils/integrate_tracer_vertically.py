@@ -6,28 +6,26 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, where
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import broadcast, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO (dastrm): k/iadv_slev_jt and vertical_start/end are redundant
 
 
-@field_operator
+@gtx.field_operator
 def _integrate_tracer_vertically_a(
-    tracer_now: fa.CellKField[wpfloat],
-    rhodz_now: fa.CellKField[wpfloat],
-    p_mflx_tracer_v: fa.CellKField[wpfloat],
-    deepatmo_divzl: fa.KField[wpfloat],
-    deepatmo_divzu: fa.KField[wpfloat],
-    rhodz_new: fa.CellKField[wpfloat],
-    p_dtime: wpfloat,
-) -> fa.CellKField[wpfloat]:
+    tracer_now: fa.CellKField[ta.wpfloat],
+    rhodz_now: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+    deepatmo_divzl: fa.KField[ta.wpfloat],
+    deepatmo_divzu: fa.KField[ta.wpfloat],
+    rhodz_new: fa.CellKField[ta.wpfloat],
+    p_dtime: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
     tracer_new = (
         tracer_now * rhodz_now
         + p_dtime * (p_mflx_tracer_v(Koff[1]) * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
@@ -36,19 +34,19 @@ def _integrate_tracer_vertically_a(
     return tracer_new
 
 
-@field_operator
+@gtx.field_operator
 def _integrate_tracer_vertically(
-    tracer_now: fa.CellKField[wpfloat],
-    rhodz_now: fa.CellKField[wpfloat],
-    p_mflx_tracer_v: fa.CellKField[wpfloat],
-    deepatmo_divzl: fa.KField[wpfloat],
-    deepatmo_divzu: fa.KField[wpfloat],
-    rhodz_new: fa.CellKField[wpfloat],
-    k: fa.KField[int32],
-    p_dtime: wpfloat,
-    ivadv_tracer: int32,
-    iadv_slev_jt: int32,
-) -> fa.CellKField[wpfloat]:
+    tracer_now: fa.CellKField[ta.wpfloat],
+    rhodz_now: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+    deepatmo_divzl: fa.KField[ta.wpfloat],
+    deepatmo_divzu: fa.KField[ta.wpfloat],
+    rhodz_new: fa.CellKField[ta.wpfloat],
+    k: fa.KField[gtx.int32],
+    p_dtime: ta.wpfloat,
+    ivadv_tracer: gtx.int32,
+    iadv_slev_jt: gtx.int32,
+) -> fa.CellKField[ta.wpfloat]:
     k = broadcast(k, (dims.CellDim, dims.KDim))
 
     tracer_new = (
@@ -72,23 +70,23 @@ def _integrate_tracer_vertically(
     return tracer_new
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def integrate_tracer_vertically(
-    tracer_now: fa.CellKField[wpfloat],
-    rhodz_now: fa.CellKField[wpfloat],
-    p_mflx_tracer_v: fa.CellKField[wpfloat],
-    deepatmo_divzl: fa.KField[wpfloat],
-    deepatmo_divzu: fa.KField[wpfloat],
-    rhodz_new: fa.CellKField[wpfloat],
-    k: fa.KField[int32],
-    p_dtime: wpfloat,
-    ivadv_tracer: int32,
-    iadv_slev_jt: int32,
-    tracer_new: fa.CellKField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    tracer_now: fa.CellKField[ta.wpfloat],
+    rhodz_now: fa.CellKField[ta.wpfloat],
+    p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+    deepatmo_divzl: fa.KField[ta.wpfloat],
+    deepatmo_divzu: fa.KField[ta.wpfloat],
+    rhodz_new: fa.CellKField[ta.wpfloat],
+    k: fa.KField[gtx.int32],
+    p_dtime: ta.wpfloat,
+    ivadv_tracer: gtx.int32,
+    iadv_slev_jt: gtx.int32,
+    tracer_new: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _integrate_tracer_vertically(
         tracer_now,

@@ -6,26 +6,24 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import neighbor_sum
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2CE, C2E
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _integrate_tracer_horizontally(
-    p_mflx_tracer_h: fa.EdgeKField[wpfloat],
-    deepatmo_divh: fa.KField[wpfloat],
-    tracer_now: fa.CellKField[wpfloat],
-    rhodz_now: fa.CellKField[wpfloat],
-    rhodz_new: fa.CellKField[wpfloat],
-    geofac_div: Field[[dims.CEDim], wpfloat],
-    p_dtime: wpfloat,
-) -> fa.CellKField[wpfloat]:
+    p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+    deepatmo_divh: fa.KField[ta.wpfloat],
+    tracer_now: fa.CellKField[ta.wpfloat],
+    rhodz_now: fa.CellKField[ta.wpfloat],
+    rhodz_new: fa.CellKField[ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    p_dtime: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
     tracer_new_hor = (
         tracer_now * rhodz_now
         - p_dtime
@@ -36,20 +34,20 @@ def _integrate_tracer_horizontally(
     return tracer_new_hor
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def integrate_tracer_horizontally(
-    p_mflx_tracer_h: fa.EdgeKField[wpfloat],
-    deepatmo_divh: fa.KField[wpfloat],
-    tracer_now: fa.CellKField[wpfloat],
-    rhodz_now: fa.CellKField[wpfloat],
-    rhodz_new: fa.CellKField[wpfloat],
-    geofac_div: Field[[dims.CEDim], wpfloat],
-    tracer_new_hor: fa.CellKField[wpfloat],
-    p_dtime: wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+    deepatmo_divh: fa.KField[ta.wpfloat],
+    tracer_now: fa.CellKField[ta.wpfloat],
+    rhodz_now: fa.CellKField[ta.wpfloat],
+    rhodz_new: fa.CellKField[ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
+    tracer_new_hor: fa.CellKField[ta.wpfloat],
+    p_dtime: ta.wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _integrate_tracer_horizontally(
         p_mflx_tracer_h,

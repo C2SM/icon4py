@@ -24,10 +24,14 @@ from icon4py.model.atmosphere.advection.stencils import (
     integrate_tracer_horizontally,
     reconstruct_linear_coefficients_svd,
 )
-from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
+from icon4py.model.common import (
+    constants,
+    dimension as dims,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
@@ -197,9 +201,9 @@ class Advection:
         self,
         diagnostic_state: advection_states.AdvectionDiagnosticState,
         prep_adv: advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[wpfloat],
-        p_tracer_new: fa.CellKField[wpfloat],
-        dtime: wpfloat,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        dtime: ta.wpfloat,
     ):
         """
         Run an advection step.
@@ -404,10 +408,10 @@ class HorizontalAdvection:
         # backtrajectory fields
         self.z_real_vt = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
         self.p_distv_bary_1 = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=ta.vpfloat
         )
         self.p_distv_bary_2 = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=ta.vpfloat
         )
 
         # reconstruction fields
@@ -419,12 +423,12 @@ class HorizontalAdvection:
     def run(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[wpfloat],
-        p_tracer_new: fa.CellKField[wpfloat],
-        rhodz_now: fa.CellKField[wpfloat],
-        rhodz_new: fa.CellKField[wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[wpfloat],
-        dtime: wpfloat,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        dtime: ta.wpfloat,
     ):
         """
         Run a horizontal advection step.
@@ -490,10 +494,10 @@ class HorizontalAdvection:
     def _compute_horizontal_tracer_flux(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[wpfloat],
-        rhodz_now: fa.CellKField[wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[wpfloat],
-        dtime: wpfloat,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        dtime: ta.wpfloat,
     ):
         """
         Calculate the horizontal numerical tracer flux.
@@ -529,7 +533,7 @@ class HorizontalAdvection:
             dual_normal_cell_2=self.edge_params.dual_normal_cell[1],
             p_distv_bary_1=self.p_distv_bary_1,
             p_distv_bary_2=self.p_distv_bary_2,
-            p_dthalf=wpfloat(0.5) * dtime,
+            p_dthalf=0.5 * dtime,
             horizontal_start=self.start_edge_lateral_boundary_level_5,
             horizontal_end=self.end_edge_halo,
             vertical_start=0,
@@ -672,12 +676,12 @@ class VerticalAdvection:
     def run(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[wpfloat],
-        p_tracer_new: fa.CellKField[wpfloat],
-        rhodz_now: fa.CellKField[wpfloat],
-        rhodz_new: fa.CellKField[wpfloat],
-        p_mflx_tracer_v: fa.CellKField[wpfloat],  # TODO (dastrm): should be KHalfDim
-        dtime: wpfloat,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+        dtime: ta.wpfloat,
         even_timestep: bool = False,
     ):
         """

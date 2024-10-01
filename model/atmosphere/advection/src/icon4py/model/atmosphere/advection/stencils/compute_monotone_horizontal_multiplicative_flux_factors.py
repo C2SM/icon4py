@@ -6,10 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, max_over, maximum, min_over, minimum
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import astype, max_over, maximum, min_over, minimum
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E2C
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -17,63 +17,53 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 # TODO (dastrm): this stencil has no test
 
 
-@field_operator
+@gtx.field_operator
 def _compute_monotone_horizontal_multiplicative_flux_factors_min_max(
-    z_tracer_max: fa.CellKField[vpfloat],
-    z_tracer_min: fa.CellKField[vpfloat],
-    beta_fct: wpfloat,
-    r_beta_fct: wpfloat,
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
-    z_max = beta_fct * maximum(max_over(z_tracer_max(C2E2C), axis=dims.C2E2CDim), z_tracer_max)
-    z_min = r_beta_fct * minimum(min_over(z_tracer_min(C2E2C), axis=dims.C2E2CDim), z_tracer_min)
+    z_tracer_max: fa.CellKField[ta.vpfloat],
+    z_tracer_min: fa.CellKField[ta.vpfloat],
+    beta_fct: ta.wpfloat,
+    r_beta_fct: ta.wpfloat,
+) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat]]:
+    z_max = vpfloat(beta_fct) * maximum(
+        max_over(z_tracer_max(C2E2C), axis=dims.C2E2CDim), z_tracer_max
+    )
+    z_min = vpfloat(r_beta_fct) * minimum(
+        min_over(z_tracer_min(C2E2C), axis=dims.C2E2CDim), z_tracer_min
+    )
     return z_max, z_min
 
 
-@program
-def compute_monotone_horizontal_multiplicative_flux_factors_min_max(
-    z_tracer_max: fa.CellKField[vpfloat],
-    z_tracer_min: fa.CellKField[vpfloat],
-    beta_fct: wpfloat,
-    r_beta_fct: wpfloat,
-    z_max: fa.CellKField[vpfloat],
-    z_min: fa.CellKField[vpfloat],
-):
-    _compute_monotone_horizontal_multiplicative_flux_factors_min_max(
-        z_tracer_max, z_tracer_min, beta_fct, r_beta_fct, out=(z_max, z_min)
-    )
-
-
-@field_operator
-def _compute_monotone_horizontal_multiplicative_flux_factors_a(
-    z_mflx_anti_in: fa.CellKField[vpfloat],
-    z_mflx_anti_out: fa.CellKField[vpfloat],
-    z_tracer_new_low: fa.CellKField[wpfloat],
-    z_max: fa.CellKField[vpfloat],
-    z_min: fa.CellKField[vpfloat],
-    dbl_eps: wpfloat,
-) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    r_p = (z_max - z_tracer_new_low) / (z_mflx_anti_in + dbl_eps)
-    r_m = (z_tracer_new_low - z_min) / (z_mflx_anti_out + dbl_eps)
+@gtx.field_operator
+def _compute_monotone_horizontal_multiplicative_flux_factors_p_m(
+    z_mflx_anti_in: fa.CellKField[ta.vpfloat],
+    z_mflx_anti_out: fa.CellKField[ta.vpfloat],
+    z_tracer_new_low: fa.CellKField[ta.wpfloat],
+    z_max: fa.CellKField[ta.vpfloat],
+    z_min: fa.CellKField[ta.vpfloat],
+    dbl_eps: ta.wpfloat,
+) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
+    r_p = (astype(z_max, wpfloat) - z_tracer_new_low) / (astype(z_mflx_anti_in, wpfloat) + dbl_eps)
+    r_m = (z_tracer_new_low - astype(z_min, wpfloat)) / (astype(z_mflx_anti_out, wpfloat) + dbl_eps)
 
     return r_p, r_m
 
 
-@field_operator
+@gtx.field_operator
 def _compute_monotone_horizontal_multiplicative_flux_factors(
-    z_tracer_max: fa.CellKField[vpfloat],
-    z_tracer_min: fa.CellKField[vpfloat],
-    beta_fct: wpfloat,
-    r_beta_fct: wpfloat,
-    z_mflx_anti_in: fa.CellKField[vpfloat],
-    z_mflx_anti_out: fa.CellKField[vpfloat],
-    z_tracer_new_low: fa.CellKField[wpfloat],
-    dbl_eps: wpfloat,
-) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+    z_tracer_max: fa.CellKField[ta.vpfloat],
+    z_tracer_min: fa.CellKField[ta.vpfloat],
+    beta_fct: ta.wpfloat,
+    r_beta_fct: ta.wpfloat,
+    z_mflx_anti_in: fa.CellKField[ta.vpfloat],
+    z_mflx_anti_out: fa.CellKField[ta.vpfloat],
+    z_tracer_new_low: fa.CellKField[ta.wpfloat],
+    dbl_eps: ta.wpfloat,
+) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     z_max, z_min = _compute_monotone_horizontal_multiplicative_flux_factors_min_max(
         z_tracer_max, z_tracer_min, beta_fct, r_beta_fct
     )
 
-    r_p, r_m = _compute_monotone_horizontal_multiplicative_flux_factors_a(
+    r_p, r_m = _compute_monotone_horizontal_multiplicative_flux_factors_p_m(
         z_mflx_anti_in,
         z_mflx_anti_out,
         z_tracer_new_low,
@@ -84,22 +74,22 @@ def _compute_monotone_horizontal_multiplicative_flux_factors(
     return r_p, r_m
 
 
-@program
+@gtx.program
 def compute_monotone_horizontal_multiplicative_flux_factors(
-    z_tracer_max: fa.CellKField[vpfloat],
-    z_tracer_min: fa.CellKField[vpfloat],
-    beta_fct: wpfloat,
-    r_beta_fct: wpfloat,
-    z_mflx_anti_in: fa.CellKField[vpfloat],
-    z_mflx_anti_out: fa.CellKField[vpfloat],
-    z_tracer_new_low: fa.CellKField[wpfloat],
-    dbl_eps: wpfloat,
-    r_p: fa.CellKField[wpfloat],
-    r_m: fa.CellKField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    z_tracer_max: fa.CellKField[ta.vpfloat],
+    z_tracer_min: fa.CellKField[ta.vpfloat],
+    beta_fct: ta.wpfloat,
+    r_beta_fct: ta.wpfloat,
+    z_mflx_anti_in: fa.CellKField[ta.vpfloat],
+    z_mflx_anti_out: fa.CellKField[ta.vpfloat],
+    z_tracer_new_low: fa.CellKField[ta.wpfloat],
+    dbl_eps: ta.wpfloat,
+    r_p: fa.CellKField[ta.wpfloat],
+    r_m: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _compute_monotone_horizontal_multiplicative_flux_factors(
         z_tracer_max,

@@ -6,36 +6,35 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import astype, int32, where
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2EC
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import vpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_barycentric_backtrajectory(
-    p_vn: fa.EdgeKField[wpfloat],
-    p_vt: fa.EdgeKField[wpfloat],
-    cell_idx: Field[[dims.ECDim], int32],
-    cell_blk: Field[[dims.ECDim], int32],
-    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
-    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
-    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
-    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
-    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
-    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
-    p_dthalf: wpfloat,
+    p_vn: fa.EdgeKField[ta.wpfloat],
+    p_vt: fa.EdgeKField[ta.wpfloat],
+    cell_idx: gtx.Field[gtx.Dims[dims.ECDim], int32],
+    cell_blk: gtx.Field[gtx.Dims[dims.ECDim], int32],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    p_dthalf: ta.wpfloat,
 ) -> tuple[
-    fa.EdgeKField[int32],
-    fa.EdgeKField[int32],
-    fa.EdgeKField[int32],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[gtx.int32],
+    fa.EdgeKField[gtx.int32],
+    fa.EdgeKField[gtx.int32],
+    fa.EdgeKField[ta.vpfloat],
+    fa.EdgeKField[ta.vpfloat],
 ]:
-    lvn_pos = where(p_vn > wpfloat(0.0), True, False)
+    lvn_pos = where(p_vn > 0.0, True, False)
 
     p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))
     p_cell_rel_idx_dsl = where(lvn_pos, 0, 1)
@@ -74,28 +73,28 @@ def _compute_barycentric_backtrajectory(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_barycentric_backtrajectory(
-    p_vn: fa.EdgeKField[wpfloat],
-    p_vt: fa.EdgeKField[wpfloat],
-    cell_idx: Field[[dims.ECDim], int32],
-    cell_blk: Field[[dims.ECDim], int32],
-    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
-    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
-    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
-    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
-    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
-    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
-    p_cell_idx: fa.EdgeKField[int32],
-    p_cell_rel_idx_dsl: fa.EdgeKField[int32],
-    p_cell_blk: fa.EdgeKField[int32],
-    p_distv_bary_1: fa.EdgeKField[vpfloat],
-    p_distv_bary_2: fa.EdgeKField[vpfloat],
-    p_dthalf: wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    p_vn: fa.EdgeKField[ta.wpfloat],
+    p_vt: fa.EdgeKField[ta.wpfloat],
+    cell_idx: gtx.Field[gtx.Dims[dims.ECDim], int32],
+    cell_blk: gtx.Field[gtx.Dims[dims.ECDim], int32],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
+    p_cell_idx: fa.EdgeKField[gtx.int32],
+    p_cell_rel_idx_dsl: fa.EdgeKField[gtx.int32],
+    p_cell_blk: fa.EdgeKField[gtx.int32],
+    p_distv_bary_1: fa.EdgeKField[ta.vpfloat],
+    p_distv_bary_2: fa.EdgeKField[ta.vpfloat],
+    p_dthalf: ta.wpfloat,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _compute_barycentric_backtrajectory(
         p_vn,

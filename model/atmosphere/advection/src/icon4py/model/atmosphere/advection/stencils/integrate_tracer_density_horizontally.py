@@ -6,64 +6,72 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _integrate_tracer_density_horizontally(
-    nsub: int32,
-    p_mass_flx_e: fa.EdgeKField[wpfloat],
-    geofac_div: Field[[dims.CellDim, dims.C2EDim], wpfloat],
-    z_rhofluxdiv_c: fa.CellKField[vpfloat],
-    z_tracer_mflx: fa.EdgeKField[wpfloat],
-    z_rho_now: fa.CellKField[wpfloat],
-    z_tracer_now: fa.CellKField[wpfloat],
-    z_dtsub: wpfloat,
+    nsub: gtx.int32,
+    p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
+    z_rhofluxdiv_c: fa.CellKField[ta.vpfloat],
+    z_tracer_mflx: fa.EdgeKField[ta.wpfloat],
+    z_rho_now: fa.CellKField[ta.wpfloat],
+    z_tracer_now: fa.CellKField[ta.wpfloat],
+    z_dtsub: ta.wpfloat,
 ) -> tuple[
-    fa.CellKField[vpfloat],
-    fa.CellKField[vpfloat],
-    fa.CellKField[wpfloat],
-    fa.CellKField[wpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.vpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
 ]:
     z_rhofluxdiv_c_out = (
-        neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=dims.C2EDim)
+        astype(neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=dims.C2EDim), vpfloat)
         if nsub == 1
         else z_rhofluxdiv_c
     )
 
-    z_fluxdiv_c_dsl = neighbor_sum(z_tracer_mflx(C2E) * geofac_div, axis=dims.C2EDim)
+    z_fluxdiv_c_dsl = astype(
+        neighbor_sum(z_tracer_mflx(C2E) * geofac_div, axis=dims.C2EDim), vpfloat
+    )
 
-    z_rho_new_dsl = z_rho_now - z_dtsub * z_rhofluxdiv_c_out
+    z_rho_new_dsl = z_rho_now - z_dtsub * astype(z_rhofluxdiv_c_out, wpfloat)
 
-    z_tracer_new_dsl = (z_tracer_now * z_rho_now - z_dtsub * z_fluxdiv_c_dsl) / z_rho_new_dsl
+    z_tracer_new_dsl = (
+        z_tracer_now * z_rho_now - z_dtsub * astype(z_fluxdiv_c_dsl, wpfloat)
+    ) / z_rho_new_dsl
 
-    return (z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl)
+    return (
+        z_rhofluxdiv_c_out,
+        z_fluxdiv_c_dsl,
+        z_rho_new_dsl,
+        z_tracer_new_dsl,
+    )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def integrate_tracer_density_horizontally(
-    nsub: int32,
-    p_mass_flx_e: fa.EdgeKField[wpfloat],
-    geofac_div: Field[[dims.CellDim, dims.C2EDim], wpfloat],
-    z_rhofluxdiv_c: fa.CellKField[vpfloat],
-    z_tracer_mflx: fa.EdgeKField[wpfloat],
-    z_rho_now: fa.CellKField[wpfloat],
-    z_tracer_now: fa.CellKField[wpfloat],
-    z_dtsub: wpfloat,
-    z_rhofluxdiv_c_out: fa.CellKField[vpfloat],
-    z_fluxdiv_c_dsl: fa.CellKField[vpfloat],
-    z_rho_new_dsl: fa.CellKField[wpfloat],
-    z_tracer_new_dsl: fa.CellKField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    nsub: gtx.int32,
+    p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
+    z_rhofluxdiv_c: fa.CellKField[ta.vpfloat],
+    z_tracer_mflx: fa.EdgeKField[ta.wpfloat],
+    z_rho_now: fa.CellKField[ta.wpfloat],
+    z_tracer_now: fa.CellKField[ta.wpfloat],
+    z_dtsub: ta.wpfloat,
+    z_rhofluxdiv_c_out: fa.CellKField[ta.vpfloat],
+    z_fluxdiv_c_dsl: fa.CellKField[ta.vpfloat],
+    z_rho_new_dsl: fa.CellKField[ta.wpfloat],
+    z_tracer_new_dsl: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _integrate_tracer_density_horizontally(
         nsub,

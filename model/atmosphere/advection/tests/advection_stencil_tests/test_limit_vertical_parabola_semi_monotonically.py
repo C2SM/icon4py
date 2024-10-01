@@ -6,23 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.limit_vertical_parabola_semi_monotonically import (
     limit_vertical_parabola_semi_monotonically,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    random_mask,
-    zero_field,
-)
 
 
-class TestLimitVerticalParabolaSemiMonotonically(StencilTest):
+class TestLimitVerticalParabolaSemiMonotonically(helpers.StencilTest):
     PROGRAM = limit_vertical_parabola_semi_monotonically
     OUTPUTS = ("p_face_up", "p_face_low")
 
@@ -45,11 +40,11 @@ class TestLimitVerticalParabolaSemiMonotonically(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        l_limit = random_mask(grid, dims.CellDim, dims.KDim, dtype=int32)
-        p_cc = random_field(grid, dims.CellDim, dims.KDim)
-        p_face = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        p_face_up = zero_field(grid, dims.CellDim, dims.KDim)
-        p_face_low = zero_field(grid, dims.CellDim, dims.KDim)
+        l_limit = helpers.random_mask(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
+        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        p_face = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_face_up = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        p_face_low = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             l_limit=l_limit,
             p_cc=p_cc,
@@ -57,7 +52,7 @@ class TestLimitVerticalParabolaSemiMonotonically(StencilTest):
             p_face_up=p_face_up,
             p_face_low=p_face_low,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

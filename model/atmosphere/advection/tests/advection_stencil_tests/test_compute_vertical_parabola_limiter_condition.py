@@ -6,18 +6,18 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_vertical_parabola_limiter_condition import (
     compute_vertical_parabola_limiter_condition,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-class TestComputeVerticalParabolaLimiterCondition(StencilTest):
+class TestComputeVerticalParabolaLimiterCondition(helpers.StencilTest):
     PROGRAM = compute_vertical_parabola_limiter_condition
     OUTPUTS = ("l_limit",)
 
@@ -30,15 +30,15 @@ class TestComputeVerticalParabolaLimiterCondition(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_cc = random_field(grid, dims.CellDim, dims.KDim)
-        p_face = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        l_limit = zero_field(grid, dims.CellDim, dims.KDim, dtype=int32)
+        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        p_face = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        l_limit = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
         return dict(
             p_face=p_face,
             p_cc=p_cc,
             l_limit=l_limit,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

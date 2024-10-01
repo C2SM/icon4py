@@ -6,23 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.prepare_ffsl_flux_area_patches_list import (
     prepare_ffsl_flux_area_patches_list,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    as_1D_sparse_field,
-    constant_field,
-    random_field,
-    random_mask,
-    reshape,
-    zero_field,
-)
 
 
 # Check whether lines inters.
@@ -121,7 +113,7 @@ def _line_intersect_numpy(
 
 
 @pytest.mark.slow_tests
-class TestPrepareFfslFluxAreaPatchesList(StencilTest):
+class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
     PROGRAM = prepare_ffsl_flux_area_patches_list
     OUTPUTS = (
         "dreg_patch0_1_lon_dsl",
@@ -897,9 +889,9 @@ class TestPrepareFfslFluxAreaPatchesList(StencilTest):
         **kwargs,
     ):
         e2c = grid.connectivities[dims.E2CDim]
-        ptr_v3_lon = reshape(ptr_v3_lon, e2c.shape)
+        ptr_v3_lon = helpers.reshape(ptr_v3_lon, e2c.shape)
         ptr_v3_lon_e = np.expand_dims(ptr_v3_lon, axis=-1)
-        ptr_v3_lat = reshape(ptr_v3_lat, e2c.shape)
+        ptr_v3_lat = helpers.reshape(ptr_v3_lat, e2c.shape)
         ptr_v3_lat_e = np.expand_dims(ptr_v3_lat, axis=-1)
         tangent_orientation_dsl = np.expand_dims(tangent_orientation_dsl, axis=-1)
 
@@ -1482,37 +1474,37 @@ class TestPrepareFfslFluxAreaPatchesList(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        famask_int = random_mask(grid, dims.EdgeDim, dims.KDim, dtype=int32)
-        p_vn = random_field(grid, dims.EdgeDim, dims.KDim)
-        ptr_v3_lon = random_field(grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
-        ptr_v3_lon_field = as_1D_sparse_field(ptr_v3_lon, dims.ECDim)
-        ptr_v3_lat = random_field(grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
-        ptr_v3_lat_field = as_1D_sparse_field(ptr_v3_lat, dims.ECDim)
-        tangent_orientation_dsl = random_field(grid, dims.EdgeDim, low=0.1, high=1.0)
-        dreg_patch0_1_lon_dsl = constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_1_lat_dsl = constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_2_lon_dsl = constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_2_lat_dsl = constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_3_lon_dsl = constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_3_lat_dsl = constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_4_lon_dsl = constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
-        dreg_patch0_4_lat_dsl = constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
-        dreg_patch1_1_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_1_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_2_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_2_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_3_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_3_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_4_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch1_4_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_1_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_1_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_2_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_2_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_3_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_3_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_4_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
-        dreg_patch2_4_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        famask_int = helpers.random_mask(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        ptr_v3_lon = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
+        ptr_v3_lon_field = helpers.as_1D_sparse_field(ptr_v3_lon, dims.ECDim)
+        ptr_v3_lat = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
+        ptr_v3_lat_field = helpers.as_1D_sparse_field(ptr_v3_lat, dims.ECDim)
+        tangent_orientation_dsl = helpers.random_field(grid, dims.EdgeDim, low=0.1, high=1.0)
+        dreg_patch0_1_lon_dsl = helpers.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_1_lat_dsl = helpers.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_2_lon_dsl = helpers.constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_2_lat_dsl = helpers.constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_3_lon_dsl = helpers.constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_3_lat_dsl = helpers.constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_4_lon_dsl = helpers.constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_4_lat_dsl = helpers.constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
+        dreg_patch1_1_lon_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_1_lat_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_2_lon_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_2_lat_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_3_lon_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_3_lat_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_4_lon_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_4_lat_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_1_lon_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_1_lat_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_2_lon_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_2_lat_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_3_lon_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_3_lat_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_4_lon_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_4_lat_vmask = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             famask_int=famask_int,
             p_vn=p_vn,
@@ -1544,7 +1536,7 @@ class TestPrepareFfslFluxAreaPatchesList(StencilTest):
             dreg_patch2_4_lon_vmask=dreg_patch2_4_lon_vmask,
             dreg_patch2_4_lat_vmask=dreg_patch2_4_lat_vmask,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_edges),
+            horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

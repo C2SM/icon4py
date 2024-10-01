@@ -10,8 +10,7 @@ import dataclasses
 
 import gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
 @dataclasses.dataclass(frozen=True)
@@ -19,19 +18,19 @@ class AdvectionDiagnosticState:
     """Represents the diagnostic fields needed in advection."""
 
     #: mass of air in layer at physics time step now [kg/m^2]
-    airmass_now: fa.CellKField[wpfloat]
+    airmass_now: fa.CellKField[ta.wpfloat]
 
     #: mass of air in layer at physics time step new [kg/m^2]
-    airmass_new: fa.CellKField[wpfloat]
+    airmass_new: fa.CellKField[ta.wpfloat]
 
     #: tracer tendency field for use in grid refinement [kg/kg/s]
-    grf_tend_tracer: fa.CellKField[wpfloat]
+    grf_tend_tracer: fa.CellKField[ta.wpfloat]
 
     #: horizontal tracer flux at edges [kg/m/s]
-    hfl_tracer: fa.EdgeKField[wpfloat]
+    hfl_tracer: fa.EdgeKField[ta.wpfloat]
 
     #: vertical tracer flux at cells [kg/m/s]
-    vfl_tracer: fa.CellKField[wpfloat]  # TODO (dastrm): should be KHalfDim
+    vfl_tracer: fa.CellKField[ta.wpfloat]  # TODO (dastrm): should be KHalfDim
 
 
 @dataclasses.dataclass(frozen=True)
@@ -39,13 +38,13 @@ class AdvectionPrepAdvState:
     """Represents the prepare advection state needed in advection."""
 
     #: horizontal velocity at edges for computation of backward trajectories averaged over dynamics substeps [m/s]
-    vn_traj: fa.EdgeKField[wpfloat]
+    vn_traj: fa.EdgeKField[ta.wpfloat]
 
     #: mass flux at full level edges averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_me: fa.EdgeKField[wpfloat]
+    mass_flx_me: fa.EdgeKField[ta.wpfloat]
 
     #: mass flux at half level centers averaged over dynamics substeps [kg/m^2/s]
-    mass_flx_ic: fa.CellKField[wpfloat]
+    mass_flx_ic: fa.CellKField[ta.wpfloat]  # TODO (dastrm): should be KHalfDim
 
 
 @dataclasses.dataclass(frozen=True)
@@ -53,16 +52,16 @@ class AdvectionInterpolationState:
     """Represents the interpolation state needed in advection."""
 
     #: factor for divergence
-    geofac_div: gtx.Field[[dims.CEDim], wpfloat]
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat]
 
     #: coefficients used for rbf interpolation of the tangential velocity component
-    rbf_vec_coeff_e: gtx.Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat]
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat]
 
     #: x-components of positions of various points on local plane tangential to the edge midpoint
-    pos_on_tplane_e_1: gtx.Field[[dims.ECDim], wpfloat]
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
 
     #: y-components of positions of various points on local plane tangential to the edge midpoint
-    pos_on_tplane_e_2: gtx.Field[[dims.ECDim], wpfloat]
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -70,8 +69,8 @@ class AdvectionLeastSquaresState:
     """Represents the least squares state needed in advection."""
 
     #: pseudo (or Moore-Penrose) inverse of lsq design matrix A
-    lsq_pseudoinv_1: gtx.Field[[dims.CECDim], wpfloat]
-    lsq_pseudoinv_2: gtx.Field[[dims.CECDim], wpfloat]
+    lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CECDim], ta.wpfloat]
+    lsq_pseudoinv_2: gtx.Field[gtx.Dims[dims.CECDim], ta.wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -79,10 +78,10 @@ class AdvectionMetricState:
     """Represents the metric fields needed in advection."""
 
     #: metrical modification factor for horizontal part of divergence at full levels (KDim)
-    deepatmo_divh: fa.KField[wpfloat]
+    deepatmo_divh: fa.KField[ta.wpfloat]
 
     #: metrical modification factor for vertical part of divergence at full levels (KDim)
-    deepatmo_divzl: fa.KField[wpfloat]
+    deepatmo_divzl: fa.KField[ta.wpfloat]
 
     #: metrical modification factor for vertical part of divergence at full levels (KDim)
-    deepatmo_divzu: fa.KField[wpfloat]
+    deepatmo_divzu: fa.KField[ta.wpfloat]
