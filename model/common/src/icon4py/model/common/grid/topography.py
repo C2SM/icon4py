@@ -7,84 +7,61 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import neighbor_sum
+from icon4py.model.common.dimension import C2E2CO, C2E2CODim
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.settings import xp
 
+@gtx.field_operator
+def _nabla2_scalar(
+    psi_c: fa.CellField[ta.wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
+) -> fa.CellField[ta.wpfloat]:
+
+    nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=C2E2CODim)
+
+    return nabla2_psi_c
+
+@gtx.program
+def nabla2_scalar(
+    psi_c: fa.CellField[ta.wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
+    nabla2_psi_c: fa.CellField[ta.wpfloat],
+):
+    _nabla2_scalar(
+        psi_c,
+        geofac_n2s,
+        out=nabla2_psi_c,
+    )
+
+
 def compute_smooth_topo(
     topography: fa.CellField[ta.wpfloat],
     grid: icon_grid.IconGrid,
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     num_iterations: int = 25,
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellField[ta.wpfloat]:
     """
     Computes the smoothed topography needed for the SLEVE coordinate.
     """
 
-    topography_smoothed = topography.asnumpy().copy()
+    topography_smoothed = topography.copy()
+
+    nabla2_topo_np = xp.zeros((grid.num_cells), dtype=ta.wpfloat)
+    nabla2_topo = gtx.as_field((dims.CellDim), nabla2_topo_np)
 
     for iter in range(num_iterations):
-        nabla2_topo = xp.zeros(grid.num_cells, dtype=ta.wpfloat)
-        for jb in range(grid.start_blk[1], grid.num_blks[1]):
-            i_startidx, i_endidx = grid.get_indices(2, jb)
-            for jc in range(i_startidx, i_endidx):
-                nabla2_topo[jc] = nabla2_topo[jc] + 0.125 * nabla2_topo[jc] * grid.area[jc, jb]
 
-        topography_smoothed = topography_smoothed + nabla2_topo
+        nabla2_scalar(
+            psi_c=topography_smoothed,
+            geofac_n2s=geofac_n2s,
+            z_topography=nabla2_topo,
+            offset_provider={"C2E2CO":grid.get_offset_provider("C2E2CO"),}
+        )
+        
+        topography_smoothed_np = topography_smoothed.asnumpy() + 0.125 * nabla2_topo.asnumpy() * grid.cell_areas # TODO implement this
+        topography_smoothed = gtx.as_field((dims.CellDim), topography_smoothed_np)
 
-    return gtx.as_field((dims.CellDim, dims.KDim), topography_smoothed)
-
-#  SUBROUTINE compute_smooth_topo(p_patch, p_int, topo_c, niter, topo_smt_c)
-#
-#    TYPE(t_patch),TARGET,INTENT(INOUT) :: p_patch
-#    TYPE(t_int_state), INTENT(IN) :: p_int
-#
-#    ! Input fields: topography on cells
-#    REAL(wp), INTENT(IN) :: topo_c(:,:)
-#
-#    ! number of iterations
-#    INTEGER,  INTENT(IN) :: niter
-#
-#    ! Output fields: smooth topography on cells
-#    REAL(wp), INTENT(OUT) :: topo_smt_c(:,:)
-#
-#    INTEGER  :: jb, jc, iter
-#    INTEGER  :: i_startblk, nblks_c, i_startidx, i_endidx
-#    REAL(wp) :: z_topo(nproma,1,p_patch%nblks_c),nabla2_topo(nproma,1,p_patch%nblks_c)
-#
-#    !-------------------------------------------------------------------------
-#
-#    ! Initialize auxiliary fields for topography with data and nullify nabla2 field
-#    z_topo(:,1,:)      = topo_c(:,:)
-#    nabla2_topo(:,1,:) = 0._wp
-#
-#    i_startblk = p_patch%cells%start_blk(2,1)
-#    nblks_c    = p_patch%nblks_c
-#
-#    CALL sync_patch_array(SYNC_C,p_patch,z_topo)
-#
-#    ! Apply nabla2-diffusion niter times to create smooth topography
-#    DO iter = 1, niter
-#
-#      CALL nabla2_scalar(z_topo, p_patch, p_int, nabla2_topo, &
-#        &                 slev=1, elev=1, rl_start=2, rl_end=min_rlcell )
-#
-#      DO jb = i_startblk,nblks_c
-#
-#        CALL get_indices_c(p_patch, jb, i_startblk, nblks_c, &
-#                           i_startidx, i_endidx, 2)
-#
-#        DO jc = i_startidx, i_endidx
-#          z_topo(jc,1,jb) = z_topo(jc,1,jb) + 0.125_wp*nabla2_topo(jc,1,jb) &
-#            &                               * p_patch%cells%area(jc,jb)
-#        ENDDO
-#      ENDDO
-#
-#      CALL sync_patch_array(SYNC_C,p_patch,z_topo)
-#
-#    ENDDO
-#
-#    ! Store smooth topography on output fields
-#    topo_smt_c(:,:) = z_topo(:,1,:)
-#
-#  END SUBROUTINE compute_smooth_topo
+    return topography_smoothed
