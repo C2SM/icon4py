@@ -163,8 +163,8 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
 
                 with dace.config.temporary_config():
                     dace.config.Config.set(
-                                "compiler", "allow_view_arguments", value=True
-                            )  # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)                    
+                        "compiler", "allow_view_arguments", value=True
+                    )  # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
                     return compiled_sdfg(**sdfg_args)
             else:
                 return fuse_func(*args, **kwargs)
