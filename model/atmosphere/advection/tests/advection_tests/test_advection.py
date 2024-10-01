@@ -100,8 +100,8 @@ def test_advection_run_single_step(
         metric_state=metric_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        even_timestep=even_timestep,
     )
-    advection_granule.even_timestep = even_timestep
 
     diagnostic_state = construct_diagnostic_init_state(icon_grid, advection_init_savepoint, ntracer)
     prep_adv = construct_prep_adv(icon_grid, advection_init_savepoint)
