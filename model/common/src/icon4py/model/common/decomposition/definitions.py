@@ -161,12 +161,15 @@ class SingleNodeExchange:
     def get_size(self):
         return 1
 
-    def __call__(self, *args, **kwargs):
-        """Performs a halo exchange operation.
-        args: The fields to be exchanged.
-        kwargs:
+    def __call__(self, *args, **kwargs) -> Optional[ExchangeResult]:
+        """Perform a halo exchange operation.
+
+        Args:
+            args: The fields to be exchanged.
+
+        Keyword Args:
             dim: The dimension along which the exchange is performed.
-            wait: If True, the operation will block until the exchange is completed.
+            wait: If True, the operation will block until the exchange is completed (default: True).
         """
         dim = kwargs.get("dim", None)
         wait = kwargs.get("wait", True)
@@ -180,7 +183,7 @@ class SingleNodeExchange:
     if dace:
         # Implementation of DaCe SDFGConvertible interface
         # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
-        def dace__sdfg__(self, *args, **kwargs):
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
             sdfg = DummyNestedSDFG().__sdfg__()
             sdfg.name = "_halo_exchange_"
             return sdfg
@@ -192,9 +195,10 @@ class SingleNodeExchange:
 
         def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
             return DummyNestedSDFG().__sdfg_signature__()
+
     else:
 
-        def dace__sdfg__(self, *args, **kwargs):
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
@@ -219,11 +223,11 @@ class SingleNodeExchange:
 class HaloExchangeWaitRuntime(Protocol):
     """Protocol for halo exchange wait."""
 
-    def __call__(self, communication_handle: ExchangeResult):
+    def __call__(self, communication_handle: ExchangeResult) -> None:
         """Wait on the communication handle."""
         ...
 
-    def __sdfg__(self, *args, **kwargs):
+    def __sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
         """DaCe related: SDFGConvertible interface."""
         ...
 
@@ -240,12 +244,12 @@ class HaloExchangeWaitRuntime(Protocol):
 class HaloExchangeWait:
     exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
 
-    def __call__(self, communication_handle: SingleNodeResult):
+    def __call__(self, communication_handle: SingleNodeResult) -> None:
         communication_handle.wait()
 
     if dace:
         # Implementation of DaCe SDFGConvertible interface
-        def dace__sdfg__(self, *args, **kwargs):
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
             sdfg = DummyNestedSDFG().__sdfg__()
             sdfg.name = "_halo_exchange_wait_"
             return sdfg
@@ -257,9 +261,10 @@ class HaloExchangeWait:
 
         def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
             return DummyNestedSDFG().__sdfg_signature__()
+
     else:
 
-        def dace__sdfg__(self, *args, **kwargs):
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )

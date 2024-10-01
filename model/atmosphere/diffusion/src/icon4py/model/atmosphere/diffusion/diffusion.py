@@ -770,14 +770,14 @@ class Diffusion:
             w=prognostic_state.w,
             type_shear=int32(
                 self.config.shear_type.value
-            ),  # TODO(kotsaloscv): if gtx.int32 is used, it breaks DaCe orchestration
+            ),  # DaCe parser peculiarity (does not work as gtx.int32)
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
             k=self.vertical_index,
             cell=self.horizontal_cell_index,
-            nrdmax=int32(  # TODO(kotsaloscv): if gtx.int32 is used, it breaks DaCe orchestration
+            nrdmax=int32(  # DaCe parser peculiarity (does not work as gtx.int32)
                 self.vertical_grid.end_index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
             interior_idx=self._cell_start_interior,

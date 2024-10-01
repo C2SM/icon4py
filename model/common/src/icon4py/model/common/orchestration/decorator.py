@@ -8,7 +8,6 @@
 
 """
 DaCe Orchestration Decorator
-----------------------------
 
 Creates a DaCe SDFG that fuses any GT4Py Program called by the decorated function.
 """
@@ -73,9 +72,7 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                 if method:
                     # self is used to retrieve the _exchange object -on the fly halo exchanges- and the grid object -offset providers-
                     self = args[0]
-                    self_name = next(
-                        param.name for param in inspect.signature(fuse_func).parameters.values()
-                    )
+                    self_name = next(iter(inspect.signature(fuse_func).parameters))
                 else:
                     raise ValueError(
                         "The orchestration decorator is only for methods -at least for now-."
@@ -431,6 +428,10 @@ if dace:
         exchange_obj: Optional[decomposition.ExchangeRuntime],
         offset_providers: dict[str, gtx.common.Connectivity],
     ) -> dict[str, Any]:
+        """kwargs needed by the compiled SDFG.
+
+        The additional kwargs are the connectivity tables (runtime tables) and the GHEX C++ pointers.
+        """
         return {
             # connectivity tables
             **{

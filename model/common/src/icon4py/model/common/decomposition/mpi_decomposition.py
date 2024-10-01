@@ -126,8 +126,8 @@ class MPICommProcessProperties(definitions.ProcessProperties):
 
 
 class GHexMultiNodeExchange:
-    max_num_of_fields_to_communicate_dace: ClassVar[
-        Final[int]
+    max_num_of_fields_to_communicate_dace: Final[
+        int
     ] = 10  # maximum number of fields to perform halo exchange on (DaCe-related)
 
     def __init__(
@@ -223,12 +223,15 @@ class GHexMultiNodeExchange:
         res = self.exchange(dim, *fields)
         res.wait()
 
-    def __call__(self, *args, **kwargs):
-        """Performs a halo exchange operation.
-        args: The fields to be exchanged.
-        kwargs:
+    def __call__(self, *args, **kwargs) -> Optional[MultiNodeResult]:
+        """Perform a halo exchange operation.
+
+        Args:
+            args: The fields to be exchanged.
+
+        Keyword Args:
             dim: The dimension along which the exchange is performed.
-            wait: If True, the operation will block until the exchange is completed.
+            wait: If True, the operation will block until the exchange is completed (default: True).
         """
         dim = kwargs.get("dim", None)
         if dim is None:
@@ -243,7 +246,7 @@ class GHexMultiNodeExchange:
 
     if dace:
         # Implementation of DaCe SDFGConvertible interface
-        def dace__sdfg__(self, *args, **kwargs):
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
             if len(args) > GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace:
                 raise ValueError(
                     f"Maximum number of fields to communicate is {GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace}. Adapt the max number accordingly."
@@ -282,9 +285,10 @@ class GHexMultiNodeExchange:
             for i in range(GHexMultiNodeExchange.max_num_of_fields_to_communicate_dace):
                 args.append(f"field_{i}")
             return (args, [])
+
     else:
 
-        def dace__sdfg__(self, *args, **kwargs):
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
@@ -312,13 +316,13 @@ class HaloExchangeWait:
 
     buffer_name: ClassVar[str] = "communication_handle"  # DaCe-related
 
-    def __call__(self, communication_handle: MultiNodeResult):
+    def __call__(self, communication_handle: MultiNodeResult) -> None:
         """Wait on the communication handle."""
         communication_handle.wait()
 
     if dace:
         # Implementation of DaCe SDFGConvertible interface
-        def dace__sdfg__(self, *args, **kwargs):
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
             sdfg = dace.SDFG("_halo_exchange_wait_")
             state = sdfg.add_state()
 
@@ -370,9 +374,10 @@ class HaloExchangeWait:
                 ],
                 [],
             )
+
     else:
 
-        def dace__sdfg__(self, *args, **kwargs):
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
