@@ -60,13 +60,13 @@ build_image_aarch64:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
-      - python -c "import cupy"
-      - cd /icon4py
       - ls "${TEST_DATA_PATH}"
       - export TEST_TEMP_DIR=$(pwd)
       - export GT4PY_BUILD_CACHE_DIR=$(pwd)
       - echo "TEST_TEMP_DIR is set to ${TEST_TEMP_DIR}"
       - echo "GT4PY_BUILD_CACHE_DIR is set to ${GT4PY_BUILD_CACHE_DIR}"
+      - python -c "import cupy"
+      - cd /icon4py
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
