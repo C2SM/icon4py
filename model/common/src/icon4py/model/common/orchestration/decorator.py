@@ -97,6 +97,8 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                 if not has_grid:
                     raise ValueError("No grid object found.")
 
+                order_kwargs_by_annotations(fuse_func, kwargs)
+
                 compile_time_args_kwargs = {}
                 all_args_kwargs = [*args, *kwargs.values()]
                 for i, (k, v) in enumerate(fuse_func.__annotations__.items()):
@@ -170,6 +172,14 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
         return wrapper
 
     return _decorator(func) if func else _decorator
+
+
+def order_kwargs_by_annotations(f: Callable, kwargs: dict[str, Any]) -> None:
+    """Order in-place the kwargs based on the annotations of the function."""
+    annotations = f.__annotations__
+    ordered_items = [(key, kwargs[key]) for key in annotations if key in kwargs]
+    kwargs.clear()
+    kwargs.update(ordered_items)
 
 
 def dace_inhibitor(f: Callable):
@@ -258,7 +268,7 @@ if dace:
             raise ValueError("The device type is not supported.")
 
     def parse_compile_cache_sdfg(
-        unique_id: int,
+        unique_id: int | str,
         compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG],
         default_build_folder: str,
         exchange_obj: Optional[decomposition.ExchangeRuntime],
