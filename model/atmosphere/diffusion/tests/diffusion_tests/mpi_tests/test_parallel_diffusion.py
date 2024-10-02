@@ -29,8 +29,8 @@ def test_parallel_diffusion(
     processor_props,  # fixture
     decomposition_info,
     icon_grid,
-    diffusion_savepoint_init,
-    diffusion_savepoint_exit,
+    savepoint_diffusion_init,
+    savepoint_diffusion_exit,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -89,7 +89,7 @@ def test_parallel_diffusion(
     )
     config = utils.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = diffusion_.DiffusionParams(config)
-    dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
@@ -112,13 +112,13 @@ def test_parallel_diffusion(
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=diffusion_savepoint_init.hdef_ic(),
-        div_ic=diffusion_savepoint_init.div_ic(),
-        dwdx=diffusion_savepoint_init.dwdx(),
-        dwdy=diffusion_savepoint_init.dwdy(),
+        hdef_ic=savepoint_diffusion_init.hdef_ic(),
+        div_ic=savepoint_diffusion_init.div_ic(),
+        dwdx=savepoint_diffusion_init.dwdx(),
+        dwdy=savepoint_diffusion_init.dwdy(),
     )
 
-    prognostic_state = diffusion_savepoint_init.construct_prognostics()
+    prognostic_state = savepoint_diffusion_init.construct_prognostics()
     if linit:
         diffusion.initial_run(
             diagnostic_state=diagnostic_state,
@@ -137,7 +137,7 @@ def test_parallel_diffusion(
         config=config,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        diffusion_savepoint=diffusion_savepoint_exit,
+        diffusion_savepoint=savepoint_diffusion_exit,
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  running diffusion step - using {processor_props.comm_name} with {processor_props.comm_size} nodes - DONE"
@@ -161,8 +161,8 @@ def test_parallel_diffusion_multiple_steps(
     processor_props,  # fixture
     decomposition_info,
     icon_grid,
-    diffusion_savepoint_init,
-    diffusion_savepoint_exit,
+    savepoint_diffusion_init,
+    savepoint_diffusion_exit,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -227,7 +227,7 @@ def test_parallel_diffusion_multiple_steps(
     )
     config = utils.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = diffusion_.DiffusionParams(config)
-    dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
+    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
@@ -255,13 +255,13 @@ def test_parallel_diffusion_multiple_steps(
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
     diagnostic_state_dace_non_orch = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=diffusion_savepoint_init.hdef_ic(),
-        div_ic=diffusion_savepoint_init.div_ic(),
-        dwdx=diffusion_savepoint_init.dwdx(),
-        dwdy=diffusion_savepoint_init.dwdy(),
+        hdef_ic=savepoint_diffusion_init.hdef_ic(),
+        div_ic=savepoint_diffusion_init.div_ic(),
+        dwdx=savepoint_diffusion_init.dwdx(),
+        dwdy=savepoint_diffusion_init.dwdy(),
     )
 
-    prognostic_state_dace_non_orch = diffusion_savepoint_init.construct_prognostics()
+    prognostic_state_dace_non_orch = savepoint_diffusion_init.construct_prognostics()
     if linit:
         for _ in range(3):
             diffusion.initial_run(
@@ -303,13 +303,13 @@ def test_parallel_diffusion_multiple_steps(
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
     diagnostic_state_dace_orch = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=diffusion_savepoint_init.hdef_ic(),
-        div_ic=diffusion_savepoint_init.div_ic(),
-        dwdx=diffusion_savepoint_init.dwdx(),
-        dwdy=diffusion_savepoint_init.dwdy(),
+        hdef_ic=savepoint_diffusion_init.hdef_ic(),
+        div_ic=savepoint_diffusion_init.div_ic(),
+        dwdx=savepoint_diffusion_init.dwdx(),
+        dwdy=savepoint_diffusion_init.dwdy(),
     )
 
-    prognostic_state_dace_orch = diffusion_savepoint_init.construct_prognostics()
+    prognostic_state_dace_orch = savepoint_diffusion_init.construct_prognostics()
     if linit:
         for _ in range(3):
             diffusion.initial_run(
