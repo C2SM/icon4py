@@ -61,8 +61,7 @@ build_image_aarch64:
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
     - python -c "import cupy"
-    # we run tests in current directory which is backed up by scratch filesystem
-    - ls "${PWD}"
+    - cd /icon4py
     - ls "${TEST_DATA_PATH}"
   variables:
     SLURM_JOB_NUM_NODES: 1
