@@ -5,7 +5,7 @@ include:
   stage: benchmark
   script:
     # force execution of tests where validation is expected to fail, because the reason for failure is wrong numpy reference
-    - $TOX_CMD -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --runxfail --verbose
+    - tox -r -e run_benchmarks -c /icon4py/model/ -- --backend=$BACKEND --grid=$GRID --runxfail --verbose
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
