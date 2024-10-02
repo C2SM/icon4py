@@ -5,9 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
+
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_01 import (
     divide_flux_area_list_stencil_01,
@@ -1481,7 +1482,7 @@ class TestDivideFluxAreaListStencil01(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        famask_int = random_mask(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        famask_int = random_mask(grid, dims.EdgeDim, dims.KDim, dtype=int32)
         p_vn = random_field(grid, dims.EdgeDim, dims.KDim)
         ptr_v3_lon = random_field(grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
         ptr_v3_lon_field = as_1D_sparse_field(ptr_v3_lon, dims.ECDim)

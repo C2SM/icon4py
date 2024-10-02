@@ -5,9 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
+
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_01 import v_limit_prbl_sm_stencil_01
 from icon4py.model.common import dimension as dims
@@ -29,5 +30,5 @@ class TestVLimitPrblSmStencil01(StencilTest):
     def input_data(self, grid):
         p_cc = random_field(grid, dims.CellDim, dims.KDim)
         p_face = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        l_limit = zero_field(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
+        l_limit = zero_field(grid, dims.CellDim, dims.KDim, dtype=int32)
         return dict(p_face=p_face, p_cc=p_cc, l_limit=l_limit)
