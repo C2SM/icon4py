@@ -22,6 +22,7 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
+from icon4pytools.py2fgen.wrappers import wrapper_dimension
 
 
 # these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
@@ -67,7 +68,10 @@ class FuncParameter(Node):
         self.gtdims = [
             dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
         ]
-        self.gtdims = ["dims." + gtdim for gtdim in self.gtdims]
+        self.gtdims = [
+            "dims." + gtdim if gtdim not in dir(wrapper_dimension) else gtdim
+            for gtdim in self.gtdims
+        ]
         self.np_type = to_np_type(self.d_type)
 
 
@@ -116,13 +120,22 @@ def build_array_size_args() -> dict[str, str]:
     array_size_args = {}
     from icon4py.model.common import dimension
 
-    for var_name, var in vars(dimension).items():
-        if isinstance(var, Dimension):
-            dim_name = var_name.replace(
-                "Dim", ""
-            )  # Assumes we keep suffixing each Dimension with Dim in icon4py.common.dimension module
-            size_name = f"n_{dim_name}"
-            array_size_args[dim_name] = size_name
+    from icon4pytools.py2fgen.wrappers import wrapper_dimension
+
+    # Function to process the dimensions
+    def process_dimensions(module):
+        for var_name, var in vars(module).items():
+            if isinstance(var, Dimension):
+                dim_name = var_name.replace(
+                    "Dim", ""
+                )  # Assumes we keep suffixing each Dimension with Dim
+                size_name = f"n_{dim_name}"
+                array_size_args[dim_name] = size_name
+
+    # Process dimensions in both modules
+    process_dimensions(dimension)
+    process_dimensions(wrapper_dimension)
+
     return array_size_args
 
 

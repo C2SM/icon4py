@@ -8,11 +8,11 @@
 
 import pytest
 
-from icon4py.model.atmosphere.diffusion import diffusion as diffusion_
 from icon4py.model.common import dimension as dims, settings
+from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusion_states
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils, parallel_helpers
+from icon4py.model.common.test_utils import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
 
@@ -58,10 +58,28 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = utils.construct_metric_state(metrics_savepoint)
+    metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+    )
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+
+    interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+    )
+
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -69,7 +87,7 @@ def test_parallel_diffusion(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    config = utils.construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = utils.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = diffusion_.DiffusionParams(config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     print(
@@ -92,7 +110,14 @@ def test_parallel_diffusion(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state = utils.construct_diagnostics(diffusion_savepoint_init)
+
+    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=diffusion_savepoint_init.hdef_ic(),
+        div_ic=diffusion_savepoint_init.div_ic(),
+        dwdx=diffusion_savepoint_init.dwdx(),
+        dwdy=diffusion_savepoint_init.dwdy(),
+    )
+
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     if linit:
         diffusion.initial_run(
@@ -130,12 +155,14 @@ def test_parallel_diffusion(
 )
 def test_parallel_diffusion_multiple_steps(
     experiment,
+    step_date_init,
     linit,
     ndyn_substeps,
     processor_props,  # fixture
     decomposition_info,
     icon_grid,
     diffusion_savepoint_init,
+    diffusion_savepoint_exit,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
@@ -145,16 +172,16 @@ def test_parallel_diffusion_multiple_steps(
     damping_height,
     caplog,
 ):
-    caplog.set_level("INFO")
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
     # Diffusion initialization
     ######################################################################
+    caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing diffusion for experiment '{datatest_utils.REGIONAL_EXPERIMENT}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{datatest_utils.REGIONAL_EXPERIMENT}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
@@ -169,10 +196,28 @@ def test_parallel_diffusion_multiple_steps(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = utils.construct_metric_state(metrics_savepoint)
+    metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+    )
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+
+    interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+    )
+
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -180,7 +225,7 @@ def test_parallel_diffusion_multiple_steps(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    config = utils.construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = utils.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = diffusion_.DiffusionParams(config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     print(
@@ -208,7 +253,14 @@ def test_parallel_diffusion_multiple_steps(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state_dace_non_orch = utils.construct_diagnostics(diffusion_savepoint_init)
+
+    diagnostic_state_dace_non_orch = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=diffusion_savepoint_init.hdef_ic(),
+        div_ic=diffusion_savepoint_init.div_ic(),
+        dwdx=diffusion_savepoint_init.dwdx(),
+        dwdy=diffusion_savepoint_init.dwdy(),
+    )
+
     prognostic_state_dace_non_orch = diffusion_savepoint_init.construct_prognostics()
     if linit:
         for _ in range(3):
@@ -249,7 +301,14 @@ def test_parallel_diffusion_multiple_steps(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state_dace_orch = utils.construct_diagnostics(diffusion_savepoint_init)
+
+    diagnostic_state_dace_orch = diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=diffusion_savepoint_init.hdef_ic(),
+        div_ic=diffusion_savepoint_init.div_ic(),
+        dwdx=diffusion_savepoint_init.dwdx(),
+        dwdy=diffusion_savepoint_init.dwdy(),
+    )
+
     prognostic_state_dace_orch = diffusion_savepoint_init.construct_prognostics()
     if linit:
         for _ in range(3):
