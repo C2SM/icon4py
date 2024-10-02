@@ -74,7 +74,7 @@ build_image_aarch64:
     CRAY_CUDA_MPS: 1
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
-    TEST_DATA_PATH: "/icon4py/ci/testdata"
+    TEST_DATA_PATH: "/testdata"
     ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
