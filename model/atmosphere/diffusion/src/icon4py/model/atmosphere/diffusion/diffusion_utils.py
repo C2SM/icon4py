@@ -169,7 +169,7 @@ def _init_nabla2_factor_in_upper_damping_zone(
     heights_1: float,
 ) -> fa.KField[float]:
     height_sliced = where(
-        k_field >= (1 + nshift) & k_field < (nshift + nrdmax + 1), physical_heights, 0.0
+        (k_field >= (1 + nshift)) & (k_field < (nshift + nrdmax + 1)), physical_heights, 0.0
     )
     diff_multfac_n2w = (
         1.0 / 12.0 * ((height_sliced - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** 4
