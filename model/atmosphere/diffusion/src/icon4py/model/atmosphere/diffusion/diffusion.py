@@ -432,7 +432,7 @@ class Diffusion:
         )
 
         diff_multfac_n2w = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        self.diff_multfac_n2w = diffusion_utils.init_nabla2_factor_in_upper_damping_zone(
+        diffusion_utils.init_nabla2_factor_in_upper_damping_zone(
             physical_heights=self.vertical_grid.interface_physical_height,
             k_field=field_alloc.allocate_indices(dims.KDim, grid=self.grid),
             diff_multfac_n2w=diff_multfac_n2w,
@@ -446,6 +446,8 @@ class Diffusion:
             vertical_end=self.vertical_grid.end_index_of_damping_layer + 1,
             offset_provider={},
         )
+        self.diff_multfac_n2w = diff_multfac_n2w
+
         self._determine_horizontal_domains()
 
         self._initialized = True
