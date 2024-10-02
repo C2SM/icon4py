@@ -9,6 +9,7 @@
 import dataclasses
 import enum
 import functools
+from functools import cached_property
 import logging
 import math
 import sys
@@ -65,6 +66,7 @@ from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from icon4py.model.common.orchestration.decorator import (
     orchestrate,
+    generate_orchestration_uid,
     build_compile_time_connectivities,
 )
 
@@ -872,3 +874,7 @@ class Diffusion:
             handle_edge_comm
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
+
+    @cached_property
+    def orchestration_uid(self) -> str:
+        return generate_orchestration_uid(self)

@@ -15,9 +15,10 @@ Creates a DaCe SDFG that fuses any GT4Py Program called by the decorated functio
 from __future__ import annotations
 
 import copy
+import hashlib
 import inspect
 import os
-import shutil
+import uuid
 from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
@@ -83,18 +84,15 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                     fuse_func
                 )  # every arg/kwarg is annotated with DaCe data types
 
-                has_exchange = False
-                has_grid = False
                 exchange_obj = None
+                grid = None
                 for attr_name, attr_value in self.__dict__.items():
-                    if isinstance(attr_value, decomposition.ExchangeRuntime) and not has_exchange:
-                        has_exchange = True
+                    if isinstance(attr_value, decomposition.ExchangeRuntime):
                         exchange_obj = getattr(self, attr_name)
-                    if isinstance(attr_value, icon_grid.IconGrid) and not has_grid:
-                        has_grid = True
+                    if isinstance(attr_value, icon_grid.IconGrid):
                         grid = getattr(self, attr_name)
 
-                if not has_grid:
+                if not grid:
                     raise ValueError("No grid object found.")
 
                 order_kwargs_by_annotations(fuse_func, kwargs)
@@ -105,23 +103,9 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                     if v is dace.compiletime:
                         compile_time_args_kwargs[k] = all_args_kwargs[i]
 
-                # unique key to retrieve from compiled_sdfgs dict the cached objects
-                if len(compile_time_args_kwargs) == 0:
-                    unique_id = fuse_func.__name__
-                else:
-                    # if compile time args/kwargs are used, hash them to create a unique id.
-                    # This happens because the fused SDFG depends on the compile time args/kwargs,
-                    # i.e. the same orchestrated function with different compile time args/kwargs gives different SDFGs.
-                    unique_id = hash(tuple([id(e) for e in compile_time_args_kwargs.values()]))
+                unique_id = make_uid(fuse_func, compile_time_args_kwargs, exchange_obj)
 
-                if exchange_obj:
-                    my_rank = exchange_obj.my_rank()
-                else:
-                    my_rank = 0 if not mpi4py else MPI.COMM_WORLD.Get_rank()
-                default_build_folder = (
-                    # Path(dace.config.Config().get("default_build_folder")) # noqa: ERA001
-                    Path(".dacecache") / f"MPI_rank_{my_rank}"
-                )
+                default_build_folder = Path(".dacecache") / f"uid_{unique_id}"
 
                 parse_compile_cache_sdfg(
                     unique_id,
@@ -137,21 +121,22 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                 sdfg = compiled_sdfgs[unique_id]["sdfg"]
                 compiled_sdfg = compiled_sdfgs[unique_id]["compiled_sdfg"]
 
+                # update the args/kwargs with runtime related values, such as
+                # contretized symbols, connectivity tables, GHEX C++ pointers, and DaCe structures pointers
                 updated_args, updated_kwargs = mod_xargs_for_dace_structures(
                     fuse_func, fuse_func_orig_annotations, args, kwargs
                 )
-
                 updated_kwargs = {
                     **updated_kwargs,
                     **dace_specific_kwargs(exchange_obj, grid.offset_providers),
                 }
-
                 updated_kwargs = {
                     **updated_kwargs,
                     **dace_symbols_concretization(
                         grid, fuse_func, fuse_func_orig_annotations, args, kwargs
                     ),
                 }
+                #
 
                 sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
                 if method:
@@ -172,6 +157,96 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
         return wrapper
 
     return _decorator(func) if func else _decorator
+
+
+def make_uid(
+    fuse_func: Callable,
+    compile_time_args_kwargs: dict[str, Any],
+    exchange_obj: Optional[decomposition.ExchangeRuntime],
+) -> str:
+    """Generate unique key to retrieve from compiled_sdfgs dict the cached objects."""
+    if len(compile_time_args_kwargs) == 0:
+        unique_id = fuse_func.__name__
+    else:
+        l_uids = []
+        for ct_key, ct_val in compile_time_args_kwargs.items():
+            if hasattr(ct_val, "orchestration_uid"):
+                l_uids.append(ct_val.orchestration_uid)
+            else:
+                l_uids.append(generate_orchestration_uid(ct_val, ct_key))
+
+        if exchange_obj:
+            my_rank = exchange_obj.my_rank()
+            mpi_size = exchange_obj.my_rank()
+        else:
+            my_rank = 0 if not mpi4py else MPI.COMM_WORLD.Get_rank()
+            mpi_size = 1 if not mpi4py else MPI.COMM_WORLD.Get_size()
+
+        l_uids.append(str({"MPI_rank": my_rank, "MPI_size": mpi_size}))
+
+        unique_id = uid_from_hashlib(str(l_uids))
+
+    return unique_id
+
+
+def generate_orchestration_uid(obj: Any, obj_name: str = "") -> str:
+    """Generate a unique id for a runtime object.
+
+    The unique id is generated by creating a dictionary that describes the runtime state of the object.
+    For primitive types, the dictionary contains the type and the value.
+    For arrays, the dictionary contains the shape and the dtype -not their content-.
+    """
+    primitive_dtypes = (*orchestration_dtypes.ICON4PY_PRIMITIVE_DTYPES, str, uuid.UUID, np.dtype)
+
+    unique_dict = {}
+
+    def _populate_entry(key: str, value: Any, parent_key: str = ""):
+        full_key = f"{parent_key}.{key}" if parent_key else key
+        if isinstance(value, primitive_dtypes):
+            unique_dict[full_key] = {"type": "primitive_dtypes", "value": str(value)}
+        elif isinstance(value, (np.ndarray, gtx.Field)):
+            unique_dict[full_key] = {
+                "type": "array/field",
+                "shape": value.shape,
+                "dtype": str(value.dtype),
+            }
+        elif isinstance(value, (list, tuple)):
+            if all(isinstance(i, primitive_dtypes) for i in value):
+                unique_dict[full_key] = {
+                    "type": "array-like[primitive_dtypes]",
+                    "length": len(value),
+                }
+            else:
+                for i, v in enumerate(value):
+                    _populate_entry(str(i), v, full_key)
+        elif value is None:
+            unique_dict[full_key] = {"type": "None", "value": None}
+        elif hasattr(value, "__dict__") or isinstance(value, dict):
+            _populate_unique_dict(value, full_key)
+        else:
+            raise ValueError(f"Type {type(value)} is not supported.")
+
+    def _populate_unique_dict(obj: Any, parent_key: str = ""):
+        if (hasattr(obj, "__dict__") or isinstance(obj, dict)) and not isinstance(
+            obj, decomposition.ExchangeRuntime
+        ):
+            obj_to_traverse = obj.__dict__ if hasattr(obj, "__dict__") else obj
+            for key, value in obj_to_traverse.items():
+                _populate_entry(key, value, parent_key)
+
+    if hasattr(obj, "__dict__") or isinstance(obj, dict):
+        _populate_unique_dict(obj)
+    else:
+        _populate_entry(obj_name, obj)
+
+    return uid_from_hashlib(str(unique_dict))
+
+
+def uid_from_hashlib(unique_string: str) -> str:
+    unique_string_bytes = unique_string.encode("utf-8")
+    hash_object = hashlib.sha256(unique_string_bytes)
+    uid = hash_object.hexdigest()
+    return uid
 
 
 def order_kwargs_by_annotations(f: Callable, kwargs: dict[str, Any]) -> None:
@@ -268,9 +343,9 @@ if dace:
             raise ValueError("The device type is not supported.")
 
     def parse_compile_cache_sdfg(
-        unique_id: int | str,
-        compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG],
-        default_build_folder: str,
+        unique_id: str,
+        compiled_sdfgs: dict[str, dict[str, Any]],
+        default_build_folder: Path,
         exchange_obj: Optional[decomposition.ExchangeRuntime],
         fuse_func: Callable,
         compile_time_args_kwargs: dict[str, Any],
@@ -291,8 +366,6 @@ if dace:
                 device=dev_type_from_gt4py_to_dace(device_type),
                 distributed_compilation=False,
             )(fuse_func)
-
-            cache_sanitization(default_build_folder, exchange_obj)
 
             # export DACE_ORCH_CACHE_FROM_DISK=(True or 1) if you want to activate it
             cache_from_disk = get_env_bool("DACE_ORCH_CACHE_FROM_DISK", default=False)
@@ -375,33 +448,7 @@ if dace:
         value = os.getenv(env_var_name, str(default)).lower()
         return value in ("true", "1")
 
-    def count_folders_in_directory(directory: str) -> int:
-        try:
-            entries = os.listdir(directory)
-            folders = [entry for entry in entries if (Path(directory) / entry).is_dir()]
-            return len(folders)
-        except Exception as e:
-            return str(e)
-
-    def cache_sanitization(
-        default_build_folder: str,
-        exchange_obj: Optional[decomposition.ExchangeRuntime],
-    ) -> None:
-        # remove the cache if the number of folders in the cache is different from the number of halo exchanges
-        normalized_path = os.path.normpath(default_build_folder)
-        parts = normalized_path.split(os.sep)
-        dacecache = next(part for part in parts if part)  # normally .dacecache
-        if exchange_obj:
-            mpi_size = exchange_obj.my_rank()
-        else:
-            mpi_size = 1 if not mpi4py else MPI.COMM_WORLD.Get_size()
-        if count_folders_in_directory(dacecache) != mpi_size:
-            try:
-                shutil.rmtree(dacecache)
-            except Exception as e:
-                print(f"Error: {e}")
-
-    def configure_dace_temp_env(default_build_folder: str) -> core_defs.DeviceType:
+    def configure_dace_temp_env(default_build_folder: Path) -> core_defs.DeviceType:
         dace.config.Config.set("default_build_folder", value=default_build_folder)
         dace.config.Config.set(
             "compiler", "allow_view_arguments", value=True
@@ -498,6 +545,7 @@ if dace:
         args: Any,
         kwargs: Any,
     ) -> dict[str, Any]:
+        """Since the generated SDFGs are parametric, we need to concretize the symbols before calling the compiled SDFGs."""
         flattened_xargs_type_value = list(
             zip(
                 [*fuse_func.__annotations__.values()],
