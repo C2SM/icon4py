@@ -9,7 +9,6 @@
 import dataclasses
 import enum
 import functools
-from functools import cached_property
 import logging
 import math
 import sys
@@ -875,6 +874,5 @@ class Diffusion:
         )  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")
 
-    @cached_property
     def orchestration_uid(self) -> str:
         return generate_orchestration_uid(self)
