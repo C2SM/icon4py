@@ -444,6 +444,7 @@ class Diffusion:
             heights_1=self.vertical_grid.interface_physical_height.asnumpy()[1],
             vertical_start=1,
             vertical_end=self.vertical_grid.end_index_of_damping_layer + 1,
+            offset_provider={}
         )
         self._determine_horizontal_domains()
 
