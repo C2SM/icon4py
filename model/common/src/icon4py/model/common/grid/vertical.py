@@ -178,7 +178,7 @@ class VerticalGrid:
     def index(self, domain: Domain) -> gtx.int32:
         match domain.marker:
             case Zone.TOP:
-                index = gtx.int32(0)
+                index = 0
             case Zone.BOTTOM:
                 index = self._bottom_level(domain)
             case Zone.MOIST:
@@ -194,10 +194,10 @@ class VerticalGrid:
         assert (
             0 <= index <= self._bottom_level(domain)
         ), f"vertical index {index} outside of grid levels for {domain.dim}"
-        return index
+        return gtx.int32(index)
 
-    def _bottom_level(self, domain: Domain) -> gtx.int32:
-        return gtx.int32(self.size(domain.dim))
+    def _bottom_level(self, domain: Domain) -> int:
+        return self.size(domain.dim)
 
     @property
     def interface_physical_height(self) -> fa.KField[float]:
