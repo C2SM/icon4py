@@ -431,12 +431,19 @@ class Diffusion:
             offset_provider={"Koff": dims.KDim},
         )
 
-        # TODO (magdalena) port to gt4py?
+        diff_multfac_n2w = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
         self.diff_multfac_n2w = diffusion_utils.init_nabla2_factor_in_upper_damping_zone(
-            k_size=self.grid.num_levels,
-            nshift=0,
             physical_heights=self.vertical_grid.interface_physical_height,
+            k_field=field_alloc.allocate_indices(dims.KDim, grid=self.grid),
+            diff_multfac_n2w=diff_multfac_n2w,
             nrdmax=self.vertical_grid.end_index_of_damping_layer,
+            nshift=0,
+            heights_nrd_shift=self.vertical_grid.interface_physical_height.asnumpy()[
+                self.vertical_grid.end_index_of_damping_layer + 1
+            ],
+            heights_1=self.vertical_grid.interface_physical_height.asnumpy()[1],
+            vertical_start=1,
+            vertical_end=self.vertical_grid.end_index_of_damping_layer + 1,
         )
         self._determine_horizontal_domains()
 
