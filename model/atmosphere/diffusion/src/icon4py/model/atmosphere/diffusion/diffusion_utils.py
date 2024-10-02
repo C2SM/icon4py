@@ -181,7 +181,7 @@ def _init_nabla2_factor_in_upper_damping_zone(
 def init_nabla2_factor_in_upper_damping_zone(
     physical_heights: fa.KField[float],
     k_field: fa.KField[gtx.int32],
-    diff_multfac_n2w: fa.KField[gtx.int32],
+    diff_multfac_n2w: fa.KField[float],
     nrdmax: gtx.int32,
     nshift: gtx.int32,
     heights_nrd_shift: float,
