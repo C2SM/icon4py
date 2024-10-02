@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
     apply_diffusion_to_theta_and_exner,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     flatten_first_two_dims,
@@ -53,7 +54,17 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         rd_o_cvd,
         **kwargs,
     ):
-        z_nabla2_e = calculate_nabla2_for_z_numpy(grid, kh_smag_e, inv_dual_edge_length, theta_v_in)
+        z_nabla2_e = np.zeros_like(kh_smag_e)
+        kwargs_2 = {k: kwargs[k] for k in kwargs.keys() - {"theta_v"}}  # remove unused kwargs
+        # adjust boundary for numpy stencil over edges below
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        kwargs_2["horizontal_start"] = grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        kwargs_2["horizontal_end"] = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        z_nabla2_e = calculate_nabla2_for_z_numpy(
+            grid, kh_smag_e, inv_dual_edge_length, theta_v_in, z_nabla2_e, **kwargs_2
+        )
         z_temp = calculate_nabla2_of_theta_numpy(grid, z_nabla2_e, geofac_div)
 
         geofac_n2s_nbh = unflatten_first_two_dims(geofac_n2s_nbh)
@@ -77,6 +88,10 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        # error message contained in truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy
+        if np.any(grid.connectivities[dims.C2E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim)
         theta_v_in = random_field(grid, dims.CellDim, dims.KDim)
@@ -119,4 +134,8 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
             theta_v=theta_v,
             exner=exner,
             rd_o_cvd=rd_o_cvd,
+            horizontal_start=0,
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )
