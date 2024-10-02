@@ -62,7 +62,7 @@ build_image_aarch64:
   before_script:
     - python -c "import cupy"
     # we run tests in current directory which is backed up by scratch filesystem
-    - ls "#{PWD}"
+    - ls "${PWD}"
     - ls "${TEST_DATA_PATH}"
   variables:
     SLURM_JOB_NUM_NODES: 1
