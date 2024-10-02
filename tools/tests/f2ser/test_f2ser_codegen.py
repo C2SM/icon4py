@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
@@ -30,7 +25,7 @@ def test_deserialiser_diffusion_codegen(diffusion_granule, diffusion_granule_dep
 def expected_no_deps_serialization_directives():
     serialization_directives = [
         GeneratedCode(
-            startln=14,
+            startln=22,
             source="\n"
             '    !$ser init directory="." prefix="f2ser"\n'
             "\n"
@@ -45,7 +40,7 @@ def expected_no_deps_serialization_directives():
             "    !$ser data b=b",
         ),
         GeneratedCode(
-            startln=16,
+            startln=24,
             source="\n"
             "    !$ser savepoint no_deps_init_out\n"
             "\n"
@@ -58,7 +53,7 @@ def expected_no_deps_serialization_directives():
             "    !$ser data b=b",
         ),
         GeneratedCode(
-            startln=22,
+            startln=30,
             source="\n"
             "    !$ser savepoint no_deps_run_in\n"
             "\n"
@@ -71,7 +66,7 @@ def expected_no_deps_serialization_directives():
             "    !$ser data b=b",
         ),
         GeneratedCode(
-            startln=24,
+            startln=32,
             source="\n"
             "    !$ser savepoint no_deps_run_out\n"
             "\n"

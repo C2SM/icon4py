@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 import pytest
@@ -18,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_51 import (
     mo_solve_nonhydro_stencil_51,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -77,15 +72,17 @@ class TestMoSolveNonHydroStencil51(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_q = zero_field(grid, CellDim, KDim)
-        w_nnew = zero_field(grid, CellDim, KDim)
-        vwind_impl_wgt = random_field(grid, CellDim)
-        theta_v_ic = random_field(grid, CellDim, KDim)
-        ddqz_z_half = random_field(grid, CellDim, KDim, low=0.5, high=1.5)
-        z_beta = random_field(grid, CellDim, KDim, low=0.5, high=1.5)
-        z_alpha = random_field(grid, CellDim, KDim, low=0.5, high=1.5, extend={KDim: 1})
-        z_w_expl = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        z_exner_expl = random_field(grid, CellDim, KDim)
+        z_q = zero_field(grid, dims.CellDim, dims.KDim)
+        w_nnew = zero_field(grid, dims.CellDim, dims.KDim)
+        vwind_impl_wgt = random_field(grid, dims.CellDim)
+        theta_v_ic = random_field(grid, dims.CellDim, dims.KDim)
+        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, low=0.5, high=1.5)
+        z_beta = random_field(grid, dims.CellDim, dims.KDim, low=0.5, high=1.5)
+        z_alpha = random_field(
+            grid, dims.CellDim, dims.KDim, low=0.5, high=1.5, extend={dims.KDim: 1}
+        )
+        z_w_expl = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        z_exner_expl = random_field(grid, dims.CellDim, dims.KDim)
         dtime = 10.0
         cpd = 1.0
         return dict(

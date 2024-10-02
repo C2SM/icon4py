@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 import pytest
@@ -18,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_list_stencil import (
     prep_gauss_quadrature_c_list_stencil,
 )
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     constant_field,
@@ -530,15 +525,15 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        famask_int = constant_field(grid, 1, EdgeDim, KDim, dtype=int32)
-        p_coords_dreg_v_1_x = random_field(grid, EdgeDim, KDim)
-        p_coords_dreg_v_2_x = random_field(grid, EdgeDim, KDim)
-        p_coords_dreg_v_3_x = random_field(grid, EdgeDim, KDim)
-        p_coords_dreg_v_4_x = random_field(grid, EdgeDim, KDim)
-        p_coords_dreg_v_1_y = random_field(grid, EdgeDim, KDim)
-        p_coords_dreg_v_2_y = random_field(grid, EdgeDim, KDim)
-        p_coords_dreg_v_3_y = random_field(grid, EdgeDim, KDim)
-        p_coords_dreg_v_4_y = random_field(grid, EdgeDim, KDim)
+        famask_int = constant_field(grid, 1, dims.EdgeDim, dims.KDim, dtype=int32)
+        p_coords_dreg_v_1_x = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_x = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_x = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_x = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_1_y = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_y = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_y = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_y = random_field(grid, dims.EdgeDim, dims.KDim)
         shape_func_1_1 = 0.001
         shape_func_2_1 = 0.001
         shape_func_3_1 = 0.001
@@ -569,18 +564,18 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
         wgt_eta_2 = 0.007
         dbl_eps = np.float64(0.1)
         eps = 0.1
-        p_dreg_area_in = random_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_1 = zero_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_2 = zero_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_3 = zero_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_4 = zero_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_5 = zero_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_6 = zero_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_7 = zero_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_8 = zero_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_9 = zero_field(grid, EdgeDim, KDim)
-        p_quad_vector_sum_10 = zero_field(grid, EdgeDim, KDim)
-        p_dreg_area = zero_field(grid, EdgeDim, KDim)
+        p_dreg_area_in = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_1 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_2 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_3 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_4 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_5 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_6 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_7 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_8 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_9 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_10 = zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_dreg_area = zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             famask_int=famask_int,
             p_coords_dreg_v_1_x=p_coords_dreg_v_1_x,

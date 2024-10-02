@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import os
 import pkgutil
@@ -133,9 +128,9 @@ def check_code_was_generated(stencil_name: str) -> None:
     dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
 )
 @pytest.mark.parametrize("flags", [()], ids=["normal"])
-def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
+def test_codegen(cli, stencil_module, stencil_name, flags, test_temp_dir) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
-    with cli.isolated_filesystem():
+    with cli.isolated_filesystem(temp_dir=test_temp_dir):
         cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH, *flags]
         result = cli.invoke(main, cli_args)
         assert (

@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import inspect
 from typing import Any, Sequence
 
@@ -26,6 +22,7 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
+from icon4pytools.py2fgen.wrappers import wrapper_dimension
 
 
 # these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
@@ -70,6 +67,10 @@ class FuncParameter(Node):
         # side. So before generating the python wrapper code, we replace occurrences of KHalfDim with KDim
         self.gtdims = [
             dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
+        ]
+        self.gtdims = [
+            "dims." + gtdim if gtdim not in dir(wrapper_dimension) else gtdim
+            for gtdim in self.gtdims
         ]
         self.np_type = to_np_type(self.d_type)
 
@@ -119,13 +120,22 @@ def build_array_size_args() -> dict[str, str]:
     array_size_args = {}
     from icon4py.model.common import dimension
 
-    for var_name, var in vars(dimension).items():
-        if isinstance(var, Dimension):
-            dim_name = var_name.replace(
-                "Dim", ""
-            )  # Assumes we keep suffixing each Dimension with Dim in icon4py.common.dimension module
-            size_name = f"n_{dim_name}"
-            array_size_args[dim_name] = size_name
+    from icon4pytools.py2fgen.wrappers import wrapper_dimension
+
+    # Function to process the dimensions
+    def process_dimensions(module):
+        for var_name, var in vars(module).items():
+            if isinstance(var, Dimension):
+                dim_name = var_name.replace(
+                    "Dim", ""
+                )  # Assumes we keep suffixing each Dimension with Dim
+                size_name = f"n_{dim_name}"
+                array_size_args[dim_name] = size_name
+
+    # Process dimensions in both modules
+    process_dimensions(dimension)
+    process_dimensions(wrapper_dimension)
+
     return array_size_args
 
 
@@ -235,6 +245,7 @@ from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.settings import xp
+from icon4py.model.common import dimension as dims
 
 {% if _this_node.is_gt4py_program_present %}
 # necessary imports when embedding a gt4py program directly

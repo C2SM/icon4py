@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 import pytest
@@ -18,10 +13,10 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 import (
     fused_velocity_advection_stencil_1_to_7,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
-from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -213,27 +208,27 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
 
-        c_intp = random_field(grid, VertexDim, V2CDim)
-        vn = random_field(grid, EdgeDim, KDim)
-        rbf_vec_coeff_e = random_field(grid, EdgeDim, E2C2EDim)
-        vt = zero_field(grid, EdgeDim, KDim)
-        wgtfac_e = random_field(grid, EdgeDim, KDim)
-        vn_ie = zero_field(grid, EdgeDim, KDim, extend={KDim: 1})
-        z_kin_hor_e = zero_field(grid, EdgeDim, KDim)
-        z_vt_ie = zero_field(grid, EdgeDim, KDim)
-        ddxn_z_full = random_field(grid, EdgeDim, KDim)
-        ddxt_z_full = random_field(grid, EdgeDim, KDim)
-        z_w_concorr_me = zero_field(grid, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(grid, EdgeDim)
-        w = random_field(grid, CellDim, KDim)
-        inv_primal_edge_length = random_field(grid, EdgeDim)
-        tangent_orientation = random_field(grid, EdgeDim)
-        z_v_grad_w = zero_field(grid, EdgeDim, KDim)
-        wgtfacq_e = random_field(grid, EdgeDim, KDim)
+        c_intp = random_field(grid, dims.VertexDim, dims.V2CDim)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim)
+        rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim)
+        vt = zero_field(grid, dims.EdgeDim, dims.KDim)
+        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        vn_ie = zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        z_kin_hor_e = zero_field(grid, dims.EdgeDim, dims.KDim)
+        z_vt_ie = zero_field(grid, dims.EdgeDim, dims.KDim)
+        ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim)
+        ddxt_z_full = random_field(grid, dims.EdgeDim, dims.KDim)
+        z_w_concorr_me = zero_field(grid, dims.EdgeDim, dims.KDim)
+        inv_dual_edge_length = random_field(grid, dims.EdgeDim)
+        w = random_field(grid, dims.CellDim, dims.KDim)
+        inv_primal_edge_length = random_field(grid, dims.EdgeDim)
+        tangent_orientation = random_field(grid, dims.EdgeDim)
+        z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim)
+        wgtfacq_e = random_field(grid, dims.EdgeDim, dims.KDim)
 
-        k = indices_field(KDim, grid, is_halfdim=True, dtype=int32)
+        k = field_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
 
-        edge = zero_field(grid, EdgeDim, dtype=int32)
+        edge = zero_field(grid, dims.EdgeDim, dtype=int32)
         for e in range(grid.num_edges):
             edge[e] = e
 

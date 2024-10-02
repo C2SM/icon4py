@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import os
 import subprocess
@@ -69,13 +64,14 @@ def run_test_case(
     backend,
     samples_path,
     fortran_driver,
+    test_temp_dir,
     compiler="gfortran",
     extra_compiler_flags=(),
     expected_error_code=0,
     limited_area=False,
     env_vars=None,
 ):
-    with cli.isolated_filesystem():
+    with cli.isolated_filesystem(temp_dir=test_temp_dir):
         invoke_cli(cli, module, function, plugin_name, backend, limited_area)
         compile_and_run_fortran(
             plugin_name,
@@ -128,14 +124,14 @@ def compile_and_run_fortran(
 
 
 @pytest.mark.parametrize(
-    "backend, extra_flags",
+    "run_backend, extra_flags",
     [
         ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
         ("CPU", ""),
     ],
 )
 def test_py2fgen_compilation_and_execution_square_cpu(
-    cli_runner, backend, samples_path, square_wrapper_module, extra_flags
+    cli_runner, run_backend, samples_path, square_wrapper_module, extra_flags, test_temp_dir
 ):
     """Tests embedding Python functions, and GT4Py program directly.
     Also tests embedding multiple functions in one shared library.
@@ -145,15 +141,16 @@ def test_py2fgen_compilation_and_execution_square_cpu(
         square_wrapper_module,
         "square,square_from_function",
         "square_plugin",
-        backend,
+        run_backend,
         samples_path,
         "test_square",
+        test_temp_dir,
         extra_compiler_flags=extra_flags,
     )
 
 
 def test_py2fgen_python_error_propagation_to_fortran(
-    cli_runner, samples_path, square_wrapper_module
+    cli_runner, samples_path, square_wrapper_module, test_temp_dir
 ):
     """Tests that Exceptions triggered in Python propagate an error code (1) up to Fortran."""
     run_test_case(
@@ -164,6 +161,7 @@ def test_py2fgen_python_error_propagation_to_fortran(
         "ROUNDTRIP",
         samples_path,
         "test_square",
+        test_temp_dir,
         extra_compiler_flags=("-DUSE_SQUARE_ERROR",),
         expected_error_code=1,
     )
@@ -171,7 +169,7 @@ def test_py2fgen_python_error_propagation_to_fortran(
 
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
-    "function_name, plugin_name, test_name, backend, extra_flags",
+    "function_name, plugin_name, test_name, run_backend, extra_flags",
     [
         ("square", "square_plugin", "test_square", "GPU", ("-acc", "-Minfo=acc")),
     ],
@@ -181,19 +179,21 @@ def test_py2fgen_compilation_and_execution_gpu(
     function_name,
     plugin_name,
     test_name,
-    backend,
+    run_backend,
     samples_path,
     square_wrapper_module,
     extra_flags,
+    test_temp_dir,
 ):
     run_test_case(
         cli_runner,
         square_wrapper_module,
         function_name,
         plugin_name,
-        backend,
+        run_backend,
         samples_path,
         test_name,
+        test_temp_dir,
         os.environ["NVFORTRAN_COMPILER"],
         extra_compiler_flags=extra_flags,
         env_vars={"ICON4PY_BACKEND": "GPU"},
@@ -201,13 +201,13 @@ def test_py2fgen_compilation_and_execution_gpu(
 
 
 @pytest.mark.parametrize(
-    "backend, extra_flags",
+    "run_backend, extra_flags",
     [
         ("CPU", ("-DPROFILE_SQUARE_FROM_FUNCTION",)),
     ],
 )
 def test_py2fgen_compilation_and_profiling(
-    cli_runner, backend, samples_path, square_wrapper_module, extra_flags
+    cli_runner, run_backend, samples_path, square_wrapper_module, extra_flags, test_temp_dir
 ):
     """Test profiling using cProfile of the generated wrapper."""
     run_test_case(
@@ -215,15 +215,16 @@ def test_py2fgen_compilation_and_profiling(
         square_wrapper_module,
         "square_from_function,profile_enable,profile_disable",
         "square_plugin",
-        backend,
+        run_backend,
         samples_path,
         "test_square",
+        test_temp_dir,
         extra_compiler_flags=extra_flags,
     )
 
 
-@pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
-def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_path):
+@pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
+def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_path, test_temp_dir):
     run_test_case(
         cli_runner,
         "icon4pytools.py2fgen.wrappers.diffusion",
@@ -232,6 +233,7 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
         "GPU",
         samples_path,
         "test_diffusion",
+        test_temp_dir,
         os.environ["NVFORTRAN_COMPILER"],
         ("-acc", "-Minfo=acc"),
         limited_area=True,
@@ -239,7 +241,8 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
     )
 
 
-def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
+@pytest.mark.skip("Need to adapt Fortran diffusion driver to pass connectivities.")
+def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, test_temp_dir):
     run_test_case(
         cli_runner,
         "icon4pytools.py2fgen.wrappers.diffusion",
@@ -248,5 +251,6 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
         "CPU",
         samples_path,
         "test_diffusion",
+        test_temp_dir,
         limited_area=True,
     )

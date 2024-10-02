@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 import pytest
@@ -18,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
-from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -60,8 +55,8 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
         * area
         * np.sum(
             np.where(
-                (grid.connectivities[C2E2CODim] != -1)[:, :, np.newaxis],
-                w[grid.connectivities[C2E2CODim]] * geofac_n2s,
+                (grid.connectivities[dims.C2E2CODim] != -1)[:, :, np.newaxis],
+                w[grid.connectivities[dims.C2E2CODim]] * geofac_n2s,
                 0,
             ),
             axis=1,
@@ -111,15 +106,15 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        levmask = random_mask(grid, KDim)
-        cfl_clipping = random_mask(grid, CellDim, KDim)
-        owner_mask = random_mask(grid, CellDim)
-        z_w_con_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        area = random_field(grid, CellDim, dtype=wpfloat)
-        geofac_n2s = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        ddt_w_adv = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        levmask = random_mask(grid, dims.KDim)
+        cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim)
+        owner_mask = random_mask(grid, dims.CellDim)
+        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        area = random_field(grid, dims.CellDim, dtype=wpfloat)
+        geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddt_w_adv = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         scalfac_exdiff = wpfloat("10.0")
         cfl_w_limit = vpfloat("3.0")
         dtime = wpfloat("2.0")

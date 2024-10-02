@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 import pytest
@@ -17,7 +12,7 @@ from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import vert_adv_stencil_01
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -61,17 +56,17 @@ class TestVertAdvStencil01(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        tracer_now = random_field(grid, CellDim, KDim)
-        rhodz_now = random_field(grid, CellDim, KDim)
-        p_mflx_tracer_v = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        deepatmo_divzl = random_field(grid, KDim)
-        deepatmo_divzu = random_field(grid, KDim)
-        rhodz_new = random_field(grid, CellDim, KDim)
-        k = as_field((KDim,), np.arange(grid.num_levels, dtype=int32))
+        tracer_now = random_field(grid, dims.CellDim, dims.KDim)
+        rhodz_now = random_field(grid, dims.CellDim, dims.KDim)
+        p_mflx_tracer_v = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        deepatmo_divzl = random_field(grid, dims.KDim)
+        deepatmo_divzu = random_field(grid, dims.KDim)
+        rhodz_new = random_field(grid, dims.CellDim, dims.KDim)
+        k = as_field((dims.KDim,), np.arange(grid.num_levels, dtype=int32))
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4
-        tracer_new = zero_field(grid, CellDim, KDim)
+        tracer_new = zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             tracer_now=tracer_now,
             rhodz_now=rhodz_now,

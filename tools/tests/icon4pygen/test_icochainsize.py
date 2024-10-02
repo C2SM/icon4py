@@ -1,20 +1,15 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
+from icon4pytools.common.metadata import _provide_offset
 from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
-from icon4pytools.icon4pygen.metadata import provide_offset
 
 
 # TODO (halungge) that test is in the wrong file: should go to test_metadata.py
@@ -42,7 +37,7 @@ from icon4pytools.icon4pygen.metadata import provide_offset
     ],
 )
 def test_chainsize_neighbors(chain, expected):
-    actual = provide_offset(chain)
+    actual = _provide_offset(chain)
     assert actual.max_neighbors == expected
 
 
@@ -51,4 +46,4 @@ def test_chainsize_neighbors(chain, expected):
 )
 def test_unsupported_connectivity_type():
     with pytest.raises(InvalidConnectivityException):
-        provide_offset("E2X")
+        _provide_offset("E2X")

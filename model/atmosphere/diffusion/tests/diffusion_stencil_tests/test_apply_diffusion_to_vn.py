@@ -1,25 +1,19 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
-from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -104,26 +98,26 @@ class TestApplyDiffusionToVn(StencilTest):
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
 
-        edge = indices_field(EdgeDim, grid, is_halfdim=False, dtype=int32)
+        edge = field_alloc.allocate_indices(dims.EdgeDim, grid=grid, is_halfdim=False)
 
-        u_vert = random_field(grid, VertexDim, KDim)
-        v_vert = random_field(grid, VertexDim, KDim)
+        u_vert = random_field(grid, dims.VertexDim, dims.KDim)
+        v_vert = random_field(grid, dims.VertexDim, dims.KDim)
 
-        primal_normal_vert_v1 = random_field(grid, EdgeDim, E2C2VDim)
-        primal_normal_vert_v2 = random_field(grid, EdgeDim, E2C2VDim)
+        primal_normal_vert_v1 = random_field(grid, dims.EdgeDim, dims.E2C2VDim)
+        primal_normal_vert_v2 = random_field(grid, dims.EdgeDim, dims.E2C2VDim)
 
-        primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, ECVDim)
-        primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, ECVDim)
+        primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, dims.ECVDim)
+        primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, dims.ECVDim)
 
-        inv_vert_vert_length = random_field(grid, EdgeDim)
-        inv_primal_edge_length = random_field(grid, EdgeDim)
+        inv_vert_vert_length = random_field(grid, dims.EdgeDim)
+        inv_primal_edge_length = random_field(grid, dims.EdgeDim)
 
-        area_edge = random_field(grid, EdgeDim)
-        kh_smag_e = random_field(grid, EdgeDim, KDim)
-        z_nabla2_e = random_field(grid, EdgeDim, KDim)
-        diff_multfac_vn = random_field(grid, KDim)
-        vn = random_field(grid, EdgeDim, KDim)
-        nudgecoeff_e = random_field(grid, EdgeDim)
+        area_edge = random_field(grid, dims.EdgeDim)
+        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        diff_multfac_vn = random_field(grid, dims.KDim)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim)
+        nudgecoeff_e = random_field(grid, dims.EdgeDim)
 
         limited_area = True
         fac_bdydiff_v = 5.0

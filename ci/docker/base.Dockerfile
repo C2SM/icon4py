@@ -22,6 +22,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     xz-utils \
     tk-dev \
     libffi-dev \
+    libhdf5-dev \
     liblzma-dev \
     python-openssl \
     libreadline-dev \
@@ -33,23 +34,27 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=22.11
 ARG HPC_SDK_NAME=nvhpc_2022_2211_Linux_x86_64_cuda_11.8
-ARG HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/22.11/${HPC_SDK_NAME}.tar.gz
+ENV HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
 
 RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
     mkdir -p /opt/nvidia && \
     tar -xzf /tmp/nvhpc.tar.gz -C /opt/nvidia && \
     rm /tmp/nvhpc.tar.gz
 
-ENV NVHPC_DEFAULT_CUDA=11.8
 ENV NVHPC_SILENT=1
 RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 
 # Set environment variables
-ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}
+ARG ARCH=x86_64
+ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
+# The variable CUDA_PATH is used by cupy to find the cuda toolchain
+ENV CUDA_PATH=${HPC_SDK_PATH}/cuda \
+    NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
 ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
     MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
-    LD_LIBRARY_PATH=${HPC_SDK_PATH}/cuda/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
+    LD_LIBRARY_PATH=${CUDA_PATH}/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
 
 # Install Boost
 RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz && \
@@ -76,4 +81,5 @@ RUN pyenv update && \
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
 
-RUN pip install --upgrade pip setuptools wheel tox clang-format cupy-cuda11x
+ARG CUPY_PACKAGE=cupy-cuda11x
+RUN pip install --upgrade pip setuptools wheel tox clang-format ${CUPY_PACKAGE}

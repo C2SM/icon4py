@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 import datetime as dt
 import functools
@@ -21,7 +17,7 @@ import netCDF4 as nc
 import numpy as np
 import xarray as xr
 
-from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.io import cf_utils
 
@@ -34,7 +30,7 @@ MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
 log = logging.getLogger(__name__)
-processor_properties = decomp_defs.SingleNodeProcessProperties()
+processor_properties = decomposition.SingleNodeProcessProperties()
 
 
 @dataclasses.dataclass
@@ -55,11 +51,11 @@ class NETCDFWriter:
     def __init__(
         self,
         file_name: pathlib.Path,
-        vertical: v_grid.VerticalGridParams,
+        vertical: v_grid.VerticalGrid,
         horizontal: h_grid.HorizontalGridSize,
         time_properties: TimeProperties,
         global_attrs: dict,
-        process_properties: decomp_defs.ProcessProperties = processor_properties,
+        process_properties: decomposition.ProcessProperties = processor_properties,
     ):
         self._file_name = str(file_name)
         self._process_properties = process_properties
@@ -74,11 +70,11 @@ class NETCDFWriter:
 
     @functools.cached_property
     def num_levels(self) -> int:
-        return self._vertical_params.inteface_physical_height.ndarray.shape[0] - 1
+        return self._vertical_params.interface_physical_height.ndarray.shape[0] - 1
 
     @functools.cached_property
     def num_interfaces(self) -> int:
-        return self._vertical_params.inteface_physical_height.ndarray.shape[0]
+        return self._vertical_params.interface_physical_height.ndarray.shape[0]
 
     def initialize_dataset(self) -> None:
         self.dataset = nc.Dataset(
@@ -129,7 +125,7 @@ class NETCDFWriter:
         heights.axis = cf_utils.COARDS_VERTICAL_COORDINATE_NAME
         heights.long_name = "height value of half levels without topography"
         heights.standard_name = cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
-        heights[:] = self._vertical_params.inteface_physical_height.ndarray
+        heights[:] = self._vertical_params.interface_physical_height.ndarray
 
     def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:
         """
