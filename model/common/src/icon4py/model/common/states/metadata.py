@@ -5,14 +5,16 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Final
 
 import gt4py.next as gtx
 
 import icon4py.model.common.io.cf_utils as cf_utils
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.states import model
 
 
-attrs = {
+attrs:Final[dict[str, model.FieldMetaData]] = {
     "functional_determinant_of_metrics_on_interface_levels": dict(
         standard_name="functional_determinant_of_metrics_on_interface_levels",
         long_name="functional determinant of the metrics [sqrt(gamma)] on half levels",
