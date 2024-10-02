@@ -58,10 +58,16 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         kwargs_2 = {k: kwargs[k] for k in kwargs.keys() - {"theta_v"}}  # remove unused kwargs
         # adjust boundary for numpy stencil over edges below
         edge_domain = h_grid.domain(dims.EdgeDim)
-        kwargs_2["horizontal_start"] = grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        kwargs_2["horizontal_start"] = (
+            0
+            if "SimpleGrid" in str(grid)
+            else grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
         )
-        kwargs_2["horizontal_end"] = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        kwargs_2["horizontal_end"] = (
+            grid.num_edges
+            if "SimpleGrid" in str(grid)
+            else grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        )
         z_nabla2_e = calculate_nabla2_for_z_numpy(
             grid, kh_smag_e, inv_dual_edge_length, theta_v_in, z_nabla2_e, **kwargs_2
         )

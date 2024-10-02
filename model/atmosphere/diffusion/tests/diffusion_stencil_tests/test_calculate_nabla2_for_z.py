@@ -67,7 +67,11 @@ class TestCalculateNabla2ForZ(StencilTest):
         z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+        horizontal_start = (
+            0
+            if "SimpleGrid" in str(grid)
+            else grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+        )
 
         return dict(
             kh_smag_e=kh_smag_e,
