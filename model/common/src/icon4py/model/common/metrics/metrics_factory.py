@@ -47,7 +47,7 @@ fields_factory = factory.FieldsFactory()
 grid = grid_savepoint.global_grid_params
 
 fields_factory.register_provider(
-    factory.PrecomputedFieldsProvider(
+    factory.PrecomputedFieldProvider(
         {
             "height_on_interface_levels": interface_model_height,
             "cell_to_edge_interpolation_coefficient": c_lin_e,
