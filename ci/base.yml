@@ -83,7 +83,7 @@ build_image_aarch64:
   extends: [.container-runner-daint-gpu-f7t, .test_template]
   needs: [build_image_x86_64]
   variables:
-    CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:$TEST_DATA_PATH","/scratch/snx3000/skellerh/ci:/icon4py"]'
+    CSCS_ADDITIONAL_MOUNTS: '["/scratch/snx3000/skellerh/ci:/icon4py"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/22.11"
 .test_template_aarch64:
   extends: [.container-runner-todi-gh200, .test_template]
