@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
+
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2E, C2EDim
@@ -16,9 +16,9 @@ from icon4py.model.common.dimension import C2E, C2EDim
 
 @field_operator
 def _upwind_hflux_miura_cycl_stencil_02(
-    nsub: gtx.int32,
+    nsub: int32,
     p_mass_flx_e: fa.EdgeKField[float],
-    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, C2EDim], float],
+    geofac_div: Field[[dims.CellDim, C2EDim], float],
     z_rhofluxdiv_c: fa.CellKField[float],
     z_tracer_mflx: fa.EdgeKField[float],
     z_rho_now: fa.CellKField[float],
@@ -45,9 +45,9 @@ def _upwind_hflux_miura_cycl_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def upwind_hflux_miura_cycl_stencil_02(
-    nsub: gtx.int32,
+    nsub: int32,
     p_mass_flx_e: fa.EdgeKField[float],
-    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, C2EDim], float],
+    geofac_div: Field[[dims.CellDim, C2EDim], float],
     z_rhofluxdiv_c: fa.CellKField[float],
     z_tracer_mflx: fa.EdgeKField[float],
     z_rho_now: fa.CellKField[float],

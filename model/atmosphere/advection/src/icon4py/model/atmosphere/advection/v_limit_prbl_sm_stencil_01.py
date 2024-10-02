@@ -5,11 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
+
+from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
     FieldOffset,
     abs,
+    int32,
     where,
 )
 
@@ -23,7 +25,7 @@ Koff = FieldOffset("Koff", source=dims.KDim, target=(dims.KDim,))
 def _v_limit_prbl_sm_stencil_01(
     p_face: fa.CellKField[float],
     p_cc: fa.CellKField[float],
-) -> fa.CellKField[gtx.int32]:
+) -> fa.CellKField[int32]:
     z_delta = p_face - p_face(Koff[1])
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face + p_face(Koff[1])))
 
@@ -32,11 +34,11 @@ def _v_limit_prbl_sm_stencil_01(
     return l_limit
 
 
-@program(grid_type=gtx.GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED)
 def v_limit_prbl_sm_stencil_01(
     p_face: fa.CellKField[float],
     p_cc: fa.CellKField[float],
-    l_limit: fa.CellKField[gtx.int32],
+    l_limit: fa.CellKField[int32],
 ):
     _v_limit_prbl_sm_stencil_01(
         p_face,

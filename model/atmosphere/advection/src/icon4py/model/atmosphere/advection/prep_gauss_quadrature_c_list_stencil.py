@@ -5,17 +5,17 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
+
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.fbuiltins import int32, where
 
 from icon4py.model.common import field_type_aliases as fa
 
 
 @field_operator
 def _prep_gauss_quadrature_c_list_stencil(
-    famask_int: fa.EdgeKField[gtx.int32],
+    famask_int: fa.EdgeKField[int32],
     p_coords_dreg_v_1_x: fa.EdgeKField[float],
     p_coords_dreg_v_2_x: fa.EdgeKField[float],
     p_coords_dreg_v_3_x: fa.EdgeKField[float],
@@ -321,7 +321,7 @@ def _prep_gauss_quadrature_c_list_stencil(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def prep_gauss_quadrature_c_list_stencil(
-    famask_int: fa.EdgeKField[gtx.int32],
+    famask_int: fa.EdgeKField[int32],
     p_coords_dreg_v_1_x: fa.EdgeKField[float],
     p_coords_dreg_v_2_x: fa.EdgeKField[float],
     p_coords_dreg_v_3_x: fa.EdgeKField[float],

@@ -29,7 +29,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims, settings
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid import geometry
 from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
@@ -40,6 +40,7 @@ from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     flatten_first_two_dims,  # todo: move away from test_utils
 )
+from icon4py.model.common.type_alias import wpfloat
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common
@@ -58,18 +59,18 @@ icon_grid: IconGrid = None
 def diffusion_init(
     vct_a: gtx.Field[gtx.Dims[dims.KHalfDim], float64],
     vct_b: gtx.Field[gtx.Dims[dims.KHalfDim], float64],
-    theta_ref_mc: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float64],
+    theta_ref_mc: fa.CellKField[wpfloat],
     wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], float64],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], float64],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], float64],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], float64],
     geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], float64],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], float64],
-    nudgecoeff_e: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
+    nudgecoeff_e: fa.EdgeField[wpfloat],
     rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], float64],
     rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], float64],
-    mask_hdiff: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], bool],
-    zd_diffcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float64],
+    mask_hdiff: fa.CellKField[bool],
+    zd_diffcoef: fa.CellKField[wpfloat],
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.int32],
     zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], float64],
     ndyn_substeps: gtx.int32,
@@ -89,12 +90,12 @@ def diffusion_init(
     denom_diffu_v: float,
     nudge_max_coeff: float,
     itype_sher: gtx.int32,
-    tangent_orientation: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
-    inverse_primal_edge_lengths: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
-    inv_dual_edge_length: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
-    inv_vert_vert_length: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
-    edge_areas: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
-    f_e: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    inverse_primal_edge_lengths: fa.EdgeField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_vert_vert_length: fa.EdgeField[wpfloat],
+    edge_areas: fa.EdgeField[wpfloat],
+    f_e: fa.EdgeField[wpfloat],
     cell_center_lat: gtx.Field[gtx.Dims[dims.CellDim], float64],
     cell_center_lon: gtx.Field[gtx.Dims[dims.CellDim], float64],
     cell_areas: gtx.Field[gtx.Dims[dims.CellDim], float64],
@@ -106,10 +107,10 @@ def diffusion_init(
     primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float64],
     dual_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float64],
     dual_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float64],
-    edge_center_lat: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
-    edge_center_lon: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
-    primal_normal_x: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
-    primal_normal_y: gtx.Field[gtx.Dims[dims.EdgeDim], float64],
+    edge_center_lat: fa.EdgeField[wpfloat],
+    edge_center_lon: fa.EdgeField[wpfloat],
+    primal_normal_x: fa.EdgeField[wpfloat],
+    primal_normal_y: fa.EdgeField[wpfloat],
     global_root: gtx.int32,
     global_level: gtx.int32,
     lowest_layer_thickness: float64,
@@ -226,10 +227,10 @@ def diffusion_init(
 
 def diffusion_run(
     w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], float64],
-    vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], float64],
-    exner: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float64],
-    theta_v: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float64],
-    rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float64],
+    vn: fa.EdgeKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    rho: fa.CellKField[wpfloat],
     hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], float64],
     div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], float64],
     dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], float64],

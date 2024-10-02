@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
+
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.fbuiltins import int32, where
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
@@ -38,7 +38,7 @@ def _upwind_hflux_miura3_stencil_01(
     z_quad_vector_sum_10: fa.EdgeKField[float],
     z_dreg_area: fa.EdgeKField[float],
     p_mass_flx_e: fa.EdgeKField[float],
-    cell_rel_idx_dsl: fa.EdgeKField[gtx.int32],
+    cell_rel_idx_dsl: fa.EdgeKField[int32],
 ) -> fa.EdgeKField[float]:
     p_out_e_miura3 = (
         (
@@ -134,7 +134,7 @@ def upwind_hflux_miura3_stencil_01(
     z_quad_vector_sum_10: fa.EdgeKField[float],
     z_dreg_area: fa.EdgeKField[float],
     p_mass_flx_e: fa.EdgeKField[float],
-    cell_rel_idx_dsl: fa.EdgeKField[gtx.int32],
+    cell_rel_idx_dsl: fa.EdgeKField[int32],
     p_out_e_miura3: fa.EdgeKField[float],
 ):
     _upwind_hflux_miura3_stencil_01(

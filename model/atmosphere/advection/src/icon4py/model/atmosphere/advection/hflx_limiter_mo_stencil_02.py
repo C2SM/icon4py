@@ -5,23 +5,23 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
+
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import maximum, minimum, where
+from gt4py.next.ffront.fbuiltins import int32, maximum, minimum, where
 
 from icon4py.model.common import field_type_aliases as fa
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_02(
-    refin_ctrl: fa.CellField[gtx.int32],
+    refin_ctrl: fa.CellField[int32],
     p_cc: fa.CellKField[float],
     z_tracer_new_low: fa.CellKField[float],
     z_tracer_max: fa.CellKField[float],
     z_tracer_min: fa.CellKField[float],
-    lo_bound: gtx.int32,
-    hi_bound: gtx.int32,
+    lo_bound: int32,
+    hi_bound: int32,
 ) -> tuple[
     fa.CellKField[float],
     fa.CellKField[float],
@@ -42,13 +42,13 @@ def _hflx_limiter_mo_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def hflx_limiter_mo_stencil_02(
-    refin_ctrl: fa.CellField[gtx.int32],
+    refin_ctrl: fa.CellField[int32],
     p_cc: fa.CellKField[float],
     z_tracer_new_low: fa.CellKField[float],
     z_tracer_max: fa.CellKField[float],
     z_tracer_min: fa.CellKField[float],
-    lo_bound: gtx.int32,
-    hi_bound: gtx.int32,
+    lo_bound: int32,
+    hi_bound: int32,
     z_tracer_new_low_out: fa.CellKField[float],
     z_tracer_max_out: fa.CellKField[float],
     z_tracer_min_out: fa.CellKField[float],

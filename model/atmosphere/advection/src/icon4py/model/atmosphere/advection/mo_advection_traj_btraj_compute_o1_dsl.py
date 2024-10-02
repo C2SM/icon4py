@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
+
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, where
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2EC
@@ -19,19 +19,19 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _mo_advection_traj_btraj_compute_o1_dsl(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[wpfloat],
-    cell_idx: gtx.Field[gtx.Dims[dims.ECDim], gtx.int32],
-    cell_blk: gtx.Field[gtx.Dims[dims.ECDim], gtx.int32],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
+    cell_idx: Field[[dims.ECDim], int32],
+    cell_blk: Field[[dims.ECDim], int32],
+    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
     p_dthalf: wpfloat,
 ) -> tuple[
-    fa.EdgeKField[gtx.int32],
-    fa.EdgeKField[gtx.int32],
-    fa.EdgeKField[gtx.int32],
+    fa.EdgeKField[int32],
+    fa.EdgeKField[int32],
+    fa.EdgeKField[int32],
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
@@ -78,24 +78,24 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
 def mo_advection_traj_btraj_compute_o1_dsl(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[wpfloat],
-    cell_idx: gtx.Field[gtx.Dims[dims.ECDim], gtx.int32],
-    cell_blk: gtx.Field[gtx.Dims[dims.ECDim], gtx.int32],
-    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], wpfloat],
-    p_cell_idx: fa.EdgeKField[gtx.int32],
-    p_cell_rel_idx_dsl: fa.EdgeKField[gtx.int32],
-    p_cell_blk: fa.EdgeKField[gtx.int32],
+    cell_idx: Field[[dims.ECDim], int32],
+    cell_blk: Field[[dims.ECDim], int32],
+    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
+    p_cell_idx: fa.EdgeKField[int32],
+    p_cell_rel_idx_dsl: fa.EdgeKField[int32],
+    p_cell_blk: fa.EdgeKField[int32],
     p_distv_bary_1: fa.EdgeKField[vpfloat],
     p_distv_bary_2: fa.EdgeKField[vpfloat],
     p_dthalf: wpfloat,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_advection_traj_btraj_compute_o1_dsl(
         p_vn,
