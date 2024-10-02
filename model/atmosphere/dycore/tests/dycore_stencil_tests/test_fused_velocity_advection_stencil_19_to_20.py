@@ -146,7 +146,11 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         nrdmax = 5
         extra_diffu = True
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+        horizontal_start = (
+            0
+            if "SimpleGrid" in str(grid)
+            else grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+        )
 
         return dict(
             vn=vn,
