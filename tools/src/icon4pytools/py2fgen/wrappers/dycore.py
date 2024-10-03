@@ -28,12 +28,15 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
+import cProfile
+import pstats
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
+    SolveNonhydro,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -61,7 +64,7 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
-from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
+from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
@@ -81,7 +84,17 @@ from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
 
 logger = setup_logger(__name__)
 
-icon_grid: IconGrid = None
+dycore_wrapper_state = {"granule": SolveNonhydro(), "profiler": cProfile.Profile()}
+
+
+def profile_enable():
+    dycore_wrapper_state["profiler"].enable()
+
+
+def profile_disable():
+    dycore_wrapper_state["profiler"].disable()
+    stats = pstats.Stats(dycore_wrapper_state["profiler"])
+    stats.dump_stats(f"{__name__}.profile")
 
 
 def solve_nh_init(
@@ -244,7 +257,7 @@ def solve_nh_init(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
-        global_num_cells=icon_grid.global_properties.num_cells,
+        global_num_cells=dycore_wrapper_state["grid"].global_properties.num_cells,
         length_rescale_factor=1.0,
     )
 
@@ -320,8 +333,8 @@ def solve_nh_init(
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
-    common.GLOBAL_STATE["dycore_granule"].init(
-        grid=icon_grid,
+    dycore_wrapper_state["granule"].init(
+        grid=dycore_wrapper_state["grid"],
         config=config,
         params=nonhydro_params,
         metric_state_nonhydro=metric_state_nonhydro,
@@ -382,7 +395,7 @@ def solve_nh_run(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        vol_flx_ic=zero_field(dycore_wrapper_state["grid"], CellDim, KDim, dtype=float),
     )
 
     diagnostic_state_nh = DiagnosticStateNonHydro(
@@ -429,7 +442,7 @@ def solve_nh_run(
     nnow = nnow - 1
     nnew = nnew - 1
 
-    common.GLOBAL_STATE["dycore_granule"].time_step(
+    dycore_wrapper_state["granule"].time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
@@ -447,6 +460,12 @@ def solve_nh_run(
 
 
 def grid_init(
+    cell_starts: Field[[CellIndexDim], int32],
+    cell_ends: Field[[CellIndexDim], int32],
+    vertex_starts: Field[[VertexIndexDim], int32],
+    vertex_ends: Field[[VertexIndexDim], int32],
+    edge_starts: Field[[EdgeIndexDim], int32],
+    edge_ends: Field[[EdgeIndexDim], int32],
     c2e: Field[[dims.CellDim, dims.C2EDim], int32],
     e2c: Field[[dims.EdgeDim, dims.E2CDim], int32],
     c2e2c: Field[[dims.CellDim, dims.C2E2CDim], int32],
@@ -456,12 +475,6 @@ def grid_init(
     v2c: Field[[dims.VertexDim, dims.V2CDim], int32],
     e2c2v: Field[[dims.EdgeDim, dims.E2C2VDim], int32],
     c2v: Field[[dims.CellDim, dims.C2VDim], int32],
-    cell_starts: Field[[CellIndexDim], int32],
-    cell_ends: Field[[CellIndexDim], int32],
-    vertex_starts: Field[[VertexIndexDim], int32],
-    vertex_ends: Field[[VertexIndexDim], int32],
-    edge_starts: Field[[EdgeIndexDim], int32],
-    edge_ends: Field[[EdgeIndexDim], int32],
     global_root: int32,
     global_level: int32,
     num_vertices: int32,
@@ -470,15 +483,27 @@ def grid_init(
     vertical_size: int32,
     limited_area: bool,
 ):
-    global icon_grid
-
     # todo: write this logic into template.py
     if isinstance(limited_area, int):
         limited_area = bool(limited_area)
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
-    icon_grid = common.construct_icon_grid(
+    dycore_wrapper_state["grid"] = common.construct_icon_grid(
+        grid_id="icon_grid",
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -488,18 +513,4 @@ def grid_init(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        global_grid_params=global_grid_params,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
-        grid_id="icon_grid",
     )

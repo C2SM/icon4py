@@ -7,35 +7,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # type: ignore
 
-import cProfile
 import logging
-import pstats
 
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import SolveNonhydro
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
-
-GLOBAL_STATE = {
-    "diffusion_granule": Diffusion(),
-    "profiler": cProfile.Profile(),
-    "dycore_granule": SolveNonhydro(),
-}
-
-
-# profiling utils
-def profile_enable():
-    GLOBAL_STATE["profiler"].enable()
-
-
-def profile_disable():
-    GLOBAL_STATE["profiler"].disable()
-    stats = pstats.Stats(GLOBAL_STATE["profiler"])
-    stats.dump_stats(f"{__name__}.profile")
 
 
 def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
