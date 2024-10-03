@@ -36,8 +36,9 @@ def test_factory_check_dependencies_on_register(grid_savepoint, backend):
         grid_savepoint.vct_b(),
     )
 
-    fields_factory = (factory.FieldsFactory(metadata.attrs).with_grid(grid, vertical)
-                      .with_backend(backend))
+    fields_factory = (
+        factory.FieldsFactory(metadata.attrs).with_grid(grid, vertical).with_backend(backend)
+    )
     provider = factory.ProgramFieldProvider(
         func=mf.compute_z_mc,
         domain={
@@ -60,19 +61,17 @@ def test_factory_raise_error_if_no_grid_is_set(metrics_savepoint, backend):
     pre_computed_fields = factory.PrecomputedFieldProvider(
         {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
-    fields_factory = factory.FieldsFactory(metadata = metadata.attrs).with_backend(backend)
+    fields_factory = factory.FieldsFactory(metadata=metadata.attrs).with_backend(backend)
     fields_factory.register_provider(pre_computed_fields)
     with pytest.raises(exceptions.IncompleteSetupError) or pytest.raises(AssertionError) as e:
         fields_factory.get("height_on_interface_levels")
         assert e.value.match("grid")
 
 
-
-
 @pytest.mark.datatest
 def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
     z_ifc = metrics_savepoint.z_ifc()
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False) 
+    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     num_levels = grid_savepoint.num(dims.KDim)
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=num_levels),
@@ -104,12 +103,12 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
 
 @pytest.mark.datatest
 def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
-    horizontal_grid = grid_savepoint.construct_icon_grid(
-        on_gpu=False
-    )
+    horizontal_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     num_levels = grid_savepoint.num(dims.KDim)
     vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=num_levels), grid_savepoint.vct_a(), grid_savepoint.vct_b()
+        v_grid.VerticalGridConfig(num_levels=num_levels),
+        grid_savepoint.vct_a(),
+        grid_savepoint.vct_b(),
     )
 
     fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
@@ -164,17 +163,21 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
     assert helpers.dallclose(data.ndarray, ref)
 
 
-def test_field_provider_for_numpy_function(grid_savepoint,
-    metrics_savepoint, interpolation_savepoint, backend
+def test_field_provider_for_numpy_function(
+    grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    grid = grid_savepoint.construct_icon_grid(False) # TODO fix this should be come obsolete
+    grid = grid_savepoint.construct_icon_grid(False)  # TODO fix this should be come obsolete
     vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=grid.num_levels), grid_savepoint.vct_a(),
-        grid_savepoint.vct_b()
+        v_grid.VerticalGridConfig(num_levels=grid.num_levels),
+        grid_savepoint.vct_a(),
+        grid_savepoint.vct_b(),
     )
 
-    fields_factory = (factory.FieldsFactory(metadata=metadata.attrs)
-                      .with_grid(grid=grid, vertical_grid=vertical_grid).with_backend(backend))
+    fields_factory = (
+        factory.FieldsFactory(metadata=metadata.attrs)
+        .with_grid(grid=grid, vertical_grid=vertical_grid)
+        .with_backend(backend)
+    )
     k_index = gtx.as_field((dims.KDim,), xp.arange(grid.num_levels + 1, dtype=gtx.int32))
     z_ifc = metrics_savepoint.z_ifc()
     wgtfacq_c_ref = metrics_savepoint.wgtfacq_c_dsl()
@@ -210,10 +213,15 @@ def test_field_provider_for_numpy_function_with_offsets(
 ):
     grid = grid_savepoint.construct_icon_grid(False)  # TODO fix this should be come obsolete
     vertical = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=grid.num_levels), grid_savepoint.vct_a(),
-        grid_savepoint.vct_b()
+        v_grid.VerticalGridConfig(num_levels=grid.num_levels),
+        grid_savepoint.vct_a(),
+        grid_savepoint.vct_b(),
     )
-    fields_factory = factory.FieldsFactory(metadata=metadata.attrs).with_grid(grid=grid, vertical_grid=vertical).with_backend(backend=backend)
+    fields_factory = (
+        factory.FieldsFactory(metadata=metadata.attrs)
+        .with_grid(grid=grid, vertical_grid=vertical)
+        .with_backend(backend=backend)
+    )
     k_index = gtx.as_field((dims.KDim,), xp.arange(grid.num_levels + 1, dtype=gtx.int32))
     z_ifc = metrics_savepoint.z_ifc()
     c_lin_e = interpolation_savepoint.c_lin_e()

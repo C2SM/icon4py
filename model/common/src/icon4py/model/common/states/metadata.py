@@ -14,7 +14,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
 
-attrs:Final[dict[str, model.FieldMetaData]] = {
+attrs: Final[dict[str, model.FieldMetaData]] = {
     "functional_determinant_of_metrics_on_interface_levels": dict(
         standard_name="functional_determinant_of_metrics_on_interface_levels",
         long_name="functional determinant of the metrics [sqrt(gamma)] on half levels",
