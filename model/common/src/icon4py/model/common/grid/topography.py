@@ -19,6 +19,10 @@ def _nabla2_scalar(
     psi_c: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
 ) -> fa.CellField[ta.wpfloat]:
+    """
+    Computes the Laplacian (nabla squared) of a scalar field defined on cell
+    centres.
+    """
 
     nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=C2E2CODim)
 
@@ -40,28 +44,32 @@ def nabla2_scalar(
 def compute_smooth_topo(
     topography: fa.CellField[ta.wpfloat],
     grid: icon_grid.IconGrid,
+    cell_areas: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     num_iterations: int = 25,
 ) -> fa.CellField[ta.wpfloat]:
     """
-    Computes the smoothed topography needed for the SLEVE coordinate.
+    Computes the smoothed (laplacian-filtered) topography needed by the SLEVE
+    coordinate.
     """
 
-    topography_smoothed = topography.copy()
+    #topography_smoothed_np = topography.asnumpy().copy()
+    #topography_smoothed = gtx.as_field((dims.CellDim,), topography_smoothed_np)
+    topography_smoothed = gtx.as_field((dims.CellDim,), topography.asnumpy())
 
-    nabla2_topo_np = xp.zeros((grid.num_cells), dtype=ta.wpfloat)
-    nabla2_topo = gtx.as_field((dims.CellDim), nabla2_topo_np)
+    nabla2_topo_np = xp.zeros(grid.num_cells, dtype=ta.wpfloat)
+    nabla2_topo = gtx.as_field((dims.CellDim,), nabla2_topo_np)
 
     for iter in range(num_iterations):
 
         nabla2_scalar(
             psi_c=topography_smoothed,
             geofac_n2s=geofac_n2s,
-            z_topography=nabla2_topo,
+            nabla2_psi_c=nabla2_topo,
             offset_provider={"C2E2CO":grid.get_offset_provider("C2E2CO"),}
         )
         
-        topography_smoothed_np = topography_smoothed.asnumpy() + 0.125 * nabla2_topo.asnumpy() * grid.cell_areas # TODO implement this
-        topography_smoothed = gtx.as_field((dims.CellDim), topography_smoothed_np)
+        topography_smoothed_np = topography_smoothed.asnumpy() + 0.125 * nabla2_topo.asnumpy() * cell_areas.asnumpy()
+        topography_smoothed = gtx.as_field((dims.CellDim,), topography_smoothed_np)
 
     return topography_smoothed
