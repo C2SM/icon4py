@@ -122,7 +122,7 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                 compiled_sdfg = compiled_sdfgs[unique_id]["compiled_sdfg"]
 
                 # update the args/kwargs with runtime related values, such as
-                # contretized symbols, connectivity tables, GHEX C++ pointers, and DaCe structures pointers
+                # concretized symbols, runtime connectivity tables, GHEX C++ pointers, and DaCe structures pointers
                 updated_args, updated_kwargs = mod_xargs_for_dace_structures(
                     fuse_func, fuse_func_orig_annotations, args, kwargs
                 )
