@@ -550,7 +550,7 @@ if dace:
             zip(
                 [*fuse_func.__annotations__.values()],
                 [*args, *kwargs.values()],
-                strict=False,
+                strict=True,
             )
         )
 
@@ -576,7 +576,7 @@ if dace:
         for annotation_, annotation_orig_ in zip(
             fuse_func.__annotations__.values(),
             modified_fuse_func_orig_annotations.values(),
-            strict=False,
+            strict=True,
         ):
             if type(annotation_) is not dace.data.Structure:
                 continue
@@ -601,7 +601,7 @@ if dace:
             zip(
                 [*fuse_func.__annotations__.values()],
                 [*args, *kwargs.values()],
-                strict=False,
+                strict=True,
             )
         )
         # initialize
@@ -625,7 +625,7 @@ if dace:
         for annotation_, annotation_orig_ in zip(
             fuse_func.__annotations__.values(),
             modified_fuse_func_orig_annotations.values(),
-            strict=False,
+            strict=True,
         ):
             if type(annotation_) is not dace.data.Structure:
                 continue
@@ -643,5 +643,5 @@ if dace:
                 )
 
         return tuple(mod_args_kwargs[0 : len(args)]), {
-            k: v for k, v in zip(kwargs.keys(), mod_args_kwargs[len(args) :], strict=False)
+            k: v for k, v in zip(kwargs.keys(), mod_args_kwargs[len(args) :], strict=True)
         }
