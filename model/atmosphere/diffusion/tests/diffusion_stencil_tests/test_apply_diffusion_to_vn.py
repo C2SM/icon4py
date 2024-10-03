@@ -119,7 +119,7 @@ class TestApplyDiffusionToVn(StencilTest):
         vn = random_field(grid, dims.EdgeDim, dims.KDim)
         nudgecoeff_e = random_field(grid, dims.EdgeDim)
 
-        limited_area = True if "SimpleGrid" in str(grid) else grid.limited_area
+        limited_area = grid.limited_area if hasattr(grid, "limited_area") else True
         fac_bdydiff_v = 5.0
         nudgezone_diff = 9.0
 
@@ -127,14 +127,14 @@ class TestApplyDiffusionToVn(StencilTest):
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = (
-            0
-            if "SimpleGrid" in str(grid)
-            else grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+            if hasattr(grid, "start_index")
+            else 0
         )
         horizontal_end = (
-            grid.num_edges
-            if "SimpleGrid" in str(grid)
-            else grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+            grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+            if hasattr(grid, "end_index")
+            else grid.num_edges
         )
 
         return dict(

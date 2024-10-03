@@ -68,9 +68,9 @@ class TestCalculateNabla2ForZ(StencilTest):
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = (
-            0
-            if "SimpleGrid" in str(grid)
-            else grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+            if hasattr(grid, "start_index")
+            else 0
         )
 
         return dict(
