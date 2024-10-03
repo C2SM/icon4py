@@ -166,23 +166,24 @@ def make_uid(
 ) -> str:
     """Generate unique key to retrieve from compiled_sdfgs dict the cached objects."""
     if len(compile_time_args_kwargs) == 0:
+        # SDFG fully parametric
         unique_id = fuse_func.__name__
     else:
         l_uids = []
         for ct_key, ct_val in compile_time_args_kwargs.items():
             if hasattr(ct_val, "orchestration_uid"):
-                l_uids.append(ct_val.orchestration_uid)
+                l_uids.append(ct_val.orchestration_uid())
             else:
                 l_uids.append(generate_orchestration_uid(ct_val, ct_key))
 
+        # Further info to build a unique id
         if exchange_obj:
             my_rank = exchange_obj.my_rank()
             mpi_size = exchange_obj.my_rank()
         else:
             my_rank = 0 if not mpi4py else MPI.COMM_WORLD.Get_rank()
             mpi_size = 1 if not mpi4py else MPI.COMM_WORLD.Get_size()
-
-        l_uids.append(str({"MPI_rank": my_rank, "MPI_size": mpi_size}))
+        l_uids.append(uid_from_hashlib(str({"MPI_rank": my_rank, "MPI_size": mpi_size})))
 
         unique_id = uid_from_hashlib(str(l_uids))
 
