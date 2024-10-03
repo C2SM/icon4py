@@ -65,7 +65,14 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
 
         def wrapper(*args, **kwargs):
             if settings.dace_orchestration is not None:
-                if "dace" not in settings.backend.executor.name.lower():
+                if hasattr(settings.backend.executor, "name"):
+                    backend_name = settings.backend.executor.name
+                elif hasattr(settings.backend.executor, "__name__"):
+                    backend_name = settings.backend.executor.__name__
+                else:
+                    raise ValueError("backend_name cannot be retrieved.")
+
+                if "dace" not in backend_name.lower():
                     raise ValueError(
                         "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
                     )
