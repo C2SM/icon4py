@@ -210,20 +210,20 @@ def generate_orchestration_uid(obj: Any, obj_name: str = "") -> str:
         elif isinstance(value, (np.ndarray, gtx.Field)):
             unique_dict[full_key] = {
                 "type": "array/field",
-                "shape": value.shape,
+                "shape": str(value.shape),
                 "dtype": str(value.dtype),
             }
         elif isinstance(value, (list, tuple)):
             if all(isinstance(i, primitive_dtypes) for i in value):
                 unique_dict[full_key] = {
-                    "type": "array-like[primitive_dtypes]",
-                    "length": len(value),
+                    "type": f"array-like[{'empty' if len(value) == 0 else type(value[0])}]",
+                    "length": str(len(value)),
                 }
             else:
                 for i, v in enumerate(value):
                     _populate_entry(str(i), v, full_key)
         elif value is None:
-            unique_dict[full_key] = {"type": "None", "value": None}
+            unique_dict[full_key] = {"type": "None", "value": "None"}
         elif hasattr(value, "__dict__") or isinstance(value, dict):
             _populate_unique_dict(value, full_key)
         else:
