@@ -549,6 +549,7 @@ def test_run_diffusion_multiple_steps(
 @pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(
     experiment,
+    linit,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -617,15 +618,16 @@ def test_run_diffusion_initial_step(
     )
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    diffusion_granule.initial_run(
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        dtime=dtime,
-    )
+    if linit:
+        diffusion_granule.initial_run(
+            diagnostic_state=diagnostic_state,
+            prognostic_state=prognostic_state,
+            dtime=dtime,
+        )
 
-    verify_diffusion_fields(
-        config=config,
-        diagnostic_state=diagnostic_state,
-        prognostic_state=prognostic_state,
-        diffusion_savepoint=savepoint_diffusion_exit,
-    )
+        verify_diffusion_fields(
+            config=config,
+            diagnostic_state=diagnostic_state,
+            prognostic_state=prognostic_state,
+            diffusion_savepoint=savepoint_diffusion_exit,
+        )
