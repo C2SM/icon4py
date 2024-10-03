@@ -875,4 +875,6 @@ class Diffusion:
         log.debug("communication of prognogistic.vn - end")
 
     def orchestration_uid(self) -> str:
+        """Unique id based on the runtime state of the Diffusion object. It is used for caching in DaCe Orchestration."""
+        # TODO (kotsaloscv): It is unsafe to set it as cached property -demands more testing-
         return generate_orchestration_uid(self)
