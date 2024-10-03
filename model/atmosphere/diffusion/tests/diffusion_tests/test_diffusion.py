@@ -545,7 +545,8 @@ def test_run_diffusion_multiple_steps(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("linit, experiment", [(True, dt_utils.REGIONAL_EXPERIMENT)])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(
     experiment,
     lowest_layer_thickness,

@@ -147,12 +147,7 @@ def test_parallel_diffusion(
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
-@pytest.mark.parametrize(
-    "linit",
-    [
-        True,
-    ],
-)
+@pytest.mark.parametrize("linit", [True])
 def test_parallel_diffusion_multiple_steps(
     experiment,
     step_date_init,
