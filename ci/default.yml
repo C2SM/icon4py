@@ -4,7 +4,7 @@ include:
 .test_model_stencils:
   stage: test
   script:
-    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
+    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
     - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
@@ -22,7 +22,7 @@ test_model_stencils_aarch64:
 .test_tools:
   stage: test
   script:
-    - tox -r -c tools/ --verbose
+    - tox -r -c tools/
 test_tools_x86_64:
   extends: [.test_tools, .test_template_x86_64]
 test_tools_aarch64:
@@ -31,7 +31,7 @@ test_tools_aarch64:
 .test_model_datatests:
   stage: test
   script:
-    - tox -r -e run_model_tests -c model/ --verbose -- --backend=$BACKEND $COMPONENT
+    - tox -r -e run_model_tests -c model/ -- --backend=$BACKEND $COMPONENT
   parallel:
     matrix:
     - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, atmosphere/subgrid_scale_physics/microphysics/tests, common/tests, driver/tests]
