@@ -65,14 +65,7 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
 
         def wrapper(*args, **kwargs):
             if settings.dace_orchestration is not None:
-                if hasattr(settings.backend.executor, "name"):
-                    backend_name = settings.backend.executor.name
-                elif hasattr(settings.backend.executor, "__name__"):
-                    backend_name = settings.backend.executor.__name__
-                else:
-                    raise ValueError("backend_name cannot be retrieved.")
-
-                if "dace" not in backend_name.lower():
+                if "dace" not in settings.backend.name.lower():
                     raise ValueError(
                         "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
                     )
@@ -459,7 +452,7 @@ if dace:
         return value in ("true", "1")
 
     def configure_dace_temp_env(default_build_folder: Path) -> core_defs.DeviceType:
-        dace.config.Config.set("default_build_folder", value=default_build_folder)
+        dace.config.Config.set("default_build_folder", value=str(default_build_folder))
         dace.config.Config.set(
             "compiler", "allow_view_arguments", value=True
         )  # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
@@ -467,7 +460,7 @@ if dace:
             "optimizer", "automatic_simplification", value=False
         )  # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
         dace.config.Config.set("optimizer", "autooptimize", value=False)
-        device_type = settings.backend.executor.otf_workflow.step.translation.device_type
+        device_type = settings.backend.executor.step.translation.device_type
         if device_type == core_defs.DeviceType.CPU:
             device = "cpu"
             compiler_args = dace.config.Config.get("compiler", "cpu", "args")
