@@ -401,7 +401,7 @@ if dace:
                         )
                 except:  # noqa: E722
                     raise ValueError(
-                        f"Corrupted cache. Remove `{dace.config.Config().get('default_build_folder')}` folder and re-run the program."
+                        f"Corrupted cache. Remove `{default_build_folder}` folder and re-run the program."
                     ) from None
             else:
                 if self_name:
@@ -492,7 +492,7 @@ if dace:
         The additional kwargs are the connectivity tables (runtime tables) and the GHEX C++ pointers.
         """
         return {
-            # connectivity tables
+            # connectivity tables at runtime
             **{
                 connectivity_identifier(k): v.table
                 for k, v in offset_providers.items()
@@ -524,6 +524,7 @@ if dace:
     def modified_orig_annotations(
         fuse_func: Callable, fuse_func_orig_annotations: dict[str, Any]
     ) -> dict[str, Any]:
+        """Add None as annotation to the the non-annotated args/kwargs."""
         ii = 0
         modified_fuse_func_orig_annotations = {}
         for i, annotation_ in enumerate(fuse_func.__annotations__.values()):
