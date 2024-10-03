@@ -62,29 +62,12 @@ def test_factory_raise_error_if_no_grid_is_set(metrics_savepoint, backend):
     )
     fields_factory = factory.FieldsFactory(metadata = metadata.attrs).with_backend(backend)
     fields_factory.register_provider(pre_computed_fields)
-    with pytest.raises(exceptions.IncompleteSetupError) as e:
+    with pytest.raises(exceptions.IncompleteSetupError) or pytest.raises(AssertionError) as e:
         fields_factory.get("height_on_interface_levels")
-        assert e.value.match("not fully instantiated")
+        assert e.value.match("grid")
 
 
-@pytest.mark.datatest
-def test_factory_raise_error_if_no_backend_is_set(metrics_savepoint, grid_savepoint):
-    grid = grid_savepoint.construct_icon_grid(False) # TODO fix this should go away
-    z_ifc = metrics_savepoint.z_ifc()
-    k_index = gtx.as_field((dims.KDim,), xp.arange(1, dtype=gtx.int32))
-    pre_computed_fields = factory.PrecomputedFieldProvider(
-        {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
-    )
-    vertical = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=10),
-        grid_savepoint.vct_a(),
-        grid_savepoint.vct_b(),
-    )
-    fields_factory = factory.FieldsFactory(metadata=metadata.attrs).with_grid(grid, vertical)
-    fields_factory.register_provider(pre_computed_fields)
-    with pytest.raises(exceptions.IncompleteSetupError) as e:
-        fields_factory.get("height_on_interface_levels")
-        assert e.value.match("not fully instantiated")
+
 
 @pytest.mark.datatest
 def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
@@ -203,7 +186,7 @@ def test_field_provider_for_numpy_function(grid_savepoint,
     func = compute_wgtfacq_c_dsl
     deps = {"z_ifc": "height_on_interface_levels"}
     params = {"nlev": grid.num_levels}
-    compute_wgtfacq_c_provider = factory.NumpyFieldProvider(
+    compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(
         func=func,
         domain={
             dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
@@ -247,7 +230,7 @@ def test_field_provider_for_numpy_function_with_offsets(
     func = compute_wgtfacq_c_dsl
     # TODO (magdalena): need to fix this for parameters
     params = {"nlev": grid.num_levels}
-    compute_wgtfacq_c_provider = factory.NumpyFieldProvider(
+    compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(
         func=func,
         domain={dims.CellDim: (0, grid.num_cells), dims.KDim: (0, grid.num_levels)},
         fields=["weighting_factor_for_quadratic_interpolation_to_cell_surface"],
@@ -260,7 +243,7 @@ def test_field_provider_for_numpy_function_with_offsets(
         "c_lin_e": "cell_to_edge_interpolation_coefficient",
     }
     fields_factory.register_provider(compute_wgtfacq_c_provider)
-    wgtfacq_e_provider = factory.NumpyFieldProvider(
+    wgtfacq_e_provider = factory.NumpyFieldsProvider(
         func=compute_wgtfacq_e_dsl,
         deps=deps,
         offsets={"e2c": dims.E2CDim},

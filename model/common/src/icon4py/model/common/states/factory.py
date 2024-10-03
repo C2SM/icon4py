@@ -41,22 +41,13 @@ from icon4py.model.common.utils import builder
 DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
 
 
+
 class RetrievalType(enum.Enum):
     FIELD = 0
     DATA_ARRAY = 1
     METADATA = 2
 
 
-def check_setup(func):
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if not self.is_setup():
-            raise exceptions.IncompleteSetupError(
-                "Factory not fully instantiated, missing grid or allocator"
-            )
-        return func(self, *args, **kwargs)
-
-    return wrapper
 
 
 class FieldProvider(Protocol):
@@ -72,19 +63,10 @@ class FieldProvider(Protocol):
      - dependencies: returns a list of field_names that the fields provided by this provider depend on.
 
     """
-    
-
-    @abc.abstractmethod
-    def evaluate(self, factory: "FieldsFactory") -> None:
-        ...
 
     def __call__(self, field_name: str, factory: "FieldsFactory") -> state_utils.FieldType:
-        if field_name not in self.fields:
-            raise ValueError(f"Field {field_name} not provided by f{self.func.__name__}.")
-        if any([f is None for f in self.fields.values()]):
-            self.evaluate(factory)
-        return self.fields[field_name]
-
+        ...
+    
     @property
     def dependencies(self) -> Sequence[str]:
         ...
@@ -103,9 +85,6 @@ class PrecomputedFieldProvider(FieldProvider):
     def __init__(self, fields: dict[str, state_utils.FieldType]):
         self._fields = fields
 
-    def evaluate(self, factory: "FieldsFactory") -> None:
-        pass
-
     @property
     def dependencies(self) -> Sequence[str]:
         return []
@@ -113,9 +92,8 @@ class PrecomputedFieldProvider(FieldProvider):
     def __call__(self, field_name: str, factory: "FieldsFactory") -> state_utils.FieldType:
         return self.fields[field_name]
     
-    # TODO signature should this only return the field_names produced by this provider?
     @property
-    def fields(self) -> Mapping[str, Any]:
+    def fields(self) -> Mapping[str, state_utils.FieldType]:
         return self._fields
     
  
@@ -127,6 +105,8 @@ class PrecomputedFieldProvider(FieldProvider):
 class ProgramFieldProvider(FieldProvider):
     """
     Computes a field defined by a GT4Py Program.
+
+    TODO (halungge): use field_operator instead.
 
     Args:
         func: GT4Py Program that computes the fields
@@ -223,7 +203,12 @@ class ProgramFieldProvider(FieldProvider):
                 raise ValueError(f"DimensionKind '{dim.kind}' not supported in Program Domain")
         return domain_args
 
-    def evaluate(self, factory: "FieldsFactory"):
+    def __call__(self, field_name: str, factory: "FieldsFactory"):
+        if any([f is None for f in self.fields.values()]):
+            self._compute(factory)
+        return self.fields[field_name]
+
+    def _compute(self, factory)->None:
         self._fields = self._allocate(factory.allocator, factory.grid)
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
@@ -234,7 +219,7 @@ class ProgramFieldProvider(FieldProvider):
         self._func.with_backend(factory._backend)(**deps, offset_provider=offset_providers)
 
     @property
-    def fields(self) -> Mapping[str, Any]:
+    def fields(self) -> Mapping[str, state_utils.FieldType]:
         return self._fields
     
     @property
@@ -245,7 +230,7 @@ class ProgramFieldProvider(FieldProvider):
         return list(self._dependencies.values())
         
 
-class NumpyFieldProvider(FieldProvider):
+class NumpyFieldsProvider(FieldProvider):
     """
     Computes a field defined by a numpy function.
 
@@ -275,7 +260,12 @@ class NumpyFieldProvider(FieldProvider):
         self._offsets = offsets if offsets is not None else {}
         self._params = params if params is not None else {}
 
-    def evaluate(self, factory: "FieldsFactory") -> None:
+    def __call__(self, field_name:str, factory: "FieldsFactory") -> None:
+        if any([f is None for f in self.fields.values()]):
+            self._compute(factory)
+        return self.fields[field_name]
+
+    def _compute(self, factory)->None:
         self._validate_dependencies()
         args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
         offsets = {k: factory.grid.connectivities[v] for k, v in self._offsets.items()}
@@ -284,7 +274,6 @@ class NumpyFieldProvider(FieldProvider):
         results = self._func(**args)
         ## TODO: can the order of return values be checked?
         results = (results,) if isinstance(results, xp.ndarray) else results
-
         self._fields = {
             k: gtx.as_field(tuple(self._dims), results[i]) for i, k in enumerate(self.fields)
         }
@@ -318,7 +307,7 @@ class NumpyFieldProvider(FieldProvider):
         return list(self._dependencies.values())
     
     @property
-    def fields(self) -> Mapping[str, Any]:
+    def fields(self) -> Mapping[str, state_utils.FieldType]:
         return self._fields
 
 def _check(
@@ -334,15 +323,32 @@ def _check(
     )
 
 
-class FieldsFactory:
+class FieldSource(Protocol):
+    def get(self, field_name: str, type_: RetrievalType = RetrievalType.FIELD):
+        ...
+
+class PartialConfigurable(Protocol):
+    def is_fully_configured(self)->bool:
+        return False
+
+    @staticmethod
+    def check_setup(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if not self.is_fully_configured():
+                raise exceptions.IncompleteSetupError(
+                    "Factory not fully instantiated"
+                )
+            return func(self, *args, **kwargs)
+        return wrapper
+
+class FieldsFactory(FieldSource, PartialConfigurable):
     def __init__(
         self,
         metadata: dict[str, model.FieldMetaData],
         grid: icon_grid.IconGrid = None,
         vertical_grid: v_grid.VerticalGrid = None,
         backend=None,
-        
-        
     ):
         self._metadata = metadata
         self._grid = grid
@@ -357,8 +363,10 @@ class FieldsFactory:
     Lazily compute fields and cache them.
     """
 
-    def is_setup(self):
-        return self._grid is not None and self.backend is not None
+    def is_fully_configured(self):
+        has_grid = self._grid is not None
+        has_vertical = self._vertical is not None
+        return has_grid and has_vertical
 
     @builder.builder
     def with_grid(self, grid: base_grid.BaseGrid, vertical_grid: v_grid.VerticalGrid):
@@ -394,7 +402,7 @@ class FieldsFactory:
         for field in provider.fields:
             self._providers[field] = provider
 
-    @check_setup
+    @PartialConfigurable.check_setup
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
     ) -> Union[state_utils.FieldType, xa.DataArray, model.FieldMetaData]:
@@ -402,8 +410,14 @@ class FieldsFactory:
             raise ValueError(f"Field {field_name} not provided by the factory")
         if type_ == RetrievalType.METADATA:
             return self._metadata[field_name]
-        if type_ in (RetrievalType.FIELD,RetrievalType.DATA_ARRAY):
+        if type_ in (RetrievalType.FIELD, RetrievalType.DATA_ARRAY):
             provider = self._providers[field_name]
+            if field_name not in provider.fields:
+                raise ValueError(f"Field {field_name} not provided by f{provider.func.__name__}.")
+            if any([f is None for f in provider.fields.values()]):
+                provider(field_name, self)
+                
+
             buffer = provider(field_name, self)
             return buffer if type_ == RetrievalType.FIELD else state_utils.to_data_array(buffer, self._metadata[field_name])
             
