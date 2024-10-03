@@ -16,23 +16,22 @@ from icon4py.model.common.settings import xp
 
 @gtx.field_operator
 def _nabla2_scalar(
-    psi_c: fa.CellField[ta.wpfloat],
+    psi_c: fa.CellKField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-) -> fa.CellField[ta.wpfloat]:
+) -> fa.CellKField[ta.wpfloat]:
     """
     Computes the Laplacian (nabla squared) of a scalar field defined on cell
     centres.
     """
-
     nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=C2E2CODim)
 
     return nabla2_psi_c
 
 @gtx.program
 def nabla2_scalar(
-    psi_c: fa.CellField[ta.wpfloat],
+    psi_c: fa.CellKField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-    nabla2_psi_c: fa.CellField[ta.wpfloat],
+    nabla2_psi_c: fa.CellKField[ta.wpfloat],
 ):
     _nabla2_scalar(
         psi_c,
@@ -53,8 +52,6 @@ def compute_smooth_topo(
     coordinate.
     """
 
-    #topography_smoothed_np = topography.asnumpy().copy()
-    #topography_smoothed = gtx.as_field((dims.CellDim,), topography_smoothed_np)
     topography_smoothed = gtx.as_field((dims.CellDim,), topography.asnumpy())
 
     nabla2_topo_np = xp.zeros(grid.num_cells, dtype=ta.wpfloat)
