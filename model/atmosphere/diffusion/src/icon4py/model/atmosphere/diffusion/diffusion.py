@@ -438,7 +438,7 @@ class Diffusion:
             diff_multfac_n2w=self.diff_multfac_n2w,
             nrdmax=self.vertical_grid.end_index_of_damping_layer,
             nshift=0,
-            heights_nrd_shift=self.vertical_grid.interface_physical_height.asnumpy()[
+            heights_nrd_shift=self.vertical_grid.interface_physical_height.ndarray[self.vertical_grid.end_index_of_damping_layer + 1].item()
                 self.vertical_grid.end_index_of_damping_layer + 1
             ],
             heights_1=self.vertical_grid.interface_physical_height.asnumpy()[1],
