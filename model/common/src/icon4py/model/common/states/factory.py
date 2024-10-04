@@ -6,13 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import abc
+
 import enum
 import functools
 import inspect
 from typing import (
+    Any,
     Callable,
-    Iterable,
+    Mapping,
     Optional,
     Protocol,
     Sequence,
@@ -33,29 +34,17 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.settings import xp
-from icon4py.model.common.states import metadata as metadata, utils as state_utils
+from icon4py.model.common.states import metadata as metadata, model, utils as state_utils
 from icon4py.model.common.utils import builder
 
 
 DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
 
 
-class RetrievalType(enum.IntEnum):
-    FIELD = (0,)
-    DATA_ARRAY = (1,)
-    METADATA = (2,)
-
-
-def valid(func):
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if not self.validate():
-            raise exceptions.IncompleteSetupError(
-                "Factory not fully instantiated, missing grid or allocator"
-            )
-        return func(self, *args, **kwargs)
-
-    return wrapper
+class RetrievalType(enum.Enum):
+    FIELD = 0
+    DATA_ARRAY = 1
+    METADATA = 2
 
 
 class FieldProvider(Protocol):
@@ -65,70 +54,77 @@ class FieldProvider(Protocol):
     A field provider is responsible for the computation and caching of a set of fields.
     The fields can be accessed by their field_name (str).
 
-    A FieldProvider is a callable that has three methods (except for __call__):
-     - evaluate (abstract) : computes the fields based on the instructions of the concrete implementation
-     - fields(): returns the list of field names provided by the provider
-     - dependencies(): returns a list of field_names that the fields provided by this provider depend on.
+    A FieldProvider is a callable and additionally has three properties (except for __call__):
+     - func: the function used to compute the fields
+     - fields: Mapping of a field_name to the data buffer holding the computed values
+     - dependencies: returns a list of field_names that the fields provided by this provider depend on.
 
-    evaluate must be implemented, for the others default implementations are provided.
     """
 
-    def __init__(self, func: Callable):
-        self._func = func
-        self._fields: dict[str, Optional[state_utils.FieldType]] = {}
-        self._dependencies: dict[str, str] = {}
-
-    @abc.abstractmethod
-    def evaluate(self, factory: "FieldsFactory") -> None:
-        pass
-
     def __call__(self, field_name: str, factory: "FieldsFactory") -> state_utils.FieldType:
-        if field_name not in self.fields():
-            raise ValueError(f"Field {field_name} not provided by f{self._func.__name__}.")
-        if any([f is None for f in self._fields.values()]):
-            self.evaluate(factory)
-        return self._fields[field_name]
+        ...
 
-    def dependencies(self) -> Iterable[str]:
-        return self._dependencies.values()
+    @property
+    def dependencies(self) -> Sequence[str]:
+        ...
 
-    def fields(self) -> Iterable[str]:
-        return self._fields.keys()
+    @property
+    def fields(self) -> Mapping[str, Any]:
+        ...
+
+    @property
+    def func(self) -> Callable:
+        ...
 
 
-class PrecomputedFieldsProvider(FieldProvider):
-    """Simple FieldProvider that does not do any computation but gets its fields at construction and returns it upon provider.get(field_name)."""
+class PrecomputedFieldProvider(FieldProvider):
+    """Simple FieldProvider that does not do any computation but gets its fields at construction
+    and returns it upon provider.get(field_name)."""
 
     def __init__(self, fields: dict[str, state_utils.FieldType]):
         self._fields = fields
 
-    def evaluate(self, factory: "FieldsFactory") -> None:
-        pass
-
+    @property
     def dependencies(self) -> Sequence[str]:
-        return []
+        return ()
 
     def __call__(self, field_name: str, factory: "FieldsFactory") -> state_utils.FieldType:
-        return self._fields[field_name]
+        return self.fields[field_name]
+
+    @property
+    def fields(self) -> Mapping[str, state_utils.FieldType]:
+        return self._fields
+
+    @property
+    def func(self) -> Callable:
+        return lambda: self.fields
 
 
 class ProgramFieldProvider(FieldProvider):
     """
     Computes a field defined by a GT4Py Program.
 
+    TODO (halungge): use field_operator instead?
+    TODO (halungge): need a way to specify where the dependencies and params can be retrieved.
+       As not all parameters can be resolved at the definition time
+
     Args:
         func: GT4Py Program that computes the fields
         domain: the compute domain used for the stencil computation
-        fields: dict[str, str], fields produced by this stencils:  the key is the variable name of the out arguments used in the program and the value the name the field is registered under and declared in the metadata.
-        deps: dict[str, str], input fields used for computing this stencil: the key is the variable name used in the program and the value the name of the field it depends on.
+        fields: dict[str, str], fields computed by this stencil:  the key is the variable name of
+            the out arguments used in the program and the value the name the field is registered
+            under and declared in the metadata.
+        deps: dict[str, str], input fields used for computing this stencil:
+            the key is the variable name used in the program and the value the name
+            of the field it depends on.
         params: scalar parameters used in the program
     """
 
     def __init__(
         self,
         func: gtx_decorator.Program,
-        domain: dict[gtx.Dimension : tuple[DomainType, DomainType]],
-        fields: dict[str:str],
+        domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
+        fields: dict[str, str],
         deps: dict[str, str],
         params: Optional[dict[str, state_utils.Scalar]] = None,
     ):
@@ -211,7 +207,12 @@ class ProgramFieldProvider(FieldProvider):
                 raise ValueError(f"DimensionKind '{dim.kind}' not supported in Program Domain")
         return domain_args
 
-    def evaluate(self, factory: "FieldsFactory"):
+    def __call__(self, field_name: str, factory: "FieldsFactory"):
+        if any([f is None for f in self.fields.values()]):
+            self._compute(factory)
+        return self.fields[field_name]
+
+    def _compute(self, factory) -> None:
         self._fields = self._allocate(factory.allocator, factory.grid)
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
@@ -221,19 +222,32 @@ class ProgramFieldProvider(FieldProvider):
         deps.update(dims)
         self._func.with_backend(factory._backend)(**deps, offset_provider=offset_providers)
 
-    def fields(self) -> Iterable[str]:
-        return self._output.values()
+    @property
+    def fields(self) -> Mapping[str, state_utils.FieldType]:
+        return self._fields
+
+    @property
+    def func(self) -> Callable:
+        return self._func
+
+    @property
+    def dependencies(self) -> Sequence[str]:
+        return list(self._dependencies.values())
 
 
 class NumpyFieldsProvider(FieldProvider):
     """
     Computes a field defined by a numpy function.
 
+    TODO (halungge): need to specify a parameter source to be able to postpone evaluation
+
+
     Args:
         func: numpy function that computes the fields
         domain: the compute domain used for the stencil computation
         fields: Seq[str] names under which the results fo the function will be registered
-        deps: dict[str, str] input fields used for computing this stencil: the key is the variable name used in the program and the value the name of the field it depends on.
+        deps: dict[str, str] input fields used for computing this stencil: the key is the variable name
+            used in the program and the value the name of the field it depends on.
         params: scalar arguments for the function
     """
 
@@ -255,7 +269,12 @@ class NumpyFieldsProvider(FieldProvider):
         self._offsets = offsets if offsets is not None else {}
         self._params = params if params is not None else {}
 
-    def evaluate(self, factory: "FieldsFactory") -> None:
+    def __call__(self, field_name: str, factory: "FieldsFactory") -> None:
+        if any([f is None for f in self.fields.values()]):
+            self._compute(factory)
+        return self.fields[field_name]
+
+    def _compute(self, factory) -> None:
         self._validate_dependencies()
         args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
         offsets = {k: factory.grid.connectivities[v] for k, v in self._offsets.items()}
@@ -264,9 +283,8 @@ class NumpyFieldsProvider(FieldProvider):
         results = self._func(**args)
         ## TODO: can the order of return values be checked?
         results = (results,) if isinstance(results, xp.ndarray) else results
-
         self._fields = {
-            k: gtx.as_field(tuple(self._dims), results[i]) for i, k in enumerate(self.fields())
+            k: gtx.as_field(tuple(self._dims), results[i]) for i, k in enumerate(self.fields)
         }
 
     def _validate_dependencies(self):
@@ -291,6 +309,18 @@ class NumpyFieldsProvider(FieldProvider):
                 f"exist or has the wrong type: {type(param_value)}."
             )
 
+    @property
+    def func(self) -> Callable:
+        return self._func
+
+    @property
+    def dependencies(self) -> Sequence[str]:
+        return list(self._dependencies.values())
+
+    @property
+    def fields(self) -> Mapping[str, state_utils.FieldType]:
+        return self._fields
+
 
 def _check(
     parameter_definition: inspect.Parameter,
@@ -312,27 +342,52 @@ def _check_str(
     return parameter_definition is not None and isinstance(value, str)
 
 
-class FieldsFactory:
-    """
-    Factory for fields.
+class FieldSource(Protocol):
+    def get(self, field_name: str, type_: RetrievalType = RetrievalType.FIELD):
+        ...
 
-    Lazily compute fields and cache them.
-    """
 
+class PartialConfigurable(Protocol):
+    def is_fully_configured(self) -> bool:
+        return False
+
+    @staticmethod
+    def check_setup(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if not self.is_fully_configured():
+                raise exceptions.IncompleteSetupError("Factory not fully instantiated")
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
+
+class FieldsFactory(FieldSource, PartialConfigurable):
     def __init__(
         self,
+        metadata: dict[str, model.FieldMetaData],
         grid: icon_grid.IconGrid = None,
         vertical_grid: v_grid.VerticalGrid = None,
-        backend=settings.backend,
+        backend=None,
     ):
+        self._metadata = metadata
         self._grid = grid
         self._vertical = vertical_grid
         self._providers: dict[str, "FieldProvider"] = {}
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._backend = backend
+        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
 
-    def validate(self):
-        return self._grid is not None
+    """
+    Factory for fields.
+    
+    It can be queried at runtime for fields. Fields will be computed upon first request.
+    Uses FieldProvider to delegate the computation of the fields
+    """
+
+    def is_fully_configured(self):
+        has_grid = self._grid is not None
+        has_vertical = self._vertical is not None
+        return has_grid and has_vertical
 
     @builder.builder
     def with_grid(self, grid: base_grid.BaseGrid, vertical_grid: v_grid.VerticalGrid):
@@ -361,25 +416,34 @@ class FieldsFactory:
         return self._allocator
 
     def register_provider(self, provider: FieldProvider):
-        for dependency in provider.dependencies():
+        for dependency in provider.dependencies:
             if dependency not in self._providers.keys():
                 raise ValueError(f"Dependency '{dependency}' not found in registered providers")
 
-        for field in provider.fields():
+        for field in provider.fields:
             self._providers[field] = provider
 
-    @valid
+    @PartialConfigurable.check_setup
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> Union[state_utils.FieldType, xa.DataArray, dict]:
-        if field_name not in metadata.attrs:
-            raise ValueError(f"Field {field_name} not found in metric fields")
-        if type_ == RetrievalType.METADATA:
-            return metadata.attrs[field_name]
-        if type_ == RetrievalType.FIELD:
-            return self._providers[field_name](field_name, self)
-        if type_ == RetrievalType.DATA_ARRAY:
-            return state_utils.to_data_array(
-                self._providers[field_name](field_name, self), metadata.attrs[field_name]
-            )
-        raise ValueError(f"Invalid retrieval type {type_}")
+    ) -> Union[state_utils.FieldType, xa.DataArray, model.FieldMetaData]:
+        if field_name not in self._providers:
+            raise ValueError(f"Field {field_name} not provided by the factory")
+        match type_:
+            case RetrievalType.METADATA:
+                return self._metadata[field_name]
+            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY:
+                provider = self._providers[field_name]
+                if field_name not in provider.fields:
+                    raise ValueError(
+                        f"Field {field_name} not provided by f{provider.func.__name__}."
+                    )
+
+                buffer = provider(field_name, self)
+                return (
+                    buffer
+                    if type_ == RetrievalType.FIELD
+                    else state_utils.to_data_array(buffer, self._metadata[field_name])
+                )
+            case _:
+                raise ValueError(f"Invalid retrieval type {type_}")

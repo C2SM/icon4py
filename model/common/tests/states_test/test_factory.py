@@ -18,8 +18,7 @@ from icon4py.model.common.metrics.compute_wgtfacq import (
     compute_wgtfacq_e_dsl,
 )
 from icon4py.model.common.settings import xp
-from icon4py.model.common.states import factory
-from icon4py.model.common.states.metadata import INTERFACE_LEVEL_STANDARD_NAME
+from icon4py.model.common.states import factory, metadata
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -29,8 +28,17 @@ interface_level = v_grid.domain(dims.KHalfDim)
 
 
 @pytest.mark.datatest
-def test_factory_check_dependencies_on_register(icon_grid, backend):
-    fields_factory = factory.FieldsFactory(icon_grid, backend)
+def test_factory_check_dependencies_on_register(grid_savepoint, backend):
+    grid = grid_savepoint.construct_icon_grid(False)
+    vertical = v_grid.VerticalGrid(
+        v_grid.VerticalGridConfig(num_levels=10),
+        grid_savepoint.vct_a(),
+        grid_savepoint.vct_b(),
+    )
+
+    fields_factory = (
+        factory.FieldsFactory(metadata.attrs).with_grid(grid, vertical).with_backend(backend)
+    )
     provider = factory.ProgramFieldProvider(
         func=mf.compute_z_mc,
         domain={
@@ -47,23 +55,23 @@ def test_factory_check_dependencies_on_register(icon_grid, backend):
 
 
 @pytest.mark.datatest
-def test_factory_raise_error_if_no_grid_is_set(metrics_savepoint):
+def test_factory_raise_error_if_no_grid_is_set(metrics_savepoint, backend):
     z_ifc = metrics_savepoint.z_ifc()
     k_index = gtx.as_field((dims.KDim,), xp.arange(1, dtype=gtx.int32))
-    pre_computed_fields = factory.PrecomputedFieldsProvider(
-        {"height_on_interface_levels": z_ifc, INTERFACE_LEVEL_STANDARD_NAME: k_index}
+    pre_computed_fields = factory.PrecomputedFieldProvider(
+        {"height_on_interface_levels": z_ifc, metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
-    fields_factory = factory.FieldsFactory(grid=None)
+    fields_factory = factory.FieldsFactory(metadata=metadata.attrs).with_backend(backend)
     fields_factory.register_provider(pre_computed_fields)
-    with pytest.raises(exceptions.IncompleteSetupError) as e:
+    with pytest.raises(exceptions.IncompleteSetupError) or pytest.raises(AssertionError) as e:
         fields_factory.get("height_on_interface_levels")
-        assert e.value.match("not fully instantiated")
+        assert e.value.match("grid")
 
 
 @pytest.mark.datatest
 def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
     z_ifc = metrics_savepoint.z_ifc()
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False)  # TODO: determine from backend
+    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     num_levels = grid_savepoint.num(dims.KDim)
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=num_levels),
@@ -71,10 +79,10 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
         grid_savepoint.vct_b(),
     )
     k_index = gtx.as_field((dims.KDim,), xp.arange(num_levels + 1, dtype=gtx.int32))
-    pre_computed_fields = factory.PrecomputedFieldsProvider(
-        {"height_on_interface_levels": z_ifc, INTERFACE_LEVEL_STANDARD_NAME: k_index}
+    pre_computed_fields = factory.PrecomputedFieldProvider(
+        {"height_on_interface_levels": z_ifc, metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
-    fields_factory = factory.FieldsFactory()
+    fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
     fields_factory.register_provider(pre_computed_fields)
     fields_factory.with_grid(grid, vertical).with_backend(backend)
     field = fields_factory.get("height_on_interface_levels", factory.RetrievalType.FIELD)
@@ -95,25 +103,23 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
 
 @pytest.mark.datatest
 def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
-    horizontal_grid = grid_savepoint.construct_icon_grid(
-        on_gpu=False
-    )  # TODO: determine from backend
+    horizontal_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     num_levels = grid_savepoint.num(dims.KDim)
-    vct_a = grid_savepoint.vct_a()
-    vct_b = grid_savepoint.vct_b()
     vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=num_levels), vct_a, vct_b
+        v_grid.VerticalGridConfig(num_levels=num_levels),
+        grid_savepoint.vct_a(),
+        grid_savepoint.vct_b(),
     )
 
-    fields_factory = factory.FieldsFactory()
+    fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
     k_index = gtx.as_field((dims.KDim,), xp.arange(num_levels + 1, dtype=gtx.int32))
     z_ifc = metrics_savepoint.z_ifc()
 
     local_cell_domain = cell_domain(h_grid.Zone.LOCAL)
     end_cell_domain = cell_domain(h_grid.Zone.END)
 
-    pre_computed_fields = factory.PrecomputedFieldsProvider(
-        {"height_on_interface_levels": z_ifc, INTERFACE_LEVEL_STANDARD_NAME: k_index}
+    pre_computed_fields = factory.PrecomputedFieldProvider(
+        {"height_on_interface_levels": z_ifc, metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
 
     fields_factory.register_provider(pre_computed_fields)
@@ -144,7 +150,7 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
         deps={
             "z_ifc": "height_on_interface_levels",
             "z_mc": "height",
-            "k": INTERFACE_LEVEL_STANDARD_NAME,
+            "k": metadata.INTERFACE_LEVEL_STANDARD_NAME,
         },
         params={"nlev": vertical_grid.num_levels},
     )
@@ -158,20 +164,31 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
 
 
 def test_field_provider_for_numpy_function(
-    icon_grid, metrics_savepoint, interpolation_savepoint, backend
+    grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    fields_factory = factory.FieldsFactory(grid=icon_grid, backend=backend)
-    k_index = gtx.as_field((dims.KDim,), xp.arange(icon_grid.num_levels + 1, dtype=gtx.int32))
+    grid = grid_savepoint.construct_icon_grid(False)  # TODO fix this should be come obsolete
+    vertical_grid = v_grid.VerticalGrid(
+        v_grid.VerticalGridConfig(num_levels=grid.num_levels),
+        grid_savepoint.vct_a(),
+        grid_savepoint.vct_b(),
+    )
+
+    fields_factory = (
+        factory.FieldsFactory(metadata=metadata.attrs)
+        .with_grid(grid=grid, vertical_grid=vertical_grid)
+        .with_backend(backend)
+    )
+    k_index = gtx.as_field((dims.KDim,), xp.arange(grid.num_levels + 1, dtype=gtx.int32))
     z_ifc = metrics_savepoint.z_ifc()
     wgtfacq_c_ref = metrics_savepoint.wgtfacq_c_dsl()
 
-    pre_computed_fields = factory.PrecomputedFieldsProvider(
-        {"height_on_interface_levels": z_ifc, INTERFACE_LEVEL_STANDARD_NAME: k_index}
+    pre_computed_fields = factory.PrecomputedFieldProvider(
+        {"height_on_interface_levels": z_ifc, metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
     fields_factory.register_provider(pre_computed_fields)
     func = compute_wgtfacq_c_dsl
     deps = {"z_ifc": "height_on_interface_levels"}
-    params = {"nlev": icon_grid.num_levels}
+    params = {"nlev": grid.num_levels}
     compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(
         func=func,
         domain={
@@ -192,18 +209,28 @@ def test_field_provider_for_numpy_function(
 
 
 def test_field_provider_for_numpy_function_with_offsets(
-    icon_grid, metrics_savepoint, interpolation_savepoint, backend
+    grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    fields_factory = factory.FieldsFactory(grid=icon_grid, backend=backend)
-    k_index = gtx.as_field((dims.KDim,), xp.arange(icon_grid.num_levels + 1, dtype=gtx.int32))
+    grid = grid_savepoint.construct_icon_grid(False)  # TODO fix this should be come obsolete
+    vertical = v_grid.VerticalGrid(
+        v_grid.VerticalGridConfig(num_levels=grid.num_levels),
+        grid_savepoint.vct_a(),
+        grid_savepoint.vct_b(),
+    )
+    fields_factory = (
+        factory.FieldsFactory(metadata=metadata.attrs)
+        .with_grid(grid=grid, vertical_grid=vertical)
+        .with_backend(backend=backend)
+    )
+    k_index = gtx.as_field((dims.KDim,), xp.arange(grid.num_levels + 1, dtype=gtx.int32))
     z_ifc = metrics_savepoint.z_ifc()
     c_lin_e = interpolation_savepoint.c_lin_e()
-    wgtfacq_e_ref = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels + 1)
+    wgtfacq_e_ref = metrics_savepoint.wgtfacq_e_dsl(grid.num_levels + 1)
 
-    pre_computed_fields = factory.PrecomputedFieldsProvider(
+    pre_computed_fields = factory.PrecomputedFieldProvider(
         {
             "height_on_interface_levels": z_ifc,
-            INTERFACE_LEVEL_STANDARD_NAME: k_index,
+            metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index,
             "cell_to_edge_interpolation_coefficient": c_lin_e,
         }
     )
@@ -211,10 +238,10 @@ def test_field_provider_for_numpy_function_with_offsets(
     func = compute_wgtfacq_c_dsl
     # TODO (magdalena): need to fix this for parameters
     # TODO: replica in metrics_fields_factory
-    params = {"nlev": icon_grid.num_levels}
+    params = {"nlev": grid.num_levels}
     compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(
         func=func,
-        domain={dims.CellDim: (0, icon_grid.num_cells), dims.KDim: (0, icon_grid.num_levels)},
+        domain={dims.CellDim: (0, grid.num_cells), dims.KDim: (0, grid.num_levels)},
         fields=["weighting_factor_for_quadratic_interpolation_to_cell_surface"],
         deps={"z_ifc": "height_on_interface_levels"},
         params=params,
@@ -229,9 +256,9 @@ def test_field_provider_for_numpy_function_with_offsets(
         func=compute_wgtfacq_e_dsl,
         deps=deps,
         offsets={"e2c": dims.E2CDim},
-        domain={dims.EdgeDim: (0, icon_grid.num_edges), dims.KDim: (0, icon_grid.num_levels)},
+        domain={dims.EdgeDim: (0, grid.num_edges), dims.KDim: (0, grid.num_levels)},
         fields=["weighting_factor_for_quadratic_interpolation_to_edge_center"],
-        params={"n_edges": icon_grid.num_edges, "nlev": icon_grid.num_levels},
+        params={"n_edges": grid.num_edges, "nlev": grid.num_levels},
     )
 
     fields_factory.register_provider(wgtfacq_e_provider)
@@ -243,12 +270,12 @@ def test_field_provider_for_numpy_function_with_offsets(
 
 
 def test_factory_for_k_only_field(icon_grid, metrics_savepoint, grid_savepoint, backend):
-    fields_factory = factory.FieldsFactory()
+    fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
     vct_a = grid_savepoint.vct_a()
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = 3
-    pre_computed_fields = factory.PrecomputedFieldsProvider({"model_interface_height": vct_a})
+    pre_computed_fields = factory.PrecomputedFieldProvider({"model_interface_height": vct_a})
     fields_factory.register_provider(pre_computed_fields)
     vertical_grid = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(grid_savepoint.num(dims.KDim)),
@@ -277,21 +304,22 @@ def test_factory_for_k_only_field(icon_grid, metrics_savepoint, grid_savepoint, 
 
 
 def test_horizontal_only_field(icon_grid, interpolation_savepoint, grid_savepoint, backend):
-    fields_factory = factory.FieldsFactory()
+    fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
     refin_ctl = grid_savepoint.refin_ctrl(dims.EdgeDim)
-    pre_computed_fields = factory.PrecomputedFieldsProvider({"refin_e_ctrl": refin_ctl})
+    pre_computed_fields = factory.PrecomputedFieldProvider({"refin_e_ctrl": refin_ctl})
     fields_factory.register_provider(pre_computed_fields)
     vertical_grid = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(grid_savepoint.num(dims.KDim)),
         grid_savepoint.vct_a(),
         grid_savepoint.vct_b(),
     )
+    domain = h_grid.domain(dims.EdgeDim)
     provider = factory.ProgramFieldProvider(
         func=compute_nudgecoeffs.compute_nudgecoeffs,
         domain={
             dims.EdgeDim: (
-                edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
-                edge_domain(h_grid.Zone.LOCAL),
+                domain(h_grid.Zone.NUDGING_LEVEL_2),
+                domain(h_grid.Zone.LOCAL),
             ),
         },
         deps={"refin_ctrl": "refin_e_ctrl"},

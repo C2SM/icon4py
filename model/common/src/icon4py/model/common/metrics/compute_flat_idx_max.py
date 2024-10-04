@@ -32,4 +32,4 @@ def compute_flat_idx_max(
             ):
                 flat_idx[je, jk] = k_lev[jk]
     flat_idx_max = xp.amax(flat_idx, axis=1)
-    return xp.astype(flat_idx_max, xp.int32)
+    return flat_idx_max.astype(xp.int32)

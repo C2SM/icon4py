@@ -12,9 +12,6 @@ import pathlib
 import gt4py.next as gtx
 
 import icon4py.model.common.states.factory as factory
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    HorizontalPressureDiscretizationType,
-)
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -30,7 +27,7 @@ from icon4py.model.common.metrics import (
     metric_fields as mf,
 )
 from icon4py.model.common.settings import xp
-from icon4py.model.common.states.metadata import INTERFACE_LEVEL_STANDARD_NAME
+from icon4py.model.common.states import metadata
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     serialbox_utils as sb,
@@ -110,16 +107,16 @@ c_owner_mask = grid_savepoint.c_owner_mask()
 edge_cell_length = grid_savepoint.edge_cell_length()
 
 
-fields_factory = factory.FieldsFactory()
+fields_factory = factory.FieldsFactory(metadata.attrs)
 
 fields_factory.register_provider(
-    factory.PrecomputedFieldsProvider(
+    factory.PrecomputedFieldProvider(
         {
             "height_on_interface_levels": interface_model_height,
             "z_ifc_sliced": z_ifc_sliced,
             "cell_to_edge_interpolation_coefficient": c_lin_e,
             "c_bln_avg": c_bln_avg,
-            INTERFACE_LEVEL_STANDARD_NAME: k_index,
+            metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index,
             "vct_a": vct_a,
             "c_refin_ctrl": c_refin_ctrl,
             "e_refin_ctrl": e_refin_ctrl,
@@ -167,7 +164,7 @@ compute_ddqz_z_half_provider = factory.ProgramFieldProvider(
     deps={
         "z_ifc": "height_on_interface_levels",
         "z_mc": "height",
-        "k": INTERFACE_LEVEL_STANDARD_NAME,
+        "k": metadata.INTERFACE_LEVEL_STANDARD_NAME,
     },
     params={"nlev": icon_grid.num_levels},
 )
@@ -312,7 +309,7 @@ compute_d2dexdz2_fac_mc_provider = factory.ProgramFieldProvider(
         "del_t_bg": constants.DEL_T_BG,
         "h_scal_bg": constants._H_SCAL_BG,
         "igradp_method": 3,
-        "igradp_constant": HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
+        "igradp_constant": 3,  # HorizontalPressureDiscretizationType.TAYLOR_HYDRO = 3,
     },
 )
 fields_factory.register_provider(compute_d2dexdz2_fac_mc_provider)
@@ -470,7 +467,7 @@ compute_wgtfac_c_provider = factory.ProgramFieldProvider(
     func=compute_wgtfac_c.compute_wgtfac_c,
     deps={
         "z_ifc": "height_on_interface_levels",
-        "k": INTERFACE_LEVEL_STANDARD_NAME,
+        "k": metadata.INTERFACE_LEVEL_STANDARD_NAME,
     },
     domain={
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
@@ -544,7 +541,7 @@ compute_flat_idx_max_provider = factory.NumpyFieldsProvider(
     deps={
         "z_me": "z_me",
         "z_ifc": "height_on_interface_levels",
-        "k_lev": INTERFACE_LEVEL_STANDARD_NAME,
+        "k_lev": metadata.INTERFACE_LEVEL_STANDARD_NAME,
     },
     offsets={"e2c": dims.E2CDim},
     params={
@@ -565,7 +562,7 @@ compute_pg_edgeidx_vertidx_provider = factory.ProgramFieldProvider(
         "e_owner_mask": "e_owner_mask",
         "flat_idx_max": "flat_idx_max",
         "e_lev": "e_lev",
-        "k_lev": INTERFACE_LEVEL_STANDARD_NAME,
+        "k_lev": metadata.INTERFACE_LEVEL_STANDARD_NAME,
     },
     domain={
         dims.EdgeDim: (
@@ -609,7 +606,7 @@ compute_pg_exdist_dsl_provider = factory.ProgramFieldProvider(
         "z_me": "z_me",
         "e_owner_mask": "e_owner_mask",
         "flat_idx_max": "flat_idx_max",
-        "k_lev": INTERFACE_LEVEL_STANDARD_NAME,
+        "k_lev": metadata.INTERFACE_LEVEL_STANDARD_NAME,
     },
     domain={
         dims.EdgeDim: (

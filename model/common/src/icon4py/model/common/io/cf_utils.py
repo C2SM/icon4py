@@ -23,8 +23,6 @@ DEFAULT_CALENDAR: Final[str] = "proleptic_gregorian"
 DEFAULT_TIME_UNIT: Final[str] = "seconds since 1970-01-01 00:00:00"
 
 
-
-
 COARDS_T_POS: Final[int] = 0
 COARDS_Z_POS: Final[int] = 1
 HORIZONTAL_POS: Final[int] = 2

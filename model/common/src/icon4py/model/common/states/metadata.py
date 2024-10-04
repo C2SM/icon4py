@@ -10,12 +10,13 @@ from typing import Final
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.states import model
 
 
 INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
 INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
 
-attrs = {
+attrs: Final[dict[str, model.FieldMetaData]] = {
     "theta_ref_mc": dict(
         standard_name="theta_ref_mc",
         long_name="theta_ref_mc",
