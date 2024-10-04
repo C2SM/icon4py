@@ -17,11 +17,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
@@ -35,24 +30,30 @@ def _compute_hydrostatic_correction_term(
     """Formerly known as _mo_solve_nonhydro_stencil_21."""
     zdiff_gradp_wp = astype(zdiff_gradp, wpfloat)
 
-    theta_v_0 = theta_v(as_offset(Koff, ikoffset(E2EC[0])))
-    theta_v_1 = theta_v(as_offset(Koff, ikoffset(E2EC[1])))
+    theta_v_0 = theta_v(E2C[0])(as_offset(Koff, ikoffset(E2EC[0])))
+    theta_v_1 = theta_v(E2C[1])(as_offset(Koff, ikoffset(E2EC[1])))
 
-    theta_v_ic_0 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[0])))
-    theta_v_ic_1 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[1])))
+    theta_v_ic_0 = theta_v_ic(E2C[0])(as_offset(Koff, ikoffset(E2EC[0])))
+    theta_v_ic_1 = theta_v_ic(E2C[1])(as_offset(Koff, ikoffset(E2EC[1])))
 
-    theta_v_ic_p1_0 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[0]) + 1))
-    theta_v_ic_p1_1 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[1]) + 1))
+    theta_v_ic_p1_0 = theta_v_ic(E2C[0])(as_offset(Koff, ikoffset(E2EC[0]) + 1))
+    theta_v_ic_p1_1 = theta_v_ic(E2C[1])(as_offset(Koff, ikoffset(E2EC[1]) + 1))
 
-    inv_ddqz_z_full_0_wp = astype(inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[0]))), wpfloat)
-    inv_ddqz_z_full_1_wp = astype(inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[1]))), wpfloat)
+    inv_ddqz_z_full_0_wp = astype(
+        inv_ddqz_z_full(E2C[0])(as_offset(Koff, ikoffset(E2EC[0]))), wpfloat
+    )
+    inv_ddqz_z_full_1_wp = astype(
+        inv_ddqz_z_full(E2C[1])(as_offset(Koff, ikoffset(E2EC[1]))), wpfloat
+    )
 
-    z_theta_0 = theta_v_0(E2C[0]) + zdiff_gradp_wp(E2EC[0]) * (
-        theta_v_ic_0(E2C[0]) - theta_v_ic_p1_0(E2C[0])
-    ) * inv_ddqz_z_full_0_wp(E2C[0])
-    z_theta_1 = theta_v_1(E2C[1]) + zdiff_gradp_wp(E2EC[1]) * (
-        theta_v_ic_1(E2C[1]) - theta_v_ic_p1_1(E2C[1])
-    ) * inv_ddqz_z_full_1_wp(E2C[1])
+    z_theta_0 = (
+        theta_v_0
+        + zdiff_gradp_wp(E2EC[0]) * (theta_v_ic_0 - theta_v_ic_p1_0) * inv_ddqz_z_full_0_wp
+    )
+    z_theta_1 = (
+        theta_v_1
+        + zdiff_gradp_wp(E2EC[1]) * (theta_v_ic_1 - theta_v_ic_p1_1) * inv_ddqz_z_full_1_wp
+    )
     z_hydro_corr_wp = (
         grav_o_cpd
         * inv_dual_edge_length
@@ -89,7 +90,7 @@ def compute_hydrostatic_correction_term(
         grav_o_cpd,
         out=z_hydro_corr,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

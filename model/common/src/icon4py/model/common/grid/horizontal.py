@@ -37,7 +37,7 @@ import dataclasses
 import enum
 import functools
 from abc import abstractmethod
-from typing import ClassVar, Final, Protocol
+from typing import Final, Protocol
 
 import gt4py.next as gtx
 
@@ -454,27 +454,8 @@ class CellDomain(Domain):
         )
 
 
-# TODO (@ halungge): maybe this should to a separate module
 @dataclasses.dataclass(frozen=True)
 class HorizontalGridSize:
     num_vertices: int
     num_edges: int
     num_cells: int
-
-
-# TODO (@ halungge): maybe this should to a separate module
-class RefinCtrlLevel:
-    _boundary_nudging_start: ClassVar = {
-        dims.EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
-        dims.CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
-    }
-
-    @classmethod
-    def boundary_nudging_start(cls, dim: gtx.Dimension) -> int:
-        """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
-        try:
-            return cls._boundary_nudging_start[dim]
-        except KeyError as err:
-            raise ValueError(
-                f"nudging start level only exists for {dims.CellDim} and {dims.EdgeDim}"
-            ) from err

@@ -16,5 +16,9 @@ class IncompleteStateError(Exception):
         super().__init__(f"Field '{field_name}' is missing in state.")
 
 
+class IconGridError(RuntimeError):
+    pass
+
+
 class MissingConnectivity(ValueError):
     pass

@@ -229,6 +229,39 @@ def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit):
 
 
 @pytest.fixture
+def savepoint_diffusion_init(
+    data_provider,  # imported fixtures data_provider
+    linit,  # imported fixtures linit
+    step_date_init,  # imported fixtures data_provider
+):
+    """
+    Load data from ICON savepoint at start of diffusion module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_date_init'
+    fixture, passing 'step_date_init=<iso_string>'
+
+    linit flag can be set by overriding the 'linit' fixture
+    """
+    return data_provider.from_savepoint_diffusion_init(linit=linit, date=step_date_init)
+
+
+@pytest.fixture
+def savepoint_diffusion_exit(
+    data_provider,  # imported fixtures data_provider`
+    linit,  # imported fixtures linit`
+    step_date_exit,  # imported fixtures step_date_exit`
+):
+    """
+    Load data from ICON savepoint at exist of diffusion module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    sp = data_provider.from_savepoint_diffusion_exit(linit=linit, date=step_date_exit)
+    return sp
+
+
+@pytest.fixture
 def istep_init():
     return 1
 

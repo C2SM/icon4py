@@ -16,11 +16,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[dims.KDim], vpfloat],
@@ -191,7 +186,7 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
         smag_offset,
         out=(kh_smag_e, kh_smag_ec, z_nabla2_e),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

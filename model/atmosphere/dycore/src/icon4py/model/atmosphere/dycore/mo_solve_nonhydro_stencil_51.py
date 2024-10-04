@@ -15,11 +15,6 @@ from icon4py.model.common.dimension import Koff
 from icon4py.model.common.settings import backend
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _mo_solve_nonhydro_stencil_51(
     vwind_impl_wgt: fa.CellField[float],
@@ -72,7 +67,7 @@ def mo_solve_nonhydro_stencil_51(
         cpd,
         out=(z_q, w_nnew),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
