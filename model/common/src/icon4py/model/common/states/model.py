@@ -9,18 +9,21 @@
 
 import dataclasses
 import functools
-from typing import Protocol, TypedDict, Union, runtime_checkable
+from typing import Literal, Protocol, TypedDict, Union, runtime_checkable
 
 import gt4py._core.definitions as gt_coredefs
 import gt4py.next as gtx
 import gt4py.next.common as gt_common
 import numpy.typing as np_t
 
+import icon4py.model.common.type_alias as ta
+
 
 """Contains type definitions used for the model`s state representation."""
-
-DimensionT = Union[gtx.Dimension, str]
+DimensionNames = Literal["cell", "edge", "vertex"]
+DimensionT = Union[gtx.Dimension, DimensionNames]  # TODO use Literal instead of str
 BufferT = Union[np_t.ArrayLike, gtx.Field]
+DTypeT = Union[ta.wpfloat, ta.vpfloat, gtx.int32, gtx.int64, gtx.float32, gtx.float64]
 
 
 class OptionalMetaData(TypedDict, total=False):
@@ -28,8 +31,9 @@ class OptionalMetaData(TypedDict, total=False):
     long_name: str
     #: we might not have this one for all fields. But it is useful to have it for tractability with ICON
     icon_var_name: str
-    # TODO (@halungge) dims should probably be required
+    # TODO (@halungge) dims should probably be required?
     dims: tuple[DimensionT, ...]
+    dtype: Union[ta.wpfloat, ta.vpfloat, gtx.int32, gtx.int64, gtx.float32, gtx.float64]
 
 
 class RequiredMetaData(TypedDict, total=True):
