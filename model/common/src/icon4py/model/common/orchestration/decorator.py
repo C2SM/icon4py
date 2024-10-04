@@ -109,11 +109,12 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                 }
 
                 unique_id = make_uid(fuse_func, compile_time_args_kwargs, exchange_obj)
+                default_build_folder = Path(".dacecache") / f"uid_{unique_id}"
+                default_build_folder.mkdir(parents=True, exist_ok=True)
 
                 if (cache_item := local_cache.get(unique_id, None)) is None:
                     fuse_func_orig_annotations = fuse_func.__annotations__
                     fuse_func.__annotations__ = dace_annotations
-                    default_build_folder = Path(".dacecache") / f"uid_{unique_id}"
 
                     cache_item = local_cache[unique_id] = parse_compile_cache_sdfg(
                         default_build_folder,
@@ -151,9 +152,7 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                     del sdfg_args[self_name]
 
                 with dace.config.temporary_config():
-                    dace.config.Config.set(
-                        "compiler", "allow_view_arguments", value=True
-                    )  # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
+                    configure_dace_temp_env(default_build_folder)
                     return compiled_sdfg(**sdfg_args)
 
             return wrapper

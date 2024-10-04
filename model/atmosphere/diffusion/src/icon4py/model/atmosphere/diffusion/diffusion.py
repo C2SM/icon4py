@@ -569,6 +569,7 @@ class Diffusion:
 
         runs a diffusion step for the parameter linit=False, within regular time loop.
         """
+        self._linit = False  # For caching purposes in DaCe Orchestration
 
         self._do_diffusion_step(
             diagnostic_state=diagnostic_state,
