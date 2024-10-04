@@ -197,7 +197,7 @@ def init_nabla2_factor_in_upper_damping_zone(
     Args
         physcial_heights: vector of physical heights [m] of the height levels
         k_field: field of k levels
-        nrdmax: index of the level where rayleigh dampint starts
+        nrdmax: index of the level where rayleigh damping starts
         nshift: 0
         heights_nrd_shift: physcial_heights at nrdmax + nshift + 1,
         heights_1: physcial_heights at 1st level,
