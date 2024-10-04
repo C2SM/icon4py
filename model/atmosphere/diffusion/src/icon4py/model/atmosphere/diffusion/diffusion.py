@@ -446,7 +446,6 @@ class Diffusion:
             vertical_end=self.vertical_grid.end_index_of_damping_layer + 1,
             offset_provider={},
         )
-        self.diff_multfac_n2w = diff_multfac_n2w
 
         self._determine_horizontal_domains()
 
