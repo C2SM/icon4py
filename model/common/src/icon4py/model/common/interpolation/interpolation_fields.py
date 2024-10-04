@@ -26,12 +26,12 @@ def compute_c_lin_e(
     Compute E2C average inverse distance.
 
     Args:
-        edge_cell_length: numpy array, representing a Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
-        inv_dual_edge_length: inverse dual edge length, numpy array representing a Field[gtx.Dims[EdgeDim], ta.wpfloat]
-        owner_mask: numpy array, representing a Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
+        edge_cell_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        inv_dual_edge_length: inverse dual edge length, numpy array representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
 
-    Returns: c_lin_e: numpy array, representing Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+    Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
