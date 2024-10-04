@@ -435,7 +435,7 @@ class Diffusion:
         diffusion_utils.init_nabla2_factor_in_upper_damping_zone(
             physical_heights=self.vertical_grid.interface_physical_height,
             k_field=field_alloc.allocate_indices(dims.KDim, grid=self.grid),
-            diff_multfac_n2w=diff_multfac_n2w,
+            diff_multfac_n2w=self.diff_multfac_n2w,
             nrdmax=self.vertical_grid.end_index_of_damping_layer,
             nshift=0,
             heights_nrd_shift=self.vertical_grid.interface_physical_height.asnumpy()[
