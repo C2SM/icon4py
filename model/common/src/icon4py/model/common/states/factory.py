@@ -6,6 +6,42 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+"""
+Provide a FieldFactory that can serve as a simple in memory database for Fields.
+
+Once setup, the factory can be queried for fields using a string name for the field. Three query modes are available:
+_ `FIELD`: return the buffer containing the computed values as a GT4Py `Field`
+- `METADATA`:  return metadata such as units, CF standard_name or similar, dimensions...
+- `DATA_ARRAY`: combination of the two above in the form of `xarray.dataarray`
+
+The factory can be used to "store" already computed fields or register functions and call arguments
+and only compute the fields lazily upon request. In order to do so the user registers the fields computation with factory.
+
+It should be possible to setup the factory and computations and the factory independent of concrete runtime parameters that define
+the computation, passing those only once they are defined at runtime, for example
+---
+factory = Factory(metadata)
+foo_provider = FieldProvider("foo", func = f1, dependencies = [])
+bar_provider = FieldProvider("bar", func = f2, dependencies = ["foo"])
+
+factory.register_provider(foo_provider)
+factory.register_provider(bar_provider)
+(...)
+
+---
+def main(backend, grid)
+factory.with_backend(backend).with_grid(grid)
+
+val = factory.get("foo", RetrievalType.DATA_ARRAY)
+
+TODO (halungge): except for domain parameters and other fields managed by the same factory we currently lack the ability to specify
+    other input sources in the factory for lazy evaluation.
+    factory.with_sources({"geometry": x}, where x:FieldSourceN
+
+
+TODO: for the numpy functions we might have to work on the func interfaces to make them a bit more uniform.
+
+"""
 
 import enum
 import functools
@@ -51,7 +87,7 @@ class FieldProvider(Protocol):
     """
     Protocol for field providers.
 
-    A field provider is responsible for the computation and caching of a set of fields.
+    A field provider is responsible for the computation (and caching) of a set of fields.
     The fields can be accessed by their field_name (str).
 
     A FieldProvider is a callable and additionally has three properties (except for __call__):
@@ -334,11 +370,18 @@ def _check(
 
 
 class FieldSource(Protocol):
+    """Protocol for object that can be queried for fields."""
     def get(self, field_name: str, type_: RetrievalType = RetrievalType.FIELD):
         ...
 
 
 class PartialConfigurable(Protocol):
+    """
+    Protocol to mark classes that are not yet fully configured upon instaniation.
+
+    Additionally provides a decorator that makes use of the Protocol an can be used in
+    concrete examples to trigger a check whether the setup is complete.
+    """
     def is_fully_configured(self) -> bool:
         return False
 
