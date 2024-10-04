@@ -94,6 +94,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        # TODO: understand why values do not verify intermittently
         # error message contained in truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy
         if np.any(grid.connectivities[dims.C2E2CDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
