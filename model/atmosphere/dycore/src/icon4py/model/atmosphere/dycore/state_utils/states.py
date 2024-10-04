@@ -71,7 +71,9 @@ class InterpolationState:
         gtx.Dims[dims.VertexDim, dims.V2EDim], float
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
-    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], float]  # factor for divergence (nproma,cell_type,nblks_c)
+    geofac_div: gtx.Field[
+        gtx.Dims[dims.CEDim], float
+    ]  # factor for divergence (nproma,cell_type,nblks_c)
 
     geofac_n2s: gtx.Field[
         gtx.Dims[dims.CellDim, dims.C2E2CODim], float
