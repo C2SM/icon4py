@@ -14,7 +14,6 @@ Creates a DaCe SDFG that fuses any GT4Py Program called by the decorated functio
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import inspect
 import os
@@ -61,70 +60,80 @@ if dace:
 
 def orchestrate(func: Callable | None = None, *, method: bool | None = None):
     def _decorator(fuse_func: Callable):
-        compiled_sdfgs = {}  # Caching
+        if settings.dace_orchestration is not None:
+            local_cache = {}  # Caching
 
-        def wrapper(*args, **kwargs):
-            if settings.dace_orchestration is not None:
-                if "dace" not in settings.backend.name.lower():
-                    raise ValueError(
-                        "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
-                    )
+            if "dace" not in settings.backend.name.lower():
+                raise ValueError(
+                    "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
+                )
 
-                if method:
-                    # self is used to retrieve the _exchange object -on the fly halo exchanges- and the grid object -offset providers-
-                    self = args[0]
-                    self_name = next(iter(inspect.signature(fuse_func).parameters))
-                else:
-                    raise ValueError(
-                        "The orchestration decorator is only for methods -at least for now-."
-                    )
+            self_name = next(iter(inspect.signature(fuse_func).parameters))
 
-                fuse_func_orig_annotations = copy.deepcopy(fuse_func.__annotations__)
-                fuse_func.__annotations__ = to_dace_annotations(
-                    fuse_func
-                )  # every arg/kwarg is annotated with DaCe data types
+            # If not explicitly set by the user, assume the provided callable is a method
+            # when its first argument is called 'self'
+            func_is_method = method or (self_name == "self")
+
+            if not func_is_method:
+                raise NotImplementedError(
+                    "The orchestration decorator is only for methods -at least for now-."
+                )
+
+            def wrapper(*args, **kwargs):
+                self = args[0]
 
                 exchange_obj = None
                 grid = None
                 for attr_name, attr_value in self.__dict__.items():
                     if isinstance(attr_value, decomposition.ExchangeRuntime):
                         exchange_obj = getattr(self, attr_name)
-                    if isinstance(attr_value, icon_grid.IconGrid):
+                    elif isinstance(attr_value, icon_grid.IconGrid):
                         grid = getattr(self, attr_name)
 
-                if not grid:
-                    raise ValueError("No grid object found.")
+                # Use assert here to allow disabling the check when running in production
+                assert grid is not None, "No grid object found in the call arguments."
 
-                order_kwargs_by_annotations(fuse_func, kwargs)
+                # Add DaCe data types annotations for **all args and kwargs**
+                dace_annotations = to_dace_annotations(fuse_func)
 
-                compile_time_args_kwargs = {}
-                all_args_kwargs = [*args, *kwargs.values()]
-                for i, (k, v) in enumerate(fuse_func.__annotations__.items()):
-                    if v is dace.compiletime:
-                        compile_time_args_kwargs[k] = all_args_kwargs[i]
+                # To extract the actual values from the function parameters defined as compile-time
+                # we first need to first sort the run-time arguments according to their definition
+                # order and also adding `None`s for the missing ones to make sure we don't use
+                # the wrong one by mistake.
+                ordered_kwargs = [kwargs[key] for key in dace_annotations if key in kwargs]
+                all_args = [*args, *ordered_kwargs]
+                compile_time_args_kwargs = {
+                    k: arg
+                    for arg, (k, v) in zip(all_args, dace_annotations.items(), strict=True)
+                    if v is dace.compiletime
+                }
 
                 unique_id = make_uid(fuse_func, compile_time_args_kwargs, exchange_obj)
 
-                default_build_folder = Path(".dacecache") / f"uid_{unique_id}"
+                if (cache_item := local_cache.get(unique_id, None)) is None:
+                    fuse_func_orig_annotations = fuse_func.__annotations__
+                    fuse_func.__annotations__ = dace_annotations
+                    default_build_folder = Path(".dacecache") / f"uid_{unique_id}"
 
-                parse_compile_cache_sdfg(
-                    unique_id,
-                    compiled_sdfgs,
-                    default_build_folder,
-                    exchange_obj,
-                    fuse_func,
-                    compile_time_args_kwargs,
-                    self_name,
-                    simplify_fused_sdfg=True,
-                )
-                dace_program = compiled_sdfgs[unique_id]["dace_program"]
-                sdfg = compiled_sdfgs[unique_id]["sdfg"]
-                compiled_sdfg = compiled_sdfgs[unique_id]["compiled_sdfg"]
+                    cache_item = local_cache[unique_id] = parse_compile_cache_sdfg(
+                        default_build_folder,
+                        exchange_obj,
+                        fuse_func,
+                        compile_time_args_kwargs,
+                        self_name,
+                        simplify_fused_sdfg=True,
+                    )
+
+                    fuse_func.__annotations__ = fuse_func_orig_annotations
+
+                dace_program = cache_item["dace_program"]
+                sdfg = cache_item["sdfg"]
+                compiled_sdfg = cache_item["compiled_sdfg"]
 
                 # update the args/kwargs with runtime related values, such as
                 # concretized symbols, runtime connectivity tables, GHEX C++ pointers, and DaCe structures pointers
                 updated_args, updated_kwargs = mod_xargs_for_dace_structures(
-                    fuse_func, fuse_func_orig_annotations, args, kwargs
+                    dace_annotations, fuse_func.__annotations__, args, kwargs
                 )
                 updated_kwargs = {
                     **updated_kwargs,
@@ -133,28 +142,24 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                 updated_kwargs = {
                     **updated_kwargs,
                     **dace_symbols_concretization(
-                        grid, fuse_func, fuse_func_orig_annotations, args, kwargs
+                        grid, dace_annotations, fuse_func.__annotations__, args, kwargs
                     ),
                 }
-                #
 
                 sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
-                if method:
+                if func_is_method:
                     del sdfg_args[self_name]
-
-                fuse_func.__annotations__ = (
-                    fuse_func_orig_annotations  # restore the original annotations
-                )
 
                 with dace.config.temporary_config():
                     dace.config.Config.set(
                         "compiler", "allow_view_arguments", value=True
                     )  # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
                     return compiled_sdfg(**sdfg_args)
-            else:
-                return fuse_func(*args, **kwargs)
 
-        return wrapper
+            return wrapper
+
+        else:
+            return fuse_func
 
     return _decorator(func) if func else _decorator
 
@@ -190,7 +195,9 @@ def make_uid(
     return unique_id
 
 
-def generate_orchestration_uid(obj: Any, obj_name: str = "") -> str:
+def generate_orchestration_uid(
+    obj: Any, obj_name: str = "", members_to_disregard: tuple[str] = ()
+) -> str:
     """Generate a unique id for a runtime object.
 
     The unique id is generated by creating a dictionary that describes the runtime state of the object.
@@ -205,6 +212,10 @@ def generate_orchestration_uid(obj: Any, obj_name: str = "") -> str:
 
     def _populate_entry(key: str, value: Any, parent_key: str = ""):
         full_key = f"{parent_key}.{key}" if parent_key else key
+
+        if full_key in members_to_disregard:
+            return
+
         if isinstance(value, primitive_dtypes):
             unique_dict[full_key] = {"type": "primitive_dtypes", "value": str(value)}
         elif isinstance(value, (np.ndarray, gtx.Field)):
@@ -346,25 +357,20 @@ if dace:
             raise ValueError("The device type is not supported.")
 
     def parse_compile_cache_sdfg(
-        unique_id: str,
-        compiled_sdfgs: dict[str, dict[str, Any]],
         default_build_folder: Path,
         exchange_obj: Optional[decomposition.ExchangeRuntime],
         fuse_func: Callable,
         compile_time_args_kwargs: dict[str, Any],
         self_name: Optional[str] = None,
         simplify_fused_sdfg: bool = True,
-    ) -> None:
+    ) -> dict[str, Any]:
         """Function that parses, compiles and caches the fused SDFG along with adding the halo exchanges."""
-        if unique_id in compiled_sdfgs:
-            return
-
-        compiled_sdfgs[unique_id] = compiled_sdfg = {}
+        cache = {}
 
         with dace.config.temporary_config():
             device_type = configure_dace_temp_env(default_build_folder)
 
-            compiled_sdfg["dace_program"] = dace_program = dace.program(
+            cache["dace_program"] = dace_program = dace.program(
                 auto_optimize=False,
                 device=dev_type_from_gt4py_to_dace(device_type),
                 distributed_compilation=False,
@@ -380,24 +386,24 @@ if dace:
                 try:
                     if self_name:
                         self = compile_time_args_kwargs.pop(self_name)
-                        compiled_sdfg["sdfg"], _ = dace_program.load_sdfg(
+                        cache["sdfg"], _ = dace_program.load_sdfg(
                             Path(dace_program_location) / "program.sdfg",
                             self,
                             **compile_time_args_kwargs,
                         )
                         (
-                            compiled_sdfg["compiled_sdfg"],
+                            cache["compiled_sdfg"],
                             _,
                         ) = dace_program.load_precompiled_sdfg(
                             dace_program_location, self, **compile_time_args_kwargs
                         )
                     else:
-                        compiled_sdfg["sdfg"], _ = dace_program.load_sdfg(
+                        cache["sdfg"], _ = dace_program.load_sdfg(
                             Path(dace_program_location) / "program.sdfg",
                             **compile_time_args_kwargs,
                         )
                         (
-                            compiled_sdfg["compiled_sdfg"],
+                            cache["compiled_sdfg"],
                             _,
                         ) = dace_program.load_precompiled_sdfg(
                             dace_program_location, **compile_time_args_kwargs
@@ -409,14 +415,14 @@ if dace:
             else:
                 if self_name:
                     self = compile_time_args_kwargs.pop(self_name)
-                    compiled_sdfg["sdfg"] = dace_program.to_sdfg(
+                    cache["sdfg"] = dace_program.to_sdfg(
                         self, **compile_time_args_kwargs, simplify=False, validate=True
                     )
                 else:
-                    compiled_sdfg["sdfg"] = dace_program.to_sdfg(
+                    cache["sdfg"] = dace_program.to_sdfg(
                         **compile_time_args_kwargs, simplify=False, validate=True
                     )
-                sdfg = compiled_sdfg["sdfg"]
+                sdfg = cache["sdfg"]
 
                 if sdfg.name != f"{fuse_func.__module__}.{fuse_func.__name__}".replace(".", "_"):
                     raise ValueError(
@@ -445,7 +451,9 @@ if dace:
 
                 with hooks.invoke_sdfg_call_hooks(sdfg) as sdfg_:
                     # TODO(kotsaloscv): Re-think the distributed compilation -all args need to be type annotated and not dace.compiletime-
-                    compiled_sdfg["compiled_sdfg"] = sdfg_.compile(validate=dace_program.validate)
+                    cache["compiled_sdfg"] = sdfg_.compile(validate=dace_program.validate)
+
+        return cache
 
     def get_env_bool(env_var_name: str, default: bool = False) -> bool:
         value = os.getenv(env_var_name, str(default)).lower()
@@ -525,26 +533,24 @@ if dace:
         }
 
     def modified_orig_annotations(
-        fuse_func: Callable, fuse_func_orig_annotations: dict[str, Any]
+        dace_annotations: dict[str, Any], fuse_func_orig_annotations: dict[str, Any]
     ) -> dict[str, Any]:
         """Add None as annotation to the the non-annotated args/kwargs."""
         ii = 0
         modified_fuse_func_orig_annotations = {}
-        for i, annotation_ in enumerate(fuse_func.__annotations__.values()):
+        for i, annotation_ in enumerate(dace_annotations.values()):
             if annotation_ is dace.compiletime:
-                modified_fuse_func_orig_annotations[
-                    list(fuse_func.__annotations__.keys())[i]
-                ] = None
+                modified_fuse_func_orig_annotations[list(dace_annotations.keys())[i]] = None
             else:
-                modified_fuse_func_orig_annotations[
-                    list(fuse_func.__annotations__.keys())[i]
-                ] = list(fuse_func_orig_annotations.values())[ii]
+                modified_fuse_func_orig_annotations[list(dace_annotations.keys())[i]] = list(
+                    fuse_func_orig_annotations.values()
+                )[ii]
                 ii += 1
         return modified_fuse_func_orig_annotations
 
     def dace_symbols_concretization(
         grid: icon_grid.IconGrid,
-        fuse_func: Callable,
+        dace_annotations: dict[str, Any],
         fuse_func_orig_annotations: dict[str, Any],
         args: Any,
         kwargs: Any,
@@ -552,7 +558,7 @@ if dace:
         """Since the generated SDFGs are parametric, we need to concretize the symbols before calling the compiled SDFGs."""
         flattened_xargs_type_value = list(
             zip(
-                [*fuse_func.__annotations__.values()],
+                [*dace_annotations.values()],
                 [*args, *kwargs.values()],
                 strict=True,
             )
@@ -573,12 +579,12 @@ if dace:
             return concretized_symbols
 
         modified_fuse_func_orig_annotations = modified_orig_annotations(
-            fuse_func, fuse_func_orig_annotations
+            dace_annotations, fuse_func_orig_annotations
         )
 
         concretize_symbols_for_dace_structure = {}
         for annotation_, annotation_orig_ in zip(
-            fuse_func.__annotations__.values(),
+            dace_annotations.values(),
             modified_fuse_func_orig_annotations.values(),
             strict=True,
         ):
@@ -598,12 +604,15 @@ if dace:
         }
 
     def mod_xargs_for_dace_structures(
-        fuse_func: Callable, fuse_func_orig_annotations: dict[str, Any], args: Any, kwargs: Any
+        dace_annotations: dict[str, Any],
+        fuse_func_orig_annotations: dict[str, Any],
+        args: Any,
+        kwargs: Any,
     ) -> tuple:
         """Modify the args/kwargs to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding Python data classes"""
         flattened_xargs_type_value = list(
             zip(
-                [*fuse_func.__annotations__.values()],
+                [*dace_annotations.values()],
                 [*args, *kwargs.values()],
                 strict=True,
             )
@@ -623,11 +632,11 @@ if dace:
                     )
 
         modified_fuse_func_orig_annotations = modified_orig_annotations(
-            fuse_func, fuse_func_orig_annotations
+            dace_annotations, fuse_func_orig_annotations
         )
 
         for annotation_, annotation_orig_ in zip(
-            fuse_func.__annotations__.values(),
+            dace_annotations.values(),
             modified_fuse_func_orig_annotations.values(),
             strict=True,
         ):

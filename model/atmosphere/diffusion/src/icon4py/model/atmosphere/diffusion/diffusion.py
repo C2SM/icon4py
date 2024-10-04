@@ -595,7 +595,7 @@ class Diffusion:
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
-    @orchestrate(method=True)
+    @orchestrate
     def _do_diffusion_step(
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
