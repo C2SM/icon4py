@@ -8,7 +8,7 @@ variables:
   stage: test
   script:
     - pip install dace==$DACE_VERSION
-    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
+    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
@@ -23,7 +23,7 @@ test_model_stencils_aarch64:
   script:
     - pip install dace==$DACE_VERSION
     # force execution of tests where validation is expected to fail, because the reason for failure is wrong numpy reference
-    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --runxfail --verbose
+    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --runxfail
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
