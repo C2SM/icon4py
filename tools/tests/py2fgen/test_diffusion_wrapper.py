@@ -28,7 +28,6 @@ from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_ru
 from .conftest import compare_objects, construct_diffusion_config
 
 
-@pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -385,7 +384,6 @@ def test_diffusion_wrapper_granule_inputs(
         assert captured_kwargs["dtime"] == expected_dtime
 
 
-@pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
