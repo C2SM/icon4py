@@ -536,8 +536,6 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        self._linit = True  # For caching purposes in DaCe Orchestration
-
         diff_multfac_vn = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
         smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
 
@@ -569,7 +567,6 @@ class Diffusion:
 
         runs a diffusion step for the parameter linit=False, within regular time loop.
         """
-        self._linit = False  # For caching purposes in DaCe Orchestration
 
         self._do_diffusion_step(
             diagnostic_state=diagnostic_state,

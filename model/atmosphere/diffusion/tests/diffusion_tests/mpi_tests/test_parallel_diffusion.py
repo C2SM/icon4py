@@ -143,6 +143,9 @@ def test_parallel_diffusion(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  running diffusion step - using {processor_props.comm_name} with {processor_props.comm_size} nodes - DONE"
     )
 
+    if settings.dace_orchestration is not None:
+        diffusion._do_diffusion_step.clear_cache()
+
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
@@ -333,3 +336,6 @@ def test_parallel_diffusion_multiple_steps(
     utils.compare_dace_orchestration_multiple_steps(
         prognostic_state_dace_non_orch, prognostic_state_dace_orch
     )
+
+    if settings.dace_orchestration is not None:
+        diffusion._do_diffusion_step.clear_cache()

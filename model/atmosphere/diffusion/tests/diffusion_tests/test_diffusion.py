@@ -400,6 +400,9 @@ def test_run_diffusion_single_step(
 
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
 
+    if settings.dace_orchestration is not None:
+        diffusion._do_diffusion_step.clear_cache()
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -543,6 +546,9 @@ def test_run_diffusion_multiple_steps(
         prognostic_state_dace_non_orch, prognostic_state_dace_orch
     )
 
+    if settings.dace_orchestration is not None:
+        diffusion._do_diffusion_step.clear_cache()
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
@@ -631,3 +637,6 @@ def test_run_diffusion_initial_step(
             prognostic_state=prognostic_state,
             diffusion_savepoint=savepoint_diffusion_exit,
         )
+
+    if settings.dace_orchestration is not None:
+        diffusion._do_diffusion_step.clear_cache()

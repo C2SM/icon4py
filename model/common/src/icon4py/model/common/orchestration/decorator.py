@@ -17,6 +17,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import os
+import shutil
 import uuid
 from collections.abc import Callable
 from pathlib import Path
@@ -154,6 +155,14 @@ def orchestrate(func: Callable | None = None, *, method: bool | None = None):
                 with dace.config.temporary_config():
                     configure_dace_temp_env(default_build_folder)
                     return compiled_sdfg(**sdfg_args)
+
+            # Pytest does not clear the cache between runs in a proper way -pytest.mark.parametrize(...)-.
+            # This leads to corrupted cache and subsequent errors.
+            # To avoid this, we provide a way to clear the cache.
+            def clear_cache():
+                local_cache.clear()
+
+            wrapper.clear_cache = clear_cache
 
             return wrapper
 
@@ -412,6 +421,11 @@ if dace:
                         f"Corrupted cache. Remove `{default_build_folder}` folder and re-run the program."
                     ) from None
             else:
+                # If there is a cached folder delete it to avoid corrupted cache.
+                # At this point, we have already decided that we are not going to use it.
+                if dace_program_location.exists() and dace_program_location.is_dir():
+                    shutil.rmtree(dace_program_location)
+
                 if self_name:
                     self = compile_time_args_kwargs.pop(self_name)
                     cache["sdfg"] = dace_program.to_sdfg(
