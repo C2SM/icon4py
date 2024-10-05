@@ -401,7 +401,7 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
 
     if settings.dace_orchestration is not None:
-        diffusion._do_diffusion_step.clear_cache()
+        diffusion_granule._do_diffusion_step.clear_cache()
 
 
 @pytest.mark.datatest
@@ -547,7 +547,7 @@ def test_run_diffusion_multiple_steps(
     )
 
     if settings.dace_orchestration is not None:
-        diffusion._do_diffusion_step.clear_cache()
+        diffusion_granule._do_diffusion_step.clear_cache()
 
 
 @pytest.mark.datatest
@@ -639,4 +639,4 @@ def test_run_diffusion_initial_step(
         )
 
     if settings.dace_orchestration is not None:
-        diffusion._do_diffusion_step.clear_cache()
+        diffusion_granule._do_diffusion_step.clear_cache()
