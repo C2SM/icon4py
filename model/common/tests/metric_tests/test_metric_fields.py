@@ -660,7 +660,7 @@ def test_compute_pg_exdist_dsl(
         horizontal_end=icon_grid.num_edges,
         vertical_start=0,
         vertical_end=nlev,
-        offset_provider={},
+        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
 
     _compute_pg_edgeidx_vertidx(
