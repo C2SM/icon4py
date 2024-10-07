@@ -250,18 +250,20 @@ def test_factory_pg_exdist_dsl(
     vertical_grid = v_grid.VerticalGrid(v_grid.VerticalGridConfig(num_levels), vct_a, vct_b)
     factory.with_grid(icon_grid, vertical_grid).with_backend(backend)
 
-    factory.get("z_aux2", states_factory.RetrievalType.FIELD)
-    factory.get("z_me", states_factory.RetrievalType.FIELD)
+    factory.get("z_ifc_sliced", states_factory.RetrievalType.FIELD)
+    factory.get("height", states_factory.RetrievalType.FIELD)
+    factory.get("cell_to_edge_interpolation_coefficient", states_factory.RetrievalType.FIELD)
     factory.get("e_owner_mask", states_factory.RetrievalType.FIELD)
     factory.get("flat_idx_max", states_factory.RetrievalType.FIELD)
     factory.get(INTERFACE_LEVEL_STANDARD_NAME, states_factory.RetrievalType.FIELD)
+    factory.get("e_lev", states_factory.RetrievalType.FIELD)
 
     pg_exdist_dsl_ref = metrics_savepoint.pg_exdist()
     pg_exdist_dsl_full = factory.get("pg_exdist_dsl", states_factory.RetrievalType.FIELD)
     assert helpers.dallclose(pg_exdist_dsl_full.asnumpy(), pg_exdist_dsl_ref.asnumpy(), rtol=1.0e-9)
 
 
-def test_factory_mask_prog_halo_c(
+def test_factory_mask_bdy_prog_halo_c(
     grid_savepoint, icon_grid, metrics_savepoint, interpolation_savepoint, backend
 ):
     factory = mf.fields_factory
@@ -275,23 +277,9 @@ def test_factory_mask_prog_halo_c(
 
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     mask_prog_halo_c_full = factory.get("mask_prog_halo_c", states_factory.RetrievalType.FIELD)
-    assert helpers.dallclose(mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy())
-
-
-def test_factory_bdy_halo_c(
-    grid_savepoint, icon_grid, metrics_savepoint, interpolation_savepoint, backend
-):
-    factory = mf.fields_factory
-    num_levels = grid_savepoint.num(dims.KDim)
-    vct_a = grid_savepoint.vct_a()
-    vct_b = grid_savepoint.vct_b()
-    vertical_grid = v_grid.VerticalGrid(v_grid.VerticalGridConfig(num_levels), vct_a, vct_b)
-    factory.with_grid(icon_grid, vertical_grid).with_backend(backend)
-
-    factory.get("c_refin_ctrl", states_factory.RetrievalType.FIELD)
-
     bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
     bdy_halo_c_full = factory.get("bdy_halo_c", states_factory.RetrievalType.FIELD)
+    assert helpers.dallclose(mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy())
     assert helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
 
 
@@ -324,8 +312,8 @@ def test_factory_zdiff_gradp(
     vertical_grid = v_grid.VerticalGrid(v_grid.VerticalGridConfig(num_levels), vct_a, vct_b)
     factory.with_grid(icon_grid, vertical_grid).with_backend(backend)
 
-    factory.get("z_aux2", states_factory.RetrievalType.FIELD)
-    factory.get("z_me", states_factory.RetrievalType.FIELD)
+    factory.get("z_ifc_sliced", states_factory.RetrievalType.FIELD)
+    factory.get("cell_to_edge_interpolation_coefficient", states_factory.RetrievalType.FIELD)
     factory.get("height", states_factory.RetrievalType.FIELD)
     factory.get("height_on_interface_levels", states_factory.RetrievalType.FIELD)
     factory.get("flat_idx_max", states_factory.RetrievalType.FIELD)

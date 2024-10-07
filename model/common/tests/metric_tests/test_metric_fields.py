@@ -642,6 +642,7 @@ def test_compute_pg_exdist_dsl(
     z_ifc = metrics_savepoint.z_ifc()
     z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, nlev])
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
+    start_edge_nudging_2 = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
     horizontal_start_edge = icon_grid.start_index(
         edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
@@ -686,12 +687,16 @@ def test_compute_pg_exdist_dsl(
     flat_idx_max = gtx.as_field((dims.EdgeDim,), flat_idx_np, dtype=gtx.int32)
 
     compute_pg_exdist_dsl.with_backend(backend)(
-        z_aux2=z_aux2,
-        z_me=z_me,
+        z_ifc_sliced=z_ifc_sliced,
+        z_mc=z_mc,
+        coeff=interpolation_savepoint.c_lin_e(),
         e_owner_mask=grid_savepoint.e_owner_mask(),
         flat_idx_max=flat_idx_max,
         k_lev=k_lev,
+        e_field=e_lev,
         pg_exdist_dsl=pg_exdist_dsl,
+        h_start_zaux2=start_edge_nudging,
+        h_end_zaux2=icon_grid.num_edges,
         horizontal_start=start_edge_nudging,
         horizontal_end=icon_grid.num_edges,
         vertical_start=0,
@@ -702,7 +707,7 @@ def test_compute_pg_exdist_dsl(
     _compute_pg_edgeidx_vertidx(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         z_ifc=z_ifc,
-        z_aux2=z_aux2,
+        z_ifc_sliced=z_ifc_sliced,
         e_owner_mask=grid_savepoint.e_owner_mask(),
         flat_idx_max=gtx.as_field((dims.EdgeDim,), flat_idx_np, dtype=gtx.int32),
         e_lev=e_lev,
@@ -724,7 +729,7 @@ def test_compute_pg_exdist_dsl(
         pg_edgeidx=pg_edgeidx,
         pg_vertidx=pg_vertidx,
         pg_edgeidx_dsl=pg_edgeidx_dsl,
-        horizontal_start=int(0),
+        horizontal_start=start_edge_nudging_2,
         horizontal_end=icon_grid.num_edges,
         vertical_start=int(0),
         vertical_end=icon_grid.num_levels,

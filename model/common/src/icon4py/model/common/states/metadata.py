@@ -370,28 +370,12 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="exner_exfac",
         long_name="metrics field",
     ),
-    "z_aux2": dict(
-        standard_name="z_aux2",
-        units="",
-        dims=(dims.EdgeDim),
-        dtype=ta.wpfloat,
-        icon_var_name="z_aux2",
-        long_name="metrics field",
-    ),
     "flat_idx_max": dict(
         standard_name="flat_idx_max",
         units="",
         dims=(dims.EdgeDim),
         dtype=gtx.int32,
         icon_var_name="flat_idx_max",
-        long_name="metrics field",
-    ),
-    "z_me": dict(
-        standard_name="z_me",
-        units="",
-        dims=(dims.EdgeDim, dims.KDim),
-        dtype=ta.wpfloat,
-        icon_var_name="z_me",
         long_name="metrics field",
     ),
     "pg_edgeidx": dict(

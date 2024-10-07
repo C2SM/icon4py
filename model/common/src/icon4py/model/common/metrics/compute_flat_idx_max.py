@@ -11,12 +11,14 @@ from icon4py.model.common.settings import xp
 
 def compute_flat_idx_max(
     e2c: xp.ndarray,
-    z_me: xp.ndarray,
+    z_mc: xp.ndarray,
+    c_lin_e: xp.ndarray,
     z_ifc: xp.ndarray,
     k_lev: xp.ndarray,
     horizontal_lower: int,
     horizontal_upper: int,
 ) -> xp.ndarray:
+    z_me = xp.sum(z_mc[e2c] * xp.expand_dims(c_lin_e, axis=-1), axis=1)
     z_ifc_e_0 = z_ifc[e2c[:, 0]]
     z_ifc_e_k_0 = xp.roll(z_ifc_e_0, -1, axis=1)
     z_ifc_e_1 = z_ifc[e2c[:, 1]]

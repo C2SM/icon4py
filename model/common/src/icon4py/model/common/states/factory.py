@@ -380,6 +380,7 @@ def _check_str(
 
 class FieldSource(Protocol):
     """Protocol for object that can be queried for fields."""
+
     def get(self, field_name: str, type_: RetrievalType = RetrievalType.FIELD):
         ...
 
@@ -391,6 +392,7 @@ class PartialConfigurable(Protocol):
     Additionally provides a decorator that makes use of the Protocol an can be used in
     concrete examples to trigger a check whether the setup is complete.
     """
+
     def is_fully_configured(self) -> bool:
         return False
 
