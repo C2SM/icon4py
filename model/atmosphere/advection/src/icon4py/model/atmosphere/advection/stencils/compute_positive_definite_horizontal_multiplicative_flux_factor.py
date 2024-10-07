@@ -11,6 +11,7 @@ from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2CE, C2E
+from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -36,7 +37,7 @@ def _compute_positive_definite_horizontal_multiplicative_flux_factor(
     return r_m
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_positive_definite_horizontal_multiplicative_flux_factor(
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],

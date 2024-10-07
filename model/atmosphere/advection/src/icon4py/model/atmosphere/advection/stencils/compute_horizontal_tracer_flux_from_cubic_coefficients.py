@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -24,7 +25,7 @@ def _compute_horizontal_tracer_flux_from_cubic_coefficients(
     return p_out_e_hybrid_2
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_tracer_flux_from_cubic_coefficients(
     p_out_e_hybrid_2: fa.EdgeKField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],

@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -20,7 +21,7 @@ def _average_horizontal_flux_subcycling_2(
     return p_out_e
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def average_horizontal_flux_subcycling_2(
     z_tracer_mflx_1_dsl: fa.EdgeKField[ta.wpfloat],
     z_tracer_mflx_2_dsl: fa.EdgeKField[ta.wpfloat],

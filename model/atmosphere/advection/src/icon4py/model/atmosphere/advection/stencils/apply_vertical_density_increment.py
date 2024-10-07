@@ -10,6 +10,7 @@ import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
+from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -26,7 +27,7 @@ def _apply_vertical_density_increment(
     return rhodz_ast + k_offset_up_low
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def apply_vertical_density_increment(
     rhodz_ast: fa.CellKField[ta.wpfloat],
     p_mflx_contra_v: fa.CellKField[ta.wpfloat],

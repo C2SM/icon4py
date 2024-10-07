@@ -10,6 +10,7 @@ import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C
+from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -171,7 +172,7 @@ def _reconstruct_cubic_coefficients_svd(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def reconstruct_cubic_coefficients_svd(
     p_cc: fa.CellKField[ta.wpfloat],
     lsq_pseudoinv_1: gtx.Field[gtx.Dims[dims.CECECDim], ta.wpfloat],

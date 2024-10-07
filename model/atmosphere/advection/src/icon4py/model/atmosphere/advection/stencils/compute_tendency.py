@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): move to common and rename arguments
@@ -24,7 +25,7 @@ def _compute_tendency(
     return opt_ddt_tracer_adv
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_tendency(
     p_tracer_now: fa.CellKField[ta.wpfloat],
     p_tracer_new: fa.CellKField[ta.wpfloat],

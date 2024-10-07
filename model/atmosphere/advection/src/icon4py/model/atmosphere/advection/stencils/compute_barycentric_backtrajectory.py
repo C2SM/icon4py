@@ -11,6 +11,7 @@ from gt4py.next.ffront.fbuiltins import astype, int32, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2EC
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -73,7 +74,7 @@ def _compute_barycentric_backtrajectory(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_barycentric_backtrajectory(
     p_vn: fa.EdgeKField[ta.wpfloat],
     p_vt: fa.EdgeKField[ta.wpfloat],

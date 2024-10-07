@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -23,7 +24,7 @@ def _compute_ppm4gpu_parabola_coefficients(
     return z_delta_q, z_a1
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_ppm4gpu_parabola_coefficients(
     z_face_up: fa.CellKField[ta.wpfloat],
     z_face_low: fa.CellKField[ta.wpfloat],

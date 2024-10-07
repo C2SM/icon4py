@@ -10,6 +10,7 @@ import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
+from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -24,7 +25,7 @@ def _compute_ppm_quadratic_face_values(
     return p_face
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_ppm_quadratic_face_values(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],

@@ -11,6 +11,7 @@ from gt4py.next.ffront.fbuiltins import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -50,7 +51,7 @@ def _compute_intermediate_horizontal_flux_from_linear_coefficients(
     return z_tracer_mflx_dsl
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_intermediate_horizontal_flux_from_linear_coefficients(
     z_lsq_coeff_1_dsl: fa.CellKField[ta.wpfloat],
     z_lsq_coeff_2_dsl: fa.CellKField[ta.wpfloat],

@@ -11,6 +11,7 @@ from gt4py.next.ffront.fbuiltins import abs, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
+from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -26,7 +27,7 @@ def _compute_vertical_parabola_limiter_condition(
     return l_limit
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_vertical_parabola_limiter_condition(
     p_face: fa.CellKField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],

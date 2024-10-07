@@ -11,6 +11,7 @@ from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): this stencil has no test
@@ -29,7 +30,7 @@ def _apply_positive_definite_horizontal_multiplicative_flux_factor(
     return p_mflx_tracer_h_out
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def apply_positive_definite_horizontal_multiplicative_flux_factor(
     r_m: fa.CellKField[ta.wpfloat],
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],

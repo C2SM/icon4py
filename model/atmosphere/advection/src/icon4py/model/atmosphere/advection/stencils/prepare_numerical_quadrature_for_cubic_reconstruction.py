@@ -10,6 +10,7 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import abs, astype, maximum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -316,7 +317,7 @@ def _prepare_numerical_quadrature_for_cubic_reconstruction(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def prepare_numerical_quadrature_for_cubic_reconstruction(
     p_coords_dreg_v_1_x: fa.EdgeKField[ta.vpfloat],
     p_coords_dreg_v_2_x: fa.EdgeKField[ta.vpfloat],

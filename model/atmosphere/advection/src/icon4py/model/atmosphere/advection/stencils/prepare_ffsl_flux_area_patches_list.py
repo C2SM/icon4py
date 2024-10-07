@@ -13,6 +13,7 @@ from gt4py.next.ffront.fbuiltins import astype, broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2EC
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -683,7 +684,7 @@ def _prepare_ffsl_flux_area_patches_list(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def prepare_ffsl_flux_area_patches_list(
     famask_int: fa.EdgeKField[gtx.int32],
     p_vn: fa.EdgeKField[ta.wpfloat],

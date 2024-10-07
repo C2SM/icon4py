@@ -11,6 +11,7 @@ from gt4py.next.ffront.fbuiltins import broadcast, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
+from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): k/iadv_slev_jt and vertical_start/end are redundant
@@ -70,7 +71,7 @@ def _integrate_tracer_vertically(
     return tracer_new
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def integrate_tracer_vertically(
     tracer_now: fa.CellKField[ta.wpfloat],
     rhodz_now: fa.CellKField[ta.wpfloat],

@@ -11,6 +11,7 @@ from gt4py.next.ffront.fbuiltins import abs
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
+from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): this stencil has no test
@@ -32,7 +33,7 @@ def _compute_upwind_and_antidiffusive_flux(
     return (z_mflx_low, z_anti)
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_upwind_and_antidiffusive_flux(
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
