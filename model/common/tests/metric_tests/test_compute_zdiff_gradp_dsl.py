@@ -19,7 +19,6 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.metrics.metric_fields import (
     _compute_flat_idx,
-    _compute_z_aux2,
     compute_z_mc,
 )
 from icon4py.model.common.test_utils.helpers import (
@@ -58,7 +57,8 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     )
     flat_idx = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     _compute_flat_idx(
-        z_me=z_me,
+        z_mc=z_mc,
+        c_lin_e=interpolation_savepoint.c_lin_e(),
         z_ifc=z_ifc,
         k_lev=k_lev,
         out=flat_idx,
@@ -73,21 +73,14 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     )
     flat_idx_np = np.amax(flat_idx.asnumpy(), axis=1)
     z_ifc_sliced = as_field((dims.CellDim,), z_ifc.asnumpy()[:, icon_grid.num_levels])
-    z_aux2 = zero_field(icon_grid, dims.EdgeDim)
-    _compute_z_aux2(
-        z_ifc=z_ifc_sliced,
-        out=z_aux2,
-        domain={dims.EdgeDim: (start_nudging, icon_grid.num_edges)},
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
-    )
 
     zdiff_gradp_full_field = compute_zdiff_gradp_dsl(
         e2c=icon_grid.connectivities[dims.E2CDim],
-        z_me=z_me.asnumpy(),
         z_mc=z_mc.asnumpy(),
+        c_lin_e=interpolation_savepoint.c_lin_e().asnumpy(),
         z_ifc=metrics_savepoint.z_ifc().asnumpy(),
         flat_idx=flat_idx_np,
-        z_aux2=z_aux2.asnumpy(),
+        z_ifc_sliced=z_ifc_sliced,
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,

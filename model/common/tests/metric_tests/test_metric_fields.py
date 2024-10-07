@@ -31,7 +31,6 @@ from icon4py.model.common.metrics.metric_fields import (
     MetricsConfig,
     _compute_flat_idx,
     _compute_pg_edgeidx_vertidx,
-    _compute_z_aux2,
     compute_bdy_halo_c,
     compute_coeff_dwdz,
     compute_d2dexdz2_fac_mc,
@@ -441,10 +440,6 @@ def test_compute_ddxt_z_full(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     ddxt_z_full_ref = metrics_savepoint.ddxt_z_full().asnumpy()
-    horizontal_start_vertex = icon_grid.start_index(
-        vertex_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    horizontal_end_vertex = icon_grid.end_index(vertex_domain(horizontal.Zone.INTERIOR))
     horizontal_start_edge = icon_grid.start_index(
         edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
@@ -452,20 +447,10 @@ def test_compute_ddxt_z_full(
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
-    z_ifv = zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
-    compute_cell_2_vertex_interpolation(
-        z_ifc,
-        gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts),
-        z_ifv,
-        offset_provider={"V2C": icon_grid.get_offset_provider("V2C")},
-        horizontal_start=horizontal_start_vertex,
-        horizontal_end=horizontal_end_vertex,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
-    )
     ddxt_z_half_e = zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
     compute_ddxt_z_half_e.with_backend(backend)(
-        z_ifv=z_ifv,
+        cell_in=z_ifc,
+        c_int=gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts),
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
         ddxt_z_half_e=ddxt_z_half_e,
@@ -553,23 +538,10 @@ def test_compute_vwind_impl_wgt(
     )
     horizontal_end_edge = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
 
-    horizontal_start_vertex = icon_grid.start_index(
-        vertex_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    horizontal_end_vertex = icon_grid.end_index(vertex_domain(horizontal.Zone.INTERIOR))
-    compute_cell_2_vertex_interpolation(
-        z_ifc,
-        interpolation_savepoint.c_intp(),
-        z_ifv,
-        horizontal_start=horizontal_start_vertex,
-        horizontal_end=horizontal_end_vertex,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
-        offset_provider={"V2C": icon_grid.get_offset_provider("V2C")},
-    )
-
     compute_ddxt_z_half_e(
         z_ifv=z_ifv,
+        cell_in=z_ifc,
+        c_int=interpolation_savepoint.c_intp(),
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
         ddxt_z_half_e=z_ddxt_z_half_e,
@@ -635,8 +607,6 @@ def test_compute_pg_exdist_dsl(
     pg_edgeidx = zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
     pg_vertidx = zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
     pg_exdist_dsl = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
-    z_me = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
-    z_aux2 = zero_field(icon_grid, dims.EdgeDim)
     z_mc = zero_field(icon_grid, dims.CellDim, dims.KDim)
     flat_idx = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     z_ifc = metrics_savepoint.z_ifc()
@@ -652,25 +622,10 @@ def test_compute_pg_exdist_dsl(
     average_cell_kdim_level_up.with_backend(backend)(
         z_ifc, out=z_mc, offset_provider={"Koff": icon_grid.get_offset_provider("Koff")}
     )
-    cell_2_edge_interpolation.with_backend(backend)(
-        in_field=z_mc,
-        coeff=interpolation_savepoint.c_lin_e(),
-        out_field=z_me,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_edges,
-        vertical_start=0,
-        vertical_end=nlev,
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
-    )
-    _compute_z_aux2(
-        z_ifc=z_ifc_sliced,
-        out=z_aux2,
-        domain={dims.EdgeDim: (start_edge_nudging, icon_grid.num_edges)},
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
-    )
 
     _compute_flat_idx(
-        z_me=z_me,
+        z_mc=z_mc,
+        c_lin_e=interpolation_savepoint.c_lin_e(),
         z_ifc=z_ifc,
         k_lev=k_lev,
         out=flat_idx,

@@ -16,7 +16,7 @@ from icon4py.model.common.test_utils.helpers import flatten_first_two_dims
 def compute_zdiff_gradp_dsl(
     e2c: xp.ndarray,
     z_mc: xp.ndarray,
-    coeff: xp.ndarray,
+    c_lin_e: xp.ndarray,
     z_ifc: xp.ndarray,
     flat_idx: xp.ndarray,
     z_ifc_sliced: xp.ndarray,
@@ -25,7 +25,7 @@ def compute_zdiff_gradp_dsl(
     horizontal_start_1: int,
     nedges: int,
 ):
-    z_me = xp.sum(z_mc[e2c] * xp.expand_dims(coeff, axis=-1), axis=1)
+    z_me = xp.sum(z_mc[e2c] * xp.expand_dims(c_lin_e, axis=-1), axis=1)
     z_aux1 = xp.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0  # extrapol_dist
     zdiff_gradp = xp.zeros_like(z_mc[e2c])
