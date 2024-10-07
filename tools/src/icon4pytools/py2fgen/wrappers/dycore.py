@@ -441,6 +441,7 @@ def solve_nh_run(
     # adjust for Fortran indexes
     nnow = nnow - 1
     nnew = nnew - 1
+    idyn_timestep = idyn_timestep - 1
 
     dycore_wrapper_state["granule"].time_step(
         diagnostic_state_nh=diagnostic_state_nh,

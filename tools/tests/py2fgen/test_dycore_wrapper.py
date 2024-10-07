@@ -581,7 +581,7 @@ def test_dycore_wrapper_granule_inputs(
             linit=linit,
             divdamp_fac_o2=initial_divdamp_fac,
             ndyn_substeps=ndyn_substeps,
-            idyn_timestep=jstep_init,
+            idyn_timestep=jstep_init + 1,  # simulate Fortran index
             nnow=nnow,
             nnew=nnew,
         )
@@ -1057,7 +1057,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         linit=linit,
         divdamp_fac_o2=initial_divdamp_fac,
         ndyn_substeps=ndyn_substeps,
-        idyn_timestep=jstep_init,
+        idyn_timestep=jstep_init + 1,  # simulate Fortran index
         nnow=nnow,
         nnew=nnew,
     )
@@ -1507,7 +1507,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             linit=linit,
             divdamp_fac_o2=initial_divdamp_fac,
             ndyn_substeps=ndyn_substeps,
-            idyn_timestep=i_substep,
+            idyn_timestep=i_substep + 1,  # simulate Fortran index
             nnow=nnow,
             nnew=nnew,
         )
