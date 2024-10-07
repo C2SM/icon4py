@@ -308,8 +308,10 @@ def test_dycore_wrapper_granule_inputs(
     rho_new = sp.rho_new()
     exner_new = sp.exner_new()
 
-    nnow = 1  # using fortran indices
+    # using fortran indices
+    nnow = 1
     nnew = 2
+    jstep_init_fortran = jstep_init + 1
 
     # --- Expected objects that form inputs into init function ---
     expected_icon_grid = icon_grid
@@ -581,7 +583,7 @@ def test_dycore_wrapper_granule_inputs(
             linit=linit,
             divdamp_fac_o2=initial_divdamp_fac,
             ndyn_substeps=ndyn_substeps,
-            idyn_timestep=jstep_init + 1,  # simulate Fortran index
+            idyn_timestep=jstep_init_fortran,
             nnow=nnow,
             nnew=nnew,
         )
@@ -1015,8 +1017,10 @@ def test_granule_solve_nonhydro_single_step_regional(
     rho_new = sp.rho_new()
     exner_new = sp.exner_new()
 
-    nnow = 1  # using fortran indices
+    # using fortran indices
+    nnow = 1
     nnew = 2
+    jstep_init_fortran = jstep_init + 1
 
     solve_nh_run(
         rho_now=rho_now,
@@ -1057,7 +1061,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         linit=linit,
         divdamp_fac_o2=initial_divdamp_fac,
         ndyn_substeps=ndyn_substeps,
-        idyn_timestep=jstep_init + 1,  # simulate Fortran index
+        idyn_timestep=jstep_init_fortran,
         nnow=nnow,
         nnew=nnew,
     )
@@ -1461,12 +1465,12 @@ def test_granule_solve_nonhydro_multi_step_regional(
     rho_new = sp.rho_new()
     exner_new = sp.exner_new()
 
-    # other params
-    nnow = 1  # use fortran indices
+    # use fortran indices (also in the driving loop to compute i_substep)
+    nnow = 1
     nnew = 2
 
-    for i_substep in range(ndyn_substeps):
-        is_last_substep = i_substep == (ndyn_substeps - 1)
+    for i_substep in range(1, ndyn_substeps + 1):
+        is_last_substep = i_substep == (ndyn_substeps)
 
         solve_nh_run(
             rho_now=rho_now,
@@ -1507,7 +1511,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             linit=linit,
             divdamp_fac_o2=initial_divdamp_fac,
             ndyn_substeps=ndyn_substeps,
-            idyn_timestep=i_substep + 1,  # simulate Fortran index
+            idyn_timestep=i_substep,
             nnow=nnow,
             nnew=nnew,
         )
