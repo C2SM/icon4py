@@ -343,7 +343,7 @@ def foo_wrapper(one: gtx.int32, two: Field[dims.CellDim, dims.KDim], float64], n
     return 0
 
 @ffi.def_extern()
-def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: int32, n_Cell: gtx.int32, n_K: gtx.int32):
+def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: gtx.int32, n_Cell: gtx.int32, n_K: gtx.int32):
     try:
         # Unpack pointers into Ndarrays
         one = unpack_gpu(one, n_Cell, n_K)
