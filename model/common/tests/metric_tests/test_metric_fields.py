@@ -458,7 +458,10 @@ def test_compute_ddxt_z_full(
         horizontal_end=horizontal_end_edge,
         vertical_start=vertical_start,
         vertical_end=vertical_end,
-        offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
+        offset_provider={
+            "E2V": icon_grid.get_offset_provider("E2V"),
+            "V2C": icon_grid.get_offset_provider("V2C"),
+        },
     )
     ddxt_z_full = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     compute_ddxn_z_full.with_backend(backend)(
@@ -514,7 +517,6 @@ def test_compute_vwind_impl_wgt(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxt_z_half_e = zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-    z_ifv = zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     horizontal_end = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
@@ -539,7 +541,6 @@ def test_compute_vwind_impl_wgt(
     horizontal_end_edge = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
 
     compute_ddxt_z_half_e(
-        z_ifv=z_ifv,
         cell_in=z_ifc,
         c_int=interpolation_savepoint.c_intp(),
         inv_primal_edge_length=inv_primal_edge_length,
@@ -549,7 +550,10 @@ def test_compute_vwind_impl_wgt(
         horizontal_end=horizontal_end_edge,
         vertical_start=vertical_start,
         vertical_end=vertical_end,
-        offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
+        offset_provider={
+            "E2V": icon_grid.get_offset_provider("E2V"),
+            "V2C": icon_grid.get_offset_provider("V2C"),
+        },
     )
 
     horizontal_start_cell = icon_grid.start_index(
@@ -644,11 +648,11 @@ def test_compute_pg_exdist_dsl(
     compute_pg_exdist_dsl.with_backend(backend)(
         z_ifc_sliced=z_ifc_sliced,
         z_mc=z_mc,
-        coeff=interpolation_savepoint.c_lin_e(),
+        c_lin_e=interpolation_savepoint.c_lin_e(),
         e_owner_mask=grid_savepoint.e_owner_mask(),
         flat_idx_max=flat_idx_max,
         k_lev=k_lev,
-        e_field=e_lev,
+        e_lev=e_lev,
         pg_exdist_dsl=pg_exdist_dsl,
         h_start_zaux2=start_edge_nudging,
         h_end_zaux2=icon_grid.num_edges,
@@ -736,8 +740,6 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backend):
-    if "gtfn_cpu" in backend.executor.name:
-        pytest.skip("CPU compilation does not work here because of domain only on edges")
     hmask_dd3d_full = zero_field(icon_grid, dims.EdgeDim)
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))

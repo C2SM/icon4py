@@ -80,7 +80,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         c_lin_e=interpolation_savepoint.c_lin_e().asnumpy(),
         z_ifc=metrics_savepoint.z_ifc().asnumpy(),
         flat_idx=flat_idx_np,
-        z_ifc_sliced=z_ifc_sliced,
+        z_ifc_sliced=z_ifc_sliced.asnumpy(),
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
