@@ -28,7 +28,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "myst_parser",
     "sphinx_math_dollar",
-    "icon4py.model.atmosphere.dycore.sphinx"
+    #"icon4py.model.atmosphere.dycore.sphinx" # disable while waiting for gt4py patch
 ]
 
 # Make sure that the autosection target is unique
