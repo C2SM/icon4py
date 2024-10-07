@@ -896,19 +896,41 @@ class SolveNonhydro:
                 raise NotImplementedError("nflatlev=1 not implemented")
 
         """
+        :meth:`predictor_stencils_7_8_9()<icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program.predictor_stencils_7_8_9>`
+        ============================================================================================================================
+
         rho_ic & theta_v_ic (1:nlev-1):
-            Compute rho and virtual temperature at half levels. rho and virtual temperature at model top boundary and ground are not updated.
+            Compute rho and virtual temperature at half levels. rho and virtual
+            temperature at model top boundary and ground are not updated.
         z_rth_pr_1 (0:nlev-1):
             Compute perturbed rho at full levels (cell center).
         z_rth_pr_2 (0:nlev-1):
             Compute perturbed virtual temperature at full levels (cell center).
+        
+        $$
+        \rho_{k}^{\prime^\tilde{n}} = \hat{\rho_{k}^{\tilde{n}}} - \rho_{0\ k} \\
+        $$
+        
         z_theta_v_pr_ic (1:nlev-1):
             Compute the perturbed virtual temperature from z_rth_pr_2 at half levels.
+
+        $$
+        \theta_{v\ k-1/2}^{\prime \tilde{n}} = \nu \pi_k^{\prime\tilde{n}} + (1 - \nu) \pi_{k-1}^{\prime\tilde{n}} \\
+        \nu = \text{wgtfa_c}
+        $$
+
         z_th_ddz_exner_c (1:nlev-1):
-            theta_v' dpi_0/dz + eta_expl theta_v dpi'/dz (see eq. 3.19 in icon tutorial 2023) at half levels (cell center) is also computed. Its value at the model top is not updated. No ground value.
+            (see eq. 3.19 in icon tutorial 2023) at half levels (cell center) is
+            also computed. Its value at the model top is not updated. No ground
+            value.
+            $$
+            theta_v' dpi_0/dz + eta_expl theta_v dpi'/dz
+            $$
             dpi_0/dz is d_exner_dz_ref_ic.
+            $$
             eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
             eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            $$
         """
         nhsolve_prog.predictor_stencils_7_8_9(
             rho=prognostic_state[nnow].rho,
