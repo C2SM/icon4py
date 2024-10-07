@@ -361,7 +361,6 @@ class NonHydrostaticConfig:
         self.is_iau_active: bool = is_iau_active
         #: IAU weight for dynamics fields
         self.iau_wgt_dyn: float = iau_wgt_dyn
-
         self._validate()
 
     def _validate(self):
@@ -1042,7 +1041,7 @@ class SolveNonhydro:
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
         hydro_corr_horizontal = gtx.as_field(
-            (dims.EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level]
+            (dims.EdgeDim,), self.z_hydro_corr.ndarray[:, lowest_level]
         )
 
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:

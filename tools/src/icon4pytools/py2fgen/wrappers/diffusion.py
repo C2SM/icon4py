@@ -16,9 +16,13 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
+import cProfile
+import pstats
+
 from gt4py.next import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
 from icon4py.model.atmosphere.diffusion.diffusion import (
+    Diffusion,
     DiffusionConfig,
     DiffusionParams,
     TurbulenceShearForcingType,
@@ -31,7 +35,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid import geometry
-from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
+from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -51,7 +55,17 @@ from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
 
 logger = setup_logger(__name__)
 
-icon_grid: IconGrid = None
+diffusion_wrapper_state = {"granule": Diffusion(), "profiler": cProfile.Profile()}
+
+
+def profile_enable():
+    diffusion_wrapper_state["profiler"].enable()
+
+
+def profile_disable():
+    diffusion_wrapper_state["profiler"].disable()
+    stats = pstats.Stats(diffusion_wrapper_state["profiler"])
+    stats.dump_stats(f"{__name__}.profile")
 
 
 def diffusion_init(
@@ -173,7 +187,7 @@ def diffusion_init(
 
     # Vertical grid config
     vertical_config = VerticalGridConfig(
-        num_levels=icon_grid.num_levels,
+        num_levels=diffusion_wrapper_state["grid"].num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
@@ -211,8 +225,8 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    common.GLOBAL_STATE["diffusion_granule"].init(
-        grid=icon_grid,
+    diffusion_wrapper_state["granule"].init(
+        grid=diffusion_wrapper_state["grid"],
         config=config,
         params=diffusion_params,
         vertical_grid=vertical_params,
@@ -253,13 +267,13 @@ def diffusion_run(
     )
 
     if linit:
-        common.GLOBAL_STATE["diffusion_granule"].initial_run(
+        diffusion_wrapper_state["granule"].initial_run(
             diagnostic_state,
             prognostic_state,
             dtime,
         )
     else:
-        common.GLOBAL_STATE["diffusion_granule"].run(
+        diffusion_wrapper_state["granule"].run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )
 
@@ -288,15 +302,13 @@ def grid_init(
     vertical_size: int32,
     limited_area: bool,
 ):
-    global icon_grid
-
     # todo: write this logic into template.py
     if isinstance(limited_area, int):
         limited_area = bool(limited_area)
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
-    icon_grid = common.construct_icon_grid(
+    diffusion_wrapper_state["grid"] = common.construct_icon_grid(
         grid_id="icon_grid",
         global_grid_params=global_grid_params,
         num_vertices=num_vertices,
