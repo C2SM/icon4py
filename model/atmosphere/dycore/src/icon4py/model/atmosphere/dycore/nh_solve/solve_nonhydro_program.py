@@ -46,6 +46,7 @@ from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
 )
 from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
+    _compute_virtual_potential_temperatures,
     _compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
@@ -330,6 +331,97 @@ def predictor_stencils_7_8_9(
             z_theta_v_pr_ic,
             theta_v_ic,
             z_th_ddz_exner_c,
+        ),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@gtx.field_operator
+def _compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
+    rho: fa.CellKField[float],
+    z_rth_pr_1: fa.CellKField[float],
+    z_rth_pr_2: fa.CellKField[float],
+    rho_ref_mc: fa.CellKField[float],
+    theta_v: fa.CellKField[float],
+    theta_ref_mc: fa.CellKField[float],
+    rho_ic: fa.CellKField[float],
+    wgtfac_c: fa.CellKField[float],
+    z_theta_v_pr_ic: fa.CellKField[float],
+    theta_v_ic: fa.CellKField[float],
+    k_field: fa.KField[gtx.int32],
+) -> tuple[
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+]:
+    (z_rth_pr_1, z_rth_pr_2) = where(
+        k_field == 0,
+        _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
+        (z_rth_pr_1, z_rth_pr_2),
+    )
+
+    (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
+        k_field >= 1,
+        _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
+            wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
+        ),
+        (rho_ic, z_rth_pr_1, z_rth_pr_2),
+    )
+
+    (z_theta_v_pr_ic, theta_v_ic) = where(
+        k_field >= 1,
+        _compute_virtual_potential_temperatures(
+            wgtfac_c,
+            z_rth_pr_2,
+            theta_v,
+        ),
+        (z_theta_v_pr_ic, theta_v_ic),
+    )
+
+    return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+def compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
+    rho: fa.CellKField[float],
+    rho_ref_mc: fa.CellKField[float],
+    theta_v: fa.CellKField[float],
+    theta_ref_mc: fa.CellKField[float],
+    rho_ic: fa.CellKField[float],
+    z_rth_pr_1: fa.CellKField[float],
+    z_rth_pr_2: fa.CellKField[float],
+    wgtfac_c: fa.CellKField[float],
+    z_theta_v_pr_ic: fa.CellKField[float],
+    theta_v_ic: fa.CellKField[float],
+    k_field: fa.KField[gtx.int32],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
+        rho,
+        z_rth_pr_1,
+        z_rth_pr_2,
+        rho_ref_mc,
+        theta_v,
+        theta_ref_mc,
+        rho_ic,
+        wgtfac_c,
+        z_theta_v_pr_ic,
+        theta_v_ic,
+        k_field,
+        out=(
+            z_rth_pr_1,
+            z_rth_pr_2,
+            rho_ic,
+            z_theta_v_pr_ic,
+            theta_v_ic,
         ),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
