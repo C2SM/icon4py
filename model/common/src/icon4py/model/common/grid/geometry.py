@@ -328,7 +328,21 @@ def edge_normals():
     """
 
 
-
+@gtx.field_operator
+def primal_normal_cell(cell_lat:fa.CellField[ta.wpfloat],
+                       cell_lon:fa.CellField[ta.wpfloat],
+                       x:fa.EdgeField[ta.wpfloat],
+                       y:fa.EdgeField[ta.wpfloat],
+                       z:fa.EdgeField[ta.wpfloat]
+                       ) -> tuple[ta.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    
+    cell_lat_1 = cell_lat(E2C[0])
+    cell_lon_1 = cell_lon(E2C[0])
+    u1, v1  = compute_zonal_and_meridional_components_on_edges(cell_lat_1, cell_lon_1, x, y, z)
+    cell_lat_2 = cell_lat(E2C[1])
+    cell_lon_2 = cell_lon(E2C[1])
+    u2, v2 = compute_zonal_and_meridional_components_on_edges(cell_lat_2, cell_lon_2, x, y, z)
+    return u1, v1, u2, v2
 
 
 
@@ -405,14 +419,33 @@ def edge_control_area(
 
 
 @gtx.field_operator
-def compute_zonal_and_meridional_components(lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat], 
-                                            x: fa.CellField[ta.wpfloat], y: fa.CellField[ta.wpfloat], 
-                                            z: fa.CellField[ta.wpfloat]) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+def compute_zonal_and_meridional_components_on_cells(lat: fa.CellField[ta.wpfloat],
+                                                     lon: fa.CellField[ta.wpfloat],
+                                                     x: fa.CellField[ta.wpfloat],
+                                                     y: fa.CellField[ta.wpfloat],
+                                                     z: fa.CellField[ta.wpfloat]) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
     cos_lat = cos(lat)
     sin_lat = sin(lat)
     cos_lon = cos(lon)
     sin_lon = sin(lon)
     u = cos_lon * y - sin_lon * x
+
+    v = cos_lat * z - sin_lat*(cos_lon * x + sin_lon * y)
+    norm = sqrt(u * u + v * v)
+    return u/norm, v/norm
+
+@gtx.field_operator
+def compute_zonal_and_meridional_components_on_edges(lat: fa.EdgeField[ta.wpfloat],
+                                                     lon: fa.EdgeField[ta.wpfloat],
+                                                     x: fa.EdgeField[ta.wpfloat],
+                                                     y: fa.EdgeField[ta.wpfloat],
+                                                     z: fa.EdgeField[ta.wpfloat]) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    cos_lat = cos(lat)
+    sin_lat = sin(lat)
+    cos_lon = cos(lon)
+    sin_lon = sin(lon)
+    u = cos_lon * y - sin_lon * x
+
     v = cos_lat * z - sin_lat*(cos_lon * x + sin_lon * y)
     norm = sqrt(u * u + v * v)
     return u/norm, v/norm
