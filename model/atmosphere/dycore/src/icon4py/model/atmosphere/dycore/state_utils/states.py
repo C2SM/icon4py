@@ -45,17 +45,21 @@ class DiagnosticStateNonHydro:
     exner_incr: fa.EdgeKField[float]  # exner increment [- ]
     exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
 
+    def set_state(self, nnow, nnew):
+        self.nnow = nnow
+        self.nnew = nnew
+
     @property
     def ddt_vn_apc_pc(
         self,
     ) -> tuple[fa.EdgeKField[float], fa.EdgeKField[float]]:
-        return (self.ddt_vn_apc_ntl1, self.ddt_vn_apc_ntl2)
+        return {self.nnow: self.ddt_vn_apc_ntl1, self.nnew: self.ddt_vn_apc_ntl2}
 
     @property
     def ddt_w_adv_pc(
         self,
     ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
-        return (self.ddt_w_adv_ntl1, self.ddt_w_adv_ntl2)
+        return {self.nnow: self.ddt_w_adv_ntl1, self.nnew: self.ddt_w_adv_ntl2}
 
 
 @dataclasses.dataclass

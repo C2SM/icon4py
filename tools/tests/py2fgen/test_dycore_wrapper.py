@@ -49,12 +49,7 @@ from icon4py.model.common.test_utils.dycore_utils import (
 )
 from icon4py.model.common.utils.gt4py_field_allocation import allocate_zero_field
 
-from icon4pytools.py2fgen.wrappers.dycore import (
-    grid_init,
-    solve_nh_init,
-    solve_nh_run,
-    solve_nh_state_init,
-)
+from icon4pytools.py2fgen.wrappers.dycore import grid_init, solve_nh_init, solve_nh_run
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellIndexDim,
     EdgeIndexDim,
@@ -1474,24 +1469,20 @@ def test_granule_solve_nonhydro_multi_step_regional(
     nnow = 1
     nnew = 2
 
-    # initialise prognostic state outside of wrapper.
-    solve_nh_state_init(
-        rho_now=rho_now,
-        rho_new=rho_new,
-        exner_now=exner_now,
-        exner_new=exner_new,
-        w_now=w_now,
-        w_new=w_new,
-        theta_v_now=theta_v_now,
-        theta_v_new=theta_v_new,
-        vn_now=vn_now,
-        vn_new=vn_new,
-    )
-
     for i_substep in range(1, ndyn_substeps + 1):
         is_last_substep = i_substep == (ndyn_substeps)
 
         solve_nh_run(
+            rho_now=rho_now,
+            rho_new=rho_new,
+            exner_now=exner_now,
+            exner_new=exner_new,
+            w_now=w_now,
+            w_new=w_new,
+            theta_v_now=theta_v_now,
+            theta_v_new=theta_v_new,
+            vn_now=vn_now,
+            vn_new=vn_new,
             w_concorr_c=w_concorr_c,
             ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
             ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,

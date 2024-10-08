@@ -605,11 +605,13 @@ class SolveNonhydro:
         )
         self._end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    def set_timelevels(self, nnow, nnew):
+    def set_timelevels(self, diagnostic_state, nnow, nnew):
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
         if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
+            diagnostic_state.set_state(nnow=nnow, nnew=nnew)
             self.ntl1 = nnow
             self.ntl2 = nnew
+            return diagnostic_state
         else:
             self.ntl1 = 0
             self.ntl2 = 0
@@ -650,7 +652,9 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        self.set_timelevels(nnow, nnew)
+        diagnostic_state_nh = self.set_timelevels(
+            diagnostic_state=diagnostic_state_nh, nnow=nnow, nnew=nnew
+        )
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,

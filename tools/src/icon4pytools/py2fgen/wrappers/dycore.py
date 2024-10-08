@@ -84,12 +84,7 @@ from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
 
 logger = setup_logger(__name__)
 
-dycore_wrapper_state = {
-    "granule": SolveNonhydro(),
-    "profiler": cProfile.Profile(),
-    "prognostic_state": None,
-    "diagnostic_state": None,
-}
+dycore_wrapper_state = {"granule": SolveNonhydro(), "profiler": cProfile.Profile()}
 
 
 def profile_enable():
@@ -352,6 +347,16 @@ def solve_nh_init(
 
 
 def solve_nh_run(
+    rho_now: Field[[CellDim, KDim], float64],
+    rho_new: Field[[CellDim, KDim], float64],
+    exner_now: Field[[CellDim, KDim], float64],
+    exner_new: Field[[CellDim, KDim], float64],
+    w_now: Field[[CellDim, KHalfDim], float64],
+    w_new: Field[[CellDim, KHalfDim], float64],
+    theta_v_now: Field[[CellDim, KDim], float64],
+    theta_v_new: Field[[CellDim, KDim], float64],
+    vn_now: Field[[EdgeDim, KDim], float64],
+    vn_new: Field[[EdgeDim, KDim], float64],
     w_concorr_c: Field[[CellDim, KHalfDim], float64],
     ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float64],
     ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], float64],
@@ -386,6 +391,13 @@ def solve_nh_run(
 ):
     logger.info(f"Using Device = {settings.device}")
 
+    prep_adv = PrepAdvection(
+        vn_traj=vn_traj,
+        mass_flx_me=mass_flx_me,
+        mass_flx_ic=mass_flx_ic,
+        vol_flx_ic=zero_field(dycore_wrapper_state["grid"], CellDim, KDim, dtype=float),
+    )
+
     diagnostic_state_nh = DiagnosticStateNonHydro(
         theta_v_ic=theta_v_ic,
         exner_pr=exner_pr,
@@ -410,47 +422,6 @@ def solve_nh_run(
         exner_dyn_incr=exner_dyn_incr,
     )
 
-    prep_adv = PrepAdvection(
-        vn_traj=vn_traj,
-        mass_flx_me=mass_flx_me,
-        mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=zero_field(dycore_wrapper_state["grid"], CellDim, KDim, dtype=float),
-    )
-
-    # adjust for Fortran indexes
-    nnow = nnow - 1
-    nnew = nnew - 1
-    idyn_timestep = idyn_timestep - 1
-
-    dycore_wrapper_state["granule"].time_step(
-        diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state_ls=dycore_wrapper_state["prognostic_state"],
-        prep_adv=prep_adv,
-        divdamp_fac_o2=divdamp_fac_o2,
-        dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        nnew=nnew,
-        nnow=nnow,
-        lclean_mflx=clean_mflx,
-        lprep_adv=lprep_adv,
-        at_first_substep=idyn_timestep == 0,
-        at_last_substep=idyn_timestep == (ndyn_substeps - 1),
-    )
-
-
-def solve_nh_state_init(
-    rho_now: Field[[CellDim, KDim], float64],
-    rho_new: Field[[CellDim, KDim], float64],
-    exner_now: Field[[CellDim, KDim], float64],
-    exner_new: Field[[CellDim, KDim], float64],
-    w_now: Field[[CellDim, KHalfDim], float64],
-    w_new: Field[[CellDim, KHalfDim], float64],
-    theta_v_now: Field[[CellDim, KDim], float64],
-    theta_v_new: Field[[CellDim, KDim], float64],
-    vn_now: Field[[EdgeDim, KDim], float64],
-    vn_new: Field[[EdgeDim, KDim], float64],
-):
     prognostic_state_nnow = PrognosticState(
         w=w_now,
         vn=vn_now,
@@ -466,7 +437,26 @@ def solve_nh_state_init(
         exner=exner_new,
     )
 
-    dycore_wrapper_state["prognostic_state"] = [prognostic_state_nnow, prognostic_state_nnew]
+    # adjust for Fortran indexes
+    idyn_timestep = idyn_timestep - 1
+
+    prognostic_state_ls = {nnow: prognostic_state_nnow, nnew: prognostic_state_nnew}
+
+    dycore_wrapper_state["granule"].time_step(
+        diagnostic_state_nh=diagnostic_state_nh,
+        prognostic_state_ls=prognostic_state_ls,
+        prep_adv=prep_adv,
+        divdamp_fac_o2=divdamp_fac_o2,
+        dtime=dtime,
+        l_recompute=recompute,
+        l_init=linit,
+        nnew=nnew,
+        nnow=nnow,
+        lclean_mflx=clean_mflx,
+        lprep_adv=lprep_adv,
+        at_first_substep=idyn_timestep == 0,
+        at_last_substep=idyn_timestep == (ndyn_substeps - 1),
+    )
 
 
 def grid_init(
