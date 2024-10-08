@@ -616,7 +616,7 @@ def test_compute_pg_exdist_dsl(
     z_ifc = metrics_savepoint.z_ifc()
     z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, nlev])
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
-    start_edge_nudging_2 = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
+    start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
     horizontal_start_edge = icon_grid.start_index(
         edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
@@ -740,6 +740,8 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backend):
+    if hasattr(backend, "name") and "gtfn_cpu" in backend.name:
+        pytest.skip("CPU compilation does not work here because of domain only on edges")
     hmask_dd3d_full = zero_field(icon_grid, dims.EdgeDim)
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))

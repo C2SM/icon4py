@@ -80,7 +80,9 @@ def test_factory_rayleigh_w(
     num_levels = grid_savepoint.num(dims.KDim)
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
-    vertical_grid = v_grid.VerticalGrid(v_grid.VerticalGridConfig(num_levels), vct_a, vct_b)
+    vertical_grid = v_grid.VerticalGrid(
+        v_grid.VerticalGridConfig(num_levels, rayleigh_damping_height=12500.0), vct_a, vct_b
+    )
     factory.with_grid(icon_grid, vertical_grid).with_backend(backend)
 
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
@@ -286,7 +288,7 @@ def test_factory_mask_bdy_prog_halo_c(
 def test_factory_hmask_dd3d(
     grid_savepoint, icon_grid, metrics_savepoint, interpolation_savepoint, backend
 ):
-    if "gtfn_cpu" in backend.executor.name:
+    if hasattr(backend, "name") and "gtfn_cpu" in backend.name:
         pytest.skip("CPU compilation does not work here because of domain only on edges")
     factory = mf.fields_factory
     num_levels = grid_savepoint.num(dims.KDim)
