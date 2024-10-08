@@ -352,52 +352,6 @@ def solve_nh_init(
 
 
 def solve_nh_run(
-    dtime: float64,
-    lprep_adv: bool,
-    clean_mflx: bool,
-    recompute: bool,
-    linit: bool,
-    divdamp_fac_o2: float64,
-    ndyn_substeps: float64,
-    idyn_timestep: int32,
-    nnew: int32,
-    nnow: int32,
-):
-    logger.info(f"Using Device = {settings.device}")
-
-    # adjust for Fortran indexes
-    nnow = nnow - 1
-    nnew = nnew - 1
-    idyn_timestep = idyn_timestep - 1
-
-    dycore_wrapper_state["granule"].time_step(
-        diagnostic_state_nh=dycore_wrapper_state["diagnostic_state"],
-        prognostic_state_ls=dycore_wrapper_state["prognostic_state"],
-        prep_adv=dycore_wrapper_state["prep_adv"],
-        divdamp_fac_o2=divdamp_fac_o2,
-        dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        nnew=nnew,
-        nnow=nnow,
-        lclean_mflx=clean_mflx,
-        lprep_adv=lprep_adv,
-        at_first_substep=idyn_timestep == 0,
-        at_last_substep=idyn_timestep == (ndyn_substeps - 1),
-    )
-
-
-def solve_nh_state_init(
-    rho_now: Field[[CellDim, KDim], float64],
-    rho_new: Field[[CellDim, KDim], float64],
-    exner_now: Field[[CellDim, KDim], float64],
-    exner_new: Field[[CellDim, KDim], float64],
-    w_now: Field[[CellDim, KHalfDim], float64],
-    w_new: Field[[CellDim, KHalfDim], float64],
-    theta_v_now: Field[[CellDim, KDim], float64],
-    theta_v_new: Field[[CellDim, KDim], float64],
-    vn_now: Field[[EdgeDim, KDim], float64],
-    vn_new: Field[[EdgeDim, KDim], float64],
     w_concorr_c: Field[[CellDim, KHalfDim], float64],
     ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float64],
     ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], float64],
@@ -419,21 +373,18 @@ def solve_nh_state_init(
     mass_flx_me: Field[[EdgeDim, KDim], float64],
     mass_flx_ic: Field[[CellDim, KHalfDim], float64],
     vn_traj: Field[[EdgeDim, KDim], float64],
+    dtime: float64,
+    lprep_adv: bool,
+    clean_mflx: bool,
+    recompute: bool,
+    linit: bool,
+    divdamp_fac_o2: float64,
+    ndyn_substeps: float64,
+    idyn_timestep: int32,
+    nnew: int32,
+    nnow: int32,
 ):
-    prognostic_state_nnow = PrognosticState(
-        w=w_now,
-        vn=vn_now,
-        theta_v=theta_v_now,
-        rho=rho_now,
-        exner=exner_now,
-    )
-    prognostic_state_nnew = PrognosticState(
-        w=w_new,
-        vn=vn_new,
-        theta_v=theta_v_new,
-        rho=rho_new,
-        exner=exner_new,
-    )
+    logger.info(f"Using Device = {settings.device}")
 
     diagnostic_state_nh = DiagnosticStateNonHydro(
         theta_v_ic=theta_v_ic,
@@ -466,9 +417,56 @@ def solve_nh_state_init(
         vol_flx_ic=zero_field(dycore_wrapper_state["grid"], CellDim, KDim, dtype=float),
     )
 
+    # adjust for Fortran indexes
+    nnow = nnow - 1
+    nnew = nnew - 1
+    idyn_timestep = idyn_timestep - 1
+
+    dycore_wrapper_state["granule"].time_step(
+        diagnostic_state_nh=diagnostic_state_nh,
+        prognostic_state_ls=dycore_wrapper_state["prognostic_state"],
+        prep_adv=prep_adv,
+        divdamp_fac_o2=divdamp_fac_o2,
+        dtime=dtime,
+        l_recompute=recompute,
+        l_init=linit,
+        nnew=nnew,
+        nnow=nnow,
+        lclean_mflx=clean_mflx,
+        lprep_adv=lprep_adv,
+        at_first_substep=idyn_timestep == 0,
+        at_last_substep=idyn_timestep == (ndyn_substeps - 1),
+    )
+
+
+def solve_nh_state_init(
+    rho_now: Field[[CellDim, KDim], float64],
+    rho_new: Field[[CellDim, KDim], float64],
+    exner_now: Field[[CellDim, KDim], float64],
+    exner_new: Field[[CellDim, KDim], float64],
+    w_now: Field[[CellDim, KHalfDim], float64],
+    w_new: Field[[CellDim, KHalfDim], float64],
+    theta_v_now: Field[[CellDim, KDim], float64],
+    theta_v_new: Field[[CellDim, KDim], float64],
+    vn_now: Field[[EdgeDim, KDim], float64],
+    vn_new: Field[[EdgeDim, KDim], float64],
+):
+    prognostic_state_nnow = PrognosticState(
+        w=w_now,
+        vn=vn_now,
+        theta_v=theta_v_now,
+        rho=rho_now,
+        exner=exner_now,
+    )
+    prognostic_state_nnew = PrognosticState(
+        w=w_new,
+        vn=vn_new,
+        theta_v=theta_v_new,
+        rho=rho_new,
+        exner=exner_new,
+    )
+
     dycore_wrapper_state["prognostic_state"] = [prognostic_state_nnow, prognostic_state_nnew]
-    dycore_wrapper_state["diagnostic_state"] = diagnostic_state_nh
-    dycore_wrapper_state["prep_adv"] = prep_adv
 
 
 def grid_init(
