@@ -1253,23 +1253,26 @@ def compute_mask_bdy_halo_c(
 def _compute_hmask_dd3d(
     e_refin_ctrl: fa.EdgeField[int32], grf_nudge_start_e: int32, grf_nudgezone_width: int32
 ) -> fa.EdgeField[wpfloat]:
+    e_refin_ctrl_wp = astype(e_refin_ctrl, wpfloat)
+    grf_nudge_start_e_wp = astype(grf_nudge_start_e, wpfloat)
+    grf_nudgezone_width_wp = astype(grf_nudgezone_width, wpfloat)
     hmask_dd3d = where(
-        (e_refin_ctrl > (grf_nudge_start_e + grf_nudgezone_width - 1)),
-        1
-        / (grf_nudgezone_width - 1)
-        * (e_refin_ctrl - (grf_nudge_start_e + grf_nudgezone_width - 1)),
-        0,
+        (e_refin_ctrl_wp > (grf_nudge_start_e_wp + grf_nudgezone_width_wp - 1.0)),
+        1.0
+        / (grf_nudgezone_width_wp - 1.0)
+        * (e_refin_ctrl_wp - (grf_nudge_start_e_wp + grf_nudgezone_width_wp - 1.0)),
+        0.0,
     )
     hmask_dd3d = where(
-        (e_refin_ctrl <= 0) | (e_refin_ctrl >= (grf_nudge_start_e + 2 * (grf_nudgezone_width - 1))),
-        1,
+        (e_refin_ctrl_wp <= 0.0)
+        | (e_refin_ctrl_wp >= (grf_nudge_start_e_wp + 2.0 * (grf_nudgezone_width_wp - 1.0))),
+        1.0,
         hmask_dd3d,
     )
-    hmask_dd3d = astype(hmask_dd3d, wpfloat)
     return hmask_dd3d
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_hmask_dd3d(
     e_refin_ctrl: fa.EdgeField[int32],
     hmask_dd3d: fa.EdgeField[wpfloat],
