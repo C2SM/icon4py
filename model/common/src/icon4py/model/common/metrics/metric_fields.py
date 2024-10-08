@@ -1314,15 +1314,15 @@ def compute_weighted_cell_neighbor_sum(
     maxslp: fa.CellKField[wpfloat],
     maxhgtd: fa.CellKField[wpfloat],
     c_bln_avg: Field[[dims.CellDim, C2E2CODim], wpfloat],
-    z_maxslp_avg: fa.CellKField[wpfloat],
-    z_maxhgtd_avg: fa.CellKField[wpfloat],
+    maxslp_avg: fa.CellKField[wpfloat],
+    maxhgtd_avg: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
     """
-    Compute z_maxslp_avg and z_maxhgtd_avg.
+    Compute maxslp_avg and maxhgtd_avg.
 
     See mo_vertical_grid.f90.
 
@@ -1330,8 +1330,8 @@ def compute_weighted_cell_neighbor_sum(
         maxslp: Max field over ddxn_z_full offset
         maxhgtd: Max field over ddxn_z_full offset*dual_edge_length offset
         c_bln_avg: Interpolation field
-        z_maxslp_avg: output
-        z_maxhgtd_avg: output
+        maxslp_avg: output
+        maxhgtd_avg: output
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
         vertical_start: vertical start index
@@ -1341,7 +1341,7 @@ def compute_weighted_cell_neighbor_sum(
     _compute_weighted_cell_neighbor_sum(
         field=maxslp,
         c_bln_avg=c_bln_avg,
-        out=z_maxslp_avg,
+        out=maxslp_avg,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -1351,7 +1351,7 @@ def compute_weighted_cell_neighbor_sum(
     _compute_weighted_cell_neighbor_sum(
         field=maxhgtd,
         c_bln_avg=c_bln_avg,
-        out=z_maxhgtd_avg,
+        out=maxhgtd_avg,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

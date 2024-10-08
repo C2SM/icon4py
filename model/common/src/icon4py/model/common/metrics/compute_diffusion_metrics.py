@@ -67,8 +67,8 @@ def _compute_z_vintcoeff(
 def _compute_ls_params(
     k_start: list,
     k_end: list,
-    z_maxslp_avg: xp.ndarray,
-    z_maxhgtd_avg: xp.ndarray,
+    maxslp_avg: xp.ndarray,
+    maxhgtd_avg: xp.ndarray,
     c_owner_mask: xp.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
@@ -83,8 +83,7 @@ def _compute_ls_params(
 
     for jc in range(cell_nudging, n_cells):
         if (
-            z_maxslp_avg[jc, nlev - 1] >= thslp_zdiffu
-            or z_maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
+            maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
         ) and c_owner_mask[jc]:
             ji += 1
             indlist[ji] = jc
@@ -101,8 +100,8 @@ def _compute_ls_params(
 def _compute_k_start_end(
     z_mc: xp.ndarray,
     max_nbhgt: xp.ndarray,
-    z_maxslp_avg: xp.ndarray,
-    z_maxhgtd_avg: xp.ndarray,
+    maxslp_avg: xp.ndarray,
+    maxhgtd_avg: xp.ndarray,
     c_owner_mask: xp.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
@@ -114,8 +113,7 @@ def _compute_k_start_end(
     k_end = [None] * n_cells
     for jc in range(cell_nudging, n_cells):
         if (
-            z_maxslp_avg[jc, nlev - 1] >= thslp_zdiffu
-            or z_maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
+            maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
         ) and c_owner_mask[jc]:
             for jk in reversed(range(nlev)):
                 if z_mc[jc, jk] >= max_nbhgt[jc]:
@@ -123,7 +121,7 @@ def _compute_k_start_end(
                     break
 
             for jk in range(nlev):
-                if z_maxslp_avg[jc, jk] >= thslp_zdiffu or z_maxhgtd_avg[jc, jk] >= thhgtd_zdiffu:
+                if maxslp_avg[jc, jk] >= thslp_zdiffu or maxhgtd_avg[jc, jk] >= thhgtd_zdiffu:
                     k_start[jc] = jk
                     break
 
@@ -138,8 +136,8 @@ def compute_diffusion_metrics(
     z_mc: xp.ndarray,
     max_nbhgt: xp.ndarray,
     c_owner_mask: xp.ndarray,
-    z_maxslp_avg: xp.ndarray,
-    z_maxhgtd_avg: xp.ndarray,
+    maxslp_avg: xp.ndarray,
+    maxhgtd_avg: xp.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     n_c2e2c: int,
@@ -158,8 +156,8 @@ def compute_diffusion_metrics(
     k_start, k_end = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
-        z_maxslp_avg=z_maxslp_avg,
-        z_maxhgtd_avg=z_maxhgtd_avg,
+        maxslp_avg=maxslp_avg,
+        maxhgtd_avg=maxhgtd_avg,
         c_owner_mask=c_owner_mask,
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
@@ -171,8 +169,8 @@ def compute_diffusion_metrics(
     indlist, listreduce, ji = _compute_ls_params(
         k_start=k_start,
         k_end=k_end,
-        z_maxslp_avg=z_maxslp_avg,
-        z_maxhgtd_avg=z_maxhgtd_avg,
+        maxslp_avg=maxslp_avg,
+        maxhgtd_avg=maxhgtd_avg,
         c_owner_mask=c_owner_mask,
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
@@ -199,8 +197,8 @@ def compute_diffusion_metrics(
             zd_diffcoef_dsl_var = xp.maximum(
                 0.0,
                 xp.maximum(
-                    xp.sqrt(xp.maximum(0.0, z_maxslp_avg[jc, k_range] - thslp_zdiffu)) / 250.0,
-                    2.0e-4 * xp.sqrt(xp.maximum(0.0, z_maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)),
+                    xp.sqrt(xp.maximum(0.0, maxslp_avg[jc, k_range] - thslp_zdiffu)) / 250.0,
+                    2.0e-4 * xp.sqrt(xp.maximum(0.0, maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)),
                 ),
             )
             zd_diffcoef_dsl[jc, k_range] = xp.minimum(0.002, zd_diffcoef_dsl_var)

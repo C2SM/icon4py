@@ -482,20 +482,20 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="maxhgtd",
         long_name="metrics field",
     ),
-    "z_maxslp_avg": dict(
-        standard_name="z_maxslp_avg",
+    "maxslp_avg": dict(
+        standard_name="maxslp_avg",
         units="",
         dims=(dims.CellDim, dims.KDim),
         dtype=ta.wpfloat,
-        icon_var_name="z_maxslp_avg",
+        icon_var_name="maxslp_avg",
         long_name="metrics field",
     ),
-    "z_maxhgtd_avg": dict(
-        standard_name="z_maxhgtd_avg",
+    "maxhgtd_avg": dict(
+        standard_name="maxhgtd_avg",
         units="",
         dims=(dims.CellDim, dims.KDim),
         dtype=ta.wpfloat,
-        icon_var_name="z_maxhgtd_avg",
+        icon_var_name="maxhgtd_avg",
         long_name="metrics field",
     ),
     "zd_diffcoef_dsl": dict(

@@ -761,7 +761,7 @@ compute_weighted_cell_neighbor_sum_provider = factory.ProgramFieldProvider(
             v_grid.domain(dims.KDim)(v_grid.Zone.BOTTOM),
         ),
     },
-    fields={"z_maxslp_avg": "z_maxslp_avg", "z_maxhgtd_avg": "z_maxhgtd_avg"},
+    fields={"maxslp_avg": "maxslp_avg", "maxhgtd_avg": "maxhgtd_avg"},
 )
 fields_factory.register_provider(compute_weighted_cell_neighbor_sum_provider)
 
@@ -790,8 +790,8 @@ compute_diffusion_metrics_provider = factory.NumpyFieldsProvider(
         "z_mc": "height",
         "max_nbhgt": "max_nbhgt",
         "c_owner_mask": "c_owner_mask",
-        "z_maxslp_avg": "z_maxslp_avg",
-        "z_maxhgtd_avg": "z_maxhgtd_avg",
+        "maxslp_avg": "maxslp_avg",
+        "maxhgtd_avg": "maxhgtd_avg",
     },
     offsets={"c2e2c": dims.C2E2CDim},
     domain={

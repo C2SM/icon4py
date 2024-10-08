@@ -376,8 +376,8 @@ def test_factory_diffusion(
     factory.get("height", states_factory.RetrievalType.FIELD)
     factory.get("max_nbhgt", states_factory.RetrievalType.FIELD)
     factory.get("c_owner_mask", states_factory.RetrievalType.FIELD)
-    factory.get("z_maxslp_avg", states_factory.RetrievalType.FIELD)
-    factory.get("z_maxhgtd_avg", states_factory.RetrievalType.FIELD)
+    factory.get("maxslp_avg", states_factory.RetrievalType.FIELD)
+    factory.get("maxhgtd_avg", states_factory.RetrievalType.FIELD)
 
     mask_hdiff = factory.get("mask_hdiff", states_factory.RetrievalType.FIELD)
     zd_diffcoef_dsl = factory.get("zd_diffcoef_dsl", states_factory.RetrievalType.FIELD)

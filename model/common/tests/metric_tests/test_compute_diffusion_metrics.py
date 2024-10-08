@@ -40,8 +40,8 @@ def test_compute_diffusion_metrics(
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         pytest.skip(f"Fields not computed for {experiment}")
 
-    z_maxslp_avg = zero_field(icon_grid, dims.CellDim, dims.KDim)
-    z_maxhgtd_avg = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    maxslp_avg = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    maxhgtd_avg = zero_field(icon_grid, dims.CellDim, dims.KDim)
     maxslp = zero_field(icon_grid, dims.CellDim, dims.KDim)
     maxhgtd = zero_field(icon_grid, dims.CellDim, dims.KDim)
     max_nbhgt = zero_field(icon_grid, dims.CellDim)
@@ -85,8 +85,8 @@ def test_compute_diffusion_metrics(
         maxslp=maxslp,
         maxhgtd=maxhgtd,
         c_bln_avg=c_bln_avg,
-        z_maxslp_avg=z_maxslp_avg,
-        z_maxhgtd_avg=z_maxhgtd_avg,
+        maxslp_avg=maxslp_avg,
+        maxhgtd_avg=maxhgtd_avg,
         horizontal_start=cell_lateral,
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
@@ -109,8 +109,8 @@ def test_compute_diffusion_metrics(
         z_mc=z_mc.asnumpy(),
         max_nbhgt=max_nbhgt.asnumpy(),
         c_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        z_maxslp_avg=z_maxslp_avg.asnumpy(),
-        z_maxhgtd_avg=z_maxhgtd_avg.asnumpy(),
+        maxslp_avg=maxslp_avg.asnumpy(),
+        maxhgtd_avg=maxhgtd_avg.asnumpy(),
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         n_c2e2c=c2e2c.shape[1],
