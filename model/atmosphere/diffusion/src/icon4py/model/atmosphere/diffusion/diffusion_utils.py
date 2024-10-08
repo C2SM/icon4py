@@ -9,15 +9,12 @@
 from typing import Tuple
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import (
-    broadcast,
-    minimum,
-)
+from gt4py.next.ffront.fbuiltins import broadcast, minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
-from icon4py.model.common.settings import backend, xp
+from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -162,30 +159,58 @@ def init_diffusion_local_fields_for_regular_timestep(
     )
 
 
-def init_nabla2_factor_in_upper_damping_zone(
-    k_size: int, nrdmax: gtx.int32, nshift: int, physical_heights: fa.KField[float]
+@gtx.field_operator
+def _init_nabla2_factor_in_upper_damping_zone(
+    physical_heights: fa.KField[float],
+    k_field: fa.KField[gtx.int32],
+    nrdmax: gtx.int32,
+    nshift: gtx.int32,
+    heights_nrd_shift: float,
+    heights_1: float,
 ) -> fa.KField[float]:
+    height_sliced = where(
+        (k_field >= (1 + nshift)) & (k_field < (nshift + nrdmax + 1)), physical_heights, 0.0
+    )
+    diff_multfac_n2w = (
+        1.0 / 12.0 * ((height_sliced - heights_nrd_shift) / (heights_1 - heights_nrd_shift)) ** 4
+    )
+    return diff_multfac_n2w
+
+
+@gtx.program
+def init_nabla2_factor_in_upper_damping_zone(
+    physical_heights: fa.KField[float],
+    k_field: fa.KField[gtx.int32],
+    diff_multfac_n2w: fa.KField[float],
+    nrdmax: gtx.int32,
+    nshift: gtx.int32,
+    heights_nrd_shift: float,
+    heights_1: float,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
     """
     Calculate diff_multfac_n2w.
 
     numpy version, since gt4py does not allow non-constant indexing into fields
 
     Args
-        k_size: number of vertical levels
-        nrdmax: index of the level where rayleigh dampint starts
-        nshift:
         physcial_heights: vector of physical heights [m] of the height levels
+        k_field: field of k levels
+        nrdmax: index of the level where rayleigh damping starts
+        nshift: 0
+        heights_nrd_shift: physcial_heights at nrdmax + nshift + 1,
+        heights_1: physcial_heights at 1st level,
+        vertical_start: vertical lower bound,
+        vertical_end: vertical upper bound,
     """
-    # TODO(Magdalena): fix with as_offset in gt4py
-    heights = physical_heights.ndarray
-    buffer = xp.zeros(k_size)
-    buffer[1 : nrdmax + 1] = (
-        1.0
-        / 12.0
-        * (
-            (heights[1 + nshift : nrdmax + 1 + nshift] - heights[nshift + nrdmax + 1])
-            / (heights[1] - heights[nshift + nrdmax + 1])
-        )
-        ** 4
+    _init_nabla2_factor_in_upper_damping_zone(
+        physical_heights=physical_heights,
+        k_field=k_field,
+        nrdmax=nrdmax,
+        nshift=nshift,
+        heights_nrd_shift=heights_nrd_shift,
+        heights_1=heights_1,
+        out=diff_multfac_n2w,
+        domain={dims.KDim: (vertical_start, vertical_end)},
     )
-    return gtx.as_field((dims.KDim,), buffer)
