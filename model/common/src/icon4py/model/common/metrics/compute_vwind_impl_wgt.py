@@ -16,17 +16,13 @@ def compute_vwind_impl_wgt(
     z_ddxn_z_half_e: xp.ndarray,
     z_ddxt_z_half_e: xp.ndarray,
     dual_edge_length: xp.ndarray,
-    global_exp: str,
-    experiment: str,
     vwind_offctr: float,
     nlev: int,
     horizontal_start_cell: int,
     n_cells: int,
 ) -> xp.ndarray:
-    vwind_offctr = 0.15 if experiment == global_exp else vwind_offctr
     init_val = 0.5 + vwind_offctr
     vwind_impl_wgt = xp.full(z_ifc.shape[0], init_val)
-
     for je in range(horizontal_start_cell, n_cells):
         zn_off_0 = z_ddxn_z_half_e[c2e[je, 0], nlev]
         zn_off_1 = z_ddxn_z_half_e[c2e[je, 1], nlev]

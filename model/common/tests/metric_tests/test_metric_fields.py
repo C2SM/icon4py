@@ -561,7 +561,11 @@ def test_compute_vwind_impl_wgt(
     )
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
-    vwind_offctr = 0.2
+    config = (
+        MetricsConfig(vwind_offctr=0.2)
+        if experiment == dt_utils.REGIONAL_EXPERIMENT
+        else MetricsConfig()
+    )
 
     vwind_impl_wgt = compute_vwind_impl_wgt(
         c2e=icon_grid.connectivities[dims.C2EDim],
@@ -570,9 +574,7 @@ def test_compute_vwind_impl_wgt(
         z_ddxn_z_half_e=z_ddxn_z_half_e.asnumpy(),
         z_ddxt_z_half_e=z_ddxt_z_half_e.asnumpy(),
         dual_edge_length=dual_edge_length.asnumpy(),
-        global_exp=dt_utils.GLOBAL_EXPERIMENT,
-        experiment=experiment,
-        vwind_offctr=vwind_offctr,
+        vwind_offctr=config.vwind_offctr,
         nlev=icon_grid.num_levels,
         horizontal_start_cell=horizontal_start_cell,
         n_cells=icon_grid.num_cells,

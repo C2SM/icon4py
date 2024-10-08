@@ -25,6 +25,7 @@ from icon4py.model.common.metrics import (
     compute_zdiff_gradp_dsl,
     metric_fields as mf,
 )
+from icon4py.model.common.metrics.metric_fields import MetricsConfig
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import metadata
 from icon4py.model.common.test_utils import (
@@ -65,8 +66,11 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 # TODO: this will go in a future ConfigurationProvider
 experiment = dt_utils.REGIONAL_EXPERIMENT
-global_exp = dt_utils.GLOBAL_EXPERIMENT
-vwind_offctr = 0.2
+config = (
+    MetricsConfig(vwind_offctr=0.2)
+    if experiment == dt_utils.REGIONAL_EXPERIMENT
+    else MetricsConfig()
+)
 divdamp_trans_start = 12500.0
 divdamp_trans_end = 17500.0
 divdamp_type = 3
@@ -411,9 +415,7 @@ compute_vwind_impl_wgt_provider = factory.NumpyFieldsProvider(
         "dual_edge_length": "dual_edge_length",
     },
     params={
-        "global_exp": str(dt_utils.GLOBAL_EXPERIMENT),
-        "experiment": str(dt_utils.REGIONAL_EXPERIMENT),
-        "vwind_offctr": vwind_offctr,
+        "vwind_offctr": config.vwind_offctr,
         "nlev": icon_grid.num_levels,
         "horizontal_start_cell": icon_grid.start_index(
             cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)

@@ -64,6 +64,7 @@ Contains metric fields calculations for the vertical grid, ported from mo_vertic
 class MetricsConfig:
     #: Temporal extrapolation of Exner for computation of horizontal pressure gradient, defined in `mo_nonhydrostatic_nml.f90` used only in metrics fields calculation.
     exner_expol: Final[wpfloat] = 0.3333333333333
+    vwind_offctr: Final[wpfloat] = 0.15
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)

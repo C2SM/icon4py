@@ -335,11 +335,9 @@ class NumpyFieldsProvider(FieldProvider):
 
         for param_key, param_value in self._params.items():
             parameter_definition = parameters.get(param_key)
-            checked = (
-                _check(parameter_definition, param_value, union=state_utils.IntegerType)
-                or _check(parameter_definition, param_value, union=state_utils.FloatType)
-                or _check_str(parameter_definition, param_value)
-            )
+            checked = _check(
+                parameter_definition, param_value, union=state_utils.IntegerType
+            ) or _check(parameter_definition, param_value, union=state_utils.FloatType)
             assert checked, (
                 f"Parameter {param_key} in function {self._func.__name__} does not "
                 f"exist or has the wrong type: {type(param_value)}."
@@ -369,13 +367,6 @@ def _check(
         and parameter_definition.annotation in members
         and type(value) in members
     )
-
-
-def _check_str(
-    parameter_definition: inspect.Parameter,
-    value: Union[state_utils.Scalar, gtx.Field],
-):
-    return parameter_definition is not None and isinstance(value, str)
 
 
 class FieldSource(Protocol):
@@ -424,7 +415,7 @@ class FieldsFactory(FieldSource, PartialConfigurable):
 
     """
     Factory for fields.
-    
+
     It can be queried at runtime for fields. Fields will be computed upon first request.
     Uses FieldProvider to delegate the computation of the fields
     """
