@@ -6,24 +6,31 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
+from gt4py.next import as_field
+
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.settings import xp
+from icon4py.model.common.test_utils.helpers import flatten_first_two_dims
 
 
 def compute_zdiff_gradp_dsl(
-    e2c,
-    z_me: np.ndarray,
-    z_mc: np.ndarray,
-    z_ifc: np.ndarray,
-    flat_idx: np.ndarray,
-    z_aux2: np.ndarray,
+    e2c: xp.ndarray,
+    z_mc: xp.ndarray,
+    c_lin_e: xp.ndarray,
+    z_ifc: xp.ndarray,
+    flat_idx: xp.ndarray,
+    z_ifc_sliced: xp.ndarray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
     nedges: int,
-) -> np.ndarray:
-    zdiff_gradp = np.zeros_like(z_mc[e2c])
+):
+    z_me = xp.sum(z_mc[e2c] * xp.expand_dims(c_lin_e, axis=-1), axis=1)
+    z_aux1 = xp.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0  # extrapol_dist
+    zdiff_gradp = xp.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
-        np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
+        xp.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
     )
     """
     First part for loop implementation with gt4py code
@@ -66,7 +73,7 @@ def compute_zdiff_gradp_dsl(
                 ):
                     param[jk1] = True
 
-            zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], np.where(param)[0][0]]
+            zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], xp.where(param)[0][0]]
 
         jk_start = int(flat_idx[je])
         for jk in range(int(flat_idx[je]) + 1, nlev):
@@ -107,4 +114,10 @@ def compute_zdiff_gradp_dsl(
                         jk_start = jk1
                         break
 
-    return zdiff_gradp
+    zdiff_gradp_full_field = flatten_first_two_dims(
+        dims.ECDim,
+        dims.KDim,
+        field=as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp),
+    )
+
+    return zdiff_gradp_full_field.asnumpy()

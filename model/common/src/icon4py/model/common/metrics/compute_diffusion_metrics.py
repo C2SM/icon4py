@@ -6,17 +6,24 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
+from icon4py.model.common.settings import xp
+
+
+def compute_max_nbhgt_np(c2e2c: xp.ndarray, z_mc: xp.ndarray, nlev: int) -> xp.ndarray:
+    z_mc_nlev = z_mc[:, nlev - 1]
+    max_nbhgt_0_1 = xp.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
+    max_nbhgt = xp.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
+    return max_nbhgt
 
 
 def _compute_nbidx(
     k_range: range,
-    z_mc: np.ndarray,
-    z_mc_off: np.ndarray,
-    nbidx: np.ndarray,
+    z_mc: xp.ndarray,
+    z_mc_off: xp.ndarray,
+    nbidx: xp.ndarray,
     jc: int,
     nlev: int,
-) -> np.ndarray:
+) -> xp.ndarray:
     for ind in range(3):
         jk_start = nlev - 1
         for jk in reversed(k_range):
@@ -34,12 +41,12 @@ def _compute_nbidx(
 
 def _compute_z_vintcoeff(
     k_range: range,
-    z_mc: np.ndarray,
-    z_mc_off: np.ndarray,
-    z_vintcoeff: np.ndarray,
+    z_mc: xp.ndarray,
+    z_mc_off: xp.ndarray,
+    z_vintcoeff: xp.ndarray,
     jc: int,
     nlev: int,
-) -> np.ndarray:
+) -> xp.ndarray:
     for ind in range(3):
         jk_start = nlev - 1
         for jk in reversed(k_range):
@@ -60,9 +67,9 @@ def _compute_z_vintcoeff(
 def _compute_ls_params(
     k_start: list,
     k_end: list,
-    z_maxslp_avg: np.ndarray,
-    z_maxhgtd_avg: np.ndarray,
-    c_owner_mask: np.ndarray,
+    maxslp_avg: xp.ndarray,
+    maxhgtd_avg: xp.ndarray,
+    c_owner_mask: xp.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     cell_nudging: int,
@@ -76,8 +83,7 @@ def _compute_ls_params(
 
     for jc in range(cell_nudging, n_cells):
         if (
-            z_maxslp_avg[jc, nlev - 1] >= thslp_zdiffu
-            or z_maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
+            maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
         ) and c_owner_mask[jc]:
             ji += 1
             indlist[ji] = jc
@@ -92,11 +98,11 @@ def _compute_ls_params(
 
 
 def _compute_k_start_end(
-    z_mc: np.ndarray,
-    max_nbhgt: np.ndarray,
-    z_maxslp_avg: np.ndarray,
-    z_maxhgtd_avg: np.ndarray,
-    c_owner_mask: np.ndarray,
+    z_mc: xp.ndarray,
+    max_nbhgt: xp.ndarray,
+    maxslp_avg: xp.ndarray,
+    maxhgtd_avg: xp.ndarray,
+    c_owner_mask: xp.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     cell_nudging: int,
@@ -107,8 +113,7 @@ def _compute_k_start_end(
     k_end = [None] * n_cells
     for jc in range(cell_nudging, n_cells):
         if (
-            z_maxslp_avg[jc, nlev - 1] >= thslp_zdiffu
-            or z_maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
+            maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
         ) and c_owner_mask[jc]:
             for jk in reversed(range(nlev)):
                 if z_mc[jc, jk] >= max_nbhgt[jc]:
@@ -116,7 +121,7 @@ def _compute_k_start_end(
                     break
 
             for jk in range(nlev):
-                if z_maxslp_avg[jc, jk] >= thslp_zdiffu or z_maxhgtd_avg[jc, jk] >= thhgtd_zdiffu:
+                if maxslp_avg[jc, jk] >= thslp_zdiffu or maxhgtd_avg[jc, jk] >= thhgtd_zdiffu:
                     k_start[jc] = jk
                     break
 
@@ -127,29 +132,32 @@ def _compute_k_start_end(
 
 
 def compute_diffusion_metrics(
-    z_mc: np.ndarray,
-    z_mc_off: np.ndarray,
-    max_nbhgt: np.ndarray,
-    c_owner_mask: np.ndarray,
-    nbidx: np.ndarray,
-    z_vintcoeff: np.ndarray,
-    z_maxslp_avg: np.ndarray,
-    z_maxhgtd_avg: np.ndarray,
-    mask_hdiff: np.ndarray,
-    zd_diffcoef_dsl: np.ndarray,
-    zd_intcoef_dsl: np.ndarray,
-    zd_vertoffset_dsl: np.ndarray,
+    c2e2c: xp.ndarray,
+    z_mc: xp.ndarray,
+    max_nbhgt: xp.ndarray,
+    c_owner_mask: xp.ndarray,
+    maxslp_avg: xp.ndarray,
+    maxhgtd_avg: xp.ndarray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
+    n_c2e2c: int,
     cell_nudging: int,
     n_cells: int,
     nlev: int,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[xp.ndarray, xp.ndarray, xp.ndarray, xp.ndarray]:
+    z_mc_off = z_mc[c2e2c]
+    nbidx = xp.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
+    z_vintcoeff = xp.zeros(shape=(n_cells, n_c2e2c, nlev))
+    mask_hdiff = xp.zeros(shape=(n_cells, nlev), dtype=bool)
+    zd_vertoffset_dsl = xp.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_intcoef_dsl = xp.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_diffcoef_dsl = xp.zeros(shape=(n_cells, nlev))
+
     k_start, k_end = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
-        z_maxslp_avg=z_maxslp_avg,
-        z_maxhgtd_avg=z_maxhgtd_avg,
+        maxslp_avg=maxslp_avg,
+        maxhgtd_avg=maxhgtd_avg,
         c_owner_mask=c_owner_mask,
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
@@ -161,8 +169,8 @@ def compute_diffusion_metrics(
     indlist, listreduce, ji = _compute_ls_params(
         k_start=k_start,
         k_end=k_end,
-        z_maxslp_avg=z_maxslp_avg,
-        z_maxhgtd_avg=z_maxhgtd_avg,
+        maxslp_avg=maxslp_avg,
+        maxhgtd_avg=maxhgtd_avg,
         c_owner_mask=c_owner_mask,
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
@@ -183,16 +191,24 @@ def compute_diffusion_metrics(
             )
 
             zd_intcoef_dsl[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
-            zd_vertoffset_dsl[jc, :, k_range] = nbidx[jc, :, k_range] - np.transpose([k_range] * 3)
+            zd_vertoffset_dsl[jc, :, k_range] = nbidx[jc, :, k_range] - xp.transpose([k_range] * 3)
             mask_hdiff[jc, k_range] = True
 
-            zd_diffcoef_dsl_var = np.maximum(
+            zd_diffcoef_dsl_var = xp.maximum(
                 0.0,
-                np.maximum(
-                    np.sqrt(np.maximum(0.0, z_maxslp_avg[jc, k_range] - thslp_zdiffu)) / 250.0,
-                    2.0e-4 * np.sqrt(np.maximum(0.0, z_maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)),
+                xp.maximum(
+                    xp.sqrt(xp.maximum(0.0, maxslp_avg[jc, k_range] - thslp_zdiffu)) / 250.0,
+                    2.0e-4 * xp.sqrt(xp.maximum(0.0, maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)),
                 ),
             )
-            zd_diffcoef_dsl[jc, k_range] = np.minimum(0.002, zd_diffcoef_dsl_var)
+            zd_diffcoef_dsl[jc, k_range] = xp.minimum(0.002, zd_diffcoef_dsl_var)
+
+    # flatten first two dims:
+    zd_intcoef_dsl = zd_intcoef_dsl.reshape(
+        (zd_intcoef_dsl.shape[0] * zd_intcoef_dsl.shape[1],) + zd_intcoef_dsl.shape[2:]
+    )
+    zd_vertoffset_dsl = zd_vertoffset_dsl.reshape(
+        (zd_vertoffset_dsl.shape[0] * zd_vertoffset_dsl.shape[1],) + zd_vertoffset_dsl.shape[2:]
+    )
 
     return mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl
