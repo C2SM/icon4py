@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-from gt4py.next.common import Field, GridType
+import gt4py.next as gtx
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, maximum, where
+from gt4py.next.ffront.fbuiltins import maximum, where
 
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
@@ -27,28 +27,28 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _fused_velocity_advection_stencil_19_to_20(
     vn: fa.EdgeKField[wpfloat],
-    geofac_rot: Field[[dims.VertexDim, dims.V2EDim], wpfloat],
+    geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    coeff_gradekin: Field[[dims.ECDim], vpfloat],
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
     f_e: fa.EdgeField[wpfloat],
-    c_lin_e: Field[[dims.EdgeDim, dims.E2CDim], wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     vn_ie: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    levelmask: Field[[dims.KDim], bool],
+    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
     area_edge: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
-    geofac_grdiv: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
-    k: fa.KField[int32],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
+    k: fa.KField[gtx.int32],
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     d_time: wpfloat,
     extra_diffu: bool,
-    nlev: int32,
-    nrdmax: int32,
+    nlev: gtx.int32,
+    nrdmax: gtx.int32,
 ) -> fa.EdgeKField[vpfloat]:
     zeta = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
 
@@ -96,33 +96,33 @@ def _fused_velocity_advection_stencil_19_to_20(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_19_to_20(
     vn: fa.EdgeKField[wpfloat],
-    geofac_rot: Field[[dims.VertexDim, dims.V2EDim], wpfloat],
+    geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    coeff_gradekin: Field[[dims.ECDim], vpfloat],
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
     f_e: fa.EdgeField[wpfloat],
-    c_lin_e: Field[[dims.EdgeDim, dims.E2CDim], wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     vn_ie: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    levelmask: Field[[dims.KDim], bool],
+    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
     area_edge: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
-    geofac_grdiv: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     ddt_vn_apc: fa.EdgeKField[vpfloat],
-    k: fa.KField[int32],
+    k: fa.KField[gtx.int32],
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     d_time: wpfloat,
     extra_diffu: bool,
-    nlev: int32,
-    nrdmax: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    nlev: gtx.int32,
+    nrdmax: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _fused_velocity_advection_stencil_19_to_20(
         vn,

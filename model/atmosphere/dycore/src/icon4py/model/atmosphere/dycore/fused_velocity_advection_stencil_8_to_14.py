@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-from gt4py.next.common import Field, GridType
+import gt4py.next as gtx
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, maximum, where
+from gt4py.next.ffront.fbuiltins import maximum, where
 
 from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
@@ -32,7 +32,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _fused_velocity_advection_stencil_8_to_14(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
@@ -43,14 +43,14 @@ def _fused_velocity_advection_stencil_8_to_14(
     z_w_concorr_mc: fa.CellKField[vpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
-    k: fa.KField[int32],
-    istep: int32,
+    k: fa.KField[gtx.int32],
+    istep: gtx.int32,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
-    nlevp1: int32,
-    nlev: int32,
-    nflatlev: int32,
-    nrdmax: int32,
+    nlevp1: gtx.int32,
+    nlev: gtx.int32,
+    nflatlev: gtx.int32,
+    nrdmax: gtx.int32,
 ) -> tuple[
     fa.CellKField[vpfloat],
     fa.CellKField[bool],
@@ -109,7 +109,7 @@ def _fused_velocity_advection_stencil_8_to_14(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_8_to_14(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
@@ -121,14 +121,14 @@ def fused_velocity_advection_stencil_8_to_14(
     w_concorr_c: fa.CellKField[vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     z_w_con_c: fa.CellKField[vpfloat],
-    k: fa.KField[int32],
-    istep: int32,
+    k: fa.KField[gtx.int32],
+    istep: gtx.int32,
     cfl_w_limit: wpfloat,
     dtime: wpfloat,
-    nlevp1: int32,
-    nlev: int32,
-    nflatlev: int32,
-    nrdmax: int32,
+    nlevp1: gtx.int32,
+    nlev: gtx.int32,
+    nflatlev: gtx.int32,
+    nrdmax: gtx.int32,
 ):
     _fused_velocity_advection_stencil_8_to_14(
         z_kin_hor_e,
