@@ -74,6 +74,10 @@ def apply_diffusion_to_theta_and_exner(
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _apply_diffusion_to_theta_and_exner(
         kh_smag_e,
@@ -90,4 +94,8 @@ def apply_diffusion_to_theta_and_exner(
         exner,
         rd_o_cvd,
         out=(theta_v, exner),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
