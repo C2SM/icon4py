@@ -11,7 +11,6 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -24,7 +23,7 @@ def _copy_cell_kdim_field_to_vp(
     return field_copy
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def copy_cell_kdim_field_to_vp(
     field: fa.CellKField[wpfloat],
     field_copy: fa.CellKField[vpfloat],

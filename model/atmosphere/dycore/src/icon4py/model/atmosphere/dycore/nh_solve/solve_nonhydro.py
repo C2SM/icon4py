@@ -14,6 +14,7 @@ import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.grid.geometry as geometry
+from gt4py.next.backend import Backend
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
@@ -411,7 +412,9 @@ class NonHydrostaticParams:
 
 class SolveNonhydro:
     def __init__(
-        self, exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()
+        self,
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        backend: Backend = None,
     ):
         self._exchange = exchange
         self._initialized = False
@@ -432,6 +435,108 @@ class SolveNonhydro:
         self.jk_start = 0  # used in stencil_55
         self.ntl1 = 0
         self.ntl2 = 0
+
+        self.compute_theta_and_exner = compute_theta_and_exner.with_backend(backend)
+        self.compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(backend)
+        self.update_theta_v = update_theta_v.with_backend(backend)
+        self.init_two_cell_kdim_fields_with_zero_vp = (
+            init_two_cell_kdim_fields_with_zero_vp.with_backend(backend)
+        )
+        self.compute_approx_of_2nd_vertical_derivative_of_exner = (
+            compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(backend)
+        )
+        self.compute_perturbation_of_rho_and_theta = (
+            compute_perturbation_of_rho_and_theta.with_backend(backend)
+        )
+        self.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)
+        )
+        self.mo_math_gradients_grad_green_gauss_cell_dsl = (
+            mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(backend)
+        )
+        self.init_two_edge_kdim_fields_with_zero_wp = (
+            init_two_edge_kdim_fields_with_zero_wp.with_backend(backend)
+        )
+        self.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates = (
+            compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(backend)
+        )
+        self.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates = (
+            compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates.with_backend(
+                backend
+            )
+        )
+        self.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels = (
+            compute_horizontal_gradient_of_exner_pressure_for_multiple_levels.with_backend(backend)
+        )
+        self.compute_hydrostatic_correction_term = compute_hydrostatic_correction_term.with_backend(
+            backend
+        )
+        self.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure = (
+            apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(
+                backend
+            )
+        )
+        self.add_temporal_tendencies_to_vn = add_temporal_tendencies_to_vn.with_backend(backend)
+        self.add_analysis_increments_to_vn = add_analysis_increments_to_vn.with_backend(backend)
+        self.compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(backend)
+        self.compute_avg_vn_and_graddiv_vn_and_vt = (
+            compute_avg_vn_and_graddiv_vn_and_vt.with_backend(backend)
+        )
+        self.compute_mass_flux = compute_mass_flux.with_backend(backend)
+        self.compute_divergence_of_fluxes_of_rho_and_theta = (
+            compute_divergence_of_fluxes_of_rho_and_theta.with_backend(backend)
+        )
+        self.init_two_cell_kdim_fields_with_zero_wp = (
+            init_two_cell_kdim_fields_with_zero_wp.with_backend(backend)
+        )
+        self.add_analysis_increments_from_data_assimilation = (
+            add_analysis_increments_from_data_assimilation.with_backend(backend)
+        )
+        self.solve_tridiagonal_matrix_for_w_forward_sweep = (
+            solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)
+        )
+        self.solve_tridiagonal_matrix_for_w_back_substitution = (
+            solve_tridiagonal_matrix_for_w_back_substitution.with_backend(backend)
+        )
+        self.apply_rayleigh_damping_mechanism = apply_rayleigh_damping_mechanism.with_backend(
+            backend
+        )
+        self.compute_results_for_thermodynamic_variables = (
+            compute_results_for_thermodynamic_variables.with_backend(backend)
+        )
+        self.compute_dwdz_for_divergence_damping = compute_dwdz_for_divergence_damping.with_backend(
+            backend
+        )
+        self.copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(backend)
+        self.compute_rho_virtual_potential_temperatures_and_pressure_gradient = (
+            compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(backend)
+        )
+        self.add_vertical_wind_derivative_to_divergence_damping = (
+            add_vertical_wind_derivative_to_divergence_damping.with_backend(backend)
+        )
+        self.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels = (
+            add_temporal_tendencies_to_vn_by_interpolating_between_time_levels.with_backend(backend)
+        )
+        self.compute_graddiv2_of_vn = compute_graddiv2_of_vn.with_backend(backend)
+        self.apply_2nd_order_divergence_damping = apply_2nd_order_divergence_damping.with_backend(
+            backend
+        )
+        self.apply_weighted_2nd_and_4th_order_divergence_damping = (
+            apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(backend)
+        )
+        self.apply_4th_order_divergence_damping = apply_4th_order_divergence_damping.with_backend(
+            backend
+        )
+        self.compute_avg_vn = compute_avg_vn.with_backend(backend)
+        self.accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(backend)
+        self.update_mass_volume_flux = update_mass_volume_flux.with_backend(backend)
+        self.update_dynamical_exner_time_increment = (
+            update_dynamical_exner_time_increment.with_backend(backend)
+        )
+        self.init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
+            backend
+        )
+        self.update_mass_flux_weighted = update_mass_flux_weighted.with_backend(backend)
 
     def init(
         self,
@@ -680,7 +785,7 @@ class SolveNonhydro:
         )
 
         if self.grid.limited_area:
-            compute_theta_and_exner(
+            self.compute_theta_and_exner(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,
@@ -694,7 +799,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            compute_exner_from_rhotheta(
+            self.compute_exner_from_rhotheta(
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,
                 exner=prognostic_state_ls[nnew].exner,
@@ -707,7 +812,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        update_theta_v(
+        self.update_theta_v(
             mask_prog_halo_c=self.metric_state_nonhydro.mask_prog_halo_c,
             rho_now=prognostic_state_ls[nnow].rho,
             theta_v_now=prognostic_state_ls[nnow].theta_v,
@@ -767,7 +872,7 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
-            init_two_cell_kdim_fields_with_zero_vp(
+            self.init_two_cell_kdim_fields_with_zero_vp(
                 cell_kdim_field_with_zero_vp_1=self.z_rth_pr_1,
                 cell_kdim_field_with_zero_vp_2=self.z_rth_pr_2,
                 horizontal_start=self._start_cell_lateral_boundary,
@@ -856,7 +961,7 @@ class SolveNonhydro:
 
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
-            compute_approx_of_2nd_vertical_derivative_of_exner(
+            self.compute_approx_of_2nd_vertical_derivative_of_exner(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=self.metric_state_nonhydro.d2dexdz2_fac1_mc,
                 d2dexdz2_fac2_mc=self.metric_state_nonhydro.d2dexdz2_fac2_mc,
@@ -872,7 +977,7 @@ class SolveNonhydro:
         # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
         # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
 
-        compute_perturbation_of_rho_and_theta(
+        self.compute_perturbation_of_rho_and_theta(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,
@@ -888,7 +993,7 @@ class SolveNonhydro:
 
         # Compute rho and theta at edges for horizontal flux divergence term
         if self.config.iadv_rhotheta == RhoThetaAdvectionType.SIMPLE:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+            self.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state[nnow].rho,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_rho_v,
@@ -898,7 +1003,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,  # UBOUND(p_cell_in,2)
                 offset_provider=self.grid.offset_providers,
             )
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+            self.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state[nnow].theta_v,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_theta_v_v,
@@ -910,7 +1015,7 @@ class SolveNonhydro:
             )
         elif self.config.iadv_rhotheta == RhoThetaAdvectionType.MIURA:
             # Compute Green-Gauss gradients for rho and theta
-            mo_math_gradients_grad_green_gauss_cell_dsl(
+            self.mo_math_gradients_grad_green_gauss_cell_dsl(
                 p_grad_1_u=self.z_grad_rth_1,
                 p_grad_1_v=self.z_grad_rth_2,
                 p_grad_2_u=self.z_grad_rth_3,
@@ -926,7 +1031,7 @@ class SolveNonhydro:
                 offset_provider=self.grid.offset_providers,
             )
         if self.config.iadv_rhotheta <= 2:
-            init_two_edge_kdim_fields_with_zero_wp(
+            self.init_two_edge_kdim_fields_with_zero_wp(
                 edge_kdim_field_with_zero_wp_1=z_fields.z_rho_e,
                 edge_kdim_field_with_zero_wp_2=z_fields.z_theta_v_e,
                 horizontal_start=self._start_edge_halo_level_2,
@@ -937,7 +1042,7 @@ class SolveNonhydro:
             )
             # initialize also nest boundary points with zero
             if self.grid.limited_area:
-                init_two_edge_kdim_fields_with_zero_wp(
+                self.init_two_edge_kdim_fields_with_zero_wp(
                     edge_kdim_field_with_zero_wp_1=z_fields.z_rho_e,
                     edge_kdim_field_with_zero_wp_2=z_fields.z_theta_v_e,
                     horizontal_start=self._start_edge_lateral_boundary,
@@ -979,7 +1084,7 @@ class SolveNonhydro:
                 )
 
         # Remaining computations at edge points
-        compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
+        self.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
             z_exner_ex_pr=self.z_exner_ex_pr,
             z_gradh_exner=z_fields.z_gradh_exner,
@@ -994,7 +1099,7 @@ class SolveNonhydro:
             # horizontal gradient of Exner pressure, including metric correction
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
 
-            compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+            self.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
@@ -1008,7 +1113,7 @@ class SolveNonhydro:
                 offset_provider=self.grid.offset_providers,
             )
 
-            compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
+            self.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
@@ -1024,7 +1129,7 @@ class SolveNonhydro:
             )
         # compute hydrostatically approximated correction term that replaces downward extrapolation
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            compute_hydrostatic_correction_term(
+            self.compute_hydrostatic_correction_term(
                 theta_v=prognostic_state[nnow].theta_v,
                 ikoffset=self.metric_state_nonhydro.vertoffset_gradp,
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
@@ -1039,14 +1144,13 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-        # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
         hydro_corr_horizontal = gtx.as_field(
             (dims.EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level]
         )
 
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
+            self.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=self.metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
                 z_hydro_corr=hydro_corr_horizontal,
@@ -1058,7 +1162,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        add_temporal_tendencies_to_vn(
+        self.add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_state[nnow].vn,
             ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
             ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
@@ -1075,7 +1179,7 @@ class SolveNonhydro:
         )
 
         if self.config.is_iau_active:
-            add_analysis_increments_to_vn(
+            self.add_analysis_increments_to_vn(
                 vn_incr=diagnostic_state_nh.vn_incr,
                 vn=prognostic_state[nnew].vn,
                 iau_wgt_dyn=self.config.iau_wgt_dyn,
@@ -1087,7 +1191,7 @@ class SolveNonhydro:
             )
 
         if self.grid.limited_area:
-            compute_vn_on_lateral_boundary(
+            self.compute_vn_on_lateral_boundary(
                 grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
                 vn_now=prognostic_state[nnow].vn,
                 vn_new=prognostic_state[nnew].vn,
@@ -1101,7 +1205,7 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
         self._exchange.exchange_and_wait(dims.EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e)
 
-        compute_avg_vn_and_graddiv_vn_and_vt(
+        self.compute_avg_vn_and_graddiv_vn_and_vt(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
@@ -1116,7 +1220,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        compute_mass_flux(
+        self.compute_mass_flux(
             z_rho_e=z_fields.z_rho_e,
             z_vn_avg=self.z_vn_avg,
             ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
@@ -1180,7 +1284,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        compute_divergence_of_fluxes_of_rho_and_theta(
+        self.compute_divergence_of_fluxes_of_rho_and_theta(
             geofac_div=self.interpolation_state.geofac_div,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
@@ -1225,7 +1329,7 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            init_two_cell_kdim_fields_with_zero_wp(
+            self.init_two_cell_kdim_fields_with_zero_wp(
                 cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=self._start_cell_nudging,
@@ -1259,7 +1363,7 @@ class SolveNonhydro:
         )
 
         if self.config.is_iau_active:
-            add_analysis_increments_from_data_assimilation(
+            self.add_analysis_increments_from_data_assimilation(
                 z_fields.z_rho_expl,
                 z_fields.z_exner_expl,
                 diagnostic_state_nh.rho_incr,
@@ -1272,7 +1376,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        solve_tridiagonal_matrix_for_w_forward_sweep(
+        self.solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
@@ -1291,7 +1395,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        solve_tridiagonal_matrix_for_w_back_substitution(
+        self.solve_tridiagonal_matrix_for_w_back_substitution(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
             horizontal_start=self._start_cell_nudging,
@@ -1302,7 +1406,7 @@ class SolveNonhydro:
         )
 
         if self.config.rayleigh_type == constants.RayleighType.KLEMP:
-            apply_rayleigh_damping_mechanism(
+            self.apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,
@@ -1315,7 +1419,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        compute_results_for_thermodynamic_variables(
+        self.compute_results_for_thermodynamic_variables(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
@@ -1342,7 +1446,7 @@ class SolveNonhydro:
 
         # compute dw/dz for divergence damping term
         if self.config.divdamp_type >= 3:
-            compute_dwdz_for_divergence_damping(
+            self.compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1355,7 +1459,7 @@ class SolveNonhydro:
             )
 
         if at_first_substep:
-            copy_cell_kdim_field_to_vp(
+            self.copy_cell_kdim_field_to_vp(
                 field=prognostic_state[nnow].exner,
                 field_copy=diagnostic_state_nh.exner_dyn_incr,
                 horizontal_start=self._start_cell_nudging,
@@ -1387,7 +1491,7 @@ class SolveNonhydro:
             )
 
         if self.config.divdamp_type >= 3:
-            compute_dwdz_for_divergence_damping(
+            self.compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1468,7 +1572,7 @@ class SolveNonhydro:
             offset_provider={},
         )
         log.debug(f"corrector: start stencil 10")
-        compute_rho_virtual_potential_temperatures_and_pressure_gradient(
+        self.compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=prognostic_state[nnew].w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
@@ -1496,7 +1600,7 @@ class SolveNonhydro:
         )
 
         log.debug(f"corrector: start stencil 17")
-        add_vertical_wind_derivative_to_divergence_damping(
+        self.add_vertical_wind_derivative_to_divergence_damping(
             hmask_dd3d=self.metric_state_nonhydro.hmask_dd3d,
             scalfac_dd3d=self.metric_state_nonhydro.scalfac_dd3d,
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
@@ -1511,7 +1615,7 @@ class SolveNonhydro:
 
         if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
             log.debug(f"corrector: start stencil 23")
-            add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
+            self.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_state[nnow].vn,
                 ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
                 ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl2],
@@ -1536,7 +1640,7 @@ class SolveNonhydro:
         ):
             # verified for e-10
             log.debug(f"corrector start stencil 25")
-            compute_graddiv2_of_vn(
+            self.compute_graddiv2_of_vn(
                 geofac_grdiv=self.interpolation_state.geofac_grdiv,
                 z_graddiv_vn=z_fields.z_graddiv_vn,
                 z_graddiv2_vn=self.z_graddiv2_vn,
@@ -1552,7 +1656,7 @@ class SolveNonhydro:
             and scal_divdamp_o2 > 1.0e-6
         ):
             log.debug(f"corrector: start stencil 26")
-            apply_2nd_order_divergence_damping(
+            self.apply_2nd_order_divergence_damping(
                 z_graddiv_vn=z_fields.z_graddiv_vn,
                 vn=prognostic_state[nnew].vn,
                 scal_divdamp_o2=scal_divdamp_o2,
@@ -1570,7 +1674,7 @@ class SolveNonhydro:
         ):
             if self.grid.limited_area:
                 log.debug("corrector: start stencil 27")
-                apply_weighted_2nd_and_4th_order_divergence_damping(
+                self.apply_weighted_2nd_and_4th_order_divergence_damping(
                     scal_divdamp=self.scal_divdamp,
                     bdy_divdamp=self._bdy_divdamp,
                     nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
@@ -1584,7 +1688,7 @@ class SolveNonhydro:
                 )
             else:
                 log.debug("corrector start stencil 4th order divdamp")
-                apply_4th_order_divergence_damping(
+                self.apply_4th_order_divergence_damping(
                     scal_divdamp=self.scal_divdamp,
                     z_graddiv2_vn=self.z_graddiv2_vn,
                     vn=prognostic_state[nnew].vn,
@@ -1598,7 +1702,7 @@ class SolveNonhydro:
         # TODO: this does not get accessed in FORTRAN
         if self.config.is_iau_active:
             log.debug("corrector start stencil 28")
-            add_analysis_increments_to_vn(
+            self.add_analysis_increments_to_vn(
                 diagnostic_state_nh.vn_incr,
                 prognostic_state[nnew].vn,
                 self.config.iau_wgt_dyn,
@@ -1611,7 +1715,7 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_state[nnew].vn))
         log.debug("corrector: start stencil 31")
-        compute_avg_vn(
+        self.compute_avg_vn(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
             z_vn_avg=self.z_vn_avg,
@@ -1623,7 +1727,7 @@ class SolveNonhydro:
         )
 
         log.debug("corrector: start stencil 32")
-        compute_mass_flux(
+        self.compute_mass_flux(
             z_rho_e=z_fields.z_rho_e,
             z_vn_avg=self.z_vn_avg,
             ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
@@ -1641,7 +1745,7 @@ class SolveNonhydro:
             log.debug("corrector: doing prep advection")
             if lclean_mflx:
                 log.debug("corrector: start stencil 33")
-                init_two_edge_kdim_fields_with_zero_wp(
+                self.init_two_edge_kdim_fields_with_zero_wp(
                     edge_kdim_field_with_zero_wp_1=prep_adv.vn_traj,
                     edge_kdim_field_with_zero_wp_2=prep_adv.mass_flx_me,
                     horizontal_start=self._start_edge_lateral_boundary,
@@ -1651,7 +1755,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             log.debug(f"corrector: start stencil 34")
-            accumulate_prep_adv_fields(
+            self.accumulate_prep_adv_fields(
                 z_vn_avg=self.z_vn_avg,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
                 vn_traj=prep_adv.vn_traj,
@@ -1666,7 +1770,7 @@ class SolveNonhydro:
 
         # verified for e-9
         log.debug(f"corrector: start stencil 41")
-        compute_divergence_of_fluxes_of_rho_and_theta(
+        self.compute_divergence_of_fluxes_of_rho_and_theta(
             geofac_div=self.interpolation_state.geofac_div,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
@@ -1747,7 +1851,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         if not self.l_vert_nested:
-            init_two_cell_kdim_fields_with_zero_wp(
+            self.init_two_cell_kdim_fields_with_zero_wp(
                 cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=self._start_cell_nudging,
@@ -1785,7 +1889,7 @@ class SolveNonhydro:
         # TODO: this is not tested in green line so far
         if self.config.is_iau_active:
             log.debug(f"corrector start stencil 50")
-            add_analysis_increments_from_data_assimilation(
+            self.add_analysis_increments_from_data_assimilation(
                 z_rho_expl=z_fields.z_rho_expl,
                 z_exner_expl=z_fields.z_exner_expl,
                 rho_incr=diagnostic_state_nh.rho_incr,
@@ -1798,7 +1902,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 52")
-        solve_tridiagonal_matrix_for_w_forward_sweep(
+        self.solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
@@ -1817,7 +1921,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
         log.debug(f"corrector start stencil 53")
-        solve_tridiagonal_matrix_for_w_back_substitution(
+        self.solve_tridiagonal_matrix_for_w_back_substitution(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
             horizontal_start=self._start_cell_nudging,
@@ -1829,7 +1933,7 @@ class SolveNonhydro:
 
         if self.config.rayleigh_type == constants.RayleighType.KLEMP:
             log.debug(f"corrector start stencil 54")
-            apply_rayleigh_damping_mechanism(
+            self.apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,
@@ -1842,7 +1946,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 55")
-        compute_results_for_thermodynamic_variables(
+        self.compute_results_for_thermodynamic_variables(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
@@ -1870,7 +1974,7 @@ class SolveNonhydro:
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                init_two_cell_kdim_fields_with_zero_wp(
+                self.init_two_cell_kdim_fields_with_zero_wp(
                     prep_adv.mass_flx_ic,
                     prep_adv.vol_flx_ic,
                     horizontal_start=self._start_cell_nudging,
@@ -1880,7 +1984,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
         log.debug(f"corrector start stencil 58")
-        update_mass_volume_flux(
+        self.update_mass_volume_flux(
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
@@ -1895,7 +1999,7 @@ class SolveNonhydro:
             offset_provider={},
         )
         if at_last_substep:
-            update_dynamical_exner_time_increment(
+            self.update_dynamical_exner_time_increment(
                 exner=prognostic_state[nnew].exner,
                 ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
@@ -1920,7 +2024,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             log.debug(f" corrector: start stencil 65")
-            update_mass_flux_weighted(
+            self.update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_ic,
                 vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
                 vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
