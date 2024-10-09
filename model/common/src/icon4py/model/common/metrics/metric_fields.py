@@ -1258,14 +1258,14 @@ def _compute_hmask_dd3d(
     grf_nudge_start_e_wp = astype(grf_nudge_start_e, wpfloat)
     grf_nudgezone_width_wp = astype(grf_nudgezone_width, wpfloat)
     hmask_dd3d = where(
-        (e_refin_ctrl_wp > (grf_nudge_start_e_wp + grf_nudgezone_width_wp - 1.0)),
+        (e_refin_ctrl > (grf_nudge_start_e + grf_nudgezone_width - 1)),
         1.0
         / (grf_nudgezone_width_wp - 1.0)
         * (e_refin_ctrl_wp - (grf_nudge_start_e_wp + grf_nudgezone_width_wp - 1.0)),
         0.0,
     )
     hmask_dd3d = where(
-        (e_refin_ctrl_wp <= 0.0)
+        (e_refin_ctrl <= 0)
         | (e_refin_ctrl_wp >= (grf_nudge_start_e_wp + 2.0 * (grf_nudgezone_width_wp - 1.0))),
         1.0,
         hmask_dd3d,
