@@ -104,7 +104,7 @@ def test_diffusion_init(
     stretch_factor,
     damping_height,
     ndyn_substeps,
-    backend
+    backend,
 ):
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
@@ -253,7 +253,7 @@ def test_verify_diffusion_init_against_savepoint(
     stretch_factor,
     damping_height,
     ndyn_substeps,
-    backend
+    backend,
 ):
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
@@ -328,7 +328,7 @@ def test_run_diffusion_single_step(
     stretch_factor,
     damping_height,
     ndyn_substeps,
-    backend
+    backend,
 ):
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -416,7 +416,7 @@ def test_run_diffusion_initial_step(
     metrics_savepoint,
     grid_savepoint,
     icon_grid,
-    backend
+    backend,
 ):
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()

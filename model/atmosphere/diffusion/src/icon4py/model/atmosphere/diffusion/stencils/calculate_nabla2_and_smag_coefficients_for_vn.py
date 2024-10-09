@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import astype, maximum, minimum, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2V, E2ECV
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import V2E, V2EDim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 

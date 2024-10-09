@@ -349,8 +349,9 @@ class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
     def __init__(
-        self, exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
-        backend: Backend = None
+        self,
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        backend: Backend = gtx.gtfn_cpu,
     ):
         self._exchange = exchange
         self._initialized = False
@@ -374,16 +375,32 @@ class Diffusion:
         self.edge_params: Optional[geometry.EdgeParams] = None
         self.cell_params: Optional[geometry.CellParams] = None
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
-        self.mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)
-        self.calculate_nabla2_and_smag_coefficients_for_vn = calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)
-        self.calculate_diagnostic_quantities_for_turbulence = calculate_diagnostic_quantities_for_turbulence.with_backend(backend)
-        self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(backend)
-        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(backend)
-        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(backend)
-        self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(backend)
-        self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)
-        self.update_theta_and_exner = update_theta_and_exner.with_backend(backend)
 
+        self.mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(
+            backend
+        )
+        self.calculate_nabla2_and_smag_coefficients_for_vn = (
+            calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)
+        )
+        self.calculate_diagnostic_quantities_for_turbulence = (
+            calculate_diagnostic_quantities_for_turbulence.with_backend(backend)
+        )
+        self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(backend)
+        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
+            apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
+                backend
+            )
+        )
+        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
+            calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
+                backend
+            )
+        )
+        self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(backend)
+        self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
+            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)
+        )
+        self.update_theta_and_exner = update_theta_and_exner.with_backend(backend)
 
     def init(
         self,
