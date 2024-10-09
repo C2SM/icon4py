@@ -57,7 +57,7 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     return astype(z_temp_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     mask: fa.CellKField[bool],
     zd_vertoffset: Field[[dims.CECDim, dims.KDim], int32],

@@ -76,7 +76,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     return w, dwdx, dwdy
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],

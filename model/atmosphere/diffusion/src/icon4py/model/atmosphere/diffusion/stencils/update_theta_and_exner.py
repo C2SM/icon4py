@@ -31,7 +31,7 @@ def _update_theta_and_exner(
     return theta_v, exner
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def update_theta_and_exner(
     z_temp: fa.CellKField[vpfloat],
     area: fa.CellField[wpfloat],

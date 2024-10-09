@@ -33,7 +33,7 @@ def _calculate_nabla2_for_theta(
     return z_temp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_nabla2_for_theta(
     kh_smag_e: fa.EdgeKField[float],
     inv_dual_edge_length: fa.EdgeField[float],

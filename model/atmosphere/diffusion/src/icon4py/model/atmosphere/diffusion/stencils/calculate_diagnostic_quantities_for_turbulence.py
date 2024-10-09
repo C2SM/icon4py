@@ -37,7 +37,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
     return div_ic_vp, hdef_ic_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
