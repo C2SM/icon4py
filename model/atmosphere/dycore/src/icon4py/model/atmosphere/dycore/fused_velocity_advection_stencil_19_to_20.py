@@ -119,7 +119,7 @@ def fused_velocity_advection_stencil_19_to_20(
     extra_diffu: bool,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-     horizontal_start: gtx.int32,
+    horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,

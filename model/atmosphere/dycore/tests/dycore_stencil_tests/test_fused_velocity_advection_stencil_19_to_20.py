@@ -177,7 +177,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
             nrdmax=nrdmax,
             ddt_vn_apc=ddt_vn_apc,
             horizontal_start=horizontal_start,
-            horizontal_end=int32(grid.num_edges),
+            horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

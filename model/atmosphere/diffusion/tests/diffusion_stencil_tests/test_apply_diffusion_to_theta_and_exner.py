@@ -141,7 +141,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
             exner=exner,
             rd_o_cvd=rd_o_cvd,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )
