@@ -252,6 +252,7 @@ def test_verify_diffusion_init_against_savepoint(
     stretch_factor,
     damping_height,
     ndyn_substeps,
+
 ):
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
@@ -289,7 +290,7 @@ def test_verify_diffusion_init_against_savepoint(
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
-    diffusion_granule = diffusion.Diffusion()
+    diffusion_granule = diffusion.Diffusion(backend)
     diffusion_granule.init(
         icon_grid,
         config,

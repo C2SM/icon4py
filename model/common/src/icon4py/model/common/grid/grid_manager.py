@@ -186,16 +186,17 @@ class GeometryName(FieldName):
     CELL_AREA = "cell_area"  # steradian (DWD), m^2 (MPI-M)
     EDGE_LENGTH = "edge_length"  # radians (DWD), m (MPI-M) -> primal_edge_length = EdgeParams.primal_edge_lengths
     DUAL_EDGE_LENGTH = "dual_edge_length"  # radians (DWD), m (MPI-M) -> dual_edge_length = EdgeParams.dual_edge_length
-    EDGE_NORMAL_ORIENTATION = "orientation_of_normal" # p_p%cells%edge_orientation(:,:,:) 
-    CELL_AREA_P = "cell_area_p" # p_p%cells%area(:,:) =  CellParams.area might be same field as CELL_AREA in the grid file 
-    TANGENT_ORIENTATION = "edge_system_orientation" #p_p%edges%tangent_orientation(:,:) = EdgeParams.tangent_orientation
-    ZONAL_NORMAL_PRIMAL_EDGE = "zonal_normal_primal_edge" #p_p % edges % primal_normal(:,:) %v1 = EdgeParams.primal_normal_x
-    MERIDIONAL_NORMAL_PRIMAL_EDGE = "meridional_normal_primal_edge" #p_p%edges%primal_normal(:,:)%v2 = EdgeParams.primal_normal_y
-    ZONAL_NORMAL_DUAL_EDGE="zonal_normal_dual_edge" #p_p%edges%dual_normal(:,:)%v1
+    EDGE_NORMAL_ORIENTATION = "orientation_of_normal"  # p_p%cells%edge_orientation(:,:,:)
+    CELL_AREA_P = "cell_area_p"  # p_p%cells%area(:,:) =  CellParams.area might be same field as CELL_AREA in the grid file
+    TANGENT_ORIENTATION = "edge_system_orientation"  # p_p%edges%tangent_orientation(:,:) = EdgeParams.tangent_orientation
+    ZONAL_NORMAL_PRIMAL_EDGE = "zonal_normal_primal_edge"  # p_p % edges % primal_normal(:,:) %v1 = EdgeParams.primal_normal_x
+    MERIDIONAL_NORMAL_PRIMAL_EDGE = "meridional_normal_primal_edge"  # p_p%edges%primal_normal(:,:)%v2 = EdgeParams.primal_normal_y
+    ZONAL_NORMAL_DUAL_EDGE = "zonal_normal_dual_edge"  # p_p%edges%dual_normal(:,:)%v1
     MERIDIONAL_NORMAL_DUAL_EDGE = "meridional_normal_dual_edge"  # p_p%edges%dual_normal(:,:)%v2
-    EDGE_VERTEX_DISTANCE = "edge_vert_distance" #p_p%edges%edge_vert_length(:,:,1:2)
-    EDGE_CELL_CENTER_DISTANCE = "edge_cell_distance" #p_p%edges%edge_cell_length(:,:,1:2)
-    EDGE_ORIENTATION_ = "edge_orientation" # p_p%verts%edge_orientation(:,:,:)
+    EDGE_VERTEX_DISTANCE = "edge_vert_distance"  # p_p%edges%edge_vert_length(:,:,1:2)
+    EDGE_CELL_CENTER_DISTANCE = "edge_cell_distance"  # p_p%edges%edge_cell_length(:,:,1:2)
+    EDGE_ORIENTATION_ = "edge_orientation"  # p_p%verts%edge_orientation(:,:,:)
+
 
 class CoordinateName(FieldName):
     """
@@ -396,32 +397,34 @@ class GridManager:
         self._refinement = self._read_grid_refinement_fields()
         self._coordinates = self._read_coordinates()
         self._geometry = self._read_geometry_fields()
-    
-    def _read_coordinates(self):
 
+    def _read_coordinates(self):
         return {
-            dims.CellDim : {
-            "lat": self._reader.variable(CoordinateName.CELL_LATITUDE), 
-            "lon": self._reader.variable(CoordinateName.CELL_LONGITUDE)
+            dims.CellDim: {
+                "lat": self._reader.variable(CoordinateName.CELL_LATITUDE),
+                "lon": self._reader.variable(CoordinateName.CELL_LONGITUDE),
             },
-            dims.EdgeDim:{
-            "lat": self._reader.variable(CoordinateName.EDGE_LATITUDE),
-            "lon": self._reader.variable(CoordinateName.EDGE_LONGITUDE)
+            dims.EdgeDim: {
+                "lat": self._reader.variable(CoordinateName.EDGE_LATITUDE),
+                "lon": self._reader.variable(CoordinateName.EDGE_LONGITUDE),
             },
             dims.VertexDim: {
                 "lat": self._reader.variable(CoordinateName.VERTEX_LATITUDE),
-                "lon": self._reader.variable(CoordinateName.VERTEX_LONGITUDE)
-            }
+                "lon": self._reader.variable(CoordinateName.VERTEX_LONGITUDE),
+            },
         }
 
     def _read_geometry_fields(self):
         return {
-        GeometryName.EDGE_LENGTH.value:self._reader.variable(GeometryName.EDGE_LENGTH),
-        GeometryName.DUAL_EDGE_LENGTH.value: self._reader.variable(GeometryName.DUAL_EDGE_LENGTH),
-        GeometryName.CELL_AREA_P.value:self._reader.variable(GeometryName.CELL_AREA_P),
-        GeometryName.CELL_AREA.value: self._reader.variable(GeometryName.CELL_AREA),
-        GeometryName.TANGENT_ORIENTATION.value: self._reader.variable(GeometryName.TANGENT_ORIENTATION)
-            
+            GeometryName.EDGE_LENGTH.value: self._reader.variable(GeometryName.EDGE_LENGTH),
+            GeometryName.DUAL_EDGE_LENGTH.value: self._reader.variable(
+                GeometryName.DUAL_EDGE_LENGTH
+            ),
+            GeometryName.CELL_AREA_P.value: self._reader.variable(GeometryName.CELL_AREA_P),
+            GeometryName.CELL_AREA.value: self._reader.variable(GeometryName.CELL_AREA),
+            GeometryName.TANGENT_ORIENTATION.value: self._reader.variable(
+                GeometryName.TANGENT_ORIENTATION
+            ),
         }
 
     def _read_start_end_indices(
@@ -511,15 +514,15 @@ class GridManager:
         TODO (@halungge) should those be added to the IconGrid?
         """
         return self._refinement
-    
+
     @property
     def geometry(self):
         return self._geometry
-    
-    def coordinates(self, dim:gtx.Dimension):
+
+    def coordinates(self, dim: gtx.Dimension):
         return self._coordinates.get(dim)
 
-    def _construct_grid(self, on_gpu: bool, limited_area: bool) ->icon.IconGrid :
+    def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
 
         Reads connectivity fields from the grid file and constructs derived connectivities needed in

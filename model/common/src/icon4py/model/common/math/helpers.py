@@ -120,7 +120,7 @@ def _grad_fd_tang(
 def spherical_to_cartesian_on_cells(
     lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat], r: ta.wpfloat
 ) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
-    x = r * cos(lat)* cos(lon)
+    x = r * cos(lat) * cos(lon)
     y = r * cos(lat) * sin(lon)
     z = r * sin(lat)
     return x, y, z
@@ -145,17 +145,32 @@ def spherical_to_cartesian_on_vertex(
     z = r * sin(lat)
     return x, y, z
 
+@gtx.field_operator
+def dot_product(
+    x1: fa.EdgeField[ta.wpfloat],
+    x2: fa.EdgeField[ta.wpfloat],
+    y1: fa.EdgeField[ta.wpfloat],
+    y2: fa.EdgeField[ta.wpfloat],
+    z1: fa.EdgeField[ta.wpfloat],
+    z2: fa.EdgeField[ta.wpfloat],
+) -> fa.EdgeField[ta.wpfloat]:
+    return x1 * x2 + y1 * y2 + z1 * z2
+
 
 @gtx.field_operator
-def norm2(x:fa.EdgeField[ta.wpfloat], y:fa.EdgeField[ta.wpfloat], z:fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
-    return sqrt(x*x + y*y + z*z)
+def norm2(
+    x: fa.EdgeField[ta.wpfloat], y: fa.EdgeField[ta.wpfloat], z: fa.EdgeField[ta.wpfloat]
+) -> fa.EdgeField[ta.wpfloat]:
+    return sqrt(dot_product(x, x, y, y, z,z))
+
+@gtx.field_operator
+def normalize_cartesian_vector(v_x: fa.EdgeField[ta.wpfloat], v_y: fa.EdgeField[ta.wpfloat], v_z: fa.EdgeField[ta.wpfloat]
+) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    norm = norm2(v_x, v_y, v_z)
+    return v_x/norm, v_y/norm, v_z/norm
+
 
 
 @gtx.field_operator
-def dot_product(x1:fa.EdgeField[ta.wpfloat], x2:fa.EdgeField[ta.wpfloat], y1:fa.EdgeField[ta.wpfloat], y2:fa.EdgeField[ta.wpfloat], z1:fa.EdgeField[ta.wpfloat], z2:fa.EdgeField[ta.wpfloat])->fa.EdgeField[ta.wpfloat]:
-     return x1 *x2 + y1 * y2 + z1 *z2
-
-
-@gtx.field_operator
-def invert(f:fa.EdgeField[ta.wpfloat])-> fa.EdgeField[ta.wpfloat]:
+def invert(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
     return where(f != 0.0, 1.0 / f, f)
