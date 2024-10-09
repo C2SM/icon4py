@@ -11,6 +11,7 @@ from icon4py.model.common.config import Icon4PyConfig
 
 config = Icon4PyConfig()
 backend = config.gt4py_runner
+dace_orchestration = config.icon4py_dace_orchestration
 xp = config.array_ns
 device = config.device
 limited_area = config.limited_area
