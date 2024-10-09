@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, int32
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
@@ -56,10 +56,10 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
     z_theta_v_pr_ic: fa.CellKField[vpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     z_th_ddz_exner_c: fa.CellKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _compute_virtual_potential_temperatures_and_pressure_gradient(
         wgtfac_c,

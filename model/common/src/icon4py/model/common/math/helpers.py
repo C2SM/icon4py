@@ -5,8 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-from gt4py.next import Field, field_operator
+import gt4py.next as gtx
+from gt4py.next import field_operator
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2V, Koff
@@ -107,7 +107,7 @@ def grad_fd_norm(
 
 @field_operator
 def _grad_fd_tang(
-    psi_v: Field[[dims.VertexDim, dims.KDim], float],
+    psi_v: gtx.Field[gtx.Dims[dims.VertexDim, dims.KDim], float],
     inv_primal_edge_length: fa.EdgeField[float],
     tangent_orientation: fa.EdgeField[float],
 ) -> fa.EdgeKField[float]:

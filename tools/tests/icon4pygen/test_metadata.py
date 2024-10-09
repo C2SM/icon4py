@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import pytest
-from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from icon4py.model.common import dimension as dims
 
@@ -69,16 +69,17 @@ def test_provide_neighbor_table_global_true_skipvalues(chain):
 
 @field_operator
 def _add(
-    field1: Field[[dims.CellDim, dims.KDim], float], field2: Field[[dims.CellDim, dims.KDim], float]
-) -> Field[[dims.CellDim, dims.KDim], float]:
+    field1: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    field2: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+) -> gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float]:
     return field1 + field2
 
 
 @program
 def with_domain(
-    a: Field[[dims.CellDim, dims.KDim], float],
-    b: Field[[dims.CellDim, dims.KDim], float],
-    result: Field[[dims.CellDim, dims.KDim], float],
+    a: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    b: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    result: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
     horizontal_start: int,
     horizontal_end: int,
     vertical_start: int,
@@ -97,18 +98,18 @@ def with_domain(
 
 @program
 def without_domain(
-    a: Field[[dims.CellDim, dims.KDim], float],
-    b: Field[[dims.CellDim, dims.KDim], float],
-    result: Field[[dims.CellDim, dims.KDim], float],
+    a: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    b: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    result: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
 ):
     _add(a, b, out=result)
 
 
 @program
 def with_constant_domain(
-    a: Field[[dims.CellDim, dims.KDim], float],
-    b: Field[[dims.CellDim, dims.KDim], float],
-    result: Field[[dims.CellDim, dims.KDim], float],
+    a: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    b: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    result: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
 ):
     _add(a, b, out=result, domain={dims.CellDim: (0, 3), dims.KDim: (1, 8)})
 

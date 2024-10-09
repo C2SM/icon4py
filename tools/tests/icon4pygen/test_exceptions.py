@@ -6,9 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import pytest
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Dimension, Field
+from gt4py.next.ffront.fbuiltins import Dimension
 from icon4py.model.common import dimension as dims
 
 from icon4pytools.common.metadata import get_stencil_info
@@ -31,13 +32,13 @@ def test_invalid_field_in_program():
 
     @field_operator
     def bad_stencil(
-        z: Field[[ZDim], float],
-    ) -> Field[[ZDim], float]:
+        z: gtx.Field[gtx.Dims[ZDim], float],
+    ) -> gtx.Field[gtx.Dims[ZDim], float]:
         return z
 
     @program
     def bad_program(
-        z: Field[[ZDim], float],
+        z: gtx.Field[gtx.Dims[ZDim], float],
     ):
         bad_stencil(z, out=z)
 
@@ -54,13 +55,13 @@ def test_chain_from_str():
 def test_non_sparse_field_neighbors():
     @field_operator
     def bad_stencil(
-        a: Field[[dims.EdgeDim], float],
-    ) -> Field[[dims.EdgeDim], float]:
+        a: gtx.Field[gtx.Dims[dims.EdgeDim], float],
+    ) -> gtx.Field[gtx.Dims[dims.EdgeDim], float]:
         return a
 
     @program
     def bad_program(
-        a: Field[[dims.EdgeDim], float],
+        a: gtx.Field[gtx.Dims[dims.EdgeDim], float],
     ):
         bad_stencil(a, out=a)
 
@@ -73,13 +74,13 @@ def test_non_sparse_field_neighbors():
 def test_ctype_rendering_exception():
     @field_operator
     def bad_stencil(
-        a: Field[[dims.EdgeDim], float],
-    ) -> Field[[dims.EdgeDim], float]:
+        a: gtx.Field[gtx.Dims[dims.EdgeDim], float],
+    ) -> gtx.Field[gtx.Dims[dims.EdgeDim], float]:
         return a
 
     @program
     def bad_program(
-        a: Field[[dims.EdgeDim], float],
+        a: gtx.Field[gtx.Dims[dims.EdgeDim], float],
     ):
         bad_stencil(a, out=a)
 
@@ -91,11 +92,13 @@ def test_ctype_rendering_exception():
 
 def test_scalar_sid_rendering_exception():
     @field_operator
-    def bad_stencil(a: Field[[dims.EdgeDim], float], b: float) -> Field[[dims.EdgeDim], float]:
+    def bad_stencil(
+        a: gtx.Field[gtx.Dims[dims.EdgeDim], float], b: float
+    ) -> gtx.Field[gtx.Dims[dims.EdgeDim], float]:
         return a + b
 
     @program
-    def bad_program(a: Field[[dims.EdgeDim], float], b: float):
+    def bad_program(a: gtx.Field[gtx.Dims[dims.EdgeDim], float], b: float):
         bad_stencil(a, b, out=a)
 
     stencil_info = get_stencil_info(bad_program)
@@ -111,13 +114,13 @@ def test_scalar_sid_rendering_exception():
 def test_serialise_func_rendering_exception():
     @field_operator
     def bad_stencil(
-        a: Field[[dims.KDim], float],
-    ) -> Field[[dims.KDim], float]:
+        a: gtx.Field[gtx.Dims[dims.KDim], float],
+    ) -> gtx.Field[gtx.Dims[dims.KDim], float]:
         return a
 
     @program
     def bad_program(
-        a: Field[[dims.KDim], float],
+        a: gtx.Field[gtx.Dims[dims.KDim], float],
     ):
         bad_stencil(a, out=a)
 

@@ -5,11 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import as_field
-from gt4py.next.ffront.fbuiltins import int32
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
@@ -37,7 +35,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
     z_mc = zero_field(icon_grid, dims.CellDim, dims.KDim)
     z_ifc = metrics_savepoint.z_ifc()
-    k_lev = as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=int))
+    k_lev = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=int))
     z_me = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     edge_domain = h_grid.domain(dims.EdgeDim)
     horizontal_start_edge = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -45,10 +43,10 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     compute_z_mc.with_backend(backend)(
         z_ifc,
         z_mc,
-        horizontal_start=int32(0),
+        horizontal_start=gtx.int32(0),
         horizontal_end=icon_grid.num_cells,
-        vertical_start=int32(0),
-        vertical_end=int32(icon_grid.num_levels),
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
     _cell_2_edge_interpolation(
@@ -65,7 +63,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         out=flat_idx,
         domain={
             dims.EdgeDim: (horizontal_start_edge, icon_grid.num_edges),
-            dims.KDim: (int32(0), icon_grid.num_levels),
+            dims.KDim: (0, icon_grid.num_levels),
         },
         offset_provider={
             "E2C": icon_grid.get_offset_provider("E2C"),
@@ -73,7 +71,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         },
     )
     flat_idx_np = np.amax(flat_idx.asnumpy(), axis=1)
-    z_ifc_sliced = as_field((dims.CellDim,), z_ifc.asnumpy()[:, icon_grid.num_levels])
+    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, icon_grid.num_levels])
     z_aux2 = zero_field(icon_grid, dims.EdgeDim)
     _compute_z_aux2(
         z_ifc=z_ifc_sliced,
@@ -97,6 +95,6 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     zdiff_gradp_full_field = flatten_first_two_dims(
         dims.ECDim,
         dims.KDim,
-        field=as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp_full_np),
+        field=gtx.as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp_full_np),
     )
     assert dallclose(zdiff_gradp_full_field.asnumpy(), zdiff_gradp_ref.asnumpy(), rtol=1.0e-5)
