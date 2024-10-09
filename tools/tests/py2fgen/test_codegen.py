@@ -40,7 +40,7 @@ field_1d = FuncParameter(
 )
 
 simple_type = FuncParameter(
-    name="name", d_type=ScalarKind.FLOAT32, dimensions=[], py_type_hint="int32"
+    name="name", d_type=ScalarKind.FLOAT32, dimensions=[], py_type_hint="gtx.int32"
 )
 
 
@@ -54,7 +54,7 @@ def test_as_target(param, expected):
 foo = Func(
     name="foo",
     args=[
-        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
+        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="gtx.int32"),
         FuncParameter(
             name="two",
             d_type=ScalarKind.FLOAT64,
@@ -77,7 +77,7 @@ bar = Func(
             ],
             py_type_hint="Field[dims.CellDim, dims.KDim], float64]",
         ),
-        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
+        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="gtx.int32"),
     ],
     is_gt4py_program=False,
 )
