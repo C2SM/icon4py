@@ -15,7 +15,7 @@ from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import helpers
 
-from .utils import construct_config, diff_multfac_vn_numpy, smag_limit_numpy
+from .utils import construct_diffusion_config, diff_multfac_vn_numpy, smag_limit_numpy
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
@@ -106,10 +106,10 @@ def test_init_zero_vertex_k(backend):
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    diffusion_savepoint_init, experiment, icon_grid, linit, ndyn_substeps
+    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps
 ):
-    savepoint = diffusion_savepoint_init
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    savepoint = savepoint_diffusion_init
+    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
 
     params = diffusion.DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()

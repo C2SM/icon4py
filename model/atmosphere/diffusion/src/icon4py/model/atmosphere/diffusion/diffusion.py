@@ -411,13 +411,20 @@ class Diffusion:
             offset_provider={"Koff": dims.KDim},
         )
 
-        # TODO (magdalena) port to gt4py?
-        self.diff_multfac_n2w = diffusion_utils.init_nabla2_factor_in_upper_damping_zone(
-            k_size=self.grid.num_levels,
-            nshift=0,
+        diffusion_utils._init_nabla2_factor_in_upper_damping_zone(
             physical_heights=self.vertical_grid.interface_physical_height,
+            k_field=self.vertical_index,
             nrdmax=self.vertical_grid.end_index_of_damping_layer,
+            nshift=0,
+            heights_nrd_shift=self.vertical_grid.interface_physical_height.ndarray[
+                self.vertical_grid.end_index_of_damping_layer + 1
+            ].item(),
+            heights_1=self.vertical_grid.interface_physical_height.ndarray[1].item(),
+            domain={dims.KDim: (1, self.vertical_grid.end_index_of_damping_layer + 1)},
+            out=self.diff_multfac_n2w,
+            offset_provider={},
         )
+
         self._determine_horizontal_domains()
 
         self._initialized = True
@@ -428,7 +435,7 @@ class Diffusion:
 
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-
+        self.diff_multfac_n2w = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
         self.smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
         self.enh_smag_fac = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
         self.u_vert = field_alloc.allocate_zero_field(dims.VertexDim, dims.KDim, grid=self.grid)

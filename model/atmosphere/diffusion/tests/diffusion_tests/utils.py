@@ -7,13 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
-import omegaconf
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import (
-    datatest_utils as dt_utils,
     helpers,
     serialbox_utils as sb,
 )
@@ -68,12 +66,9 @@ def r04b09_diffusion_config(
     )
 
 
-def construct_config(name: str, ndyn_substeps: int = 5):
+def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
     if name.lower() in "mch_ch_r04b09_dsl":
-        file = dt_utils.get_test_data_root_path().joinpath("config").joinpath(name.lower()).joinpath("diffusion.yaml")
-        
-        return omegaconf.OmegaConf.load(file)
-        #return r04b09_diffusion_config(ndyn_substeps)
+        return r04b09_diffusion_config(ndyn_substeps)
     elif name.lower() in "exclaim_ape_r02b04":
         return exclaim_ape_diffusion_config(ndyn_substeps)
 
@@ -96,7 +91,6 @@ def verify_diffusion_fields(
     validate_diagnostics = (
         config.shear_type != diffusion.TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND
     )
-
     if validate_diagnostics:
         ref_div_ic = diffusion_savepoint.div_ic().asnumpy()
         val_div_ic = diagnostic_state.div_ic.asnumpy()

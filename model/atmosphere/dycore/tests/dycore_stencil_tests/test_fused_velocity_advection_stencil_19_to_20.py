@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_19_to_20 i
     fused_velocity_advection_stencil_19_to_20,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -62,8 +62,10 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         extra_diffu,
         nlev,
         nrdmax,
+        ddt_vn_apc,
         **kwargs,
     ):
+        ddt_vn_apc_cp = ddt_vn_apc.copy()
         zeta = mo_math_divrot_rot_vertex_ri_dsl_numpy(grid, vn, geofac_rot)
 
         coeff_gradekin = np.reshape(coeff_gradekin, (grid.num_edges, 2))
@@ -103,16 +105,16 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         )
 
         ddt_vn_apc = np.where(condition & extra_diffu, ddt_vn_apc_extra_diffu, ddt_vn_apc)
+        # restriction of execution domain
+        ddt_vn_apc[0 : kwargs["horizontal_start"], :] = ddt_vn_apc_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        ddt_vn_apc[kwargs["horizontal_end"] :, :] = ddt_vn_apc_cp[kwargs["horizontal_end"] :, :]
 
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
     def input_data(self, grid):
-        if isinstance(grid, IconGrid) and grid.limited_area:
-            pytest.xfail(
-                "Execution domain needs to be restricted or boundary taken into account in stencil."
-            )
-
         z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
         coeff_gradekin = random_field(grid, dims.EdgeDim, dims.E2CDim)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, dims.ECDim)
@@ -143,6 +145,12 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
         nrdmax = 5
         extra_diffu = True
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        horizontal_start = (
+            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+            if hasattr(grid, "start_index")
+            else 0
+        )
 
         return dict(
             vn=vn,
@@ -169,4 +177,8 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
             nlev=nlev,
             nrdmax=nrdmax,
             ddt_vn_apc=ddt_vn_apc,
+            horizontal_start=horizontal_start,
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=int32(grid.num_levels),
         )
