@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_19_to_20 import (
     fused_velocity_advection_stencil_19_to_20,
@@ -137,7 +136,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        k = zero_field(grid, dims.KDim, dtype=int32)
+        k = zero_field(grid, dims.KDim, dtype=gtx.int32)
         nlev = grid.num_levels
 
         for level in range(nlev):
@@ -178,7 +177,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
             nrdmax=nrdmax,
             ddt_vn_apc=ddt_vn_apc,
             horizontal_start=horizontal_start,
-            horizontal_end=int32(grid.num_edges),
+            horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )
