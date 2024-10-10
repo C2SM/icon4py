@@ -16,7 +16,7 @@ from typing import Final
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import builder
 
@@ -36,6 +36,7 @@ class GlobalGridParams:
     root: int
     level: int
     geometry_type: Final[GeometryType] = GeometryType.SPHERE
+    length = constants.EARTH_RADIUS
 
 
     @functools.cached_property
@@ -62,7 +63,7 @@ class IconGrid(base.BaseGrid):
         self._id = id_
         self._start_indices = {}
         self._end_indices = {}
-        self.global_properties = None
+        self.global_properties:GlobalGridParams = None
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
             "E2C": (self._get_offset_provider, dims.E2CDim, dims.EdgeDim, dims.CellDim),
