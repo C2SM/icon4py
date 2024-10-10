@@ -192,7 +192,7 @@ class IconGrid(base.BaseGrid):
     def lvert_nest(self):
         return True if self.config.lvertnest else False
 
-    def start_index(self, domain: h_grid.Domain):
+    def start_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
         Use to specify lower end of domains of a field for field_operators.
 
@@ -201,10 +201,11 @@ class IconGrid(base.BaseGrid):
         """
         if domain.local:
             # special treatment because this value is not set properly in the underlying data.
-            return 0
-        return self._start_indices[domain.dim][domain()].item()
+            return gtx.int32(0)
+        # ndarray.item() does not respect the dtype of the array, returns a copy of the value _as the default python type_
+        return gtx.int32(self._start_indices[domain.dim][domain()])
 
-    def end_index(self, domain: h_grid.Domain):
+    def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
         Use to specify upper end of domains of a field for field_operators.
 
@@ -213,5 +214,6 @@ class IconGrid(base.BaseGrid):
         """
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
-            return self.size[domain.dim]
-        return self._end_indices[domain.dim][domain()].item()
+            return gtx.int32(self.size[domain.dim])
+        # ndarray.item() does not respect the dtype of the array, returns a copy of the value _as the default python builtin type_
+        return gtx.int32(self._end_indices[domain.dim][domain()].item())
