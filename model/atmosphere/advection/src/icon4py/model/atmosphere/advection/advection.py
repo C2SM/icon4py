@@ -17,9 +17,8 @@ from icon4py.model.atmosphere.advection import (
     advection_vertical,
 )
 from icon4py.model.atmosphere.advection.stencils import (
-    apply_horizontal_density_increment,
+    apply_density_increment,
     apply_interpolated_tracer_time_tendency,
-    apply_vertical_density_increment,
     copy_cell_kdim_field,
 )
 from icon4py.model.common import (
@@ -243,25 +242,30 @@ class GodunovSplittingAdvection(Advection):
         self._exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
-        # Godunov splitting
-        if self._even_timestep:  # even timestep, vertical transport precedes horizontal transport
-            # reintegrate density with vertical increment for conservation of mass
-            log.debug("running stencil apply_vertical_density_increment - start")
-            apply_vertical_density_increment.apply_vertical_density_increment(
-                rhodz_ast=diagnostic_state.airmass_now,
-                p_mflx_contra_v=prep_adv.mass_flx_ic,
-                deepatmo_divzl=self._metric_state.deepatmo_divzl,
-                deepatmo_divzu=self._metric_state.deepatmo_divzu,
-                p_dtime=dtime,
-                rhodz_ast2=self._rhodz_ast2,
-                horizontal_start=self._start_cell_lateral_boundary_level_2,
-                horizontal_end=self._end_cell_end,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.offset_providers,
-            )
-            log.debug("running stencil apply_vertical_density_increment - end")
+        # reintegrate density for conservation of mass
+        log.debug("running stencil apply_density_increment - start")
+        apply_density_increment.apply_density_increment(
+            rhodz_in=diagnostic_state.airmass_now
+            if self._even_timestep
+            else diagnostic_state.airmass_new,
+            p_mflx_contra_v=prep_adv.mass_flx_ic,
+            deepatmo_divzl=self._metric_state.deepatmo_divzl,
+            deepatmo_divzu=self._metric_state.deepatmo_divzu,
+            p_dtime=dtime,
+            even_timestep=self._even_timestep,
+            rhodz_out=self._rhodz_ast2,
+            horizontal_start=self._start_cell_lateral_boundary_level_2
+            if self._even_timestep
+            else self._start_cell_lateral_boundary_level_3,
+            horizontal_end=self._end_cell_end,
+            vertical_start=0,
+            vertical_end=self._grid.num_levels,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil apply_density_increment - end")
 
+        # Godunov splitting
+        if self._even_timestep:
             # vertical transport
             self._vertical_advection.run(
                 prep_adv=prep_adv,
@@ -285,24 +289,7 @@ class GodunovSplittingAdvection(Advection):
                 dtime=dtime,
             )
 
-        else:  # odd timestep, horizontal transport precedes vertical transport
-            # reintegrate density with horizontal increment for conservation of mass
-            log.debug("running stencil apply_horizontal_density_increment - start")
-            apply_horizontal_density_increment.apply_horizontal_density_increment(
-                p_rhodz_new=diagnostic_state.airmass_new,
-                p_mflx_contra_v=prep_adv.mass_flx_ic,
-                deepatmo_divzl=self._metric_state.deepatmo_divzl,
-                deepatmo_divzu=self._metric_state.deepatmo_divzu,
-                p_dtime=dtime,
-                rhodz_ast2=self._rhodz_ast2,
-                horizontal_start=self._start_cell_lateral_boundary_level_3,
-                horizontal_end=self._end_cell_end,
-                vertical_start=0,
-                vertical_end=self._grid.num_levels,
-                offset_provider=self._grid.offset_providers,
-            )
-            log.debug("running stencil apply_horizontal_density_increment - end")
-
+        else:
             # horizontal transport
             self._horizontal_advection.run(
                 prep_adv=prep_adv,
