@@ -401,6 +401,13 @@ class Diffusion:
             truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)
         )
         self.update_theta_and_exner = update_theta_and_exner.with_backend(backend)
+        self.copy_field = copy_field.with_backend(backend)
+        self.scale_k = scale_k.with_backend(backend)
+        self.setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(backend)
+
+        self.init_diffusion_local_fields_for_regular_timestep = (
+            init_diffusion_local_fields_for_regular_timestep.with_backend(backend)
+        )
 
     def init(
         self,
@@ -450,7 +457,7 @@ class Diffusion:
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
 
-        init_diffusion_local_fields_for_regular_timestep.with_backend(backend)(
+        self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
             config.substep_as_float,
             *params.smagorinski_factor,
@@ -591,7 +598,7 @@ class Diffusion:
         )
         smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid, backend=backend)
 
-        setup_fields_for_initial_step(
+        self.setup_fields_for_initial_step(
             self.params.K4,
             self.config.hdiff_efdt_ratio,
             diff_multfac_vn,
@@ -599,7 +606,7 @@ class Diffusion:
             offset_provider={},
         )
         self._do_diffusion_step(
-            diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, 0.0, backend
+            diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, 0.0
         )
         self._sync_cell_fields(prognostic_state)
 
@@ -608,7 +615,6 @@ class Diffusion:
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
-        backend: Backend = gtx.gtfn_cpu,
     ):
         """
         Do one diffusion step within regular time loop.
@@ -623,7 +629,6 @@ class Diffusion:
             diff_multfac_vn=self.diff_multfac_vn,
             smag_limit=self.smag_limit,
             smag_offset=self.smag_offset,
-            backend=backend,
         )
 
     def _sync_cell_fields(self, prognostic_state):
@@ -650,7 +655,6 @@ class Diffusion:
         diff_multfac_vn: fa.KField[float],
         smag_limit: fa.KField[float],
         smag_offset: float,
-        backend: Backend,
     ):
         """
         Run a diffusion step.
@@ -666,9 +670,7 @@ class Diffusion:
         """
         num_levels = self.grid.num_levels
         # dtime dependent: enh_smag_factor,
-        scale_k.with_backend(backend)(
-            self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
-        )
+        self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
@@ -801,7 +803,7 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
+        self.copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self.cell_params.area,

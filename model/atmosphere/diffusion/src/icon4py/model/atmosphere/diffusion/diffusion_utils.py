@@ -77,7 +77,7 @@ def _setup_fields_for_initial_step(
     return diff_multfac_vn, smag_limit
 
 
-@gtx.program(backend=backend)
+@gtx.program
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
