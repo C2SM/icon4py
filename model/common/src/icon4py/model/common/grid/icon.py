@@ -7,9 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import enum
 import functools
 import logging
 import uuid
+from typing import Final
 
 import gt4py.next as gtx
 import numpy as np
@@ -21,16 +23,37 @@ from icon4py.model.common.utils import builder
 
 log = logging.getLogger(__name__)
 
+class GeometryType(enum.Enum):
+    """Define geometries of the horizontal domain supported by the ICON grid.
+
+    Values are the same as mo_grid_geometry_info.f90.
+    """
+    SPHERE = 1
+    TORUS = 2
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
     root: int
     level: int
+    geometry_type: Final[GeometryType] = GeometryType.SPHERE
+
 
     @functools.cached_property
     def num_cells(self):
-        return 20.0 * self.root**2 * 4.0**self.level
+        match(self.geometry_type):
+            case GeometryType.SPHERE:
+                return compute_icosahedron_num_cells(self.root, self.level)
+            case GeometryType.TORUS:
+                return compute_torus_num_cells(1000, 1000)
+            case _:
+                NotImplementedError(f"Unknown gemoetry type {self.geometry_type}")
 
+def compute_icosahedron_num_cells(root:int, level:int):
+    return 20.0 * root ** 2 * 4.0 ** level
+
+def compute_torus_num_cells(x:int, y:int):
+    # TODO (halungge) fix this
+    raise NotImplementedError("TODO : lookup torus cell number computation")
 
 class IconGrid(base.BaseGrid):
     def __init__(self, id_: uuid.UUID):

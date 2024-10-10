@@ -401,16 +401,16 @@ class GridManager:
     def _read_coordinates(self):
         return {
             dims.CellDim: {
-                "lat": self._reader.variable(CoordinateName.CELL_LATITUDE),
-                "lon": self._reader.variable(CoordinateName.CELL_LONGITUDE),
+                "lat": gtx.as_field((dims.CellDim,), self._reader.variable(CoordinateName.CELL_LATITUDE), dtype=float),
+                "lon": gtx.as_field((dims.CellDim, ),self._reader.variable(CoordinateName.CELL_LONGITUDE), dtype=float),
             },
             dims.EdgeDim: {
-                "lat": self._reader.variable(CoordinateName.EDGE_LATITUDE),
-                "lon": self._reader.variable(CoordinateName.EDGE_LONGITUDE),
+                "lat": gtx.as_field((dims.EdgeDim,),self._reader.variable(CoordinateName.EDGE_LATITUDE)),
+                "lon": gtx.as_field((dims.EdgeDim,),self._reader.variable(CoordinateName.EDGE_LONGITUDE)),
             },
             dims.VertexDim: {
-                "lat": self._reader.variable(CoordinateName.VERTEX_LATITUDE),
-                "lon": self._reader.variable(CoordinateName.VERTEX_LONGITUDE),
+                "lat": gtx.as_field((dims.VertexDim,),self._reader.variable(CoordinateName.VERTEX_LATITUDE), dtype=float),
+                "lon": gtx.as_field((dims.VertexDim,),self._reader.variable(CoordinateName.VERTEX_LONGITUDE), dtype=float),
             },
         }
 
@@ -519,7 +519,7 @@ class GridManager:
     def geometry(self):
         return self._geometry
 
-    def coordinates(self, dim: gtx.Dimension):
+    def coordinates(self, dim: gtx.Dimension) -> dict[str, gtx.Field]:
         return self._coordinates.get(dim)
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:

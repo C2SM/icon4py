@@ -10,7 +10,7 @@ import functools
 import math
 
 from gt4py import next as gtx
-from gt4py.next import GridType
+from gt4py.next import backend
 from gt4py.next.ffront.fbuiltins import arccos, cos, neighbor_sum, sin, sqrt, where
 
 from icon4py.model.common import (
@@ -20,6 +20,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, E2CDim, E2VDim, EdgeDim
+from icon4py.model.common.grid import icon
 from icon4py.model.common.math.helpers import (
     dot_product,
     norm2,
@@ -27,6 +28,7 @@ from icon4py.model.common.math.helpers import (
     spherical_to_cartesian_on_cells,
     spherical_to_cartesian_on_vertex,
 )
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -330,7 +332,7 @@ def edge_normals():
     """
 
 
-@gtx.field_operator(grid_type=GridType.UNSTRUCTURED)
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_components_on_cells(
     lat: fa.CellField[ta.wpfloat],
     lon: fa.CellField[ta.wpfloat],
@@ -368,7 +370,7 @@ def compute_zonal_and_meridional_components_on_edges(
     return u / norm, v / norm
 
 
-@gtx.field_operator(grid_type=GridType.UNSTRUCTURED)
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def primal_normals(
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
@@ -427,8 +429,8 @@ def dual_edge_length(
     y1 = y(E2C[1])
     z0 = z(E2C[0])
     z1 = z(E2C[1])
-    norms = norm2(x0, y0, z0) * norm2(x1, y1, z1)
-    prod = dot_product(x0, x1, y0, y1, z0, z1) / norms
+    # norms = norm2(x0, y0, z0) * norm2(x1, y1, z1) # == 1 by construction
+    prod = dot_product(x0, x1, y0, y1, z0, z1) #/ norms
     arc = radius * arccos(prod)
     return arc, tendon
 
@@ -513,7 +515,12 @@ def coriolis_parameter_on_edges(
     return 2.0 * angular_velocity * sin(edge_center_lat)
 
 
+class GridGeometry(state_utils.FieldSource):
 
+    def __init__(self, grid:icon.IconGrid, backend:backend.Backend):
+        self._backend = backend
+        self._grid = grid
+        self._geometry_type:icon.GeometryType = grid.global_properties.geometry_type
 
-    
-    
+    def get(self, field_mame:str, type:state_utils.RetrievalType):
+        return 0

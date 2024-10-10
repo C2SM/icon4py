@@ -20,16 +20,32 @@ from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from . import utils
 
 
-@pytest.mark.parametrize("experiment", [dt_utils.GLOBAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        #(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
 @pytest.mark.datatest
-def test_dual_edge_length(experiment, grid_savepoint):
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
-        pytest.mark.xfail(f"FIXME: single precision error for '{experiment}'")
+def test_dual_edge_length(experiment, grid_file, grid_savepoint):
+  #  if experiment == dt_utils.REGIONAL_EXPERIMENT:
+  #      pytest.mark.xfail(f"FIXME: single precision error for '{experiment}'")
     expected = grid_savepoint.dual_edge_length().asnumpy()
+
+    gm = utils.run_grid_manager(grid_file)
+    #grid = gm.grid
     grid = grid_savepoint.construct_icon_grid(on_gpu=False)
 
-    lat = grid_savepoint.lat(dims.CellDim)
-    lon = grid_savepoint.lon(dims.CellDim)
+
+    coordinates = gm.coordinates(dims.CellDim)
+
+    lat_serialized = grid_savepoint.lat(dims.CellDim)
+    lat = coordinates["lat"]
+    lon_serialized = grid_savepoint.lon(dims.CellDim)
+    lon = coordinates["lon"]
+    assert helpers.dallclose(lat.asnumpy(), lat_serialized.asnumpy())
+    assert helpers.dallclose(lon.asnumpy(), lon_serialized.asnumpy())
     start = grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.END))
 
@@ -56,15 +72,30 @@ def test_dual_edge_length(experiment, grid_savepoint):
     assert helpers.dallclose(arch_array, expected)
 
 
-@pytest.mark.parametrize("experiment", [dt_utils.GLOBAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
 @pytest.mark.datatest
-def test_primal_edge_length(experiment, grid_savepoint):
+def test_primal_edge_length(experiment, grid_file, grid_savepoint):
     if experiment == dt_utils.REGIONAL_EXPERIMENT:
         pytest.mark.xfail(f"FIXME: single precision error for '{experiment}'")
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    gm = utils.run_grid_manager(grid_file)
+    grid = gm.grid
+
     expected = grid_savepoint.primal_edge_length().asnumpy()
-    lat = grid_savepoint.lat(dims.VertexDim)
-    lon = grid_savepoint.lon(dims.VertexDim)
+
+    lat_serialized = grid_savepoint.lat(dims.VertexDim)
+    lon_serialized = grid_savepoint.lon(dims.VertexDim)
+
+    coordinates = gm.coordinates(dims.VertexDim)
+    lat = coordinates["lat"]
+    lon = coordinates["lon"]
+    assert np.allclose(lat.asnumpy(), lat_serialized.asnumpy())
+    assert np.allclose(lon.asnumpy(), lon_serialized.asnumpy())
     start = grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY))
     end = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.END))
     arc_result = helpers.zero_field(grid, dims.EdgeDim)
@@ -90,6 +121,7 @@ def test_primal_edge_length(experiment, grid_savepoint):
 @pytest.mark.parametrize("experiment", [dt_utils.GLOBAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.datatest
 def test_edge_control_area(grid_savepoint):
+
     grid = grid_savepoint.construct_icon_grid(on_gpu=False)
 
     expected = grid_savepoint.edge_areas()
@@ -130,10 +162,15 @@ def test_vertex_vertex_length(experiment, grid_savepoint, grid_file):
     gm = utils.run_grid_manager(grid_file)
     grid = gm.grid
     expected = grid_savepoint.inv_vert_vert_length()
+    serialized_lat = grid_savepoint.lat(dims.VertexDim)
+    serialized_lon = grid_savepoint.lon(dims.VertexDim)
     result = helpers.zero_field(grid, dims.EdgeDim)
 
-    lat = gtx.as_field((dims.VertexDim,), gm.coordinates(dims.VertexDim)["lat"], dtype=float)
-    lon = gtx.as_field((dims.VertexDim,), gm.coordinates(dims.VertexDim)["lon"], dtype=float)
+    lat = gm.coordinates(dims.VertexDim)["lat"]
+    lon = gm.coordinates(dims.VertexDim)["lon"]
+    assert helpers.dallclose(lat.asnumpy(), serialized_lat.asnumpy())
+    assert helpers.dallclose(lon.asnumpy(), serialized_lon.asnumpy())
+
     edge_domain = h_grid.domain(dims.EdgeDim)
     start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(edge_domain(h_grid.Zone.END))

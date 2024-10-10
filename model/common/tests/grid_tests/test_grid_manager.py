@@ -408,7 +408,7 @@ def test_grid_manager_eval_e2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     grid = run_grid_manager(grid_file).grid
 
-    serialized_e2v = grid_savepoint.e2v()[0 : grid.num_edges, :]
+    serialized_e2v = grid_savepoint.e2v()
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
     assert not has_invalid_index(serialized_e2v)

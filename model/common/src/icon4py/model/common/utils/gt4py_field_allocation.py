@@ -23,3 +23,4 @@ def allocate_zero_field(*dims: gtx.Dimension, grid, is_halfdim=False, dtype=ta.w
 def allocate_indices(dim: gtx.Dimension, grid, is_halfdim=False, dtype=gtx.int32):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype))
+
