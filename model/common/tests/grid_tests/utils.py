@@ -51,6 +51,9 @@ def resolve_file_from_gridfile_name(name: str) -> Path:
                 r02b04_global_data_file,
             )
         return gridfile
+    elif name == "0055_R02B05":
+        gridfile =  GRIDS_PATH.joinpath("/LAM_DWD/icon_grid_0055_R02B05_N.nc")
+        return gridfile
     else:
         raise ValueError(f"invalid name: use one of {R02B04_GLOBAL, REGIONAL_EXPERIMENT}")
 

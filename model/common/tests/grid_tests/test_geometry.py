@@ -153,35 +153,36 @@ def test_coriolis_parameter(grid_savepoint, icon_grid):
     ],
 )
 @pytest.mark.datatest
-def test_vertex_vertex_length(experiment, grid_savepoint, grid_file):
+def test_edge_arc_lengths(experiment, grid_savepoint, grid_file):
     if experiment == dt_utils.REGIONAL_EXPERIMENT:
         pytest.mark.xfail(f"FIXME: single precision error for '{experiment}'")
     gm = utils.run_grid_manager(grid_file)
     grid = gm.grid
-    expected = grid_savepoint.inv_vert_vert_length()
-    serialized_lat = grid_savepoint.lat(dims.VertexDim)
-    serialized_lon = grid_savepoint.lon(dims.VertexDim)
-    result = helpers.zero_field(grid, dims.EdgeDim)
+    inv_vert_vert_length = grid_savepoint.inv_vert_vert_length()
+    expected_vert_vert_length = helpers.zero_field(grid, dims.EdgeDim)
+    math_helpers.invert(inv_vert_vert_length, offset_provider={}, out=expected_vert_vert_length)
+    expected_edge_length = grid_savepoint.primal_edge_length()
+
+    vertex_vertex_length = helpers.zero_field(grid, dims.EdgeDim)
+    edge_length = helpers.zero_field(grid, dims.EdgeDim)
 
     lat = gm.coordinates(dims.VertexDim)["lat"]
     lon = gm.coordinates(dims.VertexDim)["lon"]
-    assert helpers.dallclose(lat.asnumpy(), serialized_lat.asnumpy())
-    assert helpers.dallclose(lon.asnumpy(), serialized_lon.asnumpy())
-
+    
     edge_domain = h_grid.domain(dims.EdgeDim)
     start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(edge_domain(h_grid.Zone.END))
-    geometry.vertex_vertex_length(
+    geometry.edge_arc_lengths(
         lat,
         lon,
         constants.EARTH_RADIUS,
-        out=result,
+        out=(edge_length, vertex_vertex_length),
         offset_provider={"E2C2V": grid.get_offset_provider("E2C2V")},
         domain={dims.EdgeDim: (start, end)},
     )
-    math_helpers.invert(result, offset_provider={}, out=result)
-
-    assert helpers.dallclose(expected.asnumpy(), result.asnumpy())
+    
+    assert helpers.dallclose(edge_length.asnumpy(), expected_edge_length.asnumpy())
+    assert helpers.dallclose( vertex_vertex_length.asnumpy(), expected_vert_vert_length.asnumpy())
 
 
 @pytest.mark.datatest

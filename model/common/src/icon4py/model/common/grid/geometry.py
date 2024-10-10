@@ -8,6 +8,7 @@
 import dataclasses
 import functools
 import math
+from typing import Literal
 
 from gt4py import next as gtx
 from gt4py.next import backend
@@ -20,7 +21,8 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, E2CDim, E2VDim, EdgeDim
-from icon4py.model.common.grid import icon
+from icon4py.model.common.grid import horizontal as h_grid, icon
+from icon4py.model.common.grid.geometry_attributes import attrs
 from icon4py.model.common.math.helpers import (
     dot_product,
     norm2,
@@ -409,12 +411,17 @@ def primal_normals(
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def dual_edge_length(
+def cell_center_distance(
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
     subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat],
     radius: ta.wpfloat,
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    """ Compute the length of dual edge.
+
+    Distance between the cell center of edge adjacent cells. This is a edge of the dual grid and is
+    orthogonal to the edge. dual_edge_length in ICON.
+    """
     x, y, z = spherical_to_cartesian_on_cells(cell_lat, cell_lon, wpfloat(1.0))
 
     # that is the "Bogensehne"
@@ -450,51 +457,53 @@ def edge_primal_normal(
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def primal_edge_length(
+def edge_arc_lengths(
+    vertex_lat: fa.VertexField[ta.wpfloat],
+    vertex_lon: fa.VertexField[ta.wpfloat],
+    radius: ta.wpfloat,
+) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    """Computes the length of a spherical edges
+        - the direct edge length (primal_edge_length in ICON)ü
+        - the length of the arc between the two far vertices in the diamond E2C2V (vertex_vertex_length in ICON)
+    """
+    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
+
+    x0 = x(E2C2V[0])
+    x1 = x(E2C2V[1])
+    y0 = y(E2C2V[0])
+    y1 = y(E2C2V[1])
+    z0 = z(E2C2V[0])
+    z1 = z(E2C2V[1])
+    x2 = x(E2C2V[2])
+    x3 = x(E2C2V[3])
+    y2 = y(E2C2V[2])
+    y3 = y(E2C2V[3])
+    z2 = z(E2C2V[2])
+    z3 = z(E2C2V[3])
+    #norms: = norm2(x2, y2, z2) etc are 1 by construction
+
+    edge_length = radius * arccos(dot_product(x0, x1, y0, y1, z0, z1))
+    far_vertex_vertex_length = radius * arccos(dot_product(x2, x3, y2, y3, z2, z3))
+    return edge_length, far_vertex_vertex_length
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def tendon_vertex_to_vertex_length(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat],
     radius: ta.wpfloat,
-) -> tuple[fa.EdgeField[ta.wpfloat],fa.EdgeField[ta.wpfloat] ]:
+) -> fa.EdgeField[ta.wpfloat]:
+    """Compute the direct length between two vertices (tendon on a spherical edge)"""
     x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
     dx = neighbor_sum(subtract_coeff * x(E2V), axis=E2VDim)
     dy = neighbor_sum(subtract_coeff * y(E2V), axis=E2VDim)
     dz = neighbor_sum(subtract_coeff * z(E2V), axis=E2VDim)
 
     # length of tenddon:
-    tendon = radius * norm2(dx, dy, dz)
-    # arc length
-    x0 = x(E2V[0])
-    x1 = x(E2V[1])
+    return radius * norm2(dx, dy, dz)
+    
 
-    y0 = y(E2V[0])
-    y1 = y(E2V[1])
-    z0 = z(E2V[0])
-    z1 = z(E2V[1])
-
-    #norms = norm2(x0, y0, z0) * norm2(x1, y1, z1) # norm is 1 by constructions
-    prod = dot_product(x0, x1, y0, y1, z0, z1)
-    arc = radius * arccos(prod)
-    return arc, tendon
-
-
-@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def vertex_vertex_length(
-    vertex_lat: fa.VertexField[fa.wpfloat],
-    vertex_lon: fa.VertexField[ta.wpfloat],
-    radius: ta.wpfloat,
-) -> fa.EdgeField[ta.wpfloat]:
-    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
-    x1 = x(E2C2V[2])
-    x2 = x(E2C2V[3])
-    y1 = y(E2C2V[2])
-    y2 = y(E2C2V[3])
-    z1 = z(E2C2V[2])
-    z2 = z(E2C2V[3])
-    norm = norm2(x1, y1, z1) * norm2(x2, y2, z2)
-
-    alpha = dot_product(x1, x2, y1, y2, z1, z2) / norm
-    return radius * arccos(alpha)
 
 
 @gtx.field_operator
@@ -517,10 +526,36 @@ def coriolis_parameter_on_edges(
 
 class GridGeometry(state_utils.FieldSource):
 
-    def __init__(self, grid:icon.IconGrid, backend:backend.Backend):
+    def __init__(self, grid:icon.IconGrid, backend:backend.Backend, coordinates:dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]]):
         self._backend = backend
         self._grid = grid
         self._geometry_type:icon.GeometryType = grid.global_properties.geometry_type
+        self.fields = {
+            attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
+            attrs.CELL_LON:coordinates[dims.CellDim]["lon"],
+            attrs.VERTEX_LAT: coordinates[dims.CellDim]["lat"],
+            attrs.EDGE_LON: coordinates[dims.EdgeDim]["lon"],
+            attrs.EDGE_LAT: coordinates[dims.EdgeDim]["lat"],
+            attrs.VERTEX_LON: coordinates[dims.CellDim]["lon"],
+        }
 
-    def get(self, field_mame:str, type:state_utils.RetrievalType):
-        return 0
+    def __call__(self):
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        lateral_boundary_edge = edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+        local_edge = edge_domain(h_grid.Zone.LOCAL)
+        start_lateral_bounday_level_2 = self._grid.start_index(lateral_boundary_edge)
+        end_local = self._grid.end_index(local_edge)
+
+        edge_arc_lengths(self.fields[attrs.VERTEX_LAT], self.fields[attrs.VERTEX_LON], self._grid.global_properties.length, out=(),
+                         domain={dims.EdgeDim: (start_lateral_bounday_level_2, end_local)} )
+
+
+    def get(self, field_name: str, type_: state_utils.RetrievalType = state_utils.RetrievalType.FIELD):
+
+        match(type_):
+            case state_utils.RetrievalType.FIELD:
+                return self.fields[field_name]
+
+            case _:
+                raise NotImplementedError("not yet implemented")
+
