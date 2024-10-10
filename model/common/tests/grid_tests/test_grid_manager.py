@@ -577,6 +577,7 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file):
     serialized_ref = grid_savepoint.e2c2v()
     table = grid.get_offset_provider("E2C2V").table
     assert_unless_invalid(table, serialized_ref)
+    assert np.allclose(table[:, :2], grid.get_offset_provider("E2V").table)
 
 
 @pytest.mark.datatest
@@ -742,3 +743,5 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim):
     lon = gm.coordinates(dim)["lon"]
     assert helpers.dallclose(lat, grid_savepoint.lat(dim).asnumpy())
     assert helpers.dallclose(lon, grid_savepoint.lon(dim).asnumpy())
+
+
