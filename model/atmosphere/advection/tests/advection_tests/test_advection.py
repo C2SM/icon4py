@@ -92,9 +92,9 @@ def test_advection_run_single_step(
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
 
-    advection_granule = advection.Advection(
-        grid=icon_grid,
+    advection_granule = advection.convert_config_to_advection(
         config=config,
+        grid=icon_grid,
         interpolation_state=interpolation_state,
         least_squares_state=least_squares_state,
         metric_state=metric_state,
