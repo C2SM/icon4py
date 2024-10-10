@@ -792,70 +792,36 @@ class AdvectionInitSavepoint(IconSavepoint):
         return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
 
     def grf_tend_tracer(self, ntracer: int):
-        if ntracer == 1:
-            return self._get_field("grf_tend_tracer_1", dims.CellDim, dims.KDim)
-        if ntracer == 2:
-            return self._get_field("grf_tend_tracer_2", dims.CellDim, dims.KDim)
-        if ntracer == 3:
-            return self._get_field("grf_tend_tracer_3", dims.CellDim, dims.KDim)
-        if ntracer == 4:
-            return self._get_field("grf_tend_tracer_4", dims.CellDim, dims.KDim)
-        if ntracer == 5:
-            return self._get_field("grf_tend_tracer_5", dims.CellDim, dims.KDim)
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"grf_tend_tracer_{i}", dims.CellDim, dims.KDim)
         raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
 
     def tracer(self, ntracer: int):
-        if ntracer == 1:
-            return self._get_field("tracer_1", dims.CellDim, dims.KDim)
-        if ntracer == 2:
-            return self._get_field("tracer_2", dims.CellDim, dims.KDim)
-        if ntracer == 3:
-            return self._get_field("tracer_3", dims.CellDim, dims.KDim)
-        if ntracer == 4:
-            return self._get_field("tracer_4", dims.CellDim, dims.KDim)
-        if ntracer == 5:
-            return self._get_field("tracer_5", dims.CellDim, dims.KDim)
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"tracer_{i}", dims.CellDim, dims.KDim)
         raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
 
 
 class AdvectionExitSavepoint(IconSavepoint):
     def hfl_tracer(self, ntracer: int):
-        if ntracer == 1:
-            return self._get_field("hfl_tracer_1", dims.EdgeDim, dims.KDim)
-        if ntracer == 2:
-            return self._get_field("hfl_tracer_2", dims.EdgeDim, dims.KDim)
-        if ntracer == 3:
-            return self._get_field("hfl_tracer_3", dims.EdgeDim, dims.KDim)
-        if ntracer == 4:
-            return self._get_field("hfl_tracer_4", dims.EdgeDim, dims.KDim)
-        if ntracer == 5:
-            return self._get_field("hfl_tracer_5", dims.EdgeDim, dims.KDim)
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"hfl_tracer_{i}", dims.EdgeDim, dims.KDim)
         raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
 
     def vfl_tracer(self, ntracer: int):
-        if ntracer == 1:
-            return self._get_field("vfl_tracer_1", dims.CellDim, dims.KDim)
-        if ntracer == 2:
-            return self._get_field("vfl_tracer_2", dims.CellDim, dims.KDim)
-        if ntracer == 3:
-            return self._get_field("vfl_tracer_3", dims.CellDim, dims.KDim)
-        if ntracer == 4:
-            return self._get_field("vfl_tracer_4", dims.CellDim, dims.KDim)
-        if ntracer == 5:
-            return self._get_field("vfl_tracer_5", dims.CellDim, dims.KDim)
+        for i in range(1, 6):
+            if i == ntracer:
+                # TODO (dastrm): should be KHalfDim
+                return self._get_field(f"vfl_tracer_{i}", dims.CellDim, dims.KDim)
         raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
 
     def tracer(self, ntracer: int):
-        if ntracer == 1:
-            return self._get_field("tracer_1", dims.CellDim, dims.KDim)
-        if ntracer == 2:
-            return self._get_field("tracer_2", dims.CellDim, dims.KDim)
-        if ntracer == 3:
-            return self._get_field("tracer_3", dims.CellDim, dims.KDim)
-        if ntracer == 4:
-            return self._get_field("tracer_4", dims.CellDim, dims.KDim)
-        if ntracer == 5:
-            return self._get_field("tracer_5", dims.CellDim, dims.KDim)
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"tracer_{i}", dims.CellDim, dims.KDim)
         raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
 
 

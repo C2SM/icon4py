@@ -55,10 +55,11 @@ def construct_least_squares_state(
 
 
 def construct_metric_state(icon_grid) -> advection_states.AdvectionMetricState:
+    constant_f = helpers.constant_field(icon_grid, 1.0, dims.KDim)
     return advection_states.AdvectionMetricState(
-        deepatmo_divh=helpers.constant_field(icon_grid, 1.0, dims.KDim),
-        deepatmo_divzl=helpers.constant_field(icon_grid, 1.0, dims.KDim),
-        deepatmo_divzu=helpers.constant_field(icon_grid, 1.0, dims.KDim),
+        deepatmo_divh=constant_f,
+        deepatmo_divzl=constant_f,
+        deepatmo_divzu=constant_f,
     )
 
 
@@ -81,16 +82,11 @@ def construct_diagnostic_init_state(
 def construct_diagnostic_exit_state(
     icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int
 ) -> advection_states.AdvectionDiagnosticState:
+    zero_f = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
     return advection_states.AdvectionDiagnosticState(
-        airmass_now=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=icon_grid
-        ),  # init field
-        airmass_new=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=icon_grid
-        ),  # init field
-        grf_tend_tracer=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=icon_grid
-        ),  # init field
+        airmass_now=zero_f,  # init field
+        airmass_new=zero_f,  # init field
+        grf_tend_tracer=zero_f,  # init field
         hfl_tracer=savepoint.hfl_tracer(ntracer),
         vfl_tracer=savepoint.vfl_tracer(ntracer),
     )

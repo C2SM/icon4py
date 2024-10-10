@@ -7,8 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from abc import ABC, abstractmethod
+from enum import Enum, auto
 import dataclasses
-import enum
 import logging
 
 from icon4py.model.atmosphere.advection import (
@@ -39,44 +39,44 @@ Advection module ported from ICON mo_advection_stepping.f90.
 log = logging.getLogger(__name__)
 
 
-class HorizontalAdvectionType(enum.Enum):
+class HorizontalAdvectionType(Enum):
     """
     Horizontal operator scheme for advection.
     """
 
     #: no horizontal advection
-    NO_ADVECTION = 0
+    NO_ADVECTION = auto()
     #: 2nd order MIURA with linear reconstruction
-    LINEAR_2ND_ORDER = 2
+    LINEAR_2ND_ORDER = auto()
 
 
-class HorizontalAdvectionLimiter(enum.Enum):
+class HorizontalAdvectionLimiter(Enum):
     """
     Limiter for horizontal advection operator.
     """
 
     #: no horizontal limiter
-    NO_LIMITER = 0
+    NO_LIMITER = auto()
     #: positive definite horizontal limiter
-    POSITIVE_DEFINITE = 4
+    POSITIVE_DEFINITE = auto()
 
 
-class VerticalAdvectionType(enum.Enum):
+class VerticalAdvectionType(Enum):
     """
     Vertical operator scheme for advection.
     """
 
     #: no vertical advection
-    NO_ADVECTION = 0
+    NO_ADVECTION = auto()
 
 
-class VerticalAdvectionLimiter(enum.Enum):
+class VerticalAdvectionLimiter(Enum):
     """
     Limiter for vertical advection operator.
     """
 
     #: no vertical limiter
-    NO_LIMITER = 0
+    NO_LIMITER = auto()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -96,18 +96,22 @@ class AdvectionConfig:
     def _validate(self):
         """Apply consistency checks and validation on configuration parameters."""
 
-        assert (
-            self.horizontal_advection_type not in HorizontalAdvectionType.__members__
-        ), f"Horizontal advection type {self.horizontal_advection_type} not implemented."
-        assert (
-            self.horizontal_advection_limiter not in HorizontalAdvectionLimiter.__members__
-        ), f"Horizontal advection limiter {self.horizontal_advection_limiter} not implemented."
-        assert (
-            self.vertical_advection_type not in VerticalAdvectionType.__members__
-        ), f"Vertical advection type {self.vertical_advection_type} not implemented."
-        assert (
-            self.vertical_advection_limiter not in VerticalAdvectionLimiter.__members__
-        ), f"Vertical advection limiter {self.vertical_advection_limiter} not implemented."
+        if not hasattr(HorizontalAdvectionType, self.horizontal_advection_type.name):
+            raise NotImplementedError(
+                f"Horizontal advection type {self.horizontal_advection_type} not implemented."
+            )
+        if not hasattr(HorizontalAdvectionLimiter, self.horizontal_advection_limiter.name):
+            raise NotImplementedError(
+                f"Horizontal advection limiter {self.horizontal_advection_limiter} not implemented."
+            )
+        if not hasattr(VerticalAdvectionType, self.vertical_advection_type.name):
+            raise NotImplementedError(
+                f"Vertical advection type {self.vertical_advection_type} not implemented."
+            )
+        if not hasattr(VerticalAdvectionLimiter, self.vertical_advection_limiter.name):
+            raise NotImplementedError(
+                f"Vertical advection limiter {self.vertical_advection_limiter} not implemented."
+            )
 
 
 class Advection(ABC):

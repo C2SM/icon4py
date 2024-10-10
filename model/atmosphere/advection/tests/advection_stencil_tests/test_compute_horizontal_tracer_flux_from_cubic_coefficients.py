@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -15,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_
     compute_horizontal_tracer_flux_from_cubic_coefficients,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.settings import xp
 
 
 class TestComputeHorizontalTracerFluxFromCubicCoefficients(helpers.StencilTest):
@@ -24,17 +24,17 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        p_out_e_hybrid_2: np.array,
-        p_mass_flx_e: np.array,
-        z_dreg_area: np.array,
+        p_out_e_hybrid_2: xp.array,
+        p_mass_flx_e: xp.array,
+        z_dreg_area: xp.array,
         **kwargs,
-    ):
+    ) -> dict:
         p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
 
         return dict(p_out_e_hybrid_2=p_out_e_hybrid_2)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid) -> dict:
         p_out_e_hybrid_2 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         p_mass_flx_e = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         z_dreg_area = helpers.random_field(grid, dims.EdgeDim, dims.KDim)

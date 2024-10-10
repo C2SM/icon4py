@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -15,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory_cou
     compute_ffsl_backtrajectory_counterclockwise_indicator,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.settings import xp
 
 
 class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest):
@@ -23,22 +23,22 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest
 
     @staticmethod
     def reference(
-        grid, lcounterclock: bool, p_vn: np.array, tangent_orientation: np.array, **kwargs
-    ):
-        tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
+        grid, lcounterclock: bool, p_vn: xp.array, tangent_orientation: xp.array, **kwargs
+    ) -> dict:
+        tangent_orientation = xp.expand_dims(tangent_orientation, axis=-1)
 
-        tangent_orientation = np.broadcast_to(tangent_orientation, p_vn.shape)
+        tangent_orientation = xp.broadcast_to(tangent_orientation, p_vn.shape)
 
-        lvn_sys_pos_true = np.where(tangent_orientation * p_vn >= 0.0, True, False)
+        lvn_sys_pos_true = xp.where(tangent_orientation * p_vn >= 0.0, True, False)
 
-        mask_lcounterclock = np.broadcast_to(lcounterclock, p_vn.shape)
+        mask_lcounterclock = xp.broadcast_to(lcounterclock, p_vn.shape)
 
-        lvn_sys_pos = np.where(mask_lcounterclock, lvn_sys_pos_true, False)
+        lvn_sys_pos = xp.where(mask_lcounterclock, lvn_sys_pos_true, False)
 
         return dict(lvn_sys_pos=lvn_sys_pos)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid) -> dict:
         lcounterclock = True
         p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         tangent_orientation = helpers.random_field(grid, dims.EdgeDim)

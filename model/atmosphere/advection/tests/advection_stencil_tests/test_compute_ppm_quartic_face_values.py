@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -15,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_quartic_face_values
     compute_ppm_quartic_face_values,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.settings import xp
 
 
 class TestComputePpmQuarticFaceValues(helpers.StencilTest):
@@ -22,7 +22,9 @@ class TestComputePpmQuarticFaceValues(helpers.StencilTest):
     OUTPUTS = (helpers.Output("p_face", gtslice=(slice(None), slice(2, None))),)
 
     @staticmethod
-    def reference(grid, p_cc: np.array, p_cellhgt_mc_now: np.array, z_slope: np.array, **kwargs):
+    def reference(
+        grid, p_cc: xp.array, p_cellhgt_mc_now: xp.array, z_slope: xp.array, **kwargs
+    ) -> dict:
         p_cellhgt_mc_now_k_minus_1 = p_cellhgt_mc_now[:, 1:-2]
         p_cellhgt_mc_now_k_minus_2 = p_cellhgt_mc_now[:, 0:-3]
         p_cellhgt_mc_now_k_plus_1 = p_cellhgt_mc_now[:, 3:]
@@ -60,7 +62,7 @@ class TestComputePpmQuarticFaceValues(helpers.StencilTest):
         return dict(p_face=p_face)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid) -> dict:
         p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = helpers.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
