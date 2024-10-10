@@ -23,29 +23,26 @@ from . import utils
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        #(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
 @pytest.mark.datatest
 def test_dual_edge_length(experiment, grid_file, grid_savepoint):
-  #  if experiment == dt_utils.REGIONAL_EXPERIMENT:
-  #      pytest.mark.xfail(f"FIXME: single precision error for '{experiment}'")
+    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+        pytest.mark.xfail(f"FIXME: single precision error for '{experiment}'")
     expected = grid_savepoint.dual_edge_length().asnumpy()
+    lat_serialized = grid_savepoint.lat(dims.CellDim)
+    lon_serialized = grid_savepoint.lon(dims.CellDim)
 
     gm = utils.run_grid_manager(grid_file)
-    #grid = gm.grid
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
-
-
+    grid = gm.grid
     coordinates = gm.coordinates(dims.CellDim)
-
-    lat_serialized = grid_savepoint.lat(dims.CellDim)
     lat = coordinates["lat"]
-    lon_serialized = grid_savepoint.lon(dims.CellDim)
     lon = coordinates["lon"]
     assert helpers.dallclose(lat.asnumpy(), lat_serialized.asnumpy())
     assert helpers.dallclose(lon.asnumpy(), lon_serialized.asnumpy())
+
     start = grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.END))
 
