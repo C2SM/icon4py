@@ -43,7 +43,6 @@ TODO: for the numpy functions we might have to work on the func interfaces to ma
 
 """
 
-import enum
 import functools
 import inspect
 from typing import (
@@ -75,12 +74,6 @@ from icon4py.model.common.utils import builder
 
 
 DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
-
-
-class RetrievalType(enum.Enum):
-    FIELD = 0
-    DATA_ARRAY = 1
-    METADATA = 2
 
 
 class FieldProvider(Protocol):
@@ -369,12 +362,6 @@ def _check(
     )
 
 
-class FieldSource(Protocol):
-    """Protocol for object that can be queried for fields."""
-    def get(self, field_name: str, type_: RetrievalType = RetrievalType.FIELD):
-        ...
-
-
 class PartialConfigurable(Protocol):
     """
     Protocol to mark classes that are not yet fully configured upon instaniation.
@@ -382,6 +369,7 @@ class PartialConfigurable(Protocol):
     Additionally provides a decorator that makes use of the Protocol an can be used in
     concrete examples to trigger a check whether the setup is complete.
     """
+
     def is_fully_configured(self) -> bool:
         return False
 
@@ -396,7 +384,7 @@ class PartialConfigurable(Protocol):
         return wrapper
 
 
-class FieldsFactory(FieldSource, PartialConfigurable):
+class FieldsFactory(state_utils.FieldSource, PartialConfigurable):
     def __init__(
         self,
         metadata: dict[str, model.FieldMetaData],
@@ -459,14 +447,14 @@ class FieldsFactory(FieldSource, PartialConfigurable):
 
     @PartialConfigurable.check_setup
     def get(
-        self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
+        self, field_name: str, type_: state_utils.RetrievalType = state_utils.RetrievalType.FIELD
     ) -> Union[state_utils.FieldType, xa.DataArray, model.FieldMetaData]:
         if field_name not in self._providers:
             raise ValueError(f"Field {field_name} not provided by the factory")
         match type_:
-            case RetrievalType.METADATA:
+            case state_utils.RetrievalType.METADATA:
                 return self._metadata[field_name]
-            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY:
+            case state_utils.RetrievalType.FIELD | state_utils.RetrievalType.DATA_ARRAY:
                 provider = self._providers[field_name]
                 if field_name not in provider.fields:
                     raise ValueError(
@@ -476,7 +464,7 @@ class FieldsFactory(FieldSource, PartialConfigurable):
                 buffer = provider(field_name, self)
                 return (
                     buffer
-                    if type_ == RetrievalType.FIELD
+                    if type_ == state_utils.RetrievalType.FIELD
                     else state_utils.to_data_array(buffer, self._metadata[field_name])
                 )
             case _:

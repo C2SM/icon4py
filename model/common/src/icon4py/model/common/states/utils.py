@@ -5,8 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-from typing import Sequence, TypeAlias, TypeVar, Union
+import enum
+from typing import Protocol, Sequence, TypeAlias, TypeVar, Union
 
 import gt4py.next as gtx
 import xarray as xa
@@ -28,3 +28,16 @@ FieldType: TypeAlias = Union[gtx.Field[Sequence[gtx.Dims[DimT]], T], xp.ndarray]
 def to_data_array(field: FieldType, attrs: dict):
     data = field if isinstance(field, xp.ndarray) else field.ndarray
     return xa.DataArray(data, attrs=attrs)
+
+
+class RetrievalType(enum.Enum):
+    FIELD = 0
+    DATA_ARRAY = 1
+    METADATA = 2
+
+
+class FieldSource(Protocol):
+    """Protocol for object that can be queried for fields."""
+
+    def get(self, field_name: str, type_: RetrievalType = RetrievalType.FIELD):
+        ...
