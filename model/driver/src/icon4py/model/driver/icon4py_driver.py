@@ -14,6 +14,7 @@ from typing import Callable
 
 import click
 from devtools import Timer
+from gt4py.next.backend import Backend
 
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
@@ -278,6 +279,7 @@ def initialize(
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
+    backend: Backend,
 ):
     """
     Inititalize the driver run.
@@ -365,7 +367,7 @@ def initialize(
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro()
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(backend)
     solve_nonhydro_granule.init(
         grid=icon_grid,
         config=config.solve_nonhydro_config,
@@ -376,6 +378,7 @@ def initialize(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
+        backend=backend,
     )
 
     (
@@ -457,7 +460,15 @@ def initialize(
     help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
 )
 def icon4py_driver(
-    input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level
+    input_path,
+    run_path,
+    mpi,
+    serialization_type,
+    experiment_type,
+    grid_id,
+    grid_root,
+    grid_level,
+    backend,
 ):
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
@@ -498,6 +509,7 @@ def icon4py_driver(
         grid_id,
         grid_root,
         grid_level,
+        backend,
     )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
