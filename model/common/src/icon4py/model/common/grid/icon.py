@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import dataclasses
 import functools
 import logging
@@ -178,7 +177,7 @@ class IconGrid(base.BaseGrid):
         if domain.local:
             # special treatment because this value is not set properly in the underlying data.
             return 0
-        return self._start_indices[domain.dim][domain()]
+        return self._start_indices[domain.dim][domain()].item()
 
     def end_index(self, domain: h_grid.Domain):
         """
@@ -190,4 +189,4 @@ class IconGrid(base.BaseGrid):
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return self.size[domain.dim]
-        return self._end_indices[domain.dim][domain()]
+        return self._end_indices[domain.dim][domain()].item()

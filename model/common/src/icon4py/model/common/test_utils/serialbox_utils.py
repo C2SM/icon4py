@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import functools
 import logging
 import uuid
@@ -93,7 +92,7 @@ class IconSavepoint:
         Read a start indices field.
 
         use for start indices: the shift accounts for the zero based python
-        values are converted to int32
+        values are converted to gtx.int32
         """
         return self._read_int32(name, offset=1)
 
@@ -103,7 +102,7 @@ class IconSavepoint:
 
         use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
         this accounts for being exclusive python exclusive bounds: [from:to)
-        field values are convert to int32
+        field values are convert to gtx.int32
         """
         return self._read(name, offset, dtype=gtx.int32)
 
