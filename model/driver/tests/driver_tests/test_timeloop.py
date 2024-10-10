@@ -124,6 +124,7 @@ def test_run_timeloop_single_step(
     savepoint_velocity_init,
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
+    backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
         config = icon4py_configuration.read_config(experiment)
@@ -315,6 +316,7 @@ def test_run_timeloop_single_step(
         prep_adv,
         sp.divdamp_fac_o2(),
         do_prep_adv,
+        backend,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()

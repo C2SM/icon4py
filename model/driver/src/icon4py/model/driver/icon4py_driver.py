@@ -14,6 +14,7 @@ from typing import Callable
 
 import click
 from devtools import Timer
+from gt4py.next.backend import Backend
 
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
@@ -135,6 +136,7 @@ class TimeLoop:
         prep_adv: solve_nh_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
+        backend: Backend,
     ):
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
@@ -159,6 +161,7 @@ class TimeLoop:
                 diffusion_diagnostic_state,
                 prognostic_state_list[self._now],
                 self.dtime_in_seconds,
+                backend,
             )
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"

@@ -255,9 +255,7 @@ def diffusion_run(
 
     if linit:
         common.GLOBAL_STATE["diffusion_granule"].initial_run(
-            diagnostic_state,
-            prognostic_state,
-            dtime,
+            diagnostic_state, prognostic_state, dtime
         )
     else:
         common.GLOBAL_STATE["diffusion_granule"].run(

@@ -412,6 +412,7 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: geometry.EdgeParams,
         cell_params: geometry.CellParams,
+        backend: Backend = gtx.gtfn_cpu,
     ):
         """
         Initialize Diffusion granule with configuration.
@@ -427,6 +428,7 @@ class Diffusion:
             interpolation_state:
             edge_params:
             cell_params:
+            backend:
         """
         self.config: DiffusionConfig = config
         self.params: DiffusionParams = params
@@ -437,7 +439,7 @@ class Diffusion:
         self.edge_params = edge_params
         self.cell_params = cell_params
 
-        self._allocate_temporary_fields()
+        self._allocate_temporary_fields(backend)
 
         self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
         self.bdy_diff: float = 0.015 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
@@ -448,7 +450,7 @@ class Diffusion:
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
 
-        init_diffusion_local_fields_for_regular_timestep(
+        init_diffusion_local_fields_for_regular_timestep.with_backend(backend)(
             params.K4,
             config.substep_as_float,
             *params.smagorinski_factor,
@@ -482,24 +484,50 @@ class Diffusion:
     def initialized(self):
         return self._initialized
 
-    def _allocate_temporary_fields(self):
-        self.diff_multfac_vn = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        self.diff_multfac_n2w = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        self.smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        self.enh_smag_fac = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        self.u_vert = field_alloc.allocate_zero_field(dims.VertexDim, dims.KDim, grid=self.grid)
-        self.v_vert = field_alloc.allocate_zero_field(dims.VertexDim, dims.KDim, grid=self.grid)
-        self.kh_smag_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
-        self.kh_smag_ec = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
-        self.z_nabla2_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
-        self.z_temp = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
-        self.diff_multfac_smag = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+    def _allocate_temporary_fields(self, backend):
+        self.diff_multfac_vn = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        self.diff_multfac_n2w = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        self.smag_limit = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        self.enh_smag_fac = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        self.u_vert = field_alloc.allocate_zero_field(
+            dims.VertexDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.v_vert = field_alloc.allocate_zero_field(
+            dims.VertexDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.kh_smag_e = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.kh_smag_ec = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.z_nabla2_e = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.z_temp = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.diff_multfac_smag = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
         # TODO(Magdalena): this is KHalfDim
         self.vertical_index = field_alloc.allocate_indices(
-            dims.KDim, grid=self.grid, is_halfdim=True
+            dims.KDim, grid=self.grid, is_halfdim=True, backend=backend
         )
-        self.horizontal_cell_index = field_alloc.allocate_indices(dims.CellDim, grid=self.grid)
-        self.horizontal_edge_index = field_alloc.allocate_indices(dims.EdgeDim, grid=self.grid)
+        self.horizontal_cell_index = field_alloc.allocate_indices(
+            dims.CellDim, grid=self.grid, backend=backend
+        )
+        self.horizontal_edge_index = field_alloc.allocate_indices(
+            dims.EdgeDim, grid=self.grid, backend=backend
+        )
         self.w_tmp = gtx.as_field(
             (dims.CellDim, dims.KDim),
             xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float),
@@ -545,6 +573,7 @@ class Diffusion:
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
+        backend: Backend,
     ):
         """
         Calculate initial diffusion step.
@@ -557,8 +586,10 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+        diff_multfac_vn = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid, backend=backend)
 
         setup_fields_for_initial_step(
             self.params.K4,
@@ -568,12 +599,7 @@ class Diffusion:
             offset_provider={},
         )
         self._do_diffusion_step(
-            diagnostic_state,
-            prognostic_state,
-            dtime,
-            diff_multfac_vn,
-            smag_limit,
-            0.0,
+            diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, 0.0, backend
         )
         self._sync_cell_fields(prognostic_state)
 
@@ -582,6 +608,7 @@ class Diffusion:
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
+        backend: Backend = gtx.gtfn_cpu,
     ):
         """
         Do one diffusion step within regular time loop.
@@ -596,6 +623,7 @@ class Diffusion:
             diff_multfac_vn=self.diff_multfac_vn,
             smag_limit=self.smag_limit,
             smag_offset=self.smag_offset,
+            backend=backend,
         )
 
     def _sync_cell_fields(self, prognostic_state):
@@ -622,6 +650,7 @@ class Diffusion:
         diff_multfac_vn: fa.KField[float],
         smag_limit: fa.KField[float],
         smag_offset: float,
+        backend: Backend,
     ):
         """
         Run a diffusion step.
@@ -637,7 +666,9 @@ class Diffusion:
         """
         num_levels = self.grid.num_levels
         # dtime dependent: enh_smag_factor,
-        scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
+        scale_k.with_backend(backend)(
+            self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
+        )
 
         log.debug("rbf interpolation 1: start")
         self.mo_intp_rbf_rbf_vec_interpol_vertex(
@@ -770,7 +801,7 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+        copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
 
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self.cell_params.area,

@@ -472,6 +472,7 @@ def test_run_diffusion_initial_step(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        backend=backend,
     )
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
@@ -479,6 +480,7 @@ def test_run_diffusion_initial_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         dtime=dtime,
+        backend=backend,
     )
 
     verify_diffusion_fields(
