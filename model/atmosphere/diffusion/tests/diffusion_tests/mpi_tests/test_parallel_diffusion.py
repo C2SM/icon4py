@@ -39,6 +39,7 @@ def test_parallel_diffusion(
     stretch_factor,
     damping_height,
     caplog,
+    backend,
 ):
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -124,6 +125,7 @@ def test_parallel_diffusion(
             diagnostic_state=diagnostic_state,
             prognostic_state=prognostic_state,
             dtime=dtime,
+            backend=backend,
         )
     else:
         diffusion.run(

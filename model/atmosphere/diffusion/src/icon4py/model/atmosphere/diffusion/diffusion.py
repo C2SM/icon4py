@@ -17,6 +17,7 @@ from typing import Final, Optional
 import gt4py.next as gtx
 
 import icon4py.model.common.states.prognostic_state as prognostics
+from gt4py.next.backend import Backend
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
@@ -348,7 +349,9 @@ class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
     def __init__(
-        self, exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()
+        self,
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
+        backend: Backend = gtx.gtfn_cpu,
     ):
         self._exchange = exchange
         self._initialized = False
@@ -373,6 +376,39 @@ class Diffusion:
         self.cell_params: Optional[geometry.CellParams] = None
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
+        self.mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(
+            backend
+        )
+        self.calculate_nabla2_and_smag_coefficients_for_vn = (
+            calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)
+        )
+        self.calculate_diagnostic_quantities_for_turbulence = (
+            calculate_diagnostic_quantities_for_turbulence.with_backend(backend)
+        )
+        self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(backend)
+        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
+            apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
+                backend
+            )
+        )
+        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
+            calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
+                backend
+            )
+        )
+        self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(backend)
+        self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
+            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)
+        )
+        self.update_theta_and_exner = update_theta_and_exner.with_backend(backend)
+        self.copy_field = copy_field.with_backend(backend)
+        self.scale_k = scale_k.with_backend(backend)
+        self.setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(backend)
+
+        self.init_diffusion_local_fields_for_regular_timestep = (
+            init_diffusion_local_fields_for_regular_timestep.with_backend(backend)
+        )
+
     def init(
         self,
         grid: icon_grid.IconGrid,
@@ -383,6 +419,7 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: geometry.EdgeParams,
         cell_params: geometry.CellParams,
+        backend: Backend = gtx.gtfn_cpu,
     ):
         """
         Initialize Diffusion granule with configuration.
@@ -398,6 +435,7 @@ class Diffusion:
             interpolation_state:
             edge_params:
             cell_params:
+            backend:
         """
         self.config: DiffusionConfig = config
         self.params: DiffusionParams = params
@@ -408,7 +446,7 @@ class Diffusion:
         self.edge_params = edge_params
         self.cell_params = cell_params
 
-        self._allocate_temporary_fields()
+        self._allocate_temporary_fields(backend)
 
         self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
         self.bdy_diff: float = 0.015 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
@@ -419,7 +457,7 @@ class Diffusion:
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
 
-        init_diffusion_local_fields_for_regular_timestep(
+        self.init_diffusion_local_fields_for_regular_timestep(
             params.K4,
             config.substep_as_float,
             *params.smagorinski_factor,
@@ -453,24 +491,50 @@ class Diffusion:
     def initialized(self):
         return self._initialized
 
-    def _allocate_temporary_fields(self):
-        self.diff_multfac_vn = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        self.diff_multfac_n2w = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        self.smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        self.enh_smag_fac = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        self.u_vert = field_alloc.allocate_zero_field(dims.VertexDim, dims.KDim, grid=self.grid)
-        self.v_vert = field_alloc.allocate_zero_field(dims.VertexDim, dims.KDim, grid=self.grid)
-        self.kh_smag_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
-        self.kh_smag_ec = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
-        self.z_nabla2_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
-        self.z_temp = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
-        self.diff_multfac_smag = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+    def _allocate_temporary_fields(self, backend):
+        self.diff_multfac_vn = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        self.diff_multfac_n2w = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        self.smag_limit = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        self.enh_smag_fac = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        self.u_vert = field_alloc.allocate_zero_field(
+            dims.VertexDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.v_vert = field_alloc.allocate_zero_field(
+            dims.VertexDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.kh_smag_e = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.kh_smag_ec = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.z_nabla2_e = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.z_temp = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+        )
+        self.diff_multfac_smag = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
         # TODO(Magdalena): this is KHalfDim
         self.vertical_index = field_alloc.allocate_indices(
-            dims.KDim, grid=self.grid, is_halfdim=True
+            dims.KDim, grid=self.grid, is_halfdim=True, backend=backend
         )
-        self.horizontal_cell_index = field_alloc.allocate_indices(dims.CellDim, grid=self.grid)
-        self.horizontal_edge_index = field_alloc.allocate_indices(dims.EdgeDim, grid=self.grid)
+        self.horizontal_cell_index = field_alloc.allocate_indices(
+            dims.CellDim, grid=self.grid, backend=backend
+        )
+        self.horizontal_edge_index = field_alloc.allocate_indices(
+            dims.EdgeDim, grid=self.grid, backend=backend
+        )
         self.w_tmp = gtx.as_field(
             (dims.CellDim, dims.KDim),
             xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float),
@@ -516,6 +580,7 @@ class Diffusion:
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
+        backend: Backend,
     ):
         """
         Calculate initial diffusion step.
@@ -528,10 +593,12 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
-        smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+        diff_multfac_vn = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=backend
+        )
+        smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid, backend=backend)
 
-        setup_fields_for_initial_step(
+        self.setup_fields_for_initial_step(
             self.params.K4,
             self.config.hdiff_efdt_ratio,
             diff_multfac_vn,
@@ -539,12 +606,7 @@ class Diffusion:
             offset_provider={},
         )
         self._do_diffusion_step(
-            diagnostic_state,
-            prognostic_state,
-            dtime,
-            diff_multfac_vn,
-            smag_limit,
-            0.0,
+            diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, 0.0
         )
         self._sync_cell_fields(prognostic_state)
 
@@ -608,10 +670,10 @@ class Diffusion:
         """
         num_levels = self.grid.num_levels
         # dtime dependent: enh_smag_factor,
-        scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
+        self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex(
+        self.mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
@@ -631,7 +693,7 @@ class Diffusion:
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
-        calculate_nabla2_and_smag_coefficients_for_vn(
+        self.calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
             tangent_orientation=self.edge_params.tangent_orientation,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
@@ -662,7 +724,7 @@ class Diffusion:
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
             )
-            calculate_diagnostic_quantities_for_turbulence(
+            self.calculate_diagnostic_quantities_for_turbulence(
                 kh_smag_ec=self.kh_smag_ec,
                 vn=prognostic_state.vn,
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -689,7 +751,7 @@ class Diffusion:
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex(
+        self.mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
@@ -709,7 +771,7 @@ class Diffusion:
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
-        apply_diffusion_to_vn(
+        self.apply_diffusion_to_vn(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
@@ -741,9 +803,9 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+        self.copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
 
-        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
+        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
@@ -776,7 +838,7 @@ class Diffusion:
             "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
 
-        calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
+        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
@@ -793,7 +855,7 @@ class Diffusion:
         )
 
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-        calculate_nabla2_for_theta(
+        self.calculate_nabla2_for_theta(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             theta_v=prognostic_state.theta_v,
@@ -810,7 +872,7 @@ class Diffusion:
             "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
         if self.config.apply_zdiffusion_t:
-            truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
+            self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
                 mask=self.metric_state.mask_hdiff,
                 zd_vertoffset=self.metric_state.zd_vertoffset,
                 zd_diffcoef=self.metric_state.zd_diffcoef,
@@ -830,7 +892,7 @@ class Diffusion:
                 "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
             )
         log.debug("running stencil 16 (update_theta_and_exner): start")
-        update_theta_and_exner(
+        self.update_theta_and_exner(
             z_temp=self.z_temp,
             area=self.cell_params.area,
             theta_v=prognostic_state.theta_v,
