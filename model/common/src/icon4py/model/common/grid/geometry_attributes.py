@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import icon4py.model.common.dimension as dims
 
 
@@ -18,33 +26,45 @@ VERTEX_LAT = "grid_latitude_of_vertex"
 CELL_LON = "grid_longitude_of_cell_center"
 
 CELL_LAT = "grid_latitude_of_cell_center"
+DUAL_EDGE_LENGTH = "length_of_dual_edge"
 
 attrs = {
-    CELL_LAT: dict(standard_name =CELL_LAT,
-                 unit="radians", dims=(dims.CellDim,), icon_var_name=""),
-    CELL_LON: dict(standard_name=CELL_LON,
-                 unit="radians", dims=(dims.CellDim,), icon_var_name=""),
-
-    VERTEX_LAT: dict(standard_name=VERTEX_LAT,
-            unit="radians", dims=(dims.VertexDim,), icon_var_name=""),
-    VERTEX_LON: dict(standard_name=VERTEX_LON,
-            unit="radians", dims=(dims.VertexDim,), icon_var_name=""),
-
-    EDGE_LAT: dict(standard_name=EDGE_LAT,
-                   unit="radians", dims=(dims.EdgeDim,), icon_var_name=""),
-    EDGE_LON: dict(standard_name=EDGE_LON,
-            unit="radians", dims=(dims.EdgeDim,), icon_var_name=""),
-    EDGE_LENGTH: dict(standard_name=EDGE_LENGTH, long_name="edge length",
-                      unit="m", dims=(dims.EdgeDim,),
-                      icon_var_name="primal_edge_length", ),
-    VERTEX_VERTEX_LENGTH: dict(standard_name=VERTEX_VERTEX_LENGTH,
-                               long_name ="distance between outer vertices of adjacent cells",
-                               unit="m", dims=(dims.EdgeDim,),
-                               icon_var_name="vert_vert_length"),
-    INVERSE_VERTEX_VERTEX_LENGTH: dict(standard_name=INVERSE_VERTEX_VERTEX_LENGTH,
-            long_name ="distance between outer vertices of adjacent cells",
-            unit="m-1",
-            dims=(dims.EdgeDim,),
-            icon_var_name="inv_vert_vert_length", )
-
+    CELL_LAT: dict(standard_name=CELL_LAT, unit="radians", dims=(dims.CellDim,), icon_var_name=""),
+    CELL_LON: dict(standard_name=CELL_LON, unit="radians", dims=(dims.CellDim,), icon_var_name=""),
+    VERTEX_LAT: dict(
+        standard_name=VERTEX_LAT, unit="radians", dims=(dims.VertexDim,), icon_var_name=""
+    ),
+    VERTEX_LON: dict(
+        standard_name=VERTEX_LON, unit="radians", dims=(dims.VertexDim,), icon_var_name=""
+    ),
+    EDGE_LAT: dict(standard_name=EDGE_LAT, unit="radians", dims=(dims.EdgeDim,), icon_var_name=""),
+    EDGE_LON: dict(standard_name=EDGE_LON, unit="radians", dims=(dims.EdgeDim,), icon_var_name=""),
+    EDGE_LENGTH: dict(
+        standard_name=EDGE_LENGTH,
+        long_name="edge length",
+        unit="m",
+        dims=(dims.EdgeDim,),
+        icon_var_name="primal_edge_length",
+    ),
+    DUAL_EDGE_LENGTH: dict(
+        standard_name=DUAL_EDGE_LENGTH,
+        long_name="length of the dual edge",
+        unit="m",
+        dims=(dims.EdgeDim,),
+        icon_var_name="dual_edge_length",
+    ),
+    VERTEX_VERTEX_LENGTH: dict(
+        standard_name=VERTEX_VERTEX_LENGTH,
+        long_name="distance between outer vertices of adjacent cells",
+        unit="m",
+        dims=(dims.EdgeDim,),
+        icon_var_name="vert_vert_length",
+    ),
+    INVERSE_VERTEX_VERTEX_LENGTH: dict(
+        standard_name=INVERSE_VERTEX_VERTEX_LENGTH,
+        long_name="distance between outer vertices of adjacent cells",
+        unit="m-1",
+        dims=(dims.EdgeDim,),
+        icon_var_name="inv_vert_vert_length",
+    ),
 }

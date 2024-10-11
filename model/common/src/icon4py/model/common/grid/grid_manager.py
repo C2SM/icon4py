@@ -206,6 +206,9 @@ class CoordinateName(FieldName):
 
     CELL_LONGITUDE = "clon"
     CELL_LATITUDE = "clat"
+    CELL_CENTER_LATITUDE = "lat_cell_centre"
+    CELL_CENTER_LONGITUDE = "lon_cell_centre"
+
     EDGE_LONGITUDE = "elon"
     EDGE_LATITUDE = "elat"
     VERTEX_LONGITUDE = "vlon"
@@ -401,29 +404,58 @@ class GridManager:
     def _read_coordinates(self):
         return {
             dims.CellDim: {
-                "lat": gtx.as_field((dims.CellDim,), self._reader.variable(CoordinateName.CELL_LATITUDE), dtype=float),
-                "lon": gtx.as_field((dims.CellDim, ),self._reader.variable(CoordinateName.CELL_LONGITUDE), dtype=float),
+                "lat": gtx.as_field(
+                    (dims.CellDim,),
+                    self._reader.variable(CoordinateName.CELL_LATITUDE),
+                    dtype=float,
+                ),
+                "lon": gtx.as_field(
+                    (dims.CellDim,),
+                    self._reader.variable(CoordinateName.CELL_LONGITUDE),
+                    dtype=float,
+                ),
             },
             dims.EdgeDim: {
-                "lat": gtx.as_field((dims.EdgeDim,),self._reader.variable(CoordinateName.EDGE_LATITUDE)),
-                "lon": gtx.as_field((dims.EdgeDim,),self._reader.variable(CoordinateName.EDGE_LONGITUDE)),
+                "lat": gtx.as_field(
+                    (dims.EdgeDim,), self._reader.variable(CoordinateName.EDGE_LATITUDE)
+                ),
+                "lon": gtx.as_field(
+                    (dims.EdgeDim,), self._reader.variable(CoordinateName.EDGE_LONGITUDE)
+                ),
             },
             dims.VertexDim: {
-                "lat": gtx.as_field((dims.VertexDim,),self._reader.variable(CoordinateName.VERTEX_LATITUDE), dtype=float),
-                "lon": gtx.as_field((dims.VertexDim,),self._reader.variable(CoordinateName.VERTEX_LONGITUDE), dtype=float),
+                "lat": gtx.as_field(
+                    (dims.VertexDim,),
+                    self._reader.variable(CoordinateName.VERTEX_LATITUDE),
+                    dtype=float,
+                ),
+                "lon": gtx.as_field(
+                    (dims.VertexDim,),
+                    self._reader.variable(CoordinateName.VERTEX_LONGITUDE),
+                    dtype=float,
+                ),
             },
         }
 
     def _read_geometry_fields(self):
         return {
-            GeometryName.EDGE_LENGTH.value: self._reader.variable(GeometryName.EDGE_LENGTH),
-            GeometryName.DUAL_EDGE_LENGTH.value: self._reader.variable(
-                GeometryName.DUAL_EDGE_LENGTH
+            GeometryName.EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,), self._reader.variable(GeometryName.EDGE_LENGTH)
             ),
-            GeometryName.CELL_AREA_P.value: self._reader.variable(GeometryName.CELL_AREA_P),
-            GeometryName.CELL_AREA.value: self._reader.variable(GeometryName.CELL_AREA),
-            GeometryName.TANGENT_ORIENTATION.value: self._reader.variable(
-                GeometryName.TANGENT_ORIENTATION
+            GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
+                (dims.EdgeDim,), self._reader.variable(GeometryName.DUAL_EDGE_LENGTH)
+            ),
+            GeometryName.CELL_AREA.value: gtx.as_field(
+                (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA)
+            ),
+            GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
+                (dims.EdgeDim,), self._reader.variable(GeometryName.TANGENT_ORIENTATION)
+            ),
+            CoordinateName.CELL_CENTER_LATITUDE: gtx.as_field(
+                (dims.CellDim,), self._reader.variable(CoordinateName.CELL_CENTER_LATITUDE)
+            ),
+            CoordinateName.CELL_CENTER_LONGITUDE: gtx.as_field(
+                (dims.CellDim,), self._reader.variable(CoordinateName.CELL_LONGITUDE)
             ),
         }
 

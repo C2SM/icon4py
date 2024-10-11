@@ -741,7 +741,24 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim):
     gm = utils.run_grid_manager(grid_file)
     lat = gm.coordinates(dim)["lat"]
     lon = gm.coordinates(dim)["lon"]
-    assert helpers.dallclose(lat, grid_savepoint.lat(dim).asnumpy())
-    assert helpers.dallclose(lon, grid_savepoint.lon(dim).asnumpy())
+    assert helpers.dallclose(lat.asnumpy(), grid_savepoint.lat(dim).asnumpy())
+    assert helpers.dallclose(lon.asnumpy(), grid_savepoint.lon(dim).asnumpy())
 
 
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_cell_coordinates(grid_savepoint, grid_file, experiment):
+    gm = utils.run_grid_manager(grid_file)
+    lat = gm.coordinates(dims.CellDim)["lat"]
+    lon = gm.coordinates(dims.CellDim)["lon"]
+    cell_center_lat = gm.geometry["lat_cell_centre"]
+    cell_center_lon = gm.geometry["lon_cell_centre"]
+
+    assert helpers.dallclose(lat.asnumpy(), cell_center_lat.asnumpy())
+    assert helpers.dallclose(lon.asnumpy(), cell_center_lon.asnumpy())

@@ -23,13 +23,16 @@ from icon4py.model.common.utils import builder
 
 log = logging.getLogger(__name__)
 
+
 class GeometryType(enum.Enum):
     """Define geometries of the horizontal domain supported by the ICON grid.
 
     Values are the same as mo_grid_geometry_info.f90.
     """
+
     SPHERE = 1
     TORUS = 2
+
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
@@ -38,10 +41,9 @@ class GlobalGridParams:
     geometry_type: Final[GeometryType] = GeometryType.SPHERE
     length = constants.EARTH_RADIUS
 
-
     @functools.cached_property
     def num_cells(self):
-        match(self.geometry_type):
+        match self.geometry_type:
             case GeometryType.SPHERE:
                 return compute_icosahedron_num_cells(self.root, self.level)
             case GeometryType.TORUS:
@@ -49,12 +51,15 @@ class GlobalGridParams:
             case _:
                 NotImplementedError(f"Unknown gemoetry type {self.geometry_type}")
 
-def compute_icosahedron_num_cells(root:int, level:int):
-    return 20.0 * root ** 2 * 4.0 ** level
 
-def compute_torus_num_cells(x:int, y:int):
+def compute_icosahedron_num_cells(root: int, level: int):
+    return 20.0 * root**2 * 4.0**level
+
+
+def compute_torus_num_cells(x: int, y: int):
     # TODO (halungge) fix this
     raise NotImplementedError("TODO : lookup torus cell number computation")
+
 
 class IconGrid(base.BaseGrid):
     def __init__(self, id_: uuid.UUID):
@@ -63,7 +68,7 @@ class IconGrid(base.BaseGrid):
         self._id = id_
         self._start_indices = {}
         self._end_indices = {}
-        self.global_properties:GlobalGridParams = None
+        self.global_properties: GlobalGridParams = None
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
             "E2C": (self._get_offset_provider, dims.E2CDim, dims.EdgeDim, dims.CellDim),

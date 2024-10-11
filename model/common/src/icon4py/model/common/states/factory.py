@@ -133,7 +133,6 @@ class ProgramFieldProvider(FieldProvider):
     """
     Computes a field defined by a GT4Py Program.
 
-    TODO (halungge): use field_operator instead?
     TODO (halungge): need a way to specify where the dependencies and params can be retrieved.
        As not all parameters can be resolved at the definition time
 

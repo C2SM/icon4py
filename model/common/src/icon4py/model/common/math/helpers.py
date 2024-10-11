@@ -145,6 +145,7 @@ def spherical_to_cartesian_on_vertex(
     z = r * sin(lat)
     return x, y, z
 
+
 @gtx.field_operator
 def dot_product(
     x1: fa.EdgeField[ta.wpfloat],
@@ -161,14 +162,15 @@ def dot_product(
 def norm2(
     x: fa.EdgeField[ta.wpfloat], y: fa.EdgeField[ta.wpfloat], z: fa.EdgeField[ta.wpfloat]
 ) -> fa.EdgeField[ta.wpfloat]:
-    return sqrt(dot_product(x, x, y, y, z,z))
+    return sqrt(dot_product(x, x, y, y, z, z))
+
 
 @gtx.field_operator
-def normalize_cartesian_vector(v_x: fa.EdgeField[ta.wpfloat], v_y: fa.EdgeField[ta.wpfloat], v_z: fa.EdgeField[ta.wpfloat]
+def normalize_cartesian_vector(
+    v_x: fa.EdgeField[ta.wpfloat], v_y: fa.EdgeField[ta.wpfloat], v_z: fa.EdgeField[ta.wpfloat]
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     norm = norm2(v_x, v_y, v_z)
-    return v_x/norm, v_y/norm, v_z/norm
-
+    return v_x / norm, v_y / norm, v_z / norm
 
 
 @gtx.field_operator
