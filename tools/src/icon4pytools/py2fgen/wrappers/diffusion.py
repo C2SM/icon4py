@@ -262,7 +262,6 @@ def diffusion_run(
             prognostic_state=prognostic_state,
             diagnostic_state=diagnostic_state,
             dtime=dtime,
-            backend=backend,
         )
 
 

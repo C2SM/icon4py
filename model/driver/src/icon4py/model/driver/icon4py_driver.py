@@ -351,7 +351,7 @@ def initialize(
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
-    diffusion_granule = diffusion.Diffusion(exchange)
+    diffusion_granule = diffusion.Diffusion(exchange=exchange, backend=None)
     diffusion_granule.init(
         icon_grid,
         config.diffusion_config,
