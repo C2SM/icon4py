@@ -170,6 +170,6 @@ def test_grid_size(icon_grid):
 )
 def test_mean_cell_area_calculation(grid_root, grid_level, expected):
     params = icon.GlobalGridParams(grid_root, grid_level)
-    assert expected == geometry.CellParams._compute_mean_cell_area(
+    assert expected == geometry.compute_mean_cell_area_for_sphere(
         constants.EARTH_RADIUS, params.num_cells
     )

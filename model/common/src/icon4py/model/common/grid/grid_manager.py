@@ -448,6 +448,9 @@ class GridManager:
             GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA)
             ),
+            GeometryName.CELL_AREA_P.value: gtx.as_field(
+                (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA_P)
+            ),
             GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,), self._reader.variable(GeometryName.TANGENT_ORIENTATION)
             ),

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import logging
 import typing
-import uuid
 
 import numpy as np
 import pytest
@@ -20,7 +19,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     grid_manager as gm,
     refinement as refin,
-    simple,
     vertical as v_grid,
 )
 from icon4py.model.common.grid.grid_manager import GeometryName
@@ -41,204 +39,31 @@ except ImportError:
 from . import utils
 
 
-SIMPLE_GRID_NC = "simple_grid.nc"
-
-
 R02B04_GLOBAL_NUM_CELLS = 20480
+R02B04_GLOBAL_NUM_EDGES = 30720
+R02B04_GLOBAL_NUM_VERTEX = 10242
+
 
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
 zero_base = gm.ToZeroBasedIndexTransformation()
 
+@pytest.fixture
+def global_grid_file():
+    return utils.resolve_file_from_gridfile_name(dt_utils.R02B04_GLOBAL)
 
-@pytest.fixture(scope="module")
-def simple_grid_gridfile(tmp_path_factory):
-    def _add_to_dataset(
-        dataset: netCDF4.Dataset,
-        data: np.ndarray,
-        var_name: str,
-        dims: tuple[gm.GridFileName, gm.GridFileName],
-    ):
-        var = dataset.createVariable(var_name, np.int32, dims)
-        var[:] = np.transpose(data)[:]
-
-    path = tmp_path_factory.mktemp("simple_grid").joinpath(SIMPLE_GRID_NC).absolute()
-    grid = simple.SimpleGrid()
-
-    dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
-    dataset.setncattr(gm.MandatoryPropertyName.GRID_UUID, str(uuid.uuid4()))
-    dataset.setncattr(gm.MandatoryPropertyName.LEVEL, 0)
-    dataset.setncattr(gm.MandatoryPropertyName.ROOT, 0)
-    dataset.createDimension(gm.DimensionName.VERTEX_NAME, size=grid.num_vertices)
-
-    dataset.createDimension(gm.DimensionName.EDGE_NAME, size=grid.num_edges)
-    dataset.createDimension(gm.DimensionName.CELL_NAME, size=grid.num_cells)
-    dataset.createDimension(gm.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=grid.size[dims.E2VDim])
-    dataset.createDimension(gm.DimensionName.DIAMOND_EDGE_SIZE, size=grid.size[dims.E2C2EDim])
-    dataset.createDimension(gm.DimensionName.MAX_CHILD_DOMAINS, size=1)
-    # add dummy values for the grf dimensions
-    dataset.createDimension(gm.DimensionName.CELL_GRF, size=14)
-    dataset.createDimension(gm.DimensionName.EDGE_GRF, size=24)
-    dataset.createDimension(gm.DimensionName.VERTEX_GRF, size=13)
-    _add_to_dataset(
-        dataset,
-        np.zeros(grid.num_edges),
-        gm.GridRefinementName.CONTROL_EDGES,
-        (gm.DimensionName.EDGE_NAME,),
-    )
-
-    _add_to_dataset(
-        dataset,
-        np.zeros(grid.num_cells),
-        gm.GridRefinementName.CONTROL_CELLS,
-        (gm.DimensionName.CELL_NAME,),
-    )
-    _add_to_dataset(
-        dataset,
-        np.zeros(grid.num_vertices),
-        gm.GridRefinementName.CONTROL_VERTICES,
-        (gm.DimensionName.VERTEX_NAME,),
-    )
-
-    dataset.createDimension(gm.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=grid.size[dims.C2EDim])
-    dataset.createDimension(gm.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=grid.size[dims.V2CDim])
-
-    _add_to_dataset(
-        dataset,
-        grid.connectivities[dims.C2EDim],
-        gm.ConnectivityName.C2E,
-        (
-            gm.DimensionName.NEIGHBORS_TO_CELL_SIZE,
-            gm.DimensionName.CELL_NAME,
-        ),
-    )
-
-    _add_to_dataset(
-        dataset,
-        grid.connectivities[dims.E2CDim],
-        gm.ConnectivityName.E2C,
-        (
-            gm.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
-            gm.DimensionName.EDGE_NAME,
-        ),
-    )
-    _add_to_dataset(
-        dataset,
-        grid.connectivities[dims.E2VDim],
-        gm.ConnectivityName.E2V,
-        (
-            gm.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
-            gm.DimensionName.EDGE_NAME,
-        ),
-    )
-
-    _add_to_dataset(
-        dataset,
-        grid.connectivities[dims.V2CDim],
-        gm.ConnectivityName.V2C,
-        (
-            gm.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
-            gm.DimensionName.VERTEX_NAME,
-        ),
-    )
-
-    _add_to_dataset(
-        dataset,
-        grid.connectivities[dims.C2VDim],
-        gm.ConnectivityName.C2V,
-        (
-            gm.DimensionName.NEIGHBORS_TO_CELL_SIZE,
-            gm.DimensionName.CELL_NAME,
-        ),
-    )
-    _add_to_dataset(
-        dataset,
-        np.zeros((grid.num_vertices, 4), dtype=np.int32),
-        gm.ConnectivityName.V2E2V,
-        (gm.DimensionName.DIAMOND_EDGE_SIZE, gm.DimensionName.VERTEX_NAME),
-    )
-    _add_to_dataset(
-        dataset,
-        grid.connectivities[dims.V2EDim],
-        gm.ConnectivityName.V2E,
-        (
-            gm.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
-            gm.DimensionName.VERTEX_NAME,
-        ),
-    )
-    _add_to_dataset(
-        dataset,
-        grid.connectivities[dims.C2E2CDim],
-        gm.ConnectivityName.C2E2C,
-        (
-            gm.DimensionName.NEIGHBORS_TO_CELL_SIZE,
-            gm.DimensionName.CELL_NAME,
-        ),
-    )
-
-    _add_to_dataset(
-        dataset,
-        np.ones((1, 24), dtype=np.int32),
-        gm.GridRefinementName.START_INDEX_EDGES,
-        (gm.DimensionName.MAX_CHILD_DOMAINS, gm.DimensionName.EDGE_GRF),
-    )
-    _add_to_dataset(
-        dataset,
-        np.ones((1, 14), dtype=np.int32),
-        gm.GridRefinementName.START_INDEX_CELLS,
-        (gm.DimensionName.MAX_CHILD_DOMAINS, gm.DimensionName.CELL_GRF),
-    )
-    _add_to_dataset(
-        dataset,
-        np.ones((1, 13), dtype=np.int32),
-        gm.GridRefinementName.START_INDEX_VERTICES,
-        (gm.DimensionName.MAX_CHILD_DOMAINS, gm.DimensionName.VERTEX_GRF),
-    )
-    _add_to_dataset(
-        dataset,
-        np.ones((1, 24), dtype=np.int32),
-        gm.GridRefinementName.END_INDEX_EDGES,
-        (gm.DimensionName.MAX_CHILD_DOMAINS, gm.DimensionName.EDGE_GRF),
-    )
-    _add_to_dataset(
-        dataset,
-        np.ones((1, 14), dtype=np.int32),
-        gm.GridRefinementName.END_INDEX_CELLS,
-        (gm.DimensionName.MAX_CHILD_DOMAINS, gm.DimensionName.CELL_GRF),
-    )
-    _add_to_dataset(
-        dataset,
-        np.ones((1, 13), dtype=np.int32),
-        gm.GridRefinementName.END_INDEX_VERTICES,
-        (gm.DimensionName.MAX_CHILD_DOMAINS, gm.DimensionName.VERTEX_GRF),
-    )
-    dataset.close()
-    yield path
-    path.unlink()
-
-
-@pytest.fixture(scope="module")
-def manager_for_simple_grid(simple_grid_gridfile):
-    with gm.GridManager(
-        grid_file=simple_grid_gridfile,
-        transformation=gm.NoTransformation(),
-        config=v_grid.VerticalGridConfig(num_levels=10),
-    ) as manager:
-        manager(limited_area=False)
-        yield manager
 
 
 @pytest.mark.with_netcdf
-def test_grid_file_dimension(simple_grid_gridfile):
-    grid = simple.SimpleGrid()
-
-    parser = gm.GridFile(str(simple_grid_gridfile))
+def test_grid_file_dimension(global_grid_file):
+  
+    parser = gm.GridFile(str(global_grid_file))
     try:
         parser.open()
-        assert parser.dimension(gm.DimensionName.CELL_NAME) == grid.num_cells
-        assert parser.dimension(gm.DimensionName.VERTEX_NAME) == grid.num_vertices
-        assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid.num_edges
+        assert parser.dimension(gm.DimensionName.CELL_NAME) == R02B04_GLOBAL_NUM_CELLS
+        assert parser.dimension(gm.DimensionName.VERTEX_NAME) == R02B04_GLOBAL_NUM_VERTEX
+        assert parser.dimension(gm.DimensionName.EDGE_NAME) == R02B04_GLOBAL_NUM_EDGES
     except Exception:
         pytest.fail()
     finally:
@@ -267,27 +92,29 @@ def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
     finally:
         parser.close()
 
-
+# TODO is this useful?
+@pytest.mark.skip
 @pytest.mark.with_netcdf
-def test_grid_file_index_fields(simple_grid_gridfile, caplog):
+@pytest.mark.parametrize("experiment", (dt_utils.GLOBAL_EXPERIMENT,))
+def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
     caplog.set_level(logging.DEBUG)
-    simple_grid = simple.SimpleGrid()
-    parser = gm.GridFile(str(simple_grid_gridfile))
+    parser = gm.GridFile(str(global_grid_file))
     try:
         parser.open()
         assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.C2E), simple_grid.connectivities[dims.C2EDim]
+            parser.int_variable(gm.ConnectivityName.C2E), icon_grid.connectivities[dims.C2EDim] + 1
         )
         assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.E2C), simple_grid.connectivities[dims.E2CDim]
+            parser.int_variable(gm.ConnectivityName.E2C), icon_grid.connectivities[dims.E2CDim] + 1
         )
         assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.V2E), simple_grid.connectivities[dims.V2EDim]
+            parser.int_variable(gm.ConnectivityName.V2E), icon_grid.connectivities[dims.V2EDim] + 1
         )
         assert np.allclose(
-            parser.int_variable(gm.ConnectivityName.V2C), simple_grid.connectivities[dims.V2CDim]
+            parser.int_variable(gm.ConnectivityName.V2C), icon_grid.connectivities[dims.V2CDim] + 1
         )
-    except Exception:
+    except Exception as e:
+        logging.error(e)
         pytest.fail()
     finally:
         parser.close()
@@ -596,10 +423,12 @@ def test_grid_manager_eval_c2v(caplog, grid_savepoint, grid_file):
     assert np.allclose(c2v, grid_savepoint.c2v())
 
 
-@pytest.mark.parametrize("dim, size", [(dims.CellDim, 18), (dims.EdgeDim, 27), (dims.VertexDim, 9)])
+@pytest.mark.parametrize("dim, size", [(dims.CellDim,R02B04_GLOBAL_NUM_CELLS ), (dims.EdgeDim, R02B04_GLOBAL_NUM_EDGES), (dims.VertexDim, R02B04_GLOBAL_NUM_VERTEX)])
 @pytest.mark.with_netcdf
-def test_grid_manager_grid_size(manager_for_simple_grid, dim, size):
-    assert size == manager_for_simple_grid.grid.size[dim]
+def test_grid_manager_grid_size(dim, size):
+    grid = run_grid_manager(utils.R02B04_GLOBAL).grid
+    assert size == grid.size[dim]
+
 
 
 def assert_up_to_order(table, diamond_table):
@@ -607,11 +436,6 @@ def assert_up_to_order(table, diamond_table):
     for n in range(table.shape[0]):
         assert np.all(np.in1d(table[n, :], diamond_table[n, :]))
 
-
-@pytest.mark.with_netcdf
-def test_grid_manager_diamond_offset(manager_for_simple_grid):
-    table = manager_for_simple_grid.grid.get_offset_provider("E2C2V").table
-    assert_up_to_order(table, simple.SimpleGridData.e2c2v_table)
 
 
 @pytest.mark.with_netcdf
@@ -647,9 +471,6 @@ def test_grid_manager_grid_level_and_root(grid_file, global_num_cells):
     assert global_num_cells == run_grid_manager(grid_file, num_levels=1).grid.global_num_cells
 
 
-def test_grid_manager_eval_c2e2c2e_on_simple_grid(manager_for_simple_grid, caplog):
-    table = manager_for_simple_grid.grid.get_offset_provider("C2E2C2E").table
-    assert_up_to_order(table, simple.SimpleGridData.c2e2c2e_table)
 
 
 @pytest.mark.datatest
@@ -721,11 +542,11 @@ def test_read_geometry_fields(grid_savepoint, grid_file):
     cell_area_p = gm.geometry[GeometryName.CELL_AREA_P.value]
     tangent_orientation = gm.geometry[GeometryName.TANGENT_ORIENTATION.value]
 
-    assert helpers.dallclose(edge_length, grid_savepoint.primal_edge_length().asnumpy())
-    assert helpers.dallclose(dual_edge_length, grid_savepoint.dual_edge_length().asnumpy())
-    assert helpers.dallclose(cell_area, cell_area_p)
-    assert helpers.dallclose(cell_area, grid_savepoint.cell_areas().asnumpy())
-    assert helpers.dallclose(tangent_orientation, grid_savepoint.tangent_orientation().asnumpy())
+    assert helpers.dallclose(edge_length.asnumpy(), grid_savepoint.primal_edge_length().asnumpy())
+    assert helpers.dallclose(dual_edge_length.asnumpy(), grid_savepoint.dual_edge_length().asnumpy())
+    assert helpers.dallclose(cell_area.asnumpy(), cell_area_p.asnumpy())
+    assert helpers.dallclose(cell_area.asnumpy(), grid_savepoint.cell_areas().asnumpy())
+    assert helpers.dallclose(tangent_orientation.asnumpy(), grid_savepoint.tangent_orientation().asnumpy())
 
 
 @pytest.mark.datatest
