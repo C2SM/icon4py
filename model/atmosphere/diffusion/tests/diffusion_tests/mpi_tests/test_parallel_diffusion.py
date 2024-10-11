@@ -96,7 +96,7 @@ def test_parallel_diffusion(
     )
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    diffusion = diffusion_.Diffusion(exchange)
+    diffusion = diffusion_.Diffusion(exchange, backend)
 
     diffusion.init(
         grid=icon_grid,
@@ -125,7 +125,6 @@ def test_parallel_diffusion(
             diagnostic_state=diagnostic_state,
             prognostic_state=prognostic_state,
             dtime=dtime,
-            backend=backend,
         )
     else:
         diffusion.run(
