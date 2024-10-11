@@ -36,4 +36,4 @@ def allocate_indices(
     backend: Optional[backend.Backend] = None,
 ):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
-    return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend.allocator)
+    return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend)
