@@ -63,7 +63,7 @@ class VerticalAdvection(ABC):
         ...
 
 
-class NoVerticalAdvection(VerticalAdvection):
+class NoAdvection(VerticalAdvection):
     """Class that implements disabled vertical advection."""
 
     def __init__(self, grid: icon_grid.IconGrid):
@@ -115,7 +115,7 @@ class NoVerticalAdvection(VerticalAdvection):
         log.debug("vertical advection run - end")
 
 
-class SemiLagrangianVerticalAdvection(VerticalAdvection):
+class SemiLagrangian(VerticalAdvection):
     """Class that does one semi-Lagrangian vertical advection step."""
 
     def __init__(

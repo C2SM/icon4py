@@ -52,7 +52,7 @@ class HorizontalFluxLimiter:
         ...
 
 
-class PositiveDefiniteLimiter(HorizontalFluxLimiter):
+class PositiveDefinite(HorizontalFluxLimiter):
     """Class that implements a positive definite horizontal flux limiter."""
 
     def __init__(
@@ -150,7 +150,7 @@ class HorizontalFlux(ABC):
         ...
 
 
-class SecondOrderMiuraHorizontal(HorizontalFlux):
+class SecondOrderMiura(HorizontalFlux):
     """Class that computes a Miura-based second-order accurate numerical flux."""
 
     def __init__(
@@ -270,7 +270,7 @@ class HorizontalAdvection(ABC):
         ...
 
 
-class NoHorizontalAdvection(HorizontalAdvection):
+class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
     def __init__(self, grid: icon_grid.IconGrid):
@@ -313,7 +313,7 @@ class NoHorizontalAdvection(HorizontalAdvection):
         log.debug("horizontal advection run - end")
 
 
-class SemiLagrangianHorizontalAdvection(HorizontalAdvection):
+class SemiLagrangian(HorizontalAdvection):
     """Class that does one semi-Lagrangian horizontal advection step."""
 
     def __init__(

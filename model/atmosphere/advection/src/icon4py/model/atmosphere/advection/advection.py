@@ -355,23 +355,23 @@ def convert_config_to_horizontal_vertical_advection(
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
     if config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION:
-        horizontal_advection = advection_horizontal.NoHorizontalAdvection(grid=grid)
+        horizontal_advection = advection_horizontal.NoAdvection(grid=grid)
     else:
         if config.horizontal_advection_limiter == HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
-            horizontal_limiter = advection_horizontal.PositiveDefiniteLimiter(
+            horizontal_limiter = advection_horizontal.PositiveDefinite(
                 grid=grid, interpolation_state=interpolation_state, exchange=exchange
             )
         else:
             horizontal_limiter = advection_horizontal.HorizontalFluxLimiter()
 
         if config.horizontal_advection_type == HorizontalAdvectionType.LINEAR_2ND_ORDER:
-            horizontal_flux = advection_horizontal.SecondOrderMiuraHorizontal(
+            horizontal_flux = advection_horizontal.SecondOrderMiura(
                 grid=grid,
                 least_squares_state=least_squares_state,
                 horizontal_limiter=horizontal_limiter,
             )
 
-        horizontal_advection = advection_horizontal.SemiLagrangianHorizontalAdvection(
+        horizontal_advection = advection_horizontal.SemiLagrangian(
             horizontal_flux=horizontal_flux,
             grid=grid,
             interpolation_state=interpolation_state,
@@ -383,7 +383,7 @@ def convert_config_to_horizontal_vertical_advection(
         )
 
     if config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION:
-        vertical_advection = advection_vertical.NoVerticalAdvection(grid=grid)
+        vertical_advection = advection_vertical.NoAdvection(grid=grid)
 
     return horizontal_advection, vertical_advection
 
