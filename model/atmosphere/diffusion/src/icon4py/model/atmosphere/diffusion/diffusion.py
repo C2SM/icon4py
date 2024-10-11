@@ -537,9 +537,8 @@ class Diffusion:
         self.horizontal_edge_index = field_alloc.allocate_indices(
             dims.EdgeDim, grid=self.grid, backend=self._backend
         )
-        self.w_tmp = gtx.as_field(
-            (dims.CellDim, dims.KDim),
-            xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float),
+        self.w_tmp = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
 
     def _determine_horizontal_domains(self):

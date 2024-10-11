@@ -25,8 +25,7 @@ def allocate_zero_field(
     if is_halfdim:
         assert len(shapex) == 2
         shapex = (shapex[0], shapex[1] + 1)
-    allocator = backend.allocator if backend else None
-    return gtx.as_field(dims, xp.zeros(shapex, dtype=dtype), allocator=allocator)
+    return gtx.as_field(dims, xp.zeros(shapex, dtype=dtype), allocator=backend.allocator)
 
 
 def allocate_indices(
@@ -37,5 +36,4 @@ def allocate_indices(
     backend: Optional[backend.Backend] = None,
 ):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
-    allocator = backend.allocator if backend else None
-    return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=allocator)
+    return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend.allocator)
