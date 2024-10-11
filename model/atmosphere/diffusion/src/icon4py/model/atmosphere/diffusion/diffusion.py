@@ -18,6 +18,7 @@ import gt4py.next as gtx
 
 import icon4py.model.common.states.prognostic_state as prognostics
 from gt4py.next import backend
+
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
@@ -350,7 +351,7 @@ class Diffusion:
 
     def __init__(
         self,
-        backend: backend,
+        backend: backend.Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._backend = backend

@@ -19,7 +19,7 @@ def allocate_zero_field(
     grid,
     is_halfdim=False,
     dtype=ta.wpfloat,
-    backend: Optional[backend] = None,
+    backend: Optional[backend.Backend] = None,
 ):
     shapex = tuple(map(lambda x: grid.size[x], dims))
     if is_halfdim:
@@ -34,7 +34,7 @@ def allocate_indices(
     grid,
     is_halfdim=False,
     dtype=gtx.int32,
-    backend: Optional[backend] = None,
+    backend: Optional[backend.Backend] = None,
 ):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
     allocator = backend.allocator if backend else None
