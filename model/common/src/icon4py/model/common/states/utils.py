@@ -13,6 +13,7 @@ import xarray as xa
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.settings import xp
+from icon4py.model.common.states import model
 
 
 T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
@@ -39,5 +40,7 @@ class RetrievalType(enum.Enum):
 class FieldSource(Protocol):
     """Protocol for object that can be queried for fields."""
 
-    def get(self, field_name: str, type_: RetrievalType = RetrievalType.FIELD):
+    def get(
+        self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
+    ) -> Union[FieldType, xa.DataArray, model.FieldMetaData]:
         ...
