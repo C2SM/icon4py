@@ -17,9 +17,9 @@ from icon4py.model.common.settings import xp
 def allocate_zero_field(
     *dims: gtx.Dimension,
     grid,
+    backend: Optional[Backend],
     is_halfdim=False,
     dtype=ta.wpfloat,
-    backend: Optional[Backend] = gtx.gtfn_cpu,
 ):
     shapex = tuple(map(lambda x: grid.size[x], dims))
     if is_halfdim:
@@ -31,9 +31,9 @@ def allocate_zero_field(
 def allocate_indices(
     dim: gtx.Dimension,
     grid,
+    backend: Optional[Backend],
     is_halfdim=False,
     dtype=gtx.int32,
-    backend: Optional[Backend] = gtx.gtfn_cpu,
 ):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend.allocator)

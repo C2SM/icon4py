@@ -350,9 +350,10 @@ class Diffusion:
 
     def __init__(
         self,
+        backend: Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
-        backend: Backend = gtx.gtfn_cpu,
     ):
+        self._backend = backend
         self._exchange = exchange
         self._initialized = False
         self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
@@ -377,36 +378,38 @@ class Diffusion:
         self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
         self.mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(
-            backend
+            self._backend
         )
         self.calculate_nabla2_and_smag_coefficients_for_vn = (
-            calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)
+            calculate_nabla2_and_smag_coefficients_for_vn.with_backend(self._backend)
         )
         self.calculate_diagnostic_quantities_for_turbulence = (
-            calculate_diagnostic_quantities_for_turbulence.with_backend(backend)
+            calculate_diagnostic_quantities_for_turbulence.with_backend(self._backend)
         )
-        self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(backend)
+        self.apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(self._backend)
         self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
             apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
-                backend
+                self._backend
             )
         )
         self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
             calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
-                backend
+                self._backend
             )
         )
-        self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(backend)
+        self.calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(self._backend)
         self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
-            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)
+            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(self._backend)
         )
-        self.update_theta_and_exner = update_theta_and_exner.with_backend(backend)
-        self.copy_field = copy_field.with_backend(backend)
-        self.scale_k = scale_k.with_backend(backend)
-        self.setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(backend)
+        self.update_theta_and_exner = update_theta_and_exner.with_backend(self._backend)
+        self.copy_field = copy_field.with_backend(self._backend)
+        self.scale_k = scale_k.with_backend(self._backend)
+        self.setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(
+            self._backend
+        )
 
         self.init_diffusion_local_fields_for_regular_timestep = (
-            init_diffusion_local_fields_for_regular_timestep.with_backend(backend)
+            init_diffusion_local_fields_for_regular_timestep.with_backend(self._backend)
         )
 
     def init(
@@ -419,7 +422,6 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: geometry.EdgeParams,
         cell_params: geometry.CellParams,
-        backend: Backend = gtx.gtfn_cpu,
     ):
         """
         Initialize Diffusion granule with configuration.
@@ -435,7 +437,6 @@ class Diffusion:
             interpolation_state:
             edge_params:
             cell_params:
-            backend:
         """
         self.config: DiffusionConfig = config
         self.params: DiffusionParams = params
@@ -446,7 +447,7 @@ class Diffusion:
         self.edge_params = edge_params
         self.cell_params = cell_params
 
-        self._allocate_temporary_fields(backend)
+        self._allocate_temporary_fields()
 
         self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
         self.bdy_diff: float = 0.015 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
@@ -491,49 +492,49 @@ class Diffusion:
     def initialized(self):
         return self._initialized
 
-    def _allocate_temporary_fields(self, backend):
+    def _allocate_temporary_fields(self):
         self.diff_multfac_vn = field_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, backend=backend
+            dims.KDim, grid=self.grid, backend=self._backend
         )
         self.diff_multfac_n2w = field_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, backend=backend
+            dims.KDim, grid=self.grid, backend=self._backend
         )
         self.smag_limit = field_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, backend=backend
+            dims.KDim, grid=self.grid, backend=self._backend
         )
         self.enh_smag_fac = field_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, backend=backend
+            dims.KDim, grid=self.grid, backend=self._backend
         )
         self.u_vert = field_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self.grid, backend=backend
+            dims.VertexDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.v_vert = field_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self.grid, backend=backend
+            dims.VertexDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.kh_smag_e = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.kh_smag_ec = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_nabla2_e = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_temp = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.diff_multfac_smag = field_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, backend=backend
+            dims.KDim, grid=self.grid, backend=self._backend
         )
         # TODO(Magdalena): this is KHalfDim
         self.vertical_index = field_alloc.allocate_indices(
-            dims.KDim, grid=self.grid, is_halfdim=True, backend=backend
+            dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
         self.horizontal_cell_index = field_alloc.allocate_indices(
-            dims.CellDim, grid=self.grid, backend=backend
+            dims.CellDim, grid=self.grid, backend=self._backend
         )
         self.horizontal_edge_index = field_alloc.allocate_indices(
-            dims.EdgeDim, grid=self.grid, backend=backend
+            dims.EdgeDim, grid=self.grid, backend=self._backend
         )
         self.w_tmp = gtx.as_field(
             (dims.CellDim, dims.KDim),
@@ -580,7 +581,6 @@ class Diffusion:
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
-        backend: Backend,
     ):
         """
         Calculate initial diffusion step.
@@ -594,9 +594,11 @@ class Diffusion:
 
         """
         diff_multfac_vn = field_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, backend=backend
+            dims.KDim, grid=self.grid, backend=self._backend
         )
-        smag_limit = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid, backend=backend)
+        smag_limit = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=self._backend
+        )
 
         self.setup_fields_for_initial_step(
             self.params.K4,
