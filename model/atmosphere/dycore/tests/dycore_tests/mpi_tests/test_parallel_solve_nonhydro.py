@@ -153,7 +153,6 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
     )
 
     print(

@@ -159,7 +159,6 @@ def test_nonhydro_predictor_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
     )
 
     prognostic_state_ls = create_prognostic_states(sp)
@@ -174,7 +173,6 @@ def test_nonhydro_predictor_step(
         at_first_substep=(jstep_init == 0),
         nnow=nnow,
         nnew=nnew,
-        backend=backend,
     )
     cell_domain = h_grid.domain(dims.CellDim)
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -606,7 +604,6 @@ def test_nonhydro_corrector_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
     )
 
     prognostic_state_ls = create_prognostic_states(sp)
@@ -795,7 +792,6 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
     )
 
     prognostic_state_ls = create_prognostic_states(sp)
@@ -925,7 +921,6 @@ def test_run_solve_nonhydro_multi_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
     )
 
     for i_substep in range(ndyn_substeps):

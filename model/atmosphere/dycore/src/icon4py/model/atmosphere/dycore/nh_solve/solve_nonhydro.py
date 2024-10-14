@@ -14,7 +14,7 @@ import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.grid.geometry as geometry
-from gt4py.next.backend import Backend
+from gt4py.next import backend
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
@@ -243,7 +243,11 @@ class IntermediateFields:
     z_dwdz_dd: fa.CellKField[float]
 
     @classmethod
-    def allocate(cls, grid: grid_def.BaseGrid, backend: Backend):
+    def allocate(
+        cls,
+        grid: grid_def.BaseGrid,
+        backend: Optional[backend.Backend] = None,
+    ):
         return IntermediateFields(
             z_gradh_exner=field_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
@@ -436,9 +440,10 @@ class SolveNonhydro:
     def __init__(
         self,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
-        backend: Backend = None,
+        backend: backend.Backend = None,
     ):
         self._exchange = exchange
+        self._backend = backend
         self._initialized = False
         self.grid: Optional[icon_grid.IconGrid] = None
         self.config: Optional[NonHydrostaticConfig] = None
@@ -458,128 +463,152 @@ class SolveNonhydro:
         self.ntl1 = 0
         self.ntl2 = 0
 
-        self.compute_theta_and_exner = compute_theta_and_exner.with_backend(backend)
-        self.compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(backend)
-        self.update_theta_v = update_theta_v.with_backend(backend)
+        self.compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend)
+        self.compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(self._backend)
+        self.update_theta_v = update_theta_v.with_backend(self._backend)
         self.init_two_cell_kdim_fields_with_zero_vp = (
-            init_two_cell_kdim_fields_with_zero_vp.with_backend(backend)
+            init_two_cell_kdim_fields_with_zero_vp.with_backend(self._backend)
         )
         self.compute_approx_of_2nd_vertical_derivative_of_exner = (
-            compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(backend)
+            compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(self._backend)
         )
         self.compute_perturbation_of_rho_and_theta = (
-            compute_perturbation_of_rho_and_theta.with_backend(backend)
+            compute_perturbation_of_rho_and_theta.with_backend(self._backend)
         )
         self.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(self._backend)
         )
         self.mo_math_gradients_grad_green_gauss_cell_dsl = (
-            mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(backend)
+            mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(self._backend)
         )
         self.init_two_edge_kdim_fields_with_zero_wp = (
-            init_two_edge_kdim_fields_with_zero_wp.with_backend(backend)
+            init_two_edge_kdim_fields_with_zero_wp.with_backend(self._backend)
         )
         self.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates = (
-            compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(backend)
+            compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(
+                self._backend
+            )
         )
         self.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates = (
             compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates.with_backend(
-                backend
+                self._backend
             )
         )
         self.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels = (
-            compute_horizontal_gradient_of_exner_pressure_for_multiple_levels.with_backend(backend)
+            compute_horizontal_gradient_of_exner_pressure_for_multiple_levels.with_backend(
+                self._backend
+            )
         )
         self.compute_hydrostatic_correction_term = compute_hydrostatic_correction_term.with_backend(
-            backend
+            self._backend
         )
         self.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure = (
             apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(
-                backend
+                self._backend
             )
         )
-        self.add_temporal_tendencies_to_vn = add_temporal_tendencies_to_vn.with_backend(backend)
-        self.add_analysis_increments_to_vn = add_analysis_increments_to_vn.with_backend(backend)
-        self.compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(backend)
-        self.compute_avg_vn_and_graddiv_vn_and_vt = (
-            compute_avg_vn_and_graddiv_vn_and_vt.with_backend(backend)
+        self.add_temporal_tendencies_to_vn = add_temporal_tendencies_to_vn.with_backend(
+            self._backend
         )
-        self.compute_mass_flux = compute_mass_flux.with_backend(backend)
+        self.add_analysis_increments_to_vn = add_analysis_increments_to_vn.with_backend(
+            self._backend
+        )
+        self.compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
+            self._backend
+        )
+        self.compute_avg_vn_and_graddiv_vn_and_vt = (
+            compute_avg_vn_and_graddiv_vn_and_vt.with_backend(self._backend)
+        )
+        self.compute_mass_flux = compute_mass_flux.with_backend(self._backend)
         self.compute_divergence_of_fluxes_of_rho_and_theta = (
-            compute_divergence_of_fluxes_of_rho_and_theta.with_backend(backend)
+            compute_divergence_of_fluxes_of_rho_and_theta.with_backend(self._backend)
         )
         self.init_two_cell_kdim_fields_with_zero_wp = (
-            init_two_cell_kdim_fields_with_zero_wp.with_backend(backend)
+            init_two_cell_kdim_fields_with_zero_wp.with_backend(self._backend)
         )
         self.add_analysis_increments_from_data_assimilation = (
-            add_analysis_increments_from_data_assimilation.with_backend(backend)
+            add_analysis_increments_from_data_assimilation.with_backend(self._backend)
         )
         self.solve_tridiagonal_matrix_for_w_forward_sweep = (
-            solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)
+            solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(self._backend)
         )
         self.solve_tridiagonal_matrix_for_w_back_substitution = (
-            solve_tridiagonal_matrix_for_w_back_substitution.with_backend(backend)
+            solve_tridiagonal_matrix_for_w_back_substitution.with_backend(self._backend)
         )
         self.apply_rayleigh_damping_mechanism = apply_rayleigh_damping_mechanism.with_backend(
-            backend
+            self._backend
         )
         self.compute_results_for_thermodynamic_variables = (
-            compute_results_for_thermodynamic_variables.with_backend(backend)
+            compute_results_for_thermodynamic_variables.with_backend(self._backend)
         )
         self.compute_dwdz_for_divergence_damping = compute_dwdz_for_divergence_damping.with_backend(
-            backend
+            self._backend
         )
-        self.copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(backend)
+        self.copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(self._backend)
         self.compute_rho_virtual_potential_temperatures_and_pressure_gradient = (
-            compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(backend)
+            compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(
+                self._backend
+            )
         )
         self.add_vertical_wind_derivative_to_divergence_damping = (
-            add_vertical_wind_derivative_to_divergence_damping.with_backend(backend)
+            add_vertical_wind_derivative_to_divergence_damping.with_backend(self._backend)
         )
         self.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels = (
-            add_temporal_tendencies_to_vn_by_interpolating_between_time_levels.with_backend(backend)
+            add_temporal_tendencies_to_vn_by_interpolating_between_time_levels.with_backend(
+                self._backend
+            )
         )
-        self.compute_graddiv2_of_vn = compute_graddiv2_of_vn.with_backend(backend)
+        self.compute_graddiv2_of_vn = compute_graddiv2_of_vn.with_backend(self._backend)
         self.apply_2nd_order_divergence_damping = apply_2nd_order_divergence_damping.with_backend(
-            backend
+            self._backend
         )
         self.apply_weighted_2nd_and_4th_order_divergence_damping = (
-            apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(backend)
+            apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(self._backend)
         )
         self.apply_4th_order_divergence_damping = apply_4th_order_divergence_damping.with_backend(
-            backend
+            self._backend
         )
-        self.compute_avg_vn = compute_avg_vn.with_backend(backend)
-        self.accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(backend)
-        self.update_mass_volume_flux = update_mass_volume_flux.with_backend(backend)
+        self.compute_avg_vn = compute_avg_vn.with_backend(self._backend)
+        self.accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(self._backend)
+        self.update_mass_volume_flux = update_mass_volume_flux.with_backend(self._backend)
         self.update_dynamical_exner_time_increment = (
-            update_dynamical_exner_time_increment.with_backend(backend)
+            update_dynamical_exner_time_increment.with_backend(self._backend)
         )
         self.init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
-            backend
+            self._backend
         )
-        self.update_mass_flux_weighted = update_mass_flux_weighted.with_backend(backend)
-        self.compute_z_raylfac = solve_nh_utils.compute_z_raylfac.with_backend(backend)
-        self.predictor_stencils_2_3 = nhsolve_prog.predictor_stencils_2_3.with_backend(backend)
-        self.predictor_stencils_4_5_6 = nhsolve_prog.predictor_stencils_4_5_6.with_backend(backend)
-        self.predictor_stencils_7_8_9 = nhsolve_prog.predictor_stencils_7_8_9.with_backend(backend)
+        self.update_mass_flux_weighted = update_mass_flux_weighted.with_backend(self._backend)
+        self.compute_z_raylfac = solve_nh_utils.compute_z_raylfac.with_backend(self._backend)
+        self.predictor_stencils_2_3 = nhsolve_prog.predictor_stencils_2_3.with_backend(
+            self._backend
+        )
+        self.predictor_stencils_4_5_6 = nhsolve_prog.predictor_stencils_4_5_6.with_backend(
+            self._backend
+        )
+        self.predictor_stencils_7_8_9 = nhsolve_prog.predictor_stencils_7_8_9.with_backend(
+            self._backend
+        )
         self.predictor_stencils_11_lower_upper = (
-            nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(backend)
+            nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(self._backend)
         )
         self.compute_horizontal_advection_of_rho_and_theta = (
-            nhsolve_prog.compute_horizontal_advection_of_rho_and_theta.with_backend(backend)
+            nhsolve_prog.compute_horizontal_advection_of_rho_and_theta.with_backend(self._backend)
         )
-        self.predictor_stencils_35_36 = nhsolve_prog.predictor_stencils_35_36.with_backend(backend)
-        self.predictor_stencils_37_38 = nhsolve_prog.predictor_stencils_37_38.with_backend(backend)
-        self.stencils_39_40 = nhsolve_prog.stencils_39_40.with_backend(backend)
-        self.stencils_43_44_45_45b = nhsolve_prog.stencils_43_44_45_45b.with_backend(backend)
-        self.stencils_47_48_49 = nhsolve_prog.stencils_47_48_49.with_backend(backend)
-        self.stencils_61_62 = nhsolve_prog.stencils_61_62.with_backend(backend)
+        self.predictor_stencils_35_36 = nhsolve_prog.predictor_stencils_35_36.with_backend(
+            self._backend
+        )
+        self.predictor_stencils_37_38 = nhsolve_prog.predictor_stencils_37_38.with_backend(
+            self._backend
+        )
+        self.stencils_39_40 = nhsolve_prog.stencils_39_40.with_backend(self._backend)
+        self.stencils_43_44_45_45b = nhsolve_prog.stencils_43_44_45_45b.with_backend(self._backend)
+        self.stencils_47_48_49 = nhsolve_prog.stencils_47_48_49.with_backend(self._backend)
+        self.stencils_61_62 = nhsolve_prog.stencils_61_62.with_backend(self._backend)
         self.en_smag_fac_for_zero_nshift = smagorinsky.en_smag_fac_for_zero_nshift.with_backend(
-            backend
+            self._backend
         )
-        self.init_test_fields = nhsolve_prog.init_test_fields.with_backend(backend)
-        self.stencils_42_44_45_45b = nhsolve_prog.stencils_42_44_45_45b.with_backend(backend)
+        self.init_test_fields = nhsolve_prog.init_test_fields.with_backend(self._backend)
+        self.stencils_42_44_45_45b = nhsolve_prog.stencils_42_44_45_45b.with_backend(self._backend)
 
     def init(
         self,
@@ -592,7 +621,6 @@ class SolveNonhydro:
         edge_geometry: geometry.EdgeParams,
         cell_geometry: geometry.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: Backend = gtx.gtfn_cpu,
     ):
         """
         Initialize NonHydrostatic granule with configuration.
@@ -615,7 +643,7 @@ class SolveNonhydro:
             edge_geometry,
             owner_mask,
         )
-        self._allocate_local_fields(backend)
+        self._allocate_local_fields(self._backend)
         self._determine_local_domains()
         # TODO (magdalena) vertical nesting is only relevant in the context of
         #      horizontal nesting, since we don't support this we should remove this option
@@ -646,87 +674,89 @@ class SolveNonhydro:
     def initialized(self):
         return self._initialized
 
-    def _allocate_local_fields(self, backend):
+    def _allocate_local_fields(self):
         self.z_exner_ex_pr = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
         )
         self.z_exner_ic = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
         )
         self.z_dexner_dz_c_1 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_theta_v_pr_ic = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
         )
         self.z_th_ddz_exner_c = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_rth_pr_1 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_rth_pr_2 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_grad_rth_1 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_grad_rth_2 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_grad_rth_3 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_grad_rth_4 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_dexner_dz_c_2 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_hydro_corr = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_vn_avg = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_theta_v_fl_e = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_flxdiv_mass = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_flxdiv_theta = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=backend
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_rho_v = field_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self.grid, backend=backend
+            dims.VertexDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_theta_v_v = field_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self.grid, backend=backend
+            dims.VertexDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_graddiv2_vn = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.k_field = field_alloc.allocate_indices(
-            dims.KDim, grid=self.grid, is_halfdim=True, backend=backend
+            dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
         self.z_w_concorr_me = field_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, backend=backend
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_hydro_corr_horizontal = field_alloc.allocate_zero_field(
-            dims.EdgeDim, grid=self.grid, backend=backend
+            dims.EdgeDim, grid=self.grid, backend=self._backend
         )
-        self.z_raylfac = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid, backend=backend)
+        self.z_raylfac = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, backend=self._backend
+        )
         self.enh_divdamp_fac = field_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, backend=backend
+            dims.KDim, grid=self.grid, backend=self._backend
         )
         self._bdy_divdamp = field_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, backend=backend
+            dims.KDim, grid=self.grid, backend=self._backend
         )
         self.scal_divdamp = field_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, backend=backend
+            dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.intermediate_fields = IntermediateFields.allocate(self.grid, backend=backend)
+        self.intermediate_fields = IntermediateFields.allocate(self.grid, backend=self._backend)
 
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -912,7 +942,6 @@ class SolveNonhydro:
         at_first_substep: bool,
         nnow: int,
         nnew: int,
-        backend: Backend = gtx.gtfn_cpu,
     ):
         log.info(
             f"running predictor step: dtime = {dtime}, init = {l_init}, recompute = {l_recompute} "
@@ -1221,7 +1250,7 @@ class SolveNonhydro:
         hydro_corr_horizontal = gtx.as_field(
             (dims.EdgeDim,),
             self.z_hydro_corr.asnumpy()[:, lowest_level],
-            allocator=backend.allocator,
+            allocator=self._backend.allocator,
         )
 
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:

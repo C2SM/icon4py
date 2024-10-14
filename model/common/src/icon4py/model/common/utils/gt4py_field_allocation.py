@@ -8,7 +8,7 @@
 from typing import Optional
 
 import gt4py.next as gtx
-from gt4py.next.backend import Backend
+from gt4py.next import backend
 
 from icon4py.model.common import type_alias as ta
 from icon4py.model.common.settings import xp
@@ -19,7 +19,7 @@ def allocate_zero_field(
     grid,
     is_halfdim=False,
     dtype=ta.wpfloat,
-    backend: Optional[Backend] = gtx.gtfn_cpu,
+    backend: Optional[backend.Backend] = None,
 ):
     shapex = tuple(map(lambda x: grid.size[x], dims))
     if is_halfdim:
@@ -33,7 +33,7 @@ def allocate_indices(
     grid,
     is_halfdim=False,
     dtype=gtx.int32,
-    backend: Optional[Backend] = gtx.gtfn_cpu,
+    backend: Optional[backend.Backend] = None,
 ):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend.allocator)
