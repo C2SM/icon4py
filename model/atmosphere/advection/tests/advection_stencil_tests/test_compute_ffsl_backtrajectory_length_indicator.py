@@ -46,15 +46,15 @@ class TestComputeFfslBacktrajectoryLengthIndicator(helpers.StencilTest):
         p_vt = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         edge_cell_length = xp.asarray(grid.connectivities[dims.E2CDim], dtype=float)
         edge_cell_length_new = helpers.numpy_to_1D_sparse_field(edge_cell_length, dims.ECDim)
-        p_dt = 1.0
         opt_famask_dsl = helpers.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_dt = 1.0
 
         return dict(
             p_vn=p_vn,
             p_vt=p_vt,
             edge_cell_length=edge_cell_length_new,
-            p_dt=p_dt,
             opt_famask_dsl=opt_famask_dsl,
+            p_dt=p_dt,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,

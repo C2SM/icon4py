@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
@@ -48,8 +48,6 @@ def _integrate_tracer_vertically(
     ivadv_tracer: gtx.int32,
     iadv_slev_jt: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
-    k = broadcast(k, (dims.CellDim, dims.KDim))
-
     tracer_new = (
         where(
             (iadv_slev_jt <= k),
@@ -79,11 +77,11 @@ def integrate_tracer_vertically(
     deepatmo_divzl: fa.KField[ta.wpfloat],
     deepatmo_divzu: fa.KField[ta.wpfloat],
     rhodz_new: fa.CellKField[ta.wpfloat],
+    tracer_new: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     p_dtime: ta.wpfloat,
     ivadv_tracer: gtx.int32,
     iadv_slev_jt: gtx.int32,
-    tracer_new: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

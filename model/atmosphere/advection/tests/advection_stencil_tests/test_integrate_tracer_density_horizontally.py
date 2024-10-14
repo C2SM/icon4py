@@ -29,7 +29,6 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        nsub: gtx.int32,
         p_mass_flx_e: xp.array,
         geofac_div: xp.array,
         z_rhofluxdiv_c: xp.array,
@@ -37,6 +36,7 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
         z_rho_now: xp.array,
         z_tracer_now: xp.array,
         z_dtsub: float,
+        nsub: gtx.int32,
         **kwargs,
     ) -> dict:
         c2e = grid.connectivities[dims.C2EDim]
@@ -60,31 +60,31 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        nsub = 1
         p_mass_flx_e = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         geofac_div = helpers.random_field(grid, dims.CellDim, dims.C2EDim)
         z_rhofluxdiv_c = helpers.random_field(grid, dims.CellDim, dims.KDim)
         z_tracer_mflx = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         z_rho_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
         z_tracer_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_dtsub = 0.5
         z_rhofluxdiv_c_out = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         z_fluxdiv_c_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         z_rho_new_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         z_tracer_new_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        z_dtsub = 0.5
+        nsub = 1
         return dict(
-            nsub=nsub,
             p_mass_flx_e=p_mass_flx_e,
             geofac_div=geofac_div,
             z_rhofluxdiv_c=z_rhofluxdiv_c,
             z_tracer_mflx=z_tracer_mflx,
             z_rho_now=z_rho_now,
             z_tracer_now=z_tracer_now,
-            z_dtsub=z_dtsub,
             z_rhofluxdiv_c_out=z_rhofluxdiv_c_out,
             z_fluxdiv_c_dsl=z_fluxdiv_c_dsl,
             z_rho_new_dsl=z_rho_new_dsl,
             z_tracer_new_dsl=z_tracer_new_dsl,
+            z_dtsub=z_dtsub,
+            nsub=nsub,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

@@ -64,11 +64,11 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
         deepatmo_divzl = helpers.random_field(grid, dims.KDim)
         deepatmo_divzu = helpers.random_field(grid, dims.KDim)
         rhodz_new = helpers.random_field(grid, dims.CellDim, dims.KDim)
+        tracer_new = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         k = as_field((dims.KDim,), xp.arange(grid.num_levels, dtype=gtx.int32))
         p_dtime = xp.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4
-        tracer_new = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             tracer_now=tracer_now,
             rhodz_now=rhodz_now,
@@ -76,11 +76,11 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
             deepatmo_divzl=deepatmo_divzl,
             deepatmo_divzu=deepatmo_divzu,
             rhodz_new=rhodz_new,
+            tracer_new=tracer_new,
             k=k,
             p_dtime=p_dtime,
             ivadv_tracer=ivadv_tracer,
             iadv_slev_jt=iadv_slev_jt,
-            tracer_new=tracer_new,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

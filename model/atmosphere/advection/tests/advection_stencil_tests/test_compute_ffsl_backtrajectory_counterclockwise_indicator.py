@@ -23,7 +23,7 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest
 
     @staticmethod
     def reference(
-        grid, lcounterclock: bool, p_vn: xp.array, tangent_orientation: xp.array, **kwargs
+        grid, p_vn: xp.array, tangent_orientation: xp.array, lcounterclock: bool, **kwargs
     ) -> dict:
         tangent_orientation = xp.expand_dims(tangent_orientation, axis=-1)
 
@@ -39,15 +39,15 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        lcounterclock = True
         p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         tangent_orientation = helpers.random_field(grid, dims.EdgeDim)
         lvn_sys_pos = helpers.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=bool)
+        lcounterclock = True
         return dict(
-            lcounterclock=lcounterclock,
             p_vn=p_vn,
             tangent_orientation=tangent_orientation,
             lvn_sys_pos=lvn_sys_pos,
+            lcounterclock=lcounterclock,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,

@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
@@ -54,8 +54,6 @@ def _compute_ppm_slope(
     k: fa.KField[gtx.int32],
     elev: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
-    k = broadcast(k, (dims.CellDim, dims.KDim))
-
     z_slope = where(
         k == elev,
         _compute_ppm_slope_b(p_cc, p_cellhgt_mc_now),
@@ -70,8 +68,8 @@ def compute_ppm_slope(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
-    elev: gtx.int32,
     z_slope: fa.CellKField[ta.wpfloat],
+    elev: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

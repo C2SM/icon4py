@@ -247,20 +247,21 @@ class GodunovSplittingAdvection(Advection):
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         # reintegrate density for conservation of mass
+        rhodz_in, horizontal_start = (
+            (diagnostic_state.airmass_now, self._start_cell_lateral_boundary_level_2)
+            if self._even_timestep
+            else (diagnostic_state.airmass_new, self._start_cell_lateral_boundary_level_3)
+        )
         log.debug("running stencil apply_density_increment - start")
         apply_density_increment.apply_density_increment(
-            rhodz_in=diagnostic_state.airmass_now
-            if self._even_timestep
-            else diagnostic_state.airmass_new,
+            rhodz_in=rhodz_in,
             p_mflx_contra_v=prep_adv.mass_flx_ic,
             deepatmo_divzl=self._metric_state.deepatmo_divzl,
             deepatmo_divzu=self._metric_state.deepatmo_divzu,
+            rhodz_out=self._rhodz_ast2,
             p_dtime=dtime,
             even_timestep=self._even_timestep,
-            rhodz_out=self._rhodz_ast2,
-            horizontal_start=self._start_cell_lateral_boundary_level_2
-            if self._even_timestep
-            else self._start_cell_lateral_boundary_level_3,
+            horizontal_start=horizontal_start,
             horizontal_end=self._end_cell_end,
             vertical_start=0,
             vertical_end=self._grid.num_levels,

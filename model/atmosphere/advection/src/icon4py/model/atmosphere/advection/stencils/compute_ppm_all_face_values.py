@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_values import (
     _compute_ppm_quadratic_face_values,
@@ -32,8 +32,6 @@ def _compute_ppm_all_face_values(
     slevp1: gtx.int32,
     elevp1: gtx.int32,
 ) -> fa.CellKField[ta.wpfloat]:
-    k = broadcast(k, (dims.CellDim, dims.KDim))
-
     p_face = where(
         (k == slevp1) | (k == elev),
         _compute_ppm_quadratic_face_values(p_cc, p_cellhgt_mc_now),
@@ -52,12 +50,12 @@ def compute_ppm_all_face_values(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],
     p_face_in: fa.CellKField[ta.wpfloat],
+    p_face: fa.CellKField[ta.wpfloat],
     k: fa.KField[gtx.int32],
     slev: gtx.int32,
     elev: gtx.int32,
     slevp1: gtx.int32,
     elevp1: gtx.int32,
-    p_face: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

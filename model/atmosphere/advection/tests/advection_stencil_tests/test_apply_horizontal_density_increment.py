@@ -47,15 +47,15 @@ class TestApplyHorizontalDensityIncrement(helpers.StencilTest):
         p_mflx_contra_v = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         deepatmo_divzl = helpers.random_field(grid, dims.KDim)
         deepatmo_divzu = helpers.random_field(grid, dims.KDim)
-        p_dtime = 0.1
         rhodz_ast2 = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        p_dtime = 0.1
         return dict(
             p_rhodz_new=p_rhodz_new,
             p_mflx_contra_v=p_mflx_contra_v,
             deepatmo_divzl=deepatmo_divzl,
             deepatmo_divzu=deepatmo_divzu,
-            p_dtime=p_dtime,
             rhodz_ast2=rhodz_ast2,
+            p_dtime=p_dtime,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,

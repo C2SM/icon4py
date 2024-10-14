@@ -77,8 +77,8 @@ def _compute_ffsl_flux_area_list(
     fa.EdgeKField[gtx.int32],
     fa.EdgeKField[gtx.int32],
 ]:
-    famask_bool = where(famask_int == 1, True, False)
-    lvn_pos = where(p_vn >= 0.0, True, False)
+    famask_bool = famask_int == 1
+    lvn_pos = p_vn >= 0.0
     # Translation of patch 1 and patch 2 in system relative to respective cell
     bf_cc_patch1_lon = where(
         famask_bool,

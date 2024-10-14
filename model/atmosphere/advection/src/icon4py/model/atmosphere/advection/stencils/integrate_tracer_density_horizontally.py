@@ -17,7 +17,6 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @gtx.field_operator
 def _integrate_tracer_density_horizontally(
-    nsub: gtx.int32,
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     z_rhofluxdiv_c: fa.CellKField[ta.vpfloat],
@@ -25,6 +24,7 @@ def _integrate_tracer_density_horizontally(
     z_rho_now: fa.CellKField[ta.wpfloat],
     z_tracer_now: fa.CellKField[ta.wpfloat],
     z_dtsub: ta.wpfloat,
+    nsub: gtx.int32,
 ) -> tuple[
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
@@ -57,25 +57,24 @@ def _integrate_tracer_density_horizontally(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def integrate_tracer_density_horizontally(
-    nsub: gtx.int32,
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], ta.wpfloat],
     z_rhofluxdiv_c: fa.CellKField[ta.vpfloat],
     z_tracer_mflx: fa.EdgeKField[ta.wpfloat],
     z_rho_now: fa.CellKField[ta.wpfloat],
     z_tracer_now: fa.CellKField[ta.wpfloat],
-    z_dtsub: ta.wpfloat,
     z_rhofluxdiv_c_out: fa.CellKField[ta.vpfloat],
     z_fluxdiv_c_dsl: fa.CellKField[ta.vpfloat],
     z_rho_new_dsl: fa.CellKField[ta.wpfloat],
     z_tracer_new_dsl: fa.CellKField[ta.wpfloat],
+    z_dtsub: ta.wpfloat,
+    nsub: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     _integrate_tracer_density_horizontally(
-        nsub,
         p_mass_flx_e,
         geofac_div,
         z_rhofluxdiv_c,
@@ -83,6 +82,7 @@ def integrate_tracer_density_horizontally(
         z_rho_now,
         z_tracer_now,
         z_dtsub,
+        nsub,
         out=(z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),

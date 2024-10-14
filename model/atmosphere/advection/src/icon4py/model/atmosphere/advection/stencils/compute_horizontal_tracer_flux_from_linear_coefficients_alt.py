@@ -25,7 +25,7 @@ def _compute_horizontal_tracer_flux_from_linear_coefficients_alt(
     p_mass_flx_e: fa.EdgeKField[ta.wpfloat],
     p_vn: fa.EdgeKField[ta.wpfloat],
 ) -> fa.EdgeKField[ta.wpfloat]:
-    lvn_pos_inv = where(p_vn > 0.0, False, True)
+    lvn_pos_inv = p_vn < 0.0
 
     p_out_e = (
         where(lvn_pos_inv, z_lsq_coeff_1(E2C[1]), z_lsq_coeff_1(E2C[0]))

@@ -30,7 +30,7 @@ def _compute_barycentric_backtrajectory_alt(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    lvn_pos = where(p_vn > 0.0, True, False)
+    lvn_pos = p_vn >= 0.0
 
     z_ntdistv_bary_1 = -(
         p_vn * p_dthalf + where(lvn_pos, pos_on_tplane_e_1(E2EC[0]), pos_on_tplane_e_1(E2EC[1]))

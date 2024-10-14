@@ -25,6 +25,7 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
     p_coords_dreg_v_2_y: fa.EdgeKField[ta.vpfloat],
     p_coords_dreg_v_3_y: fa.EdgeKField[ta.vpfloat],
     p_coords_dreg_v_4_y: fa.EdgeKField[ta.vpfloat],
+    p_dreg_area_in: fa.EdgeKField[ta.vpfloat],
     shape_func_1_1: ta.wpfloat,
     shape_func_2_1: ta.wpfloat,
     shape_func_3_1: ta.wpfloat,
@@ -55,7 +56,6 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
     wgt_eta_2: ta.wpfloat,
     dbl_eps: ta.wpfloat,
     eps: ta.wpfloat,
-    p_dreg_area_in: fa.EdgeKField[ta.vpfloat],
 ) -> tuple[
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
@@ -91,15 +91,15 @@ def _prepare_numerical_quadrature_list_for_cubic_reconstruction(
     z_eta_3_4 = 1.0 + zeta_3
     z_eta_4_4 = 1.0 + zeta_4
 
-    famask_bool = where(famask_int == 1, True, False)
-    p_coords_dreg_v_1_x = where(famask_bool, p_coords_dreg_v_1_x, vpfloat(0.0))
-    p_coords_dreg_v_2_x = where(famask_bool, p_coords_dreg_v_2_x, vpfloat(0.0))
-    p_coords_dreg_v_3_x = where(famask_bool, p_coords_dreg_v_3_x, vpfloat(0.0))
-    p_coords_dreg_v_4_x = where(famask_bool, p_coords_dreg_v_4_x, vpfloat(0.0))
-    p_coords_dreg_v_1_y = where(famask_bool, p_coords_dreg_v_1_y, vpfloat(0.0))
-    p_coords_dreg_v_2_y = where(famask_bool, p_coords_dreg_v_2_y, vpfloat(0.0))
-    p_coords_dreg_v_3_y = where(famask_bool, p_coords_dreg_v_3_y, vpfloat(0.0))
-    p_coords_dreg_v_4_y = where(famask_bool, p_coords_dreg_v_4_y, vpfloat(0.0))
+    famask_bool = famask_int == 1
+    p_coords_dreg_v_1_x = where(famask_bool, p_coords_dreg_v_1_x, 0.0)
+    p_coords_dreg_v_2_x = where(famask_bool, p_coords_dreg_v_2_x, 0.0)
+    p_coords_dreg_v_3_x = where(famask_bool, p_coords_dreg_v_3_x, 0.0)
+    p_coords_dreg_v_4_x = where(famask_bool, p_coords_dreg_v_4_x, 0.0)
+    p_coords_dreg_v_1_y = where(famask_bool, p_coords_dreg_v_1_y, 0.0)
+    p_coords_dreg_v_2_y = where(famask_bool, p_coords_dreg_v_2_y, 0.0)
+    p_coords_dreg_v_3_y = where(famask_bool, p_coords_dreg_v_3_y, 0.0)
+    p_coords_dreg_v_4_y = where(famask_bool, p_coords_dreg_v_4_y, 0.0)
 
     wgt_t_detjac_1 = where(
         famask_bool,
@@ -392,6 +392,18 @@ def prepare_numerical_quadrature_list_for_cubic_reconstruction(
     p_coords_dreg_v_2_y: fa.EdgeKField[ta.vpfloat],
     p_coords_dreg_v_3_y: fa.EdgeKField[ta.vpfloat],
     p_coords_dreg_v_4_y: fa.EdgeKField[ta.vpfloat],
+    p_dreg_area_in: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_1: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_2: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_3: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_4: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_5: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_6: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_7: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_8: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_9: fa.EdgeKField[ta.vpfloat],
+    p_quad_vector_sum_10: fa.EdgeKField[ta.vpfloat],
+    p_dreg_area: fa.EdgeKField[ta.vpfloat],
     shape_func_1_1: ta.wpfloat,
     shape_func_2_1: ta.wpfloat,
     shape_func_3_1: ta.wpfloat,
@@ -422,18 +434,6 @@ def prepare_numerical_quadrature_list_for_cubic_reconstruction(
     wgt_eta_2: ta.wpfloat,
     dbl_eps: ta.wpfloat,
     eps: ta.wpfloat,
-    p_dreg_area_in: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_1: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_2: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_3: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_4: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_5: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_6: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_7: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_8: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_9: fa.EdgeKField[ta.vpfloat],
-    p_quad_vector_sum_10: fa.EdgeKField[ta.vpfloat],
-    p_dreg_area: fa.EdgeKField[ta.vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -449,6 +449,7 @@ def prepare_numerical_quadrature_list_for_cubic_reconstruction(
         p_coords_dreg_v_2_y,
         p_coords_dreg_v_3_y,
         p_coords_dreg_v_4_y,
+        p_dreg_area_in,
         shape_func_1_1,
         shape_func_2_1,
         shape_func_3_1,
@@ -479,7 +480,6 @@ def prepare_numerical_quadrature_list_for_cubic_reconstruction(
         wgt_eta_2,
         dbl_eps,
         eps,
-        p_dreg_area_in,
         out=(
             p_quad_vector_sum_1,
             p_quad_vector_sum_2,

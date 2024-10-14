@@ -96,15 +96,14 @@ class NoAdvection(VerticalAdvection):
     ):
         log.debug("vertical advection run - start")
 
+        horizontal_start = (
+            self._start_cell_lateral_boundary_level_2 if even_timestep else self._start_cell_nudging
+        )
         log.debug("running stencil copy_cell_kdim_field - start")
         copy_cell_kdim_field.copy_cell_kdim_field(
             field_in=p_tracer_now,
             field_out=p_tracer_new,
-            horizontal_start=(
-                self._start_cell_lateral_boundary_level_2
-                if even_timestep
-                else self._start_cell_nudging
-            ),
+            horizontal_start=horizontal_start,
             horizontal_end=(self._end_cell_end if even_timestep else self._end_cell_local),
             vertical_start=0,
             vertical_end=self._grid.num_levels,

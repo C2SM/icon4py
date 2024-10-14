@@ -36,6 +36,14 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
 
     @staticmethod
     def _compute_wgt_t_detjac(
+        p_coords_dreg_v_1_x,
+        p_coords_dreg_v_2_x,
+        p_coords_dreg_v_3_x,
+        p_coords_dreg_v_4_x,
+        p_coords_dreg_v_1_y,
+        p_coords_dreg_v_2_y,
+        p_coords_dreg_v_3_y,
+        p_coords_dreg_v_4_y,
         wgt_zeta_1,
         wgt_eta_1,
         wgt_zeta_2,
@@ -49,14 +57,6 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
         zeta_3,
         zeta_4,
         famask_int,
-        p_coords_dreg_v_1_x,
-        p_coords_dreg_v_2_x,
-        p_coords_dreg_v_3_x,
-        p_coords_dreg_v_4_x,
-        p_coords_dreg_v_1_y,
-        p_coords_dreg_v_2_y,
-        p_coords_dreg_v_3_y,
-        p_coords_dreg_v_4_y,
         dbl_eps,
     ):
         z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
@@ -383,6 +383,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
         p_coords_dreg_v_2_y: xp.array,
         p_coords_dreg_v_3_y: xp.array,
         p_coords_dreg_v_4_y: xp.array,
+        p_dreg_area_in: xp.array,
         shape_func_1_1: float,
         shape_func_2_1: float,
         shape_func_3_1: float,
@@ -413,10 +414,17 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
         wgt_eta_2: float,
         dbl_eps: float,
         eps: float,
-        p_dreg_area_in: xp.array,
         **kwargs,
     ) -> dict:
         wgt_t_detjac_1, wgt_t_detjac_2, wgt_t_detjac_3, wgt_t_detjac_4 = cls._compute_wgt_t_detjac(
+            p_coords_dreg_v_1_x,
+            p_coords_dreg_v_2_x,
+            p_coords_dreg_v_3_x,
+            p_coords_dreg_v_4_x,
+            p_coords_dreg_v_1_y,
+            p_coords_dreg_v_2_y,
+            p_coords_dreg_v_3_y,
+            p_coords_dreg_v_4_y,
             wgt_zeta_1,
             wgt_eta_1,
             wgt_zeta_2,
@@ -430,14 +438,6 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             zeta_3,
             zeta_4,
             famask_int,
-            p_coords_dreg_v_1_x,
-            p_coords_dreg_v_2_x,
-            p_coords_dreg_v_3_x,
-            p_coords_dreg_v_4_x,
-            p_coords_dreg_v_1_y,
-            p_coords_dreg_v_2_y,
-            p_coords_dreg_v_3_y,
-            p_coords_dreg_v_4_y,
             dbl_eps,
         )
 
@@ -529,6 +529,18 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
         p_coords_dreg_v_2_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         p_coords_dreg_v_3_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         p_coords_dreg_v_4_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_dreg_area_in = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_1 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_2 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_3 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_4 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_5 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_6 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_7 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_8 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_9 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_10 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_dreg_area = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
         shape_func_1_1 = 0.001
         shape_func_2_1 = 0.001
         shape_func_3_1 = 0.001
@@ -559,18 +571,6 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
         wgt_eta_2 = 0.007
         dbl_eps = xp.float64(0.1)
         eps = 0.1
-        p_dreg_area_in = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_1 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_2 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_3 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_4 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_5 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_6 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_7 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_8 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_9 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_10 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_dreg_area = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             famask_int=famask_int,
             p_coords_dreg_v_1_x=p_coords_dreg_v_1_x,
@@ -581,6 +581,18 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             p_coords_dreg_v_2_y=p_coords_dreg_v_2_y,
             p_coords_dreg_v_3_y=p_coords_dreg_v_3_y,
             p_coords_dreg_v_4_y=p_coords_dreg_v_4_y,
+            p_dreg_area_in=p_dreg_area_in,
+            p_quad_vector_sum_1=p_quad_vector_sum_1,
+            p_quad_vector_sum_2=p_quad_vector_sum_2,
+            p_quad_vector_sum_3=p_quad_vector_sum_3,
+            p_quad_vector_sum_4=p_quad_vector_sum_4,
+            p_quad_vector_sum_5=p_quad_vector_sum_5,
+            p_quad_vector_sum_6=p_quad_vector_sum_6,
+            p_quad_vector_sum_7=p_quad_vector_sum_7,
+            p_quad_vector_sum_8=p_quad_vector_sum_8,
+            p_quad_vector_sum_9=p_quad_vector_sum_9,
+            p_quad_vector_sum_10=p_quad_vector_sum_10,
+            p_dreg_area=p_dreg_area,
             shape_func_1_1=shape_func_1_1,
             shape_func_2_1=shape_func_2_1,
             shape_func_3_1=shape_func_3_1,
@@ -611,18 +623,6 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             wgt_eta_2=wgt_eta_2,
             dbl_eps=dbl_eps,
             eps=eps,
-            p_dreg_area_in=p_dreg_area_in,
-            p_quad_vector_sum_1=p_quad_vector_sum_1,
-            p_quad_vector_sum_2=p_quad_vector_sum_2,
-            p_quad_vector_sum_3=p_quad_vector_sum_3,
-            p_quad_vector_sum_4=p_quad_vector_sum_4,
-            p_quad_vector_sum_5=p_quad_vector_sum_5,
-            p_quad_vector_sum_6=p_quad_vector_sum_6,
-            p_quad_vector_sum_7=p_quad_vector_sum_7,
-            p_quad_vector_sum_8=p_quad_vector_sum_8,
-            p_quad_vector_sum_9=p_quad_vector_sum_9,
-            p_quad_vector_sum_10=p_quad_vector_sum_10,
-            p_dreg_area=p_dreg_area,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=0,

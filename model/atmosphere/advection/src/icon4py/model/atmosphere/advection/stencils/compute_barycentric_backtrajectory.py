@@ -35,7 +35,7 @@ def _compute_barycentric_backtrajectory(
     fa.EdgeKField[ta.vpfloat],
     fa.EdgeKField[ta.vpfloat],
 ]:
-    lvn_pos = where(p_vn > 0.0, True, False)
+    lvn_pos = p_vn >= 0.0
 
     p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))
     p_cell_rel_idx_dsl = where(lvn_pos, 0, 1)

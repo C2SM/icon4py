@@ -9,7 +9,6 @@
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import (
     astype,
-    broadcast,
     maximum,
     minimum,
     neighbor_sum,
@@ -37,18 +36,16 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
     fa.CellKField[ta.vpfloat],
     fa.CellKField[ta.vpfloat],
 ]:
-    zero = broadcast(vpfloat(0.0), (dims.CellDim, dims.KDim))
-
     z_mflx_anti_1 = astype(p_dtime * geofac_div(C2CE[0]) / p_rhodz_new * z_anti(C2E[0]), vpfloat)
     z_mflx_anti_2 = astype(p_dtime * geofac_div(C2CE[1]) / p_rhodz_new * z_anti(C2E[1]), vpfloat)
     z_mflx_anti_3 = astype(p_dtime * geofac_div(C2CE[2]) / p_rhodz_new * z_anti(C2E[2]), vpfloat)
 
     z_mflx_anti_in = -vpfloat(1.0) * (
-        minimum(zero, z_mflx_anti_1) + minimum(zero, z_mflx_anti_2) + minimum(zero, z_mflx_anti_3)
+        minimum(0.0, z_mflx_anti_1) + minimum(0.0, z_mflx_anti_2) + minimum(0.0, z_mflx_anti_3)
     )
 
     z_mflx_anti_out = (
-        maximum(zero, z_mflx_anti_1) + maximum(zero, z_mflx_anti_2) + maximum(zero, z_mflx_anti_3)
+        maximum(0.0, z_mflx_anti_1) + maximum(0.0, z_mflx_anti_2) + maximum(0.0, z_mflx_anti_3)
     )
 
     z_fluxdiv_c = neighbor_sum(z_mflx_low(C2E) * geofac_div(C2CE), axis=dims.C2EDim)
@@ -74,12 +71,12 @@ def compute_antidiffusive_cell_fluxes_and_min_max(
     z_mflx_low: fa.EdgeKField[ta.wpfloat],
     z_anti: fa.EdgeKField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
-    p_dtime: ta.wpfloat,
     z_mflx_anti_in: fa.CellKField[ta.vpfloat],
     z_mflx_anti_out: fa.CellKField[ta.vpfloat],
     z_tracer_new_low: fa.CellKField[ta.wpfloat],
     z_tracer_max: fa.CellKField[ta.vpfloat],
     z_tracer_min: fa.CellKField[ta.vpfloat],
+    p_dtime: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

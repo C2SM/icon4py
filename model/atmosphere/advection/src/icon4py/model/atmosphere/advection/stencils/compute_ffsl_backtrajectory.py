@@ -49,7 +49,7 @@ def _compute_ffsl_backtrajectory(
     fa.EdgeKField[ta.vpfloat],
 ]:
     # logical switch for MERGE operations: True for p_vn >= 0
-    lvn_pos = where(p_vn >= 0.0, True, False)
+    lvn_pos = p_vn >= 0.0
 
     # get line and block indices of upwind cell
     p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))
@@ -145,7 +145,6 @@ def compute_ffsl_backtrajectory(
     dual_normal_cell_x: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
     dual_normal_cell_y: gtx.Field[gtx.Dims[dims.ECDim], ta.wpfloat],
     lvn_sys_pos: fa.EdgeKField[bool],
-    p_dt: ta.wpfloat,
     p_cell_idx: fa.EdgeKField[gtx.int32],
     p_cell_rel_idx_dsl: fa.EdgeKField[gtx.int32],
     p_cell_blk: fa.EdgeKField[gtx.int32],
@@ -157,6 +156,7 @@ def compute_ffsl_backtrajectory(
     p_coords_dreg_v_2_lat_dsl: fa.EdgeKField[ta.vpfloat],
     p_coords_dreg_v_3_lat_dsl: fa.EdgeKField[ta.vpfloat],
     p_coords_dreg_v_4_lat_dsl: fa.EdgeKField[ta.vpfloat],
+    p_dt: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
