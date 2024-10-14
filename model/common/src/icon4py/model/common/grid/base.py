@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import dataclasses
 import functools
 import uuid
@@ -135,7 +134,7 @@ class BaseGrid(ABC):
             raise MissingConnectivity()
         assert (
             self.connectivities[dim].dtype == gtx.int32
-        ), 'Neighbor table\'s "{}" data type must be int32. Instead it\'s "{}"'.format(
+        ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
             dim, self.connectivities[dim].dtype
         )
         return gtx.NeighborTableOffsetProvider(

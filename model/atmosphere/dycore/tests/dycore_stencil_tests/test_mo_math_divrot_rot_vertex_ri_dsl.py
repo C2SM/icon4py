@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
@@ -45,7 +44,7 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
             geofac_rot=geofac_rot,
             rot_vec=rot_vec,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_vertices),
+            horizontal_end=gtx.int32(grid.num_vertices),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

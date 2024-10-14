@@ -5,11 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
-from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
+from gt4py.next.ffront.fbuiltins import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CEC, C2E2C, Koff
@@ -20,11 +20,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     mask: fa.CellKField[bool],
-    zd_vertoffset: Field[[dims.CECDim, dims.KDim], int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
-    geofac_n2s_nbh: Field[[dims.CECDim], wpfloat],
-    vcoef: Field[[dims.CECDim, dims.KDim], wpfloat],
+    geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CECDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], wpfloat],
     theta_v: fa.CellKField[wpfloat],
     z_temp: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
@@ -60,17 +60,17 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     mask: fa.CellKField[bool],
-    zd_vertoffset: Field[[dims.CECDim, dims.KDim], int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
-    geofac_n2s_nbh: Field[[dims.CECDim], wpfloat],
-    vcoef: Field[[dims.CECDim, dims.KDim], wpfloat],
+    geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CECDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], wpfloat],
     theta_v: fa.CellKField[wpfloat],
     z_temp: fa.CellKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         mask,

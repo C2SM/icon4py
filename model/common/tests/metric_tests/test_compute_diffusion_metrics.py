@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import pytest
-from gt4py.next import as_field
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
@@ -107,7 +107,7 @@ def test_compute_diffusion_metrics(
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1]),
+        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1]),
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
@@ -136,12 +136,12 @@ def test_compute_diffusion_metrics(
     zd_intcoef_dsl = flatten_first_two_dims(
         dims.CECDim,
         dims.KDim,
-        field=as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_intcoef_dsl),
+        field=gtx.as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_intcoef_dsl),
     )
     zd_vertoffset_dsl = flatten_first_two_dims(
         dims.CECDim,
         dims.KDim,
-        field=as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_vertoffset_dsl),
+        field=gtx.as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_vertoffset_dsl),
     )
 
     assert dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
