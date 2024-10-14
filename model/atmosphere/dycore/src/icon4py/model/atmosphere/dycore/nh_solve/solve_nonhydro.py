@@ -644,7 +644,7 @@ class SolveNonhydro:
             owner_mask,
             backend=self._backend,
         )
-        self._allocate_local_fields(self._backend)
+        self._allocate_local_fields()
         self._determine_local_domains()
         # TODO (magdalena) vertical nesting is only relevant in the context of
         #      horizontal nesting, since we don't support this we should remove this option
