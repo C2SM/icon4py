@@ -16,12 +16,10 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, zero_field
+from icon4py.model.common.dimension import CEDim
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 from icon4py.model.common.test_utils.serialbox_utils import (
     IconDiffusionInitSavepoint,
-    IconGridSavepoint,
     InterpolationSavepoint,
     MetricSavepoint,
 )
@@ -73,4 +71,3 @@ def construct_diagnostics_for_diffusion(
         dwdx=savepoint.dwdx(),
         dwdy=savepoint.dwdy(),
     )
-

@@ -40,9 +40,9 @@ from icon4py.model.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
+    V2C2EDim,
     V2C2VDim,
     V2CDim,
-    V2C2VDim,
     V2EDim,
     VertexDim,
 )
@@ -360,6 +360,58 @@ class IconGridSavepoint(IconSavepoint):
         else:
             return self._v2c2v()
 
+    def v2c2e(self):
+        v2c = np.asarray(self.v2c())
+        c2e = np.asarray(self.c2e())
+        v2e = np.asarray(self.v2e())
+
+        temp_v2c2eall = c2e[v2c, :]
+        temp_v2c2eall_shape = temp_v2c2eall.shape
+        v2c2eall = temp_v2c2eall.reshape(
+            temp_v2c2eall_shape[0], temp_v2c2eall_shape[1] * temp_v2c2eall_shape[2]
+        )
+        v2c2e = np.zeros_like(v2c)
+        v2c2eall_shape = temp_v2c2eall.shape
+        for i in range(v2c2eall_shape[0]):
+            v2c2e[i] = v2c2eall[i, ~np.isin(v2c2eall[i, :], v2e[i, :])]
+        for i in range(v2c2e.shape[0]):
+            if -1 in v2c2e[i]:
+                print(i, " v2c2e: ", v2c2e[i])
+
+        """
+        v2c_shape = v2c.shape
+        pentagon_points = []
+        for i in range(v2c_shape[0]):
+            if v2c[i, v2c_shape[1] - 1] in v2c[i, :v2c_shape[1] - 1]:
+                print(i, ' : ', v2c[i])
+                pentagon_points.append(i)
+            elif v2c[i, v2c_shape[1] - 2] in v2c[i, :v2c_shape[1] - 2]:
+                print(i, ' : ', v2c[i])
+                pentagon_points.append(i)
+            elif v2c[i, v2c_shape[1] - 3] in v2c[i, :v2c_shape[1] - 3]:
+                print(i, ' : ', v2c[i])
+                pentagon_points.append(i)
+            elif v2c[i, v2c_shape[1] - 4] in v2c[i, :v2c_shape[1] - 4]:
+                print(i, ' : ', v2c[i])
+                pentagon_points.append(i)
+
+        print('c2e shape: ', c2e.shape)
+        print('v2c shape: ', v2c.shape)
+        print('v2c2eall shape: ', v2c2eall.shape)
+        print('v2c2e shape: ', v2c2e.shape)
+
+        for i in pentagon_points:
+            print(i, ' : ', v2e[i])
+        print()
+        for i in pentagon_points:
+            print(i, ' : ', v2c2eall[i])
+        print()
+        for i in pentagon_points:
+            print(i, ' : ', v2c2e[i])
+        """
+
+        return xp.asarray(v2c2e)
+
     @IconSavepoint.optionally_registered()
     def _v2c2v(self):
         return self._get_connectivity_array("v2c2v", VertexDim)
@@ -456,6 +508,7 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e = self.e2c2e()
         c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c.shape[0]))), c2e2c))
         e2c2e0 = xp.column_stack(((xp.asarray(range(e2c2e.shape[0]))), e2c2e))
+
         grid = (
             IconGrid()
             .with_config(config)
@@ -481,6 +534,7 @@ class IconGridSavepoint(IconSavepoint):
                     V2EDim: self.v2e(),
                     V2CDim: self.v2c(),
                     V2C2VDim: self.v2c2v(),
+                    V2C2EDim: self.v2c2e(),
                     E2C2VDim: self.e2c2v(),
                     C2VDim: self.c2v(),
                 }

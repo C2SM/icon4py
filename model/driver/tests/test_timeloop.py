@@ -27,12 +27,12 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field, _allocate
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, VertexDim, KDim, C2E2C2EDim
+from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field
+from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.states.diagnostic_state import DiagnosticState, DiagnosticMetricState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,

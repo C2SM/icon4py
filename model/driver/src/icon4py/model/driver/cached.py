@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from icon4py.model.common.caching import CachedProgram
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
     diagnose_pressure as diagnose_pressure_orig,
 )
@@ -20,15 +21,13 @@ from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pres
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
     diagnose_temperature as diagnose_temperature_orig,
 )
-from icon4py.model.common.caching import CachedProgram
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation as edge_2_cell_vector_rbf_interpolation_orig,
 )
+
 
 # diagnostic stencils
 diagnose_pressure = CachedProgram(diagnose_pressure_orig)
 diagnose_surface_pressure = CachedProgram(diagnose_surface_pressure_orig)
 diagnose_temperature = CachedProgram(diagnose_temperature_orig)
-edge_2_cell_vector_rbf_interpolation = CachedProgram(
-    edge_2_cell_vector_rbf_interpolation_orig
-)
+edge_2_cell_vector_rbf_interpolation = CachedProgram(edge_2_cell_vector_rbf_interpolation_orig)

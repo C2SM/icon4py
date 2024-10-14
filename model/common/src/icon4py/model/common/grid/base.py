@@ -24,7 +24,6 @@ from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
 from icon4py.model.common.grid.vertical import VerticalGridSize
-from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
 
 

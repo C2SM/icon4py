@@ -175,7 +175,6 @@ def model_initialization_jabw(
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
     cell_size = cell_lat.size
-    edge_size = edge_lat.size
     num_levels = icon_grid.num_levels
 
     grid_idx_edge_start_plus1 = icon_grid.get_end_index(
@@ -191,8 +190,8 @@ def model_initialization_jabw(
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
     p_sfc = 100000.0
-    jw_up = 1.0 #1.e-4  # if doing baroclinic wave test, please set it to a nonzero value
-    jw_u0 = 35.0 #35.0
+    jw_up = 0.0  # 1.e-4  # if doing baroclinic wave test, please set it to a nonzero value
+    jw_u0 = 35.0  # 35.0
     jw_temp0 = 288.0
     # DEFINED PARAMETERS for jablonowski williamson:
     eta_0 = 0.252
@@ -254,7 +253,7 @@ def model_initialization_jabw(
 
             geopot_jw = geopot_avg + jw_u0 * (cos_etav**1.5) * (
                 fac1 * jw_u0 * (cos_etav**1.5) + fac2
-            )# * 0.4 / 0.75
+            )  # * 0.4 / 0.75
             temperature_jw = (
                 temperature_avg
                 + 0.75
@@ -284,7 +283,7 @@ def model_initialization_jabw(
         temperature_ndarray[:, k_index] = temperature_jw
     log.info("Newton iteration completed!")
 
-    '''
+    """
     sin_lat_edge = xp.sin(edge_lat)
     cos_lat_edge = xp.cos(edge_lat)
     fac1_edge = 1.0 / 6.3 - 2.0 * (sin_lat_edge**6) * (cos_lat_edge**2 + 1.0 / 3.0)
@@ -354,7 +353,7 @@ def model_initialization_jabw(
         temperature_edge_ndarray[:, k_index] = temperature_jw_edge
     eta_v_edge = as_field((CellDim, KDim), eta_v_edge_ndarray)
     log.info("Newton iteration completed (edge)!")
-    '''
+    """
 
     eta_v = as_field((CellDim, KDim), eta_v_ndarray)
     eta_v_e = _allocate(EdgeDim, KDim, grid=icon_grid)
@@ -380,7 +379,7 @@ def model_initialization_jabw(
         edge_lon,
         primal_normal_x,
         eta_v_e.ndarray,
-        #eta_v_edge.ndarray,
+        # eta_v_edge.ndarray,
     )
     log.info("U2vn computation completed.")
 
@@ -490,7 +489,6 @@ def model_initialization_jabw(
         ddt_w_adv_ntl1=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         ddt_w_adv_ntl2=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         vt=_allocate(EdgeDim, KDim, grid=icon_grid),
-        redundant_vt=_allocate(EdgeDim, KDim, grid=icon_grid),
         vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
@@ -768,9 +766,8 @@ def read_static_fields(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         )
         grid_savepoint = data_provider.from_savepoint_grid(grid_root, grid_level)
-        icon_grid = (
-            data_provider.from_savepoint_grid(grid_root, grid_level)
-            .construct_icon_grid(on_gpu=False)
+        icon_grid = data_provider.from_savepoint_grid(grid_root, grid_level).construct_icon_grid(
+            on_gpu=False
         )
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
             data_provider.from_interpolation_savepoint()
@@ -860,7 +857,10 @@ def read_static_fields(
 
 
 def configure_logging(
-    run_path: str, experiment_name: str, processor_procs: ProcessProperties = None, disable_logging = False,
+    run_path: str,
+    experiment_name: str,
+    processor_procs: ProcessProperties = None,
+    disable_logging=False,
 ) -> None:
     """
     Configure logging.
