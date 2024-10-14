@@ -33,7 +33,7 @@ from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RAT
 from icon4py.model.common.grid import geometry
 from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import device
+from icon4py.model.common.settings import backend, device
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -255,13 +255,13 @@ def diffusion_run(
 
     if linit:
         common.GLOBAL_STATE["diffusion_granule"].initial_run(
-            diagnostic_state,
-            prognostic_state,
-            dtime,
+            diagnostic_state, prognostic_state, dtime, backend
         )
     else:
         common.GLOBAL_STATE["diffusion_granule"].run(
-            prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
+            prognostic_state=prognostic_state,
+            diagnostic_state=diagnostic_state,
+            dtime=dtime,
         )
 
 

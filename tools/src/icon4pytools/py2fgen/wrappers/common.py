@@ -14,12 +14,12 @@ import pstats
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
-from icon4py.model.common.settings import xp
+from icon4py.model.common.settings import backend, xp
 
 
 log = logging.getLogger(__name__)
 
-GLOBAL_STATE = {"diffusion_granule": Diffusion(), "profiler": cProfile.Profile()}
+GLOBAL_STATE = {"diffusion_granule": Diffusion(backend=backend), "profiler": cProfile.Profile()}
 
 
 # profiling utils
