@@ -133,11 +133,11 @@ class PositiveDefinite(HorizontalFluxLimiter):
         )
 
 
-class HorizontalFlux(ABC):
-    """Class that computes the horizontal finite volume numerical flux."""
+class SemiLagrangianTracerFlux(ABC):
+    """Class that defines the horizontal semi-Lagrangian tracer flux."""
 
     @abstractmethod
-    def compute_numerical_flux(
+    def compute_tracer_flux(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -150,8 +150,8 @@ class HorizontalFlux(ABC):
         ...
 
 
-class SecondOrderMiura(HorizontalFlux):
-    """Class that computes a Miura-based second-order accurate numerical flux."""
+class SecondOrderMiura(SemiLagrangianTracerFlux):
+    """Class that computes a Miura-based second-order accurate tracer flux."""
 
     def __init__(
         self,
@@ -182,7 +182,7 @@ class SecondOrderMiura(HorizontalFlux):
         self._p_coeff_2 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self._grid)
         self._p_coeff_3 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self._grid)
 
-    def compute_numerical_flux(
+    def compute_tracer_flux(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -192,6 +192,8 @@ class SecondOrderMiura(HorizontalFlux):
         rhodz_now: fa.CellKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ):
+        log.debug("horizontal tracer flux computation - start")
+
         # linear reconstruction using singular value decomposition
         log.debug("running stencil reconstruct_linear_coefficients_svd - start")
         reconstruct_linear_coefficients_svd.reconstruct_linear_coefficients_svd(
@@ -238,6 +240,8 @@ class SecondOrderMiura(HorizontalFlux):
             rhodz_now=rhodz_now,
             dtime=dtime,
         )
+
+        log.debug("horizontal tracer flux computation - end")
 
 
 class HorizontalAdvection(ABC):
@@ -313,12 +317,70 @@ class NoAdvection(HorizontalAdvection):
         log.debug("horizontal advection run - end")
 
 
-class SemiLagrangian(HorizontalAdvection):
-    """Class that does one semi-Lagrangian horizontal advection step."""
+class FiniteVolume(HorizontalAdvection):
+    """Class that defines a finite volume horizontal advection scheme."""
+
+    def run(
+        self,
+        prep_adv: advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ):
+        log.debug("horizontal advection run - start")
+
+        self._compute_numerical_flux(
+            prep_adv=prep_adv,
+            p_tracer_now=p_tracer_now,
+            rhodz_now=rhodz_now,
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            dtime=dtime,
+        )
+
+        self._update_unknowns(
+            p_tracer_now=p_tracer_now,
+            p_tracer_new=p_tracer_new,
+            rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            dtime=dtime,
+        )
+
+        log.debug("horizontal advection run - end")
+
+    @abstractmethod
+    def _compute_numerical_flux(
+        self,
+        prep_adv: advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ):
+        ...
+
+    @abstractmethod
+    def _update_unknowns(
+        self,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ):
+        ...
+
+
+class SemiLagrangian(FiniteVolume):
+    """Class that does one horizontal semi-Lagrangian finite volume advection step."""
 
     def __init__(
         self,
-        horizontal_flux: HorizontalFlux,
+        tracer_flux: SemiLagrangianTracerFlux,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
@@ -330,7 +392,7 @@ class SemiLagrangian(HorizontalAdvection):
         log.debug("horizontal advection class init - start")
 
         # input arguments
-        self._horizontal_flux = horizontal_flux
+        self._tracer_flux = tracer_flux
         self._grid = grid
         self._interpolation_state = interpolation_state
         self._least_squares_state = least_squares_state
@@ -365,49 +427,7 @@ class SemiLagrangian(HorizontalAdvection):
 
         log.debug("horizontal advection class init - end")
 
-    def run(
-        self,
-        prep_adv: advection_states.AdvectionPrepAdvState,
-        p_tracer_now: fa.CellKField[ta.wpfloat],
-        p_tracer_new: fa.CellKField[ta.wpfloat],
-        rhodz_now: fa.CellKField[ta.wpfloat],
-        rhodz_new: fa.CellKField[ta.wpfloat],
-        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
-        dtime: ta.wpfloat,
-    ):
-        log.debug("horizontal advection run - start")
-
-        # get the horizontal numerical tracer flux
-        self._compute_horizontal_tracer_flux(
-            prep_adv=prep_adv,
-            p_tracer_now=p_tracer_now,
-            rhodz_now=rhodz_now,
-            p_mflx_tracer_h=p_mflx_tracer_h,
-            dtime=dtime,
-        )
-
-        # update tracer mass fraction
-        log.debug("running stencil integrate_tracer_horizontally - start")
-        integrate_tracer_horizontally.integrate_tracer_horizontally(
-            p_mflx_tracer_h=p_mflx_tracer_h,
-            deepatmo_divh=self._metric_state.deepatmo_divh,
-            tracer_now=p_tracer_now,
-            rhodz_now=rhodz_now,
-            rhodz_new=rhodz_new,
-            geofac_div=self._interpolation_state.geofac_div,
-            tracer_new_hor=p_tracer_new,
-            p_dtime=dtime,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
-        )
-        log.debug("running stencil integrate_tracer_horizontally - end")
-
-        log.debug("horizontal advection run - end")
-
-    def _compute_horizontal_tracer_flux(
+    def _compute_numerical_flux(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
         p_tracer_now: fa.CellKField[ta.wpfloat],
@@ -415,7 +435,7 @@ class SemiLagrangian(HorizontalAdvection):
         p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
         dtime: ta.wpfloat,
     ):
-        log.debug("horizontal tracer flux computation - start")
+        log.debug("horizontal numerical flux computation - start")
 
         ## tracer-independent part
 
@@ -457,7 +477,7 @@ class SemiLagrangian(HorizontalAdvection):
 
         ## tracer-specific part
 
-        self._horizontal_flux.compute_numerical_flux(
+        self._tracer_flux.compute_tracer_flux(
             prep_adv=prep_adv,
             p_tracer_now=p_tracer_now,
             p_mflx_tracer_h=p_mflx_tracer_h,
@@ -467,4 +487,36 @@ class SemiLagrangian(HorizontalAdvection):
             dtime=dtime,
         )
 
-        log.debug("horizontal tracer flux computation - end")
+        log.debug("horizontal numerical flux computation - end")
+
+    def _update_unknowns(
+        self,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
+        dtime: ta.wpfloat,
+    ):
+        log.debug("horizontal unknowns update - start")
+
+        # update tracer mass fraction
+        log.debug("running stencil integrate_tracer_horizontally - start")
+        integrate_tracer_horizontally.integrate_tracer_horizontally(
+            p_mflx_tracer_h=p_mflx_tracer_h,
+            deepatmo_divh=self._metric_state.deepatmo_divh,
+            tracer_now=p_tracer_now,
+            rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
+            geofac_div=self._interpolation_state.geofac_div,
+            tracer_new_hor=p_tracer_new,
+            p_dtime=dtime,
+            horizontal_start=self._start_cell_nudging,
+            horizontal_end=self._end_cell_local,
+            vertical_start=0,
+            vertical_end=self._grid.num_levels,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil integrate_tracer_horizontally - end")
+
+        log.debug("horizontal unknowns update - end")

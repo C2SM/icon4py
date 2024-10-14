@@ -365,14 +365,14 @@ def convert_config_to_horizontal_vertical_advection(
             horizontal_limiter = advection_horizontal.HorizontalFluxLimiter()
 
         if config.horizontal_advection_type == HorizontalAdvectionType.LINEAR_2ND_ORDER:
-            horizontal_flux = advection_horizontal.SecondOrderMiura(
+            tracer_flux = advection_horizontal.SecondOrderMiura(
                 grid=grid,
                 least_squares_state=least_squares_state,
                 horizontal_limiter=horizontal_limiter,
             )
 
         horizontal_advection = advection_horizontal.SemiLagrangian(
-            horizontal_flux=horizontal_flux,
+            tracer_flux=tracer_flux,
             grid=grid,
             interpolation_state=interpolation_state,
             least_squares_state=least_squares_state,

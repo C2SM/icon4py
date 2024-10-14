@@ -115,8 +115,73 @@ class NoAdvection(VerticalAdvection):
         log.debug("vertical advection run - end")
 
 
-class SemiLagrangian(VerticalAdvection):
-    """Class that does one semi-Lagrangian vertical advection step."""
+class FiniteVolume(VerticalAdvection):
+    """Class that defines a finite volume vertical advection scheme."""
+
+    def run(
+        self,
+        prep_adv: advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+        dtime: ta.wpfloat,
+        even_timestep: bool = False,
+    ):
+        log.debug("horizontal advection run - start")
+
+        # TODO (dastrm): maybe change how the indices are handled here? originally:
+        # if even step, vertical transport includes all halo points in order to avoid an additional synchronization step, i.e.
+        #    if lstep_even: i_rlstart  = 2,                i_rlend = min_rlcell
+        #    else:          i_rlstart  = grf_bdywidth_c+1, i_rlend = min_rlcell_int
+        # note: horizontal advection is always called with the same indices, i.e. i_rlstart = grf_bdywidth_c+1, i_rlend = min_rlcell_int
+
+        self._compute_numerical_flux(
+            prep_adv=prep_adv,
+            p_tracer_now=p_tracer_now,
+            rhodz_now=rhodz_now,
+            p_mflx_tracer_v=p_mflx_tracer_v,
+            dtime=dtime,
+        )
+
+        self._update_unknowns(
+            p_tracer_now=p_tracer_now,
+            p_tracer_new=p_tracer_new,
+            rhodz_now=rhodz_now,
+            rhodz_new=rhodz_new,
+            p_mflx_tracer_v=p_mflx_tracer_v,
+            dtime=dtime,
+        )
+
+        log.debug("horizontal advection run - end")
+
+    @abstractmethod
+    def _compute_numerical_flux(
+        self,
+        prep_adv: advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+        dtime: ta.wpfloat,
+    ):
+        ...
+
+    @abstractmethod
+    def _update_unknowns(
+        self,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        p_tracer_new: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        rhodz_new: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+        dtime: ta.wpfloat,
+    ):
+        ...
+
+
+class SemiLagrangian(FiniteVolume):
+    """Class that does one vertical semi-Lagrangian finite volume advection step."""
 
     def __init__(
         self,
@@ -150,27 +215,25 @@ class SemiLagrangian(VerticalAdvection):
 
         log.debug("vertical advection class init - end")
 
-    def run(
+    def _compute_numerical_flux(
         self,
         prep_adv: advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+        dtime: ta.wpfloat,
+    ):
+        # TODO (dastrm): implement this
+        ...
+
+    def _update_unknowns(
+        self,
         p_tracer_now: fa.CellKField[ta.wpfloat],
         p_tracer_new: fa.CellKField[ta.wpfloat],
         rhodz_now: fa.CellKField[ta.wpfloat],
         rhodz_new: fa.CellKField[ta.wpfloat],
         p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
         dtime: ta.wpfloat,
-        even_timestep: bool = False,
     ):
-        log.debug("vertical advection run - start")
-
-        # TODO (dastrm): maybe change how the indices are handled here? originally:
-        # if even step, vertical transport includes all halo points in order to avoid an additional synchronization step, i.e.
-        #    if lstep_even: i_rlstart  = 2,                i_rlend = min_rlcell
-        #    else:          i_rlstart  = grf_bdywidth_c+1, i_rlend = min_rlcell_int
-        # note: horizontal advection is always called with the same indices, i.e. i_rlstart = grf_bdywidth_c+1, i_rlend = min_rlcell_int
-
-        # get the vertical numerical tracer flux
-
-        # update tracer mass fraction
-
-        log.debug("vertical advection run - end")
+        # TODO (dastrm): implement this
+        ...
