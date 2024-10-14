@@ -22,7 +22,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
 )
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -76,7 +75,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     return w, dwdx, dwdy
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: fa.CellField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[CellDim, C2E2CODim], wpfloat],

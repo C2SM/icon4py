@@ -13,7 +13,6 @@ from gt4py.next.ffront.fbuiltins import astype, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CEC, C2E2C, Koff
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -57,7 +56,7 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     return astype(z_temp_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     mask: fa.CellKField[bool],
     zd_vertoffset: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], gtx.int32],
