@@ -39,6 +39,7 @@ def test_parallel_diffusion(
     stretch_factor,
     damping_height,
     caplog,
+    backend,
 ):
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -95,7 +96,7 @@ def test_parallel_diffusion(
     )
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    diffusion = diffusion_.Diffusion(exchange)
+    diffusion = diffusion_.Diffusion(exchange, backend)
 
     diffusion.init(
         grid=icon_grid,
