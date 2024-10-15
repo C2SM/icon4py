@@ -83,7 +83,7 @@ class VelocityAdvection:
             self._backend
         )
         self.compute_tangential_wind = compute_tangential_wind.with_backend(
-            None
+            gtx.gtfn_gpu
         )  # TODO: put backend specification back once offset issue is solved
         self.interpolate_vn_to_ie_and_compute_ekin_on_edges = (
             interpolate_vn_to_ie_and_compute_ekin_on_edges.with_backend(self._backend)
@@ -109,7 +109,7 @@ class VelocityAdvection:
             self._backend
         )
         self.add_extra_diffusion_for_w_con_approaching_cfl = (
-            add_extra_diffusion_for_w_con_approaching_cfl.with_backend(None)
+            add_extra_diffusion_for_w_con_approaching_cfl.with_backend(gtx.gtfn_gpu)
         )  # TODO: put backend specification back once offset issue is solvedgit bra
         self.compute_advective_normal_wind_tendency = (
             compute_advective_normal_wind_tendency.with_backend(self._backend)
