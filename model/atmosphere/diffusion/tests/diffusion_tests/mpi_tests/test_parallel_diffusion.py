@@ -39,6 +39,7 @@ def test_parallel_diffusion(
     stretch_factor,
     damping_height,
     caplog,
+    diffusion_instance,  # fixture
 ):
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -93,9 +94,8 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    diffusion = diffusion_.Diffusion(exchange)
+    diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
 
     diffusion.init(
         grid=icon_grid,
@@ -143,9 +143,6 @@ def test_parallel_diffusion(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  running diffusion step - using {processor_props.comm_name} with {processor_props.comm_size} nodes - DONE"
     )
 
-    if settings.dace_orchestration is not None:
-        diffusion._do_diffusion_step.clear_cache()
-
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
@@ -169,6 +166,7 @@ def test_parallel_diffusion_multiple_steps(
     stretch_factor,
     damping_height,
     caplog,
+    diffusion_instance,  # fixture
 ):
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
@@ -284,7 +282,7 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     settings.dace_orchestration = True
 
-    diffusion = diffusion_.Diffusion(exchange)
+    diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
 
     diffusion.init(
         grid=icon_grid,
@@ -336,6 +334,3 @@ def test_parallel_diffusion_multiple_steps(
     utils.compare_dace_orchestration_multiple_steps(
         prognostic_state_dace_non_orch, prognostic_state_dace_orch
     )
-
-    if settings.dace_orchestration is not None:
-        diffusion._do_diffusion_step.clear_cache()

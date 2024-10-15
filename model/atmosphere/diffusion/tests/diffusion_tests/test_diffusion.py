@@ -328,6 +328,7 @@ def test_run_diffusion_single_step(
     stretch_factor,
     damping_height,
     ndyn_substeps,
+    diffusion_instance,  # fixture
 ):
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -377,7 +378,7 @@ def test_run_diffusion_single_step(
     config = construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion.Diffusion()
+    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
     diffusion_granule.init(
         grid=icon_grid,
         config=config,
@@ -399,9 +400,6 @@ def test_run_diffusion_single_step(
     )
 
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
-
-    if settings.dace_orchestration is not None:
-        diffusion_granule._do_diffusion_step.clear_cache()
 
 
 @pytest.mark.datatest
@@ -425,6 +423,7 @@ def test_run_diffusion_multiple_steps(
     stretch_factor,
     damping_height,
     ndyn_substeps,
+    diffusion_instance,  # fixture
 ):
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
@@ -517,7 +516,7 @@ def test_run_diffusion_multiple_steps(
     )
     prognostic_state_dace_orch = savepoint_diffusion_init.construct_prognostics()
 
-    diffusion_granule = diffusion.Diffusion()
+    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
     diffusion_granule.init(
         grid=icon_grid,
         config=config,
@@ -546,9 +545,6 @@ def test_run_diffusion_multiple_steps(
         prognostic_state_dace_non_orch, prognostic_state_dace_orch
     )
 
-    if settings.dace_orchestration is not None:
-        diffusion_granule._do_diffusion_step.clear_cache()
-
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
@@ -566,6 +562,7 @@ def test_run_diffusion_initial_step(
     metrics_savepoint,
     grid_savepoint,
     icon_grid,
+    diffusion_instance,  # fixture
 ):
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -611,7 +608,7 @@ def test_run_diffusion_initial_step(
     config = construct_diffusion_config(experiment, ndyn_substeps=2)
     additional_parameters = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion.Diffusion()
+    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
     diffusion_granule.init(
         grid=icon_grid,
         config=config,
@@ -637,6 +634,3 @@ def test_run_diffusion_initial_step(
             prognostic_state=prognostic_state,
             diffusion_savepoint=savepoint_diffusion_exit,
         )
-
-    if settings.dace_orchestration is not None:
-        diffusion_granule._do_diffusion_step.clear_cache()

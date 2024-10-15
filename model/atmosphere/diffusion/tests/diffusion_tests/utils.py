@@ -7,8 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
+from icon4py.model.common import settings
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
 
@@ -154,3 +157,18 @@ def compare_dace_orchestration_multiple_steps(
         assert np.allclose(vn_dace_non_orch, vn_dace_orch)
     else:
         raise ValueError("Field type not recognized")
+
+
+@pytest.fixture
+def diffusion_instance(
+    processor_props,  # fixture
+    decomposition_info,  # fixture
+):
+    """Fixture to create a diffusion instance and clear the orchestration cache properly -if applicable-."""
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion_instance_ = diffusion.Diffusion(exchange)
+
+    yield diffusion_instance_
+
+    if settings.dace_orchestration is not None:
+        diffusion_instance_._do_diffusion_step.clear_cache()
