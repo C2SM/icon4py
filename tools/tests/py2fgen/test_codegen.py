@@ -40,7 +40,7 @@ field_1d = FuncParameter(
 )
 
 simple_type = FuncParameter(
-    name="name", d_type=ScalarKind.FLOAT32, dimensions=[], py_type_hint="int32"
+    name="name", d_type=ScalarKind.FLOAT32, dimensions=[], py_type_hint="gtx.int32"
 )
 
 
@@ -54,7 +54,7 @@ def test_as_target(param, expected):
 foo = Func(
     name="foo",
     args=[
-        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
+        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="gtx.int32"),
         FuncParameter(
             name="two",
             d_type=ScalarKind.FLOAT64,
@@ -77,7 +77,7 @@ bar = Func(
             ],
             py_type_hint="Field[dims.CellDim, dims.KDim], float64]",
         ),
-        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
+        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="gtx.int32"),
     ],
     is_gt4py_program=False,
 )
@@ -241,130 +241,126 @@ def test_python_wrapper(dummy_plugin):
         dummy_plugin, "GPU", False, limited_area=True, profile=False
     )
     expected = '''
-    # imports for generated wrapper code
-    import logging
+# imports for generated wrapper code
+import logging
+import math
+from libtest_plugin import ffi
+import numpy as np
+import cupy as cp
+from numpy.typing import NDArray
+from gt4py.next.iterator.embedded import np_as_located_field
+from icon4py.model.common.settings import xp
+from icon4py.model.common import dimension as dims
 
-    import math
-    from libtest_plugin import ffi
-    import numpy as np
-    import cupy as cp
-    from numpy.typing import NDArray
-    from gt4py.next.iterator.embedded import np_as_located_field
-    from gt4py.next.ffront.fbuiltins import int32
-    from icon4py.model.common.settings import xp
-    from icon4py.model.common import dimension as dims
+# logger setup
+log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
+logging.basicConfig(level=logging.ERROR,
+                    format=log_format,
+                    datefmt='%Y-%m-%d %H:%M:%S')
+logging.info(cp.show_config())
 
-    # logger setup
-    log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.ERROR,
-                        format=log_format,
-                        datefmt='%Y-%m-%d %H:%M:%S')
-    logging.info(cp.show_config())
+import numpy as np
 
-    import numpy as np
+# embedded module imports
+import foo_module_x
+import bar_module_y
 
-    # embedded module imports
-    import foo_module_x
-    import bar_module_y
+# embedded function imports
+from libtest import foo
+from libtest import bar
 
-    # embedded function imports
-    from libtest import foo
-    from libtest import bar
+def unpack_gpu(ptr, *sizes: int):
+    """
+    Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
+    This function is needed for operations that require in-place modification of GPU data,
+    enabling changes made in Python to reflect immediately in the original Fortran memory space.
 
-    def unpack_gpu(ptr, *sizes: int):
-        """
-        Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
-        This function is needed for operations that require in-place modification of GPU data,
-        enabling changes made in Python to reflect immediately in the original Fortran memory space.
+    Args:
+        ptr (cffi.CData): A CFFI pointer to GPU memory allocated by OpenACC, representing
+                          the starting address of the data. This pointer must correspond to
+                          a contiguous block of memory whose total size matches the product
+                          of the specified dimensions.
+        *sizes (int): Variable length argument list specifying the dimensions of the array.
+                      These sizes determine the shape of the resulting CuPy array.
 
-        Args:
-            ptr (cffi.CData): A CFFI pointer to GPU memory allocated by OpenACC, representing
-                              the starting address of the data. This pointer must correspond to
-                              a contiguous block of memory whose total size matches the product
-                              of the specified dimensions.
-            *sizes (int): Variable length argument list specifying the dimensions of the array.
-                          These sizes determine the shape of the resulting CuPy array.
+    Returns:
+        cp.ndarray: A CuPy array that provides a direct view of the data pointed to by `ptr`.
+                    This array shares the underlying data with the original Fortran code, allowing
+                    modifications made through the array to affect the original data.
+    """
 
-        Returns:
-            cp.ndarray: A CuPy array that provides a direct view of the data pointed to by `ptr`.
-                        This array shares the underlying data with the original Fortran code, allowing
-                        modifications made through the array to affect the original data.
-        """
-        if not sizes:
-            raise ValueError("Sizes must be provided to determine the array shape.")
+    if not sizes:
+        raise ValueError("Sizes must be provided to determine the array shape.")
 
-        length = math.prod(sizes)
-        c_type = ffi.getctype(ffi.typeof(ptr).item)
+    length = math.prod(sizes)
+    c_type = ffi.getctype(ffi.typeof(ptr).item)
 
-        dtype_map = {
-            "int": cp.int32,
-            "double": cp.float64,
-        }
-        dtype = dtype_map.get(c_type, None)
-        if dtype is None:
-            raise ValueError(f"Unsupported C data type: {c_type}")
+    dtype_map = {
+        "int": cp.int32,
+        "double": cp.float64,
+    }
+    dtype = dtype_map.get(c_type, None)
+    if dtype is None:
+        raise ValueError(f"Unsupported C data type: {c_type}")
 
-        itemsize = ffi.sizeof(c_type)
-        total_size = length * itemsize
+    itemsize = ffi.sizeof(c_type)
+    total_size = length * itemsize
 
-        # cupy array from OpenACC device pointer
-        current_device = cp.cuda.Device()
-        ptr_val = int(ffi.cast("uintptr_t", ptr))
-        mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
-        memptr = cp.cuda.MemoryPointer(mem, 0)
-        arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
-        return arr
+    # cupy array from OpenACC device pointer
+    current_device = cp.cuda.Device()
+    ptr_val = int(ffi.cast("uintptr_t", ptr))
+    mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
+    memptr = cp.cuda.MemoryPointer(mem, 0)
+    arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
+    return arr
 
-    def int_array_to_bool_array(int_array: NDArray) -> NDArray:
-        """
-        Converts a NumPy array of integers to a boolean array.
-        In the input array, 0 represents False, and any non-zero value (1 or -1) represents True.
+def int_array_to_bool_array(int_array: NDArray) -> NDArray:
+    """
+    Converts a NumPy array of integers to a boolean array.
+    In the input array, 0 represents False, and any non-zero value (1 or -1) represents True.
 
-        Args:
-            int_array: A NumPy array of integers.
+    Args:
+        int_array: A NumPy array of integers.
 
-        Returns:
-            A NumPy array of booleans.
-        """
-        bool_array = int_array != 0
-        return bool_array
+    Returns:
+        A NumPy array of booleans.
+    """
+    bool_array = int_array != 0
+    return bool_array
 
-    @ffi.def_extern()
-    def foo_wrapper(one: int32, two: Field[dims.CellDim, dims.KDim], float64], n_Cell: int32, n_K: int32):
-        try:
-            # Unpack pointers into Ndarrays
-            two = unpack_gpu(two, n_Cell, n_K)
+@ffi.def_extern()
+def foo_wrapper(one: gtx.int32, two: Field[dims.CellDim, dims.KDim], float64], n_Cell: gtx.int32, n_K: gtx.int32):
+    try:
+        # Unpack pointers into Ndarrays
+        two = unpack_gpu(two, n_Cell, n_K)
 
-            # Allocate GT4Py Fields
+        # Allocate GT4Py Fields
+        two = np_as_located_field(dims.CellDim, dims.KDim)(two)
 
-            two = np_as_located_field(dims.CellDim, dims.KDim)(two)
+        foo(one, two)
 
-            foo(one, two)
+    except Exception as e:
+        logging.exception(f"A Python error occurred: {e}")
+        return 1
 
-        except Exception as e:
-            logging.exception(f"A Python error occurred: {e}")
-            return 1
+    return 0
 
-        return 0
+@ffi.def_extern()
+def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: gtx.int32, n_Cell: gtx.int32, n_K: gtx.int32):
+    try:
+        # Unpack pointers into Ndarrays
+        one = unpack_gpu(one, n_Cell, n_K)
 
-    @ffi.def_extern()
-    def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: int32, n_Cell: int32, n_K: int32):
-        try:
-            # Unpack pointers into Ndarrays
+        # Allocate GT4Py Fields
+        one = np_as_located_field(dims.CellDim, dims.KDim)(one)
 
-            one = unpack_gpu(one, n_Cell, n_K)
+        bar(one, two)
 
-            # Allocate GT4Py Fields
+    except Exception as e:
+        logging.exception(f"A Python error occurred: {e}")
+        return 1
 
-            one = np_as_located_field(dims.CellDim, dims.KDim)(one)
-
-            bar(one, two)
-
-        except Exception as e:
-            logging.exception(f"A Python error occurred: {e}")
-            return 1
-
-        return 0
+    return 0
     '''
     assert compare_ignore_whitespace(interface, expected)
 

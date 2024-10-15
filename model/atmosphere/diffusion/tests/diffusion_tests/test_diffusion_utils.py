@@ -22,12 +22,12 @@ def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
     return k4 * hdiff_efdt_ratio / 3.0 * np.ones(shape)
 
 
-def test_scale_k():
+def test_scale_k(backend):
     grid = simple_grid.SimpleGrid()
     field = helpers.random_field(grid, dims.KDim)
     scaled_field = helpers.zero_field(grid, dims.KDim)
     factor = 2.0
-    diffusion_utils.scale_k(field, factor, scaled_field, offset_provider={})
+    diffusion_utils.scale_k.with_backend(backend)(field, factor, scaled_field, offset_provider={})
     assert np.allclose(factor * field.asnumpy(), scaled_field.asnumpy())
 
 

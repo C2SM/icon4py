@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 """
  This module handles several aspects of the horizontal grid in ICON.
 
@@ -32,7 +33,6 @@
 
 
 """
-
 import dataclasses
 import enum
 import functools

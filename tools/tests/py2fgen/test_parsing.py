@@ -18,7 +18,7 @@ source = """
 import foo
 import bar
 
-def test_function(x: Field[[EdgeDim, KDim], float64], y: int):
+def test_function(x: gtx.Field[gtx.Dims[EdgeDim, KDim], float64], y: int):
     return x * y
 """
 
@@ -42,7 +42,7 @@ def test_type_hint_visitor():
     tree = ast.parse(source)
     visitor = TypeHintVisitor()
     visitor.visit(tree)
-    expected_type_hints = {"x": "Field[[EdgeDim, KDim], float64]", "y": "int"}
+    expected_type_hints = {"x": "gtx.Field[gtx.Dims[EdgeDim, KDim], float64]", "y": "int"}
     assert visitor.type_hints == expected_type_hints
 
 

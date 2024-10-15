@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim
@@ -20,8 +20,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _calculate_nabla4(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_v1: Field[[ECVDim], wpfloat],
-    primal_normal_vert_v2: Field[[ECVDim], wpfloat],
+    primal_normal_vert_v1: gtx.Field[gtx.Dims[ECVDim], wpfloat],
+    primal_normal_vert_v2: gtx.Field[gtx.Dims[ECVDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -60,16 +60,16 @@ def _calculate_nabla4(
 def calculate_nabla4(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_v1: Field[[ECVDim], wpfloat],
-    primal_normal_vert_v2: Field[[ECVDim], wpfloat],
+    primal_normal_vert_v1: gtx.Field[gtx.Dims[ECVDim], wpfloat],
+    primal_normal_vert_v2: gtx.Field[gtx.Dims[ECVDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     z_nabla4_e2: fa.EdgeKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _calculate_nabla4(
         u_vert,
