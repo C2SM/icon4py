@@ -161,12 +161,13 @@ def compare_dace_orchestration_multiple_steps(
 
 @pytest.fixture
 def diffusion_instance(
+    backend,
     processor_props,  # fixture
     decomposition_info,  # fixture
 ):
     """Fixture to create a diffusion instance and clear the orchestration cache properly -if applicable-."""
     exchange = definitions.create_exchange(processor_props, decomposition_info)
-    diffusion_instance_ = diffusion.Diffusion(exchange)
+    diffusion_instance_ = diffusion.Diffusion(backend, exchange)
 
     yield diffusion_instance_
 
