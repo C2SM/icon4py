@@ -82,7 +82,7 @@ class VelocityAdvection:
         self.mo_math_divrot_rot_vertex_ri_dsl = mo_math_divrot_rot_vertex_ri_dsl.with_backend(
             self._backend
         )
-        self.compute_tangential_wind = compute_tangential_wind.with_backend(self._backend)
+        self.compute_tangential_wind = compute_tangential_wind  # TODO: put backend specification back once offset issue is solved
         self.interpolate_vn_to_ie_and_compute_ekin_on_edges = (
             interpolate_vn_to_ie_and_compute_ekin_on_edges.with_backend(self._backend)
         )
@@ -106,9 +106,7 @@ class VelocityAdvection:
         self.fused_stencils_16_to_17 = velocity_prog.fused_stencils_16_to_17.with_backend(
             self._backend
         )
-        self.add_extra_diffusion_for_w_con_approaching_cfl = (
-            add_extra_diffusion_for_w_con_approaching_cfl.with_backend(self._backend)
-        )
+        self.add_extra_diffusion_for_w_con_approaching_cfl = add_extra_diffusion_for_w_con_approaching_cfl  # TODO: put backend specification back once offset issue is solvedgit bra
         self.compute_advective_normal_wind_tendency = (
             compute_advective_normal_wind_tendency.with_backend(self._backend)
         )
