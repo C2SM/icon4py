@@ -36,7 +36,7 @@ from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RAT
 from icon4py.model.common.grid import geometry
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import device
+from icon4py.model.common.settings import backend, device
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -55,7 +55,7 @@ from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
 
 logger = setup_logger(__name__)
 
-diffusion_wrapper_state = {"granule": Diffusion(), "profiler": cProfile.Profile()}
+diffusion_wrapper_state = {"granule": Diffusion(backend=backend), "profiler": cProfile.Profile()}
 
 
 def profile_enable():
