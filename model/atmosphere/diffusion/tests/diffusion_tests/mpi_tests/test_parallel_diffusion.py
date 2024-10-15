@@ -40,8 +40,8 @@ def test_parallel_diffusion(
     stretch_factor,
     damping_height,
     caplog,
-    diffusion_instance,  # noqa: F811
     backend,
+    diffusion_instance,  # noqa: F811
 ):
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -168,8 +168,8 @@ def test_parallel_diffusion_multiple_steps(
     stretch_factor,
     damping_height,
     caplog,
-    diffusion_instance,  # noqa: F811
     backend,
+    diffusion_instance,  # noqa: F811
 ):
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")

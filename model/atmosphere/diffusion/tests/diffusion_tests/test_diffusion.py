@@ -331,8 +331,8 @@ def test_run_diffusion_single_step(
     stretch_factor,
     damping_height,
     ndyn_substeps,
-    diffusion_instance,  # noqa: F811
     backend,
+    diffusion_instance,  # noqa: F811
 ):
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -427,8 +427,8 @@ def test_run_diffusion_multiple_steps(
     stretch_factor,
     damping_height,
     ndyn_substeps,
-    diffusion_instance,  # noqa: F811
     backend,
+    diffusion_instance,  # noqa: F811
 ):
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
@@ -567,8 +567,8 @@ def test_run_diffusion_initial_step(
     metrics_savepoint,
     grid_savepoint,
     icon_grid,
-    diffusion_instance,  # noqa: F811
     backend,
+    diffusion_instance,  # noqa: F811
 ):
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
