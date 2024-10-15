@@ -428,6 +428,7 @@ def test_run_diffusion_multiple_steps(
     damping_height,
     ndyn_substeps,
     diffusion_instance,  # noqa: F811
+    backend,
 ):
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
@@ -488,7 +489,7 @@ def test_run_diffusion_multiple_steps(
     )
     prognostic_state_dace_non_orch = savepoint_diffusion_init.construct_prognostics()
 
-    diffusion_granule = diffusion.Diffusion()
+    diffusion_granule = diffusion.Diffusion(backend=backend)
     diffusion_granule.init(
         grid=icon_grid,
         config=config,

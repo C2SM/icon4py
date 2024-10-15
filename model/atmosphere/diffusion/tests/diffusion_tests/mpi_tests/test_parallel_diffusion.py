@@ -237,7 +237,7 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     settings.dace_orchestration = None
 
-    diffusion = diffusion_.Diffusion(exchange)
+    diffusion = diffusion_.Diffusion(backend, exchange)
 
     diffusion.init(
         grid=icon_grid,
