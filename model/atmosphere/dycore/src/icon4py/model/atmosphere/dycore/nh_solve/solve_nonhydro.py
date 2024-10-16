@@ -486,15 +486,6 @@ class SolveNonhydro:
         self.p_test_run = True
         self._initialized = True
 
-    def init(
-        self,
-    ):
-        """
-        Initialize NonHydrostatic granule with configuration.
-
-        calculates all local fields that are used in nh_solve within the time loop
-        """
-
     @property
     def initialized(self):
         return self._initialized
