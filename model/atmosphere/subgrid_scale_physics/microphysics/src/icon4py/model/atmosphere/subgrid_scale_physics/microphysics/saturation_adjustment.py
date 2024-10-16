@@ -10,7 +10,7 @@ from typing import Final
 
 import gt4py.next as gtx
 from gt4py.eve.utils import FrozenNamespace
-from gt4py.next import broadcast
+from gt4py.next import backend, broadcast
 from gt4py.next.ffront.fbuiltins import (
     abs,
     exp,
@@ -30,7 +30,7 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
-from icon4py.model.common.settings import backend, xp
+from icon4py.model.common.settings import xp
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     model,
@@ -226,7 +226,9 @@ class SaturationAdjustment:
         grid: icon_grid.IconGrid,
         vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
+        backend: backend.Backend,
     ):
+        self._backend = backend
         self.config = config
         self.grid = grid
         self.vertical_params: v_grid.VerticalGrid = vertical_params
@@ -243,72 +245,93 @@ class SaturationAdjustment:
     def _allocate_tendencies(self):
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
         self._temperature1 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         #: it was originally named as twork in ICON. New temperature before iteration.
         self._temperature2 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         #: A mask that indicates whether the grid cell is subsaturated or not.
         self._subsaturated_mask = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
         #: A mask that indicates whether next Newton iteration is required.
         self._newton_iteration_mask = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
         #: latent heat vaporization / dry air heat capacity at constant volume
         self._lwdocvd = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self._k_field = field_alloc.allocate_indices(
-            dims.KDim, grid=self.grid, is_halfdim=True, dtype=gtx.int32
+            dims.KDim, grid=self.grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
         )
         # TODO (Chia Rui): remove local pressure and pressire_ifc when scan operator can be called along with pressure tendency computation
         self._pressure = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self._pressure_ifc = field_alloc.allocate_zero_field(
-            dims.CellDim,
-            dims.KDim,
-            grid=self.grid,
-            is_halfdim=True,
-            dtype=ta.wpfloat,
+            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
         self._pressure_ifc = field_alloc.allocate_zero_field(
-            dims.CellDim,
-            dims.KDim,
-            grid=self.grid,
-            is_halfdim=True,
-            dtype=ta.wpfloat,
+            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
         self._new_exner = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self._new_virtual_temperature = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         # TODO (Chia Rui): remove the tendency terms below when architecture of the entire phyiscs component is ready to use.
         self.temperature_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.qv_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.qc_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.virtual_temperature_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.exner_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.pressure_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.pressure_ifc_tendency = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, dtype=ta.wpfloat
+            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
+        )
+
+        self.compute_subsaturated_case_and_initialize_newton_iterations = (
+            compute_subsaturated_case_and_initialize_newton_iterations.with_backend(self._backend)
+        )
+        self.update_temperature_by_newton_iteration = (
+            update_temperature_by_newton_iteration.with_backend(self._backend)
+        )
+        self.compute_newton_iteration_mask = compute_newton_iteration_mask.with_backend(
+            self._backend
+        )
+        self.copy_temperature = copy_temperature.with_backend(self._backend)
+        self.update_temperature_qv_qc_tendencies = update_temperature_qv_qc_tendencies.with_backend(
+            self._backend
+        )
+        self.compute_temperature_and_exner_tendencies_after_saturation_adjustment = (
+            compute_temperature_and_exner_tendencies_after_saturation_adjustment.with_backend(
+                self._backend
+            )
+        )
+        self.diagnose_surface_pressure = surface_pressure.diagnose_surface_pressure.with_backend(
+            self._backend
+        )
+        self.diagnose_pressure = pressure.diagnose_pressure.with_backend(self._backend)
+        self.compute_pressure_tendency_after_saturation_adjustment = (
+            compute_pressure_tendency_after_saturation_adjustment.with_backend(self._backend)
+        )
+        self.compute_pressure_ifc_tendency_after_saturation_adjustment = (
+            compute_pressure_ifc_tendency_after_saturation_adjustment.with_backend(self._backend)
         )
 
     def run(
@@ -337,7 +360,7 @@ class SaturationAdjustment:
         start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         end_cell_local = self.grid.start_index(cell_domain(h_grid.Zone.END))
 
-        compute_subsaturated_case_and_initialize_newton_iterations(
+        self.compute_subsaturated_case_and_initialize_newton_iterations(
             self.config.tolerance,
             diagnostic_state.temperature,
             tracer_state.qv,
@@ -364,7 +387,7 @@ class SaturationAdjustment:
                     start_cell_nudging:end_cell_local, 0 : self.grid.num_levels
                 ]
             ):
-                update_temperature_by_newton_iteration(
+                self.update_temperature_by_newton_iteration(
                     diagnostic_state.temperature,
                     tracer_state.qv,
                     prognostic_state.rho,
@@ -379,7 +402,7 @@ class SaturationAdjustment:
                     offset_provider={},
                 )
 
-                compute_newton_iteration_mask(
+                self.compute_newton_iteration_mask(
                     self.config.tolerance,
                     temperature_list[ncurrent],
                     temperature_list[nnext],
@@ -391,7 +414,7 @@ class SaturationAdjustment:
                     offset_provider={},
                 )
 
-                copy_temperature(
+                self.copy_temperature(
                     self._newton_iteration_mask,
                     temperature_list[ncurrent],
                     temperature_list[nnext],
@@ -413,7 +436,7 @@ class SaturationAdjustment:
             raise ConvergenceError(
                 f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {xp.abs(self.new_temperature1.ndarray - self.new_temperature2.ndarray).max()} . Please raise max_iter"
             )
-        update_temperature_qv_qc_tendencies(
+        self.update_temperature_qv_qc_tendencies(
             dtime,
             diagnostic_state.temperature,
             temperature_list[ncurrent],
@@ -433,7 +456,7 @@ class SaturationAdjustment:
 
         if self.config.diagnose_variables_from_new_temperature:
             # TODO (Chia Rui): Consider to merge the gt4py stencils below if scan operator can be called in the intermediate step
-            compute_temperature_and_exner_tendencies_after_saturation_adjustment(
+            self.compute_temperature_and_exner_tendencies_after_saturation_adjustment(
                 dtime,
                 tracer_state.qv,
                 tracer_state.qc,
@@ -459,7 +482,7 @@ class SaturationAdjustment:
                 offset_provider={},
             )
 
-            surface_pressure.diagnose_surface_pressure(
+            self.diagnose_surface_pressure(
                 self._new_exner,
                 self._new_virtual_temperature,
                 self.metric_state.ddqz_z_full,
@@ -474,7 +497,7 @@ class SaturationAdjustment:
                 offset_provider={"Koff": dims.KDim},
             )
 
-            pressure.diagnose_pressure(
+            self.diagnose_pressure(
                 self.metric_state.ddqz_z_full,
                 self._new_virtual_temperature,
                 gtx.as_field((dims.CellDim,), self._pressure_ifc.ndarray[:, -1]),
@@ -488,7 +511,7 @@ class SaturationAdjustment:
                 offset_provider={},
             )
 
-            compute_pressure_tendency_after_saturation_adjustment(
+            self.compute_pressure_tendency_after_saturation_adjustment(
                 dtime,
                 diagnostic_state.pressure,
                 self._pressure,
@@ -500,7 +523,7 @@ class SaturationAdjustment:
                 offset_provider={},
             )
 
-            compute_pressure_ifc_tendency_after_saturation_adjustment(
+            self.compute_pressure_ifc_tendency_after_saturation_adjustment(
                 dtime,
                 diagnostic_state.pressure_ifc,
                 self._pressure_ifc,
@@ -642,7 +665,7 @@ def _update_temperature_by_newton_iteration(
     return new_temperature1
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_temperature_by_newton_iteration(
     temperature: fa.CellKField[ta.wpfloat],
     qv: fa.CellKField[ta.wpfloat],
@@ -713,7 +736,7 @@ def _update_temperature_qv_qc_tendencies(
     return (temperature_next - temperature) / dtime, qv_tendency, qc_tendency
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_temperature_qv_qc_tendencies(
     dtime: ta.wpfloat,
     temperature: fa.CellKField[ta.wpfloat],
@@ -803,7 +826,7 @@ def _compute_subsaturated_case_and_initialize_newton_iterations(
     return subsaturated_mask, lwdocvd, new_temperature1, new_temperature2, newton_iteration_mask
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_subsaturated_case_and_initialize_newton_iterations(
     tolerance: ta.wpfloat,
     temperature: fa.CellKField[ta.wpfloat],
@@ -843,7 +866,7 @@ def _compute_newton_iteration_mask(
     return where(abs(temperature_current - temperature_next) > tolerance, True, False)
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_newton_iteration_mask(
     tolerance: ta.wpfloat,
     temperature_current: fa.CellKField[ta.wpfloat],
@@ -884,7 +907,7 @@ def _copy_temperature(
     return where(newton_iteration_mask, 0.0, temperature_current)
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def copy_temperature(
     newton_iteration_mask: fa.CellKField[bool],
     temperature_current: fa.CellKField[ta.wpfloat],
@@ -974,7 +997,7 @@ def _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_temperature_and_exner_tendencies_after_saturation_adjustment(
     dtime: ta.wpfloat,
     qv: fa.CellKField[ta.wpfloat],
@@ -1047,7 +1070,7 @@ def _compute_pressure_tendency_after_saturation_adjustment(
     return (new_pressure - old_pressure) / dtime
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_pressure_tendency_after_saturation_adjustment(
     dtime: ta.wpfloat,
     old_pressure: fa.CellKField[ta.wpfloat],
@@ -1089,7 +1112,7 @@ def _compute_pressure_ifc_tendency_after_saturation_adjustment(
     return (new_pressure_ifc - old_pressure_ifc) / dtime
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_pressure_ifc_tendency_after_saturation_adjustment(
     dtime: ta.wpfloat,
     old_pressure_ifc: fa.CellKField[ta.wpfloat],
