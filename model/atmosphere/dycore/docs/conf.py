@@ -50,14 +50,6 @@ rst_epilog = """
 """
 
 # -- MathJax config ----------------------------------------------------------
-MatJax = {
-    'tex2jax': {
-        'inlineMath': [ ["\\(","\\)"] ],
-        'displayMath': [["\\[","\\]"] ],
-    },
-    "jax": ["input/TeX","output/HTML-CSS"],
-    'displayAlign': 'left',
-}
 mathjax3_config = {
     'chtml': {'displayAlign': 'left',
               'displayIndent': '1em'},
