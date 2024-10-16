@@ -1186,10 +1186,10 @@ def test_granule_solve_nonhydro_single_step_regional(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000"),
-        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000"),
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
     ],
 )
 def test_granule_solve_nonhydro_multi_step_regional(
@@ -1205,6 +1205,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     stretch_factor,
     damping_height,
     grid_savepoint,
+    vn_only,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,

@@ -63,6 +63,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
@@ -202,6 +203,9 @@ def solve_nh_init(
     nflat_gradp: int32,
     num_levels: int32,
 ):
+    if not isinstance(dycore_wrapper_state["grid"], icon.IconGrid):
+        raise Exception("Need to initialise grid using grid_init before running solve_nh_init.")
+
     config = NonHydrostaticConfig(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
