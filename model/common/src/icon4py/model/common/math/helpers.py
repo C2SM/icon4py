@@ -176,3 +176,13 @@ def normalize_cartesian_vector(
 @gtx.field_operator
 def invert(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
     return where(f != 0.0, 1.0 / f, f)
+
+
+@gtx.program
+def compute_inverse(
+    f: fa.EdgeField[ta.wpfloat],
+    f_inverse: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    invert(f, out=f_inverse, domain={dims.EdgeDim: (horizontal_start, horizontal_end)})

@@ -554,8 +554,12 @@ class GridManager:
     def geometry(self):
         return self._geometry
 
-    def coordinates(self, dim: gtx.Dimension) -> dict[str, gtx.Field]:
+    def get_coordinates(self, dim: gtx.Dimension) -> dict[str, gtx.Field]:
         return self._coordinates.get(dim)
+
+    @property
+    def coordinates(self):
+        return self._coordinates
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.

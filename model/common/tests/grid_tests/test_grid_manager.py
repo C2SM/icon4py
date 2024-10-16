@@ -49,15 +49,14 @@ MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 zero_base = gm.ToZeroBasedIndexTransformation()
 
+
 @pytest.fixture
 def global_grid_file():
     return utils.resolve_file_from_gridfile_name(dt_utils.R02B04_GLOBAL)
 
 
-
 @pytest.mark.with_netcdf
 def test_grid_file_dimension(global_grid_file):
-  
     parser = gm.GridFile(str(global_grid_file))
     try:
         parser.open()
@@ -91,6 +90,7 @@ def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
         pytest.fail()
     finally:
         parser.close()
+
 
 # TODO is this useful?
 @pytest.mark.skip
@@ -423,19 +423,24 @@ def test_grid_manager_eval_c2v(caplog, grid_savepoint, grid_file):
     assert np.allclose(c2v, grid_savepoint.c2v())
 
 
-@pytest.mark.parametrize("dim, size", [(dims.CellDim,R02B04_GLOBAL_NUM_CELLS ), (dims.EdgeDim, R02B04_GLOBAL_NUM_EDGES), (dims.VertexDim, R02B04_GLOBAL_NUM_VERTEX)])
+@pytest.mark.parametrize(
+    "dim, size",
+    [
+        (dims.CellDim, R02B04_GLOBAL_NUM_CELLS),
+        (dims.EdgeDim, R02B04_GLOBAL_NUM_EDGES),
+        (dims.VertexDim, R02B04_GLOBAL_NUM_VERTEX),
+    ],
+)
 @pytest.mark.with_netcdf
 def test_grid_manager_grid_size(dim, size):
     grid = run_grid_manager(utils.R02B04_GLOBAL).grid
     assert size == grid.size[dim]
 
 
-
 def assert_up_to_order(table, diamond_table):
     assert table.shape == diamond_table.shape
     for n in range(table.shape[0]):
         assert np.all(np.in1d(table[n, :], diamond_table[n, :]))
-
 
 
 @pytest.mark.with_netcdf
@@ -469,8 +474,6 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
 )
 def test_grid_manager_grid_level_and_root(grid_file, global_num_cells):
     assert global_num_cells == run_grid_manager(grid_file, num_levels=1).grid.global_num_cells
-
-
 
 
 @pytest.mark.datatest
@@ -543,10 +546,14 @@ def test_read_geometry_fields(grid_savepoint, grid_file):
     tangent_orientation = gm.geometry[GeometryName.TANGENT_ORIENTATION.value]
 
     assert helpers.dallclose(edge_length.asnumpy(), grid_savepoint.primal_edge_length().asnumpy())
-    assert helpers.dallclose(dual_edge_length.asnumpy(), grid_savepoint.dual_edge_length().asnumpy())
+    assert helpers.dallclose(
+        dual_edge_length.asnumpy(), grid_savepoint.dual_edge_length().asnumpy()
+    )
     assert helpers.dallclose(cell_area.asnumpy(), cell_area_p.asnumpy())
     assert helpers.dallclose(cell_area.asnumpy(), grid_savepoint.cell_areas().asnumpy())
-    assert helpers.dallclose(tangent_orientation.asnumpy(), grid_savepoint.tangent_orientation().asnumpy())
+    assert helpers.dallclose(
+        tangent_orientation.asnumpy(), grid_savepoint.tangent_orientation().asnumpy()
+    )
 
 
 @pytest.mark.datatest
@@ -560,8 +567,8 @@ def test_read_geometry_fields(grid_savepoint, grid_file):
 @pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_coordinates(grid_savepoint, grid_file, experiment, dim):
     gm = utils.run_grid_manager(grid_file)
-    lat = gm.coordinates(dim)["lat"]
-    lon = gm.coordinates(dim)["lon"]
+    lat = gm.get_coordinates(dim)["lat"]
+    lon = gm.get_coordinates(dim)["lon"]
     assert helpers.dallclose(lat.asnumpy(), grid_savepoint.lat(dim).asnumpy())
     assert helpers.dallclose(lon.asnumpy(), grid_savepoint.lon(dim).asnumpy())
 
@@ -576,8 +583,8 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim):
 )
 def test_cell_coordinates(grid_savepoint, grid_file, experiment):
     gm = utils.run_grid_manager(grid_file)
-    lat = gm.coordinates(dims.CellDim)["lat"]
-    lon = gm.coordinates(dims.CellDim)["lon"]
+    lat = gm.get_coordinates(dims.CellDim)["lat"]
+    lon = gm.get_coordinates(dims.CellDim)["lon"]
     cell_center_lat = gm.geometry["lat_cell_centre"]
     cell_center_lon = gm.geometry["lon_cell_centre"]
 
