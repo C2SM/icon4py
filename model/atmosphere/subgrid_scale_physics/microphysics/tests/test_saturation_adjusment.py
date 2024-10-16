@@ -39,6 +39,7 @@ def test_saturation_adjustment_in_gscp_call(
     metrics_savepoint,
     icon_grid,
     lowest_layer_thickness,
+    backend,
 ):
     entry_microphysics_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(
         date=date
@@ -73,6 +74,7 @@ def test_saturation_adjustment_in_gscp_call(
         grid=icon_grid,
         metric_state=metric_state,
         vertical_params=vertical_params,
+        backend=backend,
     )
 
     tracer_state = tracers.TracerState(
@@ -156,6 +158,7 @@ def test_saturation_adjustment_in_physics_interface_call(
     metrics_savepoint,
     icon_grid,
     lowest_layer_thickness,
+    backend,
 ):
     entry_microphysics_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(
         date=date
@@ -193,6 +196,7 @@ def test_saturation_adjustment_in_physics_interface_call(
         grid=icon_grid,
         metric_state=metric_state,
         vertical_params=vertical_params,
+        backend=backend,
     )
 
     tracer_state = tracers.TracerState(
