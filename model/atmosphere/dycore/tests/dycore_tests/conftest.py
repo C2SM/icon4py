@@ -132,7 +132,7 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn: int):
     return config
 
 
-def _exclaim_ape_nonhydrostatic_config(ndyn):
+def _exclaim_ape_nonhydrostatic_config(ndyn: int):
     """Create configuration for EXCLAIM APE experiment."""
     return solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
@@ -141,7 +141,9 @@ def _exclaim_ape_nonhydrostatic_config(ndyn):
     )
 
 
-def create_vertical_params(vertical_config, sp):
+def create_vertical_params(
+    vertical_config: v_grid.VerticalGridConfig, sp: sb.IconSerialDataProvider
+):
     return v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=sp.vct_a(),

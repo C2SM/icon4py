@@ -16,7 +16,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import geometry as geom, vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 
-from icon4pytools.py2fgen.wrappers import diffusion_granule, wrapper_dimension as w_dim
+from icon4pytools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
 
 from . import conftest
 
@@ -210,7 +210,7 @@ def test_diffusion_wrapper_granule_inputs(
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Initialize the Grid ---
-    diffusion_granule.grid_init(
+    diffusion_wrapper.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -235,9 +235,9 @@ def test_diffusion_wrapper_granule_inputs(
         limited_area=limited_area,
     )
 
-    # --- Mock and Test diffusion_granule.init ---
+    # --- Mock and Test Diffusion.init ---
     with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.init") as mock_init:
-        diffusion_granule.diffusion_init(
+        diffusion_wrapper.diffusion_init(
             vct_a=vct_a,
             vct_b=vct_b,
             theta_ref_mc=theta_ref_mc,
@@ -299,7 +299,7 @@ def test_diffusion_wrapper_granule_inputs(
             stretch_factor=stretch_factor,
         )
 
-        # Check input arguments to diffusion_granule.init
+        # Check input arguments to Diffusion.init
         captured_args, captured_kwargs = mock_init.call_args
 
         # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
@@ -348,9 +348,9 @@ def test_diffusion_wrapper_granule_inputs(
         )
         assert result, f"Cell Params comparison failed: {error_message}"
 
-    # --- Mock and Test diffusion_granule.run ---
+    # --- Mock and Test Diffusion.run ---
     with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.run") as mock_run:
-        diffusion_granule.diffusion_run(
+        diffusion_wrapper.diffusion_run(
             w=w,
             vn=vn,
             exner=exner,
@@ -364,7 +364,7 @@ def test_diffusion_wrapper_granule_inputs(
             linit=False,
         )
 
-        # Check input arguments to diffusion_granule.run
+        # Check input arguments to Diffusion.run
         captured_args, captured_kwargs = mock_run.call_args
         assert conftest.compare_objects(
             captured_kwargs["diagnostic_state"], expected_diagnostic_state
@@ -524,7 +524,7 @@ def test_diffusion_wrapper_single_step(
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
-    diffusion_granule.grid_init(
+    diffusion_wrapper.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -550,7 +550,7 @@ def test_diffusion_wrapper_single_step(
     )
 
     # Call diffusion_init
-    diffusion_granule.diffusion_init(
+    diffusion_wrapper.diffusion_init(
         vct_a=vct_a,
         vct_b=vct_b,
         theta_ref_mc=theta_ref_mc,
@@ -613,7 +613,7 @@ def test_diffusion_wrapper_single_step(
     )
 
     # Call diffusion_run
-    diffusion_granule.diffusion_run(
+    diffusion_wrapper.diffusion_run(
         w=w,
         vn=vn,
         exner=exner,

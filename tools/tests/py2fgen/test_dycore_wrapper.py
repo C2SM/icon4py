@@ -36,7 +36,7 @@ from icon4py.model.common.test_utils import (
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
-from icon4pytools.py2fgen.wrappers import dycore_granule, wrapper_dimension as w_dim
+from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 
 from . import conftest
 
@@ -428,7 +428,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_at_last_substep = jstep_init == (ndyn_substeps - 1)
 
     # --- Initialize the Grid ---
-    dycore_granule.grid_init(
+    dycore_wrapper.grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -453,11 +453,11 @@ def test_dycore_wrapper_granule_inputs(
         limited_area=limited_area,
     )
 
-    # --- Mock and Test dycore_granule.init ---
+    # --- Mock and Test SolveNonhydro.init ---
     with mock.patch(
         "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.init"
     ) as mock_init:
-        dycore_granule.solve_nh_init(
+        dycore_wrapper.solve_nh_init(
             vct_a=vct_a,
             vct_b=vct_b,
             cell_areas=cell_areas,
@@ -617,11 +617,11 @@ def test_dycore_wrapper_granule_inputs(
         )
         assert result, f"Owner Mask comparison failed: {error_message}"
 
-    # --- Mock and Test dycore_granule.run ---
+    # --- Mock and Test SolveNonhydro.run ---
     with mock.patch(
         "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.time_step"
     ) as mock_init:
-        dycore_granule.solve_nh_run(
+        dycore_wrapper.solve_nh_run(
             rho_now=rho_now,
             rho_new=rho_new,
             exner_now=exner_now,
@@ -929,7 +929,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     global_root = 4
     global_level = 9
 
-    dycore_granule.grid_init(
+    dycore_wrapper.grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -955,7 +955,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     )
 
     # call solve init
-    dycore_granule.solve_nh_init(
+    dycore_wrapper.solve_nh_init(
         vct_a=vct_a,
         vct_b=vct_b,
         cell_areas=cell_areas,
@@ -1109,7 +1109,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     nnew = 2
     jstep_init_fortran = jstep_init + 1
 
-    dycore_granule.solve_nh_run(
+    dycore_wrapper.solve_nh_run(
         rho_now=rho_now,
         rho_new=rho_new,
         exner_now=exner_now,
@@ -1379,7 +1379,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     global_root = 4
     global_level = 9
 
-    dycore_granule.grid_init(
+    dycore_wrapper.grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -1405,7 +1405,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     )
 
     # call solve init
-    dycore_granule.solve_nh_init(
+    dycore_wrapper.solve_nh_init(
         vct_a=vct_a,
         vct_b=vct_b,
         cell_areas=cell_areas,
@@ -1561,7 +1561,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     for i_substep in range(1, ndyn_substeps + 1):
         is_last_substep = i_substep == (ndyn_substeps)
 
-        dycore_granule.solve_nh_run(
+        dycore_wrapper.solve_nh_run(
             rho_now=rho_now,
             rho_new=rho_new,
             exner_now=exner_now,
