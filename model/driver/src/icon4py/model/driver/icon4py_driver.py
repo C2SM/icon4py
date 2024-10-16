@@ -366,8 +366,7 @@ def initialize(
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro()
-    solve_nonhydro_granule.init(
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,

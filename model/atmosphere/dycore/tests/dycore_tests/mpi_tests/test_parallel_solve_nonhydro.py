@@ -141,8 +141,7 @@ def test_run_solve_nonhydro_single_step(
 
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    solve_nonhydro = nh.SolveNonhydro(exchange)
-    solve_nonhydro.init(
+    solve_nonhydro = nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -152,6 +151,7 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        exchange=exchange,
     )
 
     print(

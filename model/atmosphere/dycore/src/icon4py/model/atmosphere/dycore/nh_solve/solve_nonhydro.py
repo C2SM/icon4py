@@ -411,7 +411,17 @@ class NonHydrostaticParams:
 
 class SolveNonhydro:
     def __init__(
-        self, exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()
+        self,
+        grid: icon_grid.IconGrid,
+        config: NonHydrostaticConfig,
+        params: NonHydrostaticParams,
+        metric_state_nonhydro: solve_nh_states.MetricStateNonHydro,
+        interpolation_state: solve_nh_states.InterpolationState,
+        vertical_params: v_grid.VerticalGrid,
+        edge_geometry: geometry.EdgeParams,
+        cell_geometry: geometry.CellParams,
+        owner_mask: fa.CellField[bool],
+        exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
         self._initialized = False
@@ -433,23 +443,6 @@ class SolveNonhydro:
         self.ntl1 = 0
         self.ntl2 = 0
 
-    def init(
-        self,
-        grid: icon_grid.IconGrid,
-        config: NonHydrostaticConfig,
-        params: NonHydrostaticParams,
-        metric_state_nonhydro: solve_nh_states.MetricStateNonHydro,
-        interpolation_state: solve_nh_states.InterpolationState,
-        vertical_params: v_grid.VerticalGrid,
-        edge_geometry: geometry.EdgeParams,
-        cell_geometry: geometry.CellParams,
-        owner_mask: fa.CellField[bool],
-    ):
-        """
-        Initialize NonHydrostatic granule with configuration.
-
-        calculates all local fields that are used in nh_solve within the time loop
-        """
         self.grid = grid
         self.config: NonHydrostaticConfig = config
         self.params: NonHydrostaticParams = params
@@ -492,6 +485,15 @@ class SolveNonhydro:
 
         self.p_test_run = True
         self._initialized = True
+
+    def init(
+        self,
+    ):
+        """
+        Initialize NonHydrostatic granule with configuration.
+
+        calculates all local fields that are used in nh_solve within the time loop
+        """
 
     @property
     def initialized(self):
