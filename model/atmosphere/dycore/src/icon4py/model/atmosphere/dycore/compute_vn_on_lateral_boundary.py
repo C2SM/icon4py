@@ -10,7 +10,6 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -25,7 +24,7 @@ def _compute_vn_on_lateral_boundary(
     return vn_new_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_vn_on_lateral_boundary(
     grf_tend_vn: fa.EdgeKField[wpfloat],
     vn_now: fa.EdgeKField[wpfloat],

@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import astype, broadcast
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -29,7 +28,7 @@ def _apply_4th_order_divergence_damping(
     return vn_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_4th_order_divergence_damping(
     scal_divdamp: fa.KField[wpfloat],
     z_graddiv2_vn: fa.EdgeKField[vpfloat],

@@ -11,7 +11,6 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -30,7 +29,7 @@ def _update_dynamical_exner_time_increment(
     return astype(exner_dyn_incr_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def update_dynamical_exner_time_increment(
     exner: fa.CellKField[wpfloat],
     ddt_exner_phy: fa.CellKField[vpfloat],

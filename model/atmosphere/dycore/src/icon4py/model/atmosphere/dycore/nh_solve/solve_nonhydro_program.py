@@ -78,11 +78,10 @@ from icon4py.model.atmosphere.dycore.update_density_exner_wind import (
 )
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 
 
 # TODO: abishekg7 move this to tests
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_test_fields(
     z_rho_e: fa.EdgeKField[float],
     z_theta_v_e: fa.EdgeKField[float],
@@ -125,7 +124,7 @@ def _predictor_stencils_2_3(
     return z_exner_ex_pr, exner_pr
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_2_3(
     exner_exfac: fa.CellKField[float],
     exner: fa.CellKField[float],
@@ -190,7 +189,7 @@ def _predictor_stencils_4_5_6(
     return z_exner_ic, z_dexner_dz_c_1
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_4_5_6(
     wgtfacq_c_dsl: fa.CellKField[float],
     z_exner_ex_pr: fa.CellKField[float],
@@ -280,7 +279,7 @@ def _predictor_stencils_7_8_9(
     return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_7_8_9(
     rho: fa.CellKField[float],
     rho_ref_mc: fa.CellKField[float],
@@ -357,7 +356,7 @@ def _predictor_stencils_11_lower_upper(
     return z_theta_v_pr_ic, theta_v_ic
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_11_lower_upper(
     wgtfacq_c_dsl: fa.CellKField[float],
     z_rth_pr: fa.CellKField[float],
@@ -387,7 +386,7 @@ def predictor_stencils_11_lower_upper(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[float],
     p_vt: fa.EdgeKField[float],
@@ -471,7 +470,7 @@ def _predictor_stencils_35_36(
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_35_36(
     vn: fa.EdgeKField[float],
     ddxn_z_full: fa.EdgeKField[float],
@@ -509,7 +508,7 @@ def predictor_stencils_35_36(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def predictor_stencils_37_38(
     vn: fa.EdgeKField[float],
     vt: fa.EdgeKField[float],
@@ -570,7 +569,7 @@ def _stencils_39_40(
     return w_concorr_c
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def stencils_39_40(
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], float],
     z_w_concorr_me: fa.EdgeKField[float],
@@ -677,7 +676,7 @@ def _stencils_42_44_45_45b(
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def stencils_42_44_45_45b(
     z_w_expl: fa.CellKField[float],
     w_nnow: fa.CellKField[float],
@@ -813,7 +812,7 @@ def _stencils_43_44_45_45b(
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def stencils_43_44_45_45b(
     z_w_expl: fa.CellKField[float],
     w_nnow: fa.CellKField[float],
@@ -924,7 +923,7 @@ def _stencils_47_48_49(
     return w_nnew, z_contr_w_fl_l, z_rho_expl, z_exner_expl
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def stencils_47_48_49(
     w_nnew: fa.CellKField[float],
     z_contr_w_fl_l: fa.CellKField[float],
@@ -1006,7 +1005,7 @@ def _stencils_61_62(
     return rho_new, exner_new, w_new
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def stencils_61_62(
     rho_now: fa.CellKField[float],
     grf_tend_rho: fa.CellKField[float],

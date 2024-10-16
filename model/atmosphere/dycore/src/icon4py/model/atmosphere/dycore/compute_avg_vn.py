@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2EO, E2C2EODim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -26,7 +25,7 @@ def _compute_avg_vn(
     return z_vn_avg_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_avg_vn(
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],

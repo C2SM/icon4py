@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2EO, E2C2EODim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -28,7 +27,7 @@ def _compute_graddiv2_of_vn(
     return astype(z_graddiv2_vn_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_graddiv2_of_vn(
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], wpfloat],
     z_graddiv_vn: fa.EdgeKField[vpfloat],

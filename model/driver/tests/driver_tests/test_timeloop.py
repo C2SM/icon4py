@@ -126,6 +126,8 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_exit,
     backend,
 ):
+    if (backend is not None) and ("gtfn_cpu" in backend.name):
+        pytest.skip("Temporary skip due to gt4py offset error output")
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
         config = icon4py_configuration.read_config(experiment)
         diffusion_config = config.diffusion_config

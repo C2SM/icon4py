@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -37,7 +36,7 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl(
     return astype((p_grad_1_u_wp, p_grad_1_v_wp, p_grad_2_u_wp, p_grad_2_v_wp), vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_math_gradients_grad_green_gauss_cell_dsl(
     p_grad_1_u: fa.CellKField[vpfloat],
     p_grad_1_v: fa.CellKField[vpfloat],

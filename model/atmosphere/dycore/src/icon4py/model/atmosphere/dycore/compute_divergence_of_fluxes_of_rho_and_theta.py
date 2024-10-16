@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2CE, C2E, C2EDim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -28,7 +27,7 @@ def _compute_divergence_of_fluxes_of_rho_and_theta(
     return astype((z_flxdiv_mass_wp, z_flxdiv_theta_wp), vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_divergence_of_fluxes_of_rho_and_theta(
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     mass_fl_e: fa.EdgeKField[wpfloat],

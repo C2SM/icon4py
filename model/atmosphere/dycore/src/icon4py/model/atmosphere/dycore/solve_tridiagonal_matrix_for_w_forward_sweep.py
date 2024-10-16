@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -64,7 +63,7 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     return z_q_res, w_res
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def solve_tridiagonal_matrix_for_w_forward_sweep(
     vwind_impl_wgt: fa.CellField[wpfloat],
     theta_v_ic: fa.CellKField[wpfloat],

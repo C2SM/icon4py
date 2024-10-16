@@ -28,7 +28,6 @@ from icon4py.model.common.dimension import (
     E2CDim,
     Koff,
 )
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -88,7 +87,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     return astype(ddt_vn_apc_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], wpfloat],

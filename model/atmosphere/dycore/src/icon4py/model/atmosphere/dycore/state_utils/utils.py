@@ -86,6 +86,6 @@ def _compute_z_raylfac(rayleigh_w: fa.KField[float], dtime: float) -> fa.KField[
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
-@gtx.program(backend=backend)
+@gtx.program
 def compute_z_raylfac(rayleigh_w: fa.KField[float], dtime: float, z_raylfac: fa.KField[float]):
     _compute_z_raylfac(rayleigh_w, dtime, out=z_raylfac)
