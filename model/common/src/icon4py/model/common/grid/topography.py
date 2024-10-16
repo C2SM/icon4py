@@ -27,7 +27,7 @@ def _nabla2_scalar(
 
     return nabla2_psi_c
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def nabla2_scalar(
     psi_c: fa.CellKField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
