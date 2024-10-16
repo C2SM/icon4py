@@ -45,8 +45,8 @@ from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
 )
 from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
-    _compute_only_pressure_gradient,
-    _compute_only_virtual_potential_temperatures,
+    _compute_pressure_gradient,
+    _compute_virtual_potential_temperatures,
     _compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
@@ -379,7 +379,7 @@ def _predictor_stencils_7_8_9_firststep(
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field >= 1,
-        _compute_only_virtual_potential_temperatures(
+        _compute_virtual_potential_temperatures(
             wgtfac_c,
             z_rth_pr_2,
             theta_v,
@@ -457,7 +457,7 @@ def _predictor_stencils_7_8_9_secondstep(
 ) -> fa.CellKField[float]:
     z_th_ddz_exner_c = where(
         k_field >= 1,
-        _compute_only_pressure_gradient(
+        _compute_pressure_gradient(
             vwind_expl_wgt,
             theta_v_ic,
             z_theta_v_pr_ic,

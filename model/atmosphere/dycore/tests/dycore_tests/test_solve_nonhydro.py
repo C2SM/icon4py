@@ -24,15 +24,9 @@ from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.model.common.test_utils.dycore_utils import (
-    construct_config,
-    construct_diagnostics,
-    construct_interpolation_state_for_nonhydro,
-    construct_nh_metric_state,
-    create_prognostic_states,
-    create_vertical_params,
-)
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
+from . import conftest
 
 
 @pytest.mark.datatest
@@ -120,7 +114,7 @@ def test_nonhydro_predictor_step(
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
-    config = construct_config(experiment, ndyn_substeps)
+    config = conftest.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -131,7 +125,7 @@ def test_nonhydro_predictor_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = conftest.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
@@ -139,10 +133,12 @@ def test_nonhydro_predictor_step(
     nnow = 0
     nnew = 1
 
-    diagnostic_state_nh = construct_diagnostics(sp)
+    diagnostic_state_nh = conftest.construct_diagnostics(sp)
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    interpolation_state = conftest.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = conftest.construct_nh_metric_state(
+        metrics_savepoint, icon_grid.num_levels
+    )
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -161,7 +157,7 @@ def test_nonhydro_predictor_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = create_prognostic_states(sp)
+    prognostic_state_ls = conftest.create_prognostic_states(sp)
     solve_nonhydro.set_timelevels(nnow, nnew)
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -507,7 +503,7 @@ def test_nonhydro_corrector_step(
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
-    config = construct_config(experiment, ndyn_substeps)
+    config = conftest.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
@@ -517,7 +513,7 @@ def test_nonhydro_corrector_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = conftest.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
@@ -531,7 +527,7 @@ def test_nonhydro_corrector_step(
     nnow = 0
     nnew = 1
 
-    diagnostic_state_nh = construct_diagnostics(sp)
+    diagnostic_state_nh = conftest.construct_diagnostics(sp)
 
     z_fields = solve_nh.IntermediateFields(
         z_gradh_exner=sp.z_gradh_exner(),
@@ -552,8 +548,10 @@ def test_nonhydro_corrector_step(
 
     divdamp_fac_o2 = sp.divdamp_fac_o2()
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    interpolation_state = conftest.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = conftest.construct_nh_metric_state(
+        metrics_savepoint, icon_grid.num_levels
+    )
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -571,7 +569,7 @@ def test_nonhydro_corrector_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = create_prognostic_states(sp)
+    prognostic_state_ls = conftest.create_prognostic_states(sp)
     solve_nonhydro.set_timelevels(nnow, nnew)
 
     solve_nonhydro.run_corrector_step(
@@ -710,7 +708,7 @@ def test_run_solve_nonhydro_single_step(
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = conftest.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
@@ -722,7 +720,7 @@ def test_run_solve_nonhydro_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = conftest.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
@@ -738,10 +736,12 @@ def test_run_solve_nonhydro_single_step(
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = construct_diagnostics(sp)
+    diagnostic_state_nh = conftest.construct_diagnostics(sp)
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    interpolation_state = conftest.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = conftest.construct_nh_metric_state(
+        metrics_savepoint, icon_grid.num_levels
+    )
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -759,7 +759,7 @@ def test_run_solve_nonhydro_single_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = create_prognostic_states(sp)
+    prognostic_state_ls = conftest.create_prognostic_states(sp)
 
     initial_divdamp_fac = sp.divdamp_fac_o2()
     solve_nonhydro.time_step(
@@ -838,7 +838,7 @@ def test_run_solve_nonhydro_multi_step(
     experiment,
     ndyn_substeps,
 ):
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = conftest.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -849,7 +849,7 @@ def test_run_solve_nonhydro_multi_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = conftest.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
@@ -865,11 +865,13 @@ def test_run_solve_nonhydro_multi_step(
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = construct_diagnostics(sp)
-    prognostic_state_ls = create_prognostic_states(sp)
+    diagnostic_state_nh = conftest.construct_diagnostics(sp)
+    prognostic_state_ls = conftest.create_prognostic_states(sp)
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    interpolation_state = conftest.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = conftest.construct_nh_metric_state(
+        metrics_savepoint, icon_grid.num_levels
+    )
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()

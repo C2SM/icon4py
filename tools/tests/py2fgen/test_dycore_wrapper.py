@@ -24,39 +24,21 @@ from unittest import mock
 
 import gt4py.next as gtx
 import pytest
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    DivergenceDampingOrder,
-    HorizontalPressureDiscretizationType,
-    NonHydrostaticParams,
-    RhoThetaAdvectionType,
-    TimeSteppingScheme,
-)
-from icon4py.model.atmosphere.dycore.state_utils.states import PrepAdvection
+from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
+from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.model.common.test_utils.dycore_utils import (
-    construct_config,
-    construct_diagnostics,
-    construct_interpolation_state_for_nonhydro,
-    construct_nh_metric_state,
-    create_prognostic_states,
-    create_vertical_params,
-)
-from icon4py.model.common.utils.gt4py_field_allocation import allocate_zero_field
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
-from icon4pytools.py2fgen.wrappers.dycore import grid_init, solve_nh_init, solve_nh_run
-from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
-    CellIndexDim,
-    EdgeIndexDim,
-    VertexIndexDim,
-)
+from icon4pytools.py2fgen.wrappers import dycore_granule, wrapper_dimension as w_dim
 
-from .conftest import compare_objects
+from . import conftest
 
 
 logging.basicConfig(level=logging.INFO)
@@ -105,13 +87,13 @@ def test_dycore_wrapper_granule_inputs(
     # --- Granule input parameters for dycore init
 
     # non hydrostatic config parameters
-    itime_scheme = TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = RhoThetaAdvectionType.MIURA
-    igradp_method = HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
+    iadv_rhotheta = solve_nh.RhoThetaAdvectionType.MIURA
+    igradp_method = solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
-    divdamp_order = DivergenceDampingOrder.COMBINED
+    divdamp_order = solve_nh.DivergenceDampingOrder.COMBINED
     is_iau_active = False
     iau_wgt_dyn = 1.0
     divdamp_type = 3
@@ -244,12 +226,14 @@ def test_dycore_wrapper_granule_inputs(
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
     # raw serialised data which is not yet offset
-    cell_starts = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
-    cell_ends = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
-    vertex_starts = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_start_index"))
-    vertex_ends = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
-    edge_starts = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
-    edge_ends = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
+    cell_starts = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
+    cell_ends = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
+    vertex_starts = gtx.as_field(
+        (w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
+    )
+    vertex_ends = gtx.as_field((w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
+    edge_starts = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
+    edge_ends = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
 
     c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
     e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
@@ -317,10 +301,59 @@ def test_dycore_wrapper_granule_inputs(
     expected_icon_grid = icon_grid
     expected_edge_geometry = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry = grid_savepoint.construct_cell_geometry()
-    expected_interpolation_state = construct_interpolation_state_for_nonhydro(
-        interpolation_savepoint
+    expected_interpolation_state = solve_nh_states.InterpolationState(
+        c_lin_e=interpolation_savepoint.c_lin_e(),
+        c_intp=interpolation_savepoint.c_intp(),
+        e_flx_avg=interpolation_savepoint.e_flx_avg(),
+        geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
+        geofac_rot=interpolation_savepoint.geofac_rot(),
+        pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
+        pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
+        rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    expected_metric_state = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    expected_metric_state = solve_nh_states.MetricStateNonHydro(
+        bdy_halo_c=metrics_savepoint.bdy_halo_c(),
+        mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
+        rayleigh_w=metrics_savepoint.rayleigh_w(),
+        exner_exfac=metrics_savepoint.exner_exfac(),
+        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+        rho_ref_mc=metrics_savepoint.rho_ref_mc(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
+        d_exner_dz_ref_ic=metrics_savepoint.d_exner_dz_ref_ic(),
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        theta_ref_ic=metrics_savepoint.theta_ref_ic(),
+        d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
+        d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
+        rho_ref_me=metrics_savepoint.rho_ref_me(),
+        theta_ref_me=metrics_savepoint.theta_ref_me(),
+        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+        zdiff_gradp=metrics_savepoint.zdiff_gradp(),
+        vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
+        ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+        pg_exdist=metrics_savepoint.pg_exdist(),
+        ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+        ddxt_z_full=metrics_savepoint.ddxt_z_full(),
+        wgtfac_e=metrics_savepoint.wgtfac_e(),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(num_levels),
+        vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
+        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
+        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
+        coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
+        coeff_gradekin=metrics_savepoint.coeff_gradekin(),
+    )
     expected_vertical_config = VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -328,18 +361,60 @@ def test_dycore_wrapper_granule_inputs(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    expected_vertical_params = create_vertical_params(expected_vertical_config, grid_savepoint)
-    expected_config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
-    expected_additional_parameters = NonHydrostaticParams(expected_config)
+    expected_vertical_params = v_grid.VerticalGrid(
+        config=expected_vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
+    expected_config = conftest.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
+    expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
-    expected_diagnostic_state_nh = construct_diagnostics(sp)
-    expected_prognostic_state_ls = create_prognostic_states(sp)
-    expected_prep_adv = PrepAdvection(
+    expected_diagnostic_state_nh = solve_nh_states.DiagnosticStateNonHydro(
+        theta_v_ic=sp.theta_v_ic(),
+        exner_pr=sp.exner_pr(),
+        rho_ic=sp.rho_ic(),
+        ddt_exner_phy=sp.ddt_exner_phy(),
+        grf_tend_rho=sp.grf_tend_rho(),
+        grf_tend_thv=sp.grf_tend_thv(),
+        grf_tend_w=sp.grf_tend_w(),
+        mass_fl_e=sp.mass_fl_e(),
+        ddt_vn_phy=sp.ddt_vn_phy(),
+        grf_tend_vn=sp.grf_tend_vn(),
+        ddt_vn_apc_ntl1=sp.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=sp.ddt_w_adv_pc(2),
+        vt=sp.vt(),
+        vn_ie=sp.vn_ie(),
+        w_concorr_c=sp.w_concorr_c(),
+        rho_incr=None,  # sp.rho_incr(),
+        vn_incr=None,  # sp.vn_incr(),
+        exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=sp.exner_dyn_incr(),
+    )
+    prognostic_state_nnow = prognostics.PrognosticState(
+        w=sp.w_now(),
+        vn=sp.vn_now(),
+        theta_v=sp.theta_v_now(),
+        rho=sp.rho_now(),
+        exner=sp.exner_now(),
+    )
+    prognostic_state_nnew = prognostics.PrognosticState(
+        w=sp.w_new(),
+        vn=sp.vn_new(),
+        theta_v=sp.theta_v_new(),
+        rho=sp.rho_new(),
+        exner=sp.exner_new(),
+    )
+    expected_prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+
+    expected_prep_adv = solve_nh_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
     expected_initial_divdamp_fac = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
@@ -353,7 +428,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_at_last_substep = jstep_init == (ndyn_substeps - 1)
 
     # --- Initialize the Grid ---
-    grid_init(
+    dycore_granule.grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -382,7 +457,7 @@ def test_dycore_wrapper_granule_inputs(
     with mock.patch(
         "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.init"
     ) as mock_init:
-        solve_nh_init(
+        dycore_granule.solve_nh_init(
             vct_a=vct_a,
             vct_b=vct_b,
             cell_areas=cell_areas,
@@ -493,7 +568,9 @@ def test_dycore_wrapper_granule_inputs(
 
         # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
         try:
-            result, error_message = compare_objects(captured_kwargs["grid"], expected_icon_grid)
+            result, error_message = conftest.compare_objects(
+                captured_kwargs["grid"], expected_icon_grid
+            )
             assert result, f"Grid comparison failed: {error_message}"
         except AssertionError as e:
             error_message = str(e)
@@ -502,40 +579,40 @@ def test_dycore_wrapper_granule_inputs(
             else:
                 pass
 
-        result, error_message = compare_objects(captured_kwargs["config"], expected_config)
+        result, error_message = conftest.compare_objects(captured_kwargs["config"], expected_config)
         assert result, f"Config comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["params"], expected_additional_parameters
         )
         assert result, f"Params comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["metric_state_nonhydro"], expected_metric_state
         )
         assert result, f"Metric State comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["interpolation_state"], expected_interpolation_state
         )
         assert result, f"Interpolation State comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["vertical_params"], expected_vertical_params
         )
         assert result, f"Vertical Params comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["edge_geometry"], expected_edge_geometry
         )
         assert result, f"Edge Geometry comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["cell_geometry"], expected_cell_geometry
         )
         assert result, f"Cell Geometry comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["owner_mask"], grid_savepoint.c_owner_mask()
         )
         assert result, f"Owner Mask comparison failed: {error_message}"
@@ -544,7 +621,7 @@ def test_dycore_wrapper_granule_inputs(
     with mock.patch(
         "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.time_step"
     ) as mock_init:
-        solve_nh_run(
+        dycore_granule.solve_nh_run(
             rho_now=rho_now,
             rho_new=rho_new,
             exner_now=exner_now,
@@ -591,51 +668,59 @@ def test_dycore_wrapper_granule_inputs(
         # Check input arguments to SolveNonhydro.time_step
         captured_args, captured_kwargs = mock_init.call_args
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["diagnostic_state_nh"], expected_diagnostic_state_nh
         )
         assert result, f"Diagnostic State comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["prognostic_state_ls"], expected_prognostic_state_ls
         )
         assert result, f"Prognostic State comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["prep_adv"], expected_prep_adv)
+        result, error_message = conftest.compare_objects(
+            captured_kwargs["prep_adv"], expected_prep_adv
+        )
         assert result, f"Prep Advection comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["divdamp_fac_o2"], expected_initial_divdamp_fac
         )
         assert result, f"Divdamp Factor comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["dtime"], expected_dtime)
+        result, error_message = conftest.compare_objects(captured_kwargs["dtime"], expected_dtime)
         assert result, f"dtime comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["l_recompute"], expected_recompute)
+        result, error_message = conftest.compare_objects(
+            captured_kwargs["l_recompute"], expected_recompute
+        )
         assert result, f"Recompute flag comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["l_init"], expected_linit)
+        result, error_message = conftest.compare_objects(captured_kwargs["l_init"], expected_linit)
         assert result, f"Init flag comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["lclean_mflx"], expected_clean_mflx)
+        result, error_message = conftest.compare_objects(
+            captured_kwargs["lclean_mflx"], expected_clean_mflx
+        )
         assert result, f"Clean MFLX flag comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["lprep_adv"], expected_lprep_adv)
+        result, error_message = conftest.compare_objects(
+            captured_kwargs["lprep_adv"], expected_lprep_adv
+        )
         assert result, f"Prep Advection flag comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["nnew"], expected_nnew)
+        result, error_message = conftest.compare_objects(captured_kwargs["nnew"], expected_nnew)
         assert result, f"nnew comparison failed: {error_message}"
 
-        result, error_message = compare_objects(captured_kwargs["nnow"], expected_nnow)
+        result, error_message = conftest.compare_objects(captured_kwargs["nnow"], expected_nnow)
         assert result, f"nnow comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["at_first_substep"], expected_at_first_substep
         )
         assert result, f"First Substep comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["at_last_substep"], expected_at_last_substep
         )
         assert result, f"Last Substep comparison failed: {error_message}"
@@ -682,13 +767,13 @@ def test_granule_solve_nonhydro_single_step_regional(
     sp_step_exit = savepoint_nonhydro_step_exit
 
     # non hydrostatic config parameters
-    itime_scheme = TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = RhoThetaAdvectionType.MIURA
-    igradp_method = HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
+    iadv_rhotheta = solve_nh.RhoThetaAdvectionType.MIURA
+    igradp_method = solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
-    divdamp_order = DivergenceDampingOrder.COMBINED
+    divdamp_order = solve_nh.DivergenceDampingOrder.COMBINED
     is_iau_active = False
     iau_wgt_dyn = 1.0
     divdamp_type = 3
@@ -821,12 +906,14 @@ def test_granule_solve_nonhydro_single_step_regional(
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
     # raw serialised data which is not yet offset
-    cell_starts = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
-    cell_ends = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
-    vertex_starts = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_start_index"))
-    vertex_ends = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
-    edge_starts = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
-    edge_ends = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
+    cell_starts = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
+    cell_ends = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
+    vertex_starts = gtx.as_field(
+        (w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
+    )
+    vertex_ends = gtx.as_field((w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
+    edge_starts = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
+    edge_ends = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
 
     c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
     e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
@@ -842,7 +929,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     global_root = 4
     global_level = 9
 
-    grid_init(
+    dycore_granule.grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -868,7 +955,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     )
 
     # call solve init
-    solve_nh_init(
+    dycore_granule.solve_nh_init(
         vct_a=vct_a,
         vct_b=vct_b,
         cell_areas=cell_areas,
@@ -1022,7 +1109,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     nnew = 2
     jstep_init_fortran = jstep_init + 1
 
-    solve_nh_run(
+    dycore_granule.solve_nh_run(
         rho_now=rho_now,
         rho_new=rho_new,
         exner_now=exner_now,
@@ -1130,13 +1217,13 @@ def test_granule_solve_nonhydro_multi_step_regional(
     sp_step_exit = savepoint_nonhydro_step_exit
 
     # non hydrostatic config parameters
-    itime_scheme = TimeSteppingScheme.MOST_EFFICIENT
-    iadv_rhotheta = RhoThetaAdvectionType.MIURA
-    igradp_method = HorizontalPressureDiscretizationType.TAYLOR_HYDRO
+    itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
+    iadv_rhotheta = solve_nh.RhoThetaAdvectionType.MIURA
+    igradp_method = solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO
     ndyn_substeps = ndyn_substeps
     rayleigh_type = constants.RayleighType.KLEMP
     rayleigh_coeff = 0.05
-    divdamp_order = DivergenceDampingOrder.COMBINED
+    divdamp_order = solve_nh.DivergenceDampingOrder.COMBINED
     is_iau_active = False
     iau_wgt_dyn = 1.0
     divdamp_type = 3
@@ -1269,12 +1356,14 @@ def test_granule_solve_nonhydro_multi_step_regional(
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
     # raw serialised data which is not yet offset
-    cell_starts = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
-    cell_ends = gtx.as_field((CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
-    vertex_starts = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_start_index"))
-    vertex_ends = gtx.as_field((VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
-    edge_starts = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
-    edge_ends = gtx.as_field((EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
+    cell_starts = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
+    cell_ends = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
+    vertex_starts = gtx.as_field(
+        (w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
+    )
+    vertex_ends = gtx.as_field((w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
+    edge_starts = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
+    edge_ends = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
 
     c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
     e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
@@ -1290,7 +1379,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     global_root = 4
     global_level = 9
 
-    grid_init(
+    dycore_granule.grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -1316,7 +1405,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     )
 
     # call solve init
-    solve_nh_init(
+    dycore_granule.solve_nh_init(
         vct_a=vct_a,
         vct_b=vct_b,
         cell_areas=cell_areas,
@@ -1472,7 +1561,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     for i_substep in range(1, ndyn_substeps + 1):
         is_last_substep = i_substep == (ndyn_substeps)
 
-        solve_nh_run(
+        dycore_granule.solve_nh_run(
             rho_now=rho_now,
             rho_new=rho_new,
             exner_now=exner_now,

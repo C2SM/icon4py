@@ -12,20 +12,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType, TurbulenceShearForcingType
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.grid.geometry import CellParams, EdgeParams
+from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.grid import geometry as geom, vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-from icon4py.model.common.test_utils.datatest_utils import (
-    get_global_grid_params,
-)
 
-from icon4pytools.py2fgen.wrappers import wrapper_dimension
-from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run, grid_init
+from icon4pytools.py2fgen.wrappers import diffusion_granule, wrapper_dimension as w_dim
 
-from .conftest import compare_objects, construct_diffusion_config
+from . import conftest
 
 
 @pytest.mark.parametrize(
@@ -50,7 +43,7 @@ def test_diffusion_wrapper_granule_inputs(
     ndyn_substeps,
 ):
     # --- Define Diffusion Configuration ---
-    diffusion_type = DiffusionType.SMAGORINSKY_4TH_ORDER
+    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
@@ -62,12 +55,14 @@ def test_diffusion_wrapper_granule_inputs(
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
-    nudge_max_coeff = 0.075 * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-    itype_sher = TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+    nudge_max_coeff = 0.075 * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+    itype_sher = (
+        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+    )
     nflat_gradp = grid_savepoint.nflat_gradp()
 
     # --- Global Grid Parameters ---
-    global_root, global_level = get_global_grid_params(experiment)
+    global_root, global_level = dt_utils.get_global_grid_params(experiment)
 
     # --- Extract Grid Parameters from Savepoint ---
     tangent_orientation = grid_savepoint.tangent_orientation()
@@ -149,24 +144,14 @@ def test_diffusion_wrapper_granule_inputs(
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field(
-        (wrapper_dimension.CellIndexDim,), grid_savepoint._read_int32("c_start_index")
-    )
-    cell_ends = gtx.as_field(
-        (wrapper_dimension.CellIndexDim,), grid_savepoint._read_int32("c_end_index")
-    )
+    cell_starts = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
+    cell_ends = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
     vertex_starts = gtx.as_field(
-        (wrapper_dimension.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
+        (w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
     )
-    vertex_ends = gtx.as_field(
-        (wrapper_dimension.VertexIndexDim,), grid_savepoint._read_int32("v_end_index")
-    )
-    edge_starts = gtx.as_field(
-        (wrapper_dimension.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index")
-    )
-    edge_ends = gtx.as_field(
-        (wrapper_dimension.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index")
-    )
+    vertex_ends = gtx.as_field((w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
+    edge_starts = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
+    edge_ends = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
 
     c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
     e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
@@ -181,8 +166,8 @@ def test_diffusion_wrapper_granule_inputs(
     # --- Expected objects that form inputs into init and run functions
     expected_icon_grid = icon_grid
     expected_dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    expected_edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
-    expected_cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
+    expected_edge_geometry: geom.EdgeParams = grid_savepoint.construct_edge_geometry()
+    expected_cell_geometry: geom.CellParams = grid_savepoint.construct_cell_geometry()
     expected_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
@@ -221,11 +206,11 @@ def test_diffusion_wrapper_granule_inputs(
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
-    expected_config = construct_diffusion_config(experiment, ndyn_substeps)
+    expected_config = conftest.construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Initialize the Grid ---
-    grid_init(
+    diffusion_granule.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -252,7 +237,7 @@ def test_diffusion_wrapper_granule_inputs(
 
     # --- Mock and Test diffusion_granule.init ---
     with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.init") as mock_init:
-        diffusion_init(
+        diffusion_granule.diffusion_init(
             vct_a=vct_a,
             vct_b=vct_b,
             theta_ref_mc=theta_ref_mc,
@@ -319,7 +304,9 @@ def test_diffusion_wrapper_granule_inputs(
 
         # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
         try:
-            result, error_message = compare_objects(captured_kwargs["grid"], expected_icon_grid)
+            result, error_message = conftest.compare_objects(
+                captured_kwargs["grid"], expected_icon_grid
+            )
             assert result, f"Grid comparison failed: {error_message}"
         except AssertionError as e:
             error_message = str(e)
@@ -328,42 +315,42 @@ def test_diffusion_wrapper_granule_inputs(
             else:
                 pass
 
-        result, error_message = compare_objects(captured_kwargs["config"], expected_config)
+        result, error_message = conftest.compare_objects(captured_kwargs["config"], expected_config)
         assert result, f"Config comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["params"], expected_additional_parameters
         )
         assert result, f"Params comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["vertical_grid"], expected_vertical_params
         )
         assert result, f"Vertical Grid comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["metric_state"], expected_metric_state
         )
         assert result, f"Metric State comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["interpolation_state"], expected_interpolation_state
         )
         assert result, f"Interpolation State comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["edge_params"], expected_edge_geometry
         )
         assert result, f"Edge Params comparison failed: {error_message}"
 
-        result, error_message = compare_objects(
+        result, error_message = conftest.compare_objects(
             captured_kwargs["cell_params"], expected_cell_geometry
         )
         assert result, f"Cell Params comparison failed: {error_message}"
 
     # --- Mock and Test diffusion_granule.run ---
     with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.run") as mock_run:
-        diffusion_run(
+        diffusion_granule.diffusion_run(
             w=w,
             vn=vn,
             exner=exner,
@@ -379,8 +366,12 @@ def test_diffusion_wrapper_granule_inputs(
 
         # Check input arguments to diffusion_granule.run
         captured_args, captured_kwargs = mock_run.call_args
-        assert compare_objects(captured_kwargs["diagnostic_state"], expected_diagnostic_state)
-        assert compare_objects(captured_kwargs["prognostic_state"], expected_prognostic_state)
+        assert conftest.compare_objects(
+            captured_kwargs["diagnostic_state"], expected_diagnostic_state
+        )
+        assert conftest.compare_objects(
+            captured_kwargs["prognostic_state"], expected_prognostic_state
+        )
         assert captured_kwargs["dtime"] == expected_dtime
 
 
@@ -407,7 +398,7 @@ def test_diffusion_wrapper_single_step(
     step_date_exit,
 ):
     # Hardcoded DiffusionConfig parameters
-    diffusion_type = DiffusionType.SMAGORINSKY_4TH_ORDER
+    diffusion_type = diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
@@ -420,13 +411,15 @@ def test_diffusion_wrapper_single_step(
     thhgtd_zdiffu = 125.0
     denom_diffu_v = 150.0
     nudge_max_coeff = (
-        0.075 * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+        0.075 * constants.DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
     )  # this is done in ICON, so we replicate it here
-    itype_sher = TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+    itype_sher = (
+        diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
+    )
     nflat_gradp = grid_savepoint.nflat_gradp()
 
     # global grid parameters
-    global_root, global_level = get_global_grid_params(experiment)
+    global_root, global_level = dt_utils.get_global_grid_params(experiment)
 
     # Grid parameters
     tangent_orientation = grid_savepoint.tangent_orientation()
@@ -512,24 +505,14 @@ def test_diffusion_wrapper_single_step(
     vertical_size = grid_savepoint.num(dims.KDim)
     limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
 
-    cell_starts = gtx.as_field(
-        (wrapper_dimension.CellIndexDim,), grid_savepoint._read_int32("c_start_index")
-    )
-    cell_ends = gtx.as_field(
-        (wrapper_dimension.CellIndexDim,), grid_savepoint._read_int32("c_end_index")
-    )
+    cell_starts = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_start_index"))
+    cell_ends = gtx.as_field((w_dim.CellIndexDim,), grid_savepoint._read_int32("c_end_index"))
     vertex_starts = gtx.as_field(
-        (wrapper_dimension.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
+        (w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_start_index")
     )
-    vertex_ends = gtx.as_field(
-        (wrapper_dimension.VertexIndexDim,), grid_savepoint._read_int32("v_end_index")
-    )
-    edge_starts = gtx.as_field(
-        (wrapper_dimension.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index")
-    )
-    edge_ends = gtx.as_field(
-        (wrapper_dimension.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index")
-    )
+    vertex_ends = gtx.as_field((w_dim.VertexIndexDim,), grid_savepoint._read_int32("v_end_index"))
+    edge_starts = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_start_index"))
+    edge_ends = gtx.as_field((w_dim.EdgeIndexDim,), grid_savepoint._read_int32("e_end_index"))
 
     c2e = gtx.as_field((dims.CellDim, dims.C2EDim), grid_savepoint._read_int32("c2e"))
     e2c = gtx.as_field((dims.EdgeDim, dims.E2CDim), grid_savepoint._read_int32("e2c"))
@@ -541,7 +524,7 @@ def test_diffusion_wrapper_single_step(
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
-    grid_init(
+    diffusion_granule.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -567,7 +550,7 @@ def test_diffusion_wrapper_single_step(
     )
 
     # Call diffusion_init
-    diffusion_init(
+    diffusion_granule.diffusion_init(
         vct_a=vct_a,
         vct_b=vct_b,
         theta_ref_mc=theta_ref_mc,
@@ -630,7 +613,7 @@ def test_diffusion_wrapper_single_step(
     )
 
     # Call diffusion_run
-    diffusion_run(
+    diffusion_granule.diffusion_run(
         w=w,
         vn=vn,
         exner=exner,
