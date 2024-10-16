@@ -212,7 +212,7 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    common.GLOBAL_STATE["diffusion_granule"].init(
+    common.GLOBAL_STATE["diffusion_granule"].Diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,

@@ -153,8 +153,7 @@ def test_diffusion_init(
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
-    diffusion_granule = diffusion.Diffusion(backend=backend)
-    diffusion_granule.init(
+    diffusion_granule = diffusion.Diffusion(
         grid=icon_grid,
         config=config,
         params=additional_parameters,
@@ -163,6 +162,7 @@ def test_diffusion_init(
         interpolation_state=interpolation_state,
         edge_params=edge_params,
         cell_params=cell_params,
+        backend=backend,
     )
 
     assert diffusion_granule.diff_multfac_w == min(
@@ -294,8 +294,7 @@ def test_verify_diffusion_init_against_savepoint(
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
-    diffusion_granule = diffusion.Diffusion(backend=backend)
-    diffusion_granule.init(
+    diffusion_granule = diffusion.Diffusion(
         icon_grid,
         config,
         additional_parameters,
@@ -304,6 +303,7 @@ def test_verify_diffusion_init_against_savepoint(
         interpolation_state,
         edge_params,
         cell_params,
+        backend=backend,
     )
 
     _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule)
