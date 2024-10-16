@@ -491,14 +491,6 @@ def grid_init(
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
     dycore_wrapper_state["grid"] = common.construct_icon_grid(
-        grid_id="icon_grid",
-        global_grid_params=global_grid_params,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -514,4 +506,12 @@ def grid_init(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
+        grid_id="icon_grid",
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
     )
