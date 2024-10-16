@@ -155,7 +155,23 @@ def dot_product(
     z1: fa.EdgeField[ta.wpfloat],
     z2: fa.EdgeField[ta.wpfloat],
 ) -> fa.EdgeField[ta.wpfloat]:
+    """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
     return x1 * x2 + y1 * y2 + z1 * z2
+
+
+def cross_product(
+    x1: fa.EdgeField[ta.wpfloat],
+    x2: fa.EdgeField[ta.wpfloat],
+    y1: fa.EdgeField[ta.wpfloat],
+    y2: fa.EdgeField[ta.wpfloat],
+    z1: fa.EdgeField[ta.wpfloat],
+    z2: fa.EdgeField[ta.wpfloat],
+) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    """Compute cross product of cartesian vectors (x1, y1, z1) x (x2, y2, z2)"""
+    x3 = y1 * z2 - z1 * y2
+    y3 = z1 * x2 - x1 * z2
+    z3 = x1 * y2 - y1 * x2
+    return x3, y3, z3
 
 
 @gtx.field_operator
@@ -186,3 +202,41 @@ def compute_inverse(
     horizontal_end: gtx.int32,
 ):
     invert(f, out=f_inverse, domain={dims.EdgeDim: (horizontal_start, horizontal_end)})
+
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_zonal_and_meridional_components_on_cells(
+    lat: fa.CellField[ta.wpfloat],
+    lon: fa.CellField[ta.wpfloat],
+    x: fa.CellField[ta.wpfloat],
+    y: fa.CellField[ta.wpfloat],
+    z: fa.CellField[ta.wpfloat],
+) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+    cos_lat = cos(lat)
+    sin_lat = sin(lat)
+    cos_lon = cos(lon)
+    sin_lon = sin(lon)
+    u = cos_lon * y - sin_lon * x
+
+    v = cos_lat * z - sin_lat * (cos_lon * x + sin_lon * y)
+    norm = sqrt(u * u + v * v)
+    return u / norm, v / norm
+
+
+@gtx.field_operator
+def compute_zonal_and_meridional_components_on_edges(
+    lat: fa.EdgeField[ta.wpfloat],
+    lon: fa.EdgeField[ta.wpfloat],
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    z: fa.EdgeField[ta.wpfloat],
+) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    cos_lat = cos(lat)
+    sin_lat = sin(lat)
+    cos_lon = cos(lon)
+    sin_lon = sin(lon)
+    u = cos_lon * y - sin_lon * x
+
+    v = cos_lat * z - sin_lat * (cos_lon * x + sin_lon * y)
+    norm = sqrt(u * u + v * v)
+    return u / norm, v / norm

@@ -15,6 +15,7 @@ from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry as geometry,
     geometry_attributes as attrs,
+    geometry_program as program,
     horizontal as h_grid,
 )
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
@@ -45,7 +46,7 @@ def test_coriolis_parameter_field_op(grid_savepoint, icon_grid, backend):
     expected = grid_savepoint.f_e()
     result = helpers.zero_field(icon_grid, dims.EdgeDim)
     lat = grid_savepoint.lat(dims.EdgeDim)
-    geometry._coriolis_parameter_on_edges.with_backend(backend)(
+    program._coriolis_parameter_on_edges.with_backend(backend)(
         lat, constants.EARTH_ANGULAR_VELOCITY, offset_provider={}, out=result
     )
     assert helpers.dallclose(expected.asnumpy(), result.asnumpy())
@@ -109,7 +110,7 @@ def test_compute_edge_length_program(experiment, backend, grid_savepoint, grid_f
     edge_domain = h_grid.domain(dims.EdgeDim)
     start = grid.start_index(edge_domain(h_grid.Zone.LOCAL))
     end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-    geometry.compute_edge_length(
+    program.compute_edge_length(
         vertex_lat,
         vertex_lon,
         constants.EARTH_RADIUS,
@@ -260,7 +261,7 @@ def test_primal_normal_cell_primal_normal_vertex(grid_file, experiment, grid_sav
 
     start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(edge_domain(h_grid.Zone.END))
-    geometry.primal_normals.with_backend(None)(
+    program.compute_primal_normals_cell_vert.with_backend(None)(
         cell_lat,
         cell_lon,
         vertex_lat,
@@ -268,7 +269,7 @@ def test_primal_normal_cell_primal_normal_vertex(grid_file, experiment, grid_sav
         x,
         y,
         z,
-        out=(u1_cell, u2_cell, v1_cell, v2_cell, u1_vertex, u2_vertex, v1_vertex, v2_vertex),
+        out=(u1_cell, v1_cell, u2_cell, v2_cell, u1_vertex,v1_vertex, u2_vertex,  v2_vertex),
         offset_provider={
             "E2C": grid.get_offset_provider("E2C"),
             "E2V": grid.get_offset_provider("E2V"),

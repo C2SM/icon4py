@@ -33,6 +33,13 @@ CELL_LON = "grid_longitude_of_cell_center"
 
 CELL_LAT = "grid_latitude_of_cell_center"
 DUAL_EDGE_LENGTH = "length_of_dual_edge"
+EDGE_TANGENT_X = "x_component_of_edge_tangential_unit_vector"
+EDGE_TANGENT_Y = "y_component_of_edge_tangential_unit_vector"
+EDGE_TANGENT_Z = "z_component_of_edge_tangential_unit_vector"
+EDGE_NORMAL_X = "x_component_of_edge_normal_unit_vector"
+EDGE_NORMAL_Y = "y_component_of_edge_normal_unit_vector"
+EDGE_NORMAL_Z = "z_component_of_edge_normal_unit_vector"
+
 
 attrs: dict[str, model.FieldMetaData] = {
     CELL_LAT: dict(
@@ -115,6 +122,54 @@ attrs: dict[str, model.FieldMetaData] = {
         units="s-1",
         dims=(dims.EdgeDim,),
         icon_var_name="f_e",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_TANGENT_X: dict(
+        standard_name=EDGE_TANGENT_X,
+        long_name=EDGE_TANGENT_X,
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="",  # TODO
+        dtype=ta.wpfloat,
+    ),
+    EDGE_TANGENT_Y: dict(
+        standard_name=EDGE_TANGENT_Y,
+        long_name=EDGE_TANGENT_Y,
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="",  # TODO
+        dtype=ta.wpfloat,
+    ),
+    EDGE_TANGENT_Z: dict(
+        standard_name=EDGE_NORMAL_Z,
+        long_name=EDGE_TANGENT_Z,
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="",  # TODO
+        dtype=ta.wpfloat,
+    ),
+    EDGE_NORMAL_X: dict(
+        standard_name=EDGE_NORMAL_X,
+        long_name=EDGE_NORMAL_X,
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="primal_cart_normal%x",  # TODO
+        dtype=ta.wpfloat,
+    ),
+    EDGE_NORMAL_Y: dict(
+        standard_name=EDGE_NORMAL_Y,
+        long_name=EDGE_NORMAL_Y,
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="primal_cart_normal%y",  # TODO
+        dtype=ta.wpfloat,
+    ),
+    EDGE_NORMAL_Z: dict(
+        standard_name=EDGE_NORMAL_Z,
+        long_name=EDGE_NORMAL_Z,
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="primal_cart_normal%z",  # TODO
         dtype=ta.wpfloat,
     ),
 }
