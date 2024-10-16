@@ -1,0 +1,57 @@
+% ICON4Py - ICON inspired code in Python and GT4Py
+%
+% Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+% All rights reserved.
+%
+% Please, refer to the LICENSE file in the root directory.
+% SPDX-License-Identifier: BSD-3-Clause
+
+%===============================================================================
+% This file contains macro definitions that can be used in docstrings and are
+% parsed by the MathJax processor within sphinx.
+% These macros are loaded into `mathjax3_config` by conf.py
+% *** AT THE MOMENT ONLY SINGLE LINE MACROS ARE WORKING ***
+
+% The predefined color names are
+% black, blue, brown, cyan, darkgray, gray, green, lightgray, lime, magenta,
+% olive, orange, pink, purple, red, teal, violet, white, yellow.
+
+%===============================================================================
+% Maths
+
+% Glyph sizes
+\newcommand{\superscriptsize}{\scriptsize}
+\newcommand{\subscriptsize}{\scriptsize}
+
+% Deltas and differentials
+\renewcommand{\d}{\mathrm{d}}
+\newcommand{\dt}{{\Delta t}}
+\newcommand{\dz}{{\Delta z}}
+
+% Variables
+\newcommand{\vn}[2]{{v_n}^{\superscriptsize #1}_{\subscriptsize #2}}
+\newcommand{\vt}[2]{{v_t}^{\superscriptsize #1}_{\subscriptsize #2}}
+\newcommand{\vh}[2]{{v_h}^{\superscriptsize #1}_{\subscriptsize #2}}
+\newcommand{\thetav}[2]{{\theta_v}^{\superscriptsize #1}_{\subscriptsize #2}}
+\newcommand{\thetavprime}[2]{{\theta_v'}^{\superscriptsize #1}_{\subscriptsize #2}}
+\newcommand{\exner}[2]{{\pi}^{\superscriptsize #1}_{\subscriptsize #2}}
+\newcommand{\exnerprime}[3]{{\pi'}^{\superscriptsize\color{teal}#1}_{\subscriptsize{\color{orange}#2},\ {\color{magenta}#3}}}
+
+% Physical constants
+\newcommand{\cpd}{c_{pd}}
+\newcommand{\cvd}{c_{vd}}
+
+% Numerical constants
+\newcommand{\nlev}{{\texttt{num_lev}}}
+
+% Temporal steps
+\newcommand{\n}{{\color{teal}n}}
+\newcommand{\ntilde}{{\color{teal}\tilde{\n}}}
+
+# Vertical levels
+\renewcommand{\k}{{\color{orange}k}}
+
+% Horizontal discretization
+\newcommand{\c}{{\color{blue}c}}
+\newcommand{\e}{{\color{blue}e}}
+\newcommand{\v}{{\color{blue}v}}

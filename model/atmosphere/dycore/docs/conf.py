@@ -6,6 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from sphinx.ext import autodoc
+import re
+import inspect
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -28,6 +32,7 @@ extensions = [
     "sphinx.ext.autosectionlabel",
     "myst_parser",
     "sphinx_math_dollar",
+    'sphinx_toolbox.collapse', # https://sphinx-toolbox.readthedocs.io/en/stable/extensions/collapse.html
     #"icon4py.model.atmosphere.dycore.sphinx" # disable while waiting for gt4py patch
 ]
 
@@ -38,13 +43,39 @@ templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 source_suffix = ['.rst', '.md']
 
+# -- reST epilogue: macros / aliases -----------------------------------------
+rst_epilog = """
+.. |ICONtutorial| replace:: ICON Tutorial_
+.. _Tutorial: https://www.dwd.de/EN/ourservices/nwp_icon_tutorial/nwp_icon_tutorial_en.html
+"""
+
+# -- MathJax config ----------------------------------------------------------
 MatJax = {
     'tex2jax': {
         'inlineMath': [ ["\\(","\\)"] ],
         'displayMath': [["\\[","\\]"] ],
     },
+    "jax": ["input/TeX","output/HTML-CSS"],
+    'displayAlign': 'left',
 }
-
+mathjax3_config = {
+    'chtml': {'displayAlign': 'left',
+              'displayIndent': '1em'},
+    'tex': {
+        'inlineMath': [['\\(', '\\)']],
+        'displayMath': [["\\[", "\\]"]],
+    },
+}
+# Import latex macros and extensions
+mathjax3_config['tex']['macros'] = {}
+with open('latex_macros.tex', 'r') as f:
+    for line in f:
+        macros = re.findall(r'\\(DeclareRobustCommand|newcommand|renewcommand){\\(.*?)}(\[(\d)\])?{(.+)}', line)
+        for macro in macros:
+            if len(macro[2]) == 0:
+                mathjax3_config['tex']['macros'][macro[1]] = "{"+macro[4]+"}"
+            else:
+                mathjax3_config['tex']['macros'][macro[1]] = ["{"+macro[4]+"}", int(macro[3])]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -57,16 +88,38 @@ add_module_names = False
 
 # -- More involved stuff ------------------------------------------------------
 
-from sphinx.ext import autodoc
-import re
-import inspect
-
 class FullMethodDocumenter(autodoc.MethodDocumenter):
     """Fully document a method."""
 
     objtype = 'full'
 
     priority = autodoc.MethodDocumenter.priority - 1
+
+    def process_lines(self, docstr):
+        def insert_before_first_non_space(s, char_to_insert):
+            for i, char in enumerate(s):
+                if char != ' ':
+                    return s[:i] + char_to_insert + s[i:]
+            return s
+        # "Special" treatment of specific lines / blocks
+        in_latex_block = False
+        for iline, line in enumerate(docstr):
+            # Make collapsible Inputs section
+            if line.startswith('Inputs:'):
+                docstr[iline] = '.. collapse:: Inputs:'
+                docstr.insert(iline+1, '')
+            # Identify LaTeX blocks and align to the left
+            elif '$$' in line:
+                if not in_latex_block and '\\\\' in docstr[iline+1]:
+                    in_latex_block=True
+                    continue
+                else:
+                    in_latex_block=False
+            if in_latex_block:
+                docstr[iline] = insert_before_first_non_space(line, '&')
+        return docstr
+
+
 
     def get_doc(self):
 
@@ -90,6 +143,7 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
             docstr.append('*' + '~' * 59 + '*')
             # and have one empty line at the end
             docstr.append('')
+            docstr=self.process_lines(docstr)
             # add the processed docstring to the list
             docstrings_list.append(docstr)
         

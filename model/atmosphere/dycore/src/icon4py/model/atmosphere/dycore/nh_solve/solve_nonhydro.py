@@ -801,34 +801,27 @@ class SolveNonhydro:
             )
 
         """
-        :meth:`predictor_stencils_2_3()<icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program.predictor_stencils_2_3>`
-        ========================================================================================================================
+        Outputs:
+            - z_exner_ex_pr :
+                $$
+                \exnerprime{\ntilde}{\k}{\c} = (1 + \gamma) \exnerprime{\ntilde}{\k}{\c} - \gamma \exnerprime{\n-1}{\k}{\c}, \quad && \k \in [0, \nlev) \\
+                \exnerprime{\ntilde}{\k}{\c} = 0, && \k = \nlev
+                $$
+                Compute the temporal extrapolation of perturbed exner function
+                using the time backward scheme (see the |ICONTutorial| page 74)
+                for horizontal momentum equations.
+            - exner_pr :
+                $$
+                \exnerprime{\n-1}{\k}{\c} = \exnerprime{\ntilde}{\k}{\c}, \qquad \k \in [0, \nlev)
+                $$
+                Store perturbed exner function from previous time step.
 
-        z_exner_ex_pr (0:nlev):
-            Compute the temporal extrapolation of perturbed exner function at
-            full levels (cell center) using the time backward scheme (page 74 in
-            icon tutorial 2023) for horizontal momentum equations. Note that it
-            has nlev+1 levels. This last level is underground and set to zero.
+        Inputs:
+            - $\gamma$ : exner_exfac
+            - $\exnerprime{\ntilde}{\k}{\c}$ : exner - exner_ref_mc
+            - $\exnerprime{\n-1}{\k}{\c}$ : exner_pr
 
-        $$
-        \pi_k^{\prime\tilde{n}} = (1 + \gamma) \pi_k^{\prime n} - \gamma \pi_k^{\prime n-1}
-        $$
-
-        exner_pr (0:nlev-1):
-            Store perturbed exner function at full levels of current time step.
-
-        $$
-        \pi_k^{\prime n-1} = \pi_k^{\prime n}
-        $$
-
-        FIXME:
-            - The first operation on z_exner_ex_pr should be done in a generic
-              math (1+a)*x - a*y program
-            - In the stencil, _extrapolate_temporally_exner_pressure doesn't only
-              do what the name suggests: it also updates exner_pr, which is not
-              what the name implies.
         """
-
         nhsolve_prog.predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
             exner=prognostic_state[nnow].exner,

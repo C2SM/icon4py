@@ -140,6 +140,14 @@ def predictor_stencils_2_3(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """
+    FIXME:
+        - The first operation on z_exner_ex_pr should be done in a generic
+          math (1+a)*x - a*y program
+        - In the stencil, _extrapolate_temporally_exner_pressure doesn't only
+          do what the name suggests: it also updates exner_pr, which is not
+          what the name implies.
+    """
     _predictor_stencils_2_3(
         exner_exfac,
         exner,
