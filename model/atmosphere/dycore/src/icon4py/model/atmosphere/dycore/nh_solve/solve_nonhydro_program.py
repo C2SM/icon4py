@@ -214,6 +214,12 @@ def predictor_stencils_4_5_6(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """
+    FIXME:
+        - The value of z_exner_ic at the model top level is not updated
+          and assumed to be zero. It should be treated in the same way as
+          the ground level.
+    """
     _predictor_stencils_4_5_6(
         wgtfacq_c_dsl,
         z_exner_ex_pr,

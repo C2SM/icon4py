@@ -800,27 +800,26 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        """
+        """_scidoc_
         Outputs:
             - z_exner_ex_pr :
                 $$
-                \exnerprime{\ntilde}{\k}{\c} = (1 + \gamma) \exnerprime{\ntilde}{\k}{\c} - \gamma \exnerprime{\n-1}{\k}{\c}, \quad && \k \in [0, \nlev) \\
-                \exnerprime{\ntilde}{\k}{\c} = 0, && \k = \nlev
+                \exnerprime{\ntilde}{\c}{\k} = (1 + \gamma) \exnerprime{\ntilde}{\c}{\k} - \gamma \exnerprime{\n-1}{\c}{\k}, \quad && \k \in [0, \nlev) \\
+                \exnerprime{\ntilde}{\c}{\k} = 0, && \k = \nlev
                 $$
                 Compute the temporal extrapolation of perturbed exner function
                 using the time backward scheme (see the |ICONTutorial| page 74)
                 for horizontal momentum equations.
             - exner_pr :
                 $$
-                \exnerprime{\n-1}{\k}{\c} = \exnerprime{\ntilde}{\k}{\c}, \qquad \k \in [0, \nlev)
+                \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}, \qquad \k \in [0, \nlev)
                 $$
                 Store perturbed exner function from previous time step.
 
         Inputs:
             - $\gamma$ : exner_exfac
-            - $\exnerprime{\ntilde}{\k}{\c}$ : exner - exner_ref_mc
-            - $\exnerprime{\n-1}{\k}{\c}$ : exner_pr
-
+            - $\exnerprime{\ntilde}{\c}{\k}$ : exner - exner_ref_mc
+            - $\exnerprime{\n-1}{\c}{\k}$ : exner_pr
         """
         nhsolve_prog.predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
@@ -838,35 +837,27 @@ class SolveNonhydro:
         )
 
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            """
-            :meth:`predictor_stencils_4_5_6()<icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program.predictor_stencils_4_5_6>`
-            ============================================================================================================================
+            """_scidoc_
+            Outputs:
+                - z_exner_ic (1 or flat_lev:nlev):
+                    $$
+                    \exnerprime{\ntilde}{\c}{\k-1/2} = \nu \exnerprime{\ntilde}{\c}{\k} + (1 - \nu) \exnerprime{\ntilde}{\c}{\k-1}
+                    $$
+                    Linearly interpolate the perturbation exner computed in
+                    previous stencil to half levels. The ground level is based
+                    on quadratic interpolation (with hydrostatic assumption?).
+                - z_dexner_dz_c_1 (1 or flat_lev:nlev-1):
+                    $$
+                    \Padz{\exnerprime{\ntilde}{\c}{\k}} = \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz_{\k}}
+                    $$
+                    The vertical derivative of perturbation exner at full levels
+                    is also computed (first order scheme). flat_lev is the
+                    height (inclusive) above which the grid is not affected by
+                    terrain following.
 
-            z_exner_ic (1 or flat_lev:nlev):
-                Linearly interpolate the temporal extrapolation of perturbed
-                exner function computed in previous stencil to half levels. The
-                ground level is based on quadratic interpolation (with
-                hydrostatic assumption?).
-
-            $$
-            \pi_{k-1/2}^{\prime \tilde{n}} = \nu \pi_k^{\prime\tilde{n}} + (1 - \nu) \pi_{k-1}^{\prime\tilde{n}} \\
-            \nu = \text{wgtfa_c}
-            $$
-
-            z_dexner_dz_c_1 (1 or flat_lev:nlev-1):
-                Vertical derivative of the temporal extrapolation of exner
-                function at full levels is also computed (first order scheme).
-                flat_lev is the height (inclusive) above which the grid is not
-                affected by terrain following.
-
-            $$
-            \frac{\partial \pi_{k}^{\prime\tilde{n}}}{\partial z} = \frac{\pi_{k-1/2}^{\prime\tilde{n}} - \pi_{k+1/2}^{\prime\tilde{n}}}{\Delta z_{k}}
-            $$
-
-            FIXME:
-                - The value of z_exner_ic at the model top level is not updated
-                  and assumed to be zero. It should be treated in the same way as
-                  the ground level.
+            Inputs:
+                - $\nu$ : wgtfac_c
+                - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
             """
             nhsolve_prog.predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
