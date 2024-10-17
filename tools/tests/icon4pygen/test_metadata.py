@@ -6,12 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import pytest
-from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from icon4py.model.common import dimension as dims
 
-from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
+from icon4pytools.common.metadata import _get_field_infos, _provide_neighbor_table
 
 
 chain_false_skipvalues = [
@@ -43,7 +43,7 @@ chain_true_skipvalues = [
 )
 def test_provide_neighbor_table_local(chain):
     expected = False
-    actual = provide_neighbor_table(chain, is_global=False)
+    actual = _provide_neighbor_table(chain, is_global=False)
     assert actual.has_skip_values == expected
 
 
@@ -53,7 +53,7 @@ def test_provide_neighbor_table_local(chain):
 )
 def test_provide_neighbor_table_global_false_skipvalues(chain):
     expected = False
-    actual = provide_neighbor_table(chain, is_global=True)
+    actual = _provide_neighbor_table(chain, is_global=True)
     assert actual.has_skip_values == expected
 
 
@@ -63,27 +63,23 @@ def test_provide_neighbor_table_global_false_skipvalues(chain):
 )
 def test_provide_neighbor_table_global_true_skipvalues(chain):
     expected = True
-    actual = provide_neighbor_table(chain, is_global=True)
+    actual = _provide_neighbor_table(chain, is_global=True)
     assert actual.has_skip_values == expected
 
 
 @field_operator
 def _add(
-    field1: Field[[dims.CellDim, dims.KDim], float], field2: Field[[dims.CellDim, dims.KDim], float]
-) -> Field[[dims.CellDim, dims.KDim], float]:
+    field1: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    field2: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+) -> gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float]:
     return field1 + field2
-
-
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
 
 
 @program
 def with_domain(
-    a: Field[[dims.CellDim, dims.KDim], float],
-    b: Field[[dims.CellDim, dims.KDim], float],
-    result: Field[[dims.CellDim, dims.KDim], float],
+    a: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    b: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    result: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
     horizontal_start: int,
     horizontal_end: int,
     vertical_start: int,
@@ -94,28 +90,28 @@ def with_domain(
         b,
         out=result,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
 
 @program
 def without_domain(
-    a: Field[[dims.CellDim, dims.KDim], float],
-    b: Field[[dims.CellDim, dims.KDim], float],
-    result: Field[[dims.CellDim, dims.KDim], float],
+    a: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    b: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    result: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
 ):
     _add(a, b, out=result)
 
 
 @program
 def with_constant_domain(
-    a: Field[[dims.CellDim, dims.KDim], float],
-    b: Field[[dims.CellDim, dims.KDim], float],
-    result: Field[[dims.CellDim, dims.KDim], float],
+    a: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    b: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
+    result: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], float],
 ):
-    _add(a, b, out=result, domain={CellDim: (0, 3), KDim: (1, 8)})
+    _add(a, b, out=result, domain={dims.CellDim: (0, 3), dims.KDim: (1, 8)})
 
 
 @pytest.mark.parametrize("program", [with_domain, without_domain, with_constant_domain])

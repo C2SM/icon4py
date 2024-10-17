@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-from gt4py.next.common import Field, GridType
+import gt4py.next as gtx
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, where
+from gt4py.next.ffront.fbuiltins import broadcast, maximum, where
 
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     _add_extra_diffusion_for_w_con_approaching_cfl,
@@ -27,11 +27,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _fused_velocity_advection_stencil_16_to_18(
     z_w_con_c: fa.CellKField[vpfloat],
@@ -39,26 +34,26 @@ def _fused_velocity_advection_stencil_16_to_18(
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
-    levelmask: Field[[dims.KDim], bool],
+    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     ddqz_z_half: fa.CellKField[vpfloat],
     area: fa.CellField[wpfloat],
-    geofac_n2s: Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
-    cell: fa.CellField[int32],
-    k: fa.KField[int32],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
+    cell: fa.CellField[gtx.int32],
+    k: fa.KField[gtx.int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
-    cell_lower_bound: int32,
-    cell_upper_bound: int32,
-    nlev: int32,
-    nrdmax: int32,
+    cell_lower_bound: gtx.int32,
+    cell_upper_bound: gtx.int32,
+    nlev: gtx.int32,
+    nrdmax: gtx.int32,
     extra_diffu: bool,
 ) -> fa.CellKField[vpfloat]:
-    k = broadcast(k, (CellDim, KDim))
+    k = broadcast(k, (dims.CellDim, dims.KDim))
 
     ddt_w_adv = where(
         (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
@@ -104,23 +99,23 @@ def _fused_velocity_advection_stencil_15_to_18(
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
-    levelmask: Field[[dims.KDim], bool],
+    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     ddqz_z_half: fa.CellKField[vpfloat],
     area: fa.CellField[wpfloat],
-    geofac_n2s: Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
-    cell: fa.CellField[int32],
-    k: fa.KField[int32],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
+    cell: fa.CellField[gtx.int32],
+    k: fa.KField[gtx.int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
-    cell_lower_bound: int32,
-    cell_upper_bound: int32,
-    nlev: int32,
-    nrdmax: int32,
+    cell_lower_bound: gtx.int32,
+    cell_upper_bound: gtx.int32,
+    nlev: gtx.int32,
+    nrdmax: gtx.int32,
     lvn_only: bool,
     extra_diffu: bool,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
@@ -165,24 +160,24 @@ def fused_velocity_advection_stencil_15_to_18(
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
-    levelmask: Field[[dims.KDim], bool],
+    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     ddqz_z_half: fa.CellKField[vpfloat],
     area: fa.CellField[wpfloat],
-    geofac_n2s: Field[[dims.CellDim, dims.C2E2CODim], wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
-    cell: fa.CellField[int32],
-    k: fa.KField[int32],
+    cell: fa.CellField[gtx.int32],
+    k: fa.KField[gtx.int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
-    cell_lower_bound: int32,
-    cell_upper_bound: int32,
-    nlev: int32,
-    nrdmax: int32,
+    cell_lower_bound: gtx.int32,
+    cell_upper_bound: gtx.int32,
+    nlev: gtx.int32,
+    nrdmax: gtx.int32,
     lvn_only: bool,
     extra_diffu: bool,
 ):

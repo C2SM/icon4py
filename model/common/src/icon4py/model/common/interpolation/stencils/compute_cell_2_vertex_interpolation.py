@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
@@ -13,11 +12,6 @@ import icon4py.model.common.settings as settings
 import icon4py.model.common.type_alias as types
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import V2C, V2CDim
-
-
-# TODO: this will have to be removed once domain allows for imports
-VertexDim = dims.VertexDim
-KDim = dims.KDim
 
 
 @gtx.field_operator
@@ -56,7 +50,7 @@ def compute_cell_2_vertex_interpolation(
         c_int,
         out=vert_out,
         domain={
-            VertexDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.VertexDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

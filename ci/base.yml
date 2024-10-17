@@ -26,22 +26,16 @@ variables:
     DOCKERFILE: ci/docker/base.Dockerfile
     # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
     CSCS_REBUILD_POLICY: if-not-exists
-    DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "BASE_IMAGE=$BASE_IMAGE", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "CUPY_PACKAGE=$CUPY_PACKAGE", "PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
+    DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "CUPY_PACKAGE=$CUPY_PACKAGE", "PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
 build_baseimage_x86_64:
   extends: [.container-builder-cscs-zen2, .build_baseimage]
   variables:
-    # x86_64 test target is Daint-gpu through Sarus:
-    # the base image does not need to provide the cuda runtime
-    BASE_IMAGE: "ubuntu:20.04"
     HPC_SDK_VERSION: 22.11
     HPC_SDK_NAME: "nvhpc_2022_2211_Linux_${ARCH}_cuda_11.8"
     CUPY_PACKAGE: cupy-cuda11x
 build_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_baseimage]
   variables:
-    # aarm64 test target is Todi through Container Engine:
-    # the base image should provide the cuda runtime, therefore we use the cuda base image
-    BASE_IMAGE: "docker.io/nvidia/cuda:12.4.1-base-ubuntu20.04"
     HPC_SDK_VERSION: 24.5
     HPC_SDK_NAME: "nvhpc_2024_245_Linux_${ARCH}_cuda_12.4"
     CUPY_PACKAGE: cupy-cuda12x

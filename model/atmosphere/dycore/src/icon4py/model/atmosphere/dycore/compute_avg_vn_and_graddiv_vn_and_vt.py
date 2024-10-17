@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
 from icon4py.model.atmosphere.dycore.compute_avg_vn import _compute_avg_vn
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import _compute_tangential_wind
@@ -18,17 +18,12 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _compute_avg_vn_and_graddiv_vn_and_vt(
-    e_flx_avg: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
+    e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
-    geofac_grdiv: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
-    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
 ) -> tuple[
     fa.EdgeKField[wpfloat],
     fa.EdgeKField[vpfloat],
@@ -43,17 +38,17 @@ def _compute_avg_vn_and_graddiv_vn_and_vt(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_avg_vn_and_graddiv_vn_and_vt(
-    e_flx_avg: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
+    e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
-    geofac_grdiv: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
-    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     z_vn_avg: fa.EdgeKField[wpfloat],
     z_graddiv_vn: fa.EdgeKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _compute_avg_vn_and_graddiv_vn_and_vt(
         e_flx_avg,
@@ -62,7 +57,7 @@ def compute_avg_vn_and_graddiv_vn_and_vt(
         rbf_vec_coeff_e,
         out=(z_vn_avg, z_graddiv_vn, vt),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

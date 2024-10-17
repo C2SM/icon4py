@@ -13,14 +13,9 @@ from gt4py.next.ffront.fbuiltins import broadcast
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _init_zero_c_k() -> fa.CellKField[float]:
-    return broadcast(0.0, (CellDim, KDim))
+    return broadcast(0.0, (dims.CellDim, dims.KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
