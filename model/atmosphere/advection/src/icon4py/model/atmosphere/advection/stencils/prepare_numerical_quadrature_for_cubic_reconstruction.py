@@ -89,158 +89,135 @@ def _prepare_numerical_quadrature_for_cubic_reconstruction(
     z_eta_3_4 = 1.0 + zeta_3
     z_eta_4_4 = 1.0 + zeta_4
 
+    p_coords_dreg_v_1_x_wp = astype(p_coords_dreg_v_1_x, wpfloat)
+    p_coords_dreg_v_2_x_wp = astype(p_coords_dreg_v_2_x, wpfloat)
+    p_coords_dreg_v_3_x_wp = astype(p_coords_dreg_v_3_x, wpfloat)
+    p_coords_dreg_v_4_x_wp = astype(p_coords_dreg_v_4_x, wpfloat)
+    p_coords_dreg_v_1_y_wp = astype(p_coords_dreg_v_1_y, wpfloat)
+    p_coords_dreg_v_2_y_wp = astype(p_coords_dreg_v_2_y, wpfloat)
+    p_coords_dreg_v_3_y_wp = astype(p_coords_dreg_v_3_y, wpfloat)
+    p_coords_dreg_v_4_y_wp = astype(p_coords_dreg_v_4_y, wpfloat)
+
     wgt_t_detjac_1 = dbl_eps + z_wgt_1 * (
         (
-            z_eta_1_1
-            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
-            + z_eta_1_2
-            * (astype(p_coords_dreg_v_3_x, wpfloat) - astype(p_coords_dreg_v_4_x, wpfloat))
+            z_eta_1_1 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_1_x_wp)
+            + z_eta_1_2 * (p_coords_dreg_v_3_x_wp - p_coords_dreg_v_4_x_wp)
         )
         * (
-            z_eta_1_3
-            * (astype(p_coords_dreg_v_4_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
-            - z_eta_1_4
-            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_3_y, wpfloat))
+            z_eta_1_3 * (p_coords_dreg_v_4_y_wp - p_coords_dreg_v_1_y_wp)
+            - z_eta_1_4 * (p_coords_dreg_v_2_y_wp - p_coords_dreg_v_3_y_wp)
         )
         - (
-            z_eta_1_1
-            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
-            + z_eta_1_2
-            * (astype(p_coords_dreg_v_3_y, wpfloat) - astype(p_coords_dreg_v_4_y, wpfloat))
+            z_eta_1_1 * (p_coords_dreg_v_2_y_wp - p_coords_dreg_v_1_y_wp)
+            + z_eta_1_2 * (p_coords_dreg_v_3_y_wp - p_coords_dreg_v_4_y_wp)
         )
         * (
-            z_eta_1_3
-            * (astype(p_coords_dreg_v_4_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
-            - z_eta_1_4
-            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_3_x, wpfloat))
+            z_eta_1_3 * (p_coords_dreg_v_4_x_wp - p_coords_dreg_v_1_x_wp)
+            - z_eta_1_4 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_3_x_wp)
         )
     )
     wgt_t_detjac_2 = dbl_eps + z_wgt_2 * (
         (
-            z_eta_2_1
-            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
-            + z_eta_2_2
-            * (astype(p_coords_dreg_v_3_x, wpfloat) - astype(p_coords_dreg_v_4_x, wpfloat))
+            z_eta_2_1 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_1_x_wp)
+            + z_eta_2_2 * (p_coords_dreg_v_3_x_wp - p_coords_dreg_v_4_x_wp)
         )
         * (
-            z_eta_2_3
-            * (astype(p_coords_dreg_v_4_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
-            - z_eta_2_4
-            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_3_y, wpfloat))
+            z_eta_2_3 * (p_coords_dreg_v_4_y_wp - p_coords_dreg_v_1_y_wp)
+            - z_eta_2_4 * (p_coords_dreg_v_2_y_wp - p_coords_dreg_v_3_y_wp)
         )
         - (
-            z_eta_2_1
-            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
-            + z_eta_2_2
-            * (astype(p_coords_dreg_v_3_y, wpfloat) - astype(p_coords_dreg_v_4_y, wpfloat))
+            z_eta_2_1 * (p_coords_dreg_v_2_y_wp - p_coords_dreg_v_1_y_wp)
+            + z_eta_2_2 * (p_coords_dreg_v_3_y_wp - p_coords_dreg_v_4_y_wp)
         )
         * (
-            z_eta_2_3
-            * (astype(p_coords_dreg_v_4_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
-            - z_eta_2_4
-            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_3_x, wpfloat))
+            z_eta_2_3 * (p_coords_dreg_v_4_x_wp - p_coords_dreg_v_1_x_wp)
+            - z_eta_2_4 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_3_x_wp)
         )
     )
     wgt_t_detjac_3 = dbl_eps + z_wgt_3 * (
         (
-            z_eta_3_1
-            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
-            + z_eta_3_2
-            * (astype(p_coords_dreg_v_3_x, wpfloat) - astype(p_coords_dreg_v_4_x, wpfloat))
+            z_eta_3_1 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_1_x_wp)
+            + z_eta_3_2 * (p_coords_dreg_v_3_x_wp - p_coords_dreg_v_4_x_wp)
         )
         * (
-            z_eta_3_3
-            * (astype(p_coords_dreg_v_4_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
-            - z_eta_3_4
-            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_3_y, wpfloat))
+            z_eta_3_3 * (p_coords_dreg_v_4_y_wp - p_coords_dreg_v_1_y_wp)
+            - z_eta_3_4 * (p_coords_dreg_v_2_y_wp - p_coords_dreg_v_3_y_wp)
         )
         - (
-            z_eta_3_1
-            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
-            + z_eta_3_2
-            * (astype(p_coords_dreg_v_3_y, wpfloat) - astype(p_coords_dreg_v_4_y, wpfloat))
+            z_eta_3_1 * (p_coords_dreg_v_2_y_wp - p_coords_dreg_v_1_y_wp)
+            + z_eta_3_2 * (p_coords_dreg_v_3_y_wp - p_coords_dreg_v_4_y_wp)
         )
         * (
-            z_eta_3_3
-            * (astype(p_coords_dreg_v_4_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
-            - z_eta_3_4
-            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_3_x, wpfloat))
+            z_eta_3_3 * (p_coords_dreg_v_4_x_wp - p_coords_dreg_v_1_x_wp)
+            - z_eta_3_4 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_3_x_wp)
         )
     )
     wgt_t_detjac_4 = dbl_eps + z_wgt_4 * (
         (
-            z_eta_4_1
-            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
-            + z_eta_4_2
-            * (astype(p_coords_dreg_v_3_x, wpfloat) - astype(p_coords_dreg_v_4_x, wpfloat))
+            z_eta_4_1 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_1_x_wp)
+            + z_eta_4_2 * (p_coords_dreg_v_3_x_wp - p_coords_dreg_v_4_x_wp)
         )
         * (
-            z_eta_4_3
-            * (astype(p_coords_dreg_v_4_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
-            - z_eta_4_4
-            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_3_y, wpfloat))
+            z_eta_4_3 * (p_coords_dreg_v_4_y_wp - p_coords_dreg_v_1_y_wp)
+            - z_eta_4_4 * (p_coords_dreg_v_2_y_wp - p_coords_dreg_v_3_y_wp)
         )
         - (
-            z_eta_4_1
-            * (astype(p_coords_dreg_v_2_y, wpfloat) - astype(p_coords_dreg_v_1_y, wpfloat))
-            + z_eta_4_2
-            * (astype(p_coords_dreg_v_3_y, wpfloat) - astype(p_coords_dreg_v_4_y, wpfloat))
+            z_eta_4_1 * (p_coords_dreg_v_2_y_wp - p_coords_dreg_v_1_y_wp)
+            + z_eta_4_2 * (p_coords_dreg_v_3_y_wp - p_coords_dreg_v_4_y_wp)
         )
         * (
-            z_eta_4_3
-            * (astype(p_coords_dreg_v_4_x, wpfloat) - astype(p_coords_dreg_v_1_x, wpfloat))
-            - z_eta_4_4
-            * (astype(p_coords_dreg_v_2_x, wpfloat) - astype(p_coords_dreg_v_3_x, wpfloat))
+            z_eta_4_3 * (p_coords_dreg_v_4_x_wp - p_coords_dreg_v_1_x_wp)
+            - z_eta_4_4 * (p_coords_dreg_v_2_x_wp - p_coords_dreg_v_3_x_wp)
         )
     )
 
     z_gauss_pts_1_x = (
-        shape_func_1_1 * astype(p_coords_dreg_v_1_x, wpfloat)
-        + shape_func_2_1 * astype(p_coords_dreg_v_2_x, wpfloat)
-        + shape_func_3_1 * astype(p_coords_dreg_v_3_x, wpfloat)
-        + shape_func_4_1 * astype(p_coords_dreg_v_4_x, wpfloat)
+        shape_func_1_1 * p_coords_dreg_v_1_x_wp
+        + shape_func_2_1 * p_coords_dreg_v_2_x_wp
+        + shape_func_3_1 * p_coords_dreg_v_3_x_wp
+        + shape_func_4_1 * p_coords_dreg_v_4_x_wp
     )
     z_gauss_pts_1_y = (
-        shape_func_1_1 * astype(p_coords_dreg_v_1_y, wpfloat)
-        + shape_func_2_1 * astype(p_coords_dreg_v_2_y, wpfloat)
-        + shape_func_3_1 * astype(p_coords_dreg_v_3_y, wpfloat)
-        + shape_func_4_1 * astype(p_coords_dreg_v_4_y, wpfloat)
+        shape_func_1_1 * p_coords_dreg_v_1_y_wp
+        + shape_func_2_1 * p_coords_dreg_v_2_y_wp
+        + shape_func_3_1 * p_coords_dreg_v_3_y_wp
+        + shape_func_4_1 * p_coords_dreg_v_4_y_wp
     )
     z_gauss_pts_2_x = (
-        shape_func_1_2 * astype(p_coords_dreg_v_1_x, wpfloat)
-        + shape_func_2_2 * astype(p_coords_dreg_v_2_x, wpfloat)
-        + shape_func_3_2 * astype(p_coords_dreg_v_3_x, wpfloat)
-        + shape_func_4_2 * astype(p_coords_dreg_v_4_x, wpfloat)
+        shape_func_1_2 * p_coords_dreg_v_1_x_wp
+        + shape_func_2_2 * p_coords_dreg_v_2_x_wp
+        + shape_func_3_2 * p_coords_dreg_v_3_x_wp
+        + shape_func_4_2 * p_coords_dreg_v_4_x_wp
     )
     z_gauss_pts_2_y = (
-        shape_func_1_2 * astype(p_coords_dreg_v_1_y, wpfloat)
-        + shape_func_2_2 * astype(p_coords_dreg_v_2_y, wpfloat)
-        + shape_func_3_2 * astype(p_coords_dreg_v_3_y, wpfloat)
-        + shape_func_4_2 * astype(p_coords_dreg_v_4_y, wpfloat)
+        shape_func_1_2 * p_coords_dreg_v_1_y_wp
+        + shape_func_2_2 * p_coords_dreg_v_2_y_wp
+        + shape_func_3_2 * p_coords_dreg_v_3_y_wp
+        + shape_func_4_2 * p_coords_dreg_v_4_y_wp
     )
     z_gauss_pts_3_x = (
-        shape_func_1_3 * astype(p_coords_dreg_v_1_x, wpfloat)
-        + shape_func_2_3 * astype(p_coords_dreg_v_2_x, wpfloat)
-        + shape_func_3_3 * astype(p_coords_dreg_v_3_x, wpfloat)
-        + shape_func_4_3 * astype(p_coords_dreg_v_4_x, wpfloat)
+        shape_func_1_3 * p_coords_dreg_v_1_x_wp
+        + shape_func_2_3 * p_coords_dreg_v_2_x_wp
+        + shape_func_3_3 * p_coords_dreg_v_3_x_wp
+        + shape_func_4_3 * p_coords_dreg_v_4_x_wp
     )
     z_gauss_pts_3_y = (
-        shape_func_1_3 * astype(p_coords_dreg_v_1_y, wpfloat)
-        + shape_func_2_3 * astype(p_coords_dreg_v_2_y, wpfloat)
-        + shape_func_3_3 * astype(p_coords_dreg_v_3_y, wpfloat)
-        + shape_func_4_3 * astype(p_coords_dreg_v_4_y, wpfloat)
+        shape_func_1_3 * p_coords_dreg_v_1_y_wp
+        + shape_func_2_3 * p_coords_dreg_v_2_y_wp
+        + shape_func_3_3 * p_coords_dreg_v_3_y_wp
+        + shape_func_4_3 * p_coords_dreg_v_4_y_wp
     )
     z_gauss_pts_4_x = (
-        shape_func_1_4 * astype(p_coords_dreg_v_1_x, wpfloat)
-        + shape_func_2_4 * astype(p_coords_dreg_v_2_x, wpfloat)
-        + shape_func_3_4 * astype(p_coords_dreg_v_3_x, wpfloat)
-        + shape_func_4_4 * astype(p_coords_dreg_v_4_x, wpfloat)
+        shape_func_1_4 * p_coords_dreg_v_1_x_wp
+        + shape_func_2_4 * p_coords_dreg_v_2_x_wp
+        + shape_func_3_4 * p_coords_dreg_v_3_x_wp
+        + shape_func_4_4 * p_coords_dreg_v_4_x_wp
     )
     z_gauss_pts_4_y = (
-        shape_func_1_4 * astype(p_coords_dreg_v_1_y, wpfloat)
-        + shape_func_2_4 * astype(p_coords_dreg_v_2_y, wpfloat)
-        + shape_func_3_4 * astype(p_coords_dreg_v_3_y, wpfloat)
-        + shape_func_4_4 * astype(p_coords_dreg_v_4_y, wpfloat)
+        shape_func_1_4 * p_coords_dreg_v_1_y_wp
+        + shape_func_2_4 * p_coords_dreg_v_2_y_wp
+        + shape_func_3_4 * p_coords_dreg_v_3_y_wp
+        + shape_func_4_4 * p_coords_dreg_v_4_y_wp
     )
 
     p_quad_vector_sum_1 = wgt_t_detjac_1 + wgt_t_detjac_2 + wgt_t_detjac_3 + wgt_t_detjac_4
