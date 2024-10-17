@@ -15,7 +15,11 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Unio
 
 from gt4py.next import Dimension, Field
 
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.config import Device
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
+from icon4py.model.common.settings import device
 
 
 try:
@@ -29,6 +33,7 @@ try:
         make_field_descriptor,
         make_pattern,
     )
+    from ghex.util import Architecture
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -37,10 +42,6 @@ except ImportError:
     mpi4py = None
     ghex = None
     unstructured = None
-
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
-
 
 try:
     import dace
@@ -54,7 +55,7 @@ except ImportError:
 if TYPE_CHECKING:
     import mpi4py.MPI
 
-
+ghex_arch = Architecture.GPU if device == Device.GPU else Architecture.CPU
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
 
@@ -104,8 +105,10 @@ class ParallelLogger(logging.Filter):
 
 
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
-def get_multinode_properties(s: definitions.MultiNodeRun) -> definitions.ProcessProperties:
-    return _get_processor_properties(with_mpi=True)
+def get_multinode_properties(
+    s: definitions.MultiNodeRun, comm_id: CommId = None
+) -> definitions.ProcessProperties:
+    return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
 @dataclass(frozen=True)
@@ -213,15 +216,17 @@ class GHexMultiNodeExchange:
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f.ndarray)) for f in fields
+            pattern(make_field_descriptor(domain_descriptor, f.ndarray, arch=ghex_arch))
+            for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
-        log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
+        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
     def exchange_and_wait(self, dim: Dimension, *fields: tuple):
         res = self.exchange(dim, *fields)
         res.wait()
+        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
     def __call__(self, *args, **kwargs) -> Optional[MultiNodeResult]:
         """Perform a halo exchange operation.
@@ -350,7 +355,7 @@ class HaloExchangeWait:
 
             """
             # noqa: ERA001
-            
+
             # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
             sdfg.add_scalar(name="__return", dtype=dace.int32)
             ret = state.add_write("__return")

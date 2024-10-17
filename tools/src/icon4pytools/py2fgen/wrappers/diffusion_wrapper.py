@@ -33,10 +33,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import geometry, icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import backend, device
+from icon4py.model.common.settings import backend, device, parallel_run
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -45,17 +46,17 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import wpfloat
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.wrappers import common
-from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
-    CellIndexDim,
-    EdgeIndexDim,
-    VertexIndexDim,
-)
+from icon4pytools.py2fgen.wrappers import common, wrapper_dimension as w_dim
+from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
 
 
 logger = setup_logger(__name__)
 
-diffusion_wrapper_state = {"granule": Diffusion(backend=backend), "profiler": cProfile.Profile()}
+# Use single node exchange by default
+diffusion_wrapper_state = {
+    "granule": Diffusion(backend=backend, exchange=definitions.SingleNodeExchange()),
+    "profiler": cProfile.Profile(),
+}
 
 
 def profile_enable():
@@ -282,12 +283,12 @@ def diffusion_run(
 
 
 def grid_init(
-    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
-    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    cell_starts: gtx.Field[gtx.Dims[w_dim.CellIndexDim], gtx.int32],
+    cell_ends: gtx.Field[gtx.Dims[w_dim.CellIndexDim], gtx.int32],
+    vertex_starts: gtx.Field[gtx.Dims[w_dim.VertexIndexDim], gtx.int32],
+    vertex_ends: gtx.Field[gtx.Dims[w_dim.VertexIndexDim], gtx.int32],
+    edge_starts: gtx.Field[gtx.Dims[w_dim.EdgeIndexDim], gtx.int32],
+    edge_ends: gtx.Field[gtx.Dims[w_dim.EdgeIndexDim], gtx.int32],
     c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
     e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
     c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
@@ -297,6 +298,13 @@ def grid_init(
     v2c: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.int32],
     e2c2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
     c2v: gtx.Field[gtx.Dims[dims.CellDim, dims.C2VDim], gtx.int32],
+    c_owner_mask: gtx.Field[[dims.CellDim], bool],
+    e_owner_mask: gtx.Field[[dims.EdgeDim], bool],
+    v_owner_mask: gtx.Field[[dims.VertexDim], bool],
+    c_glb_index: gtx.Field[[w_dim.SpecialADim], gtx.int32],
+    e_glb_index: gtx.Field[[w_dim.SpecialBDim], gtx.int32],
+    v_glb_index: gtx.Field[[w_dim.SpecialCDim], gtx.int32],
+    comm_id: gtx.int32,
     global_root: gtx.int32,
     global_level: gtx.int32,
     num_vertices: gtx.int32,
@@ -336,3 +344,28 @@ def grid_init(
         limited_area=limited_area,
         on_gpu=True if settings.device == "GPU" else False,
     )
+
+    if parallel_run:
+        processor_props, decomposition_info, exchange = common.construct_decomposition(
+            c_glb_index,
+            e_glb_index,
+            v_glb_index,
+            c_owner_mask,
+            e_owner_mask,
+            v_owner_mask,
+            num_cells,
+            num_edges,
+            num_vertices,
+            vertical_size,
+            comm_id,
+        )
+        print_grid_decomp_info(
+            diffusion_wrapper_state["grid"],
+            processor_props,
+            decomposition_info,
+            num_cells,
+            num_edges,
+            num_vertices,
+        )
+        # Set MultiNodeExchange as exchange runtime
+        diffusion_wrapper_state["granule"] = Diffusion(backend=backend, exchange=exchange)
