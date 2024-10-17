@@ -78,7 +78,7 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
 
 
 @field_operator
-def _compute_only_virtual_potential_temperatures(
+def _compute_virtual_potential_temperatures(
     wgtfac_c: fa.CellKField[vpfloat],
     z_rth_pr_2: fa.CellKField[vpfloat],
     theta_v: fa.CellKField[wpfloat],
@@ -95,7 +95,7 @@ def _compute_only_virtual_potential_temperatures(
 
 
 @field_operator
-def _compute_only_pressure_gradient(
+def _compute_pressure_gradient(
     vwind_expl_wgt: fa.CellField[wpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     z_theta_v_pr_ic: fa.CellKField[wpfloat],

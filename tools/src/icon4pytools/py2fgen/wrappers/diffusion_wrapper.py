@@ -33,7 +33,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-from icon4py.model.common.grid import geometry
+from icon4py.model.common.grid import geometry, icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import backend, device
@@ -132,6 +132,9 @@ def diffusion_init(
     logger.info(f"Using Device = {device}")
 
     global_grid_params = GlobalGridParams(root=global_root, level=global_level)
+
+    if not isinstance(diffusion_wrapper_state["grid"], icon.IconGrid):
+        raise Exception("Need to initialise grid using grid_init before running diffusion_init.")
 
     # Edge geometry
     edge_params = geometry.EdgeParams(

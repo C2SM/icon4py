@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 from gt4py.next.embedded.nd_array_field import NdArrayField
 from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.common.settings import xp
 
 
@@ -110,7 +111,7 @@ def compare_objects(obj1, obj2, obj_name="object"):
     return True, None
 
 
-# TODO: this code is replicated across the codebase currently. The configuration should be read from an external file.
+# TODO: the configuration code is replicated across the codebase currently. In future, the configuration should be read from an external file.
 def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
     if name.lower() in "mch_ch_r04b09_dsl":
         return r04b09_diffusion_config(ndyn_substeps)
@@ -163,4 +164,32 @@ def exclaim_ape_diffusion_config(ndyn_substeps):
         smagorinski_scaling_factor=0.025,
         hdiff_temp=True,
         n_substeps=ndyn_substeps,
+    )
+
+
+def construct_solve_nh_config(name: str, ndyn_substeps: int = 5):
+    if name.lower() in "mch_ch_r04b09_dsl":
+        return _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps)
+    elif name.lower() in "exclaim_ape_r02b04":
+        return _exclaim_ape_nonhydrostatic_config(ndyn_substeps)
+
+
+def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
+    """Create configuration matching the mch_chR04b09_dsl experiment."""
+    config = solve_nh.NonHydrostaticConfig(
+        ndyn_substeps_var=ndyn_substeps,
+        divdamp_order=24,
+        iau_wgt_dyn=1.0,
+        divdamp_fac=0.004,
+        max_nudging_coeff=0.075,
+    )
+    return config
+
+
+def _exclaim_ape_nonhydrostatic_config(ndyn_substeps):
+    """Create configuration for EXCLAIM APE experiment."""
+    return solve_nh.NonHydrostaticConfig(
+        rayleigh_coeff=0.1,
+        divdamp_order=24,
+        ndyn_substeps_var=ndyn_substeps,
     )
