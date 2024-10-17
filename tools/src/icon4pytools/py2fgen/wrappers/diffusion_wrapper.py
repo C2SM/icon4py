@@ -16,9 +16,12 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
+import cProfile
+import pstats
 
 import gt4py.next as gtx
 from icon4py.model.atmosphere.diffusion.diffusion import (
+    Diffusion,
     DiffusionConfig,
     DiffusionParams,
     TurbulenceShearForcingType,
@@ -30,10 +33,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-from icon4py.model.common.grid import geometry
-from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
+from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.grid import geometry, icon
+from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import backend, device
+from icon4py.model.common.settings import backend, device, parallel_run
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -42,17 +46,27 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import wpfloat
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.wrappers import common
-from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
-    CellIndexDim,
-    EdgeIndexDim,
-    VertexIndexDim,
-)
+from icon4pytools.py2fgen.wrappers import common, wrapper_dimension as w_dim
+from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
 
 
 logger = setup_logger(__name__)
 
-icon_grid: IconGrid = None
+# Use single node exchange by default
+diffusion_wrapper_state = {
+    "granule": Diffusion(backend=backend, exchange=definitions.SingleNodeExchange()),
+    "profiler": cProfile.Profile(),
+}
+
+
+def profile_enable():
+    diffusion_wrapper_state["profiler"].enable()
+
+
+def profile_disable():
+    diffusion_wrapper_state["profiler"].disable()
+    stats = pstats.Stats(diffusion_wrapper_state["profiler"])
+    stats.dump_stats(f"{__name__}.profile")
 
 
 def diffusion_init(
@@ -120,6 +134,9 @@ def diffusion_init(
 
     global_grid_params = GlobalGridParams(root=global_root, level=global_level)
 
+    if not isinstance(diffusion_wrapper_state["grid"], icon.IconGrid):
+        raise Exception("Need to initialise grid using grid_init before running diffusion_init.")
+
     # Edge geometry
     edge_params = geometry.EdgeParams(
         tangent_orientation=tangent_orientation,
@@ -174,7 +191,7 @@ def diffusion_init(
 
     # Vertical grid config
     vertical_config = VerticalGridConfig(
-        num_levels=icon_grid.num_levels,
+        num_levels=diffusion_wrapper_state["grid"].num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
@@ -212,8 +229,8 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    common.GLOBAL_STATE["diffusion_granule"].init(
-        grid=icon_grid,
+    diffusion_wrapper_state["granule"].init(
+        grid=diffusion_wrapper_state["grid"],
         config=config,
         params=diffusion_params,
         vertical_grid=vertical_params,
@@ -254,24 +271,24 @@ def diffusion_run(
     )
 
     if linit:
-        common.GLOBAL_STATE["diffusion_granule"].initial_run(
-            diagnostic_state, prognostic_state, dtime, backend
+        diffusion_wrapper_state["granule"].initial_run(
+            diagnostic_state,
+            prognostic_state,
+            dtime,
         )
     else:
-        common.GLOBAL_STATE["diffusion_granule"].run(
-            prognostic_state=prognostic_state,
-            diagnostic_state=diagnostic_state,
-            dtime=dtime,
+        diffusion_wrapper_state["granule"].run(
+            prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )
 
 
 def grid_init(
-    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
-    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    cell_starts: gtx.Field[gtx.Dims[w_dim.CellIndexDim], gtx.int32],
+    cell_ends: gtx.Field[gtx.Dims[w_dim.CellIndexDim], gtx.int32],
+    vertex_starts: gtx.Field[gtx.Dims[w_dim.VertexIndexDim], gtx.int32],
+    vertex_ends: gtx.Field[gtx.Dims[w_dim.VertexIndexDim], gtx.int32],
+    edge_starts: gtx.Field[gtx.Dims[w_dim.EdgeIndexDim], gtx.int32],
+    edge_ends: gtx.Field[gtx.Dims[w_dim.EdgeIndexDim], gtx.int32],
     c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
     e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
     c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
@@ -281,6 +298,13 @@ def grid_init(
     v2c: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.int32],
     e2c2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
     c2v: gtx.Field[gtx.Dims[dims.CellDim, dims.C2VDim], gtx.int32],
+    c_owner_mask: gtx.Field[[dims.CellDim], bool],
+    e_owner_mask: gtx.Field[[dims.EdgeDim], bool],
+    v_owner_mask: gtx.Field[[dims.VertexDim], bool],
+    c_glb_index: gtx.Field[[w_dim.SpecialADim], gtx.int32],
+    e_glb_index: gtx.Field[[w_dim.SpecialBDim], gtx.int32],
+    v_glb_index: gtx.Field[[w_dim.SpecialCDim], gtx.int32],
+    comm_id: gtx.int32,
     global_root: gtx.int32,
     global_level: gtx.int32,
     num_vertices: gtx.int32,
@@ -289,23 +313,13 @@ def grid_init(
     vertical_size: gtx.int32,
     limited_area: bool,
 ):
-    global icon_grid
-
     # todo: write this logic into template.py
     if isinstance(limited_area, int):
         limited_area = bool(limited_area)
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
-    icon_grid = common.construct_icon_grid(
-        grid_id="icon_grid",
-        global_grid_params=global_grid_params,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
+    diffusion_wrapper_state["grid"] = common.construct_icon_grid(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -321,4 +335,37 @@ def grid_init(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
+        grid_id="icon_grid",
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
     )
+
+    if parallel_run:
+        processor_props, decomposition_info, exchange = common.construct_decomposition(
+            c_glb_index,
+            e_glb_index,
+            v_glb_index,
+            c_owner_mask,
+            e_owner_mask,
+            v_owner_mask,
+            num_cells,
+            num_edges,
+            num_vertices,
+            vertical_size,
+            comm_id,
+        )
+        print_grid_decomp_info(
+            diffusion_wrapper_state["grid"],
+            processor_props,
+            decomposition_info,
+            num_cells,
+            num_edges,
+            num_vertices,
+        )
+        # Set MultiNodeExchange as exchange runtime
+        diffusion_wrapper_state["granule"] = Diffusion(backend=backend, exchange=exchange)
