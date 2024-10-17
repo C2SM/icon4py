@@ -21,5 +21,6 @@
 - Paone, Edoardo. ETH Zurich - CSCS
 - Röthlin, Matthias. MeteoSwiss
 - Stellio, Mikael. MeteoSwiss
+- Strassmann, David. ETH Zurich - EXCLAIM
 - Vogt, Hannes. ETH Zurich - CSCS
 - Weber, Benjamin. MeteoSwiss
