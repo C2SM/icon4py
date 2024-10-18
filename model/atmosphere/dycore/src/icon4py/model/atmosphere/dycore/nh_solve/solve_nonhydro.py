@@ -846,7 +846,7 @@ class SolveNonhydro:
                     $$
                     Linearly interpolate the perturbation exner computed in
                     previous stencil to half levels. The ground level is based
-                    on quadratic interpolation (with hydrostatic assumption?).
+                    on quadratic extrapolation (with hydrostatic assumption?).
                 - z_dexner_dz_c_1 :
                     $$
                     \pdz{\exnerprime{\ntilde}{\c}{\k}} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz_{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
