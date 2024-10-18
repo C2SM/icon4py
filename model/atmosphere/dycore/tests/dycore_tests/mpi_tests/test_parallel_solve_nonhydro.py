@@ -131,9 +131,7 @@ def test_run_solve_nonhydro_single_step(
     )
     initial_divdamp_fac = sp.divdamp_fac_o2()
     interpolation_state = conftest.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = conftest.construct_nh_metric_state(
-        metrics_savepoint, icon_grid.num_levels
-    )
+    metric_state_nonhydro = conftest.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()

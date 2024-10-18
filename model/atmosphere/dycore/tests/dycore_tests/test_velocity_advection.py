@@ -58,9 +58,7 @@ def test_velocity_init(
     damping_height,
 ):
     interpolation_state = conftest.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = conftest.construct_nh_metric_state(
-        metrics_savepoint, icon_grid.num_levels
-    )
+    metric_state_nonhydro = conftest.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -112,9 +110,7 @@ def test_verify_velocity_init_against_regular_savepoint(
     dtime = savepoint.get_metadata("dtime").get("dtime")
 
     interpolation_state = conftest.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = conftest.construct_nh_metric_state(
-        metrics_savepoint, icon_grid.num_levels
-    )
+    metric_state_nonhydro = conftest.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -201,9 +197,7 @@ def test_velocity_predictor_step(
         exner=None,
     )
     interpolation_state = conftest.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = conftest.construct_nh_metric_state(
-        metrics_savepoint, icon_grid.num_levels
-    )
+    metric_state_nonhydro = conftest.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -372,9 +366,7 @@ def test_velocity_corrector_step(
 
     interpolation_state = conftest.construct_interpolation_state(interpolation_savepoint)
 
-    metric_state_nonhydro = conftest.construct_nh_metric_state(
-        metrics_savepoint, icon_grid.num_levels
-    )
+    metric_state_nonhydro = conftest.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
