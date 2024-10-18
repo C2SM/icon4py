@@ -101,11 +101,12 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         for idocstr, docstring in enumerate(docstrings):
             formatted_docstr = None
             if idocstr==0:
-                # "Normal" docstring at the beginning of the method
+                # "Usual" docstring at the beginning of the method
                 formatted_docstr = docstring.splitlines()
 
             elif docstring.startswith('_scidoc_'):
-                call_string = self.get_next_method_call(source, docstring)
+                # Process a scientific documentation docstring
+                call_string = self.get_next_method_call(source, source.find(docstring) + len(docstring))
                 next_method_name = call_string[0].split('.')[-1].split('(')[0]
                 formatted_docstr = docstring.splitlines()
                 formatted_docstr = self.format_source_code(formatted_docstr)
@@ -125,8 +126,8 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         # Clean up and format
         if source_lines[0].startswith('_scidoc_'):
             source_lines.pop(0) # remove the _scidoc_ prefix
-        # strip empty lines from the beginning
         while source_lines[0] == '':
+            # strip empty lines from the beginning
             source_lines.pop(0)
         # strip leading and trailing whitespace of every line (maintain indentation)
         indent = len(source_lines[0]) - len(source_lines[0].lstrip(' '))
@@ -137,7 +138,7 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         return source_lines
 
     def add_header(self, docstr_lines, title):
-        # Add a title
+        # Add a title with ReST formatting
         docstr_lines.insert(0, title)
         docstr_lines.insert(1, '='*len(title))
         docstr_lines.insert(2, '')
@@ -146,39 +147,45 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
     def add_footer(self, docstr_lines):
         # Add a horizontal line at the end of the docstring
         docstr_lines.append('')
-        #docstr_lines.append('*' + '~' * 59 + '*')
         docstr_lines.append('.. raw:: html')
         docstr_lines.append('')
         docstr_lines.append('   <hr>')
-        # and have one empty line at the end
+        # and add one empty line at the end
         docstr_lines.append('')
         return docstr_lines
 
     def process_scidocstrlines(self, docstr_lines):
         # "Special" treatment of specific lines / blocks
+
+        latex_multiline_block = False
+
         def insert_before_first_non_space(s, char_to_insert):
             for i, char in enumerate(s):
                 if char != ' ':
                     return s[:i] + char_to_insert + s[i:]
             return s
-        in_latex_block = False
+
         for iline, line in enumerate(docstr_lines):
+
             # Make collapsible Inputs section
             if line.startswith('Inputs:'):
                 docstr_lines[iline] = '.. collapse:: Inputs'
                 docstr_lines.insert(iline+1, '')
-            # Identify LaTeX blocks and align to the left
+
+            # Identify LaTeX multiline blocks and align equations to the left
             elif '$$' in line:
-                if not in_latex_block and '\\\\' in docstr_lines[iline+1]:
-                    in_latex_block=True
+                if not latex_multiline_block and '\\\\' in docstr_lines[iline+1]:
+                    latex_multiline_block=True
                     continue
                 else:
-                    in_latex_block=False
-            if in_latex_block:
+                    latex_multiline_block=False
+            if latex_multiline_block:
                 docstr_lines[iline] = insert_before_first_non_space(line, '&')
+
         return docstr_lines
 
     def add_next_method_call(self, docstr_lines, formatted_call):
+        # Add the source string of the next method call as a collapsible block
         docstr_lines.append('')
         docstr_lines.append('.. collapse:: Source code')
         docstr_lines.append('')
@@ -187,8 +194,9 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         docstr_lines += ['      ' + line for line in formatted_call]
         return docstr_lines
 
-    def get_next_method_call(self, source, docstring):
-        index_start = source.find(docstring) + len(docstring)
+    def get_next_method_call(self, source, index_start):
+        # Find the next method call in the source code using a stack to find the
+        # matching closing round brackets
         remaining_source = source[index_start:]
         stack = []
         start_index = None

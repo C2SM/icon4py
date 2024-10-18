@@ -17,7 +17,9 @@
 % both the standard as well as the dvipsnames can be used
 
 %===============================================================================
-% Maths
+% Aesthetic macros
+
+\renewcommand{\sum}{\Large{\Sigma}} % move sub/superscripts of sum symbol
 
 % Glyph sizes
 \newcommand{\superscriptsize}{\scriptsize}
@@ -27,6 +29,9 @@
 \newcommand{\timecolor}[1]{\color{teal}{#1}}
 \newcommand{\vertcolor}[1]{\color{YellowOrange}{#1}}
 \newcommand{\horicolor}[1]{\color{RedViolet}{#1}}
+
+%===============================================================================
+% Maths
 
 % Differentials and deltas
 \newcommand{\dif}{\mathrm{d}}
@@ -68,8 +73,3 @@
 \newcommand{\c}{{\horicolor{c}}}
 \newcommand{\e}{{\horicolor{e}}}
 \newcommand{\v}{{\horicolor{v}}}
-
-%===============================================================================
-% Aesthetic changes
-
-\renewcommand{\sum}{\Large{\Sigma}} % move sub/superscripts of sum symbol
