@@ -355,6 +355,14 @@ class Diffusion:
 
     def __init__(
         self,
+        grid: icon_grid.IconGrid,
+        config: DiffusionConfig,
+        params: DiffusionParams,
+        vertical_grid: v_grid.VerticalGrid,
+        metric_state: diffusion_states.DiffusionMetricState,
+        interpolation_state: diffusion_states.DiffusionInterpolationState,
+        edge_params: geometry.EdgeParams,
+        cell_params: geometry.CellParams,
         backend: backend.Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
@@ -420,32 +428,6 @@ class Diffusion:
             init_diffusion_local_fields_for_regular_timestep.with_backend(self._backend)
         )
 
-    def init(
-        self,
-        grid: icon_grid.IconGrid,
-        config: DiffusionConfig,
-        params: DiffusionParams,
-        vertical_grid: v_grid.VerticalGrid,
-        metric_state: diffusion_states.DiffusionMetricState,
-        interpolation_state: diffusion_states.DiffusionInterpolationState,
-        edge_params: geometry.EdgeParams,
-        cell_params: geometry.CellParams,
-    ):
-        """
-        Initialize Diffusion granule with configuration.
-
-        calculates all local fields that are used in diffusion within the time loop.
-
-        Args:
-            grid:
-            config:
-            params:
-            vertical_grid:
-            metric_state:
-            interpolation_state:
-            edge_params:
-            cell_params:
-        """
         self.config: DiffusionConfig = config
         self.params: DiffusionParams = params
         self.grid = grid

@@ -9,9 +9,11 @@
 import numpy as np
 import pytest
 
+import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import settings
 from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
 
@@ -161,13 +163,70 @@ def compare_dace_orchestration_multiple_steps(
 
 @pytest.fixture
 def diffusion_instance(
+    icon_grid,
+    metrics_savepoint,
+    interpolation_savepoint,
+    ndyn_substeps,
+    experiment,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    grid_savepoint,
     backend,
     processor_props,  # fixture
     decomposition_info,  # fixture
 ):
     """Fixture to create a diffusion instance and clear the orchestration cache properly -if applicable-."""
     exchange = definitions.create_exchange(processor_props, decomposition_info)
-    diffusion_instance_ = diffusion.Diffusion(backend, exchange)
+    edge_geometry = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
+    config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    additional_parameters = diffusion.DiffusionParams(config)
+    metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+    )
+    interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+    )
+
+    diffusion_instance_ = diffusion.Diffusion(
+        grid=icon_grid,
+        config=config,
+        params=additional_parameters,
+        vertical_grid=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+        backend=backend,
+        exchange=exchange,
+    )
 
     yield diffusion_instance_
 
