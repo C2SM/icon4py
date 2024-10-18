@@ -801,11 +801,11 @@ class SolveNonhydro:
             )
 
         """_scidoc_
-        Outputs:
+        Outputs
             - z_exner_ex_pr :
                 $$
-                \exnerprime{\ntilde}{\c}{\k} = (1 + \gamma) \exnerprime{\ntilde}{\c}{\k} - \gamma \exnerprime{\n-1}{\c}{\k}, \quad && \k \in [0, \nlev) \\
-                \exnerprime{\ntilde}{\c}{\k} = 0, && \k = \nlev
+                \exnerprime{\ntilde}{\c}{\k} = (1 + \gamma) \exnerprime{\n}{\c}{\k} - \gamma \exnerprime{\n-1}{\c}{\k}, \quad \k \in [0, \nlev) \\
+                \exnerprime{\ntilde}{\c}{\nlev} = 0
                 $$
                 Compute the temporal extrapolation of perturbed exner function
                 using the time backward scheme (see the |ICONTutorial| page 74)
@@ -818,7 +818,7 @@ class SolveNonhydro:
 
         Inputs:
             - $\gamma$ : exner_exfac
-            - $\exnerprime{\ntilde}{\c}{\k}$ : exner - exner_ref_mc
+            - $\exnerprime{\n}{\c}{\k}$ : exner - exner_ref_mc
             - $\exnerprime{\n-1}{\c}{\k}$ : exner_pr
         """
         nhsolve_prog.predictor_stencils_2_3(
@@ -838,26 +838,29 @@ class SolveNonhydro:
 
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             """_scidoc_
-            Outputs:
-                - z_exner_ic (1 or flat_lev:nlev):
+            Outputs
+                - z_exner_ic :
                     $$
-                    \exnerprime{\ntilde}{\c}{\k-1/2} = \nu \exnerprime{\ntilde}{\c}{\k} + (1 - \nu) \exnerprime{\ntilde}{\c}{\k-1}
+                    \exnerprime{\ntilde}{\c}{\k-1/2} = \nu \exnerprime{\ntilde}{\c}{\k} + (1 - \nu) \exnerprime{\ntilde}{\c}{\k-1}, \quad && \k \in [\max(1,\nflatlev), \nlev) \\
+                    \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \beta_{\k} \exnerprime{\ntilde}{\c}{\k}
                     $$
                     Linearly interpolate the perturbation exner computed in
                     previous stencil to half levels. The ground level is based
                     on quadratic interpolation (with hydrostatic assumption?).
-                - z_dexner_dz_c_1 (1 or flat_lev:nlev-1):
+                - z_dexner_dz_c_1 :
                     $$
-                    \Padz{\exnerprime{\ntilde}{\c}{\k}} = \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz_{\k}}
+                    \pdz{\exnerprime{\ntilde}{\c}{\k}} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz_{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
                     $$
-                    The vertical derivative of perturbation exner at full levels
-                    is also computed (first order scheme). flat_lev is the
-                    height (inclusive) above which the grid is not affected by
-                    terrain following.
+                    And use the interpolated values to compute the vertical
+                    derivative of perturbation exner at full levels (first order
+                    scheme). flat_lev is the height (inclusive) above which the
+                    grid is not affected by terrain following.
 
             Inputs:
                 - $\nu$ : wgtfac_c
+                - $\beta_{\k}$ : wgtfacq_c
                 - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+                - $1 / \Dz_{\k}$ : inv_ddqz_z_full
             """
             nhsolve_prog.predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,

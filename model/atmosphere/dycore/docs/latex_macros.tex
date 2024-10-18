@@ -8,13 +8,13 @@
 
 %===============================================================================
 % This file contains macro definitions that can be used in docstrings and are
-% parsed by the MathJax processor within sphinx.
+% parsed by the MathJax processor within Sphinx.
 % These macros are loaded into `mathjax3_config` by conf.py
-% *** AT THE MOMENT ONLY SINGLE LINE MACROS ARE WORKING ***
+% *** AT THE MOMENT ONLY SINGLE LINE MACROS WORK ***
 
-% The predefined color names are
-% black, blue, brown, cyan, darkgray, gray, green, lightgray, lime, magenta,
-% olive, orange, pink, purple, red, teal, violet, white, yellow.
+% The predefined color names are defined on this page
+% https://en.wikibooks.org/wiki/LaTeX/Colors
+% both the standard as well as the dvipsnames can be used
 
 %===============================================================================
 % Maths
@@ -22,6 +22,11 @@
 % Glyph sizes
 \newcommand{\superscriptsize}{\scriptsize}
 \newcommand{\subscriptsize}{\scriptsize}
+
+% Colors
+\newcommand{\timecolor}[1]{\color{teal}{#1}}
+\newcommand{\vertcolor}[1]{\color{YellowOrange}{#1}}
+\newcommand{\horicolor}[1]{\color{RedViolet}{#1}}
 
 % Differentials and deltas
 \newcommand{\dif}{\mathrm{d}}
@@ -31,8 +36,8 @@
 % Derivatives
 \newcommand{\ddt}[1]{\frac{\dif #1}{\dif t}}
 \newcommand{\ddz}[1]{\frac{\dif #1}{\dif z}}
-\newcommand{\Padt}[1]{\frac{\partial #1}{\partial t}}
-\newcommand{\Padz}[1]{\frac{\partial #1}{\partial z}}
+\newcommand{\pdt}[1]{\frac{\partial #1}{\partial t}}
+\newcommand{\pdz}[1]{\frac{\partial #1}{\partial z}}
 
 % Variables
 \newcommand{\vn}[2]{{v_n}^{\superscriptsize #1}_{\subscriptsize #2}}
@@ -41,7 +46,8 @@
 \newcommand{\thetav}[2]{{\theta_v}^{\superscriptsize #1}_{\subscriptsize #2}}
 \newcommand{\thetavprime}[2]{{\theta_v'}^{\superscriptsize #1}_{\subscriptsize #2}}
 \newcommand{\exner}[2]{{\pi}^{\superscriptsize #1}_{\subscriptsize #2}}
-\newcommand{\exnerprime}[3]{{\pi'}^{\superscriptsize\color{teal}#1}_{\subscriptsize{\color{blue}#2},\ {\color{orange}#3}}}
+
+\newcommand{\exnerprime}[3]{{\pi'}^{\superscriptsize\timecolor{#1}}_{\subscriptsize{\horicolor{#2}},\,{\vertcolor{#3}}}}
 
 % Physical constants
 \newcommand{\cpd}{c_{pd}}
@@ -49,15 +55,16 @@
 
 % Numerical constants
 \newcommand{\nlev}{{\texttt{num_lev}}}
+\newcommand{\nflatlev}{{\texttt{flat_lev}}}
 
 % Temporal steps
-\newcommand{\n}{{\color{teal}n}}
-\newcommand{\ntilde}{{\color{teal}\tilde{\n}}}
+\newcommand{\n}{{\timecolor{n}}}
+\newcommand{\ntilde}{{\timecolor{\tilde{\n}}}}
 
 # Vertical levels
-\renewcommand{\k}{{\color{orange}k}}
+\renewcommand{\k}{{\vertcolor{k}}}
 
 % Horizontal discretization
-\newcommand{\c}{{\color{blue}c}}
-\newcommand{\e}{{\color{blue}e}}
-\newcommand{\v}{{\color{blue}v}}
+\newcommand{\c}{{\horicolor{c}}}
+\newcommand{\e}{{\horicolor{e}}}
+\newcommand{\v}{{\horicolor{v}}}
