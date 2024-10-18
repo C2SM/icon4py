@@ -24,7 +24,7 @@ def test_function(x: gtx.Field[gtx.Dims[EdgeDim, KDim], float64], y: int):
 
 
 def test_parse_functions_on_wrapper():
-    module_path = "icon4pytools.py2fgen.wrappers.diffusion"
+    module_path = "icon4pytools.py2fgen.wrappers.diffusion_wrapper"
     functions = ["diffusion_init", "diffusion_run"]
     plugin = parse(module_path, functions, "diffusion_plugin")
     assert isinstance(plugin, CffiPlugin)
