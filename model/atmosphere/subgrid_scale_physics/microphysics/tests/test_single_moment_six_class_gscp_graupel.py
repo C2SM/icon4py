@@ -44,6 +44,7 @@ def test_graupel(
     metrics_savepoint,
     icon_grid,
     lowest_layer_thickness,
+    backend,
 ):
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -101,9 +102,9 @@ def test_graupel(
         do_saturation_adjustment=False,
         liquid_autoconversion_option=init_savepoint.iautocon(),
         ice_stickeff_min=init_savepoint.ceff_min(),
-        ice_v0=init_savepoint.vz0i(),
-        ice_sedi_density_factor_exp=init_savepoint.icesedi_exp(),
-        snow_v0=init_savepoint.v0snow(),
+        power_law_coeff_for_ice_mean_fall_speed=init_savepoint.vz0i(),
+        exponent_for_density_factor_in_ice_sedimentation=init_savepoint.icesedi_exp(),
+        power_law_coeff_for_snow_fall_speed=init_savepoint.v0snow(),
         rain_mu=init_savepoint.mu_rain(),
         rain_n0=init_savepoint.rain_n0_factor(),
     )
@@ -114,11 +115,11 @@ def test_graupel(
         grid=icon_grid,
         metric_state=metric_state,
         vertical_params=vertical_params,
+        backend=backend,
     )
 
     assert helpers.dallclose(graupel.icon_graupel_params.qmin, init_savepoint.qmin())
-    assert helpers.dallclose(graupel.icon_graupel_params.eps, init_savepoint.eps())
-    assert helpers.dallclose(graupel.icon_graupel_params.snow_m0, init_savepoint.ams())
+    assert helpers.dallclose(graupel.icon_graupel_params.power_law_coeff_for_snow_mD_relation, init_savepoint.ams())
     assert helpers.dallclose(graupel_microphysics.ccs[0], init_savepoint.ccsrim(), atol=1.0e-8)
     assert helpers.dallclose(graupel_microphysics.ccs[1], init_savepoint.ccsagg(), atol=1.0e-8)
     assert helpers.dallclose(graupel.icon_graupel_params.ccsaxp, init_savepoint.ccsaxp())
@@ -264,9 +265,9 @@ def test_graupel(
         graupel_microphysics.config.is_isochoric,
         graupel_microphysics.config.use_constant_water_heat_capacity,
         graupel_microphysics.config.ice_stickeff_min,
-        graupel_microphysics.config.ice_v0,
-        graupel_microphysics.config.ice_sedi_density_factor_exp,
-        graupel_microphysics.config.snow_v0,
+        graupel_microphysics.config.power_law_coeff_for_ice_mean_fall_speed,
+        graupel_microphysics.config.exponent_for_density_factor_in_ice_sedimentation,
+        graupel_microphysics.config.power_law_coeff_for_snow_fall_speed,
         *graupel_microphysics.ccs,
         *graupel_microphysics.rain_vel_coef,
         *graupel_microphysics.sed_dens_factor_coef,

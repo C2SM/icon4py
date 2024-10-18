@@ -8,6 +8,7 @@
 
 
 import dataclasses
+import enum
 import math
 import sys
 from typing import Final, Optional
@@ -15,6 +16,7 @@ from typing import Final, Optional
 import gt4py.next as gtx
 import numpy as np
 from gt4py.eve.utils import FrozenNamespace
+from gt4py.next import backend
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
 from gt4py.next.ffront.fbuiltins import (
     broadcast,
@@ -32,7 +34,6 @@ from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import (
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
-from icon4py.model.common.settings import backend
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -46,6 +47,28 @@ from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 sys.setrecursionlimit(350000)
 
 
+class LiquidAutoConversion(enum.IntEnum):
+    """
+    Options for computing liquid auto conversion rate
+    """
+
+    #: Kessler (1969) liquid auto conversion mode
+    KESSLER = 0
+    #: Seifert & Beheng (2006) liquid auto conversion mode
+    SEIFERT_BEHENG = 1
+
+
+class SnowInterceptParameter(enum.IntEnum):
+    """
+    Options for deriving snow intercept parameter
+    """
+
+    #: Estimated intercept parameter for the snow size distribution from the best-fit line in figure 10(a) of Field et al. (2005)
+    FIELD_BEST_FIT_ESTIMATION = 1
+    #: Estimated intercept parameter for the snow size distribution from the general moment equation in table 2 of Field et al. (2005)
+    FIELD_GENERAL_MOMENT_ESTIMATION = 2
+
+
 @dataclasses.dataclass(frozen=True)
 class SingleMomentSixClassIconGraupelConfig:
     """
@@ -55,30 +78,33 @@ class SingleMomentSixClassIconGraupelConfig:
     Values should be read from configuration.
     Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
     lsedi_ice (option for whether ice sedimendation is performed), lstickeff (option for different empirical formulae of sticking efficiency), and lred_depgrow (option for reduced depositional growth) are removed because they are set to True in the original code gscp_graupel.f90.
-    lpres_pri is removed because it is a duplicated parameter with lsedi_ice.
+    lpres_pri is removed because it is a duplicated option for lsedi_ice.
     ldiag_ttend, and ldiag_qtend are removed because default outputs in icon4py physics granules include tendencies.
+    The COSMO microphysics documentation "A Description of the Nonhydrostatic Regional COSMO-Model Part II Physical Parameterizations" can be downloaded via this link: https://www.cosmo-model.org/content/model/cosmo/coreDocumentation/cosmo_physics_6.00.pdf
     """
 
     #: execute saturation adjustment right after microphysics. Originally defined as lsatad as input to nwp_microphysics in mo_nwp_gscp_interface.f90 in ICON.
     do_saturation_adjustment: bool = True
-    #: liquid auto conversion mode. 1: Kessler (1969), 2: Seifert & Beheng (2006). Originally defined as iautocon (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
-    liquid_autoconversion_option: gtx.int32 = gtx.int32(1)
-    #: Option for deriving snow size distribution interception parameter. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
-    snow_intercept_option: gtx.int32 = gtx.int32(2)
-    #: Determine whether the microphysical processes are isochoric or isobaric. Originally defined as l_cv as input to the graupel in ICON. It is hardcoded to True, I still keep it because I no dot understand the reason for its existence.
+    #: liquid auto conversion mode. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
+    liquid_autoconversion_option: LiquidAutoConversion = LiquidAutoConversion.KESSLER
+    #: snow size distribution interception parameter. Originally defined as isnow_n0temp (PARAMETER) in gscp_data.f90 in ICON. I keep it because I think the choice depends on resolution.
+    snow_intercept_option: SnowInterceptParameter = (
+        SnowInterceptParameter.FIELD_GENERAL_MOMENT_ESTIMATION
+    )
+    #: Determine whether the microphysical processes are isochoric or isobaric. Originally defined as l_cv as input to the graupel in ICON. It is hardcoded to True, I still keep it because I do not understand the reason for its existence and isobaric may have a positive effect on reducing sound waves.
     is_isochoric: bool = True
     #: Do latent heat nudging. Originally defined as dass_lhn in mo_run_config.f90 in ICON.
     do_latent_heat_nudging = False
     #: Whether a fixed latent heat capacities are used for water. Originally defined as ithermo_water in mo_atm_phy_nwp_config.f90 in ICON (0 means True).
     use_constant_water_heat_capacity = True
-    #: First parameter in RHS of eq. 5.163 for the sticking efficiency when lstickeff = True (repricated in icon4py because it is always True in ICON). Originally defined as tune_zceff_min in mo_tuning_nwp_config.f90 in ICON. Default value is 0.075.
-    ice_stickeff_min: wpfloat = 0.01
-    #: Constant in v-qi ice terminal velocity-mixing ratio relationship, see eq. 5.169. Originally defined as tune_zvz0i in mo_tuning_nwp_config.f90 in ICON.
-    ice_v0: wpfloat = 1.25
-    #: Exponent of the density factor in ice terminal velocity equation to account for density (air thermodynamic state) change. Originally defined as tune_icesedi_exp in mo_tuning_nwp_config.f90 in ICON. Default value is 0.33.
-    ice_sedi_density_factor_exp: wpfloat = 0.3
-    #: Constant in v-D snow terminal velocity-Diameter relationship, see eqs. 5.57 (depricated after COSMO 3.0) and unnumbered eq. (v = 25 D^0.5) below eq. 5.159. Originally defined as tune_v0snow in mo_tuning_nwp_config.f90 in ICON.
-    snow_v0: wpfloat = 20.0
+    #: First parameter in RHS of eq. 5.163 in the COSMO microphysics documentation for the sticking efficiency when lstickeff = True (repricated in icon4py because it is always True in ICON). Originally defined as tune_zceff_min in mo_tuning_nwp_config.f90 in ICON.
+    ice_stickeff_min: wpfloat = 0.075
+    #: Power law coefficient in v-qi ice terminal velocity-mixing ratio relationship, see eq. 5.169 in the COSMO microphysics documentation. Originally defined as tune_zvz0i in mo_tuning_nwp_config.f90 in ICON.
+    power_law_coeff_for_ice_mean_fall_speed: wpfloat = 1.25
+    #: Exponent of the density factor in ice terminal velocity equation to account for density (air thermodynamic state) change. Originally defined as tune_icesedi_exp in mo_tuning_nwp_config.f90 in ICON.
+    exponent_for_density_factor_in_ice_sedimentation: wpfloat = 0.33
+    #: Power law coefficient in v-D snow terminal velocity-Diameter relationship, see eqs. 5.57 (depricated after COSMO 3.0) and unnumbered eq. (v = 25 D^0.5) below eq. 5.159 in the COSMO microphysics documentation. Originally defined as tune_v0snow in mo_tuning_nwp_config.f90 in ICON.
+    power_law_coeff_for_snow_fall_speed: wpfloat = 20.0
     #: mu exponential factor in gamma distribution of rain particles. Originally defined as mu_rain in mo_atm_phy_nwp_config.f90 in ICON.
     rain_mu: wpfloat = 0.0
     #: Interception parameter in gamma distribution of rain particles. Originally defined as rain_n0_factor in mo_atm_phy_nwp_config.f90 in ICON.
@@ -92,87 +118,89 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
 
     These constants are not configurable from namelists in ICON.
     If users want to tune the model for better results in specific cases, you may need to change the hard coded constants here.
-    All the equations can be found in A Description of the Nonhydrostatic Regional COSMO-Model Part II Physical Parameterizations.
+    Users can find the description of all parameters used in this microphyscs scheme in the COSMO microphysics documentation:
+    "A Description of the Nonhydrostatic Regional COSMO-Model Part II Physical Parameterizations",
+    which can be downloaded via the link given in the docstring of SingleMomentSixClassIconGraupelConfig.
     """
 
     #: threshold temperature for heterogeneous freezing of raindrops. Originally expressed as trfrz in ICON.
     threshold_freeze_temperature: wpfloat = 271.15
-    #: FR: 1. coefficient for immersion raindrop freezing: alpha_if, see eq. 5.168. Originally expressed as crfrz1 in ICON.
-    coeff_rain_freeze1_mode: wpfloat = 9.95e-5
-    #: FR: 2. coefficient for immersion raindrop freezing: a_if, see eq. 5.168. Originally expressed as crfrz2 in ICON.
-    coeff_rain_freeze2_mode: wpfloat = 0.66
+    #: FR: 1. coefficient for immersion raindrop freezing: alpha_if, see eq. 5.168 in the COSMO microphysics documentation. Originally expressed as crfrz1 in ICON.
+    coeff_rain_freeze1: wpfloat = 9.95e-5
+    #: FR: 2. coefficient for immersion raindrop freezing: a_if, see eq. 5.168 in the COSMO microphysics documentation. Originally expressed as crfrz2 in ICON.
+    coeff_rain_freeze2: wpfloat = 0.66
     #: temperature for hom. freezing of cloud water. Originally expressed as thn in ICON.
     homogeneous_freeze_temperature: wpfloat = 236.15
-    #: threshold temperature for mixed-phase cloud freezing of cloud drops (Forbes 2012, Forbes & Ahlgrimm 2014), see eq. 5.166. Originally expressed as tmix in ICON.
+    #: threshold temperature for mixed-phase cloud freezing of cloud drops (Forbes 2012, Forbes & Ahlgrimm 2014), see eq. 5.166 in the COSMO microphysics documentation. Originally expressed as tmix in ICON.
     threshold_freeze_temperature_mixedphase: wpfloat = 250.15
     #: threshold for lowest detectable mixing ratios.
     qmin: wpfloat = 1.0e-15
     #: a small number for cloud existence criterion.
-    eps: wpfloat = 1.0e-15
-    #: exponential factor in ice terminal velocity equation v = zvz0i*rhoqi^zbvi, see eq. 5.169. Originally expressed as bvi in ICON.
-    ice_exp_v: wpfloat = 0.16
+    eps: wpfloat = phy_const.DBL_EPS
+    #: exponential factor in ice terminal velocity equation v = zvz0i*rhoqi^zbvi, see eq. 5.169 in the COSMO microphysics documentation. Originally expressed as bvi in ICON.
+    power_law_exponent_for_ice_mean_fall_speed: wpfloat = 0.16
     #: reference air density. Originally expressed as rho0 in ICON.
     ref_air_density: wpfloat = 1.225e0
     #: in m/s; minimum terminal fall velocity of rain particles (applied only near the ground). Originally expressed as v_sedi_rain_min in ICON.
-    rain_v_sedi_min: wpfloat = 0.7
+    minimum_rain_fall_speed: wpfloat = 0.7
     #: in m/s; minimum terminal fall velocity of snow particles (applied only near the ground). Originally expressed as v_sedi_snow_min in ICON.
-    snow_v_sedi_min: wpfloat = 0.1
+    minimum_snow_fall_speed: wpfloat = 0.1
     #: in m/s; minimum terminal fall velocity of graupel particles (applied only near the ground). Originally expressed as v_sedi_graupel_min in ICON.
-    graupel_v_sedi_min: wpfloat = 0.4
+    minimum_graupel_fall_speed: wpfloat = 0.4
     #: maximal number concentration of ice crystals, see eq. 5.165.
-    nimax_Thom: wpfloat = 250.0e3
-    #: Formfactor in the mass-diameter relation of snow particles, see eq. 5.159. Originally expressed as ams in ICON.
-    snow_m0: wpfloat = 0.069
-    #: A constant intercept parameter for inverse exponential size distribution of snow particles, see eq. 5.160. Originally expressed as n0s0 in ICON.
-    snow_n0: wpfloat = 8.0e5
-    #: exponent of mixing ratio in the collection equation where cloud or ice particles are rimed by graupel (exp=(3+b)/(1+beta), v=a D^b, m=alpha D^beta), see eqs. 5.152 to 5.154. Originally expressed as rimexp_g in ICON.
-    graupel_exp_rim: wpfloat = 0.94878
-    #: exponent of mixing ratio in the graupel mean terminal velocity-mixing ratio relationship (exp=b/(1+beta)), see eq. 5.156. Originally expressed as expsedg in ICON.
-    graupel_exp_sed: wpfloat = 0.217
-    #: constant in the graupel mean terminal velocity-mixing ratio relationship, see eq. 5.156. Originally expressed as vz0g in ICON.
-    graupel_sed0: wpfloat = 12.24
-    #: initial crystal mass for cloud ice nucleation, see eq. 5.101. Originally expressed as mi0 in ICON.
+    nimax_thom: wpfloat = 250.0e3
+    #: Formfactor in the mass-diameter relation of snow particles, see eq. 5.159 in the COSMO microphysics documentation. Originally expressed as ams in ICON.
+    power_law_coeff_for_snow_mD_relation: wpfloat = 0.069
+    #: A constant intercept parameter for inverse exponential size distribution of snow particles, see eq. 5.160 in the COSMO microphysics documentation. Originally expressed as n0s0 in ICON.
+    snow_default_intercept_param: wpfloat = 8.0e5
+    #: exponent of mixing ratio in the collection equation where cloud or ice particles are rimed by graupel (exp=(3+b)/(1+beta), v=a D^b, m=alpha D^beta), see eqs. 5.152 to 5.154 in the COSMO microphysics documentation. Originally expressed as rimexp_g in ICON.
+    graupel_rimexp: wpfloat = 0.94878
+    #: exponent of mixing ratio in the graupel mean terminal velocity-mixing ratio relationship (exp=b/(1+beta)), see eq. 5.156 in the COSMO microphysics documentation. Originally expressed as expsedg in ICON.
+    power_law_exponent_for_graupel_mean_fall_speed: wpfloat = 0.217
+    #: power law coefficient in the graupel mean terminal velocity-mixing ratio relationship, see eq. 5.156 in the COSMO microphysics documentation. Originally expressed as vz0g in ICON.
+    power_law_coeff_for_graupel_mean_fall_speed: wpfloat = 12.24
+    #: initial crystal mass for cloud ice nucleation, see eq. 5.101 in the COSMO microphysics documentation. Originally expressed as mi0 in ICON.
     ice_initial_mass: wpfloat = 1.0e-12
-    #: maximum mass of cloud ice crystals to avoid too large ice crystals near melting point, see eq. 5.105. Originally expressed as mimax in ICON.
+    #: maximum mass of cloud ice crystals to avoid too large ice crystals near melting point, see eq. 5.105 in the COSMO microphysics documentation. Originally expressed as mimax in ICON.
     ice_max_mass: wpfloat = 1.0e-9
-    #: initial mass of snow crystals which is used in ice-ice autoconversion to snow particles, see eq. 5.108. Originally expressed as msmin in ICON.
+    #: initial mass of snow crystals which is used in ice-ice autoconversion to snow particles, see eq. 5.108 in the COSMO microphysics documentation. Originally expressed as msmin in ICON.
     snow_min_mass: wpfloat = 3.0e-9
-    #: Scaling factor [1/K] for temperature-dependent cloud ice sticking efficiency, see eq. 5.163. Originally expressed as ceff_min in ICON.
-    stick_eff_fac: wpfloat = 3.5e-3
-    #: Temperature at which cloud ice autoconversion starts, see eq. 5.163.
+    #: Scaling factor [1/K] for temperature-dependent cloud ice sticking efficiency, see eq. 5.163 in the COSMO microphysics documentation. Originally expressed as ceff_min in ICON.
+    ice_sticking_eff_factor: wpfloat = 3.5e-3
+    #: Temperature at which cloud ice autoconversion starts, see eq. 5.163 in the COSMO microphysics documentation.
     tmin_iceautoconv: wpfloat = 188.15
-    #: Reference length for distance from cloud top (Forbes 2012), see eq. 5.166.
+    #: Reference length for distance from cloud top (Forbes 2012), see eq. 5.166 in the COSMO microphysics documentation.
     dist_cldtop_ref: wpfloat = 500.0
-    #: lower bound on snow/ice deposition reduction, see eq. 5.166.
+    #: lower bound on snow/ice deposition reduction, see eq. 5.166 in the COSMO microphysics documentation.
     reduce_dep_ref: wpfloat = 0.1
-    #: Howell factor in depositional growth equation, see eq. 5.71 and eqs. 5.103 & 5.104. Originally expressed as hw in ICON.
+    #: Howell factor in depositional growth equation, see eq. 5.71 and eqs. 5.103 & 5.104 in the COSMO microphysics documentation. Originally expressed as hw in ICON.
     howell_factor: wpfloat = 2.270603
-    #: Collection efficiency for snow collecting cloud water, see eq. 5.113. Originally expressed as ecs in ICON.
+    #: Collection efficiency for snow collecting cloud water, see eq. 5.113 in the COSMO microphysics documentation. Originally expressed as ecs in ICON.
     snow_cloud_collection_eff: wpfloat = 0.9
-    #: Exponent in the terminal velocity for snow, see unnumbered eq. (v = 25 D^0.5) below eq. 5.159. Originally expressed as v1s in ICON.
-    snow_exp_v: wpfloat = 0.50
-    #: kinematic viscosity of air.
-    eta: wpfloat = 1.75e-5
+    #: Exponent in the terminal velocity for snow, see unnumbered eq. (v = 25 D^0.5) below eq. 5.159 in the COSMO microphysics documentation. Originally expressed as v1s in ICON.
+    power_law_exponent_for_snow_fall_speed: wpfloat = 0.5
+    #: kinematic viscosity of air. Originally expressed as eta in ICON.
+    air_kinemetic_viscosity: wpfloat = 1.75e-5
     #: molecular diffusion coefficient for water vapour. Originally expressed as dv in ICON.
-    diffusion_coeff_water_vapor: wpfloat = 2.22e-5
+    diffusion_coeff_for_water_vapor: wpfloat = 2.22e-5
     #: thermal conductivity of dry air. Originally expressed as lheat in ICON.
     dry_air_latent_heat: wpfloat = 2.40e-2
-    #: Exponent in the mass-diameter relation of snow particles, see eq. 5.159. Originally expressed as bms in ICON.
-    snow_exp_m: wpfloat = 2.000
-    #: Formfactor in the mass-diameter relation of cloud ice, see eq. 5.90. Originally expressed as ami in ICON.
-    ice_m0: wpfloat = 130.0
+    #: Exponent in the mass-diameter relation of snow particles, see eq. 5.159 in the COSMO microphysics documentation. Originally expressed as bms in ICON.
+    power_law_exponent_for_snow_mD_relation: wpfloat = 2.0
+    #: Formfactor in the mass-diameter relation of cloud ice, see eq. 5.90 in the COSMO microphysics documentation. Originally expressed as ami in ICON.
+    power_law_exponent_for_ice_mD_relation: wpfloat = 130.0
     #: density of liquid water. Originally expressed as rhow in ICON. [kg/m3]
     water_density: wpfloat = 1.000e3
     #: specific heat of water vapor J, at constant pressure (Landolt-Bornstein). [J/K/kg]
     cp_v: wpfloat = 1850.0
     #: specific heat of ice. Originally expressed as ci in ICON. [J/K/kg]
-    spec_heat_cap_ice: wpfloat = 2108.0
+    specific_heat_capacity_for_ice: wpfloat = 2108.0
 
-    #: parameter for snow intercept parameter when snow_intercept_option=1, see Field et al. (2005). Originally expressed as zn0s1 in ICON.
+    #: parameter for snow intercept parameter when snow_intercept_option=FIELD_BEST_FIT_ESTIMATION, see Field et al. (2005). Originally expressed as zn0s1 in ICON.
     snow_intercept_parameter_n0s1: wpfloat = 13.5 * 5.65e5
-    #: parameter for snow intercept parameter when snow_intercept_option=1, see Field et al. (2005). Originally expressed as zn0s2 in ICON.
+    #: parameter for snow intercept parameter when snow_intercept_option=FIELD_BEST_FIT_ESTIMATION, see Field et al. (2005). Originally expressed as zn0s2 in ICON.
     snow_intercept_parameter_n0s2: wpfloat = -0.107
-    #: parameter for snow intercept parameter when snow_intercept_option=2. Originally expressed as mma in ICON.
+    #: parameter for snow intercept parameter when snow_intercept_option=FIELD_GENERAL_MOMENT_ESTIMATION. Originally expressed as mma in ICON.
     snow_intercept_parameter_mma: tuple[
         wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat
     ] = (
@@ -187,7 +215,7 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
         0.000000,
         -0.015952,
     )
-    #: parameter for snow intercept parameter when snow_intercept_option=2. Originally expressed as mmb in ICON.
+    #: parameter for snow intercept parameter when snow_intercept_option=FIELD_GENERAL_MOMENT_ESTIMATION. Originally expressed as mmb in ICON.
     snow_intercept_parameter_mmb: tuple[
         wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat
     ] = (
@@ -224,11 +252,11 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     #: separating mass between cloud and rain in Seifert-Beheng (2001) autoconverssion.
     xstar: wpfloat = 2.60e-10
 
-    #: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in COSMO documentation, p = p0 exp(aw(T - T_triplepoint)/(T - bw)). Originally expressed as c1es in ICON.
+    #: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in the COSMO microphysics documentation, p = p0 exp(aw(T - T_triplepoint)/(T - bw)). Originally expressed as c1es in ICON.
     tetens_p0: wpfloat = 610.78
     #: aw in Tetens formula for saturation water pressure. Originally expressed as c3les in ICON.
     tetens_aw: wpfloat = 17.269
-    #: ai in Tetens formula for saturation ice water pressure, see eq. 5.35 in COSMO documentation, p = p0 exp(ai(T - T_triplepoint)/(T - bi)). Originally expressed as c3ies in ICON.
+    #: ai in Tetens formula for saturation ice water pressure, see eq. 5.35 in the COSMO microphysics documentation, p = p0 exp(ai(T - T_triplepoint)/(T - bi)). Originally expressed as c3ies in ICON.
     tetens_ai: wpfloat = 21.875
     #: bw in Tetens formula for saturation water pressure. Originally expressed as c4les in ICON.
     tetens_bw: wpfloat = 35.86
@@ -286,25 +314,34 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     #: Specific heat of water vapour at constant volume [J/K/kg]
     cvv: wpfloat = cpv - rv
 
-    ccsdep: wpfloat = 0.26 * math.gamma((snow_exp_v + 5.0) / 2.0) * np.sqrt(1.0 / eta)
-    _ccsvxp: wpfloat = -(snow_exp_v / (snow_exp_m + 1.0) + 1.0)
+    ccsdep: wpfloat = (
+        0.26
+        * math.gamma((power_law_exponent_for_snow_fall_speed + 5.0) / 2.0)
+        * np.sqrt(1.0 / air_kinemetic_viscosity)
+    )
+    _ccsvxp: wpfloat = -(
+        power_law_exponent_for_snow_fall_speed / (power_law_exponent_for_snow_mD_relation + 1.0)
+        + 1.0
+    )
     ccsvxp: wpfloat = _ccsvxp + 1.0
-    ccslam: wpfloat = snow_m0 * math.gamma(snow_exp_m + 1.0)
-    ccslxp: wpfloat = 1.0 / (snow_exp_m + 1.0)
-    ccswxp: wpfloat = snow_exp_v * ccslxp
-    ccsaxp: wpfloat = -(snow_exp_v + 3.0)
-    ccsdxp: wpfloat = -(snow_exp_v + 1.0) / 2.0
+    ccslam: wpfloat = power_law_coeff_for_snow_mD_relation * math.gamma(
+        power_law_exponent_for_snow_mD_relation + 1.0
+    )
+    ccslxp: wpfloat = 1.0 / (power_law_exponent_for_snow_mD_relation + 1.0)
+    ccswxp: wpfloat = power_law_exponent_for_snow_fall_speed * ccslxp
+    ccsaxp: wpfloat = -(power_law_exponent_for_snow_fall_speed + 3.0)
+    ccsdxp: wpfloat = -(power_law_exponent_for_snow_fall_speed + 1.0) / 2.0
     ccshi1: wpfloat = (
         latent_heat_for_sublimation * latent_heat_for_sublimation / (dry_air_latent_heat * rv)
     )
     ccdvtp: wpfloat = 2.22e-5 * melting_temperature ** (-1.94) * 101325.0
-    ccidep: wpfloat = 4.0 * ice_m0 ** (-1.0 / 3.0)
+    ccidep: wpfloat = 4.0 * power_law_exponent_for_ice_mD_relation ** (-1.0 / 3.0)
     ccswxp_ln1o2: wpfloat = np.exp(ccswxp * np.log(0.5))
 
     #: Latent heat of fusion for water [J/kg]. Originally expressed as alf in ICON.
     latent_heat_for_fusion: wpfloat = latent_heat_for_sublimation - latent_heat_for_vaporisation
     #: Specific heat capacity of liquid water [J/kg]. Originally expressed as clw in ICON.
-    spec_heat_cap_water: wpfloat = (rcpl + 1.0) * cpd
+    specific_heat_capacity_for_water: wpfloat = (rcpl + 1.0) * cpd
 
     #: Specific heat of dry air at constant volume [J/K/kg]
     cvd: wpfloat = phy_const.CVD
@@ -324,7 +361,7 @@ icon_graupel_params: Final = SingleMomentSixClassIconGraupelParams()
 @gtx.field_operator
 def _compute_cooper_inp_concentration(temperature: wpfloat) -> wpfloat:
     cnin = 5.0 * exp(0.304 * (icon_graupel_params.melting_temperature - temperature))
-    cnin = minimum(cnin, icon_graupel_params.nimax_Thom)
+    cnin = minimum(cnin, icon_graupel_params.nimax_thom)
     return cnin
 
 
@@ -336,7 +373,7 @@ def _compute_snow_interception_and_collision_parameters(
     ccsvel: wpfloat,
     ccsrim: wpfloat,
     ccsagg: wpfloat,
-    snow_v0: wpfloat,
+    power_law_coeff_for_snow_fall_speed: wpfloat,
     llqs: bool,
     snow_intercept_option: gtx.int32,
 ) -> tuple[wpfloat, wpfloat, wpfloat, wpfloat, wpfloat]:
@@ -344,7 +381,7 @@ def _compute_snow_interception_and_collision_parameters(
     Compute the intercept parameter, N0, of the snow exponential size distribution.
 
     First method: Explained in paragraphs at pages 2008 and 2009 in Field et al. (2005). N0s_23 = (M_2)^4 / (M_3)^3, M_2 = Gamma(3) N0s / lamda^3, M_2 = Gamma(4) N0s / lamda^4, so N0s_23 = 2/27 N0s. And N0s_23 = 5.65E5 exp(-0.107Tc)
-    Second method: Eq. 5.160 in the documentation, originally in Table 2 in Field et al. (2005).
+    Second method: Eq. 5.160 in the COSMO microphysics documentation, originally in Table 2 in Field et al. (2005).
 
     Args:
         temperature: air temperature [K]
@@ -353,13 +390,14 @@ def _compute_snow_interception_and_collision_parameters(
         ccsvel: constant for snow sedimentation
         ccsrim: constant for snow riming with clouds
         ccsagg: constant for ice aggregation (becomes snow)
-        snow_v0: constant in snow v-D relationship
+        power_law_coeff_for_snow_fall_speed: power law coefficient in snow v-D relationship
         llqs: snow grid cell
-        snow_intercept_option:
+        snow_intercept_option: estimation method for snow intercept parameter
     Returns:
 
     """
     if llqs:
+        # TODO (Chia Rui): SnowInterceptParameter.FIELD_BEST_FIT_ESTIMATION.value does not work.
         if snow_intercept_option == 1:
             # Calculate n0s using the temperature-dependent
             # formula of Field et al. (2005)
@@ -372,6 +410,7 @@ def _compute_snow_interception_and_collision_parameters(
             n0s = minimum(n0s, wpfloat("1.0e9"))
             n0s = maximum(n0s, wpfloat("1.0e6"))
 
+        # TODO (Chia Rui): SnowInterceptParameter.FIELD_GENERAL_MOMENT_ESTIMATION.value does not work.
         elif snow_intercept_option == 2:
             # Calculate n0s using the temperature-dependent moment
             # relations of Field et al. (2005)
@@ -407,7 +446,9 @@ def _compute_snow_interception_and_collision_parameters(
             )
 
             # Here is the exponent bms=2.0 hardwired# not ideal# (Uli Blahak)
-            local_m2s = qs * rho / icon_graupel_params.snow_m0  # UB rho added as bugfix
+            local_m2s = (
+                qs * rho / icon_graupel_params.power_law_coeff_for_snow_mD_relation
+            )  # UB rho added as bugfix
             local_m3s = local_alf * exp(local_bet * log(local_m2s))
 
             local_hlp = icon_graupel_params.snow_intercept_parameter_n0s1 * exp(
@@ -420,16 +461,16 @@ def _compute_snow_interception_and_collision_parameters(
             n0s = maximum(n0s, wpfloat("1.0e6"))
 
         else:
-            n0s = icon_graupel_params.snow_n0
+            n0s = icon_graupel_params.snow_default_intercept_param
 
         # compute integration factor for terminal velocity
         snow_sed0 = ccsvel * exp(icon_graupel_params.ccsvxp * log(n0s))
         # compute constants for riming, aggregation, and deposition processes for snow
         crim = ccsrim * n0s
         cagg = ccsagg * n0s
-        cbsdep = icon_graupel_params.ccsdep * sqrt(snow_v0)
+        cbsdep = icon_graupel_params.ccsdep * sqrt(power_law_coeff_for_snow_fall_speed)
     else:
-        n0s = icon_graupel_params.snow_n0
+        n0s = icon_graupel_params.snow_default_intercept_param
         snow_sed0 = wpfloat("0.0")
         crim = wpfloat("0.0")
         cagg = wpfloat("0.0")
@@ -454,7 +495,7 @@ def _deposition_nucleation_at_low_temperature_or_in_clouds(
     When in clouds, we require water saturation for this process (i.e. the existence of cloud water) to exist.
     In this case, heterogeneous deposition nucleation is assumed to occur only when no cloud ice is present and the temperature is below a nucleation threshold.
 
-    ice nucleation rate = ice_initial_mass Ni / rho / dt, Eq. 5.101
+    ice nucleation rate = ice_initial_mass Ni / rho / dt, Eq. 5.101 in the COSMO microphysics documentation
     ice_initial_mass is the initial ice crystal mass
 
     Args:
@@ -464,6 +505,7 @@ def _deposition_nucleation_at_low_temperature_or_in_clouds(
         qvsi: saturated vapor mixing ratio over ice
         cnin: number concentration of ice nucleating particles [/m3]
         dt: time step [s]
+        llqc: cloud grid cell
     Returns:
         Deposition nucleation rate
     """
@@ -493,8 +535,8 @@ def _autoconversion_and_rain_accretion(
 ) -> tuple[wpfloat, wpfloat]:
     """
     Compute the rate of cloud-to-rain autoconversion and the mass of cloud accreted by rain.
-    Method 1: liquid_autoconversion_option = 0, Kessler (1969)
-    Method 2: liquid_autoconversion_option = 1, Seifert and beheng (2001)
+    Method 1: liquid_autoconversion_option = LiquidAutoConversion.KESSLER, Kessler (1969)
+    Method 2: liquid_autoconversion_option = LiquidAutoConversion.SEIFERT_BEHENG, Seifert and beheng (2001)
 
     Args:
         temperature: air temperature [K]
@@ -503,11 +545,12 @@ def _autoconversion_and_rain_accretion(
         qnc: number concentration of CCN [/m3]
         celn7o8qrk: constant (refer to equation or documentation in the docstring above)
         llqc: cloud grid cell
-        liquid_autoconversion_option:
+        liquid_autoconversion_option: liquid auto conversion mode
     Returns:
         cloud-to-rain autoconversionn rate, rain-cloud accretion rate
     """
     if llqc & (temperature > icon_graupel_params.homogeneous_freeze_temperature):
+        # TODO (Chia Rui): LiquidAutoConversion.KESSLER.value does not work.
         if liquid_autoconversion_option == 0:
             # Kessler(1969) autoconversion rate
             cloud_autoconversion_rate_c2r = (
@@ -520,6 +563,7 @@ def _autoconversion_and_rain_accretion(
                 * celn7o8qrk
             )
 
+        # TODO (Chia Rui): LiquidAutoConversion.SEIFERT_BEHENG.value does not work.
         elif liquid_autoconversion_option == 1:
             # Seifert and Beheng (2001) autoconversion rate
             local_const = (
@@ -576,6 +620,8 @@ def _freezing_in_clouds(
     """
     Compute the freezing rate of cloud and rain in clouds if there is cloud water and the temperature is above homogeneuous freezing temperature.
     Cloud is frozen to ice. Rain is frozen to graupel.
+    (Please refer to the COSMO microphysics documentation via the link given in the docstring of SingleMomentSixClassIconGraupelConfig for all the equations)
+
     Method 1: rain_freezing_option = 1, Eq. 5.168
     Method 2 (ABANDONED in icon4py): rain_freezing_option = 2, Eq. 5.126, an approximation of combined immersion Eq. 5.80 and contact freezing Eq. 5.83.
     Args:
@@ -599,10 +645,10 @@ def _freezing_in_clouds(
                 & (qr > wpfloat("0.1") * qc)
             ):
                 rain_freezing_rate_r2g_in_clouds = (
-                    icon_graupel_params.coeff_rain_freeze1_mode
+                    icon_graupel_params.coeff_rain_freeze1
                     * (
                         exp(
-                            icon_graupel_params.coeff_rain_freeze2_mode
+                            icon_graupel_params.coeff_rain_freeze2
                             * (icon_graupel_params.threshold_freeze_temperature - temperature)
                         )
                         - wpfloat("1.0")
@@ -636,6 +682,8 @@ def _riming_in_clouds(
 ) -> tuple[wpfloat, wpfloat, wpfloat, wpfloat]:
     """
     Compute the rate of riming by snow and graupel in clouds if there is cloud water and the temperature is above homogeneuous freezing temperature.
+    (Please refer to the COSMO microphysics documentation via the link given in the docstring of SingleMomentSixClassIconGraupelConfig for all the equations)
+
     riming or accretion rate = 1/rho intg_0^inf m_dot f dD (Eq. 5.64)
     m_dot = pi/4 D^2 E(D) v(D) rho qc (Eq. 5.67)
 
@@ -789,7 +837,7 @@ def _collision_and_ice_deposition_in_cold_ice_clouds(
     llqi: bool,
 ) -> tuple[wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat]:
     """
-    Compute
+    Compute (Please refer to the COSMO microphysics documentation via the link given in the docstring of SingleMomentSixClassIconGraupelConfig for all the equations)
         1. the aggregation of snow and graupel in ice clouds when temperature is below zero degree celcius.
             aggregation rate = 1/rho intg_0^inf m_dot f dD (Eq. 5.64)
             m_dot = pi/4 D^2 E(T) v(D) rho qi (Eq. 5.67)
@@ -861,7 +909,7 @@ def _collision_and_ice_deposition_in_cold_ice_clouds(
         local_eff = maximum(local_eff, ice_stickeff_min)
         local_eff = maximum(
             local_eff,
-            icon_graupel_params.stick_eff_fac
+            icon_graupel_params.ice_sticking_eff_factor
             * (temperature - icon_graupel_params.tmin_iceautoconv),
         )
 
@@ -959,6 +1007,7 @@ def _snow_and_graupel_depositional_growth_in_cold_ice_clouds(
 ) -> tuple[wpfloat, wpfloat]:
     """
     Compute the vapor deposition of ice crystals and snow in ice clouds when temperature is below zero degree celcius.
+    (Please refer to the COSMO microphysics documentation via the link given in the docstring of SingleMomentSixClassIconGraupelConfig for all the equations)
 
     deposition rate = 1/rho intg_0^inf m_dot f dD (Eq. 5.64)
     m_dot = 4 pi C(D) G F(v,D) d (qv - qvsi),
@@ -1062,6 +1111,7 @@ def _melting(
     """
     Compute the vapor deposition of ice crystals, snow, and graupel in ice clouds when temperature is above zero degree celcius.
     When the air is supersubsaturated over both ice and water, depositional growth of snow and graupel is converted to growth of rain.
+    (Please refer to the COSMO microphysics documentation via the link given in the docstring of SingleMomentSixClassIconGraupelConfig for all the equations)
 
     Ice crystals completely melt when temperature is above zero.
     For snow and graupel, follow Eqs. 5.141 - 5.146
@@ -1217,6 +1267,7 @@ def _evaporation_and_freezing_in_subsaturated_air(
 ) -> tuple[wpfloat, wpfloat]:
     """
     Compute the evaporation rate of rain in subsaturated condition.
+    (Please refer to the COSMO microphysics documentation via the link given in the docstring of SingleMomentSixClassIconGraupelConfig for all the equations)
 
     deposition rate = 1/rho intg_0^inf m_dot f dD (Eq. 5.64)
     m_dot = 4 pi C(D) G F(v,D) d (qv - qvsw),
@@ -1277,10 +1328,10 @@ def _evaporation_and_freezing_in_subsaturated_air(
             if temperature < icon_graupel_params.threshold_freeze_temperature:
                 # FR new: reduced rain freezing rate
                 rain_freezing_rate_r2g = (
-                    icon_graupel_params.coeff_rain_freeze1_mode
+                    icon_graupel_params.coeff_rain_freeze1
                     * (
                         exp(
-                            icon_graupel_params.coeff_rain_freeze2_mode
+                            icon_graupel_params.coeff_rain_freeze2
                             * (icon_graupel_params.threshold_freeze_temperature - temperature)
                         )
                         - wpfloat("1.0")
@@ -1327,12 +1378,14 @@ class SingleMomentSixClassIconGraupel:
         grid: Optional[icon_grid.IconGrid],
         metric_state: Optional[MetricStateIconGraupel],
         vertical_params: Optional[v_grid.VerticalGrid],
+        backend: backend.Backend,
     ):
         self.config = graupel_config
-        self._validate_and_initialize_configurable_parameters()
+        self._initialize_configurable_parameters()
         self.grid = grid
         self.metric_state = metric_state
         self.vertical_params = vertical_params
+        self._backend = backend
         self.saturation_adjustment = satad.SaturationAdjustment(
             config=saturation_adjust_config,
             grid=grid,
@@ -1340,37 +1393,44 @@ class SingleMomentSixClassIconGraupel:
             metric_state=satad.MetricStateSaturationAdjustment(
                 ddqz_z_full=metric_state.ddqz_z_full
             ),
+            backend=self._backend,
         )
 
         self._initialize_local_fields()
         self._determine_horizontal_domains()
 
-    def _validate_and_initialize_configurable_parameters(self):
-        if self.config.liquid_autoconversion_option != gtx.int32(
-            0
-        ) and self.config.liquid_autoconversion_option != gtx.int32(1):
-            raise NotImplementedError("liquid_autoconversion_option can only be 0 or 1.")
-        if self.config.snow_intercept_option != gtx.int32(
-            1
-        ) and self.config.snow_intercept_option != gtx.int32(2):
-            raise NotImplementedError("snow_intercept_option can only be 1 or 2.")
+    def _initialize_configurable_parameters(self):
         # TODO (Chia Rui): clean up the naming system of these parameters
         ccsrim: wpfloat = (
             0.25
             * math.pi
             * icon_graupel_params.snow_cloud_collection_eff
-            * self.config.snow_v0
-            * math.gamma(icon_graupel_params.snow_exp_v + 3.0)
+            * self.config.power_law_coeff_for_snow_fall_speed
+            * math.gamma(icon_graupel_params.power_law_exponent_for_snow_fall_speed + 3.0)
         )
         ccsagg: wpfloat = (
-            0.25 * math.pi * self.config.snow_v0 * math.gamma(icon_graupel_params.snow_exp_v + 3.0)
+            0.25
+            * math.pi
+            * self.config.power_law_coeff_for_snow_fall_speed
+            * math.gamma(icon_graupel_params.power_law_exponent_for_snow_fall_speed + 3.0)
         )
-        _ccsvxp = -(icon_graupel_params.snow_exp_v / (icon_graupel_params.snow_exp_m + 1.0) + 1.0)
+        _ccsvxp = -(
+            icon_graupel_params.power_law_exponent_for_snow_fall_speed
+            / (icon_graupel_params.power_law_exponent_for_snow_mD_relation + 1.0)
+            + 1.0
+        )
         ccsvel: wpfloat = (
-            icon_graupel_params.snow_m0
-            * self.config.snow_v0
-            * math.gamma(icon_graupel_params.snow_exp_m + icon_graupel_params.snow_exp_v + 1.0)
-            * (icon_graupel_params.snow_m0 * math.gamma(icon_graupel_params.snow_exp_m + 1.0))
+            icon_graupel_params.power_law_coeff_for_snow_mD_relation
+            * self.config.power_law_coeff_for_snow_fall_speed
+            * math.gamma(
+                icon_graupel_params.power_law_exponent_for_snow_mD_relation
+                + icon_graupel_params.power_law_exponent_for_snow_fall_speed
+                + 1.0
+            )
+            * (
+                icon_graupel_params.power_law_coeff_for_snow_mD_relation
+                * math.gamma(icon_graupel_params.power_law_exponent_for_snow_mD_relation + 1.0)
+            )
             ** _ccsvxp
         )
         _n0r: wpfloat = (
@@ -1385,19 +1445,21 @@ class SingleMomentSixClassIconGraupel:
             * math.gamma(self.config.rain_mu + 4.0)
         )  # pre-factor
 
-        rain_exp_v: wpfloat = wpfloat(0.5) / (self.config.rain_mu + wpfloat(4.0))
-        rain_v0: wpfloat = (
+        power_law_exponent_for_rain_mean_fall_speed: wpfloat = wpfloat(0.5) / (
+            self.config.rain_mu + wpfloat(4.0)
+        )
+        power_law_coeff_for_rain_mean_fall_speed: wpfloat = (
             wpfloat(130.0)
             * math.gamma(self.config.rain_mu + 4.5)
             / math.gamma(self.config.rain_mu + 4.0)
-            * _ar ** (-rain_exp_v)
+            * _ar ** (-power_law_exponent_for_rain_mean_fall_speed)
         )
 
         cevxp: wpfloat = (self.config.rain_mu + wpfloat(2.0)) / (self.config.rain_mu + 4.0)
         cev: wpfloat = (
             wpfloat(2.0)
             * math.pi
-            * icon_graupel_params.diffusion_coeff_water_vapor
+            * icon_graupel_params.diffusion_coeff_for_water_vapor
             / icon_graupel_params.howell_factor
             * _n0r
             * _ar ** (-cevxp)
@@ -1408,20 +1470,41 @@ class SingleMomentSixClassIconGraupel:
         ) - cevxp
         bev: wpfloat = (
             0.26
-            * np.sqrt(icon_graupel_params.ref_air_density * 130.0 / icon_graupel_params.eta)
+            * np.sqrt(
+                icon_graupel_params.ref_air_density
+                * 130.0
+                / icon_graupel_params.air_kinemetic_viscosity
+            )
             * _ar ** (-bevxp)
             * math.gamma((2.0 * self.config.rain_mu + 5.5) / 2.0)
             / math.gamma(self.config.rain_mu + 2.0)
         )
 
         # Precomputations for optimization
-        rain_exp_v_ln1o2: wpfloat = np.exp(rain_exp_v * np.log(0.5))
-        ice_exp_v_ln1o2: wpfloat = np.exp(icon_graupel_params.ice_exp_v * np.log(0.5))
-        graupel_exp_sed_ln1o2: wpfloat = np.exp(icon_graupel_params.graupel_exp_sed * np.log(0.5))
+        power_law_exponent_for_rain_mean_fall_speed_ln1o2: wpfloat = np.exp(
+            power_law_exponent_for_rain_mean_fall_speed * np.log(0.5)
+        )
+        power_law_exponent_for_ice_mean_fall_speed_ln1o2: wpfloat = np.exp(
+            icon_graupel_params.power_law_exponent_for_ice_mean_fall_speed * np.log(0.5)
+        )
+        power_law_exponent_for_graupel_mean_fall_speed_ln1o2: wpfloat = np.exp(
+            icon_graupel_params.power_law_exponent_for_graupel_mean_fall_speed * np.log(0.5)
+        )
 
         self._ccs = (ccsrim, ccsagg, ccsvel)
-        self._rain_vel_coef = (rain_exp_v, rain_v0, cevxp, cev, bevxp, bev)
-        self._sed_dens_factor_coef = (rain_exp_v_ln1o2, ice_exp_v_ln1o2, graupel_exp_sed_ln1o2)
+        self._rain_vel_coef = (
+            power_law_exponent_for_rain_mean_fall_speed,
+            power_law_coeff_for_rain_mean_fall_speed,
+            cevxp,
+            cev,
+            bevxp,
+            bev,
+        )
+        self._sed_dens_factor_coef = (
+            power_law_exponent_for_rain_mean_fall_speed_ln1o2,
+            power_law_exponent_for_ice_mean_fall_speed_ln1o2,
+            power_law_exponent_for_graupel_mean_fall_speed_ln1o2,
+        )
 
     @property
     def ccs(self) -> tuple[wpfloat, wpfloat, wpfloat]:
@@ -1505,14 +1588,14 @@ class SingleMomentSixClassIconGraupel:
     ):
         icon_graupel(
             self.vertical_params.kstart_moist,
-            self.config.liquid_autoconversion_option,
-            self.config.snow_intercept_option,
+            self.config.liquid_autoconversion_option.value,
+            self.config.snow_intercept_option.value,
             self.config.is_isochoric,
             self.config.use_constant_water_heat_capacity,
             self.config.ice_stickeff_min,
-            self.config.ice_v0,
-            self.config.ice_sedi_density_factor_exp,
-            self.config.snow_v0,
+            self.config.power_law_coeff_for_ice_mean_fall_speed,
+            self.config.exponent_for_density_factor_in_ice_sedimentation,
+            self.config.power_law_coeff_for_snow_fall_speed,
             *self._ccs,
             *self._rain_vel_coef,
             *self._sed_dens_factor_coef,
@@ -1713,7 +1796,7 @@ def _icon_graupel_flux_above_ground(
     return rain_flux, snow_flux, graupel_flux, ice_flux, total_flux
 
 
-@program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=gtx.GridType.UNSTRUCTURED)
 def icon_graupel_flux_ground(
     do_latent_heat_nudging: bool,
     dtime: wpfloat,
@@ -1778,7 +1861,7 @@ def icon_graupel_flux_ground(
     )
 
 
-@program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=gtx.GridType.UNSTRUCTURED)
 def icon_graupel_flux_above_ground(
     do_latent_heat_nudging: bool,
     dtime: wpfloat,
@@ -1908,7 +1991,6 @@ def _icon_graupel_scan(
         wpfloat,
         gtx.int32,
     ],
-    # Grid information
     startmoist_level: gtx.int32,  # k start moist level
     surface_level: gtx.int32,  # k bottom level
     liquid_autoconversion_option: gtx.int32,
@@ -1916,24 +1998,23 @@ def _icon_graupel_scan(
     is_isochoric: bool,
     use_constant_water_heat_capacity: bool,
     ice_stickeff_min: wpfloat,
-    ice_v0: wpfloat,
-    ice_sedi_density_factor_exp: wpfloat,
-    snow_v0: wpfloat,
+    power_law_coeff_for_ice_mean_fall_speed: wpfloat,
+    exponent_for_density_factor_in_ice_sedimentation: wpfloat,
+    power_law_coeff_for_snow_fall_speed: wpfloat,
     ccsrim: wpfloat,
     ccsagg: wpfloat,
     ccsvel: wpfloat,
-    rain_exp_v: wpfloat,
-    rain_v0: wpfloat,
+    power_law_exponent_for_rain_mean_fall_speed: wpfloat,
+    power_law_coeff_for_rain_mean_fall_speed: wpfloat,
     cevxp: wpfloat,
     cev: wpfloat,
     bevxp: wpfloat,
     bev: wpfloat,
-    rain_exp_v_ln1o2: wpfloat,
-    ice_exp_v_ln1o2: wpfloat,
-    graupel_exp_sed_ln1o2: wpfloat,
-    dt: wpfloat,  # time step
+    power_law_exponent_for_rain_mean_fall_speed_ln1o2: wpfloat,
+    power_law_exponent_for_ice_mean_fall_speed_ln1o2: wpfloat,
+    power_law_exponent_for_graupel_mean_fall_speed_ln1o2: wpfloat,
+    dt: wpfloat,
     dz: wpfloat,
-    # Prognostics
     temperature: wpfloat,
     pres: wpfloat,
     rho: wpfloat,
@@ -2068,12 +2149,12 @@ def _icon_graupel_scan(
     # Define reciprocal of heat capacity of dry air (at constant pressure vs at constant volume)
     heat_cap_r = icon_graupel_params.rcvd if is_isochoric else icon_graupel_params.rcpd
 
-    # TODO (Chia Rui): duplicated function for computing latent heat. Move to a common place.
+    # TODO (Chia Rui): duplicated function for computing latent heat. Saturation adjustment also uses the same function. Move to a common place.
     lhv = (
         icon_graupel_params.latent_heat_for_vaporisation
         if use_constant_water_heat_capacity
         else icon_graupel_params.latent_heat_for_vaporisation
-        + (icon_graupel_params.cp_v - icon_graupel_params.spec_heat_cap_water)
+        + (icon_graupel_params.cp_v - icon_graupel_params.specific_heat_capacity_for_water)
         * (temperature - icon_graupel_params.melting_temperature)
         - icon_graupel_params.rv * temperature
     )
@@ -2081,7 +2162,7 @@ def _icon_graupel_scan(
         icon_graupel_params.latent_heat_for_sublimation
         if use_constant_water_heat_capacity
         else icon_graupel_params.latent_heat_for_sublimation
-        + (icon_graupel_params.cp_v - icon_graupel_params.spec_heat_cap_ice)
+        + (icon_graupel_params.cp_v - icon_graupel_params.specific_heat_capacity_for_ice)
         * (temperature - icon_graupel_params.melting_temperature)
         - icon_graupel_params.rv * temperature
     )
@@ -2089,7 +2170,7 @@ def _icon_graupel_scan(
     # for density correction of fall speeds
     chlp = log(icon_graupel_params.ref_air_density / rho)
     crho1o2 = exp(chlp / wpfloat("2.0"))
-    crhofac_qi = exp(chlp * ice_sedi_density_factor_exp)
+    crhofac_qi = exp(chlp * exponent_for_density_factor_in_ice_sedimentation)
 
     cdtdh = wpfloat("0.5") * dt / dz
     cscmax = qc / dt
@@ -2130,7 +2211,15 @@ def _icon_graupel_scan(
     llqi = True if (rhoqi > icon_graupel_params.qmin) else False
 
     n0s, snow_sed0, crim, cagg, cbsdep = _compute_snow_interception_and_collision_parameters(
-        temperature, rho, qs, ccsvel, ccsrim, ccsagg, snow_v0, llqs, snow_intercept_option
+        temperature,
+        rho,
+        qs,
+        ccsvel,
+        ccsrim,
+        ccsagg,
+        power_law_coeff_for_snow_fall_speed,
+        llqs,
+        snow_intercept_option,
     )
 
     # ------------------------------------------------------------------------------
@@ -2146,22 +2235,31 @@ def _icon_graupel_scan(
             else wpfloat("0.0")
         )
         vnew_r = (
-            rain_v0 * exp(rain_exp_v * log((qr_kup + qr) * wpfloat("0.5") * rho_kup)) * crho1o2_kup
+            power_law_coeff_for_rain_mean_fall_speed
+            * exp(
+                power_law_exponent_for_rain_mean_fall_speed
+                * log((qr_kup + qr) * wpfloat("0.5") * rho_kup)
+            )
+            * crho1o2_kup
             if qr_kup + qr > icon_graupel_params.qmin
             else wpfloat("0.0")
         )
         vnew_g = (
-            icon_graupel_params.graupel_sed0
+            icon_graupel_params.power_law_coeff_for_graupel_mean_fall_speed
             * exp(
-                icon_graupel_params.graupel_exp_sed * log((qg_kup + qg) * wpfloat("0.5") * rho_kup)
+                icon_graupel_params.power_law_exponent_for_graupel_mean_fall_speed
+                * log((qg_kup + qg) * wpfloat("0.5") * rho_kup)
             )
             * crho1o2_kup
             if qg_kup + qg > icon_graupel_params.qmin
             else wpfloat("0.0")
         )
         vnew_i = (
-            ice_v0
-            * exp(icon_graupel_params.ice_exp_v * log((qi_kup + qi) * wpfloat("0.5") * rho_kup))
+            power_law_coeff_for_ice_mean_fall_speed
+            * exp(
+                icon_graupel_params.power_law_exponent_for_ice_mean_fall_speed
+                * log((qi_kup + qi) * wpfloat("0.5") * rho_kup)
+            )
             * crhofac_qi_kup
             if qi_kup + qi > icon_graupel_params.qmin
             else wpfloat("0.0")
@@ -2171,7 +2269,9 @@ def _icon_graupel_scan(
         terminal_velocity = snow_sed0 * exp(icon_graupel_params.ccswxp * log(rhoqs)) * crho1o2
         # Prevent terminal fall speed of snow from being zero at the surface level
         if is_surface:
-            terminal_velocity = maximum(terminal_velocity, icon_graupel_params.snow_v_sedi_min)
+            terminal_velocity = maximum(
+                terminal_velocity, icon_graupel_params.minimum_snow_fall_speed
+            )
 
         rhoqsv = rhoqs * terminal_velocity
 
@@ -2183,56 +2283,68 @@ def _icon_graupel_scan(
         rhoqsv = wpfloat("0.0")
 
     if llqr:
-        terminal_velocity = rain_v0 * exp(rain_exp_v * log(rhoqr)) * crho1o2
+        terminal_velocity = (
+            power_law_coeff_for_rain_mean_fall_speed
+            * exp(power_law_exponent_for_rain_mean_fall_speed * log(rhoqr))
+            * crho1o2
+        )
         # Prevent terminal fall speed of snow from being zero at the surface level
         if is_surface:
-            terminal_velocity = maximum(terminal_velocity, icon_graupel_params.rain_v_sedi_min)
+            terminal_velocity = maximum(
+                terminal_velocity, icon_graupel_params.minimum_rain_fall_speed
+            )
 
         rhoqrv = rhoqr * terminal_velocity
 
         # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
         if vnew_r == wpfloat("0.0"):
-            vnew_r = terminal_velocity * rain_exp_v_ln1o2
+            vnew_r = terminal_velocity * power_law_exponent_for_rain_mean_fall_speed_ln1o2
 
     else:
         rhoqrv = wpfloat("0.0")
 
     if llqg:
         terminal_velocity = (
-            icon_graupel_params.graupel_sed0
-            * exp(icon_graupel_params.graupel_exp_sed * log(rhoqg))
+            icon_graupel_params.power_law_coeff_for_graupel_mean_fall_speed
+            * exp(icon_graupel_params.power_law_exponent_for_graupel_mean_fall_speed * log(rhoqg))
             * crho1o2
         )
         # Prevent terminal fall speed of snow from being zero at the surface level
         if is_surface:
-            terminal_velocity = maximum(terminal_velocity, icon_graupel_params.graupel_v_sedi_min)
+            terminal_velocity = maximum(
+                terminal_velocity, icon_graupel_params.minimum_graupel_fall_speed
+            )
 
         rhoqgv = rhoqg * terminal_velocity
 
         # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
         if vnew_g == wpfloat("0.0"):
-            vnew_g = terminal_velocity * graupel_exp_sed_ln1o2
+            vnew_g = terminal_velocity * power_law_exponent_for_graupel_mean_fall_speed_ln1o2
 
     else:
         rhoqgv = wpfloat("0.0")
 
     if llqi:
-        terminal_velocity = ice_v0 * exp(icon_graupel_params.ice_exp_v * log(rhoqi)) * crhofac_qi
+        terminal_velocity = (
+            power_law_coeff_for_ice_mean_fall_speed
+            * exp(icon_graupel_params.power_law_exponent_for_ice_mean_fall_speed * log(rhoqi))
+            * crhofac_qi
+        )
 
         rhoqiv = rhoqi * terminal_velocity
 
         # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
         if vnew_i == wpfloat("0.0"):
-            vnew_i = terminal_velocity * ice_exp_v_ln1o2
+            vnew_i = terminal_velocity * power_law_exponent_for_ice_mean_fall_speed_ln1o2
 
     else:
         rhoqiv = wpfloat("0.0")
 
     # Prevent terminal fall speeds of precip hydrometeors from being zero at the surface level
     if is_surface:
-        vnew_s = maximum(vnew_s, icon_graupel_params.snow_v_sedi_min)
-        vnew_r = maximum(vnew_r, icon_graupel_params.rain_v_sedi_min)
-        vnew_g = maximum(vnew_g, icon_graupel_params.graupel_v_sedi_min)
+        vnew_s = maximum(vnew_s, icon_graupel_params.minimum_snow_fall_speed)
+        vnew_r = maximum(vnew_r, icon_graupel_params.minimum_rain_fall_speed)
+        vnew_g = maximum(vnew_g, icon_graupel_params.minimum_graupel_fall_speed)
 
     # derive the intermediate density of hydrometeors, Eq. 5.21:
     # limit the precipitation flux at this k level such that mixing ratio won't go below zero
@@ -2309,7 +2421,7 @@ def _icon_graupel_scan(
         clnrhoqg = log(rhoqg)
         csgmax = rhoqg_intermediate / rho / dt
         if qi + qc > icon_graupel_params.qmin:
-            celnrimexp_g = exp(icon_graupel_params.graupel_exp_rim * clnrhoqg)
+            celnrimexp_g = exp(icon_graupel_params.graupel_rimexp * clnrhoqg)
         else:
             celnrimexp_g = wpfloat("0.0")
         celn6qgk = exp(wpfloat("0.6") * clnrhoqg)
@@ -2671,21 +2783,21 @@ def _icon_graupel(
     is_isochoric: bool,
     use_constant_water_heat_capacity: bool,
     ice_stickeff_min: wpfloat,
-    ice_v0: wpfloat,
-    ice_sedi_density_factor_exp: wpfloat,
-    snow_v0: wpfloat,
+    power_law_coeff_for_ice_mean_fall_speed: wpfloat,
+    exponent_for_density_factor_in_ice_sedimentation: wpfloat,
+    power_law_coeff_for_snow_fall_speed: wpfloat,
     ccsrim: wpfloat,
     ccsagg: wpfloat,
     ccsvel: wpfloat,
-    rain_exp_v: wpfloat,
-    rain_v0: wpfloat,
+    power_law_exponent_for_rain_mean_fall_speed: wpfloat,
+    power_law_coeff_for_rain_mean_fall_speed: wpfloat,
     cevxp: wpfloat,
     cev: wpfloat,
     bevxp: wpfloat,
     bev: wpfloat,
-    rain_exp_v_ln1o2: wpfloat,
-    ice_exp_v_ln1o2: wpfloat,
-    graupel_exp_sed_ln1o2: wpfloat,
+    power_law_exponent_for_rain_mean_fall_speed_ln1o2: wpfloat,
+    power_law_exponent_for_ice_mean_fall_speed_ln1o2: wpfloat,
+    power_law_exponent_for_graupel_mean_fall_speed_ln1o2: wpfloat,
     dt: wpfloat,
     dz: gtx.Field[[CellDim, KDim], wpfloat],
     temperature: gtx.Field[[CellDim, KDim], wpfloat],
@@ -2752,21 +2864,21 @@ def _icon_graupel(
         is_isochoric,
         use_constant_water_heat_capacity,
         ice_stickeff_min,
-        ice_v0,
-        ice_sedi_density_factor_exp,
-        snow_v0,
+        power_law_coeff_for_ice_mean_fall_speed,
+        exponent_for_density_factor_in_ice_sedimentation,
+        power_law_coeff_for_snow_fall_speed,
         ccsrim,
         ccsagg,
         ccsvel,
-        rain_exp_v,
-        rain_v0,
+        power_law_exponent_for_rain_mean_fall_speed,
+        power_law_coeff_for_rain_mean_fall_speed,
         cevxp,
         cev,
         bevxp,
         bev,
-        rain_exp_v_ln1o2,
-        ice_exp_v_ln1o2,
-        graupel_exp_sed_ln1o2,
+        power_law_exponent_for_rain_mean_fall_speed_ln1o2,
+        power_law_exponent_for_ice_mean_fall_speed_ln1o2,
+        power_law_exponent_for_graupel_mean_fall_speed_ln1o2,
         dt,
         dz,
         temperature,
@@ -2809,22 +2921,22 @@ def icon_graupel(
     is_isochoric: bool,
     use_constant_water_heat_capacity: bool,
     ice_stickeff_min: wpfloat,
-    ice_v0: wpfloat,
-    ice_sedi_density_factor_exp: wpfloat,
-    snow_v0: wpfloat,
+    power_law_coeff_for_ice_mean_fall_speed: wpfloat,
+    exponent_for_density_factor_in_ice_sedimentation: wpfloat,
+    power_law_coeff_for_snow_fall_speed: wpfloat,
     ccsrim: wpfloat,
     ccsagg: wpfloat,
     ccsvel: wpfloat,
-    rain_exp_v: wpfloat,
-    rain_v0: wpfloat,
+    power_law_exponent_for_rain_mean_fall_speed: wpfloat,
+    power_law_coeff_for_rain_mean_fall_speed: wpfloat,
     cevxp: wpfloat,
     cev: wpfloat,
     bevxp: wpfloat,
     bev: wpfloat,
-    rain_exp_v_ln1o2: wpfloat,
-    ice_exp_v_ln1o2: wpfloat,
-    graupel_exp_sed_ln1o2: wpfloat,
-    dt: wpfloat,  # time step
+    power_law_exponent_for_rain_mean_fall_speed_ln1o2: wpfloat,
+    power_law_exponent_for_ice_mean_fall_speed_ln1o2: wpfloat,
+    power_law_exponent_for_graupel_mean_fall_speed_ln1o2: wpfloat,
+    dt: wpfloat,
     dz: gtx.Field[[CellDim, KDim], wpfloat],
     temperature: gtx.Field[[CellDim, KDim], wpfloat],
     pres: gtx.Field[[CellDim, KDim], wpfloat],
@@ -2864,21 +2976,21 @@ def icon_graupel(
         is_isochoric,
         use_constant_water_heat_capacity,
         ice_stickeff_min,
-        ice_v0,
-        ice_sedi_density_factor_exp,
-        snow_v0,
+        power_law_coeff_for_ice_mean_fall_speed,
+        exponent_for_density_factor_in_ice_sedimentation,
+        power_law_coeff_for_snow_fall_speed,
         ccsrim,
         ccsagg,
         ccsvel,
-        rain_exp_v,
-        rain_v0,
+        power_law_exponent_for_rain_mean_fall_speed,
+        power_law_coeff_for_rain_mean_fall_speed,
         cevxp,
         cev,
         bevxp,
         bev,
-        rain_exp_v_ln1o2,
-        ice_exp_v_ln1o2,
-        graupel_exp_sed_ln1o2,
+        power_law_exponent_for_rain_mean_fall_speed_ln1o2,
+        power_law_exponent_for_ice_mean_fall_speed_ln1o2,
+        power_law_exponent_for_graupel_mean_fall_speed_ln1o2,
         dt,
         dz,
         temperature,
