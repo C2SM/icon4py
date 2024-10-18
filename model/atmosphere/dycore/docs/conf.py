@@ -94,7 +94,6 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         # Override the default get_doc method to pick up all docstrings in the
         # source code
         source = inspect.getsource(self.object) # this is only the source of the method, not the whole file
-        _, method_start_line = inspect.getsourcelines(self.object)
 
         docstrings = re.findall(r'"""(.*?)"""', source, re.DOTALL)
         docstrings_list = []
