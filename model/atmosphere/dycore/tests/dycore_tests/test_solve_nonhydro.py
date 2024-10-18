@@ -704,7 +704,7 @@ def test_run_solve_nonhydro_single_step(
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
-    config = conftest.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = conftest.construct_solve_nh_config(experiment, ndyn_substeps)
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
@@ -833,7 +833,7 @@ def test_run_solve_nonhydro_multi_step(
     experiment,
     ndyn_substeps,
 ):
-    config = conftest.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = conftest.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
