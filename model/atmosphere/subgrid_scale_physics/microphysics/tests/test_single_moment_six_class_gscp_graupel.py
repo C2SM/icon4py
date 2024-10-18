@@ -119,7 +119,9 @@ def test_graupel(
     )
 
     assert helpers.dallclose(graupel.icon_graupel_params.qmin, init_savepoint.qmin())
-    assert helpers.dallclose(graupel.icon_graupel_params.power_law_coeff_for_snow_mD_relation, init_savepoint.ams())
+    assert helpers.dallclose(
+        graupel.icon_graupel_params.power_law_coeff_for_snow_mD_relation, init_savepoint.ams()
+    )
     assert helpers.dallclose(graupel_microphysics.ccs[0], init_savepoint.ccsrim(), atol=1.0e-8)
     assert helpers.dallclose(graupel_microphysics.ccs[1], init_savepoint.ccsagg(), atol=1.0e-8)
     assert helpers.dallclose(graupel.icon_graupel_params.ccsaxp, init_savepoint.ccsaxp())
