@@ -368,7 +368,7 @@ class Diffusion:
     ):
         self._backend = backend
         self._exchange = exchange
-        self._config = config
+        self.config = config
         self._params = params
         self._grid = grid
         self._vertical_grid = vertical_grid
@@ -581,7 +581,7 @@ class Diffusion:
 
         self.setup_fields_for_initial_step(
             self._params.K4,
-            self._config.hdiff_efdt_ratio,
+            self.config.hdiff_efdt_ratio,
             diff_multfac_vn,
             smag_limit,
             offset_provider={},
@@ -705,7 +705,7 @@ class Diffusion:
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
         if (
-            self._config.shear_type
+            self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
         ):
             log.debug(
@@ -734,7 +734,7 @@ class Diffusion:
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
         # TODO (magdalena) move this up and do asynchronous exchange
-        if self._config.type_vn_diffu > 1:
+        if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
             self._exchange(self.z_nabla2_e, dim=dims.EdgeDim, wait=True)
             log.debug("communication rbf extrapolation of z_nable2_e - end")
@@ -809,7 +809,7 @@ class Diffusion:
             w_old=self.w_tmp,
             w=prognostic_state.w,
             type_shear=int32(
-                self._config.shear_type.value
+                self.config.shear_type.value
             ),  # DaCe parser peculiarity (does not work as gtx.int32)
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
@@ -871,7 +871,7 @@ class Diffusion:
         log.debug(
             "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
-        if self._config.apply_zdiffusion_t:
+        if self.config.apply_zdiffusion_t:
             self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_connectivities(
                 self.compile_time_connectivities
             )(
