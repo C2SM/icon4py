@@ -251,7 +251,7 @@ def test_diffusion_wrapper_granule_inputs(
     )
 
     # --- Mock and Test diffusion_granule.init ---
-    with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.init") as mock_init:
+    with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion") as mock_init:
         diffusion_init(
             vct_a=vct_a,
             vct_b=vct_b,
@@ -566,99 +566,100 @@ def test_diffusion_wrapper_single_step(
         limited_area=limited_area,
     )
 
-    # Call diffusion_init
-    diffusion_init(
-        vct_a=vct_a,
-        vct_b=vct_b,
-        theta_ref_mc=theta_ref_mc,
-        wgtfac_c=wgtfac_c,
-        e_bln_c_s=e_bln_c_s,
-        geofac_div=geofac_div,
-        geofac_grg_x=geofac_grg_x,
-        geofac_grg_y=geofac_grg_y,
-        geofac_n2s=geofac_n2s,
-        nudgecoeff_e=nudgecoeff_e,
-        rbf_coeff_1=rbf_coeff_1,
-        rbf_coeff_2=rbf_coeff_2,
-        mask_hdiff=mask_hdiff,
-        zd_diffcoef=zd_diffcoef,
-        zd_vertoffset=zd_vertoffset,
-        zd_intcoef=zd_intcoef,
-        ndyn_substeps=ndyn_substeps,
-        rayleigh_damping_height=damping_height,
-        nflat_gradp=nflat_gradp,
-        diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
-        zdiffu_t=zdiffu_t,
-        type_t_diffu=type_t_diffu,
-        type_vn_diffu=type_vn_diffu,
-        hdiff_efdt_ratio=hdiff_efdt_ratio,
-        smagorinski_scaling_factor=smagorinski_scaling_factor,
-        hdiff_temp=hdiff_temp,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
-        denom_diffu_v=denom_diffu_v,
-        nudge_max_coeff=nudge_max_coeff,
-        itype_sher=itype_sher.value,
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_vert_vert_length=inv_vert_vert_length,
-        edge_areas=edge_areas,
-        f_e=f_e,
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        cell_areas=cell_areas,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
-        global_root=global_root,
-        global_level=global_level,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
-    )
+    with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion"):
+        # Call diffusion_init
+        diffusion_init(
+            vct_a=vct_a,
+            vct_b=vct_b,
+            theta_ref_mc=theta_ref_mc,
+            wgtfac_c=wgtfac_c,
+            e_bln_c_s=e_bln_c_s,
+            geofac_div=geofac_div,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
+            geofac_n2s=geofac_n2s,
+            nudgecoeff_e=nudgecoeff_e,
+            rbf_coeff_1=rbf_coeff_1,
+            rbf_coeff_2=rbf_coeff_2,
+            mask_hdiff=mask_hdiff,
+            zd_diffcoef=zd_diffcoef,
+            zd_vertoffset=zd_vertoffset,
+            zd_intcoef=zd_intcoef,
+            ndyn_substeps=ndyn_substeps,
+            rayleigh_damping_height=damping_height,
+            nflat_gradp=nflat_gradp,
+            diffusion_type=diffusion_type,
+            hdiff_w=hdiff_w,
+            hdiff_vn=hdiff_vn,
+            zdiffu_t=zdiffu_t,
+            type_t_diffu=type_t_diffu,
+            type_vn_diffu=type_vn_diffu,
+            hdiff_efdt_ratio=hdiff_efdt_ratio,
+            smagorinski_scaling_factor=smagorinski_scaling_factor,
+            hdiff_temp=hdiff_temp,
+            thslp_zdiffu=thslp_zdiffu,
+            thhgtd_zdiffu=thhgtd_zdiffu,
+            denom_diffu_v=denom_diffu_v,
+            nudge_max_coeff=nudge_max_coeff,
+            itype_sher=itype_sher.value,
+            tangent_orientation=tangent_orientation,
+            inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+            inv_dual_edge_length=inv_dual_edge_length,
+            inv_vert_vert_length=inv_vert_vert_length,
+            edge_areas=edge_areas,
+            f_e=f_e,
+            cell_center_lat=cell_center_lat,
+            cell_center_lon=cell_center_lon,
+            cell_areas=cell_areas,
+            primal_normal_vert_x=primal_normal_vert_x,
+            primal_normal_vert_y=primal_normal_vert_y,
+            dual_normal_vert_x=dual_normal_vert_x,
+            dual_normal_vert_y=dual_normal_vert_y,
+            primal_normal_cell_x=primal_normal_cell_x,
+            primal_normal_cell_y=primal_normal_cell_y,
+            dual_normal_cell_x=dual_normal_cell_x,
+            dual_normal_cell_y=dual_normal_cell_y,
+            global_root=global_root,
+            global_level=global_level,
+            lowest_layer_thickness=lowest_layer_thickness,
+            model_top_height=model_top_height,
+            stretch_factor=stretch_factor,
+            edge_center_lat=edge_center_lat,
+            edge_center_lon=edge_center_lon,
+            primal_normal_x=primal_normal_x,
+            primal_normal_y=primal_normal_y,
+        )
 
-    # Call diffusion_run
-    diffusion_run(
-        w=w,
-        vn=vn,
-        exner=exner,
-        theta_v=theta_v,
-        rho=rho,
-        hdef_ic=hdef_ic,
-        div_ic=div_ic,
-        dwdx=dwdx,
-        dwdy=dwdy,
-        dtime=dtime,
-        linit=False,
-    )
+        # Call diffusion_run
+        diffusion_run(
+            w=w,
+            vn=vn,
+            exner=exner,
+            theta_v=theta_v,
+            rho=rho,
+            hdef_ic=hdef_ic,
+            div_ic=div_ic,
+            dwdx=dwdx,
+            dwdy=dwdy,
+            dtime=dtime,
+            linit=False,
+        )
 
-    # Assertions comparing the serialized output with computed output fields
-    w_ = savepoint_diffusion_exit.w()
-    vn_ = savepoint_diffusion_exit.vn()
-    exner_ = savepoint_diffusion_exit.exner()
-    theta_v_ = savepoint_diffusion_exit.theta_v()
-    hdef_ic_ = savepoint_diffusion_exit.hdef_ic()
-    div_ic_ = savepoint_diffusion_exit.div_ic()
-    dwdx_ = savepoint_diffusion_exit.dwdx()
-    dwdy_ = savepoint_diffusion_exit.dwdy()
+        # Assertions comparing the serialized output with computed output fields
+        w_ = savepoint_diffusion_exit.w()
+        vn_ = savepoint_diffusion_exit.vn()
+        exner_ = savepoint_diffusion_exit.exner()
+        theta_v_ = savepoint_diffusion_exit.theta_v()
+        hdef_ic_ = savepoint_diffusion_exit.hdef_ic()
+        div_ic_ = savepoint_diffusion_exit.div_ic()
+        dwdx_ = savepoint_diffusion_exit.dwdx()
+        dwdy_ = savepoint_diffusion_exit.dwdy()
 
-    assert helpers.dallclose(w.asnumpy(), w_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(vn.asnumpy(), vn_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(exner.asnumpy(), exner_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(theta_v.asnumpy(), theta_v_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(hdef_ic.asnumpy(), hdef_ic_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(div_ic.asnumpy(), div_ic_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(dwdx.asnumpy(), dwdx_.asnumpy(), atol=1e-12)
-    assert helpers.dallclose(dwdy.asnumpy(), dwdy_.asnumpy(), atol=1e-12)
+        assert helpers.dallclose(w.asnumpy(), w_.asnumpy(), atol=1e-12)
+        assert helpers.dallclose(vn.asnumpy(), vn_.asnumpy(), atol=1e-12)
+        assert helpers.dallclose(exner.asnumpy(), exner_.asnumpy(), atol=1e-12)
+        assert helpers.dallclose(theta_v.asnumpy(), theta_v_.asnumpy(), atol=1e-12)
+        assert helpers.dallclose(hdef_ic.asnumpy(), hdef_ic_.asnumpy(), atol=1e-12)
+        assert helpers.dallclose(div_ic.asnumpy(), div_ic_.asnumpy(), atol=1e-12)
+        assert helpers.dallclose(dwdx.asnumpy(), dwdx_.asnumpy(), atol=1e-12)
+        assert helpers.dallclose(dwdy.asnumpy(), dwdy_.asnumpy(), atol=1e-12)

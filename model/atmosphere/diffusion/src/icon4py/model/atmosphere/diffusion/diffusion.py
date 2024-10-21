@@ -368,14 +368,12 @@ class Diffusion:
     ):
         self._backend = backend
         self._exchange = exchange
-        self._config: DiffusionConfig = config
-        self._params: DiffusionParams = params
+        self._config = config
+        self._params = params
         self._grid = grid
         self._vertical_grid = vertical_grid
-        self._metric_state: diffusion_states.DiffusionMetricState = metric_state
-        self._interpolation_state: diffusion_states.DiffusionInterpolationState = (
-            interpolation_state
-        )
+        self._metric_state = metric_state
+        self._interpolation_state = interpolation_state
         self._edge_params = edge_params
         self._cell_params = cell_params
 

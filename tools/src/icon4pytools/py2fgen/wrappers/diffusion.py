@@ -221,6 +221,7 @@ def diffusion_init(
         interpolation_state=interpolation_state,
         edge_params=edge_params,
         cell_params=cell_params,
+        backend=backend,
     )
 
 
@@ -254,11 +255,11 @@ def diffusion_run(
     )
 
     if linit:
-        common.GLOBAL_STATE["diffusion_granule"].initial_run(
+        common.GLOBAL_STATE["diffusion_granule"].Diffusion.initial_run(
             diagnostic_state, prognostic_state, dtime, backend
         )
     else:
-        common.GLOBAL_STATE["diffusion_granule"].run(
+        common.GLOBAL_STATE["diffusion_granule"].Diffusion.run(
             prognostic_state=prognostic_state,
             diagnostic_state=diagnostic_state,
             dtime=dtime,
