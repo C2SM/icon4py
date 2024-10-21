@@ -212,7 +212,7 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    common.GLOBAL_STATE["diffusion_granule"].Diffusion(
+    common.GLOBAL_STATE["diffusion_granule"] = common.GLOBAL_STATE["diffusion_granule"].Diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -255,11 +255,11 @@ def diffusion_run(
     )
 
     if linit:
-        common.GLOBAL_STATE["diffusion_granule"].Diffusion.initial_run(
-            diagnostic_state, prognostic_state, dtime, backend
+        common.GLOBAL_STATE["diffusion_granule"].initial_run(
+            diagnostic_state, prognostic_state, dtime
         )
     else:
-        common.GLOBAL_STATE["diffusion_granule"].Diffusion.run(
+        common.GLOBAL_STATE["diffusion_granule"].run(
             prognostic_state=prognostic_state,
             diagnostic_state=diagnostic_state,
             dtime=dtime,
