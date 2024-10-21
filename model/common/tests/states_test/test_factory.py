@@ -9,6 +9,7 @@
 import gt4py.next as gtx
 import pytest
 
+import icon4py.model.common.states.utils as state_utils
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -85,16 +86,18 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
     fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
     fields_factory.register_provider(pre_computed_fields)
     fields_factory.with_grid(grid, vertical).with_backend(backend)
-    field = fields_factory.get("height_on_interface_levels", factory.RetrievalType.FIELD)
+    field = fields_factory.get("height_on_interface_levels", state_utils.RetrievalType.FIELD)
     assert field.ndarray.shape == (grid.num_cells, num_levels + 1)
-    meta = fields_factory.get("height_on_interface_levels", factory.RetrievalType.METADATA)
+    meta = fields_factory.get("height_on_interface_levels", state_utils.RetrievalType.METADATA)
     assert meta["standard_name"] == "height_on_interface_levels"
     assert meta["dims"] == (
         dims.CellDim,
         dims.KHalfDim,
     )
     assert meta["units"] == "m"
-    data_array = fields_factory.get("height_on_interface_levels", factory.RetrievalType.DATA_ARRAY)
+    data_array = fields_factory.get(
+        "height_on_interface_levels", state_utils.RetrievalType.DATA_ARRAY
+    )
     assert data_array.data.shape == (grid.num_cells, num_levels + 1)
     assert data_array.data.dtype == xp.float64
     for key in ("dims", "standard_name", "units", "icon_var_name"):
@@ -157,7 +160,8 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
     fields_factory.register_provider(functional_determinant_provider)
     fields_factory.with_grid(horizontal_grid, vertical_grid).with_backend(backend)
     data = fields_factory.get(
-        "functional_determinant_of_metrics_on_interface_levels", type_=factory.RetrievalType.FIELD
+        "functional_determinant_of_metrics_on_interface_levels",
+        type_=state_utils.RetrievalType.FIELD,
     )
     ref = metrics_savepoint.ddqz_z_half().ndarray
     assert helpers.dallclose(data.ndarray, ref)
@@ -166,7 +170,7 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
 def test_field_provider_for_numpy_function(
     grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    grid = grid_savepoint.construct_icon_grid(False)  # TODO fix this should be come obsolete
+    grid = grid_savepoint.construct_icon_grid(False) 
     vertical_grid = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=grid.num_levels),
         grid_savepoint.vct_a(),
@@ -202,7 +206,8 @@ def test_field_provider_for_numpy_function(
     fields_factory.register_provider(compute_wgtfacq_c_provider)
 
     wgtfacq_c = fields_factory.get(
-        "weighting_factor_for_quadratic_interpolation_to_cell_surface", factory.RetrievalType.FIELD
+        "weighting_factor_for_quadratic_interpolation_to_cell_surface",
+        state_utils.RetrievalType.FIELD,
     )
 
     assert helpers.dallclose(wgtfacq_c.asnumpy(), wgtfacq_c_ref.asnumpy())
@@ -263,7 +268,8 @@ def test_field_provider_for_numpy_function_with_offsets(
 
     fields_factory.register_provider(wgtfacq_e_provider)
     wgtfacq_e = fields_factory.get(
-        "weighting_factor_for_quadratic_interpolation_to_edge_center", factory.RetrievalType.FIELD
+        "weighting_factor_for_quadratic_interpolation_to_edge_center",
+        state_utils.RetrievalType.FIELD,
     )
 
     assert helpers.dallclose(wgtfacq_e.asnumpy(), wgtfacq_e_ref.asnumpy())
