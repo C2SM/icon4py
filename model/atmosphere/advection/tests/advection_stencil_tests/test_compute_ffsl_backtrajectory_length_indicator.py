@@ -23,7 +23,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(helpers.StencilTest):
 
     @staticmethod
     def reference(grid, p_vn: xp.array, p_vt: xp.array, p_dt: float, **kwargs) -> dict:
-        lvn_pos = xp.where(p_vn >= 0.0, True, False)
+        lvn_pos = p_vn >= 0.0
 
         traj_length = xp.sqrt(p_vn**2 + p_vt**2) * p_dt
 

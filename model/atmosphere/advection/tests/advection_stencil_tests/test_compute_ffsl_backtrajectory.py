@@ -64,7 +64,7 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
         primal_normal_cell_y = helpers.reshape(primal_normal_cell_y, e2c_shape)
         dual_normal_cell_y = helpers.reshape(dual_normal_cell_y, e2c_shape)
 
-        lvn_pos = xp.where(p_vn >= 0.0, True, False)
+        lvn_pos = p_vn >= 0.0
         cell_idx = xp.expand_dims(cell_idx, axis=-1)
         cell_blk = xp.expand_dims(cell_blk, axis=-1)
         primal_normal_cell_x = xp.expand_dims(primal_normal_cell_x, axis=-1)

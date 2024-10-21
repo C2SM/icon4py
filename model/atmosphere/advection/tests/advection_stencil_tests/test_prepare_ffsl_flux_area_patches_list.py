@@ -165,7 +165,7 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
         depart_pts_2_lon_dsl = dreg_patch0_3_lon_dsl
         depart_pts_2_lat_dsl = dreg_patch0_3_lat_dsl
 
-        lvn_pos = xp.where(p_vn >= 0.0, True, False)
+        lvn_pos = p_vn >= 0.0
 
         fl_line_p1_lon = depart_pts_1_lon_dsl
         fl_line_p1_lat = depart_pts_1_lat_dsl

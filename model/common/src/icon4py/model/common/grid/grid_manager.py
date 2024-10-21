@@ -566,11 +566,13 @@ def _add_derived_connectivities(grid: icon.IconGrid) -> icon.IconGrid:
             (grid.connectivities[dims.C2E2CDim]),
         )
     )
+    c2e2c2e2c = _construct_butterfly_cells(grid.connectivities[dims.C2E2CDim])
 
     grid.with_connectivities(
         {
             dims.C2E2CODim: c2e2c0,
             dims.C2E2C2EDim: c2e2c2e,
+            dims.C2E2C2E2CDim: c2e2c2e2c,
             dims.E2C2VDim: e2c2v,
             dims.E2C2EDim: e2c2e,
             dims.E2C2EODim: e2c2e0,
@@ -596,17 +598,18 @@ def _construct_diamond_vertices(e2v: xp.ndarray, c2v: xp.ndarray, e2c: xp.ndarra
 
     Starting from the e2v and c2v connectivity the connectivity table for e2c2v is built up.
 
-                 v0
-                / \
-              /    \
-             /      \
-            /        \
-           v1---e0---v3
-            \       /
-             \     /
-              \   /
-               \ /
-                v2
+             v0
+            /  \
+           /    \
+          /      \
+         /        \
+        v1---e0---v3
+         \        /
+          \      /
+           \    /
+            \  /
+             v2
+             
     For example for this diamond: e0 -> (v0, v1, v2, v3)
     Ordering is the same as ICON uses.
 
@@ -634,15 +637,15 @@ def _construct_diamond_edges(e2c: xp.ndarray, c2e: xp.ndarray) -> xp.ndarray:
 
     Starting from the e2c and c2e connectivity the connectivity table for e2c2e is built up.
 
-        / \
-      /    \
-     e2    e1
-    /    c0  \
-    ----e0----
-    \   c1   /
-     e3    e4
-      \   /
-       \ /
+            /  \
+           /    \
+          e2 c0 e1
+         /        \
+         ----e0----
+         \        /
+          e3 c1 e4
+           \    /
+            \  /
 
     For example, for this diamond for e0 -> (e1, e2, e3, e4)
 
@@ -667,25 +670,26 @@ def _construct_diamond_edges(e2c: xp.ndarray, c2e: xp.ndarray) -> xp.ndarray:
     return e2c2e
 
 
-def _construct_triangle_edges(c2e2c, c2e):
+def _construct_triangle_edges(c2e2c: xp.ndarray, c2e: xp.ndarray) -> xp.ndarray:
     r"""Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
 
-       ____e3________e7____
-       \   c1  / \   c3  /
-        \     /   \     /
-        e4   e2    e1  e8
-          \ /   c0  \ /
-            ----e0----
-            \   c2  /
-             e5    e6
-              \   /
-               \ /
+         ----e3----  ----e7----
+         \        /  \        /
+          e4 c1  /    \  c3 e8
+           \    e2 c0 e1    /
+            \  /        \  /
+               ----e0----
+               \        /
+                e5 c2 e6
+                 \    /
+                  \  /
+
 
     For example, for the triangular shape above, c0 -> (e3, e4, e2, e0, e5, e6, e7, e1, e8).
 
     Args:
-        c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
-        c2e: shape (n_cell, 3), connectivity table from a cell to its neighboring edges
+        c2e2c: shape (n_cells, 3) connectivity table from a central cell to its cell neighbors
+        c2e: shape (n_cells, 3), connectivity table from a cell to its neighboring edges
     Returns:
         xp.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
             edges of its cell neighbors
@@ -693,6 +697,37 @@ def _construct_triangle_edges(c2e2c, c2e):
     dummy_c2e = _patch_with_dummy_lastline(c2e)
     table = xp.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
     return table
+
+
+def _construct_butterfly_cells(c2e2c: xp.ndarray) -> xp.ndarray:
+    r"""Compute the connectivity from a central cell to all neighboring cells of its cell neighbors.
+
+                  /  \        /  \
+                 /    \      /    \
+                /  c4  \    /  c5  \
+               /        \  /        \
+               ----e3----  ----e7----
+            /  \        /  \        /  \
+           /    e4 c1  /    \  c3 e8    \
+          /  c9  \    e2 c0 e1    /  c6  \
+         /        \  /        \  /        \
+         ----------  ----e0----  ----------
+                  /  \        /  \
+                 /    e5 c2 e6    \
+                /  c8  \    /  c7  \
+               /        \  /        \
+               ----------  ----------
+
+    For example, for the shape above, c0 -> (c1, c4, c9, c2, c7, c8, c3, c5, c6).
+
+    Args:
+        c2e2c: shape (n_cells, 3) connectivity table from a central cell to its cell neighbors
+    Returns:
+        xp.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
+    """
+    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
+    c2e2c2e2c = xp.reshape(dummy_c2e2c[c2e2c], (c2e2c.shape[0], 9))
+    return c2e2c2e2c
 
 
 def _patch_with_dummy_lastline(ar):

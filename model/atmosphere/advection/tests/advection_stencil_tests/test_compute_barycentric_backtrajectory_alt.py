@@ -43,7 +43,7 @@ class TestComputeBarycentricBacktrajectoryAlt(helpers.StencilTest):
         dual_normal_cell_1 = dual_normal_cell_1.reshape(e2c.shape)
         dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
 
-        lvn_pos = xp.where(p_vn > 0.0, True, False)
+        lvn_pos = p_vn >= 0.0
         pos_on_tplane_e_1 = xp.expand_dims(pos_on_tplane_e_1, axis=-1)
         pos_on_tplane_e_2 = xp.expand_dims(pos_on_tplane_e_2, axis=-1)
         primal_normal_cell_1 = xp.expand_dims(primal_normal_cell_1, axis=-1)

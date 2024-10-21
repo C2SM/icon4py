@@ -355,36 +355,49 @@ def convert_config_to_horizontal_vertical_advection(
     cell_params: geometry.CellParams,
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
-    if config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION:
-        horizontal_advection = advection_horizontal.NoAdvection(grid=grid)
-    else:
-        if config.horizontal_advection_limiter == HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
+    match config.horizontal_advection_limiter:
+        case HorizontalAdvectionLimiter.NO_LIMITER:
+            horizontal_limiter = advection_horizontal.HorizontalFluxLimiter()
+        case HorizontalAdvectionLimiter.POSITIVE_DEFINITE:
             horizontal_limiter = advection_horizontal.PositiveDefinite(
                 grid=grid, interpolation_state=interpolation_state, exchange=exchange
             )
-        else:
-            horizontal_limiter = advection_horizontal.HorizontalFluxLimiter()
+        case _:
+            raise NotImplementedError(f"Unknown horizontal advection limiter.")
 
-        if config.horizontal_advection_type == HorizontalAdvectionType.LINEAR_2ND_ORDER:
+    match config.horizontal_advection_type:
+        case HorizontalAdvectionType.NO_ADVECTION:
+            horizontal_advection = advection_horizontal.NoAdvection(grid=grid)
+        case HorizontalAdvectionType.LINEAR_2ND_ORDER:
             tracer_flux = advection_horizontal.SecondOrderMiura(
                 grid=grid,
                 least_squares_state=least_squares_state,
                 horizontal_limiter=horizontal_limiter,
             )
+            horizontal_advection = advection_horizontal.SemiLagrangian(
+                tracer_flux=tracer_flux,
+                grid=grid,
+                interpolation_state=interpolation_state,
+                least_squares_state=least_squares_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                cell_params=cell_params,
+                exchange=exchange,
+            )
+        case _:
+            raise NotImplementedError(f"Unknown horizontal advection type.")
 
-        horizontal_advection = advection_horizontal.SemiLagrangian(
-            tracer_flux=tracer_flux,
-            grid=grid,
-            interpolation_state=interpolation_state,
-            least_squares_state=least_squares_state,
-            metric_state=metric_state,
-            edge_params=edge_params,
-            cell_params=cell_params,
-            exchange=exchange,
-        )
+    match config.vertical_advection_limiter:
+        case VerticalAdvectionLimiter.NO_LIMITER:
+            ...
+        case _:
+            raise NotImplementedError(f"Unknown vertical advection limiter.")
 
-    if config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION:
-        vertical_advection = advection_vertical.NoAdvection(grid=grid)
+    match config.vertical_advection_type:
+        case VerticalAdvectionType.NO_ADVECTION:
+            vertical_advection = advection_vertical.NoAdvection(grid=grid)
+        case _:
+            raise NotImplementedError(f"Unknown vertical advection type.")
 
     return horizontal_advection, vertical_advection
 
