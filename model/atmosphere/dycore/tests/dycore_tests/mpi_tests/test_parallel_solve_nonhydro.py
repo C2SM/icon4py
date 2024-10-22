@@ -142,7 +142,7 @@ def test_run_solve_nonhydro_single_step(
 
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    solve_nonhydro = nh.SolveNonhydro(exchange, backend)
+    solve_nonhydro = nh.SolveNonhydro(backend, exchange)
     solve_nonhydro.init(
         grid=icon_grid,
         config=config,

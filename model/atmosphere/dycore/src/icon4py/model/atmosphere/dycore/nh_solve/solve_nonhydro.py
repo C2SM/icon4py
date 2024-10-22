@@ -439,8 +439,8 @@ class NonHydrostaticParams:
 class SolveNonhydro:
     def __init__(
         self,
+        backend: backend.Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
-        backend: backend.Backend = None,
     ):
         self._exchange = exchange
         self._backend = backend
