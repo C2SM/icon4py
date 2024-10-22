@@ -38,7 +38,7 @@ from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 
-from . import conftest
+from . import utils
 
 
 logging.basicConfig(level=logging.INFO)
@@ -367,7 +367,7 @@ def test_dycore_wrapper_granule_inputs(
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
-    expected_config = conftest.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
+    expected_config = utils.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
@@ -568,7 +568,7 @@ def test_dycore_wrapper_granule_inputs(
 
         # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
         try:
-            result, error_message = conftest.compare_objects(
+            result, error_message = utils.compare_objects(
                 captured_kwargs["grid"], expected_icon_grid
             )
             assert result, f"Grid comparison failed: {error_message}"
@@ -579,40 +579,40 @@ def test_dycore_wrapper_granule_inputs(
             else:
                 pass
 
-        result, error_message = conftest.compare_objects(captured_kwargs["config"], expected_config)
+        result, error_message = utils.compare_objects(captured_kwargs["config"], expected_config)
         assert result, f"Config comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["params"], expected_additional_parameters
         )
         assert result, f"Params comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["metric_state_nonhydro"], expected_metric_state
         )
         assert result, f"Metric State comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["interpolation_state"], expected_interpolation_state
         )
         assert result, f"Interpolation State comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["vertical_params"], expected_vertical_params
         )
         assert result, f"Vertical Params comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["edge_geometry"], expected_edge_geometry
         )
         assert result, f"Edge Geometry comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["cell_geometry"], expected_cell_geometry
         )
         assert result, f"Cell Geometry comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["owner_mask"], grid_savepoint.c_owner_mask()
         )
         assert result, f"Owner Mask comparison failed: {error_message}"
@@ -668,59 +668,59 @@ def test_dycore_wrapper_granule_inputs(
         # Check input arguments to SolveNonhydro.time_step
         captured_args, captured_kwargs = mock_init.call_args
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["diagnostic_state_nh"], expected_diagnostic_state_nh
         )
         assert result, f"Diagnostic State comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["prognostic_state_ls"], expected_prognostic_state_ls
         )
         assert result, f"Prognostic State comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["prep_adv"], expected_prep_adv
         )
         assert result, f"Prep Advection comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["divdamp_fac_o2"], expected_initial_divdamp_fac
         )
         assert result, f"Divdamp Factor comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(captured_kwargs["dtime"], expected_dtime)
+        result, error_message = utils.compare_objects(captured_kwargs["dtime"], expected_dtime)
         assert result, f"dtime comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["l_recompute"], expected_recompute
         )
         assert result, f"Recompute flag comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(captured_kwargs["l_init"], expected_linit)
+        result, error_message = utils.compare_objects(captured_kwargs["l_init"], expected_linit)
         assert result, f"Init flag comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["lclean_mflx"], expected_clean_mflx
         )
         assert result, f"Clean MFLX flag comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["lprep_adv"], expected_lprep_adv
         )
         assert result, f"Prep Advection flag comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(captured_kwargs["nnew"], expected_nnew)
+        result, error_message = utils.compare_objects(captured_kwargs["nnew"], expected_nnew)
         assert result, f"nnew comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(captured_kwargs["nnow"], expected_nnow)
+        result, error_message = utils.compare_objects(captured_kwargs["nnow"], expected_nnow)
         assert result, f"nnow comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["at_first_substep"], expected_at_first_substep
         )
         assert result, f"First Substep comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["at_last_substep"], expected_at_last_substep
         )
         assert result, f"Last Substep comparison failed: {error_message}"

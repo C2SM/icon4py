@@ -18,7 +18,7 @@ from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 
 from icon4pytools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
 
-from . import conftest
+from . import utils
 
 
 @pytest.mark.parametrize(
@@ -206,7 +206,7 @@ def test_diffusion_wrapper_granule_inputs(
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
-    expected_config = conftest.construct_diffusion_config(experiment, ndyn_substeps)
+    expected_config = utils.construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
 
     # --- Initialize the Grid ---
@@ -304,7 +304,7 @@ def test_diffusion_wrapper_granule_inputs(
 
         # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
         try:
-            result, error_message = conftest.compare_objects(
+            result, error_message = utils.compare_objects(
                 captured_kwargs["grid"], expected_icon_grid
             )
             assert result, f"Grid comparison failed: {error_message}"
@@ -315,35 +315,35 @@ def test_diffusion_wrapper_granule_inputs(
             else:
                 pass
 
-        result, error_message = conftest.compare_objects(captured_kwargs["config"], expected_config)
+        result, error_message = utils.compare_objects(captured_kwargs["config"], expected_config)
         assert result, f"Config comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["params"], expected_additional_parameters
         )
         assert result, f"Params comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["vertical_grid"], expected_vertical_params
         )
         assert result, f"Vertical Grid comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["metric_state"], expected_metric_state
         )
         assert result, f"Metric State comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["interpolation_state"], expected_interpolation_state
         )
         assert result, f"Interpolation State comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["edge_params"], expected_edge_geometry
         )
         assert result, f"Edge Params comparison failed: {error_message}"
 
-        result, error_message = conftest.compare_objects(
+        result, error_message = utils.compare_objects(
             captured_kwargs["cell_params"], expected_cell_geometry
         )
         assert result, f"Cell Params comparison failed: {error_message}"
@@ -366,12 +366,8 @@ def test_diffusion_wrapper_granule_inputs(
 
         # Check input arguments to Diffusion.run
         captured_args, captured_kwargs = mock_run.call_args
-        assert conftest.compare_objects(
-            captured_kwargs["diagnostic_state"], expected_diagnostic_state
-        )
-        assert conftest.compare_objects(
-            captured_kwargs["prognostic_state"], expected_prognostic_state
-        )
+        assert utils.compare_objects(captured_kwargs["diagnostic_state"], expected_diagnostic_state)
+        assert utils.compare_objects(captured_kwargs["prognostic_state"], expected_prognostic_state)
         assert captured_kwargs["dtime"] == expected_dtime
 
 
