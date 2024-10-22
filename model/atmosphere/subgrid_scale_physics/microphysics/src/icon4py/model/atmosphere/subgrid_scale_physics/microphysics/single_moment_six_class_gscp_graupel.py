@@ -770,8 +770,8 @@ def _reduced_deposition_in_clouds(
         qvsw_kup: saturated vapor mixing ratio at k-1 level
         dz: vertical grid spacing
         dist_cldtop_kup: vertical distance to cloud top
-        k_lev: current k index
-        startmoist_level: moist porcess starting index
+        k_lev: current vertical level index
+        startmoist_level: the starting vertical level index for moist process
         is_surface: True if the current k level is at the bottom
         llqc: cloud grid cell
     Returns:
