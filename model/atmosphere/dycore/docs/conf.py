@@ -91,6 +91,10 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
     objtype = 'full'
     priority = autodoc.MethodDocumenter.priority - 1
 
+    # Configuration options
+    var_type_in_inputs = True
+    var_type_formatting = '``'
+
     def get_doc(self):
         # Override the default get_doc method to pick up all docstrings in the
         # source code
@@ -189,15 +193,17 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
                 docstr_lines[iline] = insert_before_first_non_space(line, '&')
 
             # Add type information to variable names (only in bullet point lines)
-            if (not past_inputs) and (not latex_multiline_block) and ('-' in line) and (':' in line):
+            if (not latex_multiline_block) and ('-' in line) and (':' in line):
+                if past_inputs and not self.var_type_in_inputs:
+                    continue
                 indent = len(line) - len(line.lstrip())
                 split_line = line.split()
-                for variable, var_type in next_method_info['variable_types'].items():
+                for variable, var_type in next_method_info['var_types'].items():
                     if variable in split_line:
                         # Replace only exact matches
                         for j, part in enumerate(split_line):
                             if part == variable:
-                                split_line[j] = f"{part} ({var_type})"
+                                split_line[j] = f"{part} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
                         docstr_lines[iline] = ' '*indent + ' '.join(split_line)
 
         return docstr_lines
@@ -250,8 +256,8 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         method_info['module_local_name'] = module_name
         method_info['module_full_name'] = module_obj.__name__
         method_info['annotations'] = method_obj.definition.__annotations__
-        method_info['variable_names_map'] = self.map_variable_names(call_string)
-        method_info['variable_types'] = self.map_variable_types(method_info)
+        method_info['var_names_map'] = self.map_variable_names(call_string)
+        method_info['var_types'] = self.map_variable_types(method_info)
         return method_info
 
     def map_variable_names(self, function_call_str):
@@ -263,36 +269,28 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         for arg_name, arg_value in matches:
             # Extract the last part of the argument value after the last period
             short_name = arg_value.split('.')[-1]
-            variable_map[short_name] = arg_name
+            variable_map[arg_name] = short_name
         return variable_map
     
     def map_variable_types(self, method_info):
-        # Map variable names to their types using the annotations
-        variable_types = {}
-        for var_name, var_type in method_info['annotations'].items():
-            if var_name in method_info['variable_names_map'].values():
-                variable_types[var_name] = self.human_readable_type(var_type)
-        return variable_types
+        # Map variable short names (*not arg name*) to their types using the
+        # annotations
+        var_types = {}
+        for arg_name, var_type in method_info['annotations'].items():
+            if arg_name in method_info['var_names_map'].keys():
+                var_types[method_info['var_names_map'][arg_name]] = self.format_type_string(var_type)
+        return var_types
     
-    # def human_readable_type(self, var_type):
-    #     type_str = str(var_type)
-    #     # Replace class types like <class 'numpy.int32'> with int32
-    #     type_str = re.sub(r"<class '([\w\.]+)'>", lambda m: m.group(1).split('.')[-1], type_str)
-    #     # Replace gt4py.next.common.Field[...] with Field[...]
-    #     type_str = re.sub(r"gt4py\.next\.common\.", "", type_str)
-    #     # Replace Dimension(value='K', kind=<DimensionKind.VERTICAL: 'vertical'>) with K
-    #     type_str = re.sub(r"Dimension\(value='(\w+)', kind=<DimensionKind\.\w+: '\w+'>\)", r"\1", type_str)
-    #     return type_str
-    
-    # TODO: Implement a more sophisticated way to convert type strings to human-readable format, it's Friday evening and I'm tired and I have the flu
-    def human_readable_type(self, var_type):
+    # TODO: Implement a more sophisticated way to convert type strings to human-readable format
+    def format_type_string(self, var_type):
         if isinstance(var_type, typing._GenericAlias):
             origin = var_type.__origin__
             args = var_type.__args__
             origin_str = origin.__name__ if hasattr(origin, '__name__') else str(origin).split('.')[-1]
-            args_str = ', '.join(self.human_readable_type(arg) for arg in args)
+            args_str = ', '.join(self.format_type_string(arg) for arg in args)
             return f"{origin_str}[{args_str}]"
         elif hasattr(var_type, '__name__') and var_type.__name__ != 'Dims':
+            print(var_type.__name__)
             return var_type.__name__
         else:
             type_str = str(var_type)
@@ -302,8 +300,12 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
             type_str = re.sub(r"gt4py\.next\.common\.", "", type_str)
             # Replace Dimension(value='K', kind=<DimensionKind.VERTICAL: 'vertical'>) with K
             type_str = re.sub(r"Dimension\(value='(\w+)', kind=<DimensionKind\.\w+: '\w+'>\)", r"\1", type_str)
-            # # Specifically handle Dims to retain the value
-            # type_str = re.sub(r"Dims\[([^\]]+)\]", lambda m: f"Dims({self.human_readable_type(m.group(1))})", type_str)
+            # Replace "Dims[Cell, K]" with "(Cell, K)"
+            type_str = re.sub(r"Dims\[(\w+), (\w+)\]", r"(\1, \2)", type_str)
+            # Replace "Dims[Kdim]" with "(Kdim)"
+            type_str = re.sub(r"Dims\[(\w+)\]", r"(\1)", type_str)
+            # Shorten "Cell" to "C"
+            type_str = re.sub(r"Cell", "C", type_str)
             return type_str
 
 
