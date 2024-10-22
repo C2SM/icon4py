@@ -170,7 +170,7 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
 def test_field_provider_for_numpy_function(
     grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    grid = grid_savepoint.construct_icon_grid(False) 
+    grid = grid_savepoint.construct_icon_grid(False)
     vertical_grid = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=grid.num_levels),
         grid_savepoint.vct_a(),
