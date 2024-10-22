@@ -76,9 +76,10 @@ from icon4py.model.common.utils import builder
 
 DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
 
+
 class GridProvider(Protocol):
     @property
-    def grid(self)-> Optional[icon_grid.IconGrid]:
+    def grid(self) -> Optional[icon_grid.IconGrid]:
         ...
 
     @property
@@ -100,7 +101,13 @@ class FieldProvider(Protocol):
 
     """
 
-    def __call__(self, field_name: str, field_src: Optional[state_utils.FieldSource], backend:Optional[gtx_backend.Backend], grid: Optional[GridProvider]) -> state_utils.FieldType:
+    def __call__(
+        self,
+        field_name: str,
+        field_src: Optional[state_utils.FieldSource],
+        backend: Optional[gtx_backend.Backend],
+        grid: Optional[GridProvider],
+    ) -> state_utils.FieldType:
         ...
 
     @property
@@ -127,7 +134,9 @@ class PrecomputedFieldProvider(FieldProvider):
     def dependencies(self) -> Sequence[str]:
         return ()
 
-    def __call__(self, field_name: str, field_src = None, backend = None, grid = None) -> state_utils.FieldType:
+    def __call__(
+        self, field_name: str, field_src=None, backend=None, grid=None
+    ) -> state_utils.FieldType:
         return self.fields[field_name]
 
     @property
@@ -178,7 +187,12 @@ class ProgramFieldProvider(FieldProvider):
     def _unallocated(self) -> bool:
         return not all(self._fields.values())
 
-    def _allocate(self, backend: gtx_backend.Backend, grid: base_grid.BaseGrid, metadata: dict[str, model.FieldMetaData]) -> dict[str, state_utils.FieldType]:
+    def _allocate(
+        self,
+        backend: gtx_backend.Backend,
+        grid: base_grid.BaseGrid,
+        metadata: dict[str, model.FieldMetaData],
+    ) -> dict[str, state_utils.FieldType]:
         def _map_size(dim: gtx.Dimension, grid: base_grid.BaseGrid) -> int:
             if dim == dims.KHalfDim:
                 return grid.num_levels + 1
@@ -193,16 +207,11 @@ class ProgramFieldProvider(FieldProvider):
         field_domain = {
             _map_dim(dim): (0, _map_size(dim, grid)) for dim in self._compute_domain.keys()
         }
-        return {
-            k: allocate(field_domain, dtype=metadata[k]["dtype"])
-            for k in self._fields.keys()
-        }
+        return {k: allocate(field_domain, dtype=metadata[k]["dtype"]) for k in self._fields.keys()}
 
     # TODO (@halungge) this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
-    def _get_offset_providers(
-        self, grid: icon_grid.IconGrid
-    ) -> dict[str, gtx.FieldOffset]:
+    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
         offset_providers = {}
         for dim in self._compute_domain.keys():
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
@@ -246,13 +255,26 @@ class ProgramFieldProvider(FieldProvider):
                 raise ValueError(f"DimensionKind '{dim.kind}' not supported in Program Domain")
         return domain_args
 
-    def __call__(self, field_name: str, factory:state_utils.FieldSource, backend:gtx_backend.Backend, grid_provider:GridProvider ):
+    def __call__(
+        self,
+        field_name: str,
+        factory: state_utils.FieldSource,
+        backend: gtx_backend.Backend,
+        grid_provider: GridProvider,
+    ):
         if any([f is None for f in self.fields.values()]):
             self._compute(factory, backend, grid_provider)
         return self.fields[field_name]
 
-    def _compute(self, factory:state_utils.FieldSource, backend:gtx_backend.Backend, grid_provider:GridProvider) -> None:
-        metadata = {v: factory.get(v, state_utils.RetrievalType.METADATA) for k, v in self._output.items()}
+    def _compute(
+        self,
+        factory: state_utils.FieldSource,
+        backend: gtx_backend.Backend,
+        grid_provider: GridProvider,
+    ) -> None:
+        metadata = {
+            v: factory.get(v, state_utils.RetrievalType.METADATA) for k, v in self._output.items()
+        }
         self._fields = self._allocate(backend, grid_provider.grid, metadata)
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
@@ -309,12 +331,23 @@ class NumpyFieldsProvider(FieldProvider):
         self._offsets = offsets if offsets is not None else {}
         self._params = params if params is not None else {}
 
-    def __call__(self, field_name: str, factory:state_utils.FieldSource, backend:gtx_backend.Backend, grid: GridProvider) -> state_utils.FieldType:
+    def __call__(
+        self,
+        field_name: str,
+        factory: state_utils.FieldSource,
+        backend: gtx_backend.Backend,
+        grid: GridProvider,
+    ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
             self._compute(factory, backend, grid)
         return self.fields[field_name]
 
-    def _compute(self, factory:state_utils.FieldSource, backend:gtx_backend.Backend, grid_provider:GridProvider) -> None:
+    def _compute(
+        self,
+        factory: state_utils.FieldSource,
+        backend: gtx_backend.Backend,
+        grid_provider: GridProvider,
+    ) -> None:
         self._validate_dependencies()
         args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
         offsets = {k: grid_provider.grid.connectivities[v] for k, v in self._offsets.items()}
@@ -324,7 +357,8 @@ class NumpyFieldsProvider(FieldProvider):
         ## TODO: can the order of return values be checked?
         results = (results,) if isinstance(results, xp.ndarray) else results
         self._fields = {
-            k: gtx.as_field(tuple(self._dims), results[i], allocator = backend) for i, k in enumerate(self.fields)
+            k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
+            for i, k in enumerate(self.fields)
         }
 
     def _validate_dependencies(self):
@@ -401,7 +435,7 @@ class FieldsFactory(state_utils.FieldSource, PartialConfigurable, GridProvider):
         metadata: dict[str, model.FieldMetaData],
         grid: Optional[icon_grid.IconGrid] = None,
         vertical_grid: Optional[v_grid.VerticalGrid] = None,
-        backend:Optional[gtx_backend.Backend]=None,
+        backend: Optional[gtx_backend.Backend] = None,
     ):
         self._metadata = metadata
         self._grid = grid
@@ -441,7 +475,6 @@ class FieldsFactory(state_utils.FieldSource, PartialConfigurable, GridProvider):
     @property
     def vertical_grid(self):
         return self._vertical
-
 
     def register_provider(self, provider: FieldProvider):
         for dependency in provider.dependencies:
