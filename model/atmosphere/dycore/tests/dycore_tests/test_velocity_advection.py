@@ -167,7 +167,7 @@ def test_velocity_predictor_step(
     savepoint_velocity_exit,
     backend,
 ):
-    if (backend is not None) and ("gtfn_cpu" in backend.name):
+    if helpers.is_gtfn_cpu_backend:
         pytest.skip("Temporary skip due to gt4py offset error output")
     sp_v = savepoint_velocity_init
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
@@ -339,7 +339,7 @@ def test_velocity_corrector_step(
     metrics_savepoint,
     backend,
 ):
-    if (backend is not None) and ("gtfn_cpu" in backend.name):
+    if helpers.is_gtfn_cpu_backend:
         pytest.skip("Temporary skip due to gt4py offset error output")
     sp_v = savepoint_velocity_init
     vn_only = sp_v.get_metadata("vn_only").get("vn_only")
