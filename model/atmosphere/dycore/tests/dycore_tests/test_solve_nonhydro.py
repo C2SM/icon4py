@@ -119,8 +119,6 @@ def test_nonhydro_predictor_step(
     ndyn_substeps,
     caplog,
 ):
-    if helpers.is_gtfn_cpu_backend:
-        pytest.skip("Temporary skip due to gt4py offset error output")
     caplog.set_level(logging.DEBUG)
     config = construct_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
@@ -543,8 +541,6 @@ def test_nonhydro_corrector_step(
     ndyn_substeps,
     caplog,
 ):
-    if helpers.is_gtfn_cpu_backend:
-        pytest.skip("Temporary skip due to gt4py offset error output")
     caplog.set_level(logging.DEBUG)
     config = construct_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
@@ -748,8 +744,6 @@ def test_run_solve_nonhydro_single_step(
     savepoint_nonhydro_step_exit,
     caplog,
 ):
-    if helpers.is_gtfn_cpu_backend:
-        pytest.skip("Temporary skip due to gt4py offset error output")
     caplog.set_level(logging.DEBUG)
     config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
 
