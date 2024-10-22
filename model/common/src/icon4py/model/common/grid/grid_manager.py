@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import enum
 import logging
 import pathlib
@@ -268,7 +267,7 @@ class GridFile:
     ) -> xp.ndarray:
         """Read a integer field from the grid file.
 
-        Reads as int32.
+        Reads as gtx.int32.
 
         Args:
             name: name of the field to read

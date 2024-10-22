@@ -5,10 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
-from gt4py.next.ffront.fbuiltins import Field, exp, int32, sqrt
+from gt4py.next.ffront.fbuiltins import exp, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.settings import backend
@@ -39,7 +39,7 @@ def _scan_pressure(
 def _diagnose_pressure(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
-    surface_pressure: Field[[dims.CellDim], ta.wpfloat],
+    surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
     grav_o_rd: ta.wpfloat,
 ) -> tuple[fa.CellKField[ta.wpfloat], fa.CellKField[ta.wpfloat]]:
     """
@@ -64,14 +64,14 @@ def _diagnose_pressure(
 def diagnose_pressure(
     ddqz_z_full: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
-    surface_pressure: Field[[dims.CellDim], ta.wpfloat],
+    surface_pressure: gtx.Field[gtx.Dims[dims.CellDim], ta.wpfloat],
     pressure: fa.CellKField[ta.wpfloat],
     pressure_ifc: fa.CellKField[ta.wpfloat],
     grav_o_rd: ta.wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _diagnose_pressure(
         ddqz_z_full,

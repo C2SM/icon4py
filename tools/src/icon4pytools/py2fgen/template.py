@@ -243,7 +243,6 @@ import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.settings import xp
 from icon4py.model.common import dimension as dims
 
@@ -290,7 +289,7 @@ def {{ func.name }}_wrapper(
 {{ arg.name }}: {{ arg.py_type_hint | replace("KHalfDim","KDim") }}{% if not loop.last or func.global_size_args %}, {% endif %}
 {%- endfor %}
 {%- for arg in func.global_size_args -%}
-{{ arg }}: int32{{ ", " if not loop.last else "" }}
+{{ arg }}: gtx.int32{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
     try:

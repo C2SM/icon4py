@@ -16,8 +16,8 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
-from gt4py.next import Field
-from gt4py.next.ffront.fbuiltins import float64, int32
+
+import gt4py.next as gtx
 from icon4py.model.atmosphere.diffusion.diffusion import (
     DiffusionConfig,
     DiffusionParams,
@@ -28,17 +28,18 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims, settings
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid import geometry
 from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import device
+from icon4py.model.common.settings import backend, device
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     flatten_first_two_dims,  # todo: move away from test_utils
 )
+from icon4py.model.common.type_alias import wpfloat
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common
@@ -55,65 +56,65 @@ icon_grid: IconGrid = None
 
 
 def diffusion_init(
-    vct_a: Field[[dims.KHalfDim], float64],
-    vct_b: Field[[dims.KHalfDim], float64],
-    theta_ref_mc: Field[[dims.CellDim, dims.KDim], float64],
-    wgtfac_c: Field[[dims.CellDim, dims.KHalfDim], float64],
-    e_bln_c_s: Field[[dims.CellDim, dims.C2EDim], float64],
-    geofac_div: Field[[dims.CellDim, dims.C2EDim], float64],
-    geofac_grg_x: Field[[dims.CellDim, dims.C2E2CODim], float64],
-    geofac_grg_y: Field[[dims.CellDim, dims.C2E2CODim], float64],
-    geofac_n2s: Field[[dims.CellDim, dims.C2E2CODim], float64],
-    nudgecoeff_e: Field[[dims.EdgeDim], float64],
-    rbf_coeff_1: Field[[dims.VertexDim, dims.V2EDim], float64],
-    rbf_coeff_2: Field[[dims.VertexDim, dims.V2EDim], float64],
-    mask_hdiff: Field[[dims.CellDim, dims.KDim], bool],
-    zd_diffcoef: Field[[dims.CellDim, dims.KDim], float64],
-    zd_vertoffset: Field[[dims.CellDim, dims.E2CDim, dims.KDim], int32],
-    zd_intcoef: Field[[dims.CellDim, dims.E2CDim, dims.KDim], float64],
-    ndyn_substeps: int32,
-    rayleigh_damping_height: float64,
-    nflat_gradp: int32,
-    diffusion_type: int32,
+    vct_a: gtx.Field[gtx.Dims[dims.KHalfDim], gtx.float64],
+    vct_b: gtx.Field[gtx.Dims[dims.KHalfDim], gtx.float64],
+    theta_ref_mc: fa.CellKField[wpfloat],
+    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
+    geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
+    geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
+    geofac_grg_y: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
+    nudgecoeff_e: fa.EdgeField[wpfloat],
+    rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
+    rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
+    mask_hdiff: fa.CellKField[bool],
+    zd_diffcoef: fa.CellKField[wpfloat],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.int32],
+    zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.float64],
+    ndyn_substeps: gtx.int32,
+    rayleigh_damping_height: gtx.float64,
+    nflat_gradp: gtx.int32,
+    diffusion_type: gtx.int32,
     hdiff_w: bool,
     hdiff_vn: bool,
     zdiffu_t: bool,
-    type_t_diffu: int32,
-    type_vn_diffu: int32,
-    hdiff_efdt_ratio: float64,
-    smagorinski_scaling_factor: float64,
+    type_t_diffu: gtx.int32,
+    type_vn_diffu: gtx.int32,
+    hdiff_efdt_ratio: gtx.float64,
+    smagorinski_scaling_factor: gtx.float64,
     hdiff_temp: bool,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     denom_diffu_v: float,
     nudge_max_coeff: float,
-    itype_sher: int32,
-    tangent_orientation: Field[[dims.EdgeDim], float64],
-    inverse_primal_edge_lengths: Field[[dims.EdgeDim], float64],
-    inv_dual_edge_length: Field[[dims.EdgeDim], float64],
-    inv_vert_vert_length: Field[[dims.EdgeDim], float64],
-    edge_areas: Field[[dims.EdgeDim], float64],
-    f_e: Field[[dims.EdgeDim], float64],
-    cell_center_lat: Field[[dims.CellDim], float64],
-    cell_center_lon: Field[[dims.CellDim], float64],
-    cell_areas: Field[[dims.CellDim], float64],
-    primal_normal_vert_x: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
-    primal_normal_vert_y: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
-    dual_normal_vert_x: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
-    dual_normal_vert_y: Field[[dims.EdgeDim, dims.E2C2VDim], float64],
-    primal_normal_cell_x: Field[[dims.EdgeDim, dims.E2CDim], float64],
-    primal_normal_cell_y: Field[[dims.EdgeDim, dims.E2CDim], float64],
-    dual_normal_cell_x: Field[[dims.EdgeDim, dims.E2CDim], float64],
-    dual_normal_cell_y: Field[[dims.EdgeDim, dims.E2CDim], float64],
-    edge_center_lat: Field[[dims.EdgeDim], float64],
-    edge_center_lon: Field[[dims.EdgeDim], float64],
-    primal_normal_x: Field[[dims.EdgeDim], float64],
-    primal_normal_y: Field[[dims.EdgeDim], float64],
-    global_root: int32,
-    global_level: int32,
-    lowest_layer_thickness: float64,
-    model_top_height: float64,
-    stretch_factor: float64,
+    itype_sher: gtx.int32,
+    tangent_orientation: fa.EdgeField[wpfloat],
+    inverse_primal_edge_lengths: fa.EdgeField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_vert_vert_length: fa.EdgeField[wpfloat],
+    edge_areas: fa.EdgeField[wpfloat],
+    f_e: fa.EdgeField[wpfloat],
+    cell_center_lat: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    cell_center_lon: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    cell_areas: gtx.Field[gtx.Dims[dims.CellDim], gtx.float64],
+    primal_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
+    primal_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
+    dual_normal_vert_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
+    dual_normal_vert_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.float64],
+    primal_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+    primal_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+    dual_normal_cell_x: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+    dual_normal_cell_y: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.float64],
+    edge_center_lat: fa.EdgeField[wpfloat],
+    edge_center_lon: fa.EdgeField[wpfloat],
+    primal_normal_x: fa.EdgeField[wpfloat],
+    primal_normal_y: fa.EdgeField[wpfloat],
+    global_root: gtx.int32,
+    global_level: gtx.int32,
+    lowest_layer_thickness: gtx.float64,
+    model_top_height: gtx.float64,
+    stretch_factor: gtx.float64,
 ):
     logger.info(f"Using Device = {device}")
 
@@ -224,16 +225,16 @@ def diffusion_init(
 
 
 def diffusion_run(
-    w: Field[[dims.CellDim, dims.KHalfDim], float64],
-    vn: Field[[dims.EdgeDim, dims.KDim], float64],
-    exner: Field[[dims.CellDim, dims.KDim], float64],
-    theta_v: Field[[dims.CellDim, dims.KDim], float64],
-    rho: Field[[dims.CellDim, dims.KDim], float64],
-    hdef_ic: Field[[dims.CellDim, dims.KHalfDim], float64],
-    div_ic: Field[[dims.CellDim, dims.KHalfDim], float64],
-    dwdx: Field[[dims.CellDim, dims.KHalfDim], float64],
-    dwdy: Field[[dims.CellDim, dims.KHalfDim], float64],
-    dtime: float64,
+    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    vn: fa.EdgeKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    rho: fa.CellKField[wpfloat],
+    hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    dtime: gtx.float64,
     linit: bool,
 ):
     # prognostic and diagnostic variables
@@ -254,38 +255,38 @@ def diffusion_run(
 
     if linit:
         common.GLOBAL_STATE["diffusion_granule"].initial_run(
-            diagnostic_state,
-            prognostic_state,
-            dtime,
+            diagnostic_state, prognostic_state, dtime, backend
         )
     else:
         common.GLOBAL_STATE["diffusion_granule"].run(
-            prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
+            prognostic_state=prognostic_state,
+            diagnostic_state=diagnostic_state,
+            dtime=dtime,
         )
 
 
 def grid_init(
-    cell_starts: Field[[CellIndexDim], int32],
-    cell_ends: Field[[CellIndexDim], int32],
-    vertex_starts: Field[[VertexIndexDim], int32],
-    vertex_ends: Field[[VertexIndexDim], int32],
-    edge_starts: Field[[EdgeIndexDim], int32],
-    edge_ends: Field[[EdgeIndexDim], int32],
-    c2e: Field[[dims.CellDim, dims.C2EDim], int32],
-    e2c: Field[[dims.EdgeDim, dims.E2CDim], int32],
-    c2e2c: Field[[dims.CellDim, dims.C2E2CDim], int32],
-    e2c2e: Field[[dims.EdgeDim, dims.E2C2EDim], int32],
-    e2v: Field[[dims.EdgeDim, dims.E2VDim], int32],
-    v2e: Field[[dims.VertexDim, dims.V2EDim], int32],
-    v2c: Field[[dims.VertexDim, dims.V2CDim], int32],
-    e2c2v: Field[[dims.EdgeDim, dims.E2C2VDim], int32],
-    c2v: Field[[dims.CellDim, dims.C2VDim], int32],
-    global_root: int32,
-    global_level: int32,
-    num_vertices: int32,
-    num_cells: int32,
-    num_edges: int32,
-    vertical_size: int32,
+    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
+    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
+    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
+    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
+    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
+    e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
+    c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
+    e2c2e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], gtx.int32],
+    e2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2VDim], gtx.int32],
+    v2e: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.int32],
+    v2c: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.int32],
+    e2c2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
+    c2v: gtx.Field[gtx.Dims[dims.CellDim, dims.C2VDim], gtx.int32],
+    global_root: gtx.int32,
+    global_level: gtx.int32,
+    num_vertices: gtx.int32,
+    num_cells: gtx.int32,
+    num_edges: gtx.int32,
+    vertical_size: gtx.int32,
     limited_area: bool,
 ):
     global icon_grid
