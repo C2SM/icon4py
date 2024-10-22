@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import where
 
@@ -406,12 +405,12 @@ def predictor_stencils_11_lower_upper(
 def compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[float],
     p_vt: fa.EdgeKField[float],
-    pos_on_tplane_e_1: gtx.Field[[dims.ECDim], float],
-    pos_on_tplane_e_2: gtx.Field[[dims.ECDim], float],
-    primal_normal_cell_1: gtx.Field[[dims.ECDim], float],
-    dual_normal_cell_1: gtx.Field[[dims.ECDim], float],
-    primal_normal_cell_2: gtx.Field[[dims.ECDim], float],
-    dual_normal_cell_2: gtx.Field[[dims.ECDim], float],
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], float],
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], float],
+    primal_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], float],
+    dual_normal_cell_1: gtx.Field[gtx.Dims[dims.ECDim], float],
+    primal_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], float],
+    dual_normal_cell_2: gtx.Field[gtx.Dims[dims.ECDim], float],
     p_dthalf: float,
     rho_ref_me: fa.EdgeKField[float],
     theta_ref_me: fa.EdgeKField[float],
@@ -559,7 +558,7 @@ def predictor_stencils_37_38(
 
 @gtx.field_operator
 def _stencils_39_40(
-    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], float],
     z_w_concorr_me: fa.EdgeKField[float],
     wgtfac_c: fa.CellKField[float],
     wgtfacq_c_dsl: fa.CellKField[float],
@@ -587,7 +586,7 @@ def _stencils_39_40(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def stencils_39_40(
-    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], float],
     z_w_concorr_me: fa.EdgeKField[float],
     wgtfac_c: fa.CellKField[float],
     wgtfacq_c_dsl: fa.CellKField[float],
