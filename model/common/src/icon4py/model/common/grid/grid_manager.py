@@ -609,7 +609,7 @@ def _construct_diamond_vertices(e2v: xp.ndarray, c2v: xp.ndarray, e2c: xp.ndarra
            \    /
             \  /
              v2
-             
+
     For example for this diamond: e0 -> (v0, v1, v2, v3)
     Ordering is the same as ICON uses.
 
@@ -726,7 +726,7 @@ def _construct_butterfly_cells(c2e2c: xp.ndarray) -> xp.ndarray:
         xp.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
     """
     dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
-    c2e2c2e2c = xp.reshape(dummy_c2e2c[c2e2c], (c2e2c.shape[0], 9))
+    c2e2c2e2c = xp.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
     return c2e2c2e2c
 
 
