@@ -8,7 +8,6 @@
 
 import logging
 
-import model.atmosphere.dycore.tests.dycore_tests.utils
 import pytest
 
 import icon4py.model.common.grid.geometry as geometry
@@ -26,6 +25,8 @@ from icon4py.model.common.test_utils import (
     helpers,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
+from . import utils
 
 
 @pytest.mark.datatest
@@ -113,9 +114,7 @@ def test_nonhydro_predictor_step(
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
-    config = model.atmosphere.dycore.tests.dycore_tests.utils.construct_solve_nh_config(
-        experiment, ndyn_substeps
-    )
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -126,9 +125,7 @@ def test_nonhydro_predictor_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = model.atmosphere.dycore.tests.dycore_tests.utils.create_vertical_params(
-        vertical_config, grid_savepoint
-    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
@@ -136,16 +133,10 @@ def test_nonhydro_predictor_step(
     nnow = 0
     nnew = 1
 
-    diagnostic_state_nh = model.atmosphere.dycore.tests.dycore_tests.utils.construct_diagnostics(sp)
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
 
-    interpolation_state = (
-        model.atmosphere.dycore.tests.dycore_tests.utils.construct_interpolation_state(
-            interpolation_savepoint
-        )
-    )
-    metric_state_nonhydro = model.atmosphere.dycore.tests.dycore_tests.utils.construct_metric_state(
-        metrics_savepoint, icon_grid.num_levels
-    )
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -164,9 +155,7 @@ def test_nonhydro_predictor_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = model.atmosphere.dycore.tests.dycore_tests.utils.create_prognostic_states(
-        sp
-    )
+    prognostic_state_ls = utils.create_prognostic_states(sp)
     solve_nonhydro.set_timelevels(nnow, nnew)
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -512,9 +501,7 @@ def test_nonhydro_corrector_step(
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
-    config = model.atmosphere.dycore.tests.dycore_tests.utils.construct_solve_nh_config(
-        experiment, ndyn_substeps
-    )
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
@@ -524,9 +511,7 @@ def test_nonhydro_corrector_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = model.atmosphere.dycore.tests.dycore_tests.utils.create_vertical_params(
-        vertical_config, grid_savepoint
-    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
@@ -540,7 +525,7 @@ def test_nonhydro_corrector_step(
     nnow = 0
     nnew = 1
 
-    diagnostic_state_nh = model.atmosphere.dycore.tests.dycore_tests.utils.construct_diagnostics(sp)
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
 
     z_fields = solve_nh.IntermediateFields(
         z_gradh_exner=sp.z_gradh_exner(),
@@ -561,14 +546,8 @@ def test_nonhydro_corrector_step(
 
     divdamp_fac_o2 = sp.divdamp_fac_o2()
 
-    interpolation_state = (
-        model.atmosphere.dycore.tests.dycore_tests.utils.construct_interpolation_state(
-            interpolation_savepoint
-        )
-    )
-    metric_state_nonhydro = model.atmosphere.dycore.tests.dycore_tests.utils.construct_metric_state(
-        metrics_savepoint, icon_grid.num_levels
-    )
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -586,9 +565,7 @@ def test_nonhydro_corrector_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = model.atmosphere.dycore.tests.dycore_tests.utils.create_prognostic_states(
-        sp
-    )
+    prognostic_state_ls = utils.create_prognostic_states(sp)
     solve_nonhydro.set_timelevels(nnow, nnew)
 
     solve_nonhydro.run_corrector_step(
@@ -727,9 +704,7 @@ def test_run_solve_nonhydro_single_step(
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
-    config = model.atmosphere.dycore.tests.dycore_tests.utils.construct_solve_nh_config(
-        experiment, ndyn_substeps
-    )
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
@@ -741,9 +716,7 @@ def test_run_solve_nonhydro_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = model.atmosphere.dycore.tests.dycore_tests.utils.create_vertical_params(
-        vertical_config, grid_savepoint
-    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
@@ -759,16 +732,10 @@ def test_run_solve_nonhydro_single_step(
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = model.atmosphere.dycore.tests.dycore_tests.utils.construct_diagnostics(sp)
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
 
-    interpolation_state = (
-        model.atmosphere.dycore.tests.dycore_tests.utils.construct_interpolation_state(
-            interpolation_savepoint
-        )
-    )
-    metric_state_nonhydro = model.atmosphere.dycore.tests.dycore_tests.utils.construct_metric_state(
-        metrics_savepoint, icon_grid.num_levels
-    )
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -786,9 +753,7 @@ def test_run_solve_nonhydro_single_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = model.atmosphere.dycore.tests.dycore_tests.utils.create_prognostic_states(
-        sp
-    )
+    prognostic_state_ls = utils.create_prognostic_states(sp)
 
     initial_divdamp_fac = sp.divdamp_fac_o2()
     solve_nonhydro.time_step(
@@ -868,9 +833,7 @@ def test_run_solve_nonhydro_multi_step(
     experiment,
     ndyn_substeps,
 ):
-    config = model.atmosphere.dycore.tests.dycore_tests.utils.construct_solve_nh_config(
-        experiment, ndyn_substeps
-    )
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -881,9 +844,7 @@ def test_run_solve_nonhydro_multi_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = model.atmosphere.dycore.tests.dycore_tests.utils.create_vertical_params(
-        vertical_config, grid_savepoint
-    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
@@ -899,19 +860,11 @@ def test_run_solve_nonhydro_multi_step(
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = model.atmosphere.dycore.tests.dycore_tests.utils.construct_diagnostics(sp)
-    prognostic_state_ls = model.atmosphere.dycore.tests.dycore_tests.utils.create_prognostic_states(
-        sp
-    )
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
+    prognostic_state_ls = utils.create_prognostic_states(sp)
 
-    interpolation_state = (
-        model.atmosphere.dycore.tests.dycore_tests.utils.construct_interpolation_state(
-            interpolation_savepoint
-        )
-    )
-    metric_state_nonhydro = model.atmosphere.dycore.tests.dycore_tests.utils.construct_metric_state(
-        metrics_savepoint, icon_grid.num_levels
-    )
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
