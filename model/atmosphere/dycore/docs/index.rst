@@ -3,8 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to icon4py-atmosphere-dycore's documentation!
-=====================================================
+Welcome to ICON4Py's documentation!
+===================================
+
+This is currently at a very early stage of development, but you can take a look
+at the numerical documentation for the dycore.
+
 
 .. toctree::
    :maxdepth: 2
