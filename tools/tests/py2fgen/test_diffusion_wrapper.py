@@ -249,117 +249,119 @@ def test_diffusion_wrapper_granule_inputs(
         vertical_size=vertical_size,
         limited_area=limited_area,
     )
-    diffusion_init(
-        vct_a=vct_a,
-        vct_b=vct_b,
-        theta_ref_mc=theta_ref_mc,
-        wgtfac_c=wgtfac_c,
-        e_bln_c_s=e_bln_c_s,
-        geofac_div=geofac_div,
-        geofac_grg_x=geofac_grg_x,
-        geofac_grg_y=geofac_grg_y,
-        geofac_n2s=geofac_n2s,
-        nudgecoeff_e=nudgecoeff_e,
-        rbf_coeff_1=rbf_coeff_1,
-        rbf_coeff_2=rbf_coeff_2,
-        mask_hdiff=mask_hdiff,
-        zd_diffcoef=zd_diffcoef,
-        zd_vertoffset=zd_vertoffset,
-        zd_intcoef=zd_intcoef,
-        ndyn_substeps=ndyn_substeps,
-        rayleigh_damping_height=damping_height,
-        nflat_gradp=nflat_gradp,
-        diffusion_type=diffusion_type,
-        hdiff_w=hdiff_w,
-        hdiff_vn=hdiff_vn,
-        zdiffu_t=zdiffu_t,
-        type_t_diffu=type_t_diffu,
-        type_vn_diffu=type_vn_diffu,
-        hdiff_efdt_ratio=hdiff_efdt_ratio,
-        smagorinski_scaling_factor=smagorinski_scaling_factor,
-        hdiff_temp=hdiff_temp,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
-        denom_diffu_v=denom_diffu_v,
-        nudge_max_coeff=nudge_max_coeff,
-        itype_sher=itype_sher.value,
-        tangent_orientation=tangent_orientation,
-        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_vert_vert_length=inv_vert_vert_length,
-        edge_areas=edge_areas,
-        f_e=f_e,
-        cell_center_lat=cell_center_lat,
-        cell_center_lon=cell_center_lon,
-        cell_areas=cell_areas,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
-        edge_center_lat=edge_center_lat,
-        edge_center_lon=edge_center_lon,
-        primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y,
-        global_root=global_root,
-        global_level=global_level,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-    )
-    # TODO: @sam fix this
-    # --- Mock and Test diffusion_granule.init ---
-    # with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.__init__") as mock_init:
 
-    # # Check input arguments to diffusion_granule.init
-    # captured_args, captured_kwargs = mock_init.call_args
-    #
-    # # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
-    # try:
-    #     result, error_message = compare_objects(captured_kwargs["grid"], expected_icon_grid)
-    #     assert result, f"Grid comparison failed: {error_message}"
-    # except AssertionError as e:
-    #     error_message = str(e)
-    #     if "object.connectivities" not in error_message:
-    #         raise
-    #     else:
-    #         pass
-    #
-    # result, error_message = compare_objects(captured_kwargs["config"], expected_config)
-    # assert result, f"Config comparison failed: {error_message}"
-    #
-    # result, error_message = compare_objects(
-    #     captured_kwargs["params"], expected_additional_parameters
-    # )
-    # assert result, f"Params comparison failed: {error_message}"
-    #
-    # result, error_message = compare_objects(
-    #     captured_kwargs["vertical_grid"], expected_vertical_params
-    # )
-    # assert result, f"Vertical Grid comparison failed: {error_message}"
-    #
-    # result, error_message = compare_objects(
-    #     captured_kwargs["metric_state"], expected_metric_state
-    # )
-    # assert result, f"Metric State comparison failed: {error_message}"
-    #
-    # result, error_message = compare_objects(
-    #     captured_kwargs["interpolation_state"], expected_interpolation_state
-    # )
-    # assert result, f"Interpolation State comparison failed: {error_message}"
-    #
-    # result, error_message = compare_objects(
-    #     captured_kwargs["edge_params"], expected_edge_geometry
-    # )
-    # assert result, f"Edge Params comparison failed: {error_message}"
-    #
-    # result, error_message = compare_objects(
-    #     captured_kwargs["cell_params"], expected_cell_geometry
-    # )
-    # assert result, f"Cell Params comparison failed: {error_message}"
+    # --- Mock and Test diffusion_granule.init ---
+    with mock.patch(
+        "icon4py.model.atmosphere.diffusion.diffusion.Diffusion.__init__", return_value=None
+    ) as mock_init:
+        diffusion_init(
+            vct_a=vct_a,
+            vct_b=vct_b,
+            theta_ref_mc=theta_ref_mc,
+            wgtfac_c=wgtfac_c,
+            e_bln_c_s=e_bln_c_s,
+            geofac_div=geofac_div,
+            geofac_grg_x=geofac_grg_x,
+            geofac_grg_y=geofac_grg_y,
+            geofac_n2s=geofac_n2s,
+            nudgecoeff_e=nudgecoeff_e,
+            rbf_coeff_1=rbf_coeff_1,
+            rbf_coeff_2=rbf_coeff_2,
+            mask_hdiff=mask_hdiff,
+            zd_diffcoef=zd_diffcoef,
+            zd_vertoffset=zd_vertoffset,
+            zd_intcoef=zd_intcoef,
+            ndyn_substeps=ndyn_substeps,
+            rayleigh_damping_height=damping_height,
+            nflat_gradp=nflat_gradp,
+            diffusion_type=diffusion_type,
+            hdiff_w=hdiff_w,
+            hdiff_vn=hdiff_vn,
+            zdiffu_t=zdiffu_t,
+            type_t_diffu=type_t_diffu,
+            type_vn_diffu=type_vn_diffu,
+            hdiff_efdt_ratio=hdiff_efdt_ratio,
+            smagorinski_scaling_factor=smagorinski_scaling_factor,
+            hdiff_temp=hdiff_temp,
+            thslp_zdiffu=thslp_zdiffu,
+            thhgtd_zdiffu=thhgtd_zdiffu,
+            denom_diffu_v=denom_diffu_v,
+            nudge_max_coeff=nudge_max_coeff,
+            itype_sher=itype_sher.value,
+            tangent_orientation=tangent_orientation,
+            inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+            inv_dual_edge_length=inv_dual_edge_length,
+            inv_vert_vert_length=inv_vert_vert_length,
+            edge_areas=edge_areas,
+            f_e=f_e,
+            cell_center_lat=cell_center_lat,
+            cell_center_lon=cell_center_lon,
+            cell_areas=cell_areas,
+            primal_normal_vert_x=primal_normal_vert_x,
+            primal_normal_vert_y=primal_normal_vert_y,
+            dual_normal_vert_x=dual_normal_vert_x,
+            dual_normal_vert_y=dual_normal_vert_y,
+            primal_normal_cell_x=primal_normal_cell_x,
+            primal_normal_cell_y=primal_normal_cell_y,
+            dual_normal_cell_x=dual_normal_cell_x,
+            dual_normal_cell_y=dual_normal_cell_y,
+            edge_center_lat=edge_center_lat,
+            edge_center_lon=edge_center_lon,
+            primal_normal_x=primal_normal_x,
+            primal_normal_y=primal_normal_y,
+            global_root=global_root,
+            global_level=global_level,
+            lowest_layer_thickness=lowest_layer_thickness,
+            model_top_height=model_top_height,
+            stretch_factor=stretch_factor,
+        )
+
+        # Check input arguments to diffusion_granule.init
+        captured_args, captured_kwargs = mock_init.call_args
+
+        # special case of grid._id as we do not use this arg in the wrapper as we cant pass strings from Fortran to the wrapper
+        try:
+            result, error_message = compare_objects(captured_kwargs["grid"], expected_icon_grid)
+            assert result, f"Grid comparison failed: {error_message}"
+        except AssertionError as e:
+            error_message = str(e)
+            if "object.connectivities" not in error_message:
+                raise
+            else:
+                pass
+
+        result, error_message = compare_objects(captured_kwargs["config"], expected_config)
+        assert result, f"Config comparison failed: {error_message}"
+
+        result, error_message = compare_objects(
+            captured_kwargs["params"], expected_additional_parameters
+        )
+        assert result, f"Params comparison failed: {error_message}"
+
+        result, error_message = compare_objects(
+            captured_kwargs["vertical_grid"], expected_vertical_params
+        )
+        assert result, f"Vertical Grid comparison failed: {error_message}"
+
+        result, error_message = compare_objects(
+            captured_kwargs["metric_state"], expected_metric_state
+        )
+        assert result, f"Metric State comparison failed: {error_message}"
+
+        result, error_message = compare_objects(
+            captured_kwargs["interpolation_state"], expected_interpolation_state
+        )
+        assert result, f"Interpolation State comparison failed: {error_message}"
+
+        result, error_message = compare_objects(
+            captured_kwargs["edge_params"], expected_edge_geometry
+        )
+        assert result, f"Edge Params comparison failed: {error_message}"
+
+        result, error_message = compare_objects(
+            captured_kwargs["cell_params"], expected_cell_geometry
+        )
+        assert result, f"Cell Params comparison failed: {error_message}"
 
     # --- Mock and Test diffusion_granule.run ---
     with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.run") as mock_run:
