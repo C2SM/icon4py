@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.reconstruct_cubic_coefficients_
     reconstruct_cubic_coefficients_svd,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.settings import xp
 
 
@@ -55,8 +56,29 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
         lsq_moments_7: xp.array,
         lsq_moments_8: xp.array,
         lsq_moments_9: xp.array,
+        p_coeff_1_dsl: xp.array,
+        p_coeff_2_dsl: xp.array,
+        p_coeff_3_dsl: xp.array,
+        p_coeff_4_dsl: xp.array,
+        p_coeff_5_dsl: xp.array,
+        p_coeff_6_dsl: xp.array,
+        p_coeff_7_dsl: xp.array,
+        p_coeff_8_dsl: xp.array,
+        p_coeff_9_dsl: xp.array,
+        p_coeff_10_dsl: xp.array,
         **kwargs,
     ) -> dict:
+        p_coeff_1_dsl_cp = p_coeff_1_dsl.copy()
+        p_coeff_2_dsl_cp = p_coeff_2_dsl.copy()
+        p_coeff_3_dsl_cp = p_coeff_3_dsl.copy()
+        p_coeff_4_dsl_cp = p_coeff_4_dsl.copy()
+        p_coeff_5_dsl_cp = p_coeff_5_dsl.copy()
+        p_coeff_6_dsl_cp = p_coeff_6_dsl.copy()
+        p_coeff_7_dsl_cp = p_coeff_7_dsl.copy()
+        p_coeff_8_dsl_cp = p_coeff_8_dsl.copy()
+        p_coeff_9_dsl_cp = p_coeff_9_dsl.copy()
+        p_coeff_10_dsl_cp = p_coeff_10_dsl.copy()
+
         c2e2c2e2c = grid.connectivities[dims.C2E2C2E2CDim]
         lsq_moments_1 = xp.expand_dims(lsq_moments_1, axis=-1)
         lsq_moments_2 = xp.expand_dims(lsq_moments_2, axis=-1)
@@ -213,6 +235,69 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
             + p_coeff_9_dsl * lsq_moments_8
             + p_coeff_10_dsl * lsq_moments_9
         )
+
+        # restriction of execution domain
+        p_coeff_1_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_1_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_1_dsl[kwargs["horizontal_end"] :, :] = p_coeff_1_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+        p_coeff_2_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_2_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_2_dsl[kwargs["horizontal_end"] :, :] = p_coeff_2_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+        p_coeff_3_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_3_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_3_dsl[kwargs["horizontal_end"] :, :] = p_coeff_3_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+        p_coeff_4_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_4_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_4_dsl[kwargs["horizontal_end"] :, :] = p_coeff_4_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+        p_coeff_5_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_5_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_5_dsl[kwargs["horizontal_end"] :, :] = p_coeff_5_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+        p_coeff_6_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_6_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_6_dsl[kwargs["horizontal_end"] :, :] = p_coeff_6_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+        p_coeff_7_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_7_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_7_dsl[kwargs["horizontal_end"] :, :] = p_coeff_7_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+        p_coeff_8_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_8_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_8_dsl[kwargs["horizontal_end"] :, :] = p_coeff_8_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+        p_coeff_9_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_9_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_9_dsl[kwargs["horizontal_end"] :, :] = p_coeff_9_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+        p_coeff_10_dsl[0 : kwargs["horizontal_start"], :] = p_coeff_10_dsl_cp[
+            0 : kwargs["horizontal_start"], :
+        ]
+        p_coeff_10_dsl[kwargs["horizontal_end"] :, :] = p_coeff_10_dsl_cp[
+            kwargs["horizontal_end"] :, :
+        ]
+
         return dict(
             p_coeff_1_dsl=p_coeff_1_dsl,
             p_coeff_2_dsl=p_coeff_2_dsl,
@@ -275,6 +360,14 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
         p_coeff_8_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         p_coeff_9_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         p_coeff_10_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+
+        cell_domain = h_grid.domain(dims.CellDim)
+        horizontal_start = (
+            grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+
         return dict(
             p_cc=p_cc,
             lsq_pseudoinv_1=lsq_pseudoinv_1_field,
@@ -305,7 +398,7 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
             p_coeff_8_dsl=p_coeff_8_dsl,
             p_coeff_9_dsl=p_coeff_9_dsl,
             p_coeff_10_dsl=p_coeff_10_dsl,
-            horizontal_start=0,
+            horizontal_start=horizontal_start,
             horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),

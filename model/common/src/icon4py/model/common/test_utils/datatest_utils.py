@@ -116,6 +116,10 @@ def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
+def get_datapath_for_experiment_advection(ranked_base_path, experiment=REGIONAL_EXPERIMENT):
+    return ranked_base_path.joinpath(f"{experiment}/advection/ser_data")
+
+
 def create_icon_serial_data_provider(datapath, processor_props):
     return IconSerialDataProvider(
         fname_prefix="icon_pydycore",
