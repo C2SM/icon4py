@@ -20,7 +20,7 @@ from icon4py.model.common.io.writers import (
     TimeProperties,
     filter_by_standard_name,
 )
-from icon4py.model.common.states import data
+from icon4py.model.common.states import data, metadata
 from icon4py.model.common.test_utils import helpers
 
 from . import test_io
@@ -97,7 +97,7 @@ def test_initialize_writer_interface_levels(test_path, random_name):
     assert interface_levels.units == "1"
     assert interface_levels.datatype == np.int32
     assert interface_levels.long_name == "model interface level index"
-    assert interface_levels.standard_name == cf_utils.INTERFACE_LEVEL_STANDARD_NAME
+    assert interface_levels.standard_name == metadata.INTERFACE_LEVEL_STANDARD_NAME
     assert len(interface_levels) == grid.num_levels + 1
     assert np.all(interface_levels == np.arange(grid.num_levels + 1))
 
@@ -108,7 +108,7 @@ def test_initialize_writer_heights(test_path, random_name):
     assert heights.units == "m"
     assert heights.datatype == np.float64
     assert heights.long_name == "height value of half levels without topography"
-    assert heights.standard_name == cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
+    assert heights.standard_name == metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
     assert len(heights) == grid.num_levels + 1
     assert heights[0] == 12000.0
     assert heights[-1] == 0.0

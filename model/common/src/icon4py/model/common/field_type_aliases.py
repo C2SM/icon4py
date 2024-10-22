@@ -21,6 +21,7 @@ CellField: TypeAlias = Field[Dims[dims.CellDim], T]
 EdgeField: TypeAlias = Field[Dims[dims.EdgeDim], T]
 VertexField: TypeAlias = Field[Dims[dims.VertexDim], T]
 KField: TypeAlias = Field[Dims[dims.KDim], T]
+KHalfField: TypeAlias = Field[Dims[dims.KHalfDim], T]
 
 CellKField: TypeAlias = Field[Dims[dims.CellDim, dims.KDim], T]
 EdgeKField: TypeAlias = Field[Dims[dims.EdgeDim, dims.KDim], T]
