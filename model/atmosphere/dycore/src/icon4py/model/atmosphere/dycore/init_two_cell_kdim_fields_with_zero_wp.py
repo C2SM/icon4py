@@ -13,7 +13,6 @@ from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     _init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -25,7 +24,7 @@ def _init_two_cell_kdim_fields_with_zero_wp() -> (
     return _init_cell_kdim_field_with_zero_wp(), _init_cell_kdim_field_with_zero_wp()
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def init_two_cell_kdim_fields_with_zero_wp(
     cell_kdim_field_with_zero_wp_1: fa.CellKField[wpfloat],
     cell_kdim_field_with_zero_wp_2: fa.CellKField[wpfloat],
