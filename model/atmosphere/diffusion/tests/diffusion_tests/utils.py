@@ -170,6 +170,3 @@ def diffusion_instance(
     diffusion_instance_ = diffusion.Diffusion(backend, exchange)
 
     yield diffusion_instance_
-
-    if settings.dace_orchestration is not None:
-        diffusion_instance_._do_diffusion_step.clear_cache()
