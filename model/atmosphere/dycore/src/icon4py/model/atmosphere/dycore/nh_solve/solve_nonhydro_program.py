@@ -222,7 +222,7 @@ def predictor_stencils_4_5_6(
 
 
 @gtx.field_operator
-def _predictor_stencils_7_8_9(
+def _compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
     rho: fa.CellKField[float],
     z_rth_pr_1: fa.CellKField[float],
     z_rth_pr_2: fa.CellKField[float],
@@ -280,7 +280,7 @@ def _predictor_stencils_7_8_9(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def predictor_stencils_7_8_9(
+def compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
     rho: fa.CellKField[float],
     rho_ref_mc: fa.CellKField[float],
     theta_v: fa.CellKField[float],
@@ -303,7 +303,7 @@ def predictor_stencils_7_8_9(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _predictor_stencils_7_8_9(
+    _compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
         rho,
         z_rth_pr_1,
         z_rth_pr_2,
