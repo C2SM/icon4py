@@ -453,21 +453,17 @@ class SolveNonhydro:
     ):
         self._exchange = exchange
         self._backend = backend
-        self._initialized = False
-        self.grid: Optional[icon_grid.IconGrid] = None
-        self.config: Optional[NonHydrostaticConfig] = None
-        self.params: Optional[NonHydrostaticParams] = None
-        self.metric_state_nonhydro: Optional[solve_nh_states.MetricStateNonHydro] = None
-        self.interpolation_state: Optional[solve_nh_states.InterpolationState] = None
-        self.vertical_params: Optional[v_grid.VerticalGrid] = None
-        self.edge_geometry: Optional[geometry.EdgeParams] = None
-        self.cell_params: Optional[geometry.CellParams] = None
-        self.velocity_advection: Optional[VelocityAdvection] = None
-        self.l_vert_nested: bool = False
+
+        self._grid = grid
+        self._config = config
+        self._params = params
+        self._metric_state_nonhydro = metric_state_nonhydro
+        self._interpolation_state = interpolation_state
+        self._vertical_params = vertical_params
+        self._edge_geometry = edge_geometry
+        self._cell_params = cell_geometry
+
         self.enh_divdamp_fac: Optional[fa.KField[float]] = None
-        self.scal_divdamp: Optional[fa.KField[float]] = None
-        self._bdy_divdamp: Optional[fa.KField[float]] = None
-        self.p_test_run = True
         self.jk_start = 0  # used in stencil_55
         self.ntl1 = 0
         self.ntl2 = 0
@@ -619,14 +615,6 @@ class SolveNonhydro:
         self._init_test_fields = nhsolve_prog.init_test_fields.with_backend(self._backend)
         self._stencils_42_44_45_45b = nhsolve_prog.stencils_42_44_45_45b.with_backend(self._backend)
 
-        self._grid = grid
-        self._config: NonHydrostaticConfig = config
-        self._params: NonHydrostaticParams = params
-        self._metric_state_nonhydro: solve_nh_states.MetricStateNonHydro = metric_state_nonhydro
-        self._interpolation_state: solve_nh_states.InterpolationState = interpolation_state
-        self._vertical_params = vertical_params
-        self._edge_geometry = edge_geometry
-        self._cell_params = cell_geometry
         self.velocity_advection = VelocityAdvection(
             grid,
             metric_state_nonhydro,
@@ -640,6 +628,7 @@ class SolveNonhydro:
         self._determine_local_domains()
         # TODO (magdalena) vertical nesting is only relevant in the context of
         #      horizontal nesting, since we don't support this we should remove this option
+        self.l_vert_nested: bool = False
         if grid.lvert_nest:
             self.l_vert_nested = True
             self.jk_start = 1
@@ -1592,7 +1581,7 @@ class SolveNonhydro:
 
         if self._config.divdamp_type >= 3:
             self._compute_dwdz_for_divergence_damping(
-                inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
                 z_dwdz_dd=z_fields.z_dwdz_dd,
