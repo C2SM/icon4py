@@ -8,7 +8,7 @@
 import dataclasses
 import functools
 import math
-from typing import Literal, Union
+from typing import Literal, TypeAlias, Union
 
 import xarray as xa
 from gt4py import next as gtx
@@ -22,14 +22,13 @@ from icon4py.model.common import (
     field_type_aliases as fa,
 )
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid import horizontal as h_grid, icon
+from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid, icon
 from icon4py.model.common.grid.geometry_program import (
+    compute_cartesian_coordinates_of_edge_tangent_and_normal,
+    compute_coriolis_parameter_on_edges,
     compute_dual_edge_length_and_far_vertex_distance_in_diamond,
+    compute_edge_area,
     compute_edge_length,
-    compute_edge_tangent_and_normal,
-    coriolis_parameter_on_edges,
-    edge_area,
-
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
@@ -56,7 +55,7 @@ reading is done in mo_domimp_patches.f90, computation of derived fields in mo_gr
 class EdgeParams:
     def __init__(
         self,
-        tangent_orientation=None,  # from grid file
+        tangent_orientation=None,  # from grid file, computation still buggy
         primal_edge_lengths=None,  # computed, see below (computed does not match, from grid file matches serialized)
         inverse_primal_edge_lengths=None,  # computed, inverse
         dual_edge_lengths=None,  # computed, see below (computed does not match, from grid file matches serialized)
@@ -74,7 +73,7 @@ class EdgeParams:
         f_e=None,  # computed, verifies
         edge_center_lat=None,  # coordinate in gridfile - "lat_edge_center" units:radians (what is the difference to elat?)
         edge_center_lon=None,  # coordinate in gridfile - "lon_edge_center" units:radians (what is the difference to elon?
-        primal_normal_x=None,  # from gridfile (computed in bridge code?
+        primal_normal_x=None,  # from gridfile (computed in bridge code?)
         primal_normal_y=None,  # from gridfile (computed in bridge code?)
     ):
         self.tangent_orientation: fa.EdgeField[float] = tangent_orientation
@@ -301,6 +300,11 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
     return 4.0 * math.pi * radius**2 / num_cells
 
 
+InputGeometryFieldType: TypeAlias = Literal[
+    attrs.CELL_AREA, attrs.EDGE_PRIMAL_NORMAL_V, attrs.EDGE_PRIMAL_NORMAL_U
+]
+
+
 class GridGeometry(state_utils.FieldSource):
     def __init__(
         self,
@@ -308,6 +312,7 @@ class GridGeometry(state_utils.FieldSource):
         decomposition_info: definitions.DecompositionInfo,
         backend: backend.Backend,
         coordinates: dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]],
+        fields: dict[InputGeometryFieldType, gtx.Field],
         metadata: dict[str, model.FieldMetaData],
     ):
         self._backend = backend
@@ -336,13 +341,19 @@ class GridGeometry(state_utils.FieldSource):
             attrs.EDGE_LON: coordinates[dims.EdgeDim]["lon"],
             attrs.EDGE_LAT: coordinates[dims.EdgeDim]["lat"],
             attrs.VERTEX_LON: coordinates[dims.VertexDim]["lon"],
-            "edge_owner_mask": gtx.as_field(
-                (dims.EdgeDim,), decomposition_info.owner_mask(dims.EdgeDim), dtype=bool
-            ),
-            "_e2v_subtraction_coefficient": subtract_coeff,
         }
         coodinate_provider = factory.PrecomputedFieldProvider(coordinates)
         self.register_provider(coodinate_provider)
+        input_fields_provider = factory.PrecomputedFieldProvider(
+            {
+                attrs.CELL_AREA: fields[gm.GeometryName.CELL_AREA],
+                attrs.TANGENT_ORIENTATION: fields[gm.GeometryName.TANGENT_ORIENTATION],
+                "edge_owner_mask": gtx.as_field(
+                    (dims.EdgeDim,), decomposition_info.owner_mask(dims.EdgeDim), dtype=bool
+                ),
+            }
+        )
+        self.register_provider(input_fields_provider)
         # TODO: remove if it works with the providers
         self._fields = coordinates
 
@@ -440,13 +451,13 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(inverse_far_edge_distance_provider)
 
         edge_areas = factory.ProgramFieldProvider(
-            func=edge_area,
+            func=compute_edge_area,
             deps={
                 "owner_mask": "edge_owner_mask",
                 "primal_edge_length": attrs.EDGE_LENGTH,
                 "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
             },
-            fields={"edge_area": attrs.EDGE_AREA},
+            fields={"area": attrs.EDGE_AREA},
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
@@ -456,7 +467,7 @@ class GridGeometry(state_utils.FieldSource):
         )
         self.register_provider(edge_areas)
         coriolis_params = factory.ProgramFieldProvider(
-            func=coriolis_parameter_on_edges,
+            func=compute_coriolis_parameter_on_edges,
             deps={"edge_center_lat": attrs.EDGE_LAT},
             params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
             fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
@@ -470,20 +481,20 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(coriolis_params)
 
         # normals:
-        # 1. primal_normals: gridfile%zonal_normal_primal_edge - edges%primal_normal%v1, gridfile%meridional_normal_primal_edge - edges%primal_normal%v2,
-        # 2. edges%primal_cart_normal (cartesian coordinates for primal_normal
-        # 3. primal_normal_vert, primal_normal_cell
-
-        provider = factory.ProgramFieldProvider(
-            func=compute_edge_tangent_and_normal,
+        # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal
+        # 2. primal_normals: gridfile%zonal_normal_primal_edge - edges%primal_normal%v1, gridfile%meridional_normal_primal_edge - edges%primal_normal%v2,
+        provider = ProgramFieldProvider(
+            func=compute_cartesian_coordinates_of_edge_tangent_and_normal,
             deps={
+                "cell_lat": attrs.CELL_LAT,
+                "cell_lon": attrs.CELL_LON,
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
                 "edge_lat": attrs.EDGE_LAT,
-                "edge_long": attrs.VERTEX_LON,
-                "subtract_coeff": "_e2v_subtraction_coefficient",
+                "edge_lon": attrs.EDGE_LON,
             },
             fields={
+                "tangent_orientation": attrs.TANGENT_ORIENTATION,
                 "tangent_x": attrs.EDGE_TANGENT_X,
                 "tangent_y": attrs.EDGE_TANGENT_Y,
                 "tangent_z": attrs.EDGE_TANGENT_Z,
@@ -499,6 +510,29 @@ class GridGeometry(state_utils.FieldSource):
             },
         )
         self.register_provider(provider)
+        provider = ProgramFieldProvider(
+            func=math_helpers.compute_zonal_and_meridional_components_on_edges,
+            deps={
+                "lat": attrs.EDGE_LAT,
+                "lon": attrs.EDGE_LON,
+                "x": attrs.EDGE_NORMAL_X,
+                "y": attrs.EDGE_NORMAL_Y,
+                "z": attrs.EDGE_NORMAL_Z,
+            },
+            fields={
+                "u": attrs.EDGE_PRIMAL_NORMAL_U,
+                "v": attrs.EDGE_PRIMAL_NORMAL_V,
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        self.register_provider(provider)
+
+        # 3. primal_normal_vert, primal_normal_cell
 
     def get(
         self, field_name: str, type_: state_utils.RetrievalType = state_utils.RetrievalType.FIELD

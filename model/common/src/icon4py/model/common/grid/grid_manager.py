@@ -447,17 +447,8 @@ class GridManager:
             GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA)
             ),
-            GeometryName.CELL_AREA_P.value: gtx.as_field(
-                (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA_P)
-            ),
             GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,), self._reader.variable(GeometryName.TANGENT_ORIENTATION)
-            ),
-            CoordinateName.CELL_CENTER_LATITUDE: gtx.as_field(
-                (dims.CellDim,), self._reader.variable(CoordinateName.CELL_CENTER_LATITUDE)
-            ),
-            CoordinateName.CELL_CENTER_LONGITUDE: gtx.as_field(
-                (dims.CellDim,), self._reader.variable(CoordinateName.CELL_LONGITUDE)
             ),
         }
 

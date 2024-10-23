@@ -6,9 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from gt4py.next import field_operator
 from gt4py import next as gtx
-from gt4py.next import Field, field_operator
+from gt4py.next import field_operator
 from gt4py.next.ffront.fbuiltins import cos, sin, sqrt, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
@@ -161,6 +160,7 @@ def dot_product(
     return x1 * x2 + y1 * y2 + z1 * z2
 
 
+@gtx.field_operator
 def cross_product(
     x1: fa.EdgeField[ta.wpfloat],
     x2: fa.EdgeField[ta.wpfloat],
@@ -170,10 +170,10 @@ def cross_product(
     z2: fa.EdgeField[ta.wpfloat],
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     """Compute cross product of cartesian vectors (x1, y1, z1) x (x2, y2, z2)"""
-    x3 = y1 * z2 - z1 * y2
-    y3 = z1 * x2 - x1 * z2
-    z3 = x1 * y2 - y1 * x2
-    return x3, y3, z3
+    x = y1 * z2 - z1 * y2
+    y = z1 * x2 - x1 * z2
+    z = x1 * y2 - y1 * x2
+    return x, y, z
 
 
 @gtx.field_operator
@@ -207,7 +207,7 @@ def compute_inverse(
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_zonal_and_meridional_components_on_cells(
+def zonal_and_meridional_components_on_cells(
     lat: fa.CellField[ta.wpfloat],
     lon: fa.CellField[ta.wpfloat],
     x: fa.CellField[ta.wpfloat],
@@ -226,7 +226,7 @@ def compute_zonal_and_meridional_components_on_cells(
 
 
 @gtx.field_operator
-def compute_zonal_and_meridional_components_on_edges(
+def zonal_and_meridional_components_on_edges(
     lat: fa.EdgeField[ta.wpfloat],
     lon: fa.EdgeField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
@@ -242,3 +242,62 @@ def compute_zonal_and_meridional_components_on_edges(
     v = cos_lat * z - sin_lat * (cos_lon * x + sin_lon * y)
     norm = sqrt(u * u + v * v)
     return u / norm, v / norm
+
+
+@gtx.program
+def compute_zonal_and_meridional_components_on_edges(
+    lat: fa.EdgeField[ta.wpfloat],
+    lon: fa.EdgeField[ta.wpfloat],
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    z: fa.EdgeField[ta.wpfloat],
+    u: fa.EdgeField[ta.wpfloat],
+    v: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    zonal_and_meridional_components_on_edges(
+        lat, lon, x, y, z, out=(u, v), domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
+    )
+
+
+@gtx.field_operator
+def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
+    lat: fa.EdgeField[ta.wpfloat],
+    lon: fa.EdgeField[ta.wpfloat],
+    u: fa.EdgeField[ta.wpfloat],
+    v: fa.EdgeField[ta.wpfloat],
+) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    cos_lat = cos(lat)
+    sin_lat = sin(lat)
+    cos_lon = cos(lon)
+    sin_lon = sin(lon)
+
+    x = -u * sin_lon - v * sin_lat * cos_lon
+    y = u * cos_lon - v * sin_lat * sin_lon
+    z = cos_lat * v
+
+    norm = norm2(x, y, z)
+    return x / norm, y / norm, y / norm
+
+
+@gtx.program
+def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
+    edge_lat: fa.EdgeField[ta.wpfloat],
+    edge_lon: fa.EdgeField[ta.wpfloat],
+    u: fa.EdgeField[ta.wpfloat],
+    v: fa.EdgeField[ta.wpfloat],
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    z: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
+        edge_lat,
+        edge_lon,
+        u,
+        v,
+        out=(x, y, z),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )

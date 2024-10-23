@@ -46,7 +46,7 @@ def test_coriolis_parameter_field_op(grid_savepoint, icon_grid, backend):
     expected = grid_savepoint.f_e()
     result = helpers.zero_field(icon_grid, dims.EdgeDim)
     lat = grid_savepoint.lat(dims.EdgeDim)
-    program._coriolis_parameter_on_edges.with_backend(backend)(
+    program.coriolis_parameter_on_edges.with_backend(backend)(
         lat, constants.EARTH_ANGULAR_VELOCITY, offset_provider={}, out=result
     )
     assert helpers.dallclose(expected.asnumpy(), result.asnumpy())
@@ -61,15 +61,8 @@ def test_coriolis_parameter_field_op(grid_savepoint, icon_grid, backend):
 )
 @pytest.mark.datatest
 def test_coriolis_parameter(grid_savepoint, grid_file, backend):
+    geometry_source = construct_grid_geometry(backend, grid_file)
     expected = grid_savepoint.f_e()
-    gm = utils.run_grid_manager(grid_file)
-    grid = gm.grid
-    decomposition_info = construct_decomposition_info(grid)
-
-    geometry_source = geometry.GridGeometry(
-        grid, decomposition_info, backend, gm.coordinates, attrs.attrs
-    )
-    geometry_source()
 
     result = geometry_source.get(attrs.CORIOLIS_PARAMETER)
     assert helpers.dallclose(expected.asnumpy(), result.asnumpy())
@@ -96,10 +89,8 @@ def test_compute_edge_length_program(experiment, backend, grid_savepoint, grid_f
     gm = utils.run_grid_manager(grid_file)
     grid = gm.grid
     decomposition_info = construct_decomposition_info(grid)
-    geometry_source = geometry.GridGeometry(
-        grid, decomposition_info, backend, gm.coordinates, attrs.attrs
-    )
-    geometry_source()
+    geometry_source = construct_grid_geometry(backend, grid_file)
+
     # FIXME: does not run on compiled???
     # edge_length = geometry_source.get(attrs.EDGE_LENGTH)
     edge_length = helpers.zero_field(grid, dims.EdgeDim)
@@ -163,7 +154,7 @@ def construct_grid_geometry(backend, grid_file):
     grid = gm.grid
     decomposition_info = construct_decomposition_info(grid)
     geometry_source = geometry.GridGeometry(
-        grid, decomposition_info, backend, gm.coordinates, attrs.attrs
+        grid, decomposition_info, backend, gm.coordinates, gm.geometry, attrs.attrs
     )
     geometry_source()
     return geometry_source
@@ -223,6 +214,51 @@ def test_compute_inverse_vertex_vertex_length(experiment, backend, grid_savepoin
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
+        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_compute_coordinates_of_edge_tangent_and_normal(
+    grid_file, experiment, grid_savepoint, backend
+):
+    grid_geometry = construct_grid_geometry(backend, grid_file)
+    x_normal = grid_geometry.get(attrs.EDGE_NORMAL_X)
+    y_normal = grid_geometry.get(attrs.EDGE_NORMAL_Y)
+    z_normal = grid_geometry.get(attrs.EDGE_NORMAL_Z)
+
+    x_normal_ref = grid_savepoint.primal_cart_normal_x()
+    y_normal_ref = grid_savepoint.primal_cart_normal_y()
+    z_normal_ref = grid_savepoint.primal_cart_normal_z()
+
+    assert helpers.dallclose(x_normal.asnumpy(), x_normal_ref.asnumpy(), atol=1e-13)
+    assert helpers.dallclose(y_normal.asnumpy(), y_normal_ref.asnumpy(), atol=1e-13)
+    assert helpers.dallclose(z_normal.asnumpy(), z_normal_ref.asnumpy(), atol=1e-13)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_compute_primal_normals(grid_file, experiment, grid_savepoint, backend):
+    grid_geometry = construct_grid_geometry(backend, grid_file)
+    primal_normal_u = grid_geometry.get(attrs.EDGE_PRIMAL_NORMAL_U)
+    primal_normal_v = grid_geometry.get(attrs.EDGE_PRIMAL_NORMAL_V)
+
+    primal_normal_u_ref = grid_savepoint.primal_normal_v1()
+    primal_normal_v_ref = grid_savepoint.primal_normal_v2()
+
+    assert helpers.dallclose(primal_normal_u.asnumpy(), primal_normal_u_ref.asnumpy(), atol=1e-13)
+    assert helpers.dallclose(primal_normal_v.asnumpy(), primal_normal_v_ref.asnumpy(), atol=1e-13)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
@@ -261,7 +297,7 @@ def test_primal_normal_cell_primal_normal_vertex(grid_file, experiment, grid_sav
 
     start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(edge_domain(h_grid.Zone.END))
-    program.compute_primal_normals_cell_vert.with_backend(None)(
+    program.edge_primal_normal_cell_vertex_projection.with_backend(None)(
         cell_lat,
         cell_lon,
         vertex_lat,
@@ -269,7 +305,7 @@ def test_primal_normal_cell_primal_normal_vertex(grid_file, experiment, grid_sav
         x,
         y,
         z,
-        out=(u1_cell, v1_cell, u2_cell, v2_cell, u1_vertex,v1_vertex, u2_vertex,  v2_vertex),
+        out=(u1_cell, v1_cell, u2_cell, v2_cell, u1_vertex, v1_vertex, u2_vertex, v2_vertex),
         offset_provider={
             "E2C": grid.get_offset_provider("E2C"),
             "E2V": grid.get_offset_provider("E2V"),

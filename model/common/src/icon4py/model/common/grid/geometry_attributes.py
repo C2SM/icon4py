@@ -10,6 +10,17 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
 
+EDGE_LON = "grid_longitude_of_edge_midpoint"
+
+EDGE_LAT = "grid_latitude_of_edge_midpoint"
+
+VERTEX_LON = "grid_longitude_of_vertex"
+
+VERTEX_LAT = "grid_latitude_of_vertex"
+
+CELL_LON = "grid_longitude_of_cell_center"
+CELL_LAT = "grid_latitude_of_cell_center"
+CELL_AREA = "cell_area"
 EDGE_AREA = "edge_area"
 
 CORIOLIS_PARAMETER = "coriolis_parameter"
@@ -20,18 +31,11 @@ VERTEX_VERTEX_LENGTH = "vertex_vertex_length"
 
 EDGE_LENGTH = "edge_length"
 
+EDGE_PRIMAL_NORMAL_U = "eastward_component_of_edge_normal"
+EDGE_PRIMAL_NORMAL_V = "northward_component_of_edge_normal"
+TANGENT_ORIENTATION = "edge_orientation"
 
-EDGE_LON = "grid_longitude_of_edge_midpoint"
 
-EDGE_LAT = "grid_latitude_of_edge_midpoint"
-
-VERTEX_LON = "grid_longitude_of_vertex"
-
-VERTEX_LAT = "grid_latitude_of_vertex"
-
-CELL_LON = "grid_longitude_of_cell_center"
-
-CELL_LAT = "grid_latitude_of_cell_center"
 DUAL_EDGE_LENGTH = "length_of_dual_edge"
 EDGE_TANGENT_X = "x_component_of_edge_tangential_unit_vector"
 EDGE_TANGENT_Y = "y_component_of_edge_tangential_unit_vector"
@@ -148,6 +152,22 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="",  # TODO
         dtype=ta.wpfloat,
     ),
+    EDGE_PRIMAL_NORMAL_V: dict(
+        standard_name=EDGE_PRIMAL_NORMAL_V,
+        long_name=EDGE_PRIMAL_NORMAL_V + " (zonal component)",
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="primal_normal%v1",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_PRIMAL_NORMAL_U: dict(
+        standard_name=EDGE_PRIMAL_NORMAL_U,
+        long_name=EDGE_PRIMAL_NORMAL_V + " (meridional component)",
+        units="",  # TODO
+        dims=(dims.EdgeDim,),
+        icon_var_name="primal_normal%v2",
+        dtype=ta.wpfloat,
+    ),
     EDGE_NORMAL_X: dict(
         standard_name=EDGE_NORMAL_X,
         long_name=EDGE_NORMAL_X,
@@ -170,6 +190,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO
         dims=(dims.EdgeDim,),
         icon_var_name="primal_cart_normal%z",  # TODO
+        dtype=ta.wpfloat,
+    ),
+    TANGENT_ORIENTATION: dict(
+        standard_name=TANGENT_ORIENTATION,
+        long_name="tangent of rhs aligned with edge tangent",
+        units="1",
+        dims=(dims.EdgeDim,),
+        icon_var_name=TANGENT_ORIENTATION,
         dtype=ta.wpfloat,
     ),
 }

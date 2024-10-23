@@ -1,48 +1,61 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from gt4py import next as gtx
-from gt4py.next import arccos, neighbor_sum, sin, where
+from gt4py.next import arccos, sin, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2C2V, E2V, E2VDim, EdgeDim
+from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
 from icon4py.model.common.math.helpers import (
-    compute_zonal_and_meridional_components_on_edges,
     cross_product,
     dot_product,
     normalize_cartesian_vector,
     spherical_to_cartesian_on_cells,
     spherical_to_cartesian_on_edges,
     spherical_to_cartesian_on_vertex,
+    zonal_and_meridional_components_on_edges,
 )
 from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def edge_primal_tangent(
+def cartesian_coordinates_of_edge_tangent(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
-    subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat],
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     """
     Compute normalized cartesian vector tangential to an edge.
 
-    That is the normalized distance between the two vertices adjacent to the edge:
-    t = |v1 - v2|
+    That is the distance between the two vertices adjacent to the edge:
+    t = d(v1, v2)
     """
     vertex_x, vertex_y, vertex_z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
-
-    x = neighbor_sum(subtract_coeff * vertex_x(E2V), axis=E2VDim)
-    y = neighbor_sum(subtract_coeff * vertex_y(E2V), axis=E2VDim)
-    z = neighbor_sum(subtract_coeff * vertex_z(E2V), axis=E2VDim)
-    return normalize_cartesian_vector(x, y, z)
+    x = vertex_x(E2V[1]) - vertex_x(E2V[0])
+    y = vertex_y(E2V[1]) - vertex_y(E2V[0])
+    z = vertex_z(E2V[1]) - vertex_z(E2V[0])
+    return x, y, z
 
 
 @gtx.field_operator
-def edge_primal_normal(
+def cartesian_coordinates_of_edge_normal(
+    cell_lat: fa.CellField[ta.wpfloat],
+    cell_lon: fa.CellField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
     edge_tangent_x: fa.EdgeField[ta.wpfloat],
     edge_tangent_y: fa.EdgeField[ta.wpfloat],
     edge_tangent_z: fa.EdgeField[ta.wpfloat],
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+]:
     """Compute the normal to the vector tangent.
 
     That is edge_center x |v1 - v2|, where v1 and v2 are the two vertices adjacent to an edge.
@@ -50,20 +63,49 @@ def edge_primal_normal(
     edge_center_x, edge_center_y, edge_center_z = spherical_to_cartesian_on_edges(
         edge_lat, edge_lon, r=1.0
     )
+    cell_x, cell_y, cell_z = spherical_to_cartesian_on_cells(cell_lat, cell_lon, r=1.0)
+    cell_distance_x = cell_x(E2C[1]) - cell_x(E2C[0])
+    cell_distance_y = cell_y(E2C[1]) - cell_y(E2C[0])
+    cell_distance_z = cell_z(E2C[1]) - cell_z(E2C[0])
+    tangent_orientation_x, tangent_orientation_y, tangent_orientation_z = cross_product(
+        edge_tangent_x,
+        cell_distance_x,
+        edge_tangent_y,
+        cell_distance_y,
+        edge_tangent_y,
+        cell_distance_z,
+    )
+    projection = dot_product(
+        edge_center_x,
+        tangent_orientation_x,
+        edge_center_y,
+        tangent_orientation_y,
+        edge_center_z,
+        tangent_orientation_z,
+    )
+    tangent_orientation = where(projection >= 0.0, 1.0, -1.0)
+
     x, y, z = cross_product(
         edge_center_x, edge_tangent_x, edge_center_y, edge_tangent_y, edge_center_z, edge_tangent_z
     )
-    return normalize_cartesian_vector(x, y, z)
+    normal_orientation = dot_product(cell_distance_x, x, cell_distance_y, y, cell_distance_z, z)
+    x = where(normal_orientation < 0.0, -1.0 * x, x)
+    y = where(normal_orientation < 0.0, -1.0 * y, y)
+    z = where(normal_orientation < 0.0, -1.0 * z, z)
+    edge_normal_x, edge_normal_y, edge_normal_z = normalize_cartesian_vector(x, y, z)
+    return tangent_orientation, edge_normal_x, edge_normal_y, edge_normal_z
 
 
 @gtx.field_operator
-def edge_tangent_and_normal(
+def cartesian_coordinates_edge_tangent_and_normal(
+    cell_lat: fa.CellField[ta.wpfloat],
+    cell_lon: fa.CellField[ta.wpfloat],
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat],
 ) -> tuple[
+    fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],
@@ -72,20 +114,23 @@ def edge_tangent_and_normal(
     fa.EdgeField[ta.wpfloat],
 ]:
     """Compute normalized cartesian vectors of edge tangent and edge normal."""
-    tangent_x, tangent_y, tangent_z = edge_primal_tangent(vertex_lat, vertex_lon, subtract_coeff)
-    normal_x, normal_y, normal_z = edge_primal_normal(
-        edge_lat, edge_lon, tangent_x, tangent_z, tangent_z
+    tangent_x, tangent_y, tangent_z = cartesian_coordinates_of_edge_tangent(vertex_lat, vertex_lon)
+    tangent_orientation, normal_x, normal_y, normal_z = cartesian_coordinates_of_edge_normal(
+        cell_lat, cell_lon, edge_lat, edge_lon, tangent_x, tangent_y, tangent_z
     )
-    return tangent_x, tangent_y, tangent_z, normal_x, normal_y, normal_z
+
+    return tangent_orientation, tangent_x, tangent_y, tangent_z, normal_x, normal_y, normal_z
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_edge_tangent_and_normal(
+def compute_cartesian_coordinates_of_edge_tangent_and_normal(
+    cell_lat: fa.CellField[ta.wpfloat],
+    cell_lon: fa.CellField[ta.wpfloat],
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
-    subtract_coeff: gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat],
+    tangent_orientation: fa.EdgeField[ta.wpfloat],
     tangent_x: fa.EdgeField[ta.wpfloat],
     tangent_y: fa.EdgeField[ta.wpfloat],
     tangent_z: fa.EdgeField[ta.wpfloat],
@@ -95,19 +140,20 @@ def compute_edge_tangent_and_normal(
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
-    edge_tangent_and_normal(
+    cartesian_coordinates_edge_tangent_and_normal(
+        cell_lat,
+        cell_lon,
         vertex_lat,
         vertex_lon,
         edge_lat,
         edge_lon,
-        subtract_coeff,
-        out=(tangent_x, tangent_y, tangent_z, normal_x, normal_y, normal_z),
+        out=(tangent_orientation, tangent_x, tangent_y, tangent_z, normal_x, normal_y, normal_z),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_primal_normals_cell_vert(
+def edge_primal_normal_cell_vertex_projection(
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
     vertex_lat: fa.VertexField[ta.wpfloat],
@@ -128,25 +174,63 @@ def compute_primal_normals_cell_vert(
     """computes edges%primal_normal_cell, edges%primal_normal_vert"""
     cell_lat_1 = cell_lat(E2C[0])
     cell_lon_1 = cell_lon(E2C[0])
-    u_cell_1, v_cell_1 = compute_zonal_and_meridional_components_on_edges(
-        cell_lat_1, cell_lon_1, x, y, z
-    )
+    u_cell_1, v_cell_1 = zonal_and_meridional_components_on_edges(cell_lat_1, cell_lon_1, x, y, z)
     cell_lat_2 = cell_lat(E2C[1])
     cell_lon_2 = cell_lon(E2C[1])
-    u_cell_2, v_cell_2 = compute_zonal_and_meridional_components_on_edges(
-        cell_lat_2, cell_lon_2, x, y, z
-    )
+    u_cell_2, v_cell_2 = zonal_and_meridional_components_on_edges(cell_lat_2, cell_lon_2, x, y, z)
     vertex_lat_1 = vertex_lat(E2V[0])
     vertex_lon_1 = vertex_lon(E2V[0])
-    u_vertex_1, v_vertex_1 = compute_zonal_and_meridional_components_on_edges(
+    u_vertex_1, v_vertex_1 = zonal_and_meridional_components_on_edges(
         vertex_lat_1, vertex_lon_1, x, y, z
     )
     vertex_lat_2 = vertex_lat(E2V[1])
     vertex_lon_2 = vertex_lon(E2V[1])
-    u_vertex_2, v_vertex_2 = compute_zonal_and_meridional_components_on_edges(
+    u_vertex_2, v_vertex_2 = zonal_and_meridional_components_on_edges(
         vertex_lat_2, vertex_lon_2, x, y, z
     )
     return u_cell_1, v_cell_1, u_cell_2, v_cell_2, u_vertex_1, v_vertex_1, u_vertex_2, v_vertex_2
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_edge_primal_normal_cell_vertex_projection(
+    cell_lat: fa.CellField[ta.wpfloat],
+    cell_lon: fa.CellField[ta.wpfloat],
+    vertex_lat: fa.VertexField[ta.wpfloat],
+    vertex_lon: fa.VertexField[ta.wpfloat],
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    z: fa.EdgeField[ta.wpfloat],
+    u_cell_1: fa.EdgeField[ta.wpfloat],
+    v_cell_1: fa.EdgeField[ta.wpfloat],
+    u_cell_2: fa.EdgeField[ta.wpfloat],
+    v_cell_2: fa.EdgeField[ta.wpfloat],
+    u_vertex_1: fa.EdgeField[ta.wpfloat],
+    v_vertex_1: fa.EdgeField[ta.wpfloat],
+    u_vertex_2: fa.EdgeField[ta.wpfloat],
+    v_vertex_2: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    edge_primal_normal_cell_vertex_projection(
+        cell_lat,
+        cell_lon,
+        vertex_lon,
+        vertex_lat,
+        x,
+        y,
+        z,
+        out=(
+            u_cell_1,
+            v_cell_1,
+            u_cell_2,
+            v_cell_2,
+            u_vertex_1,
+            v_vertex_1,
+            u_vertex_2,
+            v_vertex_2,
+        ),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -277,7 +361,7 @@ def compute_dual_edge_length_and_far_vertex_distance_in_diamond(
 
 
 @gtx.field_operator
-def _edge_area(
+def edge_area(
     owner_mask: fa.EdgeField[bool],
     primal_edge_length: fa.EdgeField[fa.wpfloat],
     dual_edge_length: fa.EdgeField[ta.wpfloat],
@@ -287,25 +371,25 @@ def _edge_area(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def edge_area(
+def compute_edge_area(
     owner_mask: fa.EdgeField[bool],
     primal_edge_length: fa.EdgeField[fa.wpfloat],
     dual_edge_length: fa.EdgeField[ta.wpfloat],
-    edge_area: fa.EdgeField[ta.wpfloat],
+    area: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
-    _edge_area(
+    edge_area(
         owner_mask,
         primal_edge_length,
         dual_edge_length,
-        out=edge_area,
+        out=area,
         domain={EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
 @gtx.field_operator
-def _coriolis_parameter_on_edges(
+def coriolis_parameter_on_edges(
     edge_center_lat: fa.EdgeField[ta.wpfloat],
     angular_velocity: ta.wpfloat,
 ) -> fa.EdgeField[ta.wpfloat]:
@@ -314,14 +398,14 @@ def _coriolis_parameter_on_edges(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def coriolis_parameter_on_edges(
+def compute_coriolis_parameter_on_edges(
     edge_center_lat: fa.EdgeField[ta.wpfloat],
     angular_velocity: ta.wpfloat,
     coriolis_parameter: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
-    _coriolis_parameter_on_edges(
+    coriolis_parameter_on_edges(
         edge_center_lat,
         angular_velocity,
         out=coriolis_parameter,

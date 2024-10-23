@@ -31,7 +31,7 @@ if typing.TYPE_CHECKING:
     import netCDF4
 
 try:
-    import netCDF4
+    import netCDF4  # noqa # F401
 except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
@@ -542,14 +542,12 @@ def test_read_geometry_fields(grid_savepoint, grid_file):
     edge_length = gm.geometry[GeometryName.EDGE_LENGTH.value]
     dual_edge_length = gm.geometry[GeometryName.DUAL_EDGE_LENGTH.value]
     cell_area = gm.geometry[GeometryName.CELL_AREA.value]
-    cell_area_p = gm.geometry[GeometryName.CELL_AREA_P.value]
     tangent_orientation = gm.geometry[GeometryName.TANGENT_ORIENTATION.value]
 
     assert helpers.dallclose(edge_length.asnumpy(), grid_savepoint.primal_edge_length().asnumpy())
     assert helpers.dallclose(
         dual_edge_length.asnumpy(), grid_savepoint.dual_edge_length().asnumpy()
     )
-    assert helpers.dallclose(cell_area.asnumpy(), cell_area_p.asnumpy())
     assert helpers.dallclose(cell_area.asnumpy(), grid_savepoint.cell_areas().asnumpy())
     assert helpers.dallclose(
         tangent_orientation.asnumpy(), grid_savepoint.tangent_orientation().asnumpy()
@@ -581,12 +579,10 @@ def test_coordinates(grid_savepoint, grid_file, experiment, dim):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_cell_coordinates(grid_savepoint, grid_file, experiment):
+def test_tangent_orientation(experiment, grid_file, grid_savepoint):
+    expected = grid_savepoint.tangent_orientation()
     gm = utils.run_grid_manager(grid_file)
-    lat = gm.get_coordinates(dims.CellDim)["lat"]
-    lon = gm.get_coordinates(dims.CellDim)["lon"]
-    cell_center_lat = gm.geometry["lat_cell_centre"]
-    cell_center_lon = gm.geometry["lon_cell_centre"]
-
-    assert helpers.dallclose(lat.asnumpy(), cell_center_lat.asnumpy())
-    assert helpers.dallclose(lon.asnumpy(), cell_center_lon.asnumpy())
+    geometry_fields = gm.geometry
+    assert helpers.dallclose(
+        geometry_fields[GeometryName.TANGENT_ORIENTATION].ndarray, expected.ndarray
+    )
