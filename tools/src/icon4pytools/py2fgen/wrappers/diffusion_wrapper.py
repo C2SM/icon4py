@@ -46,9 +46,9 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import wpfloat
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.wrappers import common, wrapper_dimension as w_dim
+from icon4pytools.py2fgen.wrappers import common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
-
+from icon4pytools.py2fgen.wrappers.wrapper_dimension import SpecialADim, SpecialBDim, SpecialCDim, CellIndexDim, EdgeIndexDim, VertexIndexDim
 
 logger = setup_logger(__name__)
 
@@ -283,12 +283,12 @@ def diffusion_run(
 
 
 def grid_init(
-    cell_starts: gtx.Field[gtx.Dims[w_dim.CellIndexDim], gtx.int32],
-    cell_ends: gtx.Field[gtx.Dims[w_dim.CellIndexDim], gtx.int32],
-    vertex_starts: gtx.Field[gtx.Dims[w_dim.VertexIndexDim], gtx.int32],
-    vertex_ends: gtx.Field[gtx.Dims[w_dim.VertexIndexDim], gtx.int32],
-    edge_starts: gtx.Field[gtx.Dims[w_dim.EdgeIndexDim], gtx.int32],
-    edge_ends: gtx.Field[gtx.Dims[w_dim.EdgeIndexDim], gtx.int32],
+    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
+    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
+    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
+    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
+    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
     c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
     e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
     c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
@@ -301,9 +301,9 @@ def grid_init(
     c_owner_mask: gtx.Field[[dims.CellDim], bool],
     e_owner_mask: gtx.Field[[dims.EdgeDim], bool],
     v_owner_mask: gtx.Field[[dims.VertexDim], bool],
-    c_glb_index: gtx.Field[[w_dim.SpecialADim], gtx.int32],
-    e_glb_index: gtx.Field[[w_dim.SpecialBDim], gtx.int32],
-    v_glb_index: gtx.Field[[w_dim.SpecialCDim], gtx.int32],
+    c_glb_index: gtx.Field[[SpecialADim], gtx.int32],
+    e_glb_index: gtx.Field[[SpecialBDim], gtx.int32],
+    v_glb_index: gtx.Field[[SpecialCDim], gtx.int32],
     comm_id: gtx.int32,
     global_root: gtx.int32,
     global_level: gtx.int32,
