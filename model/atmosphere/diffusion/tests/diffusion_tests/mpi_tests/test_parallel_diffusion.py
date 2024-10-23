@@ -15,7 +15,6 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
-from ..utils import diffusion_instance  # noqa
 
 
 @pytest.mark.mpi
@@ -41,7 +40,6 @@ def test_parallel_diffusion(
     damping_height,
     caplog,
     backend,
-    diffusion_instance,  # noqa: F811
 ):
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -97,7 +95,8 @@ def test_parallel_diffusion(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
 
-    diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion = diffusion_.Diffusion(backend, exchange)
 
     diffusion.init(
         grid=icon_grid,
@@ -169,7 +168,6 @@ def test_parallel_diffusion_multiple_steps(
     damping_height,
     caplog,
     backend,
-    diffusion_instance,  # noqa: F811
 ):
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
@@ -285,7 +283,8 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     settings.dace_orchestration = True
 
-    diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion = diffusion_.Diffusion(backend, exchange)
 
     diffusion.init(
         grid=icon_grid,
