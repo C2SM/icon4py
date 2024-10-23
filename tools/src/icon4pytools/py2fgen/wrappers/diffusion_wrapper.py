@@ -378,4 +378,4 @@ def grid_init(
         exchange_runtime = definitions.SingleNodeExchange()
 
     # initialise the Diffusion granule
-    diffusion_wrapper_state["granule"] = (Diffusion(backend=backend, exchange=exchange_runtime),)
+    diffusion_wrapper_state["granule"] = Diffusion(backend=backend, exchange=exchange_runtime)
