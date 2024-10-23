@@ -8,11 +8,11 @@
 import dataclasses
 import functools
 import math
-from typing import Literal, TypeAlias, Union
+from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar, Union
 
 import xarray as xa
 from gt4py import next as gtx
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.grid.geometry_attributes as attrs
 import icon4py.model.common.math.helpers as math_helpers
@@ -301,7 +301,7 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
 
 
 InputGeometryFieldType: TypeAlias = Literal[
-    attrs.CELL_AREA, attrs.EDGE_PRIMAL_NORMAL_V, attrs.EDGE_PRIMAL_NORMAL_U
+    attrs.CELL_AREA
 ]
 
 
@@ -310,7 +310,7 @@ class GridGeometry(state_utils.FieldSource):
         self,
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
-        backend: backend.Backend,
+        backend: gtx_backend.Backend,
         coordinates: dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]],
         fields: dict[InputGeometryFieldType, gtx.Field],
         metadata: dict[str, model.FieldMetaData],
@@ -329,11 +329,7 @@ class GridGeometry(state_utils.FieldSource):
         )
 
         self._providers: dict[str, factory.FieldProvider] = {}
-        subtract_coeff = gtx.as_field(
-            (dims.EdgeDim, dims.E2VDim),
-            data=(xp.vstack((xp.ones(grid.num_edges), -1 * xp.ones(grid.num_edges))).T),
-        )
-
+      
         coordinates = {
             attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
             attrs.CELL_LON: coordinates[dims.CellDim]["lon"],
@@ -565,3 +561,57 @@ class GridGeometry(state_utils.FieldSource):
     @property
     def vertical_grid(self):
         return None
+
+
+HorizontalD = TypeVar('HorizontalD', bound=gtx.Dimension)
+SparseD = TypeVar('SparseD', bound=gtx.Dimension)
+
+class SparseFieldProviderWrapper(factory.FieldProvider):
+
+    def __init__(self, field_provider: factory.ProgramFieldProvider, target_dims:tuple[HorizontalD, SparseD], fields:dict[str, str] ):
+        self._wrapped_provider = field_provider
+        self._fields = fields
+        self._func = functools.partial(as_sparse_field, target_dims)
+
+    def __call__(
+            self,
+            field_name: str,
+            field_src: Optional[state_utils.FieldSource],
+            backend: Optional[gtx_backend.Backend],
+            grid: Optional[factory.GridProvider],):
+        any_field = self._wrapped_provider.fields.keys()[0]
+        self._wrapped_provider.__call__(any_field, field_src, backend, grid)
+        # get the fields from the wrapped provider
+        
+        self.func()
+
+    @property
+    def dependencies(self) -> Sequence[str]:
+        return tuple(self._wrapped_provider.fields.keys())
+
+    @property
+    def fields(self) -> Mapping[str, Any]:
+        return self._fields
+
+    @property
+    def func(self) -> Callable:
+        return self._func
+
+
+
+def as_sparse_field(target_dims: tuple[HorizontalD, SparseD],
+                    data:Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]]):
+    assert len(target_dims) == 2
+    assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
+    assert target_dims[1].kind == gtx.DimensionKind.LOCAL
+    fields = []
+    for t in data:
+        buffers = list(b.ndarray for b in t)
+        field = gtx.as_field(
+            target_dims,
+            data=(xp.vstack(buffers).T), dtype=buffers[0].dtype
+        )
+        fields.append(field)
+    return fields
+
+        

@@ -153,9 +153,7 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal(
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
-def edge_primal_normal_cell_vertex_projection(
-    cell_lat: fa.CellField[ta.wpfloat],
-    cell_lon: fa.CellField[ta.wpfloat],
+def edge_primal_normal_vertex(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
@@ -166,18 +164,8 @@ def edge_primal_normal_cell_vertex_projection(
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],
     fa.EdgeField[ta.wpfloat],
-    fa.EdgeField[ta.wpfloat],
-    fa.EdgeField[ta.wpfloat],
-    fa.EdgeField[ta.wpfloat],
-    fa.EdgeField[ta.wpfloat],
-]:
+  ]:
     """computes edges%primal_normal_cell, edges%primal_normal_vert"""
-    cell_lat_1 = cell_lat(E2C[0])
-    cell_lon_1 = cell_lon(E2C[0])
-    u_cell_1, v_cell_1 = zonal_and_meridional_components_on_edges(cell_lat_1, cell_lon_1, x, y, z)
-    cell_lat_2 = cell_lat(E2C[1])
-    cell_lon_2 = cell_lon(E2C[1])
-    u_cell_2, v_cell_2 = zonal_and_meridional_components_on_edges(cell_lat_2, cell_lon_2, x, y, z)
     vertex_lat_1 = vertex_lat(E2V[0])
     vertex_lon_1 = vertex_lon(E2V[0])
     u_vertex_1, v_vertex_1 = zonal_and_meridional_components_on_edges(
@@ -188,22 +176,16 @@ def edge_primal_normal_cell_vertex_projection(
     u_vertex_2, v_vertex_2 = zonal_and_meridional_components_on_edges(
         vertex_lat_2, vertex_lon_2, x, y, z
     )
-    return u_cell_1, v_cell_1, u_cell_2, v_cell_2, u_vertex_1, v_vertex_1, u_vertex_2, v_vertex_2
+    return u_vertex_1, v_vertex_1, u_vertex_2, v_vertex_2
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_edge_primal_normal_cell_vertex_projection(
-    cell_lat: fa.CellField[ta.wpfloat],
-    cell_lon: fa.CellField[ta.wpfloat],
+def compute_edge_primal_normal_vertex(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     x: fa.EdgeField[ta.wpfloat],
     y: fa.EdgeField[ta.wpfloat],
     z: fa.EdgeField[ta.wpfloat],
-    u_cell_1: fa.EdgeField[ta.wpfloat],
-    v_cell_1: fa.EdgeField[ta.wpfloat],
-    u_cell_2: fa.EdgeField[ta.wpfloat],
-    v_cell_2: fa.EdgeField[ta.wpfloat],
     u_vertex_1: fa.EdgeField[ta.wpfloat],
     v_vertex_1: fa.EdgeField[ta.wpfloat],
     u_vertex_2: fa.EdgeField[ta.wpfloat],
@@ -211,11 +193,60 @@ def compute_edge_primal_normal_cell_vertex_projection(
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
-    edge_primal_normal_cell_vertex_projection(
-        cell_lat,
-        cell_lon,
+    edge_primal_normal_vertex(
         vertex_lon,
         vertex_lat,
+        x,
+        y,
+        z,
+        out=(
+            u_vertex_1,
+            v_vertex_1,
+            u_vertex_2,
+            v_vertex_2,
+        ),
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+def edge_primal_normal_cell(
+    cell_lat: fa.CellField[ta.wpfloat],
+    cell_lon: fa.CellField[ta.wpfloat],
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    z: fa.EdgeField[ta.wpfloat],
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+   ]:
+    """computes edges%primal_normal_cell, edges%primal_normal_vert"""
+    cell_lat_1 = cell_lat(E2C[0])
+    cell_lon_1 = cell_lon(E2C[0])
+    u_cell_1, v_cell_1 = zonal_and_meridional_components_on_edges(cell_lat_1, cell_lon_1, x, y, z)
+    cell_lat_2 = cell_lat(E2C[1])
+    cell_lon_2 = cell_lon(E2C[1])
+    u_cell_2, v_cell_2 = zonal_and_meridional_components_on_edges(cell_lat_2, cell_lon_2, x, y, z)
+    return u_cell_1, v_cell_1, u_cell_2, v_cell_2
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_edge_primal_normal_cell(
+    cell_lat: fa.CellField[ta.wpfloat],
+    cell_lon: fa.CellField[ta.wpfloat],
+    x: fa.EdgeField[ta.wpfloat],
+    y: fa.EdgeField[ta.wpfloat],
+    z: fa.EdgeField[ta.wpfloat],
+    u_cell_1: fa.EdgeField[ta.wpfloat],
+    v_cell_1: fa.EdgeField[ta.wpfloat],
+    u_cell_2: fa.EdgeField[ta.wpfloat],
+    v_cell_2: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    edge_primal_normal_cell(
+        cell_lat,
+        cell_lon,
         x,
         y,
         z,
@@ -224,13 +255,11 @@ def compute_edge_primal_normal_cell_vertex_projection(
             v_cell_1,
             u_cell_2,
             v_cell_2,
-            u_vertex_1,
-            v_vertex_1,
-            u_vertex_2,
-            v_vertex_2,
         ),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
+
+
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)

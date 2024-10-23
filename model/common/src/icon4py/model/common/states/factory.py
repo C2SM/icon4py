@@ -173,14 +173,14 @@ class ProgramFieldProvider(FieldProvider):
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
         fields: dict[str, str],
         deps: dict[str, str],
-        params: Optional[dict[str, state_utils.Scalar]] = None,
+        params: Optional[dict[str, state_utils.ScalarType]] = None,
     ):
         self._func = func
         self._compute_domain = domain
         self._dependencies = deps
         self._output = fields
         self._params = params if params is not None else {}
-        self._fields: dict[str, Optional[gtx.Field | state_utils.Scalar]] = {
+        self._fields: dict[str, Optional[gtx.Field | state_utils.ScalarType]] = {
             name: None for name in fields.values()
         }
 
@@ -320,7 +320,7 @@ class NumpyFieldsProvider(FieldProvider):
         fields: Sequence[str],
         deps: dict[str, str],
         offsets: Optional[dict[str, gtx.Dimension]] = None,
-        params: Optional[dict[str, state_utils.Scalar]] = None,
+        params: Optional[dict[str, state_utils.ScalarType]] = None,
     ):
         self._func = func
         self._compute_domain = domain
@@ -396,7 +396,7 @@ class NumpyFieldsProvider(FieldProvider):
 
 def _check(
     parameter_definition: inspect.Parameter,
-    value: Union[state_utils.Scalar, gtx.Field],
+    value: Union[state_utils.ScalarType, gtx.Field],
     union: Union,
 ) -> bool:
     members = get_args(union)
