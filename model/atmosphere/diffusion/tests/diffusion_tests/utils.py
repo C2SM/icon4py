@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common import settings
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb

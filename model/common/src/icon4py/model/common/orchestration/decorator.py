@@ -65,13 +65,15 @@ R = TypeVar("R")
 
 
 @overload
-def orchestrate(func: Callable[P, R], *, method: bool | None = None) -> Callable[P, R]: ...
+def orchestrate(func: Callable[P, R], *, method: bool | None = None) -> Callable[P, R]:
+    ...
 
 
 @overload
 def orchestrate(
     func: None = None, *, method: bool | None = None
-) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
+    ...
 
 
 def orchestrate(
