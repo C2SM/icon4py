@@ -35,6 +35,7 @@ try:
     )
     from ghex.util import Architecture
 
+    ghex_arch = Architecture.CPU if device == Device.CPU else Architecture.GPU
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
 
@@ -55,7 +56,6 @@ except ImportError:
 if TYPE_CHECKING:
     import mpi4py.MPI
 
-ghex_arch = Architecture.CPU if device == Device.CPU else Architecture.GPU
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
 
