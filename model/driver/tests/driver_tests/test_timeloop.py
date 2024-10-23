@@ -248,6 +248,7 @@ def test_run_timeloop_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
     diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(

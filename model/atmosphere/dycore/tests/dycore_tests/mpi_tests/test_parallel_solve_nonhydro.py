@@ -48,6 +48,7 @@ def test_run_solve_nonhydro_single_step(
     savepoint_nonhydro_step_exit,
     processor_props,  # : F811 fixture
     decomposition_info,  # : F811 fixture
+    backend,
 ):
     parallel_helpers.check_comm_size(processor_props)
     print(
@@ -151,6 +152,7 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
         exchange=exchange,
     )
 

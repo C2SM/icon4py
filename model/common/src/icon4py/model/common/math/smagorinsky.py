@@ -14,7 +14,6 @@ from gt4py.next.ffront.fbuiltins import (
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, Koff
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -47,7 +46,7 @@ def _en_smag_fac_for_zero_nshift(
     return enh_smag_fac
 
 
-@gtx.program(backend=backend)
+@gtx.program
 def en_smag_fac_for_zero_nshift(
     vect_a: fa.KField[float],
     hdiff_smag_fac: float,
