@@ -40,7 +40,7 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
     z_mflx_anti_2 = astype(p_dtime * geofac_div(C2CE[1]) / p_rhodz_new * z_anti(C2E[1]), vpfloat)
     z_mflx_anti_3 = astype(p_dtime * geofac_div(C2CE[2]) / p_rhodz_new * z_anti(C2E[2]), vpfloat)
 
-    z_mflx_anti_in = -vpfloat(1.0) * (
+    z_mflx_anti_in = -1.0 * (
         minimum(0.0, z_mflx_anti_1) + minimum(0.0, z_mflx_anti_2) + minimum(0.0, z_mflx_anti_3)
     )
 

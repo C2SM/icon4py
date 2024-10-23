@@ -34,7 +34,7 @@ def average_horizontal_flux_subcycling_2(
     _average_horizontal_flux_subcycling_2(
         z_tracer_mflx_1_dsl,
         z_tracer_mflx_2_dsl,
-        out=(p_out_e),
+        out=p_out_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

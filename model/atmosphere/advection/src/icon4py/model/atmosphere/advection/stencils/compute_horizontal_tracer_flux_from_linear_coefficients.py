@@ -59,7 +59,7 @@ def compute_horizontal_tracer_flux_from_linear_coefficients(
         distv_bary_2,
         p_mass_flx_e,
         cell_rel_idx_dsl,
-        out=(p_out_e),
+        out=p_out_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

@@ -159,7 +159,7 @@ def compute_intermediate_horizontal_tracer_flux_from_cubic_coefficients(
         z_quad_vector_sum0_9,
         z_quad_vector_sum0_10,
         patch0_cell_rel_idx_dsl,
-        out=(p_out_e_hybrid_1a),
+        out=p_out_e_hybrid_1a,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

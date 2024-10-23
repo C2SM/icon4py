@@ -170,7 +170,7 @@ def compute_intermediate_horizontal_tracer_flux_from_cubic_coeffs_alt(
         z_dreg_area,
         p_mass_flx_e,
         cell_rel_idx_dsl,
-        out=(p_out_e_miura3),
+        out=p_out_e_miura3,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

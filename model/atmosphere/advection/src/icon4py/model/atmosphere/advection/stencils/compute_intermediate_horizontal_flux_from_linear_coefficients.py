@@ -74,7 +74,7 @@ def compute_intermediate_horizontal_flux_from_linear_coefficients(
         distv_bary_2,
         p_mass_flx_e,
         cell_rel_idx_dsl,
-        out=(z_tracer_mflx_dsl),
+        out=z_tracer_mflx_dsl,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
