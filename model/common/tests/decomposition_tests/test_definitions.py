@@ -13,12 +13,18 @@ from icon4py.model.common.decomposition.definitions import (
 )
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # import fixtures form test_utils
     experiment,
+    icon_grid,
     processor_props,
 )
 
 
-def test_create_single_node_runtime_without_mpi(processor_props):  # noqa: F811 # fixture
-    decomposition_info = DecompositionInfo(klevels=10)
+def test_create_single_node_runtime_without_mpi(icon_grid, processor_props):  # noqa: F811 # fixture
+    decomposition_info = DecompositionInfo(
+        klevels=10,
+        num_cells=icon_grid.num_cells,
+        num_edges=icon_grid.num_edges,
+        num_vertices=icon_grid.num_vertices,
+    )
     exchange = create_exchange(processor_props, decomposition_info)
 
     assert isinstance(exchange, SingleNodeExchange)

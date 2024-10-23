@@ -153,15 +153,17 @@ def construct_decomposition(
     e_glb_index = adjust_fortran_indices(e_glb_index, offset)
     v_glb_index = adjust_fortran_indices(v_glb_index, offset)
 
-    c_owner_mask = c_owner_mask.ndarray[0:num_cells]
-    e_owner_mask = e_owner_mask.ndarray[0:num_edges]
-    v_owner_mask = v_owner_mask.ndarray[0:num_vertices]
+    c_owner_mask = c_owner_mask.ndarray[:num_cells]
+    e_owner_mask = e_owner_mask.ndarray[:num_edges]
+    v_owner_mask = v_owner_mask.ndarray[:num_vertices]
 
     decomposition_info = (
-        definitions.DecompositionInfo(klevels=num_levels)
+        definitions.DecompositionInfo(
+            klevels=num_levels, num_cells=num_cells, num_edges=num_edges, num_vertices=num_vertices
+        )
         .with_dimension(dims.CellDim, c_glb_index, c_owner_mask)
         .with_dimension(dims.EdgeDim, e_glb_index, e_owner_mask)
-        .with_dimension(dims.VertexDim, v_glb_index, v_owner_mask)
+        .with_dimension(dims.VertexDim, v_glb_index, v_owner_mask),
     )
     processor_props = mpi.get_multinode_properties(definitions.MultiNodeRun(), comm_id)
     exchange = definitions.create_exchange(processor_props, decomposition_info)

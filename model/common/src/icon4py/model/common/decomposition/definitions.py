@@ -81,14 +81,25 @@ class DecompositionInfo:
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
 
-    def __init__(self, klevels: int):
+    def __init__(self, klevels: int, num_cells: int, num_edges: int, num_vertices: int):
         self._global_index = {}
         self._klevels = klevels
+        self._num_vertices = num_vertices
+        self._num_cells = num_cells
+        self._num_edges = num_edges
         self._owner_mask = {}
 
     @property
     def klevels(self):
         return self._klevels
+
+    @property
+    def num_cells(self):
+        return self._num_cells
+
+    @property
+    def num_edges(self):
+        return self._num_edges
 
     def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:

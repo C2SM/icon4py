@@ -19,7 +19,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.config import Device
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
-from icon4py.model.common.settings import device
+from icon4py.model.common.settings import device, xp
 
 
 try:
@@ -35,7 +35,6 @@ try:
     )
     from ghex.util import Architecture
 
-    ghex_arch = Architecture.CPU if device == Device.CPU else Architecture.GPU
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
 
@@ -142,18 +141,10 @@ class GHexMultiNodeExchange:
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
-            dim: self._create_domain_descriptor(
-                dim,
-            )
-            for dim in dims.global_dimensions.values()
+            dim: self._create_domain_descriptor(dim) for dim in dims.global_dimensions.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
-        self._patterns = {
-            dim: self._create_pattern(
-                dim,
-            )
-            for dim in dims.global_dimensions.values()
-        }
+        self._patterns = {dim: self._create_pattern(dim) for dim in dims.global_dimensions.values()}
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
 
@@ -180,9 +171,6 @@ class GHexMultiNodeExchange:
         local_halo = self._decomposition_info.local_index(
             dim, definitions.DecompositionInfo.EntryType.HALO
         )
-        # first arg is the domain ID which builds up an MPI Tag.
-        # if those ids are not different for all domain descriptors the system might deadlock
-        # if two parallel exchanges with the same domain id are done
         domain_desc = DomainDescriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
@@ -209,14 +197,39 @@ class GHexMultiNodeExchange:
         )
         return pattern
 
+    def _slice_field_based_on_dim(self, field: Field, dim: definitions.Dimension) -> xp.ndarray:
+        """
+        Slices the field based on the dimension passed in.
+        """
+        if dim == dims.VertexDim:
+            return field.ndarray[: self._decomposition_info.num_vertices, :]
+        elif dim == dims.EdgeDim:
+            return field.ndarray[: self._decomposition_info.num_edges, :]
+        elif dim == dims.CellDim:
+            return field.ndarray[: self._decomposition_info.num_cells, :]
+        else:
+            raise ValueError(f"Unknown dimension {dim}")
+
     def exchange(self, dim: definitions.Dimension, *fields: Sequence[Field]):
+        """
+        Exchange method that slices the fields based on the dimension and then performs halo exchange.
+
+            This ensures that the exchanged fields always have the correct size, thereby also working in
+            the granule context where fields otherwise have length nproma.
+        """
         assert dim in dims.global_dimensions.values()
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
+
+        # Slice the fields based on the dimension
+        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
+
+        # Create field descriptors and perform the exchange
+        arch = Architecture.CPU if device == Device.CPU else Architecture.GPU
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f, arch=ghex_arch)) for f in fields
+            pattern(make_field_descriptor(domain_descriptor, f, arch=arch)) for f in sliced_fields
         ]
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
