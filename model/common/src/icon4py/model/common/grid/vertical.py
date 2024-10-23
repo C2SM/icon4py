@@ -186,7 +186,7 @@ class VerticalGrid:
         assert (
             0 <= index <= self._bottom_level(domain)
         ), f"vertical index {index} outside of grid levels for {domain.dim}"
-        return index
+        return gtx.int32(index)
 
     def _bottom_level(self, domain: Domain) -> gtx.int32:
         return gtx.int32(self.size(domain.dim))
@@ -203,7 +203,7 @@ class VerticalGrid:
     @functools.cached_property
     def nflatlev(self) -> gtx.int32:
         """Vertical index for bottom most level at which coordinate surfaces are flat."""
-        return self.index(Domain(dims.KDim, Zone.FLAT))
+        return gtx.int32(self.index(Domain(dims.KDim, Zone.FLAT)))
 
     @functools.cached_property
     def nrdmax(self) -> gtx.int32:

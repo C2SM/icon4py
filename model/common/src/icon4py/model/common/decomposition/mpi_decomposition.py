@@ -213,7 +213,7 @@ class GHexMultiNodeExchange:
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f.asnumpy())) for f in fields
+            pattern(make_field_descriptor(domain_descriptor, f.ndarray)) for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
         log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
