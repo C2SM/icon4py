@@ -720,7 +720,7 @@ class SolveNonhydro:
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
         self.z_rho_v = field_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self.grid, backend=self._backend
+            dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
         )
         self.z_theta_v_v = field_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
