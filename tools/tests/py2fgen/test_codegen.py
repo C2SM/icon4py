@@ -259,6 +259,8 @@ logging.basicConfig(level=logging.ERROR,
                     datefmt='%Y-%m-%d %H:%M:%S')
 logging.info(cp.show_config())
 
+import numpy as np
+
 # embedded module imports
 import foo_module_x
 import bar_module_y
@@ -286,6 +288,7 @@ def unpack_gpu(ptr, *sizes: int):
                     This array shares the underlying data with the original Fortran code, allowing
                     modifications made through the array to affect the original data.
     """
+
     if not sizes:
         raise ValueError("Sizes must be provided to determine the array shape.")
 
@@ -350,6 +353,7 @@ def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: gtx.int32, n
 
         # Allocate GT4Py Fields
         one = np_as_located_field(dims.CellDim, dims.KDim)(one)
+
         bar(one, two)
 
     except Exception as e:

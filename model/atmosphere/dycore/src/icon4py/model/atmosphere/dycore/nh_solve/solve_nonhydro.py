@@ -594,7 +594,7 @@ class SolveNonhydro:
         self._predictor_stencils_4_5_6 = nhsolve_prog.predictor_stencils_4_5_6.with_backend(
             self._backend
         )
-        self._predictor_stencils_7_8_9 = nhsolve_prog.predictor_stencils_7_8_9.with_backend(
+        self.compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels = nhsolve_prog.compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels.with_backend(
             self._backend
         )
         self._predictor_stencils_11_lower_upper = (
@@ -1015,7 +1015,7 @@ class SolveNonhydro:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
-        self._predictor_stencils_7_8_9(
+        self.compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self._metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,
@@ -1245,7 +1245,7 @@ class SolveNonhydro:
         lowest_level = self._grid.num_levels - 1
         hydro_corr_horizontal = gtx.as_field(
             (dims.EdgeDim,),
-            self.z_hydro_corr.asnumpy()[:, lowest_level],
+            self.z_hydro_corr.ndarray[:, lowest_level],
             allocator=self._backend.allocator,
         )
 
