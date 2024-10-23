@@ -147,7 +147,7 @@ def test_nonhydro_predictor_step(
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro()
+    solve_nonhydro = solve_nh.SolveNonhydro(backend)
     nlev = icon_grid.num_levels
     solve_nonhydro.init(
         grid=icon_grid,
@@ -593,7 +593,7 @@ def test_nonhydro_corrector_step(
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro()
+    solve_nonhydro = solve_nh.SolveNonhydro(backend)
     solve_nonhydro.init(
         grid=icon_grid,
         config=config,
@@ -781,7 +781,7 @@ def test_run_solve_nonhydro_single_step(
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro()
+    solve_nonhydro = solve_nh.SolveNonhydro(backend)
     solve_nonhydro.init(
         grid=icon_grid,
         config=config,
@@ -910,7 +910,7 @@ def test_run_solve_nonhydro_multi_step(
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro()
+    solve_nonhydro = solve_nh.SolveNonhydro(backend)
     solve_nonhydro.init(
         grid=icon_grid,
         config=config,

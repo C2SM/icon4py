@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.dycore.compute_avg_vn import _compute_avg_vn
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import _compute_tangential_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2EO, E2C2EODim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -36,7 +35,7 @@ def _compute_avg_vn_and_graddiv_vn_and_vt(
     return z_vn_avg_wp, z_graddiv_vn_vp, vt_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_avg_vn_and_graddiv_vn_and_vt(
     e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],

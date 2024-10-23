@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 import numpy as np
+from gt4py.next import backend
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
 import icon4py.model.common.grid.geometry as geometry
@@ -57,9 +58,11 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: geometry.EdgeParams,
         owner_mask: fa.CellField[bool],
+        backend: backend.Backend,
     ):
         self._initialized = False
         self.grid: icon_grid.IconGrid = grid
+        self._backend = backend
         self.metric_state: solve_nh_states.MetricStateNonHydro = metric_state
         self.interpolation_state: solve_nh_states.InterpolationState = interpolation_state
         self.vertical_params = vertical_params
@@ -73,32 +76,84 @@ class VelocityAdvection:
 
         self._initialized = True
 
+        self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(self._backend)
+        )
+        self._mo_math_divrot_rot_vertex_ri_dsl = mo_math_divrot_rot_vertex_ri_dsl.with_backend(
+            self._backend
+        )
+        self._compute_tangential_wind = compute_tangential_wind.with_backend(self._backend)
+        self._interpolate_vn_to_ie_and_compute_ekin_on_edges = (
+            interpolate_vn_to_ie_and_compute_ekin_on_edges.with_backend(self._backend)
+        )
+        self._interpolate_vt_to_interface_edges = interpolate_vt_to_interface_edges.with_backend(
+            self._backend
+        )
+        self._fused_stencils_4_5 = velocity_prog.fused_stencils_4_5.with_backend(self._backend)
+        self._extrapolate_at_top = velocity_prog.extrapolate_at_top.with_backend(self._backend)
+        self._compute_horizontal_advection_term_for_vertical_velocity = (
+            compute_horizontal_advection_term_for_vertical_velocity.with_backend(self._backend)
+        )
+        self._interpolate_to_cell_center = interpolate_to_cell_center.with_backend(self._backend)
+        self._fused_stencils_9_10 = velocity_prog.fused_stencils_9_10.with_backend(self._backend)
+        self._fused_stencils_11_to_13 = velocity_prog.fused_stencils_11_to_13.with_backend(
+            self._backend
+        )
+        self._fused_stencil_14 = velocity_prog.fused_stencil_14.with_backend(self._backend)
+        self._interpolate_contravariant_vertical_velocity_to_full_levels = (
+            interpolate_contravariant_vertical_velocity_to_full_levels.with_backend(self._backend)
+        )
+        self._fused_stencils_16_to_17 = velocity_prog.fused_stencils_16_to_17.with_backend(
+            self._backend
+        )
+        self._add_extra_diffusion_for_w_con_approaching_cfl = (
+            add_extra_diffusion_for_w_con_approaching_cfl.with_backend(self._backend)
+        )
+        self._compute_advective_normal_wind_tendency = (
+            compute_advective_normal_wind_tendency.with_backend(self._backend)
+        )
+        self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl = (
+            add_extra_diffusion_for_normal_wind_tendency_approaching_cfl.with_backend(self._backend)
+        )
+
     @property
     def initialized(self):
         return self._initialized
 
     def _allocate_local_fields(self):
         self.z_w_v = field_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, is_halfdim=True, grid=self.grid
+            dims.VertexDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
         )
-        self.z_v_grad_w = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
-        self.z_ekinh = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.z_v_grad_w = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
+        )
+        self.z_ekinh = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        )
         self.z_w_concorr_mc = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.z_w_con_c = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid
+            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
         )
-        self.zeta = field_alloc.allocate_zero_field(dims.VertexDim, dims.KDim, grid=self.grid)
+        self.zeta = field_alloc.allocate_zero_field(
+            dims.VertexDim, dims.KDim, grid=self.grid, backend=self._backend
+        )
         self.z_w_con_c_full = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         self.cfl_clipping = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool
+            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
-        self.levmask = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid, dtype=bool)
-        self.vcfl_dsl = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
-        self.k_field = field_alloc.allocate_indices(dims.KDim, grid=self.grid, is_halfdim=True)
+        self.levmask = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
+        )
+        self.vcfl_dsl = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        )
+        self.k_field = field_alloc.allocate_indices(
+            dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
+        )
 
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -148,7 +203,7 @@ class VelocityAdvection:
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+            self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
@@ -159,7 +214,7 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        mo_math_divrot_rot_vertex_ri_dsl(
+        self._mo_math_divrot_rot_vertex_ri_dsl(
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
             rot_vec=self.zeta,
@@ -170,7 +225,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        compute_tangential_wind(
+        self._compute_tangential_wind(
             vn=prognostic_state.vn,
             rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
             vt=diagnostic_state.vt,
@@ -181,7 +236,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        interpolate_vn_to_ie_and_compute_ekin_on_edges(
+        self._interpolate_vn_to_ie_and_compute_ekin_on_edges(
             wgtfac_e=self.metric_state.wgtfac_e,
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
@@ -195,7 +250,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            interpolate_vt_to_interface_edges(
+            self._interpolate_vt_to_interface_edges(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
                 z_vt_ie=z_vt_ie,
@@ -206,7 +261,7 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        velocity_prog.fused_stencils_4_5(
+        self._fused_stencils_4_5(
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
@@ -224,7 +279,7 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        velocity_prog.extrapolate_at_top(
+        self._extrapolate_at_top(
             wgtfacq_e=self.metric_state.wgtfacq_e,
             vn=prognostic_state.vn,
             vn_ie=diagnostic_state.vn_ie,
@@ -236,7 +291,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            compute_horizontal_advection_term_for_vertical_velocity(
+            self._compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
@@ -252,7 +307,7 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        interpolate_to_cell_center(
+        self._interpolate_to_cell_center(
             interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             interpolation=self.z_ekinh,
@@ -263,7 +318,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        velocity_prog.fused_stencils_9_10(
+        self._fused_stencils_9_10(
             z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             local_z_w_concorr_mc=self.z_w_concorr_mc,
@@ -279,7 +334,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        velocity_prog.fused_stencils_11_to_13(
+        self._fused_stencils_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -293,7 +348,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        velocity_prog.fused_stencil_14(
+        self._fused_stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
@@ -311,7 +366,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        interpolate_contravariant_vertical_velocity_to_full_levels(
+        self._interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
@@ -322,7 +377,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            velocity_prog.fused_stencils_16_to_17(
+            self._fused_stencils_16_to_17(
                 w=prognostic_state.w,
                 local_z_v_grad_w=self.z_v_grad_w,
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -337,7 +392,7 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-            add_extra_diffusion_for_w_con_approaching_cfl(
+            self._add_extra_diffusion_for_w_con_approaching_cfl(
                 levmask=self.levmask,
                 cfl_clipping=self.cfl_clipping,
                 owner_mask=self.c_owner_mask,
@@ -361,7 +416,7 @@ class VelocityAdvection:
 
         self.levelmask = self.levmask
 
-        compute_advective_normal_wind_tendency(
+        self._compute_advective_normal_wind_tendency(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
@@ -380,7 +435,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
+        self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -428,7 +483,7 @@ class VelocityAdvection:
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+            self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
@@ -439,7 +494,7 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        mo_math_divrot_rot_vertex_ri_dsl(
+        self._mo_math_divrot_rot_vertex_ri_dsl(
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
             rot_vec=self.zeta,
@@ -451,7 +506,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            compute_horizontal_advection_term_for_vertical_velocity(
+            self._compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
@@ -467,7 +522,7 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        interpolate_to_cell_center(
+        self._interpolate_to_cell_center(
             interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             interpolation=self.z_ekinh,
@@ -478,7 +533,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        velocity_prog.fused_stencils_11_to_13(
+        self._fused_stencils_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -492,7 +547,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        velocity_prog.fused_stencil_14(
+        self._fused_stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
@@ -508,7 +563,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        interpolate_contravariant_vertical_velocity_to_full_levels(
+        self._interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
@@ -518,7 +573,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        velocity_prog.fused_stencils_16_to_17(
+        self._fused_stencils_16_to_17(
             w=prognostic_state.w,
             local_z_v_grad_w=self.z_v_grad_w,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -533,7 +588,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        add_extra_diffusion_for_w_con_approaching_cfl(
+        self._add_extra_diffusion_for_w_con_approaching_cfl(
             levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
@@ -556,7 +611,7 @@ class VelocityAdvection:
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
-        compute_advective_normal_wind_tendency(
+        self._compute_advective_normal_wind_tendency(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
@@ -575,7 +630,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
+        self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
