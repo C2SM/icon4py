@@ -48,13 +48,19 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
-from icon4pytools.py2fgen.wrappers.wrapper_dimension import SpecialADim, SpecialBDim, SpecialCDim, CellIndexDim, EdgeIndexDim, VertexIndexDim
+from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
+    CellIndexDim,
+    EdgeIndexDim,
+    SpecialADim,
+    SpecialBDim,
+    SpecialCDim,
+    VertexIndexDim,
+)
+
 
 logger = setup_logger(__name__)
 
-# Use single node exchange by default
 diffusion_wrapper_state = {
-    "granule": Diffusion(backend=backend, exchange=definitions.SingleNodeExchange()),
     "profiler": cProfile.Profile(),
 }
 
@@ -346,7 +352,8 @@ def grid_init(
     )
 
     if parallel_run:
-        processor_props, decomposition_info, exchange = common.construct_decomposition(
+        # Set MultiNodeExchange as exchange runtime
+        processor_props, decomposition_info, exchange_runtime = common.construct_decomposition(
             c_glb_index,
             e_glb_index,
             v_glb_index,
@@ -367,5 +374,8 @@ def grid_init(
             num_edges,
             num_vertices,
         )
-        # Set MultiNodeExchange as exchange runtime
-        diffusion_wrapper_state["granule"] = Diffusion(backend=backend, exchange=exchange)
+    else:
+        exchange_runtime = definitions.SingleNodeExchange()
+
+    # initialise the Diffusion granule
+    diffusion_wrapper_state["granule"] = (Diffusion(backend=backend, exchange=exchange_runtime),)

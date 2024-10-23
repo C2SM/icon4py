@@ -55,7 +55,7 @@ except ImportError:
 if TYPE_CHECKING:
     import mpi4py.MPI
 
-ghex_arch = Architecture.CPU if device == Device.CPU else Architecture.GPU 
+ghex_arch = Architecture.CPU if device == Device.CPU else Architecture.GPU
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
 
@@ -216,8 +216,7 @@ class GHexMultiNodeExchange:
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f, arch=ghex_arch))
-            for f in fields
+            pattern(make_field_descriptor(domain_descriptor, f, arch=ghex_arch)) for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")

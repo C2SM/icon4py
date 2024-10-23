@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 
-import numpy as np
 import numpy.ma as ma
 from gt4py.next import Dimension
 
@@ -119,7 +118,6 @@ class DecompositionInfo:
             case DecompositionInfo.EntryType.OWNED:
                 return self._global_index[dim][self._owner_mask[dim]]
             case DecompositionInfo.EntryType.HALO:
-                global_index = self._global_index[dim]
                 return self._global_index[dim][~self._owner_mask[dim]]
             case _:
                 raise NotImplementedError()
