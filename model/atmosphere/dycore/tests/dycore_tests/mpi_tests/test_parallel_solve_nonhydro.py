@@ -48,6 +48,7 @@ def test_run_solve_nonhydro_single_step(
     savepoint_nonhydro_step_exit,
     processor_props,  # : F811 fixture
     decomposition_info,  # : F811 fixture
+    backend,
 ):
     parallel_helpers.check_comm_size(processor_props)
     print(
@@ -141,7 +142,7 @@ def test_run_solve_nonhydro_single_step(
 
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    solve_nonhydro = nh.SolveNonhydro(exchange)
+    solve_nonhydro = nh.SolveNonhydro(backend, exchange)
     solve_nonhydro.init(
         grid=icon_grid,
         config=config,

@@ -85,7 +85,10 @@ from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
 
 logger = setup_logger(__name__)
 
-dycore_wrapper_state = {"granule": SolveNonhydro(), "profiler": cProfile.Profile()}
+dycore_wrapper_state = {
+    "granule": SolveNonhydro(backend=settings.backend),
+    "profiler": cProfile.Profile(),
+}
 
 
 def profile_enable():
