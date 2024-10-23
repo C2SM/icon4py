@@ -684,22 +684,22 @@ class SolveNonhydro:
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
         self.z_rth_pr_1 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, self._grid, backend=self._backend
+            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
         self.z_rth_pr_2 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, self._grid, backend=self._backend
+            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
         self.z_grad_rth_1 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, self._grid, backend=self._backend
+            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
         self.z_grad_rth_2 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, self._grid, backend=self._backend
+            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
         self.z_grad_rth_3 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, self._grid, backend=self._backend
+            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
         self.z_grad_rth_4 = field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, self._grid, backend=self._backend
+            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
         self.z_dexner_dz_c_2 = field_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
@@ -747,7 +747,9 @@ class SolveNonhydro:
         self.scal_divdamp = field_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.intermediate_fields = IntermediateFields.allocate(self._grid, backend=self._backend)
+        self.intermediate_fields = IntermediateFields.allocate(
+            grid=self._grid, backend=self._backend
+        )
 
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
