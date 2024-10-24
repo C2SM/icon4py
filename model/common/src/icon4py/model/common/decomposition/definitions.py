@@ -101,6 +101,10 @@ class DecompositionInfo:
     def num_edges(self):
         return self._num_edges
 
+    @property
+    def num_vertices(self):
+        return self._num_vertices
+
     def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
