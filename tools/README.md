@@ -158,11 +158,10 @@ Together, the `START STENCIL` and `END STENCIL` directives result in the followi
 
 ```fortran
 !$ACC DATA CREATE( &
-!$ACC   vn_before, &
-!$ACC      IF ( i_am_accel_node )
+!$ACC   vn_before)
 
 #ifdef __DSL_VERIFY
-!$ACC KERNELS IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+!$ACC KERNELS DEFAULT(NONE) ASYNC(1)
 vn_before(:, :, :) = vn(:, :, :)
 !$ACC END KERNELS
 ```
@@ -219,11 +218,10 @@ Together, the `START FUSED STENCIL` and `END FUSED STENCIL` directives result in
         !$ACC DATA CREATE( &
         !$ACC   kh_smag_e_before, &
         !$ACC   kh_smag_ec_before, &
-        !$ACC   z_nabla2_e_before ) &
-        !$ACC      IF ( i_am_accel_node )
+        !$ACC   z_nabla2_e_before )
 
 #ifdef __DSL_VERIFY
-        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1)
+        !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
         kh_smag_e_before(:, :, :) = kh_smag_e(:, :, :)
         kh_smag_ec_before(:, :, :) = kh_smag_ec(:, :, :)
         z_nabla2_e_before(:, :, :) = z_nabla2_e(:, :, :)
@@ -250,8 +248,7 @@ call wrap_run_calculate_diagnostic_quantities_for_turbulence( &
 
 !$ACC EXIT DATA DELETE( &
 !$ACC   div_ic_before, &
-!$ACC   hdef_ic_before ) &
-!$ACC      IF ( i_am_accel_node )
+!$ACC   hdef_ic_before )
 ```
 
 #### `!$DSL INSERT()`
