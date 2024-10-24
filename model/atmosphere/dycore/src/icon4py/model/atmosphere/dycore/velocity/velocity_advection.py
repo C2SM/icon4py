@@ -60,7 +60,6 @@ class VelocityAdvection:
         owner_mask: fa.CellField[bool],
         backend: backend.Backend,
     ):
-        self._initialized = False
         self.grid: icon_grid.IconGrid = grid
         self._backend = backend
         self.metric_state: solve_nh_states.MetricStateNonHydro = metric_state
