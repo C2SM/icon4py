@@ -166,8 +166,7 @@ def test_run_timeloop_single_step(
     )
     additional_parameters = diffusion.DiffusionParams(diffusion_config)
 
-    diffusion_granule = diffusion.Diffusion(backend=backend)
-    diffusion_granule.init(
+    diffusion_granule = diffusion.Diffusion(
         grid=icon_grid,
         config=diffusion_config,
         params=additional_parameters,
@@ -176,6 +175,7 @@ def test_run_timeloop_single_step(
         interpolation_state=diffusion_interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        backend=backend,
     )
 
     sp = savepoint_nonhydro_init
@@ -238,8 +238,7 @@ def test_run_timeloop_single_step(
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro(backend)
-    solve_nonhydro_granule.init(
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=nonhydro_config,
         params=nonhydro_params,
@@ -249,6 +248,7 @@ def test_run_timeloop_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
     diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(

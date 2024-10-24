@@ -55,7 +55,7 @@ from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
 
 logger = setup_logger(__name__)
 
-diffusion_wrapper_state = {"granule": Diffusion(backend=backend), "profiler": cProfile.Profile()}
+diffusion_wrapper_state = {"profiler": cProfile.Profile()}
 
 
 def profile_enable():
@@ -228,7 +228,7 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    diffusion_wrapper_state["granule"].init(
+    diffusion_wrapper_state["granule"] = Diffusion(
         grid=diffusion_wrapper_state["grid"],
         config=config,
         params=diffusion_params,
@@ -237,6 +237,7 @@ def diffusion_init(
         interpolation_state=interpolation_state,
         edge_params=edge_params,
         cell_params=cell_params,
+        backend=backend,
     )
 
 

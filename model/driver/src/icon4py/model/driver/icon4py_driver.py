@@ -352,8 +352,7 @@ def initialize(
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
-    diffusion_granule = diffusion.Diffusion(exchange=exchange, backend=gtfn_cpu)
-    diffusion_granule.init(
+    diffusion_granule = diffusion.Diffusion(
         icon_grid,
         config.diffusion_config,
         diffusion_params,
@@ -362,13 +361,14 @@ def initialize(
         diffusion_interpolation_state,
         edge_geometry,
         cell_geometry,
+        exchange=exchange,
+        backend=gtfn_cpu,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro(backend=gtfn_cpu)
-    solve_nonhydro_granule.init(
-        grid=icon_grid,
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(
+        backend=gtfn_cpu,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
