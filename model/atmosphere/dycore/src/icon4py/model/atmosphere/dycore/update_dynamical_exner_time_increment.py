@@ -25,8 +25,10 @@ def _update_dynamical_exner_time_increment(
     """Formerly known as _mo_solve_nonhydro_stencil_60."""
     exner_dyn_incr_wp, ddt_exner_phy_wp = astype((exner_dyn_incr, ddt_exner_phy), wpfloat)
 
-    exner_dyn_incr_wp = exner - (exner_dyn_incr_wp + ndyn_substeps_var * dtime * ddt_exner_phy_wp)
-    return astype(exner_dyn_incr_wp, vpfloat)
+    exner_dyn_incr_lastsubstep_wp = exner - (
+        exner_dyn_incr_wp + ndyn_substeps_var * dtime * ddt_exner_phy_wp
+    )
+    return astype(exner_dyn_incr_lastsubstep_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -34,6 +36,7 @@ def update_dynamical_exner_time_increment(
     exner: fa.CellKField[wpfloat],
     ddt_exner_phy: fa.CellKField[vpfloat],
     exner_dyn_incr: fa.CellKField[vpfloat],
+    exner_dyn_incr_lastsubstep: fa.CellKField[vpfloat],
     ndyn_substeps_var: wpfloat,
     dtime: wpfloat,
     horizontal_start: gtx.int32,
@@ -47,7 +50,7 @@ def update_dynamical_exner_time_increment(
         exner_dyn_incr,
         ndyn_substeps_var,
         dtime,
-        out=exner_dyn_incr,
+        out=exner_dyn_incr_lastsubstep,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

@@ -17,12 +17,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.settings import backend, xp
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
-def hydrostatic_adjustment_numpy(
+def hydrostatic_adjustment_ndarray(
     wgtfac_c: xp.ndarray,
     ddqz_z_half: xp.ndarray,
     exner_ref_mc: xp.ndarray,
@@ -62,7 +57,7 @@ def hydrostatic_adjustment_numpy(
     return rho, exner, theta_v
 
 
-def hydrostatic_adjustment_constant_thetav_numpy(
+def hydrostatic_adjustment_constant_thetav_ndarray(
     wgtfac_c: xp.ndarray,
     ddqz_z_half: xp.ndarray,
     exner_ref_mc: xp.ndarray,
@@ -76,7 +71,7 @@ def hydrostatic_adjustment_constant_thetav_numpy(
 ) -> tuple[xp.ndarray, xp.ndarray]:
     """
     Computes a hydrostatically balanced profile. In constrast to the above
-    hydrostatic_adjustment_numpy, the virtual temperature is kept (assumed)
+    hydrostatic_adjustment_ndarray, the virtual temperature is kept (assumed)
     constant during the adjustment, leading to a simpler formula.
     """
 
@@ -102,7 +97,7 @@ def hydrostatic_adjustment_constant_thetav_numpy(
     return rho, exner
 
 
-def zonalwind_2_normalwind_numpy(
+def zonalwind_2_normalwind_ndarray(
     grid: icon_grid.IconGrid,
     jw_u0: float,
     jw_up: float,
@@ -145,14 +140,18 @@ def zonalwind_2_normalwind_numpy(
             u
             + jw_up
             * xp.exp(
-                -10.0
-                * xp.arccos(
-                    xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
-                    + xp.cos(lat_perturbation_center)
-                    * xp.cos(edge_lat)
-                    * xp.cos(edge_lon - lon_perturbation_center)
+                -(
+                    (
+                        10.0
+                        * xp.arccos(
+                            xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
+                            + xp.cos(lat_perturbation_center)
+                            * xp.cos(edge_lat)
+                            * xp.cos(edge_lon - lon_perturbation_center)
+                        )
+                    )
+                    ** 2
                 )
-                ** 2
             ),
             u,
         )
@@ -199,7 +198,7 @@ def compute_perturbed_exner(
         exner_ref,
         out=exner_pr,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
