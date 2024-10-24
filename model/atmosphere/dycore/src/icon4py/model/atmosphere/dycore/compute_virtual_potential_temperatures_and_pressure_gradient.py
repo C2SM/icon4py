@@ -82,7 +82,6 @@ def _compute_virtual_potential_temperatures(
     wgtfac_c: fa.CellKField[vpfloat],
     z_rth_pr_2: fa.CellKField[vpfloat],
     theta_v: fa.CellKField[wpfloat],
-    d_exner_dz_ref_ic: fa.CellKField[vpfloat],
 ) -> tuple[
     fa.CellKField[vpfloat],
     fa.CellKField[wpfloat],
