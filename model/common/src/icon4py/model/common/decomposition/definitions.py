@@ -12,7 +12,6 @@ import enum
 import functools
 import logging
 from dataclasses import dataclass
-from enum import IntEnum
 from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 
 import gt4py.next as gtx
@@ -159,6 +158,14 @@ class ExchangeRuntime(Protocol):
 
     def my_rank(self):
         ...
+
+
+class SingleNodeResult:
+    def wait(self):
+        pass
+
+    def is_ready(self) -> bool:
+        return True
 
 
 @dataclasses.dataclass
@@ -308,14 +315,6 @@ def create_halo_exchange_wait(runtime: ExchangeRuntime) -> HaloExchangeWaitRunti
 @create_halo_exchange_wait.register(SingleNodeExchange)
 def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloExchangeWait:
     return HaloExchangeWait(runtime)
-
-
-class SingleNodeResult:
-    def wait(self):
-        pass
-
-    def is_ready(self) -> bool:
-        return True
 
 
 class RunType:

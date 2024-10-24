@@ -140,7 +140,6 @@ def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=init_savepoint.exner_dyn_incr(),
-        exner_dyn_incr_lastsubstep=init_savepoint.exner_dyn_incr(),
     )
 
 

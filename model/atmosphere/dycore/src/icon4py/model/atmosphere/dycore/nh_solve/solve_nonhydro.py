@@ -593,9 +593,7 @@ class SolveNonhydro:
         self._compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels = nhsolve_prog.compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels.with_backend(
             self._backend
         )
-        self._compute_pressure_gradient = compute_pressure_gradient.with_backend(
-            self._backend
-        )
+        self._compute_pressure_gradient = compute_pressure_gradient.with_backend(self._backend)
         self._predictor_stencils_11_lower_upper = (
             nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(self._backend)
         )
@@ -1025,7 +1023,7 @@ class SolveNonhydro:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
-        self._compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
+        self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,
@@ -1034,27 +1032,17 @@ class SolveNonhydro:
             z_rth_pr_1=self.z_rth_pr_1,
             z_rth_pr_2=self.z_rth_pr_2,
             wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+            vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
+            exner_pr=diagnostic_state_nh.exner_pr,
+            d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
+            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
             z_theta_v_pr_ic=self.z_theta_v_pr_ic,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             k_field=self.k_field,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._compute_pressure_gradient(
-            vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
-            z_theta_v_pr_ic=self.z_theta_v_pr_ic,
-            exner_pr=diagnostic_state_nh.exner_pr,
-            d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
-            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
-            z_th_ddz_exner_c=self.z_th_ddz_exner_c,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
@@ -2115,7 +2103,6 @@ class SolveNonhydro:
                 exner=prognostic_state[nnew].exner,
                 ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
-                exner_dyn_incr_lastsubstep=diagnostic_state_nh.exner_dyn_incr_lastsubstep,
                 ndyn_substeps_var=gtx.float64(self.config.ndyn_substeps_var),
                 dtime=dtime,
                 horizontal_start=self._start_cell_nudging,

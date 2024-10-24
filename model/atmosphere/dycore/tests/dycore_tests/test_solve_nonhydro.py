@@ -658,7 +658,7 @@ def test_nonhydro_corrector_step(
     )
     # stencil 60 only relevant for last substep
     assert helpers.dallclose(
-        diagnostic_state_nh.exner_dyn_incr_lastsubstep.asnumpy(),
+        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
@@ -800,7 +800,7 @@ def test_run_solve_nonhydro_single_step(
 
     if jstep_init == ndyn_substeps - 1:
         assert helpers.dallclose(
-            diagnostic_state_nh.exner_dyn_incr_lastsubstep.asnumpy(),
+            diagnostic_state_nh.exner_dyn_incr.asnumpy(),
             savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
             atol=1e-14,
         )
@@ -977,7 +977,7 @@ def test_run_solve_nonhydro_multi_step(
         atol=5e-13,
     )
     assert helpers.dallclose(
-        diagnostic_state_nh.exner_dyn_incr_lastsubstep.asnumpy(),
+        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )

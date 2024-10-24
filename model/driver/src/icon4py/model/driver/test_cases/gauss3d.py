@@ -282,9 +282,6 @@ def model_initialization_gauss3d(
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
         exner_dyn_incr=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        exner_dyn_incr_lastsubstep=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid
-        ),
     )
 
     prep_adv = solve_nh_states.PrepAdvection(

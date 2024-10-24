@@ -10,6 +10,7 @@ import logging
 import uuid
 
 import gt4py.next as gtx
+import numpy as np
 import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -358,11 +359,10 @@ class IconGridSavepoint(IconSavepoint):
 
     def refin_ctrl(self, dim: gtx.Dimension):
         field_name = "refin_ctl"
-        buffer = 
         return gtx.as_field(
             (dim,),
             xp.squeeze(
-            self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
+                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
             ),
         )
 

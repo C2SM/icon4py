@@ -13,13 +13,13 @@ from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment impor
     update_dynamical_exner_time_increment,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
     PROGRAM = update_dynamical_exner_time_increment
-    OUTPUTS = ("exner_dyn_incr_lastsubstep",)
+    OUTPUTS = ("exner_dyn_incr",)
 
     @staticmethod
     def reference(
@@ -31,10 +31,8 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         dtime: float,
         **kwargs,
     ) -> dict:
-        exner_dyn_incr_lastsubstep = exner - (
-            exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy
-        )
-        return dict(exner_dyn_incr_lastsubstep=exner_dyn_incr_lastsubstep)
+        exner_dyn_incr = exner - (exner_dyn_incr + ndyn_substeps_var * dtime * ddt_exner_phy)
+        return dict(exner_dyn_incr=exner_dyn_incr)
 
     @pytest.fixture
     def input_data(self, grid):
@@ -42,13 +40,11 @@ class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
         exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddt_exner_phy = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         exner_dyn_incr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        exner_dyn_incr_lastsubstep = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             exner=exner,
             ddt_exner_phy=ddt_exner_phy,
             exner_dyn_incr=exner_dyn_incr,
-            exner_dyn_incr_lastsubstep=exner_dyn_incr_lastsubstep,
             ndyn_substeps_var=ndyn_substeps_var,
             dtime=dtime,
             horizontal_start=0,

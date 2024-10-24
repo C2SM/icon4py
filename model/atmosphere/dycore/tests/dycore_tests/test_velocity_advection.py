@@ -193,7 +193,6 @@ def test_velocity_predictor_step(
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=None,
-        exner_dyn_incr_lastsubstep=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=sp_v.w(),
@@ -363,7 +362,6 @@ def test_velocity_corrector_step(
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=None,
-        exner_dyn_incr_lastsubstep=None,
     )
     prognostic_state = prognostics.PrognosticState(
         w=sp_v.w(),
