@@ -12,6 +12,7 @@ import re
 import uuid
 
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
 
 
 DEFAULT_TEST_DATA_FOLDER = "testdata"
@@ -115,12 +116,24 @@ def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
-def create_icon_serial_data_provider(datapath, processor_props):
-    from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
+def get_datapath_for_experiment_advection(ranked_base_path, experiment=REGIONAL_EXPERIMENT):
+    return ranked_base_path.joinpath(f"{experiment}/advection/ser_data")
 
+
+def create_icon_serial_data_provider(datapath, processor_props):
     return IconSerialDataProvider(
         fname_prefix="icon_pydycore",
         path=str(datapath),
         mpi_rank=processor_props.rank,
         do_print=True,
+    )
+
+
+def create_icon_serial_data_provider_advection(datapath, processor_props):
+    return IconSerialDataProvider(
+        fname_prefix="icon_pyadvection",
+        path=str(datapath),
+        mpi_rank=processor_props.rank,
+        do_print=True,
+        advection=True,
     )
