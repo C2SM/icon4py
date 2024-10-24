@@ -43,6 +43,10 @@ EDGE_TANGENT_Z = "z_component_of_edge_tangential_unit_vector"
 EDGE_NORMAL_X = "x_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_Y = "y_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_Z = "z_component_of_edge_normal_unit_vector"
+EDGE_NORMAL_VERTEX_U = "eastward_component_of_edge_normal_on_vertex"  # TODO
+EDGE_NORMAL_VERTEX_V = "northward_component_of_edge_normal_on_vertex"  # TODO
+EDGE_NORMAL_CELL_U = "eastward_component_of_edge_normal_on_cell"  # TODO
+EDGE_NORMAL_CELL_V = "northward_component_of_edge_normal_on_cell"  # TODO
 
 
 attrs: dict[str, model.FieldMetaData] = {
@@ -190,6 +194,38 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO
         dims=(dims.EdgeDim,),
         icon_var_name="primal_cart_normal%z",  # TODO
+        dtype=ta.wpfloat,
+    ),
+    EDGE_NORMAL_VERTEX_U: dict(
+        standard_name=EDGE_NORMAL_VERTEX_U,
+        long_name=EDGE_NORMAL_VERTEX_U,
+        units="",  # TODO missing
+        dims=(dims.EdgeDim, dims.E2C2VDim),
+        icon_var_name="primal_normal_vert%v1",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_NORMAL_VERTEX_V: dict(
+        standard_name=EDGE_NORMAL_VERTEX_V,
+        long_name=EDGE_NORMAL_VERTEX_V,
+        units="",  # TODO missing
+        dims=(dims.EdgeDim, dims.E2C2VDim),
+        icon_var_name="primal_normal_vert%v2",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_NORMAL_CELL_U: dict(
+        standard_name=EDGE_NORMAL_CELL_U,
+        long_name=EDGE_NORMAL_CELL_U,
+        units="",  # TODO missing
+        dims=(dims.EdgeDim, dims.E2CDim),
+        icon_var_name="primal_normal_vert%v1",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_NORMAL_CELL_V: dict(
+        standard_name=EDGE_NORMAL_CELL_V,
+        long_name=EDGE_NORMAL_CELL_V,
+        units="",  # TODO missing
+        dims=(dims.EdgeDim, dims.E2CDim),
+        icon_var_name="primal_normal_vert%v2",
         dtype=ta.wpfloat,
     ),
     TANGENT_ORIENTATION: dict(

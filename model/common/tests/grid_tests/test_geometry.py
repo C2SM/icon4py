@@ -91,12 +91,11 @@ def test_compute_edge_length_program(experiment, backend, grid_savepoint, grid_f
     expected_edge_length = grid_savepoint.primal_edge_length()
     gm = utils.run_grid_manager(grid_file)
     grid = gm.grid
-    decomposition_info = construct_decomposition_info(grid)
     geometry_source = construct_grid_geometry(backend, grid_file)
 
     # FIXME: does not run on compiled???
-    # edge_length = geometry_source.get(attrs.EDGE_LENGTH)
-    edge_length = helpers.zero_field(grid, dims.EdgeDim)
+    edge_length = geometry_source.get(attrs.EDGE_LENGTH)
+    # edge_length = helpers.zero_field(grid, dims.EdgeDim)
 
     vertex_lat = gm.coordinates[dims.VertexDim]["lat"]
     vertex_lon = gm.coordinates[dims.VertexDim]["lon"]
@@ -242,7 +241,7 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), # FIX LAM
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -266,7 +265,7 @@ def test_compute_primal_normals(grid_file, experiment, grid_savepoint, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_primal_normal_cell(grid_file, experiment, grid_savepoint, backend):
+def test_primal_normal_cell_program(grid_file, experiment, grid_savepoint, backend):
     edge_domain = h_grid.domain(dims.EdgeDim)
     grid = grid_savepoint.construct_icon_grid(on_gpu=False)
 
@@ -276,7 +275,6 @@ def test_primal_normal_cell(grid_file, experiment, grid_savepoint, backend):
 
     cell_lat = grid_savepoint.lat(dims.CellDim)
     cell_lon = grid_savepoint.lon(dims.CellDim)
-
 
     u1_cell_ref = grid_savepoint.primal_normal_cell_x().asnumpy()[:, 0]
     u2_cell_ref = grid_savepoint.primal_normal_cell_x().asnumpy()[:, 1]
@@ -288,7 +286,6 @@ def test_primal_normal_cell(grid_file, experiment, grid_savepoint, backend):
     u1_cell = helpers.zero_field(grid, dims.EdgeDim)
     u2_cell = helpers.zero_field(grid, dims.EdgeDim)
 
-
     start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(edge_domain(h_grid.Zone.END))
     program.compute_edge_primal_normal_cell.with_backend(None)(
@@ -297,14 +294,56 @@ def test_primal_normal_cell(grid_file, experiment, grid_savepoint, backend):
         x,
         y,
         z,
-        u1_cell, v1_cell, u2_cell, v2_cell,
-        horizontal_start=start, horizontal_end=end,
-        offset_provider={"E2C": grid.get_offset_provider("E2C")}
+        u1_cell,
+        v1_cell,
+        u2_cell,
+        v2_cell,
+        horizontal_start=start,
+        horizontal_end=end,
+        offset_provider={"E2C": grid.get_offset_provider("E2C")},
     )
     assert helpers.dallclose(v1_cell.asnumpy(), v1_cell_ref)
     assert helpers.dallclose(v2_cell.asnumpy(), v2_cell_ref)
     assert helpers.dallclose(u1_cell.asnumpy(), u1_cell_ref, atol=2e-16)
     assert helpers.dallclose(u2_cell.asnumpy(), u2_cell_ref, atol=2e-16)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_primal_normal_cell(experiment, grid_file, grid_savepoint, backend):
+    grid_geometry = construct_grid_geometry(None, grid_file)
+    primal_normal_cell_u_ref = grid_savepoint.primal_normal_cell_x().asnumpy()
+    primal_normal_cell_v_ref = grid_savepoint.primal_normal_cell_y().asnumpy()
+    primal_normal_cell_u = grid_geometry.get(attrs.EDGE_NORMAL_CELL_U)
+    primal_normal_cell_v = grid_geometry.get(attrs.EDGE_NORMAL_CELL_V)
+
+    assert helpers.dallclose(primal_normal_cell_u.asnumpy(), primal_normal_cell_u_ref, atol=1e-14)
+    assert helpers.dallclose(primal_normal_cell_v.asnumpy(), primal_normal_cell_v_ref, atol=1e-14)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_primal_normal_vert(experiment, grid_file, grid_savepoint, backend):
+    grid_geometry = construct_grid_geometry(None, grid_file)
+    primal_normal_vert_u_ref = grid_savepoint.primal_normal_vert_x().asnumpy()
+    primal_normal_vert_v_ref = grid_savepoint.primal_normal_vert_y().asnumpy()
+    primal_normal_vert_u = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_U)
+    primal_normal_vert_v = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_V)
+
+    assert helpers.dallclose(primal_normal_vert_u.asnumpy(), primal_normal_vert_u_ref, atol=2e-14)
+    assert helpers.dallclose(primal_normal_vert_v.asnumpy(), primal_normal_vert_v_ref, atol=2e-14)
 
 
 @pytest.mark.datatest
@@ -327,18 +366,25 @@ def test_primal_normal_vertex(grid_file, experiment, grid_savepoint, backend):
     vertex_lon = grid_savepoint.verts_vertex_lon()
 
     u1_vertex_ref = grid_savepoint.primal_normal_vert_x().asnumpy()[:, 0]
-    u2_vertex_ref = grid_savepoint.primal_normal_vert_x().asnumpy()[:, 1]
     v1_vertex_ref = grid_savepoint.primal_normal_vert_y().asnumpy()[:, 0]
+    u2_vertex_ref = grid_savepoint.primal_normal_vert_x().asnumpy()[:, 1]
     v2_vertex_ref = grid_savepoint.primal_normal_vert_y().asnumpy()[:, 1]
+    u3_vertex_ref = grid_savepoint.primal_normal_vert_x().asnumpy()[:, 2]
+    v3_vertex_ref = grid_savepoint.primal_normal_vert_y().asnumpy()[:, 2]
+    u4_vertex_ref = grid_savepoint.primal_normal_vert_x().asnumpy()[:, 3]
+    v4_vertex_ref = grid_savepoint.primal_normal_vert_y().asnumpy()[:, 3]
 
     v1_vertex = helpers.zero_field(grid, dims.EdgeDim)
     v2_vertex = helpers.zero_field(grid, dims.EdgeDim)
+    v3_vertex = helpers.zero_field(grid, dims.EdgeDim)
+    v4_vertex = helpers.zero_field(grid, dims.EdgeDim)
     u1_vertex = helpers.zero_field(grid, dims.EdgeDim)
     u2_vertex = helpers.zero_field(grid, dims.EdgeDim)
+    u3_vertex = helpers.zero_field(grid, dims.EdgeDim)
+    u4_vertex = helpers.zero_field(grid, dims.EdgeDim)
 
     start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(edge_domain(h_grid.Zone.END))
-
 
     program.compute_edge_primal_normal_vertex.with_backend(None)(
         vertex_lat,
@@ -346,21 +392,30 @@ def test_primal_normal_vertex(grid_file, experiment, grid_savepoint, backend):
         x,
         y,
         z,
-        u1_vertex, v1_vertex, u2_vertex, v2_vertex,
-        horizontal_start = start,
-        horizontal_end = end,
+        u1_vertex,
+        v1_vertex,
+        u2_vertex,
+        v2_vertex,
+        u3_vertex,
+        v3_vertex,
+        u4_vertex,
+        v4_vertex,
+        horizontal_start=start,
+        horizontal_end=end,
         offset_provider={
             "E2C": grid.get_offset_provider("E2C"),
-            "E2V": grid.get_offset_provider("E2V"),
+            "E2C2V": grid.get_offset_provider("E2C2V"),
         },
     )
-    
-
 
     assert helpers.dallclose(v1_vertex.asnumpy(), v1_vertex_ref, atol=2e-16)
     assert helpers.dallclose(v2_vertex.asnumpy(), v2_vertex_ref, atol=2e-16)
     assert helpers.dallclose(u1_vertex.asnumpy(), u1_vertex_ref, atol=2e-16)
     assert helpers.dallclose(u2_vertex.asnumpy(), u2_vertex_ref, atol=2e-16)
+    assert helpers.dallclose(v3_vertex.asnumpy(), v3_vertex_ref, atol=2e-16)
+    assert helpers.dallclose(v4_vertex.asnumpy(), v4_vertex_ref, atol=2e-16)
+    assert helpers.dallclose(u3_vertex.asnumpy(), u3_vertex_ref, atol=2e-16)
+    assert helpers.dallclose(u4_vertex.asnumpy(), u4_vertex_ref, atol=2e-16)
 
 
 def test_sparse_fields_creator():

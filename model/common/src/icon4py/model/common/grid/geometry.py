@@ -29,6 +29,8 @@ from icon4py.model.common.grid.geometry_program import (
     compute_dual_edge_length_and_far_vertex_distance_in_diamond,
     compute_edge_area,
     compute_edge_length,
+    compute_edge_primal_normal_cell,
+    compute_edge_primal_normal_vertex,
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
@@ -300,9 +302,7 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
     return 4.0 * math.pi * radius**2 / num_cells
 
 
-InputGeometryFieldType: TypeAlias = Literal[
-    attrs.CELL_AREA
-]
+InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA]
 
 
 class GridGeometry(state_utils.FieldSource):
@@ -329,7 +329,7 @@ class GridGeometry(state_utils.FieldSource):
         )
 
         self._providers: dict[str, factory.FieldProvider] = {}
-      
+
         coordinates = {
             attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
             attrs.CELL_LON: coordinates[dims.CellDim]["lon"],
@@ -478,7 +478,6 @@ class GridGeometry(state_utils.FieldSource):
 
         # normals:
         # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal
-        # 2. primal_normals: gridfile%zonal_normal_primal_edge - edges%primal_normal%v1, gridfile%meridional_normal_primal_edge - edges%primal_normal%v2,
         provider = ProgramFieldProvider(
             func=compute_cartesian_coordinates_of_edge_tangent_and_normal,
             deps={
@@ -500,12 +499,13 @@ class GridGeometry(state_utils.FieldSource):
             },
             domain={
                 dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
         )
         self.register_provider(provider)
+        # 2. primal_normals: gridfile%zonal_normal_primal_edge - edges%primal_normal%v1, gridfile%meridional_normal_primal_edge - edges%primal_normal%v2,
         provider = ProgramFieldProvider(
             func=math_helpers.compute_zonal_and_meridional_components_on_edges,
             deps={
@@ -529,6 +529,71 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(provider)
 
         # 3. primal_normal_vert, primal_normal_cell
+        wrapped_provider = ProgramFieldProvider(
+            func=compute_edge_primal_normal_vertex,
+            deps={
+                "vertex_lat": attrs.VERTEX_LAT,
+                "vertex_lon": attrs.VERTEX_LON,
+                "x": attrs.EDGE_NORMAL_X,
+                "y": attrs.EDGE_NORMAL_Y,
+                "z": attrs.EDGE_NORMAL_Z,
+            },
+            fields={
+                "u_vertex_1": "u_vertex_1",
+                "v_vertex_1": "v_vertex_1",
+                "u_vertex_2": "u_vertex_2",
+                "v_vertex_2": "v_vertex_2",
+                "u_vertex_3": "u_vertex_3",
+                "v_vertex_3": "v_vertex_3",
+                "u_vertex_4": "u_vertex_4",
+                "v_vertex_4": "v_vertex_4",
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        provider = SparseFieldProviderWrapper(
+            wrapped_provider,
+            target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
+            fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
+            pairs=(
+                ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
+                ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
+            ),
+        )
+        self.register_provider(provider)
+        wrapped_provider = ProgramFieldProvider(
+            func=compute_edge_primal_normal_cell,
+            deps={
+                "cell_lat": attrs.CELL_LAT,
+                "cell_lon": attrs.CELL_LON,
+                "x": attrs.EDGE_NORMAL_X,
+                "y": attrs.EDGE_NORMAL_Y,
+                "z": attrs.EDGE_NORMAL_Z,
+            },
+            fields={
+                "u_cell_1": "u_cell_1",
+                "v_cell_1": "v_cell_1",
+                "u_cell_2": "u_cell_2",
+                "v_cell_2": "v_cell_2",
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        provider = SparseFieldProviderWrapper(
+            wrapped_provider,
+            target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
+            fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
+            pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
+        )
+        self.register_provider(provider)
 
     def get(
         self, field_name: str, type_: state_utils.RetrievalType = state_utils.RetrievalType.FIELD
@@ -563,31 +628,45 @@ class GridGeometry(state_utils.FieldSource):
         return None
 
 
-HorizontalD = TypeVar('HorizontalD', bound=gtx.Dimension)
-SparseD = TypeVar('SparseD', bound=gtx.Dimension)
+HorizontalD = TypeVar("HorizontalD", bound=gtx.Dimension)
+SparseD = TypeVar("SparseD", bound=gtx.Dimension)
+
 
 class SparseFieldProviderWrapper(factory.FieldProvider):
-
-    def __init__(self, field_provider: factory.ProgramFieldProvider, target_dims:tuple[HorizontalD, SparseD], fields:dict[str, str] ):
+    def __init__(
+        self,
+        field_provider: factory.ProgramFieldProvider,
+        target_dims: tuple[HorizontalD, SparseD],
+        fields: Sequence[str],
+        pairs: Sequence[tuple[str, str]],
+    ):
         self._wrapped_provider = field_provider
-        self._fields = fields
+        self._fields = {name: None for name in fields}
         self._func = functools.partial(as_sparse_field, target_dims)
+        self._pairs = pairs
 
     def __call__(
-            self,
-            field_name: str,
-            field_src: Optional[state_utils.FieldSource],
-            backend: Optional[gtx_backend.Backend],
-            grid: Optional[factory.GridProvider],):
-        any_field = self._wrapped_provider.fields.keys()[0]
-        self._wrapped_provider.__call__(any_field, field_src, backend, grid)
-        # get the fields from the wrapped provider
-        
-        self.func()
+        self,
+        field_name: str,
+        field_src: Optional[state_utils.FieldSource],
+        backend: Optional[gtx_backend.Backend],
+        grid: Optional[factory.GridProvider],
+    ):
+        if not self._fields.get(field_name):
+            # get the fields from the wrapped provider
+
+            input_fields = []
+            for p in self._pairs:
+                t = tuple([self._wrapped_provider(name, field_src, backend, grid) for name in p])
+                input_fields.append(t)
+            sparse_fields = self.func(input_fields)
+            self._fields = {k: sparse_fields[i] for i, k in enumerate(self.fields)}
+        return self._fields[field_name]
 
     @property
     def dependencies(self) -> Sequence[str]:
-        return tuple(self._wrapped_provider.fields.keys())
+        # TODO or values?
+        return self._wrapped_provider.dependencies
 
     @property
     def fields(self) -> Mapping[str, Any]:
@@ -598,20 +677,16 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         return self._func
 
 
-
-def as_sparse_field(target_dims: tuple[HorizontalD, SparseD],
-                    data:Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]]):
+def as_sparse_field(
+    target_dims: tuple[HorizontalD, SparseD],
+    data: Sequence[tuple[gtx.Field[gtx.Dims[HorizontalD], state_utils.ScalarType], ...]],
+):
     assert len(target_dims) == 2
     assert target_dims[0].kind == gtx.DimensionKind.HORIZONTAL
     assert target_dims[1].kind == gtx.DimensionKind.LOCAL
     fields = []
     for t in data:
         buffers = list(b.ndarray for b in t)
-        field = gtx.as_field(
-            target_dims,
-            data=(xp.vstack(buffers).T), dtype=buffers[0].dtype
-        )
+        field = gtx.as_field(target_dims, data=(xp.vstack(buffers).T), dtype=buffers[0].dtype)
         fields.append(field)
     return fields
-
-        

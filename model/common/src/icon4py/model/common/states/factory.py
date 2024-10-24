@@ -62,7 +62,7 @@ import gt4py.next.backend as gtx_backend
 import gt4py.next.ffront.decorator as gtx_decorator
 import xarray as xa
 
-from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common import dimension as dims, exceptions, type_alias as ta
 from icon4py.model.common.grid import (
     base as base_grid,
     horizontal as h_grid,
@@ -191,7 +191,7 @@ class ProgramFieldProvider(FieldProvider):
         self,
         backend: gtx_backend.Backend,
         grid: base_grid.BaseGrid,
-        metadata: dict[str, model.FieldMetaData],
+        dtype: state_utils.ScalarType = ta.wpfloat,
     ) -> dict[str, state_utils.FieldType]:
         def _map_size(dim: gtx.Dimension, grid: base_grid.BaseGrid) -> int:
             if dim == dims.KHalfDim:
@@ -207,7 +207,7 @@ class ProgramFieldProvider(FieldProvider):
         field_domain = {
             _map_dim(dim): (0, _map_size(dim, grid)) for dim in self._compute_domain.keys()
         }
-        return {k: allocate(field_domain, dtype=metadata[k]["dtype"]) for k in self._fields.keys()}
+        return {k: allocate(field_domain, dtype=dtype) for k in self._fields.keys()}
 
     # TODO (@halungge) this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
@@ -272,10 +272,16 @@ class ProgramFieldProvider(FieldProvider):
         backend: gtx_backend.Backend,
         grid_provider: GridProvider,
     ) -> None:
-        metadata = {
-            v: factory.get(v, state_utils.RetrievalType.METADATA) for k, v in self._output.items()
-        }
-        self._fields = self._allocate(backend, grid_provider.grid, metadata)
+        try:
+            metadata = {
+                v: factory.get(v, state_utils.RetrievalType.METADATA)
+                for k, v in self._output.items()
+            }
+            dtype = metadata["dtype"]
+        except KeyError:
+            dtype = ta.wpfloat
+
+        self._fields = self._allocate(backend, grid_provider.grid, dtype=dtype)
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
