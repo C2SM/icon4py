@@ -28,6 +28,7 @@ from typing import Any, Optional, ParamSpec, TypeVar, Union, get_type_hints, ove
 import gt4py.next as gtx
 import numpy as np
 from gt4py._core import definitions as core_defs
+from icon4pytools.py2fgen.wrappers.common import dace_orchestration
 
 from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -88,7 +89,7 @@ def orchestrate(
     """
 
     def _decorator(fuse_func: Callable[P, R]) -> Callable[P, R]:
-        if settings.dace_orchestration is not None:
+        if dace_orchestration is not None:
             orchestrator_cache = {}  # Caching
 
             if "dace" not in settings.backend.name.lower():

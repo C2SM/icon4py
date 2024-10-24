@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -44,7 +43,7 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
     return z_theta_v_pr_ic_vp, theta_v_ic_wp, astype(z_th_ddz_exner_c_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_virtual_potential_temperatures_and_pressure_gradient(
     wgtfac_c: fa.CellKField[vpfloat],
     z_rth_pr_2: fa.CellKField[vpfloat],

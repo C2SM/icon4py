@@ -36,7 +36,7 @@ from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RAT
 from icon4py.model.common.grid import geometry, icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import backend, device
+from icon4pytools.py2fgen.wrappers.common import backend, device
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,

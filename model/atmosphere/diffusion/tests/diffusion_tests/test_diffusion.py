@@ -9,12 +9,12 @@
 import numpy as np
 import pytest
 
+from tools.src.icon4pytools.py2fgen.wrappers.common import backend, dace_orchestration
+
 import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
-from icon4py.model.common import settings
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
-from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     helpers,
@@ -430,7 +430,7 @@ def test_run_diffusion_multiple_steps(
     backend,
     diffusion_instance,  # noqa: F811
 ):
-    if settings.dace_orchestration is None:
+    if dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
@@ -479,7 +479,7 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe NON-Orchestrated Backend
     ######################################################################
-    settings.dace_orchestration = None
+    dace_orchestration = None
 
     diagnostic_state_dace_non_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -511,7 +511,7 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe Orchestrated Backend
     ######################################################################
-    settings.dace_orchestration = True
+    dace_orchestration = True
 
     diagnostic_state_dace_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),

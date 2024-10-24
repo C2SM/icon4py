@@ -11,7 +11,6 @@ from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -25,7 +24,7 @@ def _compute_first_vertical_derivative(
     return z_dexner_dz_c_1
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_first_vertical_derivative(
     z_exner_ic: fa.CellKField[vpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],

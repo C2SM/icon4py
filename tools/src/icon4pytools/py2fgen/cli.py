@@ -9,7 +9,6 @@
 import pathlib
 
 import click
-from icon4py.model.common.config import GT4PyBackend
 
 from icon4pytools.common.utils import write_string
 from icon4pytools.py2fgen.generate import (
@@ -19,6 +18,7 @@ from icon4pytools.py2fgen.generate import (
 )
 from icon4pytools.py2fgen.parsing import parse
 from icon4pytools.py2fgen.plugin import generate_and_compile_cffi_plugin
+from icon4pytools.py2fgen.wrappers import common
 
 
 def parse_comma_separated_list(ctx, param, value) -> list[str]:
@@ -43,7 +43,7 @@ def parse_comma_separated_list(ctx, param, value) -> list[str]:
 @click.option(
     "--backend",
     "-b",
-    type=click.Choice([e.name for e in GT4PyBackend], case_sensitive=False),
+    type=click.Choice([e.name for e in common.GT4PyBackend], case_sensitive=False),
     default="CPU",
     help="Set the backend to use, thereby unpacking Fortran pointers into NumPy or CuPy arrays respectively.",
 )

@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     _init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -30,7 +29,7 @@ def _set_lower_boundary_condition_for_w_and_contravariant_correction(
     return w_nnew_wp, z_contr_w_fl_l_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_nnew: fa.CellKField[wpfloat],
     z_contr_w_fl_l: fa.CellKField[wpfloat],

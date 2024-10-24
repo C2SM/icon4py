@@ -13,7 +13,6 @@ from gt4py.eve import Node, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 from gt4py.next import Dimension
 from gt4py.next.type_system.type_specifications import ScalarKind
-from icon4py.model.common.config import GT4PyBackend
 
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
@@ -22,7 +21,7 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
-from icon4pytools.py2fgen.wrappers import wrapper_dimension
+from icon4pytools.py2fgen.wrappers import common, wrapper_dimension
 
 
 # these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
@@ -107,7 +106,7 @@ class PythonWrapper(CffiPlugin):
     is_gt4py_program_present: bool = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.gt4py_backend = GT4PyBackend[self.backend].value
+        self.gt4py_backend = common.GT4PyBackend[self.backend].value
         self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
         self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 

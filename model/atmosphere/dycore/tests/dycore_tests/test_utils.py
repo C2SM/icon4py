@@ -7,11 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 import numpy as np
+from icon4pytools.py2fgen.wrappers.common import backend
 
 from icon4py.model.atmosphere.dycore.state_utils import utils as solve_nh_utils
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import helpers
 
 
