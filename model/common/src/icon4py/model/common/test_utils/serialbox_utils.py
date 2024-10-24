@@ -5,13 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import functools
 import logging
 import uuid
 
 import gt4py.next as gtx
-import numpy as np
 import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -90,7 +88,7 @@ class IconSavepoint:
         Read an index field.
 
         use for start indices: the shift accounts for the zero based python
-        values are converted to int32
+        values are converted to gtx.int32
         """
         return self._read_int32(name, offset=1)
 
@@ -313,6 +311,7 @@ class IconGridSavepoint(IconSavepoint):
             ]
         else:
             connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
+        connectivity = xp.asarray(connectivity)
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
@@ -359,12 +358,12 @@ class IconGridSavepoint(IconSavepoint):
 
     def refin_ctrl(self, dim: gtx.Dimension):
         field_name = "refin_ctl"
-        buffer = xp.squeeze(
-            self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
-        )
+        buffer = 
         return gtx.as_field(
             (dim,),
-            buffer,
+            xp.squeeze(
+            self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
+            ),
         )
 
     def num(self, dim: gtx.Dimension):
@@ -387,8 +386,7 @@ class IconGridSavepoint(IconSavepoint):
     def owner_mask(self, dim: gtx.Dimension):
         field_name = "owner_mask"
         mask = self._read_field_for_dim(field_name, self._read_bool, dim)
-        buffer = xp.squeeze(mask)
-        return buffer
+        return xp.squeeze(mask)
 
     def global_index(self, dim: gtx.Dimension):
         field_name = "glb_index"

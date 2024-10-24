@@ -5,9 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next import GridType, field_operator, program
-from gt4py.next.ffront.fbuiltins import exp, int32, log
+from gt4py.next.ffront.fbuiltins import exp, log
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
@@ -49,10 +49,10 @@ def compute_reference_atmosphere_edge_fields(
     h_scal_bg: wpfloat,
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _compute_reference_atmosphere_edge_fields(
         z_me,
@@ -151,10 +151,10 @@ def compute_reference_atmosphere_cell_fields(
     h_scal_bg: wpfloat,
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     """
         Calculate reference atmosphere fields on full levels.

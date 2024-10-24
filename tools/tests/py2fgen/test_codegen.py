@@ -40,7 +40,7 @@ field_1d = FuncParameter(
 )
 
 simple_type = FuncParameter(
-    name="name", d_type=ScalarKind.FLOAT32, dimensions=[], py_type_hint="int32"
+    name="name", d_type=ScalarKind.FLOAT32, dimensions=[], py_type_hint="gtx.int32"
 )
 
 
@@ -54,7 +54,7 @@ def test_as_target(param, expected):
 foo = Func(
     name="foo",
     args=[
-        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
+        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="gtx.int32"),
         FuncParameter(
             name="two",
             d_type=ScalarKind.FLOAT64,
@@ -77,7 +77,7 @@ bar = Func(
             ],
             py_type_hint="Field[dims.CellDim, dims.KDim], float64]",
         ),
-        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
+        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="gtx.int32"),
     ],
     is_gt4py_program=False,
 )
@@ -249,7 +249,6 @@ import numpy as np
 import cupy as cp
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.settings import xp
 from icon4py.model.common import dimension as dims
 
@@ -259,6 +258,8 @@ logging.basicConfig(level=logging.ERROR,
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
 logging.info(cp.show_config())
+
+import numpy as np
 
 # embedded module imports
 import foo_module_x
@@ -287,6 +288,7 @@ def unpack_gpu(ptr, *sizes: int):
                     This array shares the underlying data with the original Fortran code, allowing
                     modifications made through the array to affect the original data.
     """
+
     if not sizes:
         raise ValueError("Sizes must be provided to determine the array shape.")
 
@@ -327,7 +329,7 @@ def int_array_to_bool_array(int_array: NDArray) -> NDArray:
     return bool_array
 
 @ffi.def_extern()
-def foo_wrapper(one: int32, two: Field[dims.CellDim, dims.KDim], float64], n_Cell: int32, n_K: int32):
+def foo_wrapper(one: gtx.int32, two: Field[dims.CellDim, dims.KDim], float64], n_Cell: gtx.int32, n_K: gtx.int32):
     try:
         # Unpack pointers into Ndarrays
         two = unpack_gpu(two, n_Cell, n_K)
@@ -344,7 +346,7 @@ def foo_wrapper(one: int32, two: Field[dims.CellDim, dims.KDim], float64], n_Cel
     return 0
 
 @ffi.def_extern()
-def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: int32, n_Cell: int32, n_K: int32):
+def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: gtx.int32, n_Cell: gtx.int32, n_K: gtx.int32):
     try:
         # Unpack pointers into Ndarrays
         one = unpack_gpu(one, n_Cell, n_K)

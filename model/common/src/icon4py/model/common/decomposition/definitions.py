@@ -11,12 +11,24 @@ import dataclasses
 import enum
 import functools
 import logging
-from typing import Any, Protocol
+from dataclasses import dataclass
+from enum import IntEnum
+from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 
 import gt4py.next as gtx
 
 from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
+
+
+try:
+    import dace
+
+    from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
+except ImportError:
+    from types import ModuleType
+
+    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
 
 
 log = logging.getLogger(__name__)
@@ -134,6 +146,7 @@ class ExchangeResult(Protocol):
         ...
 
 
+@runtime_checkable
 class ExchangeRuntime(Protocol):
     def exchange(self, dim: gtx.Dimension, *fields: tuple) -> ExchangeResult:
         ...
@@ -146,12 +159,6 @@ class ExchangeRuntime(Protocol):
 
     def my_rank(self):
         ...
-
-    def wait(self):
-        pass
-
-    def is_ready(self) -> bool:
-        return True
 
 
 @dataclasses.dataclass
@@ -167,6 +174,140 @@ class SingleNodeExchange:
 
     def get_size(self):
         return 1
+
+    def __call__(self, *args, **kwargs) -> Optional[ExchangeResult]:
+        """Perform a halo exchange operation.
+
+        Args:
+            args: The fields to be exchanged.
+
+        Keyword Args:
+            dim: The dimension along which the exchange is performed.
+            wait: If True, the operation will block until the exchange is completed (default: True).
+        """
+        dim = kwargs.get("dim", None)
+        wait = kwargs.get("wait", True)
+
+        res = self.exchange(dim, *args)
+        if wait:
+            res.wait()
+        else:
+            return res
+
+    if dace:
+        # Implementation of DaCe SDFGConvertible interface
+        # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+            sdfg = DummyNestedSDFG().__sdfg__()
+            sdfg.name = "_halo_exchange_"
+            return sdfg
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            return DummyNestedSDFG().__sdfg_closure__()
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            return DummyNestedSDFG().__sdfg_signature__()
+
+    else:
+
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+            raise NotImplementedError(
+                "__sdfg__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            raise NotImplementedError(
+                "__sdfg_closure__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            raise NotImplementedError(
+                "__sdfg_signature__ is only supported when the 'dace' module is available."
+            )
+
+    __sdfg__ = dace__sdfg__
+    __sdfg_closure__ = dace__sdfg_closure__
+    __sdfg_signature__ = dace__sdfg_signature__
+
+
+class HaloExchangeWaitRuntime(Protocol):
+    """Protocol for halo exchange wait."""
+
+    def __call__(self, communication_handle: ExchangeResult) -> None:
+        """Wait on the communication handle."""
+        ...
+
+    def __sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        """DaCe related: SDFGConvertible interface."""
+        ...
+
+    def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
+        """DaCe related: SDFGConvertible interface."""
+        ...
+
+    def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+        """DaCe related: SDFGConvertible interface."""
+        ...
+
+
+@dataclass
+class HaloExchangeWait:
+    exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
+
+    def __call__(self, communication_handle: SingleNodeResult) -> None:
+        communication_handle.wait()
+
+    if dace:
+        # Implementation of DaCe SDFGConvertible interface
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+            sdfg = DummyNestedSDFG().__sdfg__()
+            sdfg.name = "_halo_exchange_wait_"
+            return sdfg
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            return DummyNestedSDFG().__sdfg_closure__()
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            return DummyNestedSDFG().__sdfg_signature__()
+
+    else:
+
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+            raise NotImplementedError(
+                "__sdfg__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            raise NotImplementedError(
+                "__sdfg_closure__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            raise NotImplementedError(
+                "__sdfg_signature__ is only supported when the 'dace' module is available."
+            )
+
+    __sdfg__ = dace__sdfg__
+    __sdfg_closure__ = dace__sdfg_closure__
+    __sdfg_signature__ = dace__sdfg_signature__
+
+
+@functools.singledispatch
+def create_halo_exchange_wait(runtime: ExchangeRuntime) -> HaloExchangeWaitRuntime:
+    raise TypeError(f"Unknown ExchangeRuntime type ({type(runtime)})")
+
+
+@create_halo_exchange_wait.register(SingleNodeExchange)
+def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloExchangeWait:
+    return HaloExchangeWait(runtime)
 
 
 class SingleNodeResult:

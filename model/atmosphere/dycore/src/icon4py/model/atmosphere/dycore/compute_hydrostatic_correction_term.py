@@ -5,23 +5,22 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2EC, Koff
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
-    ikoffset: Field[[dims.ECDim, dims.KDim], int32],
-    zdiff_gradp: Field[[dims.ECDim, dims.KDim], vpfloat],
+    ikoffset: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], vpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
@@ -65,20 +64,20 @@ def _compute_hydrostatic_correction_term(
     return astype(z_hydro_corr_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
-    ikoffset: Field[[dims.ECDim, dims.KDim], int32],
-    zdiff_gradp: Field[[dims.ECDim, dims.KDim], vpfloat],
+    ikoffset: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], gtx.int32],
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], vpfloat],
     theta_v_ic: fa.CellKField[wpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
     z_hydro_corr: fa.EdgeKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _compute_hydrostatic_correction_term(
         theta_v,

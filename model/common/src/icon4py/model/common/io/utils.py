@@ -5,8 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-
 import xarray as xa
 from gt4py import next as gtx
 from gt4py._core import definitions as gt_coredefs

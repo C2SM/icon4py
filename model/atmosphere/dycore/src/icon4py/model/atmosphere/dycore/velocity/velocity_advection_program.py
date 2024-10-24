@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import where
 
@@ -37,7 +36,6 @@ from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -74,7 +72,7 @@ def _fused_stencils_4_5(
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fused_stencils_4_5(
     vn: fa.EdgeKField[float],
     vt: fa.EdgeKField[float],
@@ -112,7 +110,7 @@ def fused_stencils_4_5(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def extrapolate_at_top(
     wgtfacq_e: fa.EdgeKField[float],
     vn: fa.EdgeKField[float],
@@ -136,7 +134,7 @@ def extrapolate_at_top(
 @gtx.field_operator
 def _fused_stencils_9_10(
     z_w_concorr_me: fa.EdgeKField[float],
-    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], float],
     local_z_w_concorr_mc: fa.CellKField[float],
     wgtfac_c: fa.CellKField[float],
     w_concorr_c: fa.CellKField[float],
@@ -159,10 +157,10 @@ def _fused_stencils_9_10(
     return local_z_w_concorr_mc, w_concorr_c
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fused_stencils_9_10(
     z_w_concorr_me: fa.EdgeKField[float],
-    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], float],
     local_z_w_concorr_mc: fa.CellKField[float],
     wgtfac_c: fa.CellKField[float],
     w_concorr_c: fa.CellKField[float],
@@ -216,7 +214,7 @@ def _fused_stencils_11_to_13(
     return local_z_w_con_c
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fused_stencils_11_to_13(
     w: fa.CellKField[float],
     w_concorr_c: fa.CellKField[float],
@@ -265,7 +263,7 @@ def _fused_stencil_14(
     return local_cfl_clipping, local_vcfl, local_z_w_con_c
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fused_stencil_14(
     local_z_w_con_c: fa.CellKField[float],
     ddqz_z_half: fa.CellKField[float],
@@ -295,7 +293,7 @@ def fused_stencil_14(
 def _fused_stencils_16_to_17(
     w: fa.CellKField[float],
     local_z_v_grad_w: fa.EdgeKField[float],
-    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], float],
     local_z_w_con_c: fa.CellKField[float],
     coeff1_dwdz: fa.CellKField[float],
     coeff2_dwdz: fa.CellKField[float],
@@ -308,11 +306,11 @@ def _fused_stencils_16_to_17(
     return ddt_w_adv
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fused_stencils_16_to_17(
     w: fa.CellKField[float],
     local_z_v_grad_w: fa.EdgeKField[float],
-    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], float],
     local_z_w_con_c: fa.CellKField[float],
     coeff1_dwdz: fa.CellKField[float],
     coeff2_dwdz: fa.CellKField[float],

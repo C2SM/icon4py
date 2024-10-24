@@ -124,6 +124,7 @@ def test_run_timeloop_single_step(
     savepoint_velocity_init,
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
+    backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
         config = icon4py_configuration.read_config(experiment)
@@ -165,7 +166,7 @@ def test_run_timeloop_single_step(
     )
     additional_parameters = diffusion.DiffusionParams(diffusion_config)
 
-    diffusion_granule = diffusion.Diffusion()
+    diffusion_granule = diffusion.Diffusion(backend=backend)
     diffusion_granule.init(
         grid=icon_grid,
         config=diffusion_config,
@@ -237,7 +238,7 @@ def test_run_timeloop_single_step(
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro()
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(backend)
     solve_nonhydro_granule.init(
         grid=icon_grid,
         config=nonhydro_config,

@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import dataclasses
 
 import gt4py.next as gtx
@@ -64,34 +63,36 @@ class InterpolationState:
     """Represents the ICON interpolation state used in the dynamical core (SolveNonhydro)."""
 
     e_bln_c_s: gtx.Field[
-        [dims.CEDim], float
+        gtx.Dims[dims.CEDim], float
     ]  # coefficent for bilinear interpolation from edge to cell ()
     rbf_coeff_1: gtx.Field[
-        [dims.VertexDim, dims.V2EDim], float
+        gtx.Dims[dims.VertexDim, dims.V2EDim], float
     ]  # rbf_vec_coeff_v_1(nproma, rbf_vec_dim_v, nblks_v)
     rbf_coeff_2: gtx.Field[
-        [dims.VertexDim, dims.V2EDim], float
+        gtx.Dims[dims.VertexDim, dims.V2EDim], float
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
-    geofac_div: gtx.Field[[dims.CEDim], float]  # factor for divergence (nproma,cell_type,nblks_c)
+    geofac_div: gtx.Field[
+        gtx.Dims[dims.CEDim], float
+    ]  # factor for divergence (nproma,cell_type,nblks_c)
 
     geofac_n2s: gtx.Field[
-        [dims.CellDim, dims.C2E2CODim], float
+        gtx.Dims[dims.CellDim, dims.C2E2CODim], float
     ]  # factor for nabla2-scalar (nproma,cell_type+1,nblks_c)
-    geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], float]
+    geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], float]
     geofac_grg_y: gtx.Field[
-        [dims.CellDim, dims.C2E2CODim], float
+        gtx.Dims[dims.CellDim, dims.C2E2CODim], float
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
     nudgecoeff_e: fa.EdgeField[float]  # Nudgeing coeffients for edges
 
-    c_lin_e: gtx.Field[[dims.EdgeDim, dims.E2CDim], float]
-    geofac_grdiv: gtx.Field[[dims.EdgeDim, dims.E2C2EODim], float]
-    rbf_vec_coeff_e: gtx.Field[[dims.EdgeDim, dims.E2C2EDim], float]
-    c_intp: gtx.Field[[dims.VertexDim, dims.V2CDim], float]
-    geofac_rot: gtx.Field[[dims.VertexDim, dims.V2EDim], float]
-    pos_on_tplane_e_1: gtx.Field[[dims.ECDim], float]
-    pos_on_tplane_e_2: gtx.Field[[dims.ECDim], float]
-    e_flx_avg: gtx.Field[[dims.EdgeDim, dims.E2C2EODim], float]
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float]
+    geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], float]
+    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], float]
+    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], float]
+    geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], float]
+    pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], float]
+    pos_on_tplane_e_2: gtx.Field[gtx.Dims[dims.ECDim], float]
+    e_flx_avg: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], float]
 
 
 @dataclasses.dataclass
@@ -125,8 +126,8 @@ class MetricStateNonHydro:
     ddxt_z_full: fa.EdgeKField[float]
     inv_ddqz_z_full: fa.CellKField[float]
 
-    vertoffset_gradp: gtx.Field[[dims.ECDim, dims.KDim], float]
-    zdiff_gradp: gtx.Field[[dims.ECDim, dims.KDim], float]
+    vertoffset_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], float]
+    zdiff_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], float]
     ipeidx_dsl: fa.EdgeKField[bool]
     pg_exdist: fa.EdgeKField[float]
 
@@ -138,7 +139,7 @@ class MetricStateNonHydro:
 
     coeff1_dwdz: fa.CellKField[float]
     coeff2_dwdz: fa.CellKField[float]
-    coeff_gradekin: gtx.Field[[dims.ECDim], float]
+    coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], float]
 
 
 @dataclasses.dataclass

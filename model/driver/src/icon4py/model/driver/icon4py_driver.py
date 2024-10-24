@@ -14,6 +14,7 @@ from typing import Callable
 
 import click
 from devtools import Timer
+from gt4py.next import gtfn_cpu
 
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
@@ -351,7 +352,7 @@ def initialize(
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
-    diffusion_granule = diffusion.Diffusion(exchange)
+    diffusion_granule = diffusion.Diffusion(exchange=exchange, backend=gtfn_cpu)
     diffusion_granule.init(
         icon_grid,
         config.diffusion_config,
@@ -365,7 +366,7 @@ def initialize(
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro()
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(backend=gtfn_cpu)
     solve_nonhydro_granule.init(
         grid=icon_grid,
         config=config.solve_nonhydro_config,

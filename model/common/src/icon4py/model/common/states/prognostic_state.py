@@ -8,7 +8,7 @@
 
 from dataclasses import dataclass
 
-from gt4py.next import as_field
+import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
@@ -30,4 +30,4 @@ class PrognosticState:
 
     @property
     def w_1(self) -> fa.CellField[ta.wpfloat]:
-        return as_field((dims.CellDim,), self.w.ndarray[:, 0])
+        return gtx.as_field((dims.CellDim,), self.w.ndarray[:, 0])
