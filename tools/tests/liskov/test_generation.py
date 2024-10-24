@@ -149,8 +149,7 @@ def expected_start_create_source():
     return """
 !$ACC DATA CREATE( &
 !$ACC   foo, &
-!$ACC   bar ) &
-!$ACC   IF ( i_am_accel_node )"""
+!$ACC   bar )"""
 
 
 @pytest.fixture
@@ -182,11 +181,10 @@ def expected_start_stencil_source():
         !$ACC   out4_before, &
         !$ACC   out5_before, &
         !$ACC   out6_before, &
-        !$ACC   out7_before ) &
-        !$ACC      IF ( i_am_accel_node )
+        !$ACC   out7_before )
 
 #ifdef __DSL_VERIFY
-        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
+        !$ACC KERNELS DEFAULT(NONE) ASYNC(1)
         out1_before(:, :) = out1(:, :, 1)
         out2_before(:, :, :) = p_nh%prog(nnew)%out2(:, :, :)
         out3_before(:, :) = p_nh%prog(nnew)%w(:, :, jb)
@@ -240,11 +238,10 @@ def expected_start_fused_stencil_source():
         !$ACC   out4_before, &
         !$ACC   out5_before, &
         !$ACC   out6_before, &
-        !$ACC   out7_before ) &
-        !$ACC      IF ( i_am_accel_node )
+        !$ACC   out7_before )
 
 #ifdef __DSL_VERIFY
-        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1)
+        !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
         out1_before(:, :) = out1(:, :, 1)
         out2_before(:, :, :) = p_nh%prog(nnew)%out2(:, :, :)
         out3_before(:, :) = p_nh%prog(nnew)%w(:, :, jb)
@@ -290,8 +287,7 @@ def expected_end_fused_stencil_source():
         !$ACC   out4_before, &
         !$ACC   out5_before, &
         !$ACC   out6_before, &
-        !$ACC   out7_before ) &
-        !$ACC      IF ( i_am_accel_node )"""
+        !$ACC   out7_before )"""
 
 
 @pytest.fixture
