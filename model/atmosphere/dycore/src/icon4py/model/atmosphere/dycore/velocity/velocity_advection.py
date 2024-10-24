@@ -73,8 +73,6 @@ class VelocityAdvection:
         self._allocate_local_fields()
         self._determine_local_domains()
 
-        self._initialized = True
-
         self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(self._backend)
         )
@@ -114,10 +112,6 @@ class VelocityAdvection:
         self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl = (
             add_extra_diffusion_for_normal_wind_tendency_approaching_cfl.with_backend(self._backend)
         )
-
-    @property
-    def initialized(self):
-        return self._initialized
 
     def _allocate_local_fields(self):
         self.z_w_v = field_alloc.allocate_zero_field(

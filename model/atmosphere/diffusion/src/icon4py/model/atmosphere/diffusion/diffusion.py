@@ -465,12 +465,6 @@ class Diffusion:
             self._grid.offset_providers
         )
 
-        self._initialized = True
-
-    @property
-    def initialized(self):
-        return self._initialized
-
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = field_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
