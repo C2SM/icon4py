@@ -110,6 +110,18 @@ from icon4py.model.atmosphere.dycore.apply_4th_order_3d_divergence_damping_to_vn
 from icon4py.model.atmosphere.dycore.apply_4th_order_3d_divergence_damping_to_w import (
     apply_4th_order_3d_divergence_damping_to_w as apply_4th_order_3d_divergence_damping_to_w_orig,
 )
+from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_normal_wind import (
+    compute_2nd_order_divergence_of_flux_of_normal_wind as compute_2nd_order_divergence_of_flux_of_normal_wind_orig,
+)
+from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell import (
+    interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell as interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_full3d_graddiv import (
+    compute_2nd_order_divergence_of_flux_of_full3d_graddiv as compute_2nd_order_divergence_of_flux_of_full3d_graddiv_orig,
+)
+from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell import (
+    interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell as interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell_orig,
+)
 # end of new divergence stencils
 
 from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
@@ -388,6 +400,18 @@ apply_4th_order_3d_divergence_damping_to_vn = CachedProgram(
 
 apply_4th_order_3d_divergence_damping_to_w = CachedProgram(
     apply_4th_order_3d_divergence_damping_to_w_orig
+)
+compute_2nd_order_divergence_of_flux_of_normal_wind = CachedProgram(
+    compute_2nd_order_divergence_of_flux_of_normal_wind_orig
+)
+interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell = CachedProgram(
+    interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell_orig
+)
+compute_2nd_order_divergence_of_flux_of_full3d_graddiv = CachedProgram(
+    compute_2nd_order_divergence_of_flux_of_full3d_graddiv_orig
+)
+interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell = CachedProgram(
+    interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell_orig
 )
 # end of new divergence stencils
 

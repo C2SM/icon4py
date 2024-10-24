@@ -16,6 +16,8 @@ import math
 from enum import Enum
 from pathlib import Path
 
+import numpy as np
+
 from gt4py.next import as_field
 from gt4py.next.common import Field
 
@@ -48,7 +50,7 @@ from icon4py.model.common.dimension import (
     CEDim,
     CellDim,
     EdgeDim,
-    KDim,
+    KDim, VertexDim, V2C2EDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
@@ -777,6 +779,15 @@ def read_static_fields(
         )
         interpolation_savepoint = data_provider.from_interpolation_savepoint()
         grg = interpolation_savepoint.geofac_grg()
+        cell_edge_orientation = grid_savepoint.cell_edge_orientation().ndarray
+        cell_area = grid_savepoint.cell_areas().ndarray
+        primal_edge_length = grid_savepoint.primal_edge_lengths().ndarray
+        v2c_connectivity = grid_savepoint.v2c()
+        geofac_2order_div_array = np.zeros((icon_grid.num_vertices, 6), dtype=float)
+        for i in range(icon_grid.num_vertices):
+            hexagon_area = np.sum(cell_area[v2c_connectivity[i,:]])
+            geofac_2order_div_array[i,:] = cell_edge_orientation[i,:] * primal_edge_length[i,:] / hexagon_area
+        geofac_2order_div = as_field((VertexDim, V2C2EDim), geofac_2order_div_array)
         solve_nonhydro_interpolation_state = InterpolationState(
             c_lin_e=interpolation_savepoint.c_lin_e(),
             c_intp=interpolation_savepoint.c_intp(),
@@ -794,6 +805,7 @@ def read_static_fields(
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+            geofac_2order_div=geofac_2order_div,
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
         solve_nonhydro_metric_state = MetricStateNonHydro(

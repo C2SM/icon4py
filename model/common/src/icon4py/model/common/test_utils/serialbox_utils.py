@@ -160,6 +160,9 @@ class IconGridSavepoint(IconSavepoint):
         super().__init__(sp, ser, size)
         self.global_grid_params = GlobalGridParams(root, level)
 
+    def cell_edge_orientation(self):
+        return self._get_field("cells_edge_orientation", CellDim, C2EDim)
+
     def v_dual_area(self):
         return self._get_field("v_dual_area", VertexDim)
 

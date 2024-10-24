@@ -211,6 +211,7 @@ def test_run_timeloop_single_step(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+        geofac_2order_div=None,
     )
     nonhydro_metric_state = MetricStateNonHydro(
         bdy_halo_c=metrics_savepoint.bdy_halo_c(),

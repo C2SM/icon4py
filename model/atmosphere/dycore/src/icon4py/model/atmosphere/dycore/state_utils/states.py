@@ -25,6 +25,7 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
     V2CDim,
+    V2C2EDim,
     V2EDim,
     VertexDim,
 )
@@ -108,6 +109,7 @@ class InterpolationState:
     pos_on_tplane_e_1: Field[[ECDim], float]
     pos_on_tplane_e_2: Field[[ECDim], float]
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float]
+    geofac_2order_div: Field[[VertexDim, V2C2EDim], float]
 
 
 @dataclass

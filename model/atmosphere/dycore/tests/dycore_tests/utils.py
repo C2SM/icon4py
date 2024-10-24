@@ -70,6 +70,7 @@ def construct_interpolation_state_for_nonhydro(
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=savepoint.nudgecoeff_e(),
+        geofac_2order_div=None,
     )
 
 

@@ -48,6 +48,10 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     compute_full3d_graddiv2_vertical,
     apply_4th_order_3d_divergence_damping_to_vn,
     apply_4th_order_3d_divergence_damping_to_w,
+    compute_2nd_order_divergence_of_flux_of_normal_wind,
+    interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell,
+    compute_2nd_order_divergence_of_flux_of_full3d_graddiv,
+    interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell,
     # end of new divergence stencils
     compute_dwdz_for_divergence_damping,
     compute_exner_from_rhotheta,
@@ -1840,6 +1844,10 @@ class SolveNonhydro:
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
         )
         end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        start_vertex_nudging = self.grid.get_start_index(
+            VertexDim, HorizontalMarkerIndex.nudging(VertexDim)
+        )
+        end_vertex_local = self.grid.get_end_index(VertexDim, HorizontalMarkerIndex.local(VertexDim))
 
         lvn_only = False
         log.debug(f"corrector run velocity advection")
@@ -2031,13 +2039,27 @@ class SolveNonhydro:
                 )
             else:
                 if self.config.do_second_order_3d_divergence_damping:
+                    log.debug("corrector: 2nd order full 3d divergence damping")
                     """
-                    z_flxdiv_vn (0:nlev-1):
-                        Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
+                    z_flxdiv2order_vn_vertex (0:nlev-1):
+                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
                     """
                     compute_2nd_order_divergence_of_flux_of_normal_wind(
-                        geofac_div=self.interpolation_state.geofac_div,
+                        geofac_2order_div=self.interpolation_state.geofac_2order_div,
                         vn=prognostic_state[nnew].vn,
+                        z_flxdiv2order_vn_vertex=z_fields.z_flxdiv2order_vn_vertex,
+                        horizontal_start=start_vertex_nudging,
+                        horizontal_end=end_vertex_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    """
+                    z_flxdiv_vn (0:nlev-1):
+                        Interpolate the 2nd order divergence of normal wind at full levels from vertices to cell center by average (because cell center is located at barycenter).
+                    """
+                    interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell(
+                        z_flxdiv2order_vn_vertex=z_fields.z_flxdiv2order_vn_vertex,
                         z_flxdiv_vn=z_fields.z_flxdiv_vn,
                         horizontal_start=start_cell_nudging,
                         horizontal_end=end_cell_local,
@@ -2045,6 +2067,182 @@ class SolveNonhydro:
                         vertical_end=self.grid.num_levels,
                         offset_provider=self.grid.offset_providers,
                     )
+                    """
+                    z_flxdiv2order_vn_and_w (0:nlev-1):
+                        Add vertical derivative of vertical wind to the 2nd order divergence of normal wind at full levels (cell center).
+                    """
+                    add_dwdz_to_divergence_of_flux_of_normal_wind(
+                        z_dwdz_dd=z_fields.z_dwdz_dd,
+                        z_flxdiv_vn=z_fields.z_flxdiv_vn,
+                        z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    """
+                    z_graddiv_normal (0:nlev-1):
+                        Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                    """
+                    compute_full3d_graddiv_normal(
+                        inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                        z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                        z_graddiv_normal=z_fields.z_graddiv_normal,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    """
+                    z_graddiv_vertical (1:nlev-1):
+                        Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                    """
+                    compute_full3d_graddiv_vertical(
+                        ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                        z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                        z_graddiv_vertical=z_fields.z_graddiv_vertical,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=1,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    """
+                    z_dgraddiv_dz (dd3d_lev:nlev-1):
+                        Compute vertical derivative of graddiv_vertical at full levels (cell center).
+                        z_dgraddiv_dz_{k} = ( graddiv_vertical_{k-1/2} - graddiv_vertical_{k+1/2} ) / dz_{k}
+                    """
+                    end_cell_nudging_minus1 = self.grid.get_end_index(
+                        CellDim,
+                        HorizontalMarkerIndex.nudging(CellDim) - 1,
+                    )
+                    compute_dgraddiv_dz_for_full3d_divergence_damping(
+                        inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                        z_dgraddiv_vertical=z_fields.z_graddiv_vertical,
+                        z_dgraddiv_dz=z_fields.z_dgraddiv_dz,
+                        horizontal_start=start_cell_lb,
+                        horizontal_end=end_cell_nudging_minus1,
+                        vertical_start=self.params.kstart_dd3d,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    """
+                    z_flxdiv2order_vn_vertex (0:nlev-1):
+                        Compute the 2nd order divergence of normal wind at full levels (cell center) by Gauss theorem.
+                    """
+                    compute_2nd_order_divergence_of_flux_of_full3d_graddiv(
+                        geofac_2order_div=self.interpolation_state.geofac_2order_div,
+                        z_graddiv_normal=z_fields.z_graddiv_normal,
+                        z_flxdiv2order_graddiv_vn_vertex=z_fields.z_flxdiv2order_graddiv_vn_vertex,
+                        horizontal_start=start_vertex_nudging,
+                        horizontal_end=end_vertex_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    """
+                    z_flxdiv_graddiv_vn (0:nlev-1):
+                        Interpolate the 2nd order divergence of normal wind at full levels from vertices to cell center by average (because cell center is located at barycenter).
+                    """
+                    interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell(
+                        z_flxdiv2order_graddiv_vn_vertex=z_fields.z_flxdiv2order_graddiv_vn_vertex,
+                        z_flxdiv_graddiv_vn=z_fields.z_flxdiv_graddiv_vn,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    """
+                    z_flxdiv_graddiv_vn_and_w (0:nlev-1):
+                        Add vertical derivative of vertical wind to the divergence of gradient of 3d divergence at full levels (cell center).
+                    """
+                    add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv(
+                        z_dgraddiv_dz=z_fields.z_dgraddiv_dz,
+                        z_flxdiv_graddiv_vn=z_fields.z_flxdiv_graddiv_vn,
+                        z_flxdiv_graddiv_vn_and_w=z_fields.z_flxdiv_graddiv_vn_and_w,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+
+                    """
+                    z_graddiv2_normal (0:nlev-1):
+                        Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                    """
+                    compute_full3d_graddiv2_normal(
+                        inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                        z_flxdiv_vn_and_w=z_fields.z_flxdiv_graddiv_vn_and_w,
+                        z_graddiv2_normal=self.z_graddiv2_normal,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+                    """
+                    z_graddiv2_vertical (1:nlev-1):
+                        Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                    """
+                    compute_full3d_graddiv2_vertical(
+                        ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                        z_flxdiv_vn_and_w=z_fields.z_flxdiv_graddiv_vn_and_w,
+                        z_graddiv2_vertical=self.z_graddiv2_vertical,
+                        horizontal_start=start_cell_nudging,
+                        horizontal_end=end_cell_local,
+                        vertical_start=1,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
+
+                    """
+                    vn (0:nlev-1):
+                        Apply the higher order divergence damping to vn at full levels (edge center).
+                        vn = vn + scal_divdamp * Del(normal_direction) Div( Del Div(V) )
+                    """
+                    # self.output_intermediate_fields.output_graddiv2_normal = self.z_graddiv2_normal
+                    # self.output_intermediate_fields.output_graddiv2_vertical = self.z_graddiv2_vertical
+                    # self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
+                    log.info(
+                        f"{z_fields.z_graddiv_normal.ndarray.min():.15e} {z_fields.z_graddiv_normal.ndarray.max():.15e}")
+                    log.info(
+                        f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
+                    log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
+                    log.info(
+                        f"{self.z_graddiv2_vertical.ndarray.min():.15e} {self.z_graddiv2_vertical.ndarray.max():.15e}")
+                    # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
+                    # for k in range(self.grid.num_levels):
+                    #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
+                    apply_4th_order_3d_divergence_damping_to_vn(
+                        scal_divdamp=self.scal_divdamp,
+                        z_graddiv2_normal=self.z_graddiv2_normal,
+                        vn=prognostic_state[nnew].vn,
+                        horizontal_start=start_edge_nudging_plus1,
+                        horizontal_end=end_edge_local,
+                        vertical_start=0,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider={},
+                    )
+                    """
+                    w (1:nlev-1):
+                        Apply the higher order divergence damping to w at half levels (cell center).
+                        w = w + scal_divdamp_half * Del(vertical_direction) Div( Del Div(V) )
+                    """
+                    apply_4th_order_3d_divergence_damping_to_w(
+                        scal_divdamp_half=self.scal_divdamp_half,
+                        z_graddiv2_vertical=self.z_graddiv2_vertical,
+                        w=prognostic_state[nnew].w,
+                        horizontal_start=start_edge_nudging_plus1,
+                        horizontal_end=end_edge_local,
+                        vertical_start=1,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider={},
+                    )
+
                 else:
 
                     if self.config.do_3d_divergence_damping:
@@ -2223,7 +2421,7 @@ class SolveNonhydro:
                             offset_provider={},
                         )
                     else:
-                        log.debug("corrector start stencil 4th order divdamp")
+                        log.debug("corrector start stencil 4th order multiple divdamp")
                         """
                         vn (0:nlev-1):
                             Apply the higher order divergence damping to vn at full levels (edge center).
