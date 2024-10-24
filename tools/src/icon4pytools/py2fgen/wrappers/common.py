@@ -163,7 +163,7 @@ def construct_decomposition(
         )
         .with_dimension(dims.CellDim, c_glb_index, c_owner_mask)
         .with_dimension(dims.EdgeDim, e_glb_index, e_owner_mask)
-        .with_dimension(dims.VertexDim, v_glb_index, v_owner_mask),
+        .with_dimension(dims.VertexDim, v_glb_index, v_owner_mask)
     )
     processor_props = mpi.get_multinode_properties(definitions.MultiNodeRun(), comm_id)
     exchange = definitions.create_exchange(processor_props, decomposition_info)
