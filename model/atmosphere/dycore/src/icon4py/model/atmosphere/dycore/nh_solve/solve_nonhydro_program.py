@@ -236,7 +236,6 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-# def compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
 def compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
     rho: fa.CellKField[float],
     rho_ref_mc: fa.CellKField[float],
@@ -557,7 +556,7 @@ def stencils_39_40(
 
 
 @gtx.field_operator
-def _stencils_42_44_45_45b(
+def _stencils_42_44_45(
     z_w_expl: fa.CellKField[float],
     w_nnow: fa.CellKField[float],
     ddt_w_adv_ntl1: fa.CellKField[float],
@@ -625,9 +624,8 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
-
     z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -664,7 +662,7 @@ def stencils_42_44_45_45b(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _stencils_42_44_45_45b(
+    _stencils_42_44_45(
         z_w_expl,
         w_nnow,
         ddt_w_adv_ntl1,
@@ -694,7 +692,14 @@ def stencils_42_44_45_45b(
         out=(z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+    _init_cell_kdim_field_with_zero_vp(
+        out=z_alpha,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )
 
