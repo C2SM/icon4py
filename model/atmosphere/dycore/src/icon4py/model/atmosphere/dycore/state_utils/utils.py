@@ -21,7 +21,7 @@ from gt4py.next.ffront.fbuiltins import (
     maximum,
 )
 
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.dimension import EdgeDim, KDim, Koff
 from icon4py.model.common.settings import backend, xp
 from icon4py.model.common.type_alias import wpfloat
 
@@ -120,3 +120,29 @@ def compute_z_raylfac(
     rayleigh_w: Field[[KDim], float], dtime: float, z_raylfac: Field[[KDim], float]
 ):
     _compute_z_raylfac(rayleigh_w, dtime, out=z_raylfac)
+
+
+@field_operator
+def _calculate_scal_divdamp_half(
+    scal_divdamp: Field[[KDim], float],
+    vct_a: Field[[KDim], float],
+) -> Field[[KDim], float]:
+    level_above_height = 0.5 * (vct_a + vct_a(Koff[-1]))
+    level_below_height = 0.5 * (vct_a + vct_a(Koff[1]))
+    return (scal_divdamp*(vct_a - level_below_height) + scal_divdamp*(level_above_height - vct_a)) / (level_above_height - level_below_height)
+
+
+@program(backend=backend)
+def calculate_scal_divdamp_half(
+    scal_divdamp: Field[[KDim], float],
+    vct_a: Field[[KDim], float],
+    scal_divdamp_half: Field[[KDim], float],
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _calculate_scal_divdamp_half(
+        scal_divdamp,
+        vct_a,
+        out=scal_divdamp_half,
+        domain={KDim: (vertical_start, vertical_end)},
+    )

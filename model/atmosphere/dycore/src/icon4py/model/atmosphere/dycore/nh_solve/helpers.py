@@ -70,10 +70,48 @@ from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_o
 from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn as compute_avg_vn_orig
 from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt as compute_avg_vn_and_graddiv_vn_and_vt_orig,
+    compute_avg_vn_and_full3d_graddiv_vn_and_vt as compute_avg_vn_and_full3d_graddiv_vn_and_vt_orig,
 )
 from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta as compute_divergence_of_fluxes_of_rho_and_theta_orig,
 )
+
+# New divergence stencils
+from icon4py.model.atmosphere.dycore.compute_divergence_of_flux_of_normal_wind import (
+    compute_divergence_of_flux_of_normal_wind as compute_divergence_of_flux_of_normal_wind_orig,
+)
+from icon4py.model.atmosphere.dycore.add_dwdz_to_divergence_of_flux_of_normal_wind import (
+    add_dwdz_to_divergence_of_flux_of_normal_wind as add_dwdz_to_divergence_of_flux_of_normal_wind_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_full3d_graddiv_normal import (
+    compute_full3d_graddiv_normal as compute_full3d_graddiv_normal_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_full3d_graddiv_vertical import (
+    compute_full3d_graddiv_vertical as compute_full3d_graddiv_vertical_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_dgraddiv_dz_for_full3d_divergence_damping import (
+    compute_dgraddiv_dz_for_full3d_divergence_damping as compute_dgraddiv_dz_for_full3d_divergence_damping_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_divergence_of_flux_of_full3d_graddiv import (
+    compute_divergence_of_flux_of_full3d_graddiv as compute_divergence_of_flux_of_full3d_graddiv_orig,
+)
+from icon4py.model.atmosphere.dycore.add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv import (
+    add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv as add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_full3d_graddiv2_normal import (
+    compute_full3d_graddiv2_normal as compute_full3d_graddiv2_normal_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_full3d_graddiv2_vertical import (
+    compute_full3d_graddiv2_vertical as compute_full3d_graddiv2_vertical_orig,
+)
+from icon4py.model.atmosphere.dycore.apply_4th_order_3d_divergence_damping_to_vn import (
+    apply_4th_order_3d_divergence_damping_to_vn as apply_4th_order_3d_divergence_damping_to_vn_orig,
+)
+from icon4py.model.atmosphere.dycore.apply_4th_order_3d_divergence_damping_to_w import (
+    apply_4th_order_3d_divergence_damping_to_w as apply_4th_order_3d_divergence_damping_to_w_orig,
+)
+# end of new divergence stencils
+
 from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping as compute_dwdz_for_divergence_damping_orig,
 )
@@ -301,9 +339,57 @@ compute_avg_vn = CachedProgram(compute_avg_vn_orig)
 
 compute_avg_vn_and_graddiv_vn_and_vt = CachedProgram(compute_avg_vn_and_graddiv_vn_and_vt_orig)
 
+compute_avg_vn_and_full3d_graddiv_vn_and_vt = CachedProgram(compute_avg_vn_and_full3d_graddiv_vn_and_vt_orig)
+
 compute_divergence_of_fluxes_of_rho_and_theta = CachedProgram(
     compute_divergence_of_fluxes_of_rho_and_theta_orig
 )
+
+# New divergence stencils
+compute_divergence_of_flux_of_normal_wind = CachedProgram(
+    compute_divergence_of_flux_of_normal_wind_orig
+)
+
+add_dwdz_to_divergence_of_flux_of_normal_wind = CachedProgram(
+    add_dwdz_to_divergence_of_flux_of_normal_wind_orig
+)
+
+compute_full3d_graddiv_normal = CachedProgram(
+    compute_full3d_graddiv_normal_orig
+)
+
+compute_full3d_graddiv_vertical = CachedProgram(
+    compute_full3d_graddiv_vertical_orig
+)
+
+compute_dgraddiv_dz_for_full3d_divergence_damping = CachedProgram(
+    compute_dgraddiv_dz_for_full3d_divergence_damping_orig
+)
+
+compute_divergence_of_flux_of_full3d_graddiv = CachedProgram(
+    compute_divergence_of_flux_of_full3d_graddiv_orig
+)
+
+add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv = CachedProgram(
+    add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv_orig
+)
+
+compute_full3d_graddiv2_normal = CachedProgram(
+    compute_full3d_graddiv2_normal_orig
+)
+
+compute_full3d_graddiv2_vertical = CachedProgram(
+    compute_full3d_graddiv2_vertical_orig
+)
+
+apply_4th_order_3d_divergence_damping_to_vn = CachedProgram(
+    apply_4th_order_3d_divergence_damping_to_vn_orig
+)
+
+apply_4th_order_3d_divergence_damping_to_w = CachedProgram(
+    apply_4th_order_3d_divergence_damping_to_w_orig
+)
+# end of new divergence stencils
 
 compute_dwdz_for_divergence_damping = CachedProgram(compute_dwdz_for_divergence_damping_orig)
 
