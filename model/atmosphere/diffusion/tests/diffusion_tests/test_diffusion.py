@@ -12,6 +12,7 @@ import pytest
 import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import settings
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.settings import backend
@@ -26,7 +27,6 @@ from .utils import (
     compare_dace_orchestration_multiple_steps,
     construct_diffusion_config,
     diff_multfac_vn_numpy,
-    diffusion_instance,  # noqa
     smag_limit_numpy,
     verify_diffusion_fields,
 )
@@ -332,7 +332,8 @@ def test_run_diffusion_single_step(
     damping_height,
     ndyn_substeps,
     backend,
-    diffusion_instance,  # noqa: F811
+    processor_props,
+    decomposition_info,
 ):
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -382,7 +383,8 @@ def test_run_diffusion_single_step(
     config = construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion_granule = diffusion.Diffusion(backend, exchange)
     diffusion_granule.init(
         grid=icon_grid,
         config=config,
@@ -428,7 +430,8 @@ def test_run_diffusion_multiple_steps(
     damping_height,
     ndyn_substeps,
     backend,
-    diffusion_instance,  # noqa: F811
+    processor_props,
+    decomposition_info,
 ):
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
@@ -521,7 +524,8 @@ def test_run_diffusion_multiple_steps(
     )
     prognostic_state_dace_orch = savepoint_diffusion_init.construct_prognostics()
 
-    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion_granule = diffusion.Diffusion(backend, exchange)
     diffusion_granule.init(
         grid=icon_grid,
         config=config,
@@ -568,7 +572,8 @@ def test_run_diffusion_initial_step(
     grid_savepoint,
     icon_grid,
     backend,
-    diffusion_instance,  # noqa: F811
+    processor_props,
+    decomposition_info,
 ):
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -614,7 +619,8 @@ def test_run_diffusion_initial_step(
     config = construct_diffusion_config(experiment, ndyn_substeps=2)
     additional_parameters = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion_granule = diffusion.Diffusion(backend, exchange)
     diffusion_granule.init(
         grid=icon_grid,
         config=config,

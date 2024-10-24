@@ -166,7 +166,14 @@ def orchestrate(
                 )
                 updated_kwargs = {
                     **updated_kwargs,
-                    **dace_specific_kwargs(exchange_obj, grid.offset_providers),
+                    **dace_specific_kwargs(
+                        exchange_obj,
+                        {
+                            k: v
+                            for k, v in grid.offset_providers.items()
+                            if connectivity_identifier(k) in sdfg.arrays
+                        },
+                    ),
                 }
                 updated_kwargs = {
                     **updated_kwargs,
@@ -182,14 +189,6 @@ def orchestrate(
                 with dace.config.temporary_config():
                     configure_dace_temp_env(default_build_folder)
                     return compiled_sdfg(**sdfg_args)
-
-            # Pytest does not clear the cache between runs in a proper way -pytest.mark.parametrize(...)-.
-            # This leads to corrupted cache and subsequent errors.
-            # To avoid this, we provide a way to clear the cache.
-            def clear_cache():
-                orchestrator_cache.clear()
-
-            wrapper.clear_cache = clear_cache
 
             return wrapper
 
