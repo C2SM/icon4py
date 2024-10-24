@@ -219,7 +219,7 @@ class SingleNodeExchange:
 
     else:
 
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args, **kwargs) -> None:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )
@@ -248,7 +248,7 @@ class HaloExchangeWaitRuntime(Protocol):
         """Wait on the communication handle."""
         ...
 
-    def __sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+    def __sdfg__(self, *args, **kwargs): # -> dace.sdfg.sdfg.SDFG
         """DaCe related: SDFGConvertible interface."""
         ...
 
@@ -285,7 +285,7 @@ class HaloExchangeWait:
 
     else:
 
-        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        def dace__sdfg__(self, *args, **kwargs) -> None:
             raise NotImplementedError(
                 "__sdfg__ is only supported when the 'dace' module is available."
             )

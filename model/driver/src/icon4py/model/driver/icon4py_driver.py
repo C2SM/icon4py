@@ -349,6 +349,7 @@ def initialize(
         ser_type=serialization_type,
     )
 
+    log.info(f"Loaded backend is '{backend}'")
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
