@@ -489,7 +489,7 @@ class GridGeometry(state_utils.FieldSource):
                 "edge_lon": attrs.EDGE_LON,
             },
             fields={
-                "tangent_orientation": attrs.TANGENT_ORIENTATION,
+                "tangent_orientation": "_invalid_tangent_orientation",
                 "tangent_x": attrs.EDGE_TANGENT_X,
                 "tangent_y": attrs.EDGE_TANGENT_Y,
                 "tangent_z": attrs.EDGE_TANGENT_Z,

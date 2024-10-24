@@ -261,6 +261,22 @@ def test_compute_primal_normals(grid_file, experiment, grid_savepoint, backend):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), # FIX LAM
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_tangent_orientation(grid_file, experiment, grid_savepoint, backend):
+    grid_geometry = construct_grid_geometry(backend, grid_file)
+    result = grid_geometry.get(attrs.TANGENT_ORIENTATION)
+    expected = grid_savepoint.tangent_orientation()
+
+    assert helpers.dallclose(result.asnumpy(), expected.asnumpy())
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
