@@ -10,7 +10,6 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -25,7 +24,7 @@ def _apply_nabla2_to_vn_in_lateral_boundary(
     return vn_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_nabla2_to_vn_in_lateral_boundary(
     z_nabla2_e: fa.EdgeKField[wpfloat],
     area_edge: fa.EdgeField[wpfloat],

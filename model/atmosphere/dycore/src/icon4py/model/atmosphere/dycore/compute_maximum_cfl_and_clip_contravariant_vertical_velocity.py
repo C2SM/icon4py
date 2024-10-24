@@ -16,7 +16,6 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -58,7 +57,7 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     return cfl_clipping, vcfl_vp, astype(z_w_con_c_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     ddqz_z_half: fa.CellKField[vpfloat],
     z_w_con_c: fa.CellKField[vpfloat],

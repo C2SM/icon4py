@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import max_over, maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2CDim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -25,7 +24,7 @@ def _enhance_diffusion_coefficient_for_grid_point_cold_pools(
     return kh_smag_e_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def enhance_diffusion_coefficient_for_grid_point_cold_pools(
     kh_smag_e: fa.EdgeKField[vpfloat],
     enh_diffu_3d: fa.CellKField[vpfloat],

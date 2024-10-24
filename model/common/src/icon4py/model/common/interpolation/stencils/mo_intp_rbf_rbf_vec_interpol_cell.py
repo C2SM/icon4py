@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2E, C2EDim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -27,7 +26,7 @@ def _mo_intp_rbf_rbf_vec_interpol_cell(
     return p_u_out, p_v_out
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_intp_rbf_rbf_vec_interpol_cell(
     p_vn_in: fa.EdgeKField[wpfloat],
     ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, C2EDim], wpfloat],

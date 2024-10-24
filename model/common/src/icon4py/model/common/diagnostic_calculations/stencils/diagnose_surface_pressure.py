@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import exp, log
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 
 
 @field_operator
@@ -36,7 +35,7 @@ def _diagnose_surface_pressure(
     return surface_pressure
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def diagnose_surface_pressure(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],

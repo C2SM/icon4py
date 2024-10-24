@@ -8,7 +8,6 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -29,7 +28,7 @@ def _diagnose_virtual_temperature_and_temperature(
     return virtual_temperature, temperature
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def diagnose_virtual_temperature_and_temperature(
     qv: fa.CellKField[ta.wpfloat],
     # TODO (Chia Rui): This should be changed to a list hydrometeors with mass instead of directly specifying each hydrometeor, as in trHydroMass list in ICON. Otherwise, the input arguments may need to be changed when different microphysics is used.

@@ -10,11 +10,18 @@
 import logging
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
+
+config = Icon4PyConfig()
+backend = config.gt4py_runner
+dace_orchestration = config.icon4py_dace_orchestration
+device = config.device
+limited_area = config.limited_area
 
 
 def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:

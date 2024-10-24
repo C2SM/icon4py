@@ -14,7 +14,7 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.settings import backend, xp
+from icon4py.model.common.settings import xp
 
 
 # TODO: this will have to be removed once domain allows for imports
@@ -184,7 +184,7 @@ def _compute_perturbed_exner(
     return exner_pr
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_perturbed_exner(
     exner: fa.CellKField[ta.wpfloat],
     exner_ref: fa.CellKField[ta.vpfloat],

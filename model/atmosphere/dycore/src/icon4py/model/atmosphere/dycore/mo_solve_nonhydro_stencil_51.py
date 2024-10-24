@@ -11,7 +11,6 @@ from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 
 
 @field_operator
@@ -36,7 +35,7 @@ def _mo_solve_nonhydro_stencil_51(
     return z_q, w_nnew
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_51(
     z_q: fa.CellKField[float],
     w_nnew: fa.CellKField[float],

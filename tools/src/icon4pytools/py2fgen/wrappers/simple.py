@@ -15,7 +15,6 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.settings import backend
 
 
 # global profiler object
@@ -41,7 +40,7 @@ def _square(
     return inp**2
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def square(
     inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
     result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],

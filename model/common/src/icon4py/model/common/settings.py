@@ -6,12 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common.config import Icon4PyConfig
+try:
+    import cupy as xp
+except ImportError:
+    import numpy as xp
 
+    print("cupy not installed, defaulting to numpy")
 
-config = Icon4PyConfig()
-backend = config.gt4py_runner
-dace_orchestration = config.icon4py_dace_orchestration
-xp = config.array_ns
-device = config.device
-limited_area = config.limited_area
+xp  # noqa: B018

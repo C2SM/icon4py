@@ -8,11 +8,11 @@
 
 import numpy as np
 import pytest
+from icon4pytools.py2fgen.wrappers.common import backend
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import helpers
 
 from .utils import construct_diffusion_config, diff_multfac_vn_numpy, smag_limit_numpy
@@ -99,7 +99,7 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
 def test_init_zero_vertex_k(backend):
     grid = simple_grid.SimpleGrid()
     f = helpers.random_field(grid, dims.VertexDim, dims.KDim)
-    diffusion_utils.init_zero_v_k(f, offset_provider={})
+    diffusion_utils.init_zero_v_k.with_abckend(backend)(f, offset_provider={})
     assert np.allclose(0.0, f.asnumpy())
 
 
