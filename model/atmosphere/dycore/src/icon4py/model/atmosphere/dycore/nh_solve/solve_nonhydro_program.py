@@ -144,6 +144,25 @@ def predictor_stencils_2_3(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    _extrapolate_temporally_exner_pressure(
+        exner_exfac,
+        exner,
+        exner_ref_mc,
+        exner_pr,
+        out=(z_exner_ex_pr, exner_pr),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+    _init_cell_kdim_field_with_zero_wp(
+        out=z_exner_ex_pr,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
+        },
+    )
+'''
     _predictor_stencils_2_3(
         exner_exfac,
         exner,
@@ -158,6 +177,7 @@ def predictor_stencils_2_3(
             KDim: (vertical_start, vertical_end),
         },
     )
+'''
 
 
 @field_operator
@@ -210,6 +230,34 @@ def predictor_stencils_4_5_6(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    _interpolate_to_surface(
+        wgtfacq_c_dsl,
+        z_exner_ex_pr,
+        out=z_exner_ic,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
+        },
+    )
+    _interpolate_to_half_levels_vp(
+        wgtfac_c,
+        z_exner_ex_pr,
+        out=z_exner_ic,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+    _compute_first_vertical_derivative(
+        z_exner_ic,
+        inv_ddqz_z_full,
+        out=z_dexner_dz_c_1,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+'''
     _predictor_stencils_4_5_6(
         wgtfacq_c_dsl,
         z_exner_ex_pr,
@@ -225,6 +273,7 @@ def predictor_stencils_4_5_6(
             KDim: (vertical_start, vertical_end),
         },
     )
+'''
 
 
 @field_operator
@@ -776,7 +825,7 @@ def stencils_39_40(
 
 
 @field_operator
-def _stencils_42_44_45_45b(
+def _stencils_42_44_45(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
@@ -844,7 +893,7 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    #z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
 
     z_q = where(k_field == int32(0), _init_cell_kdim_field_with_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
@@ -883,7 +932,7 @@ def stencils_42_44_45_45b(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _stencils_42_44_45_45b(
+    _stencils_42_44_45(
         z_w_expl,
         w_nnow,
         ddt_w_adv_ntl1,
@@ -916,10 +965,17 @@ def stencils_42_44_45_45b(
             KDim: (vertical_start, vertical_end),
         },
     )
+    _init_cell_kdim_field_with_zero_vp(
+        out=z_alpha,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
+        },
+    )
 
 
 @field_operator
-def _stencils_43_44_45_45b(
+def _stencils_43_44_45(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
@@ -980,7 +1036,7 @@ def _stencils_43_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    #z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
     z_q = where(k_field == int32(0), _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
@@ -1016,7 +1072,7 @@ def stencils_43_44_45_45b(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _stencils_43_44_45_45b(
+    _stencils_43_44_45(
         z_w_expl,
         w_nnow,
         ddt_w_adv_ntl1,
@@ -1044,6 +1100,13 @@ def stencils_43_44_45_45b(
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
+        },
+    )
+    _init_cell_kdim_field_with_zero_vp(
+        out=z_alpha,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
         },
     )
 
@@ -1120,6 +1183,32 @@ def stencils_47_48_49(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    _set_lower_boundary_condition_for_w_and_contravariant_correction(
+        w_concorr_c,
+        out=(w_nnew, z_contr_w_fl_l),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
+        },
+    )
+    _compute_explicit_part_for_rho_and_exner(
+        rho_nnow,
+        inv_ddqz_z_full,
+        z_flxdiv_mass,
+        z_contr_w_fl_l,
+        exner_pr,
+        z_beta,
+        z_flxdiv_theta,
+        theta_v_ic,
+        ddt_exner_phy,
+        dtime,
+        out=(z_rho_expl, z_exner_expl),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+'''
     _stencils_47_48_49(
         w_nnew,
         z_contr_w_fl_l,
@@ -1143,6 +1232,7 @@ def stencils_47_48_49(
             KDim: (vertical_start, vertical_end),
         },
     )
+'''
 
 
 @field_operator
@@ -1198,6 +1288,31 @@ def stencils_61_62(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    _update_density_exner_wind(
+        rho_now,
+        grf_tend_rho,
+        theta_v_now,
+        grf_tend_thv,
+        w_now,
+        grf_tend_w,
+        dtime,
+        out=(rho_new, exner_new, w_new),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end - 1),
+        },
+    )
+    _update_wind(
+        w_now,
+        grf_tend_w,
+        dtime,
+        out=w_new,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
+        },
+    )
+'''
     _stencils_61_62(
         rho_now,
         grf_tend_rho,
@@ -1217,3 +1332,4 @@ def stencils_61_62(
             KDim: (vertical_start, vertical_end),
         },
     )
+'''
