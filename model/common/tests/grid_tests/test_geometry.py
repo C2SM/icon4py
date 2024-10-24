@@ -340,18 +340,19 @@ def test_primal_normal_vertex(grid_file, experiment, grid_savepoint, backend):
     end = grid.end_index(edge_domain(h_grid.Zone.END))
 
 
-    program.edge_primal_normal_vertex.with_backend(None)(
+    program.compute_edge_primal_normal_vertex.with_backend(None)(
         vertex_lat,
         vertex_lon,
         x,
         y,
         z,
-        out=(u1_vertex, v1_vertex, u2_vertex, v2_vertex),
+        u1_vertex, v1_vertex, u2_vertex, v2_vertex,
+        horizontal_start = start,
+        horizontal_end = end,
         offset_provider={
             "E2C": grid.get_offset_provider("E2C"),
             "E2V": grid.get_offset_provider("E2V"),
         },
-        domain={dims.EdgeDim: (start, end)},
     )
     
 

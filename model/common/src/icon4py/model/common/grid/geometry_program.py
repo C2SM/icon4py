@@ -186,27 +186,20 @@ def compute_edge_primal_normal_vertex(
     x: fa.EdgeField[ta.wpfloat],
     y: fa.EdgeField[ta.wpfloat],
     z: fa.EdgeField[ta.wpfloat],
-    u_vertex_1: fa.EdgeField[ta.wpfloat],
+    u_vertex_1:fa.EdgeField[ta.wpfloat],
     v_vertex_1: fa.EdgeField[ta.wpfloat],
-    u_vertex_2: fa.EdgeField[ta.wpfloat],
-    v_vertex_2: fa.EdgeField[ta.wpfloat],
+    u_vertex_2:fa.EdgeField[ta.wpfloat],
+    v_vertex_2:fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
+    horizontal_end:gtx.int32,
 ):
     edge_primal_normal_vertex(
-        vertex_lon,
         vertex_lat,
-        x,
-        y,
-        z,
-        out=(
-            u_vertex_1,
-            v_vertex_1,
-            u_vertex_2,
-            v_vertex_2,
-        ),
-        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+        vertex_lon, x, y, z,
+        out = (u_vertex_1, v_vertex_1, u_vertex_2,  v_vertex_2),
+        domain = {dims.EdgeDim: (horizontal_start, horizontal_end)}
     )
+
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
 def edge_primal_normal_cell(
