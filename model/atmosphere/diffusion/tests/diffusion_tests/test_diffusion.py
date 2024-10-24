@@ -8,7 +8,8 @@
 
 import numpy as np
 import pytest
-from icon4pytools.py2fgen.wrappers.common import backend, dace_orchestration
+
+from tools.src.icon4pytools.py2fgen.wrappers.common import backend, dace_orchestration
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
