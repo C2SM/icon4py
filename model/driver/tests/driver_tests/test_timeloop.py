@@ -238,7 +238,7 @@ def test_run_timeloop_single_step(
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro()
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(backend)
     solve_nonhydro_granule.init(
         grid=icon_grid,
         config=nonhydro_config,
