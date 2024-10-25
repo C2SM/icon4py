@@ -464,6 +464,7 @@ class Diffusion:
         self.compile_time_connectivities = orchestration.build_compile_time_connectivities(
             self._grid.offset_providers
         )
+        self._initialized = True
 
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = field_alloc.allocate_zero_field(

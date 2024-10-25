@@ -650,6 +650,7 @@ class SolveNonhydro:
         )
 
         self.p_test_run = True
+        self._initialized = True
 
     def _allocate_local_fields(self):
         self.z_exner_ex_pr = field_alloc.allocate_zero_field(

@@ -75,9 +75,9 @@ class TimeLoop:
     def _validate_config(self):
         if self._n_time_steps < 0:
             raise ValueError("end_date should be larger than start_date. Please check.")
-        if not self.diffusion.initialized:
+        if not self.diffusion._initialized:
             raise Exception("diffusion is not initialized before time loop")
-        if not self.solve_nonhydro.initialized:
+        if not self.solve_nonhydro._initialized:
             raise Exception("nonhydro solver is not initialized before time loop")
 
     @property
