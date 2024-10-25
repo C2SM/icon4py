@@ -171,6 +171,9 @@ class GHexMultiNodeExchange:
         local_halo = self._decomposition_info.local_index(
             dim, definitions.DecompositionInfo.EntryType.HALO
         )
+        # first arg is the domain ID which builds up an MPI Tag.
+        # if those ids are not different for all domain descriptors the system might deadlock
+        # if two parallel exchanges with the same domain id are done
         domain_desc = DomainDescriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )

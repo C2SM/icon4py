@@ -49,11 +49,11 @@ from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
+    CellGlobalIndexDim,
     CellIndexDim,
+    EdgeGlobalIndexDim,
     EdgeIndexDim,
-    SpecialADim,
-    SpecialBDim,
-    SpecialCDim,
+    VertexGlobalIndexDim,
     VertexIndexDim,
 )
 
@@ -307,9 +307,9 @@ def grid_init(
     c_owner_mask: gtx.Field[[dims.CellDim], bool],
     e_owner_mask: gtx.Field[[dims.EdgeDim], bool],
     v_owner_mask: gtx.Field[[dims.VertexDim], bool],
-    c_glb_index: gtx.Field[[SpecialADim], gtx.int32],
-    e_glb_index: gtx.Field[[SpecialBDim], gtx.int32],
-    v_glb_index: gtx.Field[[SpecialCDim], gtx.int32],
+    c_glb_index: gtx.Field[[CellGlobalIndexDim], gtx.int32],
+    e_glb_index: gtx.Field[[EdgeGlobalIndexDim], gtx.int32],
+    v_glb_index: gtx.Field[[VertexGlobalIndexDim], gtx.int32],
     comm_id: gtx.int32,
     global_root: gtx.int32,
     global_level: gtx.int32,
