@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import broadcast, neighbor_sum
+from gt4py.next.ffront.fbuiltins import neighbor_sum
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
@@ -65,7 +65,6 @@ def compute_smooth_topo(
     Computes the smoothed (laplacian-filtered) topography needed by the SLEVE
     coordinate.
     """
-
 
     topography_smoothed_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=ta.wpfloat)
     topography_smoothed_np[:,0] = topography.asnumpy()

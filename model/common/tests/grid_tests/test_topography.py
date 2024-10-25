@@ -6,20 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.grid import geometry, icon as icon_grid
-from icon4py.model.common.grid import topography as topo
+from icon4py.model.common.grid import geometry, topography as topo
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.common.interpolation import interpolation_fields as interp_fields
 
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils import helpers as test_helpers
 from icon4py.model.common.settings import xp
 
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
+from icon4py.model.common.test_utils.helpers import constant_field, zero_field
 
 def nabla2_scalar_numpy(grid, psi_c: xp.array, geofac_n2s: xp.array):
     c2e2cO = grid.connectivities[dims.C2E2CODim]
@@ -28,30 +23,6 @@ def nabla2_scalar_numpy(grid, psi_c: xp.array, geofac_n2s: xp.array):
         xp.where((c2e2cO != -1)[:, :, xp.newaxis], psi_c[c2e2cO] * geofac_n2s, 0), axis=1
     )
     return nabla2_psi_c
-
-
-@pytest.mark.datatest
-class TestCalculateNabla2ForW(StencilTest):
-    PROGRAM = topo.nabla2_scalar
-    OUTPUTS = ("nabla2_psi_c",)
-
-    @staticmethod
-    def reference(grid, psi_c: xp.array, geofac_n2s: xp.array, **kwargs) -> dict:
-        nabla2_psi_c = nabla2_scalar_numpy(grid, psi_c, geofac_n2s)
-        return dict(nabla2_psi_c=nabla2_psi_c)
-
-    @pytest.fixture
-    def input_data(self, grid, interpolation_savepoint):
-        psi_c = constant_field(grid, 1.0, dims.CellDim, dims.KDim)
-        geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
-        #geofac_n2s = interpolation_savepoint.geofac_n2s()
-        nabla2_psi_c = zero_field(grid, dims.CellDim, dims.KDim)
-
-        return dict(
-            psi_c=psi_c,
-            geofac_n2s=geofac_n2s,
-            nabla2_psi_c=nabla2_psi_c,
-        )
 
 @pytest.mark.datatest
 def test_nabla2_scalar(
