@@ -73,6 +73,7 @@ def test_advection_run_single_step(
     advection_exit_savepoint,
     data_provider,
     data_provider_advection,
+    backend,
     even_timestep,
     ntracer,
     horizontal_advection_type,
@@ -101,6 +102,7 @@ def test_advection_run_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         even_timestep=even_timestep,
+        backend=backend,
     )
 
     diagnostic_state = construct_diagnostic_init_state(icon_grid, advection_init_savepoint, ntracer)

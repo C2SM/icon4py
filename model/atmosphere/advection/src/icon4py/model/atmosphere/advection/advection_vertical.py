@@ -9,10 +9,12 @@
 from abc import ABC, abstractmethod
 import logging
 
+from gt4py.next import backend
+
 from icon4py.model.atmosphere.advection import advection_states
-from icon4py.model.atmosphere.advection.stencils import (
-    copy_cell_kdim_field,
-)
+
+from icon4py.model.atmosphere.advection.stencils.copy_cell_kdim_field import copy_cell_kdim_field
+
 from icon4py.model.common import (
     dimension as dims,
     field_type_aliases as fa,
@@ -66,11 +68,12 @@ class VerticalAdvection(ABC):
 class NoAdvection(VerticalAdvection):
     """Class that implements disabled vertical advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid):
+    def __init__(self, grid: icon_grid.IconGrid, backend: backend.Backend):
         log.debug("vertical advection class init - start")
 
         # input arguments
         self._grid = grid
+        self._backend = backend
 
         # cell indices
         cell_domain = h_grid.domain(dims.CellDim)
@@ -80,6 +83,9 @@ class NoAdvection(VerticalAdvection):
         self._start_cell_nudging = self._grid.start_index(cell_domain(h_grid.Zone.NUDGING))
         self._end_cell_local = self._grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
+
+        # stencils
+        self._copy_cell_kdim_field = copy_cell_kdim_field.with_backend(self._backend)
 
         log.debug("vertical advection class init - end")
 
@@ -100,7 +106,7 @@ class NoAdvection(VerticalAdvection):
             self._start_cell_lateral_boundary_level_2 if even_timestep else self._start_cell_nudging
         )
         log.debug("running stencil copy_cell_kdim_field - start")
-        copy_cell_kdim_field.copy_cell_kdim_field(
+        self._copy_cell_kdim_field(
             field_in=p_tracer_now,
             field_out=p_tracer_new,
             horizontal_start=horizontal_start,
@@ -190,6 +196,7 @@ class SemiLagrangian(FiniteVolume):
         metric_state: advection_states.AdvectionMetricState,
         edge_params: geometry.EdgeParams,
         cell_params: geometry.CellParams,
+        backend: backend.Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         log.debug("vertical advection class init - start")
@@ -201,6 +208,7 @@ class SemiLagrangian(FiniteVolume):
         self._metric_state = metric_state
         self._edge_params = edge_params
         self._cell_params = cell_params
+        self._backend = backend
         self._exchange = exchange
 
         # cell indices
