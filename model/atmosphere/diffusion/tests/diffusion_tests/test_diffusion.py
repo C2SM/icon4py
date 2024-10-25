@@ -9,8 +9,6 @@
 import numpy as np
 import pytest
 
-from tools.src.icon4pytools.py2fgen.wrappers.common import backend, dace_orchestration
-
 import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common.grid import vertical as v_grid
@@ -200,7 +198,7 @@ def test_diffusion_init(
 
 
 def _verify_init_values_against_savepoint(
-    savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion
+    savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion, backend
 ):
     dtime = savepoint.get_metadata("dtime")["dtime"]
 
@@ -306,7 +304,7 @@ def test_verify_diffusion_init_against_savepoint(
         cell_params,
     )
 
-    _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule)
+    _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule, backend)
 
 
 @pytest.mark.datatest
@@ -428,6 +426,7 @@ def test_run_diffusion_multiple_steps(
     damping_height,
     ndyn_substeps,
     backend,
+    dace_orchestration,
     diffusion_instance,  # noqa: F811
 ):
     if dace_orchestration is None:

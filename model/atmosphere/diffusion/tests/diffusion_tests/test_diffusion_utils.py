@@ -8,7 +8,6 @@
 
 import numpy as np
 import pytest
-
 from tools.src.icon4pytools.py2fgen.wrappers.common import backend
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils

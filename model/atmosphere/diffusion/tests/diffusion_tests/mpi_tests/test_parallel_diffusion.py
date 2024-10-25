@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from icon4pytools.py2fgen.wrappers.common import dace_orchestration
 
 from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusion_states
 from icon4py.model.common import dimension as dims
@@ -171,6 +170,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
     diffusion_instance,  # noqa: F811
+    dace_orchestration,
 ):
     if dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")

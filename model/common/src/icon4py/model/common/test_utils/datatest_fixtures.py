@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+from icon4pytools.py2fgen.wrappers.common import Icon4PyConfig
 
 import icon4py.model.common.decomposition.definitions as decomposition
 
@@ -344,3 +345,8 @@ def maximal_layer_thickness():
 @pytest.fixture
 def top_height_limit_for_maximal_layer_thickness():
     return 15000.0
+
+
+@pytest.fixture
+def dace_orchestration():
+    return Icon4PyConfig.icon4py_dace_orchestration
