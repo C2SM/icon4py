@@ -217,7 +217,7 @@ class GHexMultiNodeExchange:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
 
-            This ensures that the exchanged fields always have the correct size, thereby also working in
+            This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
             the granule context where fields otherwise have length nproma.
         """
         assert dim in dims.global_dimensions.values()
