@@ -14,10 +14,13 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import geometry, topography as topo
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
+    GAUSS3D_EXPERIMENT,
 )
+from icon4py.model.driver.test_cases import artificial_topography
 from icon4py.model.common.test_utils.helpers import dallclose
 
 
@@ -195,3 +198,52 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 
     assert dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
     assert dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [GAUSS3D_EXPERIMENT])
+def test_init_vert_coord(
+    grid_savepoint,
+    interpolation_savepoint,
+    metrics_savepoint,
+    experiment,
+    icon_grid,
+    backend,
+):
+
+    vct_a = grid_savepoint.vct_a()
+    vct_b = grid_savepoint.vct_b()
+    geofac_n2s = interpolation_savepoint.geofac_n2s()
+
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    vertical_config = v_grid.VerticalGridConfig(
+        num_levels=grid_savepoint.num(dims.KDim),
+        #flat_height=flat_height,
+        #rayleigh_damping_height=damping_height,
+    )
+    vertical_geometry = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=vct_a,
+        vct_b=vct_b,
+    )
+
+    topography = artificial_topography.gaussian_hill(icon_grid, cell_geometry)
+    topography_smoothed = topo.compute_smooth_topo(
+        topography=topography,
+        grid=icon_grid,
+        cell_areas=cell_geometry.area,
+        geofac_n2s=geofac_n2s,
+        num_iterations=1,
+        backend=backend,
+    )
+
+    z_ifc = v_grid.init_vert_coord(
+        vct_a=vct_a,
+        topography=topography,
+        topography_smoothed=topography_smoothed,
+        grid=icon_grid,
+        vertical_config=vertical_config,
+        vertical_geometry=vertical_geometry,
+    )
+
+    assert dallclose(z_ifc.asnumpy(), metrics_savepoint.z_ifc().asnumpy())

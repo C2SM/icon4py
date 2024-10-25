@@ -16,6 +16,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     experiment,
     flat_height,
     grid_savepoint,
+    metrics_savepoint,
     htop_moist_proc,
     icon_grid,
     interpolation_savepoint,

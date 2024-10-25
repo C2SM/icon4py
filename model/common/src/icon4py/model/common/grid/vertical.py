@@ -509,15 +509,18 @@ def init_vert_coord(
     """
 
     z3d_i = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
-    ktop_thicklimit = xp.zeros(grid.num_cells, dtype=ta.wpfloat)
+
+    topography = topography.asnumpy()
+    topography_smoothed = topography_smoothed.asnumpy()
+    vct_a = vct_a.asnumpy()
 
     dvct1 = 100.0
     minrat1 = 1.0 / 3.0  # minimum relative layer thickness for nominal thicknesses <= dvct1 (in m)
     dvct2 = 500.0
     minrat2 = 0.5  # minimum relative layer thickness for a nominal thickness of dvct2
 
-    z3d_i[:, grid.num_levels + 1] = topography
-    ktop_thicklimit = grid.num_levels
+    z3d_i[:, grid.num_levels] = topography
+    ktop_thicklimit = grid.num_levels * xp.ones(grid.num_cells, dtype=ta.wpfloat)
 
     for k in range(vertical_geometry.nflatlev):
         k1 = k + nshift
@@ -574,33 +577,34 @@ def init_vert_coord(
 
     # Smooth layer thickness ratios in the transition layer of columns where the
     # thickness limiter has been active (exclude lowest and highest layers)
-    cell_ids = xp.argwhere(ktop_thicklimit <= grid.num_levels - 3 and ktop_thicklimit >= 3)
-    dz1 = (
-        z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
-        - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 2]
-    )
-    dz2 = (
-        z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 3]
-        - z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
-    )
-    dzr = (dz2 / dz1) ** 0.25  # stretching factor
-    dz3 = (
-        z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
-        - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
-    ) / (dzr * (1.0 + dzr * (1.0 + dzr)))
-    z3d_i[cell_ids, ktop_thicklimit[cell_ids]] = xp.maximum(
-        z3d_i[cell_ids, ktop_thicklimit[cell_ids]],
-        z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1] + dz3 * dzr,
-    )
-    z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1] = xp.maximum(
-        z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1],
-        z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + dz3 * dzr * dzr,
-    )
+    cell_ids = xp.argwhere((ktop_thicklimit <= grid.num_levels - 3) & (ktop_thicklimit >= 3))
+    if cell_ids.size > 0:
+        dz1 = (
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
+            - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 2]
+        )
+        dz2 = (
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 3]
+            - z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
+        )
+        dzr = (dz2 / dz1) ** 0.25  # stretching factor
+        dz3 = (
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
+            - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
+        ) / (dzr * (1.0 + dzr * (1.0 + dzr)))
+        z3d_i[cell_ids, ktop_thicklimit[cell_ids]] = xp.maximum(
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids]],
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1] + dz3 * dzr,
+        )
+        z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1] = xp.maximum(
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1],
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + dz3 * dzr * dzr,
+        )
 
     # Check if level nflatlev is still flat
     try:
         assert xp.all(
-            z3d_i[:, vertical_geometry.nflatlev] == vct_a[vertical_geometry.nflatlev + nshift]
+            z3d_i[:, vertical_geometry.nflatlev-1] == vct_a[vertical_geometry.nflatlev-1 + nshift]
         )
     except AssertionError:
         log.error("Level nflatlev is not flat")
