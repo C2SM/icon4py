@@ -16,10 +16,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Unio
 from gt4py.next import Dimension, Field
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.config import Device
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
-from icon4py.model.common.settings import device, xp
+from icon4py.model.common.settings import xp
 
 
 try:
@@ -33,7 +32,6 @@ try:
         make_field_descriptor,
         make_pattern,
     )
-    from ghex.util import Architecture
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -230,9 +228,8 @@ class GHexMultiNodeExchange:
         sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
 
         # Create field descriptors and perform the exchange
-        arch = Architecture.CPU if device == Device.CPU else Architecture.GPU
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f, arch=arch)) for f in sliced_fields
+            pattern(make_field_descriptor(domain_descriptor, f)) for f in sliced_fields
         ]
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
