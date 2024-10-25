@@ -429,6 +429,12 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Initialize the Grid ---
     dycore_wrapper.grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -438,12 +444,6 @@ def test_dycore_wrapper_granule_inputs(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
         global_root=global_root,
         global_level=global_level,
         num_vertices=num_vertices,
@@ -451,6 +451,13 @@ def test_dycore_wrapper_granule_inputs(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        c_glb_index=None,  # not running in parallel
+        e_glb_index=None,
+        v_glb_index=None,
+        c_owner_mask=None,
+        e_owner_mask=None,
+        v_owner_mask=None,
+        comm_id=None,
     )
 
     # --- Mock and Test SolveNonhydro.init ---
@@ -930,6 +937,12 @@ def test_granule_solve_nonhydro_single_step_regional(
     global_level = 9
 
     dycore_wrapper.grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -939,12 +952,6 @@ def test_granule_solve_nonhydro_single_step_regional(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
         global_root=global_root,
         global_level=global_level,
         num_vertices=num_vertices,
@@ -952,6 +959,13 @@ def test_granule_solve_nonhydro_single_step_regional(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        c_glb_index=None,  # not running in parallel
+        e_glb_index=None,
+        v_glb_index=None,
+        c_owner_mask=None,
+        e_owner_mask=None,
+        v_owner_mask=None,
+        comm_id=None,
     )
 
     # call solve init
@@ -1381,6 +1395,12 @@ def test_granule_solve_nonhydro_multi_step_regional(
     global_level = 9
 
     dycore_wrapper.grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -1390,12 +1410,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
         global_root=global_root,
         global_level=global_level,
         num_vertices=num_vertices,
@@ -1403,6 +1417,13 @@ def test_granule_solve_nonhydro_multi_step_regional(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        c_glb_index=None,  # not running in parallel
+        e_glb_index=None,
+        v_glb_index=None,
+        c_owner_mask=None,
+        e_owner_mask=None,
+        v_owner_mask=None,
+        comm_id=None,
     )
 
     # call solve init

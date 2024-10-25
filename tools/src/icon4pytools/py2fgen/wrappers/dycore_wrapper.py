@@ -36,6 +36,7 @@ from gt4py.next import common as gt4py_common
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro
 from icon4py.model.atmosphere.dycore.state_utils import states as nh_states
 from icon4py.model.common import dimension as dims, settings
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import (
     C2E2CODim,
     C2EDim,
@@ -58,6 +59,7 @@ from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
+from icon4py.model.common.settings import parallel_run
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -66,10 +68,14 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.wrappers import common as wrapper_common
+from icon4pytools.py2fgen.wrappers import common
+from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellIndexDim,
     EdgeIndexDim,
+    SpecialADim,
+    SpecialBDim,
+    SpecialCDim,
     VertexIndexDim,
 )
 
@@ -77,7 +83,6 @@ from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
 logger = setup_logger(__name__)
 
 dycore_wrapper_state = {
-    "granule": solve_nonhydro.SolveNonhydro(backend=settings.backend),
     "profiler": cProfile.Profile(),
 }
 
@@ -459,21 +464,28 @@ def solve_nh_run(
 
 
 def grid_init(
-    cell_starts: gt4py_common.Field[[CellIndexDim], gtx.int32],
-    cell_ends: gt4py_common.Field[[CellIndexDim], gtx.int32],
-    vertex_starts: gt4py_common.Field[[VertexIndexDim], gtx.int32],
-    vertex_ends: gt4py_common.Field[[VertexIndexDim], gtx.int32],
-    edge_starts: gt4py_common.Field[[EdgeIndexDim], gtx.int32],
-    edge_ends: gt4py_common.Field[[EdgeIndexDim], gtx.int32],
-    c2e: gt4py_common.Field[[dims.CellDim, dims.C2EDim], gtx.int32],
-    e2c: gt4py_common.Field[[dims.EdgeDim, dims.E2CDim], gtx.int32],
-    c2e2c: gt4py_common.Field[[dims.CellDim, dims.C2E2CDim], gtx.int32],
-    e2c2e: gt4py_common.Field[[dims.EdgeDim, dims.E2C2EDim], gtx.int32],
-    e2v: gt4py_common.Field[[dims.EdgeDim, dims.E2VDim], gtx.int32],
-    v2e: gt4py_common.Field[[dims.VertexDim, dims.V2EDim], gtx.int32],
-    v2c: gt4py_common.Field[[dims.VertexDim, dims.V2CDim], gtx.int32],
-    e2c2v: gt4py_common.Field[[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
-    c2v: gt4py_common.Field[[dims.CellDim, dims.C2VDim], gtx.int32],
+    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
+    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
+    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
+    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
+    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
+    e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
+    c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
+    e2c2e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], gtx.int32],
+    e2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2VDim], gtx.int32],
+    v2e: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.int32],
+    v2c: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.int32],
+    e2c2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
+    c2v: gtx.Field[gtx.Dims[dims.CellDim, dims.C2VDim], gtx.int32],
+    c_owner_mask: gtx.Field[[dims.CellDim], bool],
+    e_owner_mask: gtx.Field[[dims.EdgeDim], bool],
+    v_owner_mask: gtx.Field[[dims.VertexDim], bool],
+    c_glb_index: gtx.Field[[SpecialADim], gtx.int32],
+    e_glb_index: gtx.Field[[SpecialBDim], gtx.int32],
+    v_glb_index: gtx.Field[[SpecialCDim], gtx.int32],
+    comm_id: gtx.int32,
     global_root: gtx.int32,
     global_level: gtx.int32,
     num_vertices: gtx.int32,
@@ -488,15 +500,7 @@ def grid_init(
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
-    dycore_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
-        grid_id="icon_grid",
-        global_grid_params=global_grid_params,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
+    dycore_wrapper_state["grid"] = common.construct_icon_grid(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -512,4 +516,43 @@ def grid_init(
         v2c=v2c,
         e2c2v=e2c2v,
         c2v=c2v,
+        grid_id="icon_grid",
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
+    )
+
+    if parallel_run:
+        # Set MultiNodeExchange as exchange runtime
+        processor_props, decomposition_info, exchange_runtime = common.construct_decomposition(
+            c_glb_index,
+            e_glb_index,
+            v_glb_index,
+            c_owner_mask,
+            e_owner_mask,
+            v_owner_mask,
+            num_cells,
+            num_edges,
+            num_vertices,
+            vertical_size,
+            comm_id,
+        )
+        print_grid_decomp_info(
+            dycore_wrapper_state["grid"],
+            processor_props,
+            decomposition_info,
+            num_cells,
+            num_edges,
+            num_vertices,
+        )
+    else:
+        exchange_runtime = definitions.SingleNodeExchange()
+
+    # initialise the Diffusion granule
+    dycore_wrapper_state["granule"] = solve_nonhydro.SolveNonhydro(
+        backend=settings.backend, exchange=exchange_runtime
     )
