@@ -37,7 +37,7 @@ def compute_smooth_topo(
     cell_domain = h_grid.domain(dims.CellDim)
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    for iter in range(num_iterations):
+    for _ in range(num_iterations):
         math_oper.nabla2_scalar.with_backend(backend)(
             psi_c=topography_smoothed,
             geofac_n2s=geofac_n2s,

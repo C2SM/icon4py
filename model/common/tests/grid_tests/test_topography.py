@@ -31,7 +31,7 @@ def test_topography_smoothing(
     # numpy implementation
     topography_smoothed_np = xp.zeros((icon_grid.num_cells, icon_grid.num_levels), dtype=ta.wpfloat)
     topography_smoothed_np[:, 0] = topography_np.copy()
-    for iter in range(num_iterations):
+    for _ in range(num_iterations):
         nabla2_topo_np = reference_funcs.nabla2_scalar_numpy(
             icon_grid, topography_smoothed_np, geofac_n2s.asnumpy()
         )

@@ -6,8 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
-
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.settings import xp
 
@@ -21,10 +19,10 @@ def enhanced_smagorinski_factor_numpy(factor_in, heigths_in, a_vec):
     bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
     aqdr = df32 / dz32 - bqdr * dz32
     zf = 0.5 * (a_vec[:-1] + a_vec[1:])
-    max0 = np.maximum(0.0, zf - heigths_in[0])
-    dzlin = np.minimum(heigths_in[1] - heigths_in[0], max0)
-    max1 = np.maximum(0.0, zf - heigths_in[1])
-    dzqdr = np.minimum(heigths_in[3] - heigths_in[1], max1)
+    max0 = xp.maximum(0.0, zf - heigths_in[0])
+    dzlin = xp.minimum(heigths_in[1] - heigths_in[0], max0)
+    max1 = xp.maximum(0.0, zf - heigths_in[1])
+    dzqdr = xp.minimum(heigths_in[3] - heigths_in[1], max1)
     return factor_in[0] + dzlin * alin + dzqdr * (aqdr + dzqdr * bqdr)
 
 
