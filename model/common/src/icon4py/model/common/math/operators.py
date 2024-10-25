@@ -8,8 +8,10 @@
 
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import neighbor_sum
+
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim
+
 
 # TODO: this will have to be removed once domain allows for imports
 CellDim = dims.CellDim
@@ -29,6 +31,7 @@ def _nabla2_scalar(
     nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=C2E2CODim)
 
     return nabla2_psi_c
+
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def nabla2_scalar(

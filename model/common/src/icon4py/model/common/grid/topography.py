@@ -9,9 +9,10 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.grid import icon as icon_grid, horizontal as h_grid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.math import operators as math_oper
 from icon4py.model.common.settings import xp
+
 
 def compute_smooth_topo(
     topography: fa.CellField[ta.wpfloat],
@@ -27,7 +28,7 @@ def compute_smooth_topo(
     """
 
     topography_smoothed_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=ta.wpfloat)
-    topography_smoothed_np[:,0] = topography.asnumpy()
+    topography_smoothed_np[:, 0] = topography.asnumpy()
     topography_smoothed = gtx.as_field((dims.CellDim, dims.KDim), topography_smoothed_np)
 
     nabla2_topo_np = xp.zeros((grid.num_cells, grid.num_levels), dtype=ta.wpfloat)
@@ -37,7 +38,6 @@ def compute_smooth_topo(
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
     for iter in range(num_iterations):
-
         math_oper.nabla2_scalar.with_backend(backend)(
             psi_c=topography_smoothed,
             geofac_n2s=geofac_n2s,
@@ -46,10 +46,15 @@ def compute_smooth_topo(
             horizontal_end=end_cell_end,
             vertical_start=0,
             vertical_end=1,
-            offset_provider={"C2E2CO":grid.get_offset_provider("C2E2CO"),}
+            offset_provider={
+                "C2E2CO": grid.get_offset_provider("C2E2CO"),
+            },
         )
-        
-        topography_smoothed_np[:,0] = topography_smoothed.asnumpy()[:,0] + 0.125 * nabla2_topo.asnumpy()[:,0] * cell_areas.asnumpy()
+
+        topography_smoothed_np[:, 0] = (
+            topography_smoothed.asnumpy()[:, 0]
+            + 0.125 * nabla2_topo.asnumpy()[:, 0] * cell_areas.asnumpy()
+        )
         topography_smoothed = gtx.as_field((dims.CellDim, dims.KDim), topography_smoothed_np)
 
-    return gtx.as_field((dims.CellDim,), topography_smoothed_np[:,0])
+    return gtx.as_field((dims.CellDim,), topography_smoothed_np[:, 0])

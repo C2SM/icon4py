@@ -6,9 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import numpy as np
+
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.settings import xp
-import numpy as np
 
 
 def enhanced_smagorinski_factor_numpy(factor_in, heigths_in, a_vec):

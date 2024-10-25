@@ -18,7 +18,6 @@ import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.common.settings import xp
 
 
@@ -495,6 +494,7 @@ def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
         else _compute_vct_a_and_vct_b(vertical_config)
     )
 
+
 def init_vert_coord(
     vct_a: fa.KField[ta.wpfloat],
     topography: fa.CellField[ta.wpfloat],
@@ -502,75 +502,106 @@ def init_vert_coord(
     grid: icon_grid.IconGrid,
     vertical_config: VerticalGridConfig,
     vertical_geometry: VerticalGrid,
-    nshift: int = 0, # shift parameter used for vertical nesting
+    nshift: int = 0,  # shift parameter used for vertical nesting
 ) -> fa.CellKField[ta.wpfloat]:
     """
     Computes the 3D vertical coordinate fields.
     """
 
-    z3d_i = xp.zeros((grid.num_cells, grid.num_levels+1), dtype=ta.wpfloat)
+    z3d_i = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
     ktop_thicklimit = xp.zeros(grid.num_cells, dtype=ta.wpfloat)
 
-    dvct1   = 100.0
-    minrat1 = 1.0/3.0 # minimum relative layer thickness for nominal thicknesses <= dvct1 (in m)
-    dvct2   = 500.0
-    minrat2 = 0.5 # minimum relative layer thickness for a nominal thickness of dvct2
+    dvct1 = 100.0
+    minrat1 = 1.0 / 3.0  # minimum relative layer thickness for nominal thicknesses <= dvct1 (in m)
+    dvct2 = 500.0
+    minrat2 = 0.5  # minimum relative layer thickness for a nominal thickness of dvct2
 
-    z3d_i[:, grid.num_levels+1] = topography
+    z3d_i[:, grid.num_levels + 1] = topography
     ktop_thicklimit = grid.num_levels
 
     for k in range(vertical_geometry.nflatlev):
         k1 = k + nshift
-        z3d_i[:,k] = vct_a[k1]
+        z3d_i[:, k] = vct_a[k1]
 
     for k in range(vertical_geometry.nflatlev, grid.num_levels):
         k1 = k + nshift
         # Scaling factors for large-scale and small-scale topography
-        z_fac1 = xp.sinh((vertical_config.model_top_height/vertical_config.decay_scale_1)**vertical_config.decay_exponent - (vct_a[k1]/vertical_config.decay_scale_1)**vertical_config.decay_exponent)/ xp.sinh((vertical_config.model_top_height/vertical_config.decay_scale_1)**vertical_config.decay_exponent)
-        z_fac2 = xp.sinh((vertical_config.model_top_height/vertical_config.decay_scale_2)**vertical_config.decay_exponent - (vct_a[k1]/vertical_config.decay_scale_2)**vertical_config.decay_exponent)/ xp.sinh((vertical_config.model_top_height/vertical_config.decay_scale_2)**vertical_config.decay_exponent)
+        z_fac1 = xp.sinh(
+            (vertical_config.model_top_height / vertical_config.decay_scale_1)
+            ** vertical_config.decay_exponent
+            - (vct_a[k1] / vertical_config.decay_scale_1) ** vertical_config.decay_exponent
+        ) / xp.sinh(
+            (vertical_config.model_top_height / vertical_config.decay_scale_1)
+            ** vertical_config.decay_exponent
+        )
+        z_fac2 = xp.sinh(
+            (vertical_config.model_top_height / vertical_config.decay_scale_2)
+            ** vertical_config.decay_exponent
+            - (vct_a[k1] / vertical_config.decay_scale_2) ** vertical_config.decay_exponent
+        ) / xp.sinh(
+            (vertical_config.model_top_height / vertical_config.decay_scale_2)
+            ** vertical_config.decay_exponent
+        )
 
         # Small-scale topography (i.e. full topo - smooth topo)
         topo_deviation = topography - topography_smoothed
 
-        z3d_i[:, k] = vct_a[k1] + topography_smoothed*z_fac1 + topo_deviation*z_fac2
-    
+        z3d_i[:, k] = vct_a[k1] + topography_smoothed * z_fac1 + topo_deviation * z_fac2
+
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
-    for k in range(grid.num_levels-1, -1, -1):
+    for k in range(grid.num_levels - 1, -1, -1):
         k1 = k + nshift
-        dvct = vct_a[k1] - vct_a[k1+1]
-        if (dvct < dvct1):
+        dvct = vct_a[k1] - vct_a[k1 + 1]
+        if dvct < dvct1:
             # limit layer thickness to minrat1 times its nominal value
-            min_lay_spacing = minrat1*dvct
-        elif (dvct < dvct2):
+            min_lay_spacing = minrat1 * dvct
+        elif dvct < dvct2:
             # limitation factor changes from minrat1 to minrat2
-            wfac = ((dvct2-dvct)/(dvct2-dvct1))**2
-            min_lay_spacing = (minrat1*wfac + minrat2*(1.0 - wfac))*dvct
+            wfac = ((dvct2 - dvct) / (dvct2 - dvct1)) ** 2
+            min_lay_spacing = (minrat1 * wfac + minrat2 * (1.0 - wfac)) * dvct
         else:
             # limitation factor decreases again
-            min_lay_spacing = minrat2*dvct2*(dvct/dvct2)**(1.0/3.0)
+            min_lay_spacing = minrat2 * dvct2 * (dvct / dvct2) ** (1.0 / 3.0)
 
         min_lay_spacing = max(min_lay_spacing, min(50, vertical_config.lowest_layer_thickness))
 
         # Ensure that the layer thickness is not too small, if so fix it and
         # save the layer index
-        cell_ids = xp.argwhere(z3d_i[:,k+1] + min_lay_spacing > z3d_i[:,k])
-        z3d_i[cell_ids,k] = z3d_i[cell_ids,k+1] + min_lay_spacing
+        cell_ids = xp.argwhere(z3d_i[:, k + 1] + min_lay_spacing > z3d_i[:, k])
+        z3d_i[cell_ids, k] = z3d_i[cell_ids, k + 1] + min_lay_spacing
         ktop_thicklimit[cell_ids] = k
 
     # Smooth layer thickness ratios in the transition layer of columns where the
     # thickness limiter has been active (exclude lowest and highest layers)
-    cell_ids = xp.argwhere(ktop_thicklimit <= grid.num_levels-3 and ktop_thicklimit >= 3)
-    dz1 = z3d_i[cell_ids, ktop_thicklimit[cell_ids]+1] - z3d_i[cell_ids, ktop_thicklimit[cell_ids]+2]
-    dz2 = z3d_i[cell_ids, ktop_thicklimit[cell_ids]-3] - z3d_i[cell_ids, ktop_thicklimit[cell_ids]-2]
-    dzr = (dz2/dz1)**0.25 # stretching factor
-    dz3 = (z3d_i[cell_ids, ktop_thicklimit[cell_ids]-2] - z3d_i[cell_ids, ktop_thicklimit[cell_ids]+1])/(dzr*(1.0 + dzr*(1.0 + dzr)))
-    z3d_i[cell_ids, ktop_thicklimit[cell_ids]] = xp.maximum(z3d_i[cell_ids, ktop_thicklimit[cell_ids]], z3d_i[cell_ids, ktop_thicklimit[cell_ids]+1] + dz3*dzr)
-    z3d_i[cell_ids, ktop_thicklimit[cell_ids]-1] = xp.maximum(z3d_i[cell_ids, ktop_thicklimit[cell_ids]-1], z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + dz3*dzr*dzr)
+    cell_ids = xp.argwhere(ktop_thicklimit <= grid.num_levels - 3 and ktop_thicklimit >= 3)
+    dz1 = (
+        z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
+        - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 2]
+    )
+    dz2 = (
+        z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 3]
+        - z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
+    )
+    dzr = (dz2 / dz1) ** 0.25  # stretching factor
+    dz3 = (
+        z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
+        - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
+    ) / (dzr * (1.0 + dzr * (1.0 + dzr)))
+    z3d_i[cell_ids, ktop_thicklimit[cell_ids]] = xp.maximum(
+        z3d_i[cell_ids, ktop_thicklimit[cell_ids]],
+        z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1] + dz3 * dzr,
+    )
+    z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1] = xp.maximum(
+        z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1],
+        z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + dz3 * dzr * dzr,
+    )
 
     # Check if level nflatlev is still flat
     try:
-        assert xp.all(z3d_i[:,vertical_geometry.nflatlev] == vct_a[vertical_geometry.nflatlev+nshift])
+        assert xp.all(
+            z3d_i[:, vertical_geometry.nflatlev] == vct_a[vertical_geometry.nflatlev + nshift]
+        )
     except AssertionError:
         log.error("Level nflatlev is not flat")
         exit(1)
@@ -582,6 +613,8 @@ def init_vert_coord(
             log.error(f"Model top is too low and num_levels, {vertical_config.num_levels}, > 6.")
             exit(1)
         else:
-            log.warning(f"Model top is too low. But num_levels, {vertical_config.num_levels}, <= 6. ")
+            log.warning(
+                f"Model top is too low. But num_levels, {vertical_config.num_levels}, <= 6. "
+            )
 
     return gtx.as_field((dims.CellDim, dims.KDim), z3d_i)
