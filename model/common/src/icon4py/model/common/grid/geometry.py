@@ -302,7 +302,7 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
     return 4.0 * math.pi * radius**2 / num_cells
 
 
-InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA]
+InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
 
 
 class GridGeometry(state_utils.FieldSource):
@@ -400,18 +400,18 @@ class GridGeometry(state_utils.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.LOCAL)
                 )
             },
             fields={
                 "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
-                "far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH,
+                "far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH
             },
             deps={
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
                 "cell_lat": attrs.CELL_LAT,
-                "cell_lon": attrs.CELL_LON,
+                "cell_lon": attrs.CELL_LON
             },
             params={"radius": self._grid.global_properties.length},
         )
@@ -451,7 +451,7 @@ class GridGeometry(state_utils.FieldSource):
             deps={
                 "owner_mask": "edge_owner_mask",
                 "primal_edge_length": attrs.EDGE_LENGTH,
-                "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
+                "dual_edge_length": attrs.DUAL_EDGE_LENGTH
             },
             fields={"area": attrs.EDGE_AREA},
             domain={

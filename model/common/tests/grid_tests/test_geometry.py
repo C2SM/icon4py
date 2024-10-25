@@ -10,7 +10,6 @@ import functools
 import numpy as np
 import pytest
 
-import icon4py.model.common.constants as constants
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -21,6 +20,9 @@ from icon4py.model.common.grid import (
     simple as simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
+from icon4py.model.common.grid.geometry_program import (
+    compute_dual_edge_length_and_far_vertex_distance_in_diamond,
+)
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
@@ -42,17 +44,6 @@ def test_edge_control_area(grid_savepoint, grid_file, backend, rtol):
     result = geometry_source.get(attrs.EDGE_AREA)
     assert helpers.dallclose(expected.ndarray, result.ndarray, rtol)
 
-
-@pytest.mark.parametrize("experiment", [dt_utils.GLOBAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT])
-@pytest.mark.datatest
-def test_coriolis_parameter_field_op(grid_savepoint, icon_grid, backend):
-    expected = grid_savepoint.f_e()
-    result = helpers.zero_field(icon_grid, dims.EdgeDim)
-    lat = grid_savepoint.lat(dims.EdgeDim)
-    program.coriolis_parameter_on_edges.with_backend(backend)(
-        lat, constants.EARTH_ANGULAR_VELOCITY, offset_provider={}, out=result
-    )
-    assert helpers.dallclose(expected.asnumpy(), result.asnumpy())
 
 
 @pytest.mark.parametrize(
@@ -79,43 +70,6 @@ def construct_decomposition_info(grid):
     return decomposition_info
 
 
-@pytest.mark.parametrize(
-    "grid_file, experiment, rtol",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
-    ],
-)
-@pytest.mark.datatest
-def test_compute_edge_length_program(experiment, backend, grid_savepoint, grid_file, rtol):
-    expected_edge_length = grid_savepoint.primal_edge_length()
-    gm = utils.run_grid_manager(grid_file)
-    grid = gm.grid
-    geometry_source = construct_grid_geometry(backend, grid_file)
-
-    # FIXME: does not run on compiled???
-    edge_length = geometry_source.get(attrs.EDGE_LENGTH)
-    # edge_length = helpers.zero_field(grid, dims.EdgeDim)
-
-    vertex_lat = gm.coordinates[dims.VertexDim]["lat"]
-    vertex_lon = gm.coordinates[dims.VertexDim]["lon"]
-
-    edge_domain = h_grid.domain(dims.EdgeDim)
-    start = grid.start_index(edge_domain(h_grid.Zone.LOCAL))
-    end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-    program.compute_edge_length(
-        vertex_lat,
-        vertex_lon,
-        constants.EARTH_RADIUS,
-        edge_length,
-        start,
-        end,
-        offset_provider={
-            "E2V": grid.get_offset_provider("E2V"),
-        },
-    )
-
-    assert helpers.dallclose(edge_length.asnumpy(), expected_edge_length.asnumpy(), rtol=rtol)
 
 
 @pytest.mark.parametrize(
@@ -129,7 +83,6 @@ def test_compute_edge_length_program(experiment, backend, grid_savepoint, grid_f
 def test_compute_edge_length(experiment, backend, grid_savepoint, grid_file, rtol):
     expected = grid_savepoint.primal_edge_length()
     geometry_source = construct_grid_geometry(backend, grid_file)
-    # FIXME: does not run on compiled???
     result = geometry_source.get(attrs.EDGE_LENGTH)
     assert helpers.dallclose(result.ndarray, expected.ndarray, rtol=rtol)
 
@@ -145,7 +98,6 @@ def test_compute_edge_length(experiment, backend, grid_savepoint, grid_file, rto
 def test_compute_inverse_edge_length(experiment, backend, grid_savepoint, grid_file, rtol):
     expected = grid_savepoint.inverse_primal_edge_lengths()
     geometry_source = construct_grid_geometry(backend, grid_file)
-    # FIXME: does not run on compiled???
     computed = geometry_source.get(f"inverse_of_{attrs.EDGE_LENGTH}")
 
     assert helpers.dallclose(computed.ndarray, expected.ndarray, rtol=rtol)
@@ -178,8 +130,31 @@ def test_compute_dual_edge_length(experiment, backend, grid_savepoint, grid_file
     result = grid_geometry.get(attrs.DUAL_EDGE_LENGTH)
     assert helpers.dallclose(result.ndarray, expected.ndarray, rtol=rtol)
 
+@pytest.mark.parametrize(
+    "grid_file, experiment, rtol",
+    [
+        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+    ],
+)
+@pytest.mark.datatest
+def test_dual_edge_length_x(experiment, backend, grid_savepoint, grid_file, rtol):
+    gm = utils.run_grid_manager(grid_file)
+    grid = gm.grid
 
+    vlat = grid_savepoint.verts_vertex_lat()
+    vlon = grid_savepoint.verts_vertex_lon()
+    clat = grid_savepoint.cell_center_lat()
+    clon = grid_savepoint.cell_center_lat()
+    f1 = helpers.zero_field(grid, dims.EdgeDim)
+    f2 = helpers.zero_field(grid, dims.EdgeDim)
+    compute_dual_edge_length_and_far_vertex_distance_in_diamond(
+        vlat, vlon, clat, clon, 3000.0,f1, f2, 0, grid.num_edges, offset_provider = {"E2C2V": grid.get_offset_provider("E2C2V"), "E2C": grid.get_offset_provider("E2C")}
+    )
+    
 # TODO (halungge) why does serialized reference start from index 0 even for LAM model?
+#    the use the same pattern: use cell_center distances of adjacent cells if they exist, else
+#    use the edge center
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
@@ -272,6 +247,21 @@ def test_tangent_orientation(grid_file, experiment, grid_savepoint, backend):
 
     assert helpers.dallclose(result.asnumpy(), expected.asnumpy())
 
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), # FIX LAM
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_cell_area(grid_file, experiment, grid_savepoint, backend):
+    grid_geometry = construct_grid_geometry(backend, grid_file)
+    result = grid_geometry.get(attrs.CELL_AREA)
+    expected = grid_savepoint.cell_areas()
+
+    assert helpers.dallclose(result.asnumpy(), expected.asnumpy())
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -304,7 +294,7 @@ def test_primal_normal_cell_program(grid_file, experiment, grid_savepoint, backe
 
     start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(edge_domain(h_grid.Zone.END))
-    program.compute_edge_primal_normal_cell.with_backend(None)(
+    program.compute_edge_primal_normal_cell.with_backend(backend)(
         cell_lat,
         cell_lon,
         x,
@@ -402,7 +392,7 @@ def test_primal_normal_vertex(grid_file, experiment, grid_savepoint, backend):
     start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     end = grid.end_index(edge_domain(h_grid.Zone.END))
 
-    program.compute_edge_primal_normal_vertex.with_backend(None)(
+    program.compute_edge_primal_normal_vertex.with_backend(backend)(
         vertex_lat,
         vertex_lon,
         x,

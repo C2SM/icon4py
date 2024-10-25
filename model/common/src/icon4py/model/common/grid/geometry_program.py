@@ -20,7 +20,6 @@ from icon4py.model.common.math.helpers import (
     spherical_to_cartesian_on_vertex,
     zonal_and_meridional_components_on_edges,
 )
-from icon4py.model.common.type_alias import wpfloat
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -34,7 +33,7 @@ def cartesian_coordinates_of_edge_tangent(
     That is the distance between the two vertices adjacent to the edge:
     t = d(v1, v2)
     """
-    vertex_x, vertex_y, vertex_z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
+    vertex_x, vertex_y, vertex_z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon)
     x = vertex_x(E2V[1]) - vertex_x(E2V[0])
     y = vertex_y(E2V[1]) - vertex_y(E2V[0])
     z = vertex_z(E2V[1]) - vertex_z(E2V[0])
@@ -61,9 +60,9 @@ def cartesian_coordinates_of_edge_normal(
     That is edge_center x |v1 - v2|, where v1 and v2 are the two vertices adjacent to an edge.
     """
     edge_center_x, edge_center_y, edge_center_z = spherical_to_cartesian_on_edges(
-        edge_lat, edge_lon, r=1.0
+        edge_lat, edge_lon
     )
-    cell_x, cell_y, cell_z = spherical_to_cartesian_on_cells(cell_lat, cell_lon, r=1.0)
+    cell_x, cell_y, cell_z = spherical_to_cartesian_on_cells(cell_lat, cell_lon)
     cell_distance_x = cell_x(E2C[1]) - cell_x(E2C[0])
     cell_distance_y = cell_y(E2C[1]) - cell_y(E2C[0])
     cell_distance_z = cell_z(E2C[1]) - cell_z(E2C[0])
@@ -293,7 +292,7 @@ def compute_edge_primal_normal_cell(
     )
 
 
-@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.field_operator
 def cell_center_arc_distance(
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
@@ -304,7 +303,7 @@ def cell_center_arc_distance(
     Distance between the cell center of edge adjacent cells. This is a edge of the dual grid and is
     orthogonal to the edge. dual_edge_length in ICON.
     """
-    x, y, z = spherical_to_cartesian_on_cells(cell_lat, cell_lon, wpfloat(1.0))
+    x, y, z = spherical_to_cartesian_on_cells(cell_lat, cell_lon)
     x0 = x(E2C[0])
     x1 = x(E2C[1])
     y0 = y(E2C[0])
@@ -316,17 +315,17 @@ def cell_center_arc_distance(
     return arc
 
 
-@gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
+@gtx.field_operator
 def compute_arc_distance_of_far_edges_in_diamond(
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     radius: ta.wpfloat,
 ) -> fa.EdgeField[ta.wpfloat]:
     """Computes the length of a spherical edges
-    - the direct edge length (primal_edge_length in ICON)ü
+    - the direct edge length (primal_edge_length in ICON)
     - the length of the arc between the two far vertices in the diamond E2C2V (vertex_vertex_length in ICON)
     """
-    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
+    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon)
     x2 = x(E2C2V[2])
     x3 = x(E2C2V[3])
     y2 = y(E2C2V[2])
@@ -351,7 +350,7 @@ def compute_primal_edge_length(
     The computation is the same as for the arc length between the far vertices in the E2C2V diamond but
     and could be done using the E2C2V connectivity, but is has different bounds, as there are no skip values for the edge adjacent vertices.
     """
-    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon, 1.0)
+    x, y, z = spherical_to_cartesian_on_vertex(vertex_lat, vertex_lon)
     x0 = x(E2V[0])
     x1 = x(E2V[1])
     y0 = y(E2V[0])
@@ -416,14 +415,14 @@ def compute_dual_edge_length_and_far_vertex_distance_in_diamond(
         cell_lon=cell_lon,
         radius=radius,
         out=(far_vertex_distance, dual_edge_length),
-        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
     )
 
 
 @gtx.field_operator
 def edge_area(
     owner_mask: fa.EdgeField[bool],
-    primal_edge_length: fa.EdgeField[fa.wpfloat],
+    primal_edge_length: fa.EdgeField[ta.wpfloat],
     dual_edge_length: fa.EdgeField[ta.wpfloat],
 ) -> fa.EdgeField[ta.wpfloat]:
     """compute the edge_area"""
@@ -433,7 +432,7 @@ def edge_area(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_edge_area(
     owner_mask: fa.EdgeField[bool],
-    primal_edge_length: fa.EdgeField[fa.wpfloat],
+    primal_edge_length: fa.EdgeField[ta.wpfloat],
     dual_edge_length: fa.EdgeField[ta.wpfloat],
     area: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
@@ -444,7 +443,7 @@ def compute_edge_area(
         primal_edge_length,
         dual_edge_length,
         out=area,
-        domain={EdgeDim: (horizontal_start, horizontal_end)},
+        domain={EdgeDim: (horizontal_start, horizontal_end)}
     )
 
 
@@ -469,5 +468,5 @@ def compute_coriolis_parameter_on_edges(
         edge_center_lat,
         angular_velocity,
         out=coriolis_parameter,
-        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
     )

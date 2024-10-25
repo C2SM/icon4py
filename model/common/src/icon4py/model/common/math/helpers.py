@@ -119,31 +119,31 @@ def _grad_fd_tang(
 
 @gtx.field_operator
 def spherical_to_cartesian_on_cells(
-    lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat], r: ta.wpfloat
+    lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat]
 ) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
-    x = r * cos(lat) * cos(lon)
-    y = r * cos(lat) * sin(lon)
-    z = r * sin(lat)
+    x = cos(lat) * cos(lon)
+    y = cos(lat) * sin(lon)
+    z = sin(lat)
     return x, y, z
 
 
 @gtx.field_operator
 def spherical_to_cartesian_on_edges(
-    lat: fa.EdgeField[ta.wpfloat], lon: fa.EdgeField[ta.wpfloat], r: ta.wpfloat
+    lat: fa.EdgeField[ta.wpfloat], lon: fa.EdgeField[ta.wpfloat]
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
-    x = r * cos(lat) * cos(lon)
-    y = r * cos(lat) * sin(lon)
-    z = r * sin(lat)
+    x = cos(lat) * cos(lon)
+    y = cos(lat) * sin(lon)
+    z = sin(lat)
     return x, y, z
 
 
 @gtx.field_operator
 def spherical_to_cartesian_on_vertex(
-    lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat], r: ta.wpfloat
+    lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat]
 ) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
-    x = r * cos(lat) * cos(lon)
-    y = r * cos(lat) * sin(lon)
-    z = r * sin(lat)
+    x = cos(lat) * cos(lon)
+    y = cos(lat) * sin(lon)
+    z = sin(lat)
     return x, y, z
 
 
@@ -196,7 +196,7 @@ def invert(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
     return where(f != 0.0, 1.0 / f, f)
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_inverse(
     f: fa.EdgeField[ta.wpfloat],
     f_inverse: fa.EdgeField[ta.wpfloat],
@@ -244,7 +244,7 @@ def zonal_and_meridional_components_on_edges(
     return u / norm, v / norm
 
 
-@gtx.program
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_components_on_edges(
     lat: fa.EdgeField[ta.wpfloat],
     lon: fa.EdgeField[ta.wpfloat],
