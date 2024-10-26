@@ -789,8 +789,8 @@ class SolveNonhydro:
                 \exnerprime{\ntilde}{\c}{\nlev} = 0
                 $$
                 Compute the temporal extrapolation of perturbed exner function
-                using the time backward scheme (see the |ICONTutorial| page 74)
-                for horizontal momentum equations.
+                using the time backward scheme for horizontal momentum equations
+                (see the |ICONTutorial| page 74).
             - exner_pr :
                 $$
                 \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}, \qquad \k \in [0, \nlev)
@@ -830,18 +830,18 @@ class SolveNonhydro:
                     on quadratic extrapolation (with hydrostatic assumption?).
                 - z_dexner_dz_c_1 :
                     $$
-                    \pdz{\exnerprime{\ntilde}{\c}{\k}} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz_{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
+                    \pdz{\exnerprime{\ntilde}{\c}{\k}} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
                     $$
                     And use the interpolated values to compute the vertical
                     derivative of perturbation exner at full levels (first order
-                    scheme). flat_lev is the height (inclusive) above which the
+                    scheme). $\nflatlev$ is the height (inclusive) above which the
                     grid is not affected by terrain following.
 
             Inputs:
                 - $\nu$ : wgtfac_c
                 - $\beta_{\k}$ : wgtfacq_c
                 - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
-                - $1 / \Dz_{\k}$ : inv_ddqz_z_full
+                - $1 / \Dz{\k}$ : inv_ddqz_z_full
             """
             nhsolve_prog.predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,

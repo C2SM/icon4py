@@ -22,8 +22,8 @@
 \renewcommand{\sum}{\Large{\Sigma}} % move sub/superscripts of sum symbol
 
 % Glyph sizes
-\newcommand{\superscriptsize}{\scriptsize}
-\newcommand{\subscriptsize}{\scriptsize}
+\newcommand{\superscriptsize}{\scriptscriptstyle}
+\newcommand{\subscriptsize}{\scriptscriptstyle}
 
 % Colors
 \newcommand{\timecolor}[1]{\color{teal}{#1}}
@@ -31,28 +31,38 @@
 \newcommand{\horicolor}[1]{\color{RedViolet}{#1}}
 
 %===============================================================================
-% Maths
+% Numerics
+
+% Discretization points
+\newcommand{\timestep}[1]{{\subscriptsize{\timecolor{#1}}}}
+\newcommand{\vertlevel}[1]{{\subscriptsize{\vertcolor{#1}}}}
+\newcommand{\horipoint}[1]{{\subscriptsize{\horicolor{#1}}}}
 
 % Differentials and deltas
 \newcommand{\dif}{\mathrm{d}}
 \newcommand{\Dt}{{\Delta t}}
-\newcommand{\Dz}{{\Delta z}}
+\newcommand{\Dz}[1]{{\Delta z}_\vertlevel{#1}}
+\newcommand{\hdivergence}[1]{\vec{\nabla}\!_h\cdot\left(#1\right)}
 
 % Derivatives
 \newcommand{\ddt}[1]{\frac{\dif #1}{\dif t}}
 \newcommand{\ddz}[1]{\frac{\dif #1}{\dif z}}
 \newcommand{\pdt}[1]{\frac{\partial #1}{\partial t}}
+\newcommand{\pdn}[1]{\frac{\partial #1}{\partial n}}
 \newcommand{\pdz}[1]{\frac{\partial #1}{\partial z}}
 
 % Variables with helper macro for formatting superscript and subscript
-\newcommand{\variable}[4]{{#1}^{\superscriptsize\timecolor{#2}}_{\subscriptsize{\horicolor{#3}},\,{\vertcolor{#4}}}}
-\newcommand{\vn}[3]{         \variable{v_n      }{#1}{#2}{#3}}
-\newcommand{\vt}[3]{         \variable{v_t      }{#1}{#2}{#3}}
-\newcommand{\vh}[3]{         \variable{v_h      }{#1}{#2}{#3}}
-\newcommand{\thetav}[3]{     \variable{\theta_v }{#1}{#2}{#3}}
-\newcommand{\thetavprime}[3]{\variable{\theta_v'}{#1}{#2}{#3}}
-\newcommand{\exner}[3]{      \variable{\pi      }{#1}{#2}{#3}}
-\newcommand{\exnerprime}[3]{ \variable{\pi'     }{#1}{#2}{#3}}
+\newcommand{\variable}[4]{{{#1}_{\horipoint{#3}\,\vertlevel{#4}}^{\timestep{#2}}}}
+\newcommand{\vn}[3]{        \variable{v_n      }{#1}{#2}{#3}}
+\newcommand{\vt}[3]{        \variable{v_t      }{#1}{#2}{#3}}
+\newcommand{\vh}[3]{        \variable{\vec{v_h}}{#1}{#2}{#3}}
+\newcommand{\w}[3]{         \variable{w        }{#1}{#2}{#3}}
+\newcommand{\density}[3]{   \variable{\rho     }{#1}{#2}{#3}}
+\newcommand{\vtemp}[3]{     \variable{\theta_v }{#1}{#2}{#3}}
+\newcommand{\vtempprime}[3]{\variable{\theta_v'}{#1}{#2}{#3}}
+\newcommand{\exner}[3]{     \variable{\pi      }{#1}{#2}{#3}}
+\newcommand{\exnerprime}[3]{\variable{\pi'     }{#1}{#2}{#3}}
+\newcommand{\exnerref}[3]{  \variable{\pi_0    }{#1}{#2}{#3}}
 
 % Physical constants
 \newcommand{\cpd}{c_{pd}}
@@ -66,10 +76,10 @@
 \newcommand{\n}{{\timecolor{n}}}
 \newcommand{\ntilde}{{\timecolor{\tilde{\n}}}}
 
-# Vertical levels
+% Vertical levels
 \renewcommand{\k}{{\vertcolor{k}}}
 
 % Horizontal discretization
-\newcommand{\c}{{\horicolor{c}}}
+\renewcommand{\c}{{\horicolor{c}}}
 \newcommand{\e}{{\horicolor{e}}}
-\newcommand{\v}{{\horicolor{v}}}
+\renewcommand{\v}{{\horicolor{v}}}
