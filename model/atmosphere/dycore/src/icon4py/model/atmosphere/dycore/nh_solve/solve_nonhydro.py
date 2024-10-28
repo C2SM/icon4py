@@ -747,6 +747,9 @@ class SolveNonhydro:
             else:
                 lvn_only = False
 
+            log.info(
+                f"running velocity_advection.run_predictor_step {lvn_only=}"
+            )
             self.velocity_advection.run_predictor_step(
                 vn_only=lvn_only,
                 diagnostic_state=diagnostic_state_nh,
@@ -759,6 +762,9 @@ class SolveNonhydro:
                 cell_areas=self.cell_params.area,
             )
 
+        # log.info(
+        #         f"running solve_nh_utils.compute_z_raylfac {lvn_only=}"
+        #     )
         #  Precompute Rayleigh damping factor
         solve_nh_utils.compute_z_raylfac(
             rayleigh_w=self.metric_state_nonhydro.rayleigh_w,
@@ -769,6 +775,9 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
+            log.info(
+                f"running init_two_cell_kdim_fields_with_zero_vp"
+            )
             init_two_cell_kdim_fields_with_zero_vp(
                 cell_kdim_field_with_zero_vp_1=self.z_rth_pr_1,
                 cell_kdim_field_with_zero_vp_2=self.z_rth_pr_2,
@@ -778,43 +787,76 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-
-        nhsolve_prog.predictor_stencils_2_3(
-            exner_exfac=self.metric_state_nonhydro.exner_exfac,
-            exner=prognostic_state[nnow].exner,
-            exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
-            exner_pr=diagnostic_state_nh.exner_pr,
-            z_exner_ex_pr=self.z_exner_ex_pr,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_halo,
-            k_field=self.k_field,
-            nlev=self.grid.num_levels,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
-            offset_provider={},
-        )
-
-        if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            nhsolve_prog.predictor_stencils_4_5_6(
-                wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
-                z_exner_ex_pr=self.z_exner_ex_pr,
-                z_exner_ic=self.z_exner_ic,
-                wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
-                inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-                z_dexner_dz_c_1=self.z_dexner_dz_c_1,
-                k_field=self.k_field,
-                nlev=self.grid.num_levels,
-                horizontal_start=self._start_cell_lateral_boundary_level_3,
-                horizontal_end=self._end_cell_halo,
-                vertical_start=max(1, self.vertical_params.nflatlev),
-                vertical_end=self.grid.num_levels + 1,
-                offset_provider=self.grid.offset_providers,
+        log.info(
+                f"nhsolve_prog.predictor_stencils_2_3"
             )
+        log.info("==SKIPPED==")
+        # nhsolve_prog.predictor_stencils_2_3(
+        #     exner_exfac=self.metric_state_nonhydro.exner_exfac,
+        #     exner=prognostic_state[nnow].exner,
+        #     exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
+        #     exner_pr=diagnostic_state_nh.exner_pr,
+        #     z_exner_ex_pr=self.z_exner_ex_pr,
+        #     horizontal_start=self._start_cell_lateral_boundary_level_3,
+        #     horizontal_end=self._end_cell_halo,
+        #     k_field=self.k_field,
+        #     nlev=self.grid.num_levels,
+        #     vertical_start=0,
+        #     vertical_end=self.grid.num_levels + 1,
+        #     offset_provider={},
+        # )
+
+        
+        log.info(f"{self.config.igradp_method=}")
+        if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+            log.info(f"{self.metric_state_nonhydro.wgtfacq_c}, type={type(self.metric_state_nonhydro.wgtfacq_c)}")
+            log.info(f"{self.z_exner_ex_pr}, type={type(self.z_exner_ex_pr)}")
+            log.info(f"{self.z_exner_ic}, type={type(self.z_exner_ic)}")
+            log.info(f"{self.metric_state_nonhydro.wgtfac_c}, type={type(self.metric_state_nonhydro.wgtfac_c)}")
+            log.info(f"{self.metric_state_nonhydro.inv_ddqz_z_full}, type={type(self.metric_state_nonhydro.inv_ddqz_z_full)}")
+            log.info(f"{self.z_dexner_dz_c_1}, type={type(self.z_dexner_dz_c_1)}")
+            log.info(f"{self.k_field}, type={type(self.k_field)}")
+            log.info(f"{self.grid.num_levels}, type={type(self.grid.num_levels)}")
+            log.info(f"{self._start_cell_lateral_boundary_level_3}, type={type(self._start_cell_lateral_boundary_level_3)}")
+            log.info(f"{self._end_cell_halo}, type={type(self._end_cell_halo)}")
+            log.info(max(1, self.vertical_params.nflatlev))
+            log.info(f"{self.grid.num_levels + 1}, type={type(self.grid.num_levels + 1)}")
+
+            import cupy as cp
+            mempool = cp.get_default_memory_pool()
+
+            # You can access statistics of these memory pools.
+            log.info(f"{mempool.used_bytes()}")              # 0
+            log.info(f"{mempool.total_bytes()}")             # 0
+
+            # exit(1)
+            log.info(
+                f"nhsolve_prog.predictor_stencils_4_5_6"
+            )
+            log.info("==SKIPPED==")
+            # nhsolve_prog.predictor_stencils_4_5_6(
+            #     wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
+            #     z_exner_ex_pr=self.z_exner_ex_pr,
+            #     z_exner_ic=self.z_exner_ic,
+            #     wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+            #     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+            #     z_dexner_dz_c_1=self.z_dexner_dz_c_1,
+            #     k_field=self.k_field,
+            #     nlev=self.grid.num_levels,
+            #     horizontal_start=self._start_cell_lateral_boundary_level_3,
+            #     horizontal_end=self._end_cell_halo,
+            #     vertical_start=max(1, self.vertical_params.nflatlev),
+            #     vertical_end=self.grid.num_levels + 1,
+            #     offset_provider=self.grid.offset_providers,
+            # )
 
             if self.vertical_params.nflatlev == 1:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
-
+        log.info(
+                f"nhsolve_prog.compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels"
+            )
+        # log.info("==SKIPPED==")
         nhsolve_prog.compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
@@ -834,6 +876,9 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
+        log.info(
+                f"compute_pressure_gradient"
+            )
         compute_pressure_gradient(
             vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
@@ -1112,6 +1157,7 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
         self._exchange.exchange_and_wait(dims.EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e)
 
+        log.info(f"compute_avg_vn_and_graddiv_vn_and_vt")
         compute_avg_vn_and_graddiv_vn_and_vt(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
@@ -1127,6 +1173,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
+        log.info("compute_mass_flux")
         compute_mass_flux(
             z_rho_e=z_fields.z_rho_e,
             z_vn_avg=self.z_vn_avg,
@@ -1141,6 +1188,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
+        log.info("predictor_stencils_35_36")
         nhsolve_prog.predictor_stencils_35_36(
             vn=prognostic_state[nnew].vn,
             ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
@@ -1161,6 +1209,7 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
+            log.info("predictor_stencils_37_38")
             nhsolve_prog.predictor_stencils_37_38(
                 vn=prognostic_state[nnew].vn,
                 vt=diagnostic_state_nh.vt,
@@ -1175,6 +1224,7 @@ class SolveNonhydro:
                 offset_provider=self.grid.offset_providers,
             )
 
+        log.info("stencils_39_40")
         nhsolve_prog.stencils_39_40(
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_w_concorr_me=self.z_w_concorr_me,
@@ -1191,6 +1241,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
+        log.info("compute_divergence_of_fluxes_of_rho_and_theta")
         compute_divergence_of_fluxes_of_rho_and_theta(
             geofac_div=self.interpolation_state.geofac_div,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
@@ -1204,70 +1255,76 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        nhsolve_prog.stencils_43_44_45_45b(
-            z_w_expl=z_fields.z_w_expl,
-            w_nnow=prognostic_state[nnow].w,
-            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
-            z_th_ddz_exner_c=self.z_th_ddz_exner_c,
-            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            rho_ic=diagnostic_state_nh.rho_ic,
-            w_concorr_c=diagnostic_state_nh.w_concorr_c,
-            vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
-            z_beta=z_fields.z_beta,
-            exner_nnow=prognostic_state[nnow].exner,
-            rho_nnow=prognostic_state[nnow].rho,
-            theta_v_nnow=prognostic_state[nnow].theta_v,
-            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-            z_alpha=z_fields.z_alpha,
-            vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
-            z_q=z_fields.z_q,
-            k_field=self.k_field,
-            rd=constants.RD,
-            cvd=constants.CVD,
-            dtime=dtime,
-            cpd=constants.CPD,
-            nlev=self.grid.num_levels,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
-            offset_provider={},
-        )
+        log.info("stencils_43_44_45_45b")
+        log.info("==SKIPPED==")
+        # nhsolve_prog.stencils_43_44_45_45b(
+        #     z_w_expl=z_fields.z_w_expl,
+        #     w_nnow=prognostic_state[nnow].w,
+        #     ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
+        #     z_th_ddz_exner_c=self.z_th_ddz_exner_c,
+        #     z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+        #     rho_ic=diagnostic_state_nh.rho_ic,
+        #     w_concorr_c=diagnostic_state_nh.w_concorr_c,
+        #     vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
+        #     z_beta=z_fields.z_beta,
+        #     exner_nnow=prognostic_state[nnow].exner,
+        #     rho_nnow=prognostic_state[nnow].rho,
+        #     theta_v_nnow=prognostic_state[nnow].theta_v,
+        #     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+        #     z_alpha=z_fields.z_alpha,
+        #     vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
+        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
+        #     z_q=z_fields.z_q,
+        #     k_field=self.k_field,
+        #     rd=constants.RD,
+        #     cvd=constants.CVD,
+        #     dtime=dtime,
+        #     cpd=constants.CPD,
+        #     nlev=self.grid.num_levels,
+        #     horizontal_start=self._start_cell_nudging,
+        #     horizontal_end=self._end_cell_local,
+        #     vertical_start=0,
+        #     vertical_end=self.grid.num_levels + 1,
+        #     offset_provider={},
+        # )
 
         if not self.l_vert_nested:
-            init_two_cell_kdim_fields_with_zero_wp(
-                cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
-                cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=0,
-                vertical_end=1,
-                offset_provider={},
-            )
-        nhsolve_prog.stencils_47_48_49(
-            w_nnew=prognostic_state[nnew].w,
-            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            w_concorr_c=diagnostic_state_nh.w_concorr_c,
-            z_rho_expl=z_fields.z_rho_expl,
-            z_exner_expl=z_fields.z_exner_expl,
-            rho_nnow=prognostic_state[nnow].rho,
-            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-            z_flxdiv_mass=self.z_flxdiv_mass,
-            exner_pr=diagnostic_state_nh.exner_pr,
-            z_beta=z_fields.z_beta,
-            z_flxdiv_theta=self.z_flxdiv_theta,
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
-            ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
-            k_field=self.k_field,
-            dtime=dtime,
-            nlev=self.grid.num_levels,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providers,
-        )
+            log.info("init_two_cell_kdim_fields_with_zero_wp")
+            log.info("==SKIPPED==")
+            # init_two_cell_kdim_fields_with_zero_wp(
+            #     cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
+            #     cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
+            #     horizontal_start=self._start_cell_nudging,
+            #     horizontal_end=self._end_cell_local,
+            #     vertical_start=0,
+            #     vertical_end=1,
+            #     offset_provider={},
+            # )
+        log.info("stencils_47_48_49")
+        log.info("==SKIPPED==")
+        # nhsolve_prog.stencils_47_48_49(
+        #     w_nnew=prognostic_state[nnew].w,
+        #     z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+        #     w_concorr_c=diagnostic_state_nh.w_concorr_c,
+        #     z_rho_expl=z_fields.z_rho_expl,
+        #     z_exner_expl=z_fields.z_exner_expl,
+        #     rho_nnow=prognostic_state[nnow].rho,
+        #     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+        #     z_flxdiv_mass=self.z_flxdiv_mass,
+        #     exner_pr=diagnostic_state_nh.exner_pr,
+        #     z_beta=z_fields.z_beta,
+        #     z_flxdiv_theta=self.z_flxdiv_theta,
+        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
+        #     ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
+        #     k_field=self.k_field,
+        #     dtime=dtime,
+        #     nlev=self.grid.num_levels,
+        #     horizontal_start=self._start_cell_nudging,
+        #     horizontal_end=self._end_cell_local,
+        #     vertical_start=0,
+        #     vertical_end=self.grid.num_levels + 1,
+        #     offset_provider=self.grid.offset_providers,
+        # )
 
         if self.config.is_iau_active:
             add_analysis_increments_from_data_assimilation(
@@ -1283,6 +1340,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        log.info("solve_tridiagonal_matrix_for_w_forward_sweep")
         solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
@@ -1313,6 +1371,7 @@ class SolveNonhydro:
         )
 
         if self.config.rayleigh_type == constants.RayleighType.KLEMP:
+            log.info("apply_rayleigh_damping_mechanism")
             apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -1353,6 +1412,7 @@ class SolveNonhydro:
 
         # compute dw/dz for divergence damping term
         if self.config.divdamp_type >= 3:
+            log.info("compute_dwdz_for_divergence_damping")
             compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
@@ -1677,18 +1737,18 @@ class SolveNonhydro:
 
         # verified for e-9
         log.debug(f"corrector: start stencil 41")
-        compute_divergence_of_fluxes_of_rho_and_theta(
-            geofac_div=self.interpolation_state.geofac_div,
-            mass_fl_e=diagnostic_state_nh.mass_fl_e,
-            z_theta_v_fl_e=self.z_theta_v_fl_e,
-            z_flxdiv_mass=self.z_flxdiv_mass,
-            z_flxdiv_theta=self.z_flxdiv_theta,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
+        # compute_divergence_of_fluxes_of_rho_and_theta(
+        #     geofac_div=self.interpolation_state.geofac_div,
+        #     mass_fl_e=diagnostic_state_nh.mass_fl_e,
+        #     z_theta_v_fl_e=self.z_theta_v_fl_e,
+        #     z_flxdiv_mass=self.z_flxdiv_mass,
+        #     z_flxdiv_theta=self.z_flxdiv_theta,
+        #     horizontal_start=self._start_cell_nudging,
+        #     horizontal_end=self._end_cell_local,
+        #     vertical_start=0,
+        #     vertical_end=self.grid.num_levels,
+        #     offset_provider=self.grid.offset_providers,
+        # )
 
         if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
             log.debug(f"corrector start stencil 42 44 45 45b")

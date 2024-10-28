@@ -14,6 +14,7 @@ from typing import Callable
 
 import click
 from devtools import Timer
+from scalene import scalene_profiler
 
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
@@ -165,6 +166,8 @@ class TimeLoop:
         )
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
+            if time_step == 1:
+                scalene_profiler.start()
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
                 f" MAX VN: {prognostic_state_list[self._now].vn.ndarray.max():.15e} , MAX W: {prognostic_state_list[self._now].w.ndarray.max():.15e}"
@@ -195,6 +198,7 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
+        scalene_profiler.stop()
         timer.summary(True)
 
     def _integrate_one_time_step(

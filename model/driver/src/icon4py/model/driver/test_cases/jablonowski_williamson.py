@@ -252,9 +252,11 @@ def model_initialization_jabw(
     exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray)
     rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray)
     theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray)
+    
 
     u = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
     v = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
+
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation(
         vn,
         rbf_vec_coeff_c1,
