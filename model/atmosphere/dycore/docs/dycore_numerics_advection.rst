@@ -1,0 +1,4 @@
+This page documents the advection part of the dycore
+
+.. autofull:: icon4py.model.atmosphere.dycore.velocity.VelocityAdvection.run_predictor_step
+   :no-index:
