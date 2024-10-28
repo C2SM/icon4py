@@ -13,6 +13,9 @@ simple_mesh*.nc
 /prof
 .profile
 
+### Sphinx ###
+**/docs/*.rst
+
 ### GT4Py ####
 .gt_cache/
 
