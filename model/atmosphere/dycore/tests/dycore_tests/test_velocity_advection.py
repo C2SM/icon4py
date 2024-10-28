@@ -377,6 +377,7 @@ def test_velocity_corrector_step(
         dtime=dtime,
         ntnd=ntnd - 1,
         cell_areas=cell_geometry.area,
+        output_intermediate_fields=None,
     )
 
     icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd).asnumpy()

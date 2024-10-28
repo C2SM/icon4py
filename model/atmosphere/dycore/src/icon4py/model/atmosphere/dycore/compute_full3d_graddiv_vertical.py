@@ -22,7 +22,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_full3d_graddiv_vertical(
-    ddqz_z_half: Field[[CellDim], vpfloat],
+    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     z_flxdiv_vn_and_w: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
     z_graddiv_vertical = (z_flxdiv_vn_and_w(Koff[-1]) - z_flxdiv_vn_and_w) / ddqz_z_half
@@ -33,7 +33,7 @@ def _compute_full3d_graddiv_vertical(
 def compute_full3d_graddiv_vertical(
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     z_flxdiv_vn_and_w: Field[[CellDim, KDim], vpfloat],
-    z_graddiv_vertical: Field[[EdgeDim, KDim], vpfloat],
+    z_graddiv_vertical: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -22,7 +22,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_dgraddiv_dz_for_full3d_divergence_damping(
-    inv_ddqz_z_full: Field[[CellDim], vpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     z_dgraddiv_vertical: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
     z_dgraddiv_dz = inv_ddqz_z_full * (z_dgraddiv_vertical - z_dgraddiv_vertical(Koff[1]))

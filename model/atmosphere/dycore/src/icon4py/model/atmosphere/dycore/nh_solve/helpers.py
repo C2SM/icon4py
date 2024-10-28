@@ -70,7 +70,6 @@ from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_o
 from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn as compute_avg_vn_orig
 from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt as compute_avg_vn_and_graddiv_vn_and_vt_orig,
-    compute_avg_vn_and_full3d_graddiv_vn_and_vt as compute_avg_vn_and_full3d_graddiv_vn_and_vt_orig,
 )
 from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta as compute_divergence_of_fluxes_of_rho_and_theta_orig,
@@ -190,6 +189,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
     predictor_stencils_2_3 as predictor_stencils_2_3_orig,
     predictor_stencils_4_5_6 as predictor_stencils_4_5_6_orig,
     predictor_stencils_7_8_9 as predictor_stencils_7_8_9_orig,
+    compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels as compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels_orig,
     predictor_stencils_7_8_9_firststep as predictor_stencils_7_8_9_firststep_orig,
     predictor_stencils_7_8_9_secondstep as predictor_stencils_7_8_9_secondstep_orig,
     predictor_stencils_11_lower_upper as predictor_stencils_11_lower_upper_orig,
@@ -201,6 +201,11 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
     stencils_47_48_49 as stencils_47_48_49_orig,
     stencils_61_62 as stencils_61_62_orig,
 )
+
+from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
+    compute_pressure_gradient as compute_pressure_gradient_orig,
+)
+
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution as solve_tridiagonal_matrix_for_w_back_substitution_orig,
 )
@@ -351,8 +356,6 @@ compute_avg_vn = CachedProgram(compute_avg_vn_orig)
 
 compute_avg_vn_and_graddiv_vn_and_vt = CachedProgram(compute_avg_vn_and_graddiv_vn_and_vt_orig)
 
-compute_avg_vn_and_full3d_graddiv_vn_and_vt = CachedProgram(compute_avg_vn_and_full3d_graddiv_vn_and_vt_orig)
-
 compute_divergence_of_fluxes_of_rho_and_theta = CachedProgram(
     compute_divergence_of_fluxes_of_rho_and_theta_orig
 )
@@ -494,6 +497,10 @@ predictor_stencils_2_3 = CachedProgram(predictor_stencils_2_3_orig)
 predictor_stencils_4_5_6 = CachedProgram(predictor_stencils_4_5_6_orig)
 
 predictor_stencils_7_8_9 = CachedProgram(predictor_stencils_7_8_9_orig)
+
+compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels = CachedProgram(compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels_orig)
+
+compute_pressure_gradient = CachedProgram(compute_pressure_gradient_orig)
 
 predictor_stencils_7_8_9_firststep = CachedProgram(predictor_stencils_7_8_9_firststep_orig)
 

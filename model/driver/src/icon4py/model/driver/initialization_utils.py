@@ -783,11 +783,43 @@ def read_static_fields(
         cell_area = grid_savepoint.cell_areas().ndarray
         primal_edge_length = grid_savepoint.primal_edge_lengths().ndarray
         v2c_connectivity = grid_savepoint.v2c()
+        c2e_connectivity = grid_savepoint.c2e()
+        v2c2e_connectivity = grid_savepoint.v2c2e()
         geofac_2order_div_array = np.zeros((icon_grid.num_vertices, 6), dtype=float)
         for i in range(icon_grid.num_vertices):
             hexagon_area = np.sum(cell_area[v2c_connectivity[i,:]])
-            geofac_2order_div_array[i,:] = cell_edge_orientation[i,:] * primal_edge_length[i,:] / hexagon_area
+            #print(i, v2c2e_connectivity[i].shape[0], cell_area[v2c_connectivity[i,:]].shape)
+            #print(cell_edge_orientation.shape, primal_edge_length.shape)
+            for j in range(v2c2e_connectivity[i].shape[0]):
+                edge_index = v2c2e_connectivity[i,j]
+                for k in range(v2c_connectivity[i].shape[0]):
+                    if edge_index in c2e_connectivity[v2c_connectivity[i,k]]:
+                        cell_index = v2c_connectivity[i,k]
+                        edge_in_local_cell_index = xp.where(c2e_connectivity[v2c_connectivity[i,k]] == edge_index)[0]
+                        if edge_in_local_cell_index > 2 or edge_in_local_cell_index < 0:
+                            raise ValueError(f"Something wrong when obtaining edge_in_local_cell_index: {edge_in_local_cell_index}. The vertex index: {i}. The edge index: {edge_index}. The cell index: {cell_index}")
+                        break
+                geofac_2order_div_array[i,j] = cell_edge_orientation[cell_index,edge_in_local_cell_index] * primal_edge_length[edge_index] / hexagon_area
+                if j == 5:
+                    if edge_index == v2c2e_connectivity[i,j-1]:
+                        print ("PENTAGON POINT", i, v2c2e_connectivity[i])
+                        geofac_2order_div_array[i, j] = 0.0
         geofac_2order_div = as_field((VertexDim, V2C2EDim), geofac_2order_div_array)
+        print("geofac_div shape: ", interpolation_savepoint.geofac_div().ndarray.shape)
+        print("geofac_div 0: ", interpolation_savepoint.geofac_div().ndarray[0])
+        print("geofac_div 1: ", interpolation_savepoint.geofac_div().ndarray[1])
+        print("geofac_div 2: ", interpolation_savepoint.geofac_div().ndarray[2])
+        print("geofac_2order_div 0: ", geofac_2order_div.ndarray[0])
+        print("geofac_2order_div 1: ", geofac_2order_div.ndarray[1])
+        print("geofac_2order_div 2: ", geofac_2order_div.ndarray[2])
+        print("geofac_2order_div array 0: ", geofac_2order_div_array[0])
+        print("geofac_2order_div array 1: ", geofac_2order_div_array[1])
+        print("geofac_2order_div array 2: ", geofac_2order_div_array[2])
+        print("sparsed geofac_div shape: ", as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim).ndarray.shape)
+        print("V2C connectivity: ", v2c_connectivity[0])
+        print("c_intp 0: ", interpolation_savepoint.c_intp().ndarray[0])
+        print("c_intp 1: ", interpolation_savepoint.c_intp().ndarray[1])
+        print("c_intp 2: ", interpolation_savepoint.c_intp().ndarray[2])
         solve_nonhydro_interpolation_state = InterpolationState(
             c_lin_e=interpolation_savepoint.c_lin_e(),
             c_intp=interpolation_savepoint.c_intp(),

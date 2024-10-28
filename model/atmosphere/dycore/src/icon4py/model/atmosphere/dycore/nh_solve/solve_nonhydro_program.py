@@ -51,8 +51,8 @@ from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
 )
 from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
-    _compute_only_pressure_gradient,
-    _compute_only_virtual_potential_temperatures,
+    _compute_pressure_gradient,
+    _compute_virtual_potential_temperatures,
     _compute_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
@@ -392,6 +392,96 @@ def predictor_stencils_7_8_9(
 
 
 @field_operator
+def _compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
+    rho: Field[[CellDim, KDim], float],
+    z_rth_pr_1: Field[[CellDim, KDim], float],
+    z_rth_pr_2: Field[[CellDim, KDim], float],
+    rho_ref_mc: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    theta_ref_mc: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    k_field: Field[[KDim], int32],
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
+    (z_rth_pr_1, z_rth_pr_2) = where(
+        k_field == 0,
+        _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
+        (z_rth_pr_1, z_rth_pr_2),
+    )
+
+    (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
+        k_field >= 1,
+        _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
+            wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
+        ),
+        (rho_ic, z_rth_pr_1, z_rth_pr_2),
+    )
+
+    (z_theta_v_pr_ic, theta_v_ic) = where(
+        k_field >= 1,
+        _compute_virtual_potential_temperatures(
+            wgtfac_c,
+            z_rth_pr_2,
+            theta_v,
+        ),
+        (z_theta_v_pr_ic, theta_v_ic),
+    )
+
+    return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic
+
+
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
+    rho: Field[[CellDim, KDim], float],
+    rho_ref_mc: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], float],
+    theta_ref_mc: Field[[CellDim, KDim], float],
+    rho_ic: Field[[CellDim, KDim], float],
+    z_rth_pr_1: Field[[CellDim, KDim], float],
+    z_rth_pr_2: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
+    theta_v_ic: Field[[CellDim, KDim], float],
+    k_field: Field[[KDim], int32],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
+        rho,
+        z_rth_pr_1,
+        z_rth_pr_2,
+        rho_ref_mc,
+        theta_v,
+        theta_ref_mc,
+        rho_ic,
+        wgtfac_c,
+        z_theta_v_pr_ic,
+        theta_v_ic,
+        k_field,
+        out=(
+            z_rth_pr_1,
+            z_rth_pr_2,
+            rho_ic,
+            z_theta_v_pr_ic,
+            theta_v_ic,
+        ),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+
+@field_operator
 def _predictor_stencils_7_8_9_firststep(
     rho: Field[[CellDim, KDim], float],
     z_rth_pr_1: Field[[CellDim, KDim], float],
@@ -401,13 +491,9 @@ def _predictor_stencils_7_8_9_firststep(
     theta_ref_mc: Field[[CellDim, KDim], float],
     rho_ic: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int32],
-    nlev: int32,
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -431,11 +517,10 @@ def _predictor_stencils_7_8_9_firststep(
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field >= int32(1),
-        _compute_only_virtual_potential_temperatures(
+        _compute_virtual_potential_temperatures(
             wgtfac_c,
             z_rth_pr_2,
             theta_v,
-            d_exner_dz_ref_ic,
         ),
         (z_theta_v_pr_ic, theta_v_ic),
     )
@@ -453,13 +538,9 @@ def predictor_stencils_7_8_9_firststep(
     z_rth_pr_1: Field[[CellDim, KDim], float],
     z_rth_pr_2: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int32],
-    nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -474,13 +555,9 @@ def predictor_stencils_7_8_9_firststep(
         theta_ref_mc,
         rho_ic,
         wgtfac_c,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
         z_theta_v_pr_ic,
         theta_v_ic,
         k_field,
-        nlev,
         out=(
             z_rth_pr_1,
             z_rth_pr_2,
@@ -505,11 +582,10 @@ def _predictor_stencils_7_8_9_secondstep(
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int32],
-    nlev: int32,
 ) -> Field[[CellDim, KDim], float]:
     z_th_ddz_exner_c = where(
         k_field >= int32(1),
-        _compute_only_pressure_gradient(
+        _compute_pressure_gradient(
             vwind_expl_wgt,
             theta_v_ic,
             z_theta_v_pr_ic,
@@ -533,7 +609,6 @@ def predictor_stencils_7_8_9_secondstep(
     ddqz_z_half: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int32],
-    nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -548,7 +623,6 @@ def predictor_stencils_7_8_9_secondstep(
         ddqz_z_half,
         z_th_ddz_exner_c,
         k_field,
-        nlev,
         out=z_th_ddz_exner_c,
         domain={
             CellDim: (horizontal_start, horizontal_end),

@@ -31,7 +31,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     zero_field,
 )
 from icon4py.model.common import constants
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim
 from icon4py.model.common.grid.horizontal import (
     CellParams,
     EdgeParams,
@@ -571,6 +571,15 @@ def test_nonhydro_corrector_step(
         z_dwdz_dd=sp.z_dwdz_dd(),
         z_kin_hor_e=sp.z_kin_hor_e(),
         z_vt_ie=sp.z_vt_ie(),
+        z_flxdiv_vn=_allocate(CellDim, KDim, grid=icon_grid),
+        z_flxdiv_vn_and_w=_allocate(CellDim, KDim, grid=icon_grid),
+        z_graddiv_normal=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_graddiv_vertical=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
+        z_dgraddiv_dz=_allocate(CellDim, KDim, grid=icon_grid),
+        z_flxdiv_graddiv_vn=_allocate(CellDim, KDim, grid=icon_grid),
+        z_flxdiv_graddiv_vn_and_w=_allocate(CellDim, KDim, grid=icon_grid),
+        z_flxdiv2order_vn_vertex=_allocate(VertexDim, KDim, grid=icon_grid),
+        z_flxdiv2order_graddiv_vn_vertex=_allocate(VertexDim, KDim, grid=icon_grid),
     )
 
     divdamp_fac_o2 = sp.divdamp_fac_o2()

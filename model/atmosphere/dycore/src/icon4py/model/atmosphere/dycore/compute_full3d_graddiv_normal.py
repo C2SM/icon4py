@@ -45,7 +45,7 @@ def compute_full3d_graddiv_normal(
         z_flxdiv_vn_and_w,
         out=z_graddiv_normal,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
+            EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )

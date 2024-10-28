@@ -1352,79 +1352,82 @@ def initialize(
     )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
-    log.info("initializing netCDF4 output state")
-    output_data = {}
-    output_data["vn"] = prognostic_state_list[0].vn
-    output_data["rho"] = prognostic_state_list[0].rho
-    output_data["theta_v"] = prognostic_state_list[0].theta_v
-    output_data["w"] = prognostic_state_list[0].w
-    output_data["exner"] = prognostic_state_list[0].exner
-    output_data["u"] = diagnostic_state.u
-    output_data["v"] = diagnostic_state.v
-    output_data["pressure"] = diagnostic_state.pressure
-    output_data["temperature"] = diagnostic_state.temperature
-    output_data["pressure_sfc"] = diagnostic_state.pressure_sfc
-    output_data[
-        "predictor_theta_v_e"
-    ] = solve_nonhydro.output_intermediate_fields.output_predictor_theta_v_e
-    output_data[
-        "predictor_pressure_grad"
-    ] = solve_nonhydro.output_intermediate_fields.output_predictor_gradh_exner
-    output_data[
-        "predictor_advection"
-    ] = solve_nonhydro.output_intermediate_fields.output_predictor_ddt_vn_apc_ntl1
-    output_data[
-        "corrector_theta_v_e"
-    ] = solve_nonhydro.output_intermediate_fields.output_corrector_theta_v_e
-    output_data[
-        "corrector_pressure_grad"
-    ] = solve_nonhydro.output_intermediate_fields.output_corrector_gradh_exner
-    output_data[
-        "corrector_advection"
-    ] = solve_nonhydro.output_intermediate_fields.output_corrector_ddt_vn_apc_ntl2
-    output_data[
-        "predictor_hgrad_kinetic"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e
-    output_data[
-        "predictor_tangent_wind"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_tangent_wind
-    output_data[
-        "predictor_total_vorticity"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_total_vorticity_e
-    output_data[
-        "predictor_vertical_wind"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vertical_wind_e
-    output_data[
-        "predictor_vgrad_vn"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vgrad_vn_e
-    output_data[
-        "corrector_hgrad_kinetic"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e
-    output_data[
-        "corrector_tangent_wind"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_tangent_wind
-    output_data[
-        "corrector_total_vorticity"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_total_vorticity_e
-    output_data[
-        "corrector_vertical_wind"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vertical_wind_e
-    output_data[
-        "corrector_vgrad_vn"
-    ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vgrad_vn_e
-    output_data["graddiv_vn"] = solve_nonhydro.output_intermediate_fields.output_graddiv_vn
-    output_data["graddiv2_vn"] = solve_nonhydro.output_intermediate_fields.output_graddiv2_vn
-    output_data["scal_divdamp"] = solve_nonhydro.output_intermediate_fields.output_scal_divdamp
-    output_state = NewOutputState(
-        config.output_config,
-        config.run_config.start_date,
-        config.run_config.end_date,
-        icon_grid,
-        cell_geometry,
-        edge_geometry,
-        diagnostic_metric_state,
-        output_data,
-    )
+    if enable_output:
+        log.info("initializing netCDF4 output state")
+        output_data = {}
+        output_data["vn"] = prognostic_state_list[0].vn
+        output_data["rho"] = prognostic_state_list[0].rho
+        output_data["theta_v"] = prognostic_state_list[0].theta_v
+        output_data["w"] = prognostic_state_list[0].w
+        output_data["exner"] = prognostic_state_list[0].exner
+        output_data["u"] = diagnostic_state.u
+        output_data["v"] = diagnostic_state.v
+        output_data["pressure"] = diagnostic_state.pressure
+        output_data["temperature"] = diagnostic_state.temperature
+        output_data["pressure_sfc"] = diagnostic_state.pressure_sfc
+        output_data[
+            "predictor_theta_v_e"
+        ] = solve_nonhydro.output_intermediate_fields.output_predictor_theta_v_e
+        output_data[
+            "predictor_pressure_grad"
+        ] = solve_nonhydro.output_intermediate_fields.output_predictor_gradh_exner
+        output_data[
+            "predictor_advection"
+        ] = solve_nonhydro.output_intermediate_fields.output_predictor_ddt_vn_apc_ntl1
+        output_data[
+            "corrector_theta_v_e"
+        ] = solve_nonhydro.output_intermediate_fields.output_corrector_theta_v_e
+        output_data[
+            "corrector_pressure_grad"
+        ] = solve_nonhydro.output_intermediate_fields.output_corrector_gradh_exner
+        output_data[
+            "corrector_advection"
+        ] = solve_nonhydro.output_intermediate_fields.output_corrector_ddt_vn_apc_ntl2
+        output_data[
+            "predictor_hgrad_kinetic"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e
+        output_data[
+            "predictor_tangent_wind"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_tangent_wind
+        output_data[
+            "predictor_total_vorticity"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_total_vorticity_e
+        output_data[
+            "predictor_vertical_wind"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vertical_wind_e
+        output_data[
+            "predictor_vgrad_vn"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vgrad_vn_e
+        output_data[
+            "corrector_hgrad_kinetic"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e
+        output_data[
+            "corrector_tangent_wind"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_tangent_wind
+        output_data[
+            "corrector_total_vorticity"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_total_vorticity_e
+        output_data[
+            "corrector_vertical_wind"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vertical_wind_e
+        output_data[
+            "corrector_vgrad_vn"
+        ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vgrad_vn_e
+        output_data["graddiv_vn"] = solve_nonhydro.output_intermediate_fields.output_graddiv_vn
+        output_data["graddiv2_vn"] = solve_nonhydro.output_intermediate_fields.output_graddiv2_vn
+        output_data["scal_divdamp"] = solve_nonhydro.output_intermediate_fields.output_scal_divdamp
+        output_state = NewOutputState(
+            config.output_config,
+            config.run_config.start_date,
+            config.run_config.end_date,
+            icon_grid,
+            cell_geometry,
+            edge_geometry,
+            diagnostic_metric_state,
+            output_data,
+        )
+    else:
+        output_state = None
 
     timeloop = TimeLoop(
         run_config=config.run_config,
@@ -1459,8 +1462,8 @@ def initialize(
 @click.option("--grid_root", default=2, help="experiment selection")
 @click.option("--grid_level", default=4, help="experiment selection")
 @click.option("--profile", default=False, help="Whether to profile code using cProfile.")
-@click.option("--disable-logging", is_flag=True, help="Disable all logging output.")
-@click.option("--enable_output", is_flag=True, help="Enable output.")
+@click.option("--disable_logging", is_flag=False, help="Disable all logging output.")
+@click.option("--enable_output", is_flag=False, help="Enable output.")
 def main(
     input_path,
     run_path,
@@ -1527,6 +1530,7 @@ def main(
     log.info("dycore configuring: DONE")
     log.info("timeloop: START")
 
+    #return
     if speed_test:
         timeloop.time_integration_speed_test(
             diagnostic_metric_state,

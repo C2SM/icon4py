@@ -514,11 +514,12 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
-        output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e = self.output_hgrad_kinetic_e
-        output_intermediate_fields.output_velocity_predictor_tangent_wind = diagnostic_state.vt
-        output_intermediate_fields.output_velocity_predictor_total_vorticity_e = self.output_total_vorticity_e
-        output_intermediate_fields.output_velocity_predictor_vertical_wind_e = self.output_vertical_wind_e
-        output_intermediate_fields.output_velocity_predictor_vgrad_vn_e = self.output_vgrad_vn_e
+        if output_intermediate_fields is not None:
+            output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e = self.output_hgrad_kinetic_e
+            output_intermediate_fields.output_velocity_predictor_tangent_wind = diagnostic_state.vt
+            output_intermediate_fields.output_velocity_predictor_total_vorticity_e = self.output_total_vorticity_e
+            output_intermediate_fields.output_velocity_predictor_vertical_wind_e = self.output_vertical_wind_e
+            output_intermediate_fields.output_velocity_predictor_vgrad_vn_e = self.output_vgrad_vn_e
 
         """
         ddt_vn_apc_pc[ntnd] (max(3,damp_lev-2)-1:nlev-5):
@@ -849,11 +850,12 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
-        output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e = self.output_hgrad_kinetic_e
-        output_intermediate_fields.output_velocity_corrector_tangent_wind = diagnostic_state.vt
-        output_intermediate_fields.output_velocity_corrector_total_vorticity_e = self.output_total_vorticity_e
-        output_intermediate_fields.output_velocity_corrector_vertical_wind_e = self.output_vertical_wind_e
-        output_intermediate_fields.output_velocity_corrector_vgrad_vn_e = self.output_vgrad_vn_e
+        if output_intermediate_fields is not None:
+            output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e = self.output_hgrad_kinetic_e
+            output_intermediate_fields.output_velocity_corrector_tangent_wind = diagnostic_state.vt
+            output_intermediate_fields.output_velocity_corrector_total_vorticity_e = self.output_total_vorticity_e
+            output_intermediate_fields.output_velocity_corrector_vertical_wind_e = self.output_vertical_wind_e
+            output_intermediate_fields.output_velocity_corrector_vgrad_vn_e = self.output_vgrad_vn_e
 
         """
         ddt_vn_apc_pc[ntnd] (max(3,damp_lev-2)-1:nlev-5):

@@ -18,6 +18,9 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
+from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_wp import (
+    _interpolate_to_half_levels_wp,
+)
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -41,7 +44,8 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
     wgtfac_c_wp, ddqz_z_half_wp = astype((wgtfac_c, ddqz_z_half), wpfloat)
 
     z_theta_v_pr_ic_vp = _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_rth_pr_2)
-    theta_v_ic_wp = wgtfac_c_wp * theta_v + (wpfloat("1.0") - wgtfac_c_wp) * theta_v(Koff[-1])
+    #theta_v_ic_wp = wgtfac_c_wp * theta_v + (wpfloat("1.0") - wgtfac_c_wp) * theta_v(Koff[-1])
+    theta_v_ic_wp = _interpolate_to_half_levels_wp(wgtfac_c=wgtfac_c_wp, interpolant=theta_v)
     z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic_wp * (
         exner_pr(Koff[-1]) - exner_pr
     ) / ddqz_z_half_wp + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
@@ -49,11 +53,10 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
 
 
 @field_operator
-def _compute_only_virtual_potential_temperatures(
+def _compute_virtual_potential_temperatures(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], vpfloat],
 ) -> tuple[
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], wpfloat],
@@ -66,7 +69,7 @@ def _compute_only_virtual_potential_temperatures(
 
 
 @field_operator
-def _compute_only_pressure_gradient(
+def _compute_pressure_gradient(
     vwind_expl_wgt: Field[[CellDim], wpfloat],
     theta_v_ic: Field[[CellDim, KDim], wpfloat],
     z_theta_v_pr_ic: Field[[CellDim, KDim], wpfloat],
@@ -107,6 +110,35 @@ def compute_virtual_potential_temperatures_and_pressure_gradient(
         d_exner_dz_ref_ic,
         ddqz_z_half,
         out=(z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def compute_pressure_gradient(
+    vwind_expl_wgt: Field[[CellDim], wpfloat],
+    theta_v_ic: Field[[CellDim, KDim], wpfloat],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
+    exner_pr: Field[[CellDim, KDim], wpfloat],
+    d_exner_dz_ref_ic: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
+    z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_pressure_gradient(
+        vwind_expl_wgt,
+        theta_v_ic,
+        z_theta_v_pr_ic,
+        exner_pr,
+        d_exner_dz_ref_ic,
+        ddqz_z_half,
+        out=z_th_ddz_exner_c,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

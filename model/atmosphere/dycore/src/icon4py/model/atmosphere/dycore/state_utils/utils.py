@@ -129,7 +129,7 @@ def _calculate_scal_divdamp_half(
 ) -> Field[[KDim], float]:
     level_above_height = 0.5 * (vct_a + vct_a(Koff[-1]))
     level_below_height = 0.5 * (vct_a + vct_a(Koff[1]))
-    return (scal_divdamp*(vct_a - level_below_height) + scal_divdamp*(level_above_height - vct_a)) / (level_above_height - level_below_height)
+    return (scal_divdamp*(vct_a - level_below_height) + scal_divdamp(Koff[1])*(level_above_height - vct_a)) / (level_above_height - level_below_height)
 
 
 @program(backend=backend)

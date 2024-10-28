@@ -260,6 +260,8 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
             divdamp_fac=0.0025,
+            do_3d_divergence_damping=True,
+            do_second_order_3d_divergence_damping=True,
         )
 
     def _mch_ch_r04b09_config():
@@ -717,8 +719,8 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
 
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=60.0),
-            end_date=datetime(1, 2, 8, 0, 0, 0),
+            dtime=timedelta(seconds=300.0),
+            end_date=datetime(1, 1, 1, 0, 5, 0),
             # end_date=datetime(1, 1, 1, 0, 2, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,

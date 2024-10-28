@@ -15,7 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
 
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.dimension import KDim, CellDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -23,12 +23,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _apply_4th_order_3d_divergence_damping_to_w(
     scal_divdamp_half: Field[[KDim], wpfloat],
-    z_graddiv2_vertical: Field[[EdgeDim, KDim], vpfloat],
-    w: Field[[EdgeDim, KDim], wpfloat],
-) -> Field[[EdgeDim, KDim], wpfloat]:
+    z_graddiv2_vertical: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+) -> Field[[CellDim, KDim], wpfloat]:
     """Formelry known as _mo_solve_nonhydro_4th_order_divdamp."""
     z_graddiv2_vertical_wp = astype(z_graddiv2_vertical, wpfloat)
-    scal_divdamp_half = broadcast(scal_divdamp_half, (EdgeDim, KDim))
+    scal_divdamp_half = broadcast(scal_divdamp_half, (CellDim, KDim))
     w_wp = w + (scal_divdamp_half * z_graddiv2_vertical_wp)
     return w_wp
 
@@ -36,8 +36,8 @@ def _apply_4th_order_3d_divergence_damping_to_w(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_4th_order_3d_divergence_damping_to_w(
     scal_divdamp_half: Field[[KDim], wpfloat],
-    z_graddiv2_vertical: Field[[EdgeDim, KDim], vpfloat],
-    w: Field[[EdgeDim, KDim], wpfloat],
+    z_graddiv2_vertical: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -49,7 +49,7 @@ def apply_4th_order_3d_divergence_damping_to_w(
         w,
         out=w,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
+            CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )
