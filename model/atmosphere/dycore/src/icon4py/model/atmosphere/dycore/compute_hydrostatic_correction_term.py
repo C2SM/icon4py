@@ -13,7 +13,6 @@ from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2EC, Koff
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -65,7 +64,7 @@ def _compute_hydrostatic_correction_term(
     return astype(z_hydro_corr_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
     ikoffset: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], gtx.int32],

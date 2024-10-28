@@ -145,14 +145,18 @@ def zonalwind_2_normalwind_numpy(
             u
             + jw_up
             * xp.exp(
-                -10.0
-                * xp.arccos(
-                    xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
-                    + xp.cos(lat_perturbation_center)
-                    * xp.cos(edge_lat)
-                    * xp.cos(edge_lon - lon_perturbation_center)
+                -(
+                    (
+                        10.0
+                        * xp.arccos(
+                            xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
+                            + xp.cos(lat_perturbation_center)
+                            * xp.cos(edge_lat)
+                            * xp.cos(edge_lon - lon_perturbation_center)
+                        )
+                    )
+                    ** 2
                 )
-                ** 2
             ),
             u,
         )

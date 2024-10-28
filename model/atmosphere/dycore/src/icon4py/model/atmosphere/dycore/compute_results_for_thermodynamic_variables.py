@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -59,7 +58,7 @@ def _compute_results_for_thermodynamic_variables(
     return rho_new_wp, exner_new_wp, theta_v_new_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CellKField[wpfloat],
     vwind_impl_wgt: fa.CellField[wpfloat],

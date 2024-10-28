@@ -11,7 +11,6 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -27,7 +26,7 @@ def _apply_rayleigh_damping_mechanism(
     return w_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_rayleigh_damping_mechanism(
     z_raylfac: fa.KField[wpfloat],
     w_1: fa.CellField[wpfloat],
