@@ -19,7 +19,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 
 
 try:
-    import dace
+    import dace  # type: ignore[import-not-found]
     from gt4py.next.program_processors.runners.dace import (
         run_dace_cpu,
         run_dace_cpu_noopt,
@@ -30,7 +30,7 @@ except ImportError:
     from types import ModuleType
     from typing import Optional
 
-    dace: Optional[ModuleType] = None
+    dace: Optional[ModuleType] = None  # type: ignore[no-redef] # definition needed here
 
 
 class Device(Enum):
@@ -69,7 +69,7 @@ class Icon4PyConfig:
     @cached_property
     def array_ns(self):
         if self.device == Device.GPU:
-            import cupy as cp  # type: ignore[import-untyped]
+            import cupy as cp  # type: ignore[import-not-found]
 
             return cp
         else:
