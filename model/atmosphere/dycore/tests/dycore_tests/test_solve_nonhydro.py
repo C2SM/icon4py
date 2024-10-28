@@ -9,7 +9,7 @@
 import logging
 
 import pytest
-from icon4pytools.py2fgen.wrappers.common import backend
+from icon4pytools.py2fgen.wrappers.settings import backend
 
 import icon4py.model.common.grid.geometry as geometry
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh

@@ -45,7 +45,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common
-from icon4pytools.py2fgen.wrappers.common import backend, device
+from icon4pytools.py2fgen.wrappers.settings import backend, device
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellIndexDim,
     EdgeIndexDim,
