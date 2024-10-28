@@ -720,11 +720,11 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
 
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=300.0),
-            end_date=datetime(1, 1, 1, 0, 5, 0),
+            end_date=datetime(1, 1, 1, 0, 30, 0),
             # end_date=datetime(1, 1, 1, 0, 2, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,
-            n_substeps=1,
+            n_substeps=5,
         )
         jabw_output_config = IconOutputConfig(
             output_time_interval=timedelta(seconds=14400),

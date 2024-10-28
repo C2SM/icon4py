@@ -130,6 +130,7 @@ from icon4py.model.common.grid.horizontal import (
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.dimension import V2C2EDim
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -1879,10 +1880,12 @@ class SolveNonhydro:
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
         )
         end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-        start_vertex_nudging = self.grid.get_start_index(
-            VertexDim, HorizontalMarkerIndex.nudging(VertexDim)
+        start_vertex_lb_plus1 = self.grid.get_start_index(
+            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
         )
-        end_vertex_local = self.grid.get_end_index(VertexDim, HorizontalMarkerIndex.local(VertexDim))
+        end_vertex_local_minus1 = self.grid.get_end_index(
+            VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
+        )
 
         lvn_only = False
         log.debug(f"corrector run velocity advection")
@@ -2079,23 +2082,24 @@ class SolveNonhydro:
                     z_flxdiv2order_vn_vertex (0:nlev-1):
                         Compute the 2nd order divergence of normal wind at full levels (vertex) by Gauss theorem.
                     """
-                    from icon4py.model.common.dimension import V2C2EDim
-                    print("debugging 2nd order divdamp: ", self.grid.connectivities[V2C2EDim][0])
-                    print("debugging 2nd order divdamp vn: ", prognostic_state[nnew].vn.ndarray[self.grid.connectivities[V2C2EDim][0],self.grid.num_levels-10])
-                    print("debugging 2nd order divdamp geofac: ",
-                          self.interpolation_state.geofac_2order_div.ndarray[0])
+                    # print("debugging 2nd order divdamp: ", self.grid.connectivities[V2C2EDim][0])
+                    # print("debugging 2nd order divdamp vn: ", prognostic_state[nnew].vn.ndarray[self.grid.connectivities[V2C2EDim][0],self.grid.num_levels-10])
+                    # print("debugging 2nd order divdamp geofac: ",
+                    #       self.interpolation_state.geofac_2order_div.ndarray[0])
                     compute_2nd_order_divergence_of_flux_of_normal_wind(
                         geofac_2order_div=self.interpolation_state.geofac_2order_div,
                         vn=prognostic_state[nnew].vn,
                         z_flxdiv2order_vn_vertex=z_fields.z_flxdiv2order_vn_vertex,
-                        horizontal_start=start_vertex_nudging,
-                        horizontal_end=end_vertex_local,
+                        horizontal_start=start_vertex_lb_plus1,
+                        horizontal_end=end_vertex_local_minus1,
                         vertical_start=0,
                         vertical_end=self.grid.num_levels,
                         offset_provider=self.grid.offset_providers,
                     )
-                    print("debugging 2nd order divdamp result: ",
-                          z_fields.z_flxdiv2order_vn_vertex.ndarray[0,self.grid.num_levels-10])
+                    # print(start_vertex_lb_plus1, end_vertex_local_minus1, self.grid.num_vertices)
+                    # import numpy as np
+                    # print("debugging 2nd order divdamp result: ",
+                    #      z_fields.z_flxdiv2order_vn_vertex.ndarray[0,self.grid.num_levels-10], np.sum(prognostic_state[nnew].vn.ndarray[self.grid.connectivities[V2C2EDim][0],self.grid.num_levels-10]*self.interpolation_state.geofac_2order_div.ndarray[0]))
                     """
                     z_flxdiv_vn (0:nlev-1):
                         Interpolate the 2nd order divergence of normal wind at full levels from vertices to cell center by average (because cell center is located at barycenter).
@@ -2174,44 +2178,28 @@ class SolveNonhydro:
                     z_flxdiv2order_graddiv_vn_vertex (0:nlev-1):
                         Compute the 2nd order divergence of normal wind at full levels (vertex) by Gauss theorem.
                     """
-                    print("debugging 2nd order divdamp z_graddiv_normal: ", z_fields.z_graddiv_normal.ndarray[
-                        self.grid.connectivities[V2C2EDim][0], self.grid.num_levels - 10])
-                    print("debugging 2nd order divdamp geofac: ",
-                          self.interpolation_state.geofac_2order_div.ndarray[0])
+                    # print("debugging 2nd order divdamp z_graddiv_normal: ", z_fields.z_graddiv_normal.ndarray[
+                    #     self.grid.connectivities[V2C2EDim][0], self.grid.num_levels - 10])
+                    # print("debugging 2nd order divdamp geofac: ",
+                    #       self.interpolation_state.geofac_2order_div.ndarray[0])
                     compute_2nd_order_divergence_of_flux_of_full3d_graddiv(
                         geofac_2order_div=self.interpolation_state.geofac_2order_div,
                         z_graddiv_normal=z_fields.z_graddiv_normal,
                         z_flxdiv2order_graddiv_vn_vertex=z_fields.z_flxdiv2order_graddiv_vn_vertex,
-                        horizontal_start=start_vertex_nudging,
-                        horizontal_end=end_vertex_local,
+                        horizontal_start=start_vertex_lb_plus1,
+                        horizontal_end=end_vertex_local_minus1,
                         vertical_start=0,
                         vertical_end=self.grid.num_levels,
                         offset_provider=self.grid.offset_providers,
                     )
-                    print("debugging 2nd order divdamp result: ",
-                          z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray[0, self.grid.num_levels - 10])
+                    # print("debugging 2nd order divdamp result: ",
+                    #       z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray[0, self.grid.num_levels - 10])
                     """
                     z_flxdiv_graddiv_vn (0:nlev-1):
                         Interpolate the 2nd order divergence of normal wind at full levels from vertices to cell center by average (because cell center is located at barycenter).
                     """
-                    '''
                     interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell(
                         z_flxdiv2order_graddiv_vn_vertex=z_fields.z_flxdiv2order_graddiv_vn_vertex,
-                        z_flxdiv_graddiv_vn=z_fields.z_flxdiv_graddiv_vn,
-                        horizontal_start=start_cell_nudging,
-                        horizontal_end=end_cell_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider=self.grid.offset_providers,
-                    )
-                    '''
-                    """
-                    z_flxdiv_graddiv_vn (0:nlev-1):
-                        Compute the divergence of gradient of 3d divergence at full levels (cell center) by Gauss theorem.
-                    """
-                    compute_divergence_of_flux_of_full3d_graddiv(
-                        geofac_div=self.interpolation_state.geofac_div,
-                        z_graddiv_normal=z_fields.z_graddiv_normal,
                         z_flxdiv_graddiv_vn=z_fields.z_flxdiv_graddiv_vn,
                         horizontal_start=start_cell_nudging,
                         horizontal_end=end_cell_local,

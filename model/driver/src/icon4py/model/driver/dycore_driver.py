@@ -914,6 +914,12 @@ class TimeLoop:
             log.info(
                 f" MAX RHO: {prognostic_state_list[self._now].rho.ndarray.max():.15e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.max():.15e}"
             )
+            log.info(
+                f" AVE VN: {prognostic_state_list[self._now].vn.ndarray.mean(axis=(0,1)):.15e} , AVE W: {prognostic_state_list[self._now].w.ndarray.mean(axis=(0,1)):.15e}"
+            )
+            log.info(
+                f" AVE RHO: {prognostic_state_list[self._now].rho.ndarray.mean(axis=(0,1)):.15e} , AVE THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.mean(axis=(0,1)):.15e}"
+            )
             # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
             """
@@ -1530,7 +1536,6 @@ def main(
     log.info("dycore configuring: DONE")
     log.info("timeloop: START")
 
-    #return
     if speed_test:
         timeloop.time_integration_speed_test(
             diagnostic_metric_state,
