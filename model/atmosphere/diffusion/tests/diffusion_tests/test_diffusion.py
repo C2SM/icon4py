@@ -8,6 +8,7 @@
 
 import numpy as np
 import pytest
+from icon4pytools.py2fgen.wrappers import settings
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
@@ -426,10 +427,9 @@ def test_run_diffusion_multiple_steps(
     damping_height,
     ndyn_substeps,
     backend,
-    dace_orchestration,
     diffusion_instance,  # noqa: F811
 ):
-    if dace_orchestration is None:
+    if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
@@ -478,7 +478,7 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe NON-Orchestrated Backend
     ######################################################################
-    dace_orchestration = None
+    settings.dace_orchestration = None
 
     diagnostic_state_dace_non_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -510,7 +510,7 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe Orchestrated Backend
     ######################################################################
-    dace_orchestration = True
+    settings.dace_orchestration = True
 
     diagnostic_state_dace_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),

@@ -13,7 +13,6 @@ import icon4py.model.common.type_alias as type_alias
 import pytest
 from click.testing import CliRunner
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
-    dace_orchestration,
     damping_height,
     data_provider,
     download_ser_data,

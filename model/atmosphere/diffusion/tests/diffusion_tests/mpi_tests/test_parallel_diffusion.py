@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
+from icon4pytools.py2fgen.wrappers import settings
 
 from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusion_states
 from icon4py.model.common import dimension as dims
@@ -170,9 +171,8 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
     diffusion_instance,  # noqa: F811
-    dace_orchestration,
 ):
-    if dace_orchestration is None:
+    if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
@@ -236,7 +236,7 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     # DaCe NON-Orchestrated Backend
     ######################################################################
-    dace_orchestration = None
+    settings.dace_orchestration = None
 
     diffusion = diffusion_.Diffusion(backend, exchange)
 
@@ -284,7 +284,7 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     # DaCe Orchestrated Backend
     ######################################################################
-    dace_orchestration = True
+    settings.dace_orchestration = True
 
     diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
 

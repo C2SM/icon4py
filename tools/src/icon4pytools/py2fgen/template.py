@@ -21,11 +21,14 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
-from icon4pytools.py2fgen.wrappers import common, wrapper_dimension
+from icon4pytools.py2fgen.wrappers import wrapper_dimension
+from icon4pytools.py2fgen.wrappers.settings import GT4PyBackend
 
 
 # these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
 # therefore unpacking needs to be skipped as otherwise it will trigger an error.
+
+
 UNINITIALISED_ARRAYS = [
     "mask_hdiff",
     "zd_diffcoef",
@@ -106,7 +109,7 @@ class PythonWrapper(CffiPlugin):
     is_gt4py_program_present: bool = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.gt4py_backend = common.GT4PyBackend[self.backend].value
+        self.gt4py_backend = GT4PyBackend[self.backend].value
         self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
         self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 
