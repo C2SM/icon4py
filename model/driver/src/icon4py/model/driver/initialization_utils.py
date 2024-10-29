@@ -479,5 +479,5 @@ def configure_logging(
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging.INFO)
     logging.getLogger("").addHandler(console_handler)
