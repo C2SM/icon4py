@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import Dimension, NeighborTableOffsetProvider
 
 from icon4py.model.common.settings import xp
@@ -18,7 +17,7 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
     neighbor_axis: Dimension,
     has_skip_values: bool,
 ):
-    table = xp.asarray(np.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape))
+    table = xp.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)
     assert (
         table.dtype == gtx.int32
     ), 'Neighbor table\'s ("{}" to "{}") data type for 1d sparse fields must be gtx.int32. Instead it\'s "{}"'.format(
