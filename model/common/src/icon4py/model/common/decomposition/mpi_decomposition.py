@@ -16,10 +16,9 @@ from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Unio
 from gt4py.next import Dimension, Field
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.config import Device
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
-from icon4py.model.common.settings import device, xp
+from icon4py.model.common.settings import xp
 
 
 try:
@@ -33,7 +32,6 @@ try:
         make_field_descriptor,
         make_pattern,
     )
-    from ghex.util import Architecture
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -171,6 +169,9 @@ class GHexMultiNodeExchange:
         local_halo = self._decomposition_info.local_index(
             dim, definitions.DecompositionInfo.EntryType.HALO
         )
+        # first arg is the domain ID which builds up an MPI Tag.
+        # if those ids are not different for all domain descriptors the system might deadlock
+        # if two parallel exchanges with the same domain id are done
         domain_desc = DomainDescriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
@@ -214,7 +215,7 @@ class GHexMultiNodeExchange:
         """
         Exchange method that slices the fields based on the dimension and then performs halo exchange.
 
-            This ensures that the exchanged fields always have the correct size, thereby also working in
+            This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
             the granule context where fields otherwise have length nproma.
         """
         assert dim in dims.global_dimensions.values()
@@ -227,9 +228,8 @@ class GHexMultiNodeExchange:
         sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
 
         # Create field descriptors and perform the exchange
-        arch = Architecture.CPU if device == Device.CPU else Architecture.GPU
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f, arch=arch)) for f in sliced_fields
+            pattern(make_field_descriptor(domain_descriptor, f)) for f in sliced_fields
         ]
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
