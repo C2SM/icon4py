@@ -138,7 +138,7 @@ class BaseGrid(ABC):
             dim, self.connectivities[dim].dtype
         )
         return gtx.NeighborTableOffsetProvider(
-            xp.asarray(self.connectivities[dim]),
+            gtx.as_field([from_dim, gtx.Dimension("neigh", kind=gtx.DimensionKind.LOCAL)], xp.asarray(self.connectivities[dim])).ndarray,
             from_dim,
             to_dim,
             self.size[dim],
