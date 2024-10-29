@@ -9,13 +9,13 @@
 from sphinx.ext import autodoc
 import re
 import inspect
-import typing
+import types, typing
 import ast
 
 class FullMethodDocumenter(autodoc.MethodDocumenter):
     """
-    'Fully' document a method, i.e. picking up and processing all docstrings in
-    its source code.
+    'Fully' document a method, i.e. picking up and processing all 'tagged'
+    comment blocks in its source code.
     """
 
     objtype = 'full'
@@ -182,6 +182,7 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
             # we are importing directly from a module
             module_obj = getattr(self.module, parent_name)
             method_obj = getattr(module_obj, method_name)
+            module_full_name = module_obj.__name__
         elif parent_name == 'self':
             # the method was renamed in the present class
             class_and_method_name = re.sub(self.modname, '', self.fullname)[1:]
@@ -217,6 +218,7 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
                                                 if original_method_name in self.module.__dict__.keys():
                                                     module_obj = getattr(self.module, original_method_name)
                                                     method_obj = getattr(module_obj, method_name)
+                                                    module_full_name = module_obj.__name__
                                                     break
                                             elif isinstance(stmt.value, ast.Call):
                                                 # Traverse the call chain to get the original method and module
@@ -230,18 +232,38 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
                                                         call_chain.append(current_node.id)
                                                         break
                                                 call_chain.reverse()
-                                                module_name = call_chain[0]
-                                                original_method_name = call_chain[1]
-                                                if module_name in self.module.__dict__.keys():
-                                                    module_obj = getattr(self.module, module_name)
-                                                    method_obj = getattr(module_obj, original_method_name)
-                                                    break
+                                                if call_chain[-1] == 'with_backend':
+                                                    # remove it from the call chain
+                                                    call_chain.pop()
+                                                if len(call_chain) == 1:
+                                                    # the method is imported directly, e.g.
+                                                    # from solve_nonhydro_program import stencil
+                                                    # self._stencil = stencil.with_backend(...)
+                                                    original_method_name = call_chain[0]
+                                                    if original_method_name in self.module.__dict__.keys() and not isinstance(getattr(self.module, original_method_name), types.ModuleType):
+                                                        # method_obj.definition_stage.definition.__module__
+                                                        method_obj = getattr(self.module, original_method_name)
+                                                        if type(method_obj).__module__.startswith('gt4py') and type(method_obj).__name__ == 'Program':
+                                                            # it's a decorated gt4py program
+                                                            module_full_name = method_obj.definition_stage.definition.__module__
+                                                            break
+                                                elif len(call_chain) >= 2:
+                                                    # the method is called from a module import, e.g.
+                                                    # import solve_nonhydro_program as nhsolve_prog
+                                                    # self._stencil = nhsolve_prog.stencil.with_backend(...)
+                                                    module_name = call_chain[0]
+                                                    original_method_name = call_chain[1]
+                                                    if module_name in self.module.__dict__.keys() and isinstance(getattr(self.module, module_name), types.ModuleType):
+                                                        module_obj = getattr(self.module, module_name)
+                                                        method_obj = getattr(module_obj, original_method_name)
+                                                        module_full_name = module_obj.__name__
+                                                        break
         #
         method_info['call_string'] = call_string
         method_info['method_name'] = method_name
         method_info['module_local_name'] = parent_name
-        method_info['module_full_name'] = module_obj.__name__
-        method_info['annotations'] = method_obj.definition.__annotations__
+        method_info['module_full_name'] = module_full_name
+        method_info['annotations'] = method_obj.definition_stage.definition.__annotations__ if type(method_obj).__name__ == 'Program' else method_obj.__annotations__
         method_info['var_names_map'] = self.map_variable_names(call_string)
         method_info['var_types'] = self.map_variable_types(method_info)
         return method_info
@@ -271,6 +293,7 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
     def format_type_string(self, var_type):
         if isinstance(var_type, typing._GenericAlias):
             origin = var_type.__origin__
+            assert origin.__name__ == 'Field' and origin.__module__.startswith('gt4py')
             args = var_type.__args__
             origin_str = origin.__name__ if hasattr(origin, '__name__') else str(origin).split('.')[-1]
             args_str = ', '.join(self.format_type_string(arg) for arg in args)
@@ -285,10 +308,4 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
             type_str = re.sub(r"gt4py\.next\.common\.", "", type_str)
             # Replace Dimension(value='K', kind=<DimensionKind.VERTICAL: 'vertical'>) with K
             type_str = re.sub(r"Dimension\(value='(\w+)', kind=<DimensionKind\.\w+: '\w+'>\)", r"\1", type_str)
-            # Replace "Dims[Cell, K]" with "(Cell, K)"
-            type_str = re.sub(r"Dims\[(\w+), (\w+)\]", r"(\1, \2)", type_str)
-            # Replace "Dims[Kdim]" with "(Kdim)"
-            type_str = re.sub(r"Dims\[(\w+)\]", r"(\1)", type_str)
-            # Shorten "Cell" to "C"
-            type_str = re.sub(r"Cell", "C", type_str)
             return type_str
