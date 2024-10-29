@@ -9,7 +9,6 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): move this highly generic stencil to common
@@ -21,7 +20,7 @@ def _copy_cell_kdim_field(field_in: fa.CellKField[ta.wpfloat]) -> fa.CellKField[
     return field_in
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def copy_cell_kdim_field(
     field_in: fa.CellKField[ta.wpfloat],
     field_out: fa.CellKField[ta.wpfloat],

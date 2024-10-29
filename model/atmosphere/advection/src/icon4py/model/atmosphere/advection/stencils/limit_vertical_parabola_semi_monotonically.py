@@ -11,7 +11,6 @@ from gt4py.next.ffront.fbuiltins import minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -37,7 +36,7 @@ def _limit_vertical_parabola_semi_monotonically(
     return q_face_up, q_face_low
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def limit_vertical_parabola_semi_monotonically(
     l_limit: fa.CellKField[gtx.int32],
     p_face: fa.CellKField[ta.wpfloat],

@@ -11,7 +11,6 @@ from gt4py.next.ffront.fbuiltins import broadcast, maximum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): this stencil has no test
@@ -34,7 +33,7 @@ def _apply_density_increment(
     return rhodz_out
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_density_increment(
     rhodz_in: fa.CellKField[ta.wpfloat],
     p_mflx_contra_v: fa.CellKField[ta.wpfloat],

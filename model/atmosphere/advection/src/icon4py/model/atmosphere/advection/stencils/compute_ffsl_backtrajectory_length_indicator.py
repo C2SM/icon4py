@@ -11,7 +11,6 @@ from gt4py.next.ffront.fbuiltins import sqrt, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2EC
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -27,7 +26,7 @@ def _compute_ffsl_backtrajectory_length_indicator(
     return opt_famask_dsl
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_ffsl_backtrajectory_length_indicator(
     p_vn: fa.EdgeKField[ta.wpfloat],
     p_vt: fa.EdgeKField[ta.wpfloat],

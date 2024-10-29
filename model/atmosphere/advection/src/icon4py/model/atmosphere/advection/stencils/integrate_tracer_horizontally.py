@@ -11,7 +11,6 @@ from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2CE, C2E
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -34,7 +33,7 @@ def _integrate_tracer_horizontally(
     return tracer_new_hor
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def integrate_tracer_horizontally(
     p_mflx_tracer_h: fa.EdgeKField[ta.wpfloat],
     deepatmo_divh: fa.KField[ta.wpfloat],

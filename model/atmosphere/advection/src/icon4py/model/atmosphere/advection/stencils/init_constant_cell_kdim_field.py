@@ -10,7 +10,6 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): move this highly generic stencil to common
@@ -22,7 +21,7 @@ def _init_constant_cell_kdim_field(value: ta.wpfloat) -> fa.CellKField[ta.wpfloa
     return broadcast(value, (dims.CellDim, dims.KDim))
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_constant_cell_kdim_field(
     field: fa.CellKField[ta.wpfloat],
     value: ta.wpfloat,

@@ -11,7 +11,6 @@ from gt4py.next.ffront.fbuiltins import minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C
-from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): this stencil has no test
@@ -32,7 +31,7 @@ def _apply_monotone_horizontal_multiplicative_flux_factors(
     return z_mflx_low + minimum(1.0, r_frac) * z_anti
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_monotone_horizontal_multiplicative_flux_factors(
     z_anti: fa.EdgeKField[ta.wpfloat],
     r_m: fa.CellKField[ta.wpfloat],

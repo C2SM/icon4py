@@ -11,7 +11,6 @@ from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -63,7 +62,7 @@ def _compute_ppm_slope(
     return z_slope
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_ppm_slope(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],

@@ -10,7 +10,6 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import astype, maximum, minimum, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -45,7 +44,7 @@ def _postprocess_antidiffusive_cell_fluxes_and_min_max(
     return (z_tracer_new_out, z_tracer_max_out, z_tracer_min_out)
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def postprocess_antidiffusive_cell_fluxes_and_min_max(
     refin_ctrl: fa.CellField[gtx.int32],
     p_cc: fa.CellKField[ta.wpfloat],

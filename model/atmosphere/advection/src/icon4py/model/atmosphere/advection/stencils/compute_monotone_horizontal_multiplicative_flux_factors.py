@@ -11,7 +11,6 @@ from gt4py.next.ffront.fbuiltins import astype, max_over, maximum, min_over, min
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E2C
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -75,7 +74,7 @@ def _compute_monotone_horizontal_multiplicative_flux_factors(
     return r_p, r_m
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_monotone_horizontal_multiplicative_flux_factors(
     z_tracer_max: fa.CellKField[ta.vpfloat],
     z_tracer_min: fa.CellKField[ta.vpfloat],

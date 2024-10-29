@@ -11,7 +11,6 @@ from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C2E
-from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): this stencil is a duplicate of compute_tangential_wind
@@ -27,7 +26,7 @@ def _compute_edge_tangential(
     return p_vt_out
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_edge_tangential(
     p_vn_in: fa.EdgeKField[ta.wpfloat],
     ptr_coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], ta.wpfloat],

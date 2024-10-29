@@ -11,7 +11,6 @@ from gt4py.next.ffront.fbuiltins import maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -27,7 +26,7 @@ def _apply_horizontal_density_increment(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_horizontal_density_increment(
     p_rhodz_new: fa.CellKField[ta.wpfloat],
     p_mflx_contra_v: fa.CellKField[ta.wpfloat],

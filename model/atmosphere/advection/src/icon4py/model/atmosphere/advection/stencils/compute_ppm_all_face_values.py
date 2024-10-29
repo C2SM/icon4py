@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_valu
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 
 
 # TODO (dastrm): this stencil is imported but never called
@@ -45,7 +44,7 @@ def _compute_ppm_all_face_values(
     return p_face
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_ppm_all_face_values(
     p_cc: fa.CellKField[ta.wpfloat],
     p_cellhgt_mc_now: fa.CellKField[ta.wpfloat],

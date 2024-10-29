@@ -10,7 +10,6 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -23,7 +22,7 @@ def _apply_interpolated_tracer_time_tendency(
     return p_tracer_new
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def apply_interpolated_tracer_time_tendency(
     p_tracer_now: fa.CellKField[ta.wpfloat],
     p_grf_tend_tracer: fa.CellKField[ta.wpfloat],

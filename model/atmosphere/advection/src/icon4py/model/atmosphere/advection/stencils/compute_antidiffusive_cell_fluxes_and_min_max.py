@@ -16,7 +16,6 @@ from gt4py.next.ffront.fbuiltins import (
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2CE, C2E
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -63,7 +62,7 @@ def _compute_antidiffusive_cell_fluxes_and_min_max(
     )
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_antidiffusive_cell_fluxes_and_min_max(
     geofac_div: gtx.Field[gtx.Dims[dims.CEDim], ta.wpfloat],
     p_rhodz_now: fa.CellKField[ta.wpfloat],
