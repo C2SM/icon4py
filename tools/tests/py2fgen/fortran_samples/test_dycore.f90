@@ -654,7 +654,7 @@ program solve_nh_simulation
    !$acc c2e, e2c, e2v, v2e, v2c, c2v, e2c2v, c2e2c, e2c2e, cell_starts, cell_ends, &
    !$acc vertex_starts, vertex_ends, edge_starts, edge_ends)
 
-   call grid_init( &
+   call grid_init_dycore( &
     cell_starts, cell_ends, &
     vertex_starts, vertex_ends, &
     edge_starts, edge_ends, &

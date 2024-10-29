@@ -428,7 +428,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_at_last_substep = jstep_init == (ndyn_substeps - 1)
 
     # --- Initialize the Grid ---
-    dycore_wrapper.grid_init(
+    dycore_wrapper.grid_init_dycore(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -936,7 +936,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     global_root = 4
     global_level = 9
 
-    dycore_wrapper.grid_init(
+    dycore_wrapper.grid_init_dycore(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -1394,7 +1394,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     global_root = 4
     global_level = 9
 
-    dycore_wrapper.grid_init(
+    dycore_wrapper.grid_init_dycore(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,

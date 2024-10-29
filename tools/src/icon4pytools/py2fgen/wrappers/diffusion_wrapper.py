@@ -141,7 +141,7 @@ def diffusion_init(
     global_grid_params = GlobalGridParams(root=global_root, level=global_level)
 
     if not isinstance(diffusion_wrapper_state["grid"], icon.IconGrid):
-        raise Exception("Need to initialise grid using grid_init before running diffusion_init.")
+        raise Exception("Need to initialise grid using grid_init_diffusion before running diffusion_init.")
 
     # Edge geometry
     edge_params = geometry.EdgeParams(
@@ -288,7 +288,7 @@ def diffusion_run(
         )
 
 
-def grid_init(
+def grid_init_diffusion(
     cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
     cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
     vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],

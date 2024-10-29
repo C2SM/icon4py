@@ -71,11 +71,11 @@ from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
+    CellGlobalIndexDim,
     CellIndexDim,
+    EdgeGlobalIndexDim,
     EdgeIndexDim,
-    SpecialADim,
-    SpecialBDim,
-    SpecialCDim,
+    VertexGlobalIndexDim,
     VertexIndexDim,
 )
 
@@ -203,7 +203,7 @@ def solve_nh_init(
     num_levels: gtx.int32,
 ):
     if not isinstance(dycore_wrapper_state["grid"], icon.IconGrid):
-        raise Exception("Need to initialise grid using grid_init before running solve_nh_init.")
+        raise Exception("Need to initialise grid using grid_init_dycore before running solve_nh_init.")
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -463,7 +463,7 @@ def solve_nh_run(
     )
 
 
-def grid_init(
+def grid_init_dycore(
     cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
     cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
     vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
@@ -482,9 +482,9 @@ def grid_init(
     c_owner_mask: gtx.Field[[dims.CellDim], bool],
     e_owner_mask: gtx.Field[[dims.EdgeDim], bool],
     v_owner_mask: gtx.Field[[dims.VertexDim], bool],
-    c_glb_index: gtx.Field[[SpecialADim], gtx.int32],
-    e_glb_index: gtx.Field[[SpecialBDim], gtx.int32],
-    v_glb_index: gtx.Field[[SpecialCDim], gtx.int32],
+    c_glb_index: gtx.Field[[CellGlobalIndexDim], gtx.int32],
+    e_glb_index: gtx.Field[[EdgeGlobalIndexDim], gtx.int32],
+    v_glb_index: gtx.Field[[VertexGlobalIndexDim], gtx.int32],
     comm_id: gtx.int32,
     global_root: gtx.int32,
     global_level: gtx.int32,
