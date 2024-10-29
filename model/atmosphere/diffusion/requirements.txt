@@ -1,4 +1,4 @@
 -r ../../../base-requirements.txt
 ../../common
-../../../tools
+../../../tools.src.icon4pytools
 .
