@@ -437,3 +437,49 @@ def test_sparse_fields_creator():
     assert sparse[0].ndarray.shape == (grid.num_edges, 2)
     assert helpers.dallclose(sparse[0].asnumpy(), sparse2[0].asnumpy())
     assert helpers.dallclose(sparse[1].asnumpy(), sparse2[1].asnumpy())
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_create_auxiliary_orientation_coordinates(grid_file, experiment, grid_savepoint):
+    gm = utils.run_grid_manager(grid_file)
+    grid = gm.grid
+    coordinates = gm.coordinates
+
+    cell_lat = coordinates[dims.CellDim]["lat"]
+    cell_lon = coordinates[dims.CellDim]["lon"]
+    edge_lat = coordinates[dims.EdgeDim]["lat"]
+    edge_lon = coordinates[dims.EdgeDim]["lon"]
+    lat_0, lon_0, lat_1, lon_1 = geometry.create_auxiliary_coordinate_arrays_for_orientation(gm.grid, cell_lat, cell_lon, edge_lat, edge_lon)
+    connectivity = grid.connectivities[dims.E2CDim]
+    has_boundary_edges = np.count_nonzero(connectivity == -1 )
+    if has_boundary_edges == 0:
+        assert helpers.dallclose(lat_0.ndarray, cell_lat.ndarray[connectivity[:, 0]])
+        assert helpers.dallclose(lat_1.ndarray, cell_lat.ndarray[connectivity[:, 1]])
+        assert helpers.dallclose(lon_0.ndarray, cell_lon.ndarray[connectivity[:, 0]])
+        assert helpers.dallclose(lon_1.ndarray, cell_lon.ndarray[connectivity[:, 1]])
+
+    edge_coordinates_0 = np.where(connectivity[:, 0] < 0)
+    edge_coordinates_1 = np.where(connectivity[:, 1] < 0)
+    cell_coordinates_0 = np.where(connectivity[:, 0] >= 0)
+    cell_coordinates_1 = np.where(connectivity[:, 1] >= 0)
+    assert helpers.dallclose(lat_0.ndarray[edge_coordinates_0], edge_lat.ndarray[edge_coordinates_0])
+    assert helpers.dallclose(lat_0.ndarray[cell_coordinates_0],
+                                 cell_lat.ndarray[connectivity[cell_coordinates_0, 0]])
+
+    assert helpers.dallclose(lon_0.ndarray[edge_coordinates_0], edge_lon.ndarray[edge_coordinates_0])
+    assert helpers.dallclose(lon_0.ndarray[cell_coordinates_0],
+                                 cell_lon.ndarray[connectivity[cell_coordinates_0, 0]])
+
+    assert helpers.dallclose(lat_1.ndarray[edge_coordinates_1], edge_lat.ndarray[edge_coordinates_1])
+    assert helpers.dallclose(lat_1.ndarray[cell_coordinates_1], cell_lat.ndarray[connectivity[cell_coordinates_1, 1]])
+    assert helpers.dallclose(lon_1.ndarray[edge_coordinates_1],
+                                 edge_lon.ndarray[edge_coordinates_1])
+    assert helpers.dallclose(lon_1.ndarray[cell_coordinates_1],
+                                cell_lon.ndarray[connectivity[cell_coordinates_1, 1]])
+

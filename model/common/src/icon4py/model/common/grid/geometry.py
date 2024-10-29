@@ -20,6 +20,7 @@ from icon4py.model.common import (
     constants,
     dimension as dims,
     field_type_aliases as fa,
+    type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid, icon
@@ -690,3 +691,24 @@ def as_sparse_field(
         field = gtx.as_field(target_dims, data=(xp.vstack(buffers).T), dtype=buffers[0].dtype)
         fields.append(field)
     return fields
+
+
+def create_auxiliary_coordinate_arrays_for_orientation(
+        grid:icon.IconGrid,
+        cell_lat:fa.CellField[ta.wpfloat],
+        cell_lon:fa.CellField[ta.wpfloat],
+        edge_lat:fa.EdgeField[ta.wpfloat],
+        edge_lon:fa.EdgeField[ta.wpfloat],
+) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    e2c_table = grid.connectivities[dims.E2CDim]
+    lat = cell_lat.ndarray[e2c_table]
+    lon = cell_lon.ndarray[e2c_table]
+    for i in (0,1):
+        boundary_edges = xp.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
+        lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]
+        lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
+      
+    return (gtx.as_field((dims.EdgeDim, ), lat[:, 0]),
+            gtx.as_field((dims.EdgeDim, ), lon[:, 0]),
+            gtx.as_field((dims.EdgeDim, ), lat[:, 1]),
+            gtx.as_field((dims.EdgeDim, ), lon[:, 1]))
