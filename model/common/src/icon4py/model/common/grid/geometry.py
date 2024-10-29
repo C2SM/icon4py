@@ -27,11 +27,12 @@ from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid, 
 from icon4py.model.common.grid.geometry_program import (
     compute_cartesian_coordinates_of_edge_tangent_and_normal,
     compute_coriolis_parameter_on_edges,
-    compute_dual_edge_length_and_far_vertex_distance_in_diamond,
+    compute_dual_edge_length,
     compute_edge_area,
     compute_edge_length,
     compute_edge_primal_normal_cell,
     compute_edge_primal_normal_vertex,
+    compute_far_vertex_distance_in_diamond,
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
@@ -331,16 +332,28 @@ class GridGeometry(state_utils.FieldSource):
 
         self._providers: dict[str, factory.FieldProvider] = {}
 
-        coordinates = {
+        edge_orientation0_lat, edge_orientation0_lon, edge_orientation1_lat, edge_orientation1_lon \
+            = create_auxiliary_coordinate_arrays_for_orientation(self._grid,
+                                                                 coordinates[dims.CellDim]["lat"],
+                                                                 coordinates[dims.CellDim]["lon"],
+                                                                 coordinates[dims.EdgeDim]["lat"],
+                                                                 coordinates[dims.EdgeDim]["lon"])
+        coordinates_ = {
             attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
             attrs.CELL_LON: coordinates[dims.CellDim]["lon"],
             attrs.VERTEX_LAT: coordinates[dims.VertexDim]["lat"],
             attrs.EDGE_LON: coordinates[dims.EdgeDim]["lon"],
             attrs.EDGE_LAT: coordinates[dims.EdgeDim]["lat"],
             attrs.VERTEX_LON: coordinates[dims.VertexDim]["lon"],
+            "latitude_of_edge_cell_neighbor_0":edge_orientation0_lat,
+            "longitude_of_edge_cell_neighbor_0": edge_orientation0_lon,
+            "latitude_of_edge_cell_neighbor_1": edge_orientation1_lat,
+            "longitude_of_edge_cell_neighbor_1": edge_orientation1_lon,
+
         }
-        coodinate_provider = factory.PrecomputedFieldProvider(coordinates)
+        coodinate_provider = factory.PrecomputedFieldProvider(coordinates_)
         self.register_provider(coodinate_provider)
+                                                                                                                                                
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
                 attrs.CELL_AREA: fields[gm.GeometryName.CELL_AREA],
@@ -397,26 +410,26 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(inverse_edge_length)
 
         dual_length_provider = factory.ProgramFieldProvider(
-            func=compute_dual_edge_length_and_far_vertex_distance_in_diamond,
+            func=compute_dual_edge_length,
             domain={
                 dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.LOCAL),
                     self._edge_domain(h_grid.Zone.LOCAL)
                 )
             },
             fields={
                 "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
-                "far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH
             },
             deps={
-                "vertex_lat": attrs.VERTEX_LAT,
-                "vertex_lon": attrs.VERTEX_LON,
-                "cell_lat": attrs.CELL_LAT,
-                "cell_lon": attrs.CELL_LON
+                "edge_neighbor_0_lat": "latitude_of_edge_cell_neighbor_0",
+                "edge_neighbor_0_lon": "longitude_of_edge_cell_neighbor_0",
+                "edge_neighbor_1_lat": "latitude_of_edge_cell_neighbor_1",
+                "edge_neighbor_1_lon": "longitude_of_edge_cell_neighbor_1",
             },
             params={"radius": self._grid.global_properties.length},
         )
         self.register_provider(dual_length_provider)
+
         name, meta = attrs.data_for_inverse(attrs.attrs[attrs.DUAL_EDGE_LENGTH])
         self._attrs.update({name: meta})
         inverse_dual_length = ProgramFieldProvider(
@@ -425,13 +438,32 @@ class GridGeometry(state_utils.FieldSource):
             fields={"f_inverse": name},
             domain={
                 dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
         )
         self.register_provider(inverse_dual_length)
 
+        provider = factory.ProgramFieldProvider(
+            func=compute_far_vertex_distance_in_diamond,
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.LOCAL)
+                )
+            },
+            fields={
+                "far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH
+            },
+            deps={
+                "vertex_lat":attrs.VERTEX_LAT,
+                "vertex_lon": attrs.VERTEX_LON,
+
+            },
+            params={"radius": self._grid.global_properties.length},
+        )
+        self.register_provider(provider)
         name, meta = attrs.data_for_inverse(attrs.attrs[attrs.VERTEX_VERTEX_LENGTH])
         self._attrs.update({name: meta})
         inverse_far_edge_distance_provider = ProgramFieldProvider(
@@ -440,7 +472,7 @@ class GridGeometry(state_utils.FieldSource):
             fields={"f_inverse": name},
             domain={
                 dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
@@ -482,8 +514,12 @@ class GridGeometry(state_utils.FieldSource):
         provider = ProgramFieldProvider(
             func=compute_cartesian_coordinates_of_edge_tangent_and_normal,
             deps={
-                "cell_lat": attrs.CELL_LAT,
+                "cell_lat":attrs.CELL_LAT,
                 "cell_lon": attrs.CELL_LON,
+                "edge_neighbor0_lat": "latitude_of_edge_cell_neighbor_0",
+                "edge_neighbor0_lon": "longitude_of_edge_cell_neighbor_0",
+                "edge_neighbor1_lat":"latitude_of_edge_cell_neighbor_1",
+                "edge_neighbor1_lon":"longitude_of_edge_cell_neighbor_1",
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
                 "edge_lat": attrs.EDGE_LAT,

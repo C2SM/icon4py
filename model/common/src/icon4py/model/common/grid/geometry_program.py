@@ -37,13 +37,18 @@ def cartesian_coordinates_of_edge_tangent(
     x = vertex_x(E2V[1]) - vertex_x(E2V[0])
     y = vertex_y(E2V[1]) - vertex_y(E2V[0])
     z = vertex_z(E2V[1]) - vertex_z(E2V[0])
-    return x, y, z
+
+    return normalize_cartesian_vector(x, y, z)
 
 
 @gtx.field_operator
 def cartesian_coordinates_of_edge_normal(
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
+    edge_neighbor0_lat: fa.EdgeField[ta.wpfloat],
+    edge_neighbor0_lon: fa.EdgeField[ta.wpfloat],
+    edge_neighbor1_lat: fa.EdgeField[ta.wpfloat],
+    edge_neighbor1_lon: fa.EdgeField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
     edge_tangent_x: fa.EdgeField[ta.wpfloat],
@@ -66,6 +71,12 @@ def cartesian_coordinates_of_edge_normal(
     cell_distance_x = cell_x(E2C[1]) - cell_x(E2C[0])
     cell_distance_y = cell_y(E2C[1]) - cell_y(E2C[0])
     cell_distance_z = cell_z(E2C[1]) - cell_z(E2C[0])
+    x0, y0, z0 = spherical_to_cartesian_on_edges(edge_neighbor0_lat, edge_neighbor0_lon)
+    x1, y1, z1 = spherical_to_cartesian_on_edges(edge_neighbor1_lat, edge_neighbor1_lon)
+
+    #cell_distance_x = x0 - x1
+    #cell_distance_y = y0 - y1
+    #cell_distance_z = z0 - z1 # c_tmp
     tangent_orientation_x, tangent_orientation_y, tangent_orientation_z = cross_product(
         edge_tangent_x,
         cell_distance_x,
@@ -87,6 +98,7 @@ def cartesian_coordinates_of_edge_normal(
     x, y, z = cross_product(
         edge_center_x, edge_tangent_x, edge_center_y, edge_tangent_y, edge_center_z, edge_tangent_z
     )
+    #x, y, z = normalize_cartesian_vector(x, y, z)
     normal_orientation = dot_product(cell_distance_x, x, cell_distance_y, y, cell_distance_z, z)
     x = where(normal_orientation < 0.0, -1.0 * x, x)
     y = where(normal_orientation < 0.0, -1.0 * y, y)
@@ -99,6 +111,10 @@ def cartesian_coordinates_of_edge_normal(
 def cartesian_coordinates_edge_tangent_and_normal(
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
+    edge_neighbor0_lat: fa.EdgeField[ta.wpfloat],
+    edge_neighbor0_lon: fa.EdgeField[ta.wpfloat],
+    edge_neighbor1_lat: fa.EdgeField[ta.wpfloat],
+    edge_neighbor1_lon: fa.EdgeField[ta.wpfloat],
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
@@ -114,8 +130,8 @@ def cartesian_coordinates_edge_tangent_and_normal(
 ]:
     """Compute normalized cartesian vectors of edge tangent and edge normal."""
     tangent_x, tangent_y, tangent_z = cartesian_coordinates_of_edge_tangent(vertex_lat, vertex_lon)
-    tangent_orientation, normal_x, normal_y, normal_z = cartesian_coordinates_of_edge_normal(
-        cell_lat, cell_lon, edge_lat, edge_lon, tangent_x, tangent_y, tangent_z
+    tangent_orientation, normal_x, normal_y, normal_z = cartesian_coordinates_of_edge_normal(cell_lat, cell_lon,
+        edge_neighbor0_lat, edge_neighbor0_lon, edge_neighbor1_lat, edge_neighbor1_lon, edge_lat, edge_lon, tangent_x, tangent_y, tangent_z
     )
 
     return tangent_orientation, tangent_x, tangent_y, tangent_z, normal_x, normal_y, normal_z
@@ -125,6 +141,10 @@ def cartesian_coordinates_edge_tangent_and_normal(
 def compute_cartesian_coordinates_of_edge_tangent_and_normal(
     cell_lat: fa.CellField[ta.wpfloat],
     cell_lon: fa.CellField[ta.wpfloat],
+    edge_neighbor0_lat: fa.EdgeField[ta.wpfloat],
+    edge_neighbor0_lon: fa.EdgeField[ta.wpfloat],
+    edge_neighbor1_lat: fa.EdgeField[ta.wpfloat],
+    edge_neighbor1_lon: fa.EdgeField[ta.wpfloat],
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
@@ -142,6 +162,10 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal(
     cartesian_coordinates_edge_tangent_and_normal(
         cell_lat,
         cell_lon,
+        edge_neighbor0_lat,
+        edge_neighbor0_lon,
+        edge_neighbor1_lat,
+        edge_neighbor1_lon,
         vertex_lat,
         vertex_lon,
         edge_lat,
@@ -294,8 +318,10 @@ def compute_edge_primal_normal_cell(
 
 @gtx.field_operator
 def cell_center_arc_distance(
-    cell_lat: fa.CellField[ta.wpfloat],
-    cell_lon: fa.CellField[ta.wpfloat],
+    lat_neighbor_0: fa.EdgeField[ta.wpfloat],
+    lon_neighbor_0: fa.EdgeField[ta.wpfloat],
+    lat_neighbor_1:fa.EdgeField[ta.wpfloat],
+    lon_neighbor_1:fa.EdgeField[ta.wpfloat],
     radius: ta.wpfloat,
 ) -> fa.EdgeField[ta.wpfloat]:
     """Compute the length of dual edge.
@@ -303,13 +329,8 @@ def cell_center_arc_distance(
     Distance between the cell center of edge adjacent cells. This is a edge of the dual grid and is
     orthogonal to the edge. dual_edge_length in ICON.
     """
-    x, y, z = spherical_to_cartesian_on_cells(cell_lat, cell_lon)
-    x0 = x(E2C[0])
-    x1 = x(E2C[1])
-    y0 = y(E2C[0])
-    y1 = y(E2C[1])
-    z0 = z(E2C[0])
-    z1 = z(E2C[1])
+    x0, y0, z0 = spherical_to_cartesian_on_edges(lat_neighbor_0, lon_neighbor_0)
+    x1, y1, z1 = spherical_to_cartesian_on_edges(lat_neighbor_1, lon_neighbor_1)
     # (xi, yi, zi) are normalized by construction
     arc = radius * arccos(dot_product(x0, x1, y0, y1, z0, z1))
     return arc
@@ -381,40 +402,44 @@ def compute_edge_length(
     )
 
 
-@gtx.field_operator
-def _compute_dual_edge_length_and_far_vertex_distance_in_diamond(
-    vertex_lat: fa.VertexField[ta.wpfloat],
-    vertex_lon: fa.VertexField[ta.wpfloat],
-    cell_lat: fa.CellField[ta.wpfloat],
-    cell_lon: fa.CellField[ta.wpfloat],
-    radius: ta.wpfloat,
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
-    far_vertex_distance = compute_arc_distance_of_far_edges_in_diamond(
-        vertex_lat, vertex_lon, radius
-    )
-    dual_edge_length = cell_center_arc_distance(cell_lat, cell_lon, radius)
-    return far_vertex_distance, dual_edge_length
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_dual_edge_length_and_far_vertex_distance_in_diamond(
-    vertex_lat: fa.VertexField[ta.wpfloat],
-    vertex_lon: fa.VertexField[ta.wpfloat],
-    cell_lat: fa.CellField[ta.wpfloat],
-    cell_lon: fa.CellField[ta.wpfloat],
+def compute_dual_edge_length(
+    edge_neighbor_0_lat: fa.EdgeField[ta.wpfloat],
+    edge_neighbor_0_lon: fa.EdgeField[ta.wpfloat],
+    edge_neighbor_1_lat: fa.EdgeField[ta.wpfloat],
+    edge_neighbor_1_lon: fa.EdgeField[ta.wpfloat],
     radius: ta.wpfloat,
-    far_vertex_distance: fa.EdgeField[ta.wpfloat],
     dual_edge_length: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
-    _compute_dual_edge_length_and_far_vertex_distance_in_diamond(
+   cell_center_arc_distance(
+        lat_neighbor_0=edge_neighbor_0_lat,
+        lon_neighbor_0=edge_neighbor_0_lon,
+        lat_neighbor_1=edge_neighbor_1_lat,
+        lon_neighbor_1=edge_neighbor_1_lon,
+        radius=radius,
+        out=dual_edge_length,
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
+    )
+   
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def compute_far_vertex_distance_in_diamond(
+    vertex_lat: fa.VertexField[ta.wpfloat],
+    vertex_lon: fa.VertexField[ta.wpfloat],
+    radius: ta.wpfloat,
+    far_vertex_distance: fa.EdgeField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    compute_arc_distance_of_far_edges_in_diamond(
         vertex_lat=vertex_lat,
         vertex_lon=vertex_lon,
-        cell_lat=cell_lat,
-        cell_lon=cell_lon,
         radius=radius,
-        out=(far_vertex_distance, dual_edge_length),
+        out=far_vertex_distance,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
     )
 

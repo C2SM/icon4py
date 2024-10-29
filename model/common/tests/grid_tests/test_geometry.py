@@ -20,20 +20,16 @@ from icon4py.model.common.grid import (
     simple as simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
-from icon4py.model.common.grid.geometry_program import (
-    compute_dual_edge_length_and_far_vertex_distance_in_diamond,
-)
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 from . import utils
 
 
-# FIXME boundary values for LAM model
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 1e-9),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 3e-12),
     ],
 )
@@ -114,11 +110,11 @@ def construct_grid_geometry(backend, grid_file):
     return geometry_source
 
 
-# TODO (halungge) why does serialized reference start from index 0 even for LAM model?
+
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
@@ -130,44 +126,21 @@ def test_compute_dual_edge_length(experiment, backend, grid_savepoint, grid_file
     result = grid_geometry.get(attrs.DUAL_EDGE_LENGTH)
     assert helpers.dallclose(result.ndarray, expected.ndarray, rtol=rtol)
 
-@pytest.mark.parametrize(
-    "grid_file, experiment, rtol",
-    [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
-    ],
-)
-@pytest.mark.datatest
-def test_dual_edge_length_x(experiment, backend, grid_savepoint, grid_file, rtol):
-    gm = utils.run_grid_manager(grid_file)
-    grid = gm.grid
 
-    vlat = grid_savepoint.verts_vertex_lat()
-    vlon = grid_savepoint.verts_vertex_lon()
-    clat = grid_savepoint.cell_center_lat()
-    clon = grid_savepoint.cell_center_lat()
-    f1 = helpers.zero_field(grid, dims.EdgeDim)
-    f2 = helpers.zero_field(grid, dims.EdgeDim)
-    compute_dual_edge_length_and_far_vertex_distance_in_diamond(
-        vlat, vlon, clat, clon, 3000.0,f1, f2, 0, grid.num_edges, offset_provider = {"E2C2V": grid.get_offset_provider("E2C2V"), "E2C": grid.get_offset_provider("E2C")}
-    )
-    
-# TODO (halungge) why does serialized reference start from index 0 even for LAM model?
-#    the use the same pattern: use cell_center distances of adjacent cells if they exist, else
-#    use the edge center
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
     [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
 @pytest.mark.datatest
 def test_compute_inverse_dual_edge_length(experiment, backend, grid_savepoint, grid_file, rtol):
-    grid_geometry = construct_grid_geometry(backend, grid_file)
 
+    grid_geometry = construct_grid_geometry(backend, grid_file)
     expected = grid_savepoint.inv_dual_edge_length()
     result = grid_geometry.get(f"inverse_of_{attrs.DUAL_EDGE_LENGTH}")
+
     assert helpers.dallclose(result.ndarray, expected.ndarray, rtol=rtol)
 
 
@@ -184,14 +157,14 @@ def test_compute_inverse_vertex_vertex_length(experiment, backend, grid_savepoin
 
     expected = grid_savepoint.inv_vert_vert_length()
     result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH)
-    assert helpers.dallclose(result.asnumpy(), expected.asnumpy(), rtol=rtol)
+    assert helpers.dallclose(result.ndarray, expected.ndarray, rtol=rtol)
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -207,9 +180,9 @@ def test_compute_coordinates_of_edge_tangent_and_normal(
     y_normal_ref = grid_savepoint.primal_cart_normal_y()
     z_normal_ref = grid_savepoint.primal_cart_normal_z()
 
-    assert helpers.dallclose(x_normal.asnumpy(), x_normal_ref.asnumpy(), atol=1e-13)
-    assert helpers.dallclose(y_normal.asnumpy(), y_normal_ref.asnumpy(), atol=1e-13)
-    assert helpers.dallclose(z_normal.asnumpy(), z_normal_ref.asnumpy(), atol=1e-13)
+    assert helpers.dallclose(x_normal.ndarray, x_normal_ref.ndarray, atol=1e-13)
+    assert helpers.dallclose(y_normal.ndarray, y_normal_ref.ndarray, atol=1e-13)
+    assert helpers.dallclose(z_normal.ndarray, z_normal_ref.ndarray, atol=1e-13)
 
 
 @pytest.mark.datatest
@@ -260,7 +233,7 @@ def test_cell_area(grid_file, experiment, grid_savepoint, backend):
     result = grid_geometry.get(attrs.CELL_AREA)
     expected = grid_savepoint.cell_areas()
 
-    assert helpers.dallclose(result.asnumpy(), expected.asnumpy())
+    assert helpers.dallclose(result.ndarray, expected.ndarray)
 
 
 @pytest.mark.datatest
