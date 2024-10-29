@@ -667,7 +667,12 @@ class Diffusion:
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
-        self._exchange(self.u_vert, self.v_vert, dim=dims.VertexDim, wait=True)
+        self._exchange(
+            self.u_vert,
+            self.v_vert,
+            dim=dims.VertexDim,
+            wait=True,
+        )
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -751,7 +756,12 @@ class Diffusion:
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         log.debug("communication rbf extrapolation of z_nable2_e - start")
-        self._exchange(self.u_vert, self.v_vert, dim=dims.VertexDim, wait=True)
+        self._exchange(
+            self.u_vert,
+            self.v_vert,
+            dim=dims.VertexDim,
+            wait=True,
+        )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
