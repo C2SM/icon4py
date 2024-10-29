@@ -25,6 +25,7 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
     docstring_keyword = 'scidoc'
     var_type_in_inputs = True
     var_type_formatting = '``'
+    print_variable_longnames = True
 
     def get_doc(self):
         # Override the default get_doc method to pick up all docstrings in the
@@ -157,7 +158,14 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
                         # Replace only exact matches
                         for j, part in enumerate(split_line):
                             if part == variable:
-                                split_line[j] = f"{part} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
+                                if self.print_variable_longnames:
+                                    # long name version
+                                    var_longname = next_method_info['var_longnames_map'][variable]
+                                    var_longname = '*' + '.'.join(var_longname.split('.')[:-1]) + '*. **' + var_longname.split('.')[-1] + '**'
+                                    split_line[j] = f"{var_longname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
+                                else:
+                                    # short name version
+                                    split_line[j] = f"{variable} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
                         docstr_lines[iline] = ' '*indent + ' '.join(split_line)
 
         return docstr_lines
@@ -302,7 +310,7 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         method_info['module_local_name'] = parent_name
         method_info['module_full_name'] = module_full_name
         method_info['annotations'] = method_obj.definition_stage.definition.__annotations__ if type(method_obj).__name__ == 'Program' else method_obj.__annotations__
-        method_info['var_names_map'] = self.map_variable_names(call_string)
+        method_info['var_names_map'], method_info['var_longnames_map'] = self.map_variable_names(call_string)
         method_info['var_types'] = self.map_variable_types(method_info)
         return method_info
 
@@ -312,11 +320,13 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         matches = re.findall(pattern, ''.join(function_call_str))
         # Create a dictionary to map variable names to their full argument names
         variable_map = {}
+        variable_longnames_map = {}
         for arg_name, arg_value in matches:
             # Extract the last part of the argument value after the last period
             short_name = arg_value.split('.')[-1]
             variable_map[arg_name] = short_name
-        return variable_map
+            variable_longnames_map[short_name] = arg_value
+        return variable_map, variable_longnames_map
     
     def map_variable_types(self, method_info):
         # Map variable short names (*not arg name*) to their types using the

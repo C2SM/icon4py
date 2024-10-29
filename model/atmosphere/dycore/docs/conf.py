@@ -60,7 +60,7 @@ mathjax3_config = {
         'displayMath': [["\\[", "\\]"]],
     },
 }
-# Import latex macros and extensions
+# Import latex macros
 mathjax3_config['tex']['macros'] = latex_sphinx.get_latex_macros('latex_macros.tex')
 
 # -- Options for HTML output -------------------------------------------------
