@@ -526,7 +526,6 @@ class GridGeometry(state_utils.FieldSource):
                 "edge_lon": attrs.EDGE_LON,
             },
             fields={
-                "tangent_orientation": "_invalid_tangent_orientation",
                 "tangent_x": attrs.EDGE_TANGENT_X,
                 "tangent_y": attrs.EDGE_TANGENT_Y,
                 "tangent_z": attrs.EDGE_TANGENT_Z,
@@ -536,7 +535,7 @@ class GridGeometry(state_utils.FieldSource):
             },
             domain={
                 dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.LOCAL),
                     self._edge_domain(h_grid.Zone.END),
                 )
             },
