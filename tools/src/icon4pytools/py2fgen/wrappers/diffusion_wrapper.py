@@ -245,6 +245,7 @@ def diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
+        exchange=definitions.SingleNodeExchange(),
     )
 
 
@@ -375,8 +376,3 @@ def grid_init(
             num_edges,
             num_vertices,
         )
-    else:
-        exchange_runtime = definitions.SingleNodeExchange()
-
-    # initialise the Diffusion granule
-    diffusion_wrapper_state["granule"] = Diffusion(backend=backend, exchange=exchange_runtime)
