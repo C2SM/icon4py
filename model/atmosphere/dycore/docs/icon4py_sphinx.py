@@ -10,6 +10,7 @@ from sphinx.ext import autodoc
 import re
 import inspect
 import typing
+import ast
 
 class FullMethodDocumenter(autodoc.MethodDocumenter):
     """
@@ -175,14 +176,70 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         method_info = {}
         local_method_name = call_string[0].split('(')[0] # get the method name from the call string (remove open bracket)
         # Get the module of this method from its name
-        module_name = local_method_name.split('.')[0] # this is not robust because it assumes we always import with module names
+        parent_name = local_method_name.split('.')[0]
         method_name = local_method_name.split('.')[-1]
-        module_obj = getattr(self.module, module_name)
-        method_obj = getattr(module_obj, method_name)
+        if parent_name in self.module.__dict__.keys():
+            # we are importing directly from a module
+            module_obj = getattr(self.module, parent_name)
+            method_obj = getattr(module_obj, method_name)
+        elif parent_name == 'self':
+            # the method was renamed in the present class
+            class_and_method_name = re.sub(self.modname, '', self.fullname)[1:]
+            class_name = class_and_method_name.split('.')[0]
+            class_obj = getattr(self.module, class_name)
+            # Check if the method is defined in the class
+            if hasattr(class_obj, method_name):
+                method_obj = getattr(class_obj, method_name)
+            else:
+                # Handle the case where the method is imported and renamed in the class
+                for attr_name in dir(class_obj):
+                    attr = getattr(class_obj, attr_name)
+                    if callable(attr) and hasattr(attr, '__name__') and attr.__name__ == method_name:
+                        method_obj = attr
+                        break
+                else:
+                    # Handle the case where the method is assigned to an instance variable using AST
+                    source = inspect.getsource(class_obj)
+                    tree = ast.parse(source)
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.FunctionDef) and node.name == '__init__':
+                            for stmt in node.body:
+                                if isinstance(stmt, ast.Assign):
+                                    for target in stmt.targets:
+                                        if isinstance(target, ast.Attribute) and target.attr == method_name:
+                                            if isinstance(stmt.value, ast.Attribute):
+                                                original_method_name = stmt.value.attr
+                                                if hasattr(class_obj, original_method_name):
+                                                    method_obj = getattr(class_obj, original_method_name)
+                                                    break
+                                            elif isinstance(stmt.value, ast.Name):
+                                                original_method_name = stmt.value.id
+                                                if original_method_name in self.module.__dict__.keys():
+                                                    module_obj = getattr(self.module, original_method_name)
+                                                    method_obj = getattr(module_obj, method_name)
+                                                    break
+                                            elif isinstance(stmt.value, ast.Call):
+                                                # Traverse the call chain to get the original method and module
+                                                call_chain = []
+                                                current_node = stmt.value.func
+                                                while isinstance(current_node, (ast.Attribute, ast.Name)):
+                                                    if isinstance(current_node, ast.Attribute):
+                                                        call_chain.append(current_node.attr)
+                                                        current_node = current_node.value
+                                                    elif isinstance(current_node, ast.Name):
+                                                        call_chain.append(current_node.id)
+                                                        break
+                                                call_chain.reverse()
+                                                module_name = call_chain[0]
+                                                original_method_name = call_chain[1]
+                                                if module_name in self.module.__dict__.keys():
+                                                    module_obj = getattr(self.module, module_name)
+                                                    method_obj = getattr(module_obj, original_method_name)
+                                                    break
         #
         method_info['call_string'] = call_string
         method_info['method_name'] = method_name
-        method_info['module_local_name'] = module_name
+        method_info['module_local_name'] = parent_name
         method_info['module_full_name'] = module_obj.__name__
         method_info['annotations'] = method_obj.definition.__annotations__
         method_info['var_names_map'] = self.map_variable_names(call_string)
