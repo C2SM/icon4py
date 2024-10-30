@@ -14,6 +14,7 @@ from typing import Callable, NamedTuple
 
 import click
 import numpy as np
+from cupy import cuda
 from devtools import Timer
 
 import icon4py.model.common.utils as common_utils
@@ -64,6 +65,10 @@ class TimeLoop:
         self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
+
+        self._timer_solve_nonhydro = Timer("nh_solve")
+        self._timer_diffusion = Timer("diffusion")
+        self.detailed_timers = False
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -169,8 +174,6 @@ class TimeLoop:
                 initial_divdamp_fac_o2,
                 do_prep_adv,
             )
-            from cupy import cuda
-
             cuda.runtime.deviceSynchronize()
             timer.capture()
 
@@ -183,6 +186,9 @@ class TimeLoop:
             # TODO (Chia Rui): simple IO enough for JW test
 
         timer.summary(True)
+        if self.detailed_timers:
+            self._timer_solve_nonhydro.summary(True)
+            self._timer_diffusion.summary(True)
 
     def _integrate_one_time_step(
         self,
@@ -204,11 +210,16 @@ class TimeLoop:
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
+            if self.detailed_timers:
+                self._timer_diffusion.start()
             self.diffusion.run(
                 diffusion_diagnostic_state,
                 prognostic_states.next,
                 self.dtime_in_seconds,
             )
+            if self.detailed_timers:
+                cuda.runtime.deviceSynchronize()
+                self._timer_diffusion.capture()
 
         prognostic_states.swap()
 
@@ -229,6 +240,8 @@ class TimeLoop:
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
             )
+            if self.detailed_timers:
+                self._timer_solve_nonhydro.start()
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
@@ -240,6 +253,9 @@ class TimeLoop:
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
             )
+            if self.detailed_timers:
+                cuda.runtime.deviceSynchronize()
+                self._timer_solve_nonhydro.capture()
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
