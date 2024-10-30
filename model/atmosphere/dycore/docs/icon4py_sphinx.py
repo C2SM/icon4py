@@ -22,32 +22,31 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
     priority = autodoc.MethodDocumenter.priority - 1
 
     # Configuration options
+    docstring_keyword = 'scidoc'
     var_type_in_inputs = True
     var_type_formatting = '``'
+    print_variable_longnames = True
 
     def get_doc(self):
         # Override the default get_doc method to pick up all docstrings in the
         # source code
         source = inspect.getsource(self.object) # this is only the source of the method, not the whole file
 
-        docstrings = re.findall(r'"""(.*?)"""', source, re.DOTALL)
+        docstrings = self.get_docstring_blocks(source, self.docstring_keyword)
+
         docstrings_list = []
         for idocstr, docstring in enumerate(docstrings):
             formatted_docstr = None
-            if idocstr==0:
-                # "Usual" docstring at the beginning of the method
-                formatted_docstr = docstring.splitlines()
 
-            elif docstring.startswith('_scidoc_'):
-                # Get some useful information
-                call_string = self.get_next_method_call(source, source.find(docstring) + len(docstring))
-                next_method_info = self.get_method_info(call_string)
-                # and process a scientific documentation docstring
-                formatted_docstr = docstring.splitlines()
-                formatted_docstr = self.format_source_code(formatted_docstr)
-                formatted_docstr = self.add_header(formatted_docstr, next_method_info)
-                formatted_docstr = self.process_scidocstrlines(formatted_docstr, next_method_info)
-                formatted_docstr = self.add_next_method_call(formatted_docstr, call_string)
+            # Get some useful information on the following method call
+            call_string = self.get_next_method_call(source, source.find(docstring) + len(docstring))
+            next_method_info = self.get_method_info(call_string)
+            # and process a scientific documentation docstring
+            formatted_docstr = docstring.splitlines()
+            formatted_docstr = self.format_docstring_block(formatted_docstr, self.docstring_keyword)
+            formatted_docstr = self.add_header(formatted_docstr, next_method_info)
+            formatted_docstr = self.process_scidocstrlines(formatted_docstr, next_method_info)
+            formatted_docstr = self.add_next_method_call(formatted_docstr, call_string)
 
             if formatted_docstr is not None:
                 if idocstr < len(docstrings)-1: # Add footer
@@ -56,25 +55,51 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
                 docstrings_list.append(formatted_docstr)
 
         return docstrings_list
+    
+    def get_docstring_blocks(self, source, keyword):
+        # which in this implementation are comment blocks
+        comment_blocks = []
+        source_lines = source.splitlines()
+        in_block = False
+        current_block = []
+        for line in source_lines:
+            stripped_line = line.strip()
+            if stripped_line.startswith(f'# {keyword}:'):
+                if in_block:
+                    comment_blocks.append('\n'.join(current_block))
+                    current_block = []
+                in_block = True
+                current_block.append(line)
+            elif in_block:
+                if stripped_line.startswith('#'):
+                    current_block.append(line)
+                else:
+                    in_block = False
+                    comment_blocks.append('\n'.join(current_block))
+                    current_block = []
+        if current_block:
+            comment_blocks.append('\n'.join(current_block))
+        return comment_blocks
 
-    def format_source_code(self, source_lines):
+    def format_docstring_block(self, docstr_lines, keyword):
         # Clean up and format
-        if source_lines[0].startswith('_scidoc_'):
-            source_lines.pop(0) # remove the _scidoc_ prefix
-        while source_lines[0] == '':
+        if docstr_lines[0].strip().startswith(f'# {keyword}:'):
+            docstr_lines.pop(0) # remove the {keyword} prefix
+        while docstr_lines[0].strip() == '#':
             # strip empty lines from the beginning
-            source_lines.pop(0)
+            docstr_lines.pop(0)
         # strip leading and trailing whitespace of every line (maintain indentation)
-        indent = len(source_lines[0]) - len(source_lines[0].lstrip(' '))
-        source_lines = [line[indent:].rstrip() for line in source_lines]
+        # as well as comment character and space (indent+2)
+        indent = len(docstr_lines[0]) - len(docstr_lines[0].lstrip(' '))
+        docstr_lines = [line[min(indent+2,len(line)):].rstrip() for line in docstr_lines]
         # strip empty lines from the end
-        while source_lines[-1] == '':
-            source_lines.pop(-1)
-        return source_lines
-
+        while docstr_lines[-1] == '':
+            docstr_lines.pop(-1)
+        return docstr_lines
+    
     def add_header(self, docstr_lines, method_info):
         # Add a title with ReST formatting
-        method_name = method_info['method_name']
+        method_name = method_info['module_local_name'] + '.' + method_info['method_name']
         method_full_name = method_info['module_full_name'] + '.' + method_name
         title = f':meth:`{method_name}()<{method_full_name}>`'
         docstr_lines.insert(0, title)
@@ -133,7 +158,14 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
                         # Replace only exact matches
                         for j, part in enumerate(split_line):
                             if part == variable:
-                                split_line[j] = f"{part} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
+                                if self.print_variable_longnames:
+                                    # long name version
+                                    var_longname = next_method_info['var_longnames_map'][variable]
+                                    var_longname = '*' + '.'.join(var_longname.split('.')[:-1]) + '*. **' + var_longname.split('.')[-1] + '**'
+                                    split_line[j] = f"{var_longname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
+                                else:
+                                    # short name version
+                                    split_line[j] = f"{variable} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
                         docstr_lines[iline] = ' '*indent + ' '.join(split_line)
 
         return docstr_lines
@@ -168,9 +200,23 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         if start_index is not None and end_index is not None:
             call_start_line = source[:index_start].count('\n')+1
             call_end_line = call_start_line + remaining_source[:end_index].count('\n')-1
-            call_string = self.format_source_code(source.splitlines()[call_start_line:call_end_line+1])
+            call_string = self.format_code_block(source.splitlines()[call_start_line:call_end_line+1])
             return call_string
         return None
+
+    def format_code_block(self, code_lines):
+        # Clean up and format
+        while code_lines[0] == '':
+            # strip empty lines from the beginning
+            code_lines.pop(0)
+        # strip leading and trailing whitespace of every line (maintain indentation)
+        indent = len(code_lines[0]) - len(code_lines[0].lstrip(' '))
+        code_lines = [line[indent:].rstrip() for line in code_lines]
+        # strip empty lines from the end
+        while code_lines[-1] == '':
+            code_lines.pop(-1)
+        return code_lines
+
 
     def get_method_info(self, call_string):
         method_info = {}
@@ -264,7 +310,7 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         method_info['module_local_name'] = parent_name
         method_info['module_full_name'] = module_full_name
         method_info['annotations'] = method_obj.definition_stage.definition.__annotations__ if type(method_obj).__name__ == 'Program' else method_obj.__annotations__
-        method_info['var_names_map'] = self.map_variable_names(call_string)
+        method_info['var_names_map'], method_info['var_longnames_map'] = self.map_variable_names(call_string)
         method_info['var_types'] = self.map_variable_types(method_info)
         return method_info
 
@@ -274,11 +320,13 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         matches = re.findall(pattern, ''.join(function_call_str))
         # Create a dictionary to map variable names to their full argument names
         variable_map = {}
+        variable_longnames_map = {}
         for arg_name, arg_value in matches:
             # Extract the last part of the argument value after the last period
             short_name = arg_value.split('.')[-1]
             variable_map[arg_name] = short_name
-        return variable_map
+            variable_longnames_map[short_name] = arg_value
+        return variable_map, variable_longnames_map
     
     def map_variable_types(self, method_info):
         # Map variable short names (*not arg name*) to their types using the

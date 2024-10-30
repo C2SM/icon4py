@@ -6,11 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import re
 import sys, os
 # Add the directory containing icon4py_sphinx to sys.path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 import icon4py_sphinx
+import latex_sphinx
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -60,16 +60,8 @@ mathjax3_config = {
         'displayMath': [["\\[", "\\]"]],
     },
 }
-# Import latex macros and extensions
-mathjax3_config['tex']['macros'] = {}
-with open('latex_macros.tex', 'r') as f:
-    for line in f:
-        macros = re.findall(r'\\(DeclareRobustCommand|newcommand|renewcommand){\\(.*?)}(\[(\d)\])?{(.+)}', line)
-        for macro in macros:
-            if len(macro[2]) == 0:
-                mathjax3_config['tex']['macros'][macro[1]] = "{"+macro[4]+"}"
-            else:
-                mathjax3_config['tex']['macros'][macro[1]] = ["{"+macro[4]+"}", int(macro[3])]
+# Import latex macros
+mathjax3_config['tex']['macros'] = latex_sphinx.get_latex_macros('latex_macros.tex')
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
