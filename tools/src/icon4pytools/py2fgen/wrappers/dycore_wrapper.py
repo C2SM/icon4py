@@ -34,6 +34,7 @@ import pstats
 import gt4py.next as gtx
 from gt4py.next import common as gt4py_common
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import SolveNonhydro
 from icon4py.model.atmosphere.dycore.state_utils import states as nh_states
 from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.decomposition import definitions
@@ -59,7 +60,7 @@ from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import parallel_run
+from icon4py.model.common.settings import backend, parallel_run
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -68,7 +69,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.wrappers import common
+from icon4pytools.py2fgen.wrappers import common as wrapper_common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellGlobalIndexDim,
@@ -203,7 +204,9 @@ def solve_nh_init(
     num_levels: gtx.int32,
 ):
     if not isinstance(dycore_wrapper_state["grid"], icon.IconGrid):
-        raise Exception("Need to initialise grid using grid_init_dycore before running solve_nh_init.")
+        raise Exception(
+            "Need to initialise grid using grid_init_dycore before running solve_nh_init."
+        )
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -336,7 +339,7 @@ def solve_nh_init(
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
-    dycore_wrapper_state["granule"].init(
+    dycore_wrapper_state["granule"] = SolveNonhydro(
         grid=dycore_wrapper_state["grid"],
         config=config,
         params=nonhydro_params,
@@ -346,6 +349,7 @@ def solve_nh_init(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
+        backend=backend,
     )
 
 
@@ -500,7 +504,7 @@ def grid_init_dycore(
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
-    dycore_wrapper_state["grid"] = common.construct_icon_grid(
+    dycore_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -528,7 +532,11 @@ def grid_init_dycore(
 
     if parallel_run:
         # Set MultiNodeExchange as exchange runtime
-        processor_props, decomposition_info, exchange_runtime = common.construct_decomposition(
+        (
+            processor_props,
+            decomposition_info,
+            exchange_runtime,
+        ) = wrapper_common.construct_decomposition(
             c_glb_index,
             e_glb_index,
             v_glb_index,

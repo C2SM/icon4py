@@ -462,7 +462,8 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Mock and Test SolveNonhydro.init ---
     with mock.patch(
-        "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.init"
+        "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.__init__",
+        return_value=None,
     ) as mock_init:
         dycore_wrapper.solve_nh_init(
             vct_a=vct_a,

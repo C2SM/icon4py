@@ -141,7 +141,9 @@ def diffusion_init(
     global_grid_params = GlobalGridParams(root=global_root, level=global_level)
 
     if not isinstance(diffusion_wrapper_state["grid"], icon.IconGrid):
-        raise Exception("Need to initialise grid using grid_init_diffusion before running diffusion_init.")
+        raise Exception(
+            "Need to initialise grid using grid_init_diffusion before running diffusion_init."
+        )
 
     # Edge geometry
     edge_params = geometry.EdgeParams(
@@ -235,7 +237,7 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    diffusion_wrapper_state["granule"].init(
+    diffusion_wrapper_state["granule"] = Diffusion(
         grid=diffusion_wrapper_state["grid"],
         config=config,
         params=diffusion_params,
@@ -244,6 +246,8 @@ def diffusion_init(
         interpolation_state=interpolation_state,
         edge_params=edge_params,
         cell_params=cell_params,
+        backend=backend,
+        exchange=definitions.SingleNodeExchange(),
     )
 
 
@@ -374,8 +378,3 @@ def grid_init_diffusion(
             num_edges,
             num_vertices,
         )
-    else:
-        exchange_runtime = definitions.SingleNodeExchange()
-
-    # initialise the Diffusion granule
-    diffusion_wrapper_state["granule"] = Diffusion(backend=backend, exchange=exchange_runtime)

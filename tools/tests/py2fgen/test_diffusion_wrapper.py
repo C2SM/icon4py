@@ -243,7 +243,9 @@ def test_diffusion_wrapper_granule_inputs(
     )
 
     # --- Mock and Test Diffusion.init ---
-    with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.init") as mock_init:
+    with mock.patch(
+        "icon4py.model.atmosphere.diffusion.diffusion.Diffusion.__init__", return_value=None
+    ) as mock_init:
         diffusion_wrapper.diffusion_init(
             vct_a=vct_a,
             vct_b=vct_b,
