@@ -46,6 +46,10 @@ def is_roundtrip(backend) -> bool:
     return backend.name == "roundtrip" if backend else False
 
 
+def is_gpu(backend) -> bool:
+    return "gpu" in backend.name
+
+
 def _shape(
     grid,
     *dims: gt_common.Dimension,

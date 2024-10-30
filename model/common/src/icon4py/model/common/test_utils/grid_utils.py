@@ -11,7 +11,7 @@ import functools
 import pytest
 
 import icon4py.model.common.grid.grid_manager as gm
-from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.test_utils import data_handling, datatest_utils as dt_utils
 
 
@@ -25,7 +25,7 @@ MCH_CH_R04B09_LEVELS = 65
 
 
 @functools.cache
-def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> icon_grid.IconGrid:
+def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> gm.GridManager:
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         return _download_and_load_from_gridfile(
             dt_utils.R02B04_GLOBAL,
@@ -59,21 +59,23 @@ def download_grid_file(file_path: str, filename: str):
 
 def load_grid_from_file(
     grid_file: str, num_levels: int, on_gpu: bool, limited_area: bool
-) -> icon_grid.IconGrid:
+) -> gm.GridManager:
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(),
         str(grid_file),
         v_grid.VerticalGridConfig(num_levels=num_levels),
     )
     manager(on_gpu=on_gpu, limited_area=limited_area)
-    return manager.grid
+    return manager
 
 
 def _download_and_load_from_gridfile(
     file_path: str, filename: str, num_levels: int, on_gpu: bool, limited_area: bool
-) -> icon_grid.IconGrid:
+) -> gm.GridManager:
     grid_file = download_grid_file(file_path, filename)
-    return load_grid_from_file(grid_file, num_levels, on_gpu, limited_area)
+
+    gm = load_grid_from_file(grid_file, num_levels, on_gpu, limited_area)
+    return gm
 
 
 @pytest.fixture

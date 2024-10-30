@@ -278,7 +278,7 @@ class ProgramFieldProvider(FieldProvider):
                 for k, v in self._output.items()
             }
             dtype = metadata["dtype"]
-        except (ValueError,  KeyError):
+        except (ValueError, KeyError):
             dtype = ta.wpfloat
 
         self._fields = self._allocate(backend, grid_provider.grid, dtype=dtype)

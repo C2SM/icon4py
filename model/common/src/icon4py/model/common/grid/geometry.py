@@ -313,8 +313,8 @@ class GridGeometry(state_utils.FieldSource):
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
         backend: gtx_backend.Backend,
-        coordinates: dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]],
-        fields: dict[InputGeometryFieldType, gtx.Field],
+        coordinates: gm.CoordinateDict,
+        extra_fields: dict[InputGeometryFieldType, gtx.Field],
         metadata: dict[str, model.FieldMetaData],
     ):
         self._backend = backend
@@ -332,12 +332,18 @@ class GridGeometry(state_utils.FieldSource):
 
         self._providers: dict[str, factory.FieldProvider] = {}
 
-        edge_orientation0_lat, edge_orientation0_lon, edge_orientation1_lat, edge_orientation1_lon \
-            = create_auxiliary_coordinate_arrays_for_orientation(self._grid,
-                                                                 coordinates[dims.CellDim]["lat"],
-                                                                 coordinates[dims.CellDim]["lon"],
-                                                                 coordinates[dims.EdgeDim]["lat"],
-                                                                 coordinates[dims.EdgeDim]["lon"])
+        (
+            edge_orientation0_lat,
+            edge_orientation0_lon,
+            edge_orientation1_lat,
+            edge_orientation1_lon,
+        ) = create_auxiliary_coordinate_arrays_for_orientation(
+            self._grid,
+            coordinates[dims.CellDim]["lat"],
+            coordinates[dims.CellDim]["lon"],
+            coordinates[dims.EdgeDim]["lat"],
+            coordinates[dims.EdgeDim]["lon"],
+        )
         coordinates_ = {
             attrs.CELL_LAT: coordinates[dims.CellDim]["lat"],
             attrs.CELL_LON: coordinates[dims.CellDim]["lon"],
@@ -345,19 +351,18 @@ class GridGeometry(state_utils.FieldSource):
             attrs.EDGE_LON: coordinates[dims.EdgeDim]["lon"],
             attrs.EDGE_LAT: coordinates[dims.EdgeDim]["lat"],
             attrs.VERTEX_LON: coordinates[dims.VertexDim]["lon"],
-            "latitude_of_edge_cell_neighbor_0":edge_orientation0_lat,
+            "latitude_of_edge_cell_neighbor_0": edge_orientation0_lat,
             "longitude_of_edge_cell_neighbor_0": edge_orientation0_lon,
             "latitude_of_edge_cell_neighbor_1": edge_orientation1_lat,
             "longitude_of_edge_cell_neighbor_1": edge_orientation1_lon,
-
         }
         coodinate_provider = factory.PrecomputedFieldProvider(coordinates_)
         self.register_provider(coodinate_provider)
-                                                                                                                                                
+
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
-                attrs.CELL_AREA: fields[gm.GeometryName.CELL_AREA],
-                attrs.TANGENT_ORIENTATION: fields[gm.GeometryName.TANGENT_ORIENTATION],
+                attrs.CELL_AREA: extra_fields[gm.GeometryName.CELL_AREA],
+                attrs.TANGENT_ORIENTATION: extra_fields[gm.GeometryName.TANGENT_ORIENTATION],
                 "edge_owner_mask": gtx.as_field(
                     (dims.EdgeDim,), decomposition_info.owner_mask(dims.EdgeDim), dtype=bool
                 ),
@@ -414,7 +419,7 @@ class GridGeometry(state_utils.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL)
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
             fields={
@@ -450,16 +455,13 @@ class GridGeometry(state_utils.FieldSource):
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
-                    self._edge_domain(h_grid.Zone.LOCAL)
+                    self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
-            fields={
-                "far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH
-            },
+            fields={"far_vertex_distance": attrs.VERTEX_VERTEX_LENGTH},
             deps={
-                "vertex_lat":attrs.VERTEX_LAT,
+                "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
-
             },
             params={"radius": self._grid.global_properties.length},
         )
@@ -484,7 +486,7 @@ class GridGeometry(state_utils.FieldSource):
             deps={
                 "owner_mask": "edge_owner_mask",
                 "primal_edge_length": attrs.EDGE_LENGTH,
-                "dual_edge_length": attrs.DUAL_EDGE_LENGTH
+                "dual_edge_length": attrs.DUAL_EDGE_LENGTH,
             },
             fields={"area": attrs.EDGE_AREA},
             domain={
@@ -514,16 +516,17 @@ class GridGeometry(state_utils.FieldSource):
         provider = ProgramFieldProvider(
             func=compute_cartesian_coordinates_of_edge_tangent_and_normal,
             deps={
-                "cell_lat":attrs.CELL_LAT,
+                "cell_lat": attrs.CELL_LAT,
                 "cell_lon": attrs.CELL_LON,
                 "edge_neighbor0_lat": "latitude_of_edge_cell_neighbor_0",
                 "edge_neighbor0_lon": "longitude_of_edge_cell_neighbor_0",
-                "edge_neighbor1_lat":"latitude_of_edge_cell_neighbor_1",
-                "edge_neighbor1_lon":"longitude_of_edge_cell_neighbor_1",
+                "edge_neighbor1_lat": "latitude_of_edge_cell_neighbor_1",
+                "edge_neighbor1_lon": "longitude_of_edge_cell_neighbor_1",
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
                 "edge_lat": attrs.EDGE_LAT,
                 "edge_lon": attrs.EDGE_LON,
+                "edge_orientation": attrs.TANGENT_ORIENTATION,
             },
             fields={
                 "tangent_x": attrs.EDGE_TANGENT_X,
@@ -630,6 +633,72 @@ class GridGeometry(state_utils.FieldSource):
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
         )
         self.register_provider(provider)
+        # 3. dual normals: the dual normals are the edge tangents
+        wrapped_provider = ProgramFieldProvider(
+            func=compute_edge_primal_normal_vertex,
+            deps={
+                "vertex_lat": attrs.VERTEX_LAT,
+                "vertex_lon": attrs.VERTEX_LON,
+                "x": attrs.EDGE_TANGENT_X,
+                "y": attrs.EDGE_TANGENT_Y,
+                "z": attrs.EDGE_TANGENT_Z,
+            },
+            fields={
+                "u_vertex_1": "u_vertex_1",
+                "v_vertex_1": "v_vertex_1",
+                "u_vertex_2": "u_vertex_2",
+                "v_vertex_2": "v_vertex_2",
+                "u_vertex_3": "u_vertex_3",
+                "v_vertex_3": "v_vertex_3",
+                "u_vertex_4": "u_vertex_4",
+                "v_vertex_4": "v_vertex_4",
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        provider = SparseFieldProviderWrapper(
+            wrapped_provider,
+            target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
+            fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
+            pairs=(
+                ("u_vertex_1", "u_vertex_2", "u_vertex_3", "u_vertex_4"),
+                ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
+            ),
+        )
+        self.register_provider(provider)
+        wrapped_provider = ProgramFieldProvider(
+            func=compute_edge_primal_normal_cell,
+            deps={
+                "cell_lat": attrs.CELL_LAT,
+                "cell_lon": attrs.CELL_LON,
+                "x": attrs.EDGE_TANGENT_X,
+                "y": attrs.EDGE_TANGENT_Y,
+                "z": attrs.EDGE_TANGENT_Z,
+            },
+            fields={
+                "u_cell_1": "u_cell_1",
+                "v_cell_1": "v_cell_1",
+                "u_cell_2": "u_cell_2",
+                "v_cell_2": "v_cell_2",
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        provider = SparseFieldProviderWrapper(
+            wrapped_provider,
+            target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
+            fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
+            pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
+        )
+        self.register_provider(provider)
 
     def get(
         self, field_name: str, type_: state_utils.RetrievalType = state_utils.RetrievalType.FIELD
@@ -674,7 +743,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
         field_provider: factory.ProgramFieldProvider,
         target_dims: tuple[HorizontalD, SparseD],
         fields: Sequence[str],
-        pairs: Sequence[tuple[str, str]],
+        pairs: Sequence[tuple[str, ...]],
     ):
         self._wrapped_provider = field_provider
         self._fields = {name: None for name in fields}
@@ -701,7 +770,6 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
 
     @property
     def dependencies(self) -> Sequence[str]:
-        # TODO or values?
         return self._wrapped_provider.dependencies
 
     @property
@@ -729,21 +797,28 @@ def as_sparse_field(
 
 
 def create_auxiliary_coordinate_arrays_for_orientation(
-        grid:icon.IconGrid,
-        cell_lat:fa.CellField[ta.wpfloat],
-        cell_lon:fa.CellField[ta.wpfloat],
-        edge_lat:fa.EdgeField[ta.wpfloat],
-        edge_lon:fa.EdgeField[ta.wpfloat],
-) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    grid: icon.IconGrid,
+    cell_lat: fa.CellField[ta.wpfloat],
+    cell_lon: fa.CellField[ta.wpfloat],
+    edge_lat: fa.EdgeField[ta.wpfloat],
+    edge_lon: fa.EdgeField[ta.wpfloat],
+) -> tuple[
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+    fa.EdgeField[ta.wpfloat],
+]:
     e2c_table = grid.connectivities[dims.E2CDim]
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
-    for i in (0,1):
+    for i in (0, 1):
         boundary_edges = xp.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
         lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]
         lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
-      
-    return (gtx.as_field((dims.EdgeDim, ), lat[:, 0]),
-            gtx.as_field((dims.EdgeDim, ), lon[:, 0]),
-            gtx.as_field((dims.EdgeDim, ), lat[:, 1]),
-            gtx.as_field((dims.EdgeDim, ), lon[:, 1]))
+
+    return (
+        gtx.as_field((dims.EdgeDim,), lat[:, 0]),
+        gtx.as_field((dims.EdgeDim,), lon[:, 0]),
+        gtx.as_field((dims.EdgeDim,), lat[:, 1]),
+        gtx.as_field((dims.EdgeDim,), lon[:, 1]),
+    )

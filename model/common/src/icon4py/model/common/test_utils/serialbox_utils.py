@@ -192,6 +192,15 @@ class IconGridSavepoint(IconSavepoint):
     def primal_cart_normal_z(self):
         return self._get_field("primal_cart_normal_z", dims.EdgeDim)
 
+    def dual_cart_normal_x(self):
+        return self._get_field("dual_cart_normal_x", dims.EdgeDim)
+
+    def dual_cart_normal_y(self):
+        return self._get_field("dual_cart_normal_y", dims.EdgeDim)
+
+    def dual_cart_normal_z(self):
+        return self._get_field("dual_cart_normal_z", dims.EdgeDim)
+
     def inv_vert_vert_length(self):
         return self._get_field("inv_vert_vert_length", dims.EdgeDim)
 

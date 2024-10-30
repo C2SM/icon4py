@@ -8,7 +8,7 @@
 import enum
 import logging
 import pathlib
-from typing import Optional, Protocol, Union
+from typing import Literal, Optional, Protocol, TypeAlias, Union
 
 import gt4py.next as gtx
 
@@ -343,6 +343,9 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         return xp.asarray(xp.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
+CoordinateDict: TypeAlias = dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+
+
 class GridManager:
     """
     Read ICON grid file and set up grid topology, refinement information and geometry fields.
@@ -368,7 +371,7 @@ class GridManager:
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
         self._geometry = {}
         self._reader = None
-        self._coordinates = {}
+        self._coordinates: CoordinateDict = {}
 
     def open(self):
         """Open the gridfile resource for reading."""

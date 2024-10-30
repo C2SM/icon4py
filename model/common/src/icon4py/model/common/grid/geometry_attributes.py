@@ -40,13 +40,17 @@ DUAL_EDGE_LENGTH = "length_of_dual_edge"
 EDGE_TANGENT_X = "x_component_of_edge_tangential_unit_vector"
 EDGE_TANGENT_Y = "y_component_of_edge_tangential_unit_vector"
 EDGE_TANGENT_Z = "z_component_of_edge_tangential_unit_vector"
+EDGE_TANGENT_VERTEX_U = "eastward_component_of_edge_tangent_on_vertex"  # TODO @halungge check name
+EDGE_TANGENT_VERTEX_V = "northward_component_of_edge_tangent_on_vertex"  # TODO @halungge check name
+EDGE_TANGENT_CELL_U = "eastward_component_of_edge_tangent_on_cell"  # TODO @halungge check name
+EDGE_TANGENT_CELL_V = "northward_component_of_edge_tangent_on_cell"  # TODO @halungge check name
 EDGE_NORMAL_X = "x_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_Y = "y_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_Z = "z_component_of_edge_normal_unit_vector"
-EDGE_NORMAL_VERTEX_U = "eastward_component_of_edge_normal_on_vertex"  # TODO
-EDGE_NORMAL_VERTEX_V = "northward_component_of_edge_normal_on_vertex"  # TODO
-EDGE_NORMAL_CELL_U = "eastward_component_of_edge_normal_on_cell"  # TODO
-EDGE_NORMAL_CELL_V = "northward_component_of_edge_normal_on_cell"  # TODO
+EDGE_NORMAL_VERTEX_U = "eastward_component_of_edge_normal_on_vertex"  # TODO @halungge check name
+EDGE_NORMAL_VERTEX_V = "northward_component_of_edge_normal_on_vertex"  # TODO @halungge check name
+EDGE_NORMAL_CELL_U = "eastward_component_of_edge_normal_on_cell"  # TODO @halungge check name
+EDGE_NORMAL_CELL_V = "northward_component_of_edge_normal_on_cell"  # TODO @halungge check name
 
 
 attrs: dict[str, model.FieldMetaData] = {
@@ -209,7 +213,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name=EDGE_NORMAL_VERTEX_V,
         units="",  # TODO missing
         dims=(dims.EdgeDim, dims.E2C2VDim),
-        icon_var_name="primal_normal_vert%v2",
+        icon_var_name="primal_normal_vert%v2",  # TODO check
         dtype=ta.wpfloat,
     ),
     EDGE_NORMAL_CELL_U: dict(
@@ -217,7 +221,7 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name=EDGE_NORMAL_CELL_U,
         units="",  # TODO missing
         dims=(dims.EdgeDim, dims.E2CDim),
-        icon_var_name="primal_normal_vert%v1",
+        icon_var_name="primal_normal_cell%v1",  # TODO check
         dtype=ta.wpfloat,
     ),
     EDGE_NORMAL_CELL_V: dict(
@@ -225,7 +229,39 @@ attrs: dict[str, model.FieldMetaData] = {
         long_name=EDGE_NORMAL_CELL_V,
         units="",  # TODO missing
         dims=(dims.EdgeDim, dims.E2CDim),
-        icon_var_name="primal_normal_vert%v2",
+        icon_var_name="primal_normal_cell%v2",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_TANGENT_CELL_U: dict(
+        standard_name=EDGE_TANGENT_CELL_U,
+        long_name=EDGE_TANGENT_CELL_U,
+        units="",
+        dims=(dims.EdgeDim, dims.E2CDim),
+        icon_var_name="dual_normal_cell%v1",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_TANGENT_CELL_V: dict(
+        standard_name=EDGE_TANGENT_CELL_V,
+        long_name=EDGE_TANGENT_CELL_V,
+        units="",
+        dims=(dims.EdgeDim, dims.E2CDim),
+        icon_var_name="dual_normal_cell%v2",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_TANGENT_VERTEX_U: dict(
+        standard_name=EDGE_TANGENT_VERTEX_U,
+        long_name=EDGE_TANGENT_VERTEX_U,
+        units="",
+        icon_var_name="dual_normal_vert%v1",  # TODO check
+        dims=(dims.EdgeDim, dims.E2C2VDim),
+        dtype=ta.wpfloat,
+    ),
+    EDGE_TANGENT_VERTEX_V: dict(
+        standard_name=EDGE_TANGENT_VERTEX_V,
+        long_name=EDGE_TANGENT_VERTEX_V,
+        units="",
+        dims=(dims.EdgeDim, dims.E2C2VDim),
+        icon_var_name="dual_normal_vert%v2",  # TODO check
         dtype=ta.wpfloat,
     ),
     TANGENT_ORIENTATION: dict(
