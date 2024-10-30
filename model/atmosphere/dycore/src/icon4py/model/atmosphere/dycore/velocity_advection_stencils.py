@@ -236,20 +236,32 @@ def fused_stencils_11_to_13(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _fused_stencils_11_to_13(
+    _copy_cell_kdim_field_to_vp(
         w,
-        w_concorr_c,
-        local_z_w_con_c,
-        k_field,
-        nflatlev_startindex,
-        nlev,
         out=local_z_w_con_c,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
 
+    _init_cell_kdim_field_with_zero_vp(
+        out=local_z_w_con_c,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
+        },
+    )
+
+    _correct_contravariant_vertical_velocity(
+        local_z_w_con_c,
+        w_concorr_c,
+        out=local_z_w_con_c,
+        domain = {
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (nflatlev_startindex + 1, vertical_end - 1),
+        },
+    )
 
 @gtx.field_operator
 def _fused_stencil_14(
@@ -329,13 +341,22 @@ def fused_stencils_16_to_17(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _fused_stencils_16_to_17(
+    _compute_advective_vertical_wind_tendency(
+       local_z_w_con_c,
         w,
-        local_z_v_grad_w,
-        e_bln_c_s,
-        local_z_w_con_c,
         coeff1_dwdz,
         coeff2_dwdz,
+        out=ddt_w_adv,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+    _add_interpolated_horizontal_advection_of_w(
+        e_bln_c_s,
+        local_z_v_grad_w,
+        ddt_w_adv,
         out=ddt_w_adv,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
