@@ -454,7 +454,7 @@ class GridGeometry(state_utils.FieldSource):
             func=compute_far_vertex_distance_in_diamond,
             domain={
                 dims.EdgeDim: (
-                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
                     self._edge_domain(h_grid.Zone.LOCAL),
                 )
             },
