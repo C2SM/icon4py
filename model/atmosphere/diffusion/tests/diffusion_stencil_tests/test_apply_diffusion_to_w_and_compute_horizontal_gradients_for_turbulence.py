@@ -6,13 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
@@ -49,10 +49,10 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         halo_idx,
         **kwargs,
     ):
-        reshaped_k = k[np.newaxis, :]
-        reshaped_cell = cell[:, np.newaxis]
+        reshaped_k = k[xp.newaxis, :]
+        reshaped_cell = cell[:, xp.newaxis]
         if type_shear == 2:
-            dwdx, dwdy = np.where(
+            dwdx, dwdy = xp.where(
                 0 < reshaped_k,
                 calculate_horizontal_gradients_for_turbulence_numpy(
                     grid, w_old, geofac_grg_x, geofac_grg_y
@@ -62,13 +62,13 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
         z_nabla2_c = calculate_nabla2_for_w_numpy(grid, w_old, geofac_n2s)
 
-        w = np.where(
+        w = xp.where(
             (interior_idx <= reshaped_cell) & (reshaped_cell < halo_idx),
             apply_nabla2_to_w_numpy(grid, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
             w_old,
         )
 
-        w = np.where(
+        w = xp.where(
             (0 < reshaped_k)
             & (reshaped_k < nrdmax)
             & (interior_idx <= reshaped_cell)

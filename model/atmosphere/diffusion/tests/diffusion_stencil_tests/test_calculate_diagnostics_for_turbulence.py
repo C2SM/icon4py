@@ -6,22 +6,22 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbulence import (
     calculate_diagnostics_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
 
 
 def calculate_diagnostics_for_turbulence_numpy(
-    wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic
-) -> tuple[np.array, np.array]:
-    kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
-    div_offset_1 = np.roll(div, shift=1, axis=1)
+    wgtfac_c: xp.array, div: xp.array, kh_c: xp.array, div_ic, hdef_ic
+) -> tuple[xp.array, xp.array]:
+    kc_offset_1 = xp.roll(kh_c, shift=1, axis=1)
+    div_offset_1 = xp.roll(div, shift=1, axis=1)
     div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
     hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[:, 1:]
     return div_ic, hdef_ic
@@ -32,7 +32,7 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
     OUTPUTS = ("div_ic", "hdef_ic")
 
     @staticmethod
-    def reference(grid, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic) -> dict:
+    def reference(grid, wgtfac_c: xp.array, div: xp.array, kh_c: xp.array, div_ic, hdef_ic) -> dict:
         div_ic, hdef_ic = calculate_diagnostics_for_turbulence_numpy(
             wgtfac_c, div, kh_c, div_ic, hdef_ic
         )

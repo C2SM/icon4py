@@ -6,12 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -61,10 +61,10 @@ class TestApplyDiffusionToVn(StencilTest):
             inv_primal_edge_length,
         )
 
-        condition = start_2nd_nudge_line_idx_e <= edge[:, np.newaxis]
+        condition = start_2nd_nudge_line_idx_e <= edge[:, xp.newaxis]
 
         if limited_area:
-            vn = np.where(
+            vn = xp.where(
                 condition,
                 apply_nabla2_and_nabla4_to_vn_numpy(
                     grid,
@@ -82,7 +82,7 @@ class TestApplyDiffusionToVn(StencilTest):
                 ),
             )
         else:
-            vn = np.where(
+            vn = xp.where(
                 condition,
                 apply_nabla2_and_nabla4_global_to_vn_numpy(
                     grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn

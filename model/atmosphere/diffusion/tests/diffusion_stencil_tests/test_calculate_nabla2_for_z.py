@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
@@ -14,20 +13,21 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def calculate_nabla2_for_z_numpy(
     grid,
-    kh_smag_e: np.array,
-    inv_dual_edge_length: np.array,
-    theta_v: np.array,
-    z_nabla2_e: np.array,
+    kh_smag_e: xp.array,
+    inv_dual_edge_length: xp.array,
+    theta_v: xp.array,
+    z_nabla2_e: xp.array,
     **kwargs,
-) -> np.array:
+) -> xp.array:
     z_nabla2_e_cp = z_nabla2_e.copy()
-    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+    inv_dual_edge_length = xp.expand_dims(inv_dual_edge_length, axis=-1)
 
     theta_v_e2c = theta_v[grid.connectivities[dims.E2CDim]]
     theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
@@ -47,10 +47,10 @@ class TestCalculateNabla2ForZ(StencilTest):
     @staticmethod
     def reference(
         grid,
-        kh_smag_e: np.array,
-        inv_dual_edge_length: np.array,
-        theta_v: np.array,
-        z_nabla2_e: np.array,
+        kh_smag_e: xp.array,
+        inv_dual_edge_length: xp.array,
+        theta_v: xp.array,
+        z_nabla2_e: xp.array,
         **kwargs,
     ) -> dict:
         z_nabla2_e = calculate_nabla2_for_z_numpy(
