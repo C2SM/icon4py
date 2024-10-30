@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
-from icon4pytools.py2fgen.wrappers import settings
 
 from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusion_states
 from icon4py.model.common import dimension as dims
@@ -172,8 +171,8 @@ def test_parallel_diffusion_multiple_steps(
     backend,
     diffusion_instance,  # noqa: F811
 ):
-    if settings.dace_orchestration is None:
-        raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
+    # if settings.dace_orchestration is None:
+    #     raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
     # Diffusion initialization
@@ -236,7 +235,6 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     # DaCe NON-Orchestrated Backend
     ######################################################################
-    settings.dace_orchestration = None
 
     diffusion = diffusion_.Diffusion(
         grid=icon_grid,
@@ -285,11 +283,10 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     # DaCe Orchestrated Backend
     ######################################################################
-    settings.dace_orchestration = True
 
     diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
 
-    diffusion.init(
+    diffusion_.Diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -300,6 +297,9 @@ def test_parallel_diffusion_multiple_steps(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        backend=backend,
+        exchange=exchange,
+        orchestration=True,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 

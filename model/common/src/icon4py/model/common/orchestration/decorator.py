@@ -99,12 +99,12 @@ def orchestrate(
             raise NotImplementedError(
                 "The orchestration decorator is only for methods -at least for now-."
             )
-        # Add DaCe data types annotations for **all args and kwargs**
-        dace_annotations = to_dace_annotations(fuse_func)
 
         def wrapper(*args, **kwargs):
             self = args[0]
             if self._orchestration:
+                # Add DaCe data types annotations for **all args and kwargs**
+                dace_annotations = to_dace_annotations(fuse_func)
                 if "dace" not in self._backend.name.lower():
                     raise ValueError(
                         "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."

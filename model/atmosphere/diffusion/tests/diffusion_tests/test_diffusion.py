@@ -359,7 +359,7 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
 
 
-@pytest.mark.dace_orchestration
+# @pytest.mark.dace_orchestration
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -448,6 +448,7 @@ def test_run_diffusion_multiple_steps(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        orchestration=True,
         backend=backend,
     )
 
