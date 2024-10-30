@@ -20,6 +20,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
+def _interpolate_to_half_levels_wp(
+    wgtfac_c: fa.CellKField[wpfloat],
+    interpolant: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
+    """Formerly known mo_velocity_advection_stencil_10 and as _mo_solve_nonhydro_stencil_05."""
+    interpolation_to_half_levels_wp = wgtfac_c * interpolant + (
+        wpfloat("1.0") - wgtfac_c
+    ) * interpolant(Koff[-1])
+    return interpolation_to_half_levels_wp
+
+@field_operator
 def _compute_virtual_potential_temperatures_and_pressure_gradient(
     wgtfac_c: fa.CellKField[vpfloat],
     z_rth_pr_2: fa.CellKField[vpfloat],
@@ -37,7 +48,8 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
     wgtfac_c_wp, ddqz_z_half_wp = astype((wgtfac_c, ddqz_z_half), wpfloat)
 
     z_theta_v_pr_ic_vp = _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_rth_pr_2)
-    theta_v_ic_wp = wgtfac_c_wp * theta_v + (wpfloat("1.0") - wgtfac_c_wp) * theta_v(Koff[-1])
+    theta_v_ic_wp = _interpolate_to_half_levels_wp(wgtfac_c=wgtfac_c_wp, interpolant=theta_v)
+    # TODO (Chia Rui): this does not work: theta_v_ic_wp = wgtfac_c_wp * theta_v + (wpfloat("1.0") - wgtfac_c_wp) * theta_v(Koff[-1])
     z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic_wp * (
         exner_pr(Koff[-1]) - exner_pr
     ) / ddqz_z_half_wp + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
