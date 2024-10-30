@@ -244,13 +244,24 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        """
-        vn_ie (1:nlev-1):
-            Compute normal velocity at half levels (edge center) simply by interpolating two neighboring
-            normal velocity at full levels.
-        z_kin_hor_e (1:nlev-1):
-            Compute the horizontal kinetic energy (vn^2 + vt^2)/2 at full levels (edge center).
-        """
+        # scidoc:
+        # Outputs:
+        #  - vn_ie :
+        #     $$
+        #     \vn{\n}{\e}{\k-1/2} = \nu \vn{\n}{\e}{\k} + (1 - \nu) \vn{\n}{\e}{\k-1}, \qquad \k \in [1, \nlev)
+        #     $$
+        #     Linearly interpolate the normal velocity from full levels to half levels.
+        #  - z_kin_hor_e :
+        #     $$
+        #     \kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right), \qquad \k \in [1, \nlev)
+        #     $$
+        #     Compute the horizontal kinetic energy.
+        #
+        # Inputs:
+        #  - $\nu$ : wgtfac_e
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #  - $\vt{\n}{\e}{\k}$ : vt
+        #
         self._interpolate_vn_to_ie_and_compute_ekin_on_edges(
             wgtfac_e=self.metric_state.wgtfac_e,
             vn=prognostic_state.vn,
