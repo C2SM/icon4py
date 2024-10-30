@@ -141,9 +141,7 @@ def test_nonhydro_predictor_step(
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro(backend)
-    nlev = icon_grid.num_levels
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -153,7 +151,9 @@ def test_nonhydro_predictor_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
+    nlev = icon_grid.num_levels
 
     prognostic_state_ls = utils.create_prognostic_states(sp)
     solve_nonhydro.set_timelevels(nnow, nnew)
@@ -552,8 +552,7 @@ def test_nonhydro_corrector_step(
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro(backend)
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -563,6 +562,7 @@ def test_nonhydro_corrector_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
     prognostic_state_ls = utils.create_prognostic_states(sp)
@@ -740,8 +740,7 @@ def test_run_solve_nonhydro_single_step(
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro(backend)
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -751,6 +750,7 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
     prognostic_state_ls = utils.create_prognostic_states(sp)
@@ -869,8 +869,7 @@ def test_run_solve_nonhydro_multi_step(
     cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro(backend)
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -880,6 +879,7 @@ def test_run_solve_nonhydro_multi_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
     for i_substep in range(ndyn_substeps):
