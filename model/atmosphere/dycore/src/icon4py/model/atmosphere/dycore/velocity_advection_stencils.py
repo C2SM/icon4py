@@ -94,25 +94,26 @@ def fused_stencils_4_5(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _fused_stencils_4_5(
+    _compute_contravariant_correction(
         vn,
-        vt,
-        vn_ie,
-        z_vt_ie,
-        z_kin_hor_e,
         ddxn_z_full,
         ddxt_z_full,
-        z_w_concorr_me,
-        k_field,
-        nflatlev_startindex,
-        nlev,
-        out=(z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e),
-        domain={
+        vt,
+        out=z_w_concorr_me,
+        domain = {
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KDim: (nflatlev_startindex, vertical_end),
         },
     )
-
+    _compute_horizontal_kinetic_energy(
+        vn,
+        vt,
+        out = (vn_ie, z_vt_ie, z_kin_hor_e),
+        domain = {
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_start + 1),
+        },
+    )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def extrapolate_at_top(
@@ -176,19 +177,23 @@ def fused_stencils_9_10(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _fused_stencils_9_10(
+    _interpolate_to_cell_center(
         z_w_concorr_me,
         e_bln_c_s,
-        local_z_w_concorr_mc,
-        wgtfac_c,
-        w_concorr_c,
-        k_field,
-        nflatlev_startindex,
-        nlev,
-        out=(local_z_w_concorr_mc, w_concorr_c),
-        domain={
+        out=local_z_w_concorr_mc,
+        domain = {
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            dims.KDim: (nflatlev_startindex, vertical_end),
+        },
+    )
+
+    _interpolate_to_half_levels_vp(
+        interpolant=local_z_w_concorr_mc,
+        wgtfac_c=wgtfac_c,
+        out=w_concorr_c,
+        domain = {
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (nflatlev_startindex + 1, vertical_end),
         },
     )
 
