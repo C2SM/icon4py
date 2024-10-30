@@ -18,7 +18,7 @@ import icon4py.model.common.grid.geometry as geometry
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
-from icon4py.model.common.settings import xp
+from icon4py.model.common.settings import backend, xp
 from icon4py.model.common.states import prognostic_state
 
 
@@ -45,7 +45,7 @@ class IconSavepoint:
                     )
                     if dims:
                         shp = tuple(self.sizes[d] for d in dims)
-                        return gtx.as_field(dims, xp.zeros(shp))
+                        return gtx.as_field(dims, xp.zeros(shp), allocator=backend)
                     else:
                         return None
 
@@ -61,14 +61,14 @@ class IconSavepoint:
         buffer = self._reduce_to_dim_size(buffer, dimensions)
 
         self.log.debug(f"{name} {buffer.shape}")
-        return gtx.as_field(dimensions, buffer)
+        return gtx.as_field(dimensions, buffer, allocator=backend)
 
     def _get_field_component(self, name: str, ntnd: int, dims: tuple[gtx.Dimension, gtx]):
         buffer = self.serializer.read(name, self.savepoint).astype(float)
         buffer = xp.squeeze(buffer)[:, :, ntnd - 1]
         buffer = self._reduce_to_dim_size(buffer, dims)
         self.log.debug(f"{name} {buffer.shape}")
-        return gtx.as_field(dims, buffer)
+        return gtx.as_field(dims, buffer, allocator=backend)
 
     def _reduce_to_dim_size(self, buffer, dimensions):
         buffer_size = (
@@ -80,7 +80,7 @@ class IconSavepoint:
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
         ar = self._reduce_to_dim_size(ar, dimensions)
-        return gtx.as_field(dimensions, ar)
+        return gtx.as_field(dimensions, ar, allocator=backend)
 
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()
@@ -358,6 +358,7 @@ class IconGridSavepoint(IconSavepoint):
             xp.squeeze(
                 self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
             ),
+            allocator=backend,
         )
 
     def num(self, dim: gtx.Dimension):
@@ -547,9 +548,9 @@ class InterpolationSavepoint(IconSavepoint):
     def geofac_grg(self):
         grg = xp.squeeze(self.serializer.read("geofac_grg", self.savepoint))
         num_cells = self.sizes[dims.CellDim]
-        return gtx.as_field((dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 0]), gtx.as_field(
-            (dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 1]
-        )
+        return gtx.as_field(
+            (dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 0], allocator=backend
+        ), gtx.as_field((dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 1], allocator=backend)
 
     @IconSavepoint.optionally_registered()
     def zd_intcoef(self):
@@ -576,21 +577,21 @@ class InterpolationSavepoint(IconSavepoint):
         buffer = xp.squeeze(
             self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.EdgeDim, dims.E2C2EDim), buffer)
+        return gtx.as_field((dims.EdgeDim, dims.E2C2EDim), buffer, allocator=backend)
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
         buffer = xp.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer)
+        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=backend)
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
         buffer = xp.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer)
+        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=backend)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)
@@ -752,7 +753,9 @@ class MetricSavepoint(IconSavepoint):
     ):
         old_shape = data.shape
         assert old_shape[1] == sparse_size
-        return gtx.as_field(target_dims, data.reshape(old_shape[0] * old_shape[1], old_shape[2]))
+        return gtx.as_field(
+            target_dims, data.reshape(old_shape[0] * old_shape[1], old_shape[2]), allocator=backend
+        )
 
     @IconSavepoint.optionally_registered()
     def zd_vertoffset(self):
