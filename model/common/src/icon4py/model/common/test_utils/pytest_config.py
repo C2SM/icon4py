@@ -11,7 +11,6 @@ import os
 import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
-import icon4py.model.common.settings as settings
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
@@ -63,6 +62,9 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
     config.addinivalue_line("markers", "slow_tests: this test takes a very long time")
     config.addinivalue_line(
+        "markers", "dace_orchestration: this test only runs when running with dace orchestration"
+    )
+    config.addinivalue_line(
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
     )
 
@@ -73,10 +75,6 @@ def pytest_configure(config):
     if config.getoption("--backend"):
         backend = config.getoption("--backend")
         check_backend_validity(backend)
-        settings.backend = backends[backend]
-
-    if config.getoption("--dace-orchestration"):
-        settings.dace_orchestration = True
 
 
 def pytest_addoption(parser):
@@ -125,8 +123,8 @@ def pytest_addoption(parser):
     try:
         parser.addoption(
             "--dace-orchestration",
-            action="store",
-            default=None,
+            action="store_true",
+            default=False,
             help="Performs DaCe orchestration. Any value will enable it.",
         )
     except ValueError:
@@ -137,6 +135,10 @@ def pytest_runtest_setup(item):
     for _ in item.iter_markers(name="datatest"):
         if not item.config.getoption("--datatest"):
             pytest.skip("need '--datatest' option to run")
+
+    for _ in item.iter_markers(name="dace_orchestration"):
+        if not item.config.getoption("--dace-orchestration"):
+            pytest.skip("need '--dace_orchestration' option to run")
 
 
 def pytest_generate_tests(metafunc):

@@ -226,6 +226,7 @@ def diffusion_instance(
         cell_params=cell_geometry,
         backend=backend,
         exchange=exchange,
+        orchestration=True,
     )
 
     yield diffusion_instance_

@@ -28,7 +28,6 @@ from typing import Any, Optional, ParamSpec, TypeVar, Union, get_type_hints, ove
 import gt4py.next as gtx
 import numpy as np
 from gt4py._core import definitions as core_defs
-from icon4pytools.py2fgen.wrappers import settings
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -89,30 +88,27 @@ def orchestrate(
     """
 
     def _decorator(fuse_func: Callable[P, R]) -> Callable[P, R]:
-        if settings.dace_orchestration is not None:
-            orchestrator_cache = {}  # Caching
+        orchestrator_cache = {}  # Caching
+        self_name = next(iter(inspect.signature(fuse_func).parameters))
 
-            if "dace" not in settings.backend.name.lower():
-                raise ValueError(
-                    "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
-                )
+        # If not explicitly set by the user, assume the provided callable is a method
+        # when its first argument is called 'self'
+        func_is_method = method or (self_name == "self")
 
-            self_name = next(iter(inspect.signature(fuse_func).parameters))
+        if not func_is_method:
+            raise NotImplementedError(
+                "The orchestration decorator is only for methods -at least for now-."
+            )
+        # Add DaCe data types annotations for **all args and kwargs**
+        dace_annotations = to_dace_annotations(fuse_func)
 
-            # If not explicitly set by the user, assume the provided callable is a method
-            # when its first argument is called 'self'
-            func_is_method = method or (self_name == "self")
-
-            if not func_is_method:
-                raise NotImplementedError(
-                    "The orchestration decorator is only for methods -at least for now-."
-                )
-
-            # Add DaCe data types annotations for **all args and kwargs**
-            dace_annotations = to_dace_annotations(fuse_func)
-
-            def wrapper(*args, **kwargs):
-                self = args[0]
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            if self._orchestration:
+                if "dace" not in self._backend.name.lower():
+                    raise ValueError(
+                        "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
+                    )
 
                 exchange_obj = None
                 grid = None
@@ -147,6 +143,7 @@ def orchestrate(
 
                     cache_item = orchestrator_cache[unique_id] = parse_compile_cache_sdfg(
                         default_build_folder,
+                        self._backend,
                         exchange_obj,
                         fuse_func,
                         compile_time_args_kwargs,
@@ -181,21 +178,20 @@ def orchestrate(
                     del sdfg_args[self_name]
 
                 with dace.config.temporary_config():
-                    configure_dace_temp_env(default_build_folder)
+                    configure_dace_temp_env(default_build_folder, self._backend)
                     return compiled_sdfg(**sdfg_args)
+            else:
+                return fuse_func(*args, **kwargs)
 
-            # Pytest does not clear the cache between runs in a proper way -pytest.mark.parametrize(...)-.
-            # This leads to corrupted cache and subsequent errors.
-            # To avoid this, we provide a way to clear the cache.
-            def clear_cache():
-                orchestrator_cache.clear()
+        # Pytest does not clear the cache between runs in a proper way -pytest.mark.parametrize(...)-.
+        # This leads to corrupted cache and subsequent errors.
+        # To avoid this, we provide a way to clear the cache.
+        def clear_cache():
+            orchestrator_cache.clear()
 
-            wrapper.clear_cache = clear_cache
+        wrapper.clear_cache = clear_cache
 
-            return wrapper
-
-        else:
-            return fuse_func
+        return wrapper
 
     return _decorator(func) if func else _decorator
 
@@ -391,6 +387,7 @@ if dace:
 
     def parse_compile_cache_sdfg(
         default_build_folder: Path,
+        backend,
         exchange_obj: Optional[decomposition.ExchangeRuntime],
         fuse_func: Callable,
         compile_time_args_kwargs: dict[str, Any],
@@ -401,7 +398,7 @@ if dace:
         cache = {}
 
         with dace.config.temporary_config():
-            device_type = configure_dace_temp_env(default_build_folder)
+            device_type = configure_dace_temp_env(default_build_folder, backend)
 
             cache["dace_program"] = dace_program = dace.program(
                 auto_optimize=False,
@@ -497,7 +494,7 @@ if dace:
         value = os.getenv(env_var_name, str(default)).lower()
         return value in ("true", "1")
 
-    def configure_dace_temp_env(default_build_folder: Path) -> core_defs.DeviceType:
+    def configure_dace_temp_env(default_build_folder: Path, backend) -> core_defs.DeviceType:
         dace.config.Config.set("default_build_folder", value=str(default_build_folder))
         dace.config.Config.set(
             "compiler", "allow_view_arguments", value=True
@@ -506,7 +503,7 @@ if dace:
             "optimizer", "automatic_simplification", value=False
         )  # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
         dace.config.Config.set("optimizer", "autooptimize", value=False)
-        device_type = settings.backend.executor.step.translation.device_type
+        device_type = backend.executor.step.translation.device_type
         if device_type == core_defs.DeviceType.CPU:
             device = "cpu"
             compiler_args = dace.config.Config.get("compiler", "cpu", "args")

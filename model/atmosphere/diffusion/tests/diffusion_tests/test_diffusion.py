@@ -8,7 +8,6 @@
 
 import numpy as np
 import pytest
-from icon4pytools.py2fgen.wrappers import settings
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
@@ -302,6 +301,7 @@ def test_verify_diffusion_init_against_savepoint(
         interpolation_state,
         edge_params,
         cell_params,
+        orchestration=True,
         backend=backend,
     )
 
@@ -359,6 +359,7 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
 
 
+@pytest.mark.dace_orchestration
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -383,9 +384,6 @@ def test_run_diffusion_multiple_steps(
     backend,
     diffusion_instance,  # noqa: F811
 ):
-    if settings.dace_orchestration is None:
-        raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
-
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -432,7 +430,6 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe NON-Orchestrated Backend
     ######################################################################
-    settings.dace_orchestration = None
 
     diagnostic_state_dace_non_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -464,7 +461,6 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe Orchestrated Backend
     ######################################################################
-    settings.dace_orchestration = True
 
     diagnostic_state_dace_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -474,7 +470,9 @@ def test_run_diffusion_multiple_steps(
     )
     prognostic_state_dace_orch = savepoint_diffusion_init.construct_prognostics()
 
-    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    diffusion_granule = diffusion.Diffusion(
+        orchestration=True
+    )  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
 
     for _ in range(3):
         diffusion_granule.run(
