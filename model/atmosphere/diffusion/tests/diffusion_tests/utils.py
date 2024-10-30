@@ -8,7 +8,6 @@
 
 import numpy as np
 import pytest
-from icon4pytools.py2fgen.wrappers import settings
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
@@ -161,6 +160,7 @@ def compare_dace_orchestration_multiple_steps(
         raise ValueError("Field type not recognized")
 
 
+# @pytest.mark.dace_orchestration
 @pytest.fixture
 def diffusion_instance(
     icon_grid,
@@ -214,6 +214,7 @@ def diffusion_instance(
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
+    dace_orchestration = True
 
     diffusion_instance_ = diffusion.Diffusion(
         grid=icon_grid,
@@ -226,10 +227,10 @@ def diffusion_instance(
         cell_params=cell_geometry,
         backend=backend,
         exchange=exchange,
-        orchestration=True,
+        orchestration=dace_orchestration,
     )
 
     yield diffusion_instance_
 
-    if settings.dace_orchestration is not None:
+    if dace_orchestration:
         diffusion_instance_._do_diffusion_step.clear_cache()

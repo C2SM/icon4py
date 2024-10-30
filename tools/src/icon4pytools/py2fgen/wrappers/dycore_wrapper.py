@@ -59,7 +59,6 @@ from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -69,6 +68,7 @@ from icon4py.model.common.test_utils.helpers import (
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
+from icon4pytools.py2fgen.wrappers.settings import backend
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellIndexDim,
     EdgeIndexDim,
