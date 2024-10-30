@@ -8,7 +8,6 @@
 
 import numpy as np
 import pytest
-from icon4pytools.py2fgen.wrappers.settings import backend
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
 from icon4py.model.common import dimension as dims
@@ -106,7 +105,7 @@ def test_init_zero_vertex_k(backend):
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps
+    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):
     savepoint = savepoint_diffusion_init
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
