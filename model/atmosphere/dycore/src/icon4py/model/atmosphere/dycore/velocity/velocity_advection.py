@@ -228,11 +228,19 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        """
-        vt (0:nlev-1):
-            Compute tangential velocity at half levels (edge center) by RBF interpolation from four neighboring
-            edges (diamond shape) and projected to tangential direction.
-        """
+        # scidoc:
+        # Outputs:
+        #  - vt (0:nlev-1):
+        #     $$
+        #     \vt{\n}{\e}{\k} = \sum_{\e=\eTcTe} \Wrbf \vn{\n}{\e}{\k}, \qquad \k \in [0, \nlev)
+        #     $$
+        #     Compute the tangential velocity by RBF interpolation from four neighboring
+        #     edges (diamond shape) and projected to tangential direction.
+        #
+        # Inputs:
+        #  - $\Wrbf$ : rbf_vec_coeff_e
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #
         self._compute_tangential_wind(
             vn=prognostic_state.vn,
             rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
