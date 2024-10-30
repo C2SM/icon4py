@@ -367,7 +367,7 @@ def test_dycore_wrapper_granule_inputs(
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
-    expected_config = utils.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
+    expected_config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
@@ -455,7 +455,8 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Mock and Test SolveNonhydro.init ---
     with mock.patch(
-        "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.init"
+        "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.__init__",
+        return_value=None,
     ) as mock_init:
         dycore_wrapper.solve_nh_init(
             vct_a=vct_a,
