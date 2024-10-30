@@ -161,11 +161,16 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
                                 if self.print_variable_longnames:
                                     # long name version
                                     var_longname = next_method_info['var_longnames_map'][variable]
-                                    var_longname = '*' + '.'.join(var_longname.split('.')[:-1]) + '*. **' + var_longname.split('.')[-1] + '**'
-                                    split_line[j] = f"{var_longname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
+                                    prefix = '.'.join(var_longname.split('.')[:-1])
+                                    suffix = var_longname.split('.')[-1]
+                                    if prefix:
+                                        vname = '*' + prefix + '*. **' + suffix + '**'
+                                    else:
+                                        vname = '**' + suffix + '**'
                                 else:
                                     # short name version
-                                    split_line[j] = f"{variable} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
+                                    vname = variable
+                                split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
                         docstr_lines[iline] = ' '*indent + ' '.join(split_line)
 
         return docstr_lines
