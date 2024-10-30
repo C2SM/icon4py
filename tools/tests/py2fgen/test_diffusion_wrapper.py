@@ -233,10 +233,19 @@ def test_diffusion_wrapper_granule_inputs(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        c_glb_index=None,  # not running in parallel
+        e_glb_index=None,
+        v_glb_index=None,
+        c_owner_mask=None,
+        e_owner_mask=None,
+        v_owner_mask=None,
+        comm_id=None,
     )
 
     # --- Mock and Test Diffusion.init ---
-    with mock.patch("icon4py.model.atmosphere.diffusion.diffusion.Diffusion.init") as mock_init:
+    with mock.patch(
+        "icon4py.model.atmosphere.diffusion.diffusion.Diffusion.__init__", return_value=None
+    ) as mock_init:
         diffusion_wrapper.diffusion_init(
             vct_a=vct_a,
             vct_b=vct_b,
@@ -543,6 +552,13 @@ def test_diffusion_wrapper_single_step(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        c_glb_index=None,  # not running in parallel
+        e_glb_index=None,
+        v_glb_index=None,
+        c_owner_mask=None,
+        e_owner_mask=None,
+        v_owner_mask=None,
+        comm_id=None,
     )
 
     # Call diffusion_init
