@@ -1644,19 +1644,6 @@ class SolveNonhydro:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(dims.CellDim, prognostic_state[nnew].w)
 
-        log.info(
-            f" MAXPRE VN: {prognostic_state[nnew].vn.ndarray.max():.15e} , MAXPRE W: {prognostic_state[nnew].w.ndarray.max():.15e}"
-        )
-        log.info(
-            f" MAXPRE RHO: {prognostic_state[nnew].rho.ndarray.max():.15e} , MAXPRE THETA_V: {prognostic_state[nnew].theta_v.ndarray.max():.15e}"
-        )
-        log.info(
-            f" AVEPRE VN: {prognostic_state[nnew].vn.ndarray.mean(axis=(0,1)):.15e} , AVEPRE W: {prognostic_state[nnew].w.ndarray.mean(axis=(0,1)):.15e}"
-        )
-        log.info(
-            f" AVEPRE RHO: {prognostic_state[nnew].rho.ndarray.mean(axis=(0,1)):.15e} , AVEPRE THETA_V: {prognostic_state[nnew].theta_v.ndarray.mean(axis=(0,1)):.15e}"
-        )
-
     def run_corrector_step(
         self,
         diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
@@ -1845,19 +1832,6 @@ class SolveNonhydro:
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
-
-        log.info(
-            f" MAXDIV VN: {prognostic_state[nnew].vn.ndarray.max():.15e} , MAXDIV W: {prognostic_state[nnew].w.ndarray.max():.15e}"
-        )
-        log.info(
-            f" MAXDIV RHO: {prognostic_state[nnew].rho.ndarray.max():.15e} , MAXDIV THETA_V: {prognostic_state[nnew].theta_v.ndarray.max():.15e}"
-        )
-        log.info(
-            f" AVEDIV VN: {prognostic_state[nnew].vn.ndarray.mean(axis=(0,1)):.15e} , AVEDIV W: {prognostic_state[nnew].w.ndarray.mean(axis=(0,1)):.15e}"
-        )
-        log.info(
-            f" AVEDIV RHO: {prognostic_state[nnew].rho.ndarray.mean(axis=(0,1)):.15e} , AVEDIV THETA_V: {prognostic_state[nnew].theta_v.ndarray.mean(axis=(0,1)):.15e}"
-        )
 
         # TODO: this does not get accessed in FORTRAN
         if self.config.is_iau_active:
@@ -2205,15 +2179,3 @@ class SolveNonhydro:
                 prognostic_state[nnew].w,
             )
         
-        log.info(
-            f" MAXCOR VN: {prognostic_state[nnew].vn.ndarray.max():.15e} , MAXCOR W: {prognostic_state[nnew].w.ndarray.max():.15e}"
-        )
-        log.info(
-            f" MAXCOR RHO: {prognostic_state[nnew].rho.ndarray.max():.15e} , MAXCOR THETA_V: {prognostic_state[nnew].theta_v.ndarray.max():.15e}"
-        )
-        log.info(
-            f" AVECOR VN: {prognostic_state[nnew].vn.ndarray.mean(axis=(0,1)):.15e} , AVECOR W: {prognostic_state[nnew].w.ndarray.mean(axis=(0,1)):.15e}"
-        )
-        log.info(
-            f" AVECOR RHO: {prognostic_state[nnew].rho.ndarray.mean(axis=(0,1)):.15e} , AVECOR THETA_V: {prognostic_state[nnew].theta_v.ndarray.mean(axis=(0,1)):.15e}"
-        )
