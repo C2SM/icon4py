@@ -46,7 +46,7 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import wpfloat
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.wrappers import common
+from icon4pytools.py2fgen.wrappers import common as wrapper_common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellGlobalIndexDim,
@@ -329,7 +329,7 @@ def grid_init_diffusion(
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
-    diffusion_wrapper_state["grid"] = common.construct_icon_grid(
+    diffusion_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -357,7 +357,11 @@ def grid_init_diffusion(
 
     if parallel_run:
         # Set MultiNodeExchange as exchange runtime
-        processor_props, decomposition_info, exchange_runtime = common.construct_decomposition(
+        (
+            processor_props,
+            decomposition_info,
+            exchange_runtime,
+        ) = wrapper_common.construct_decomposition(
             c_glb_index,
             e_glb_index,
             v_glb_index,
