@@ -11,6 +11,7 @@ import logging
 import pathlib
 import uuid
 from typing import Callable
+from cupy import cuda
 
 import click
 from devtools import Timer
@@ -64,6 +65,10 @@ class TimeLoop:
 
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
+
+        self._timer_solve_nonhydro = Timer("nh_solve")
+        self._timer_diffusion = Timer("diffusion")
+        self.detailed_timers = False
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -194,7 +199,6 @@ class TimeLoop:
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
-            from cupy import cuda
             cuda.runtime.deviceSynchronize()
 
             timer.capture()
@@ -206,6 +210,9 @@ class TimeLoop:
             # TODO (Chia Rui): simple IO enough for JW test
 
         timer.summary(True)
+        if self.detailed_timers:
+            self._timer_solve_nonhydro.summary(True)
+            self._timer_diffusion.summary(True)
 
     def _integrate_one_time_step(
         self,
@@ -227,9 +234,14 @@ class TimeLoop:
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
+            if self.detailed_timers:
+                self._timer_diffusion.start()
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
+            if self.detailed_timers:
+                cuda.runtime.deviceSynchronize()
+                self._timer_diffusion.capture()
 
         self._swap()
 
@@ -253,6 +265,8 @@ class TimeLoop:
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}, "
                 f"nnow: {self._now}, nnew : {self._next}"
             )
+            if self.detailed_timers:
+                self._timer_solve_nonhydro.start()
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
@@ -268,6 +282,9 @@ class TimeLoop:
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
             )
+            if self.detailed_timers:
+                cuda.runtime.deviceSynchronize()
+                self._timer_solve_nonhydro.capture()
 
             do_recompute = False
             do_clean_mflx = False
