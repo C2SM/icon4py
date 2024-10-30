@@ -14,7 +14,6 @@ from typing import Callable
 
 import click
 from devtools import Timer
-from gt4py.next import gtfn_cpu
 
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
@@ -279,6 +278,7 @@ def initialize(
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
+    icon4py_driver_backend: driver_config.DriverBackends,
 ):
     """
     Inititalize the driver run.
@@ -306,7 +306,7 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(experiment_type)
+    config = driver_config.read_config(icon4py_driver_backend, experiment_type)
 
     decomp_info = driver_init.read_decomp_info(
         file_path, props, serialization_type, grid_id, grid_root, grid_level
@@ -352,7 +352,7 @@ def initialize(
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
-    diffusion_granule = diffusion.Diffusion(exchange=exchange, backend=gtfn_cpu)
+    diffusion_granule = diffusion.Diffusion(exchange=exchange, backend=config.run_config.backend)
     diffusion_granule.init(
         icon_grid,
         config.diffusion_config,
@@ -366,7 +366,7 @@ def initialize(
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro(backend=gtfn_cpu)
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(backend=config.run_config.backend)
     solve_nonhydro_granule.init(
         grid=icon_grid,
         config=config.solve_nonhydro_config,
@@ -392,6 +392,7 @@ def initialize(
         cell_geometry,
         edge_geometry,
         file_path,
+        backend=config.run_config.backend,
         rank=props.rank,
         experiment_type=experiment_type,
     )
@@ -457,8 +458,28 @@ def initialize(
     default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
     help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
 )
+@click.option(
+    "--enable_output",
+    is_flag=True,
+    help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
+)
+@click.option(
+    "--icon4py_driver_backend",
+    default=driver_config.DriverBackends.GTFN_CPU,
+    show_default=True,
+    help="Backend for all components executed in icon4py driver. Choose between GTFN_CPU or GTFN_GPU. Please see abs_path_to_icon4py/model/driver/src/icon4py/model/driver/icon4py_configuration/) ",
+)
 def icon4py_driver(
-    input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level
+    input_path,
+    run_path,
+    mpi,
+    serialization_type,
+    experiment_type,
+    grid_id,
+    grid_root,
+    grid_level,
+    enable_output,
+    icon4py_driver_backend,
 ):
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
@@ -482,7 +503,7 @@ def icon4py_driver(
     """
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     grid_id = uuid.UUID(grid_id)
-    driver_init.configure_logging(run_path, experiment_type, parallel_props)
+    driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
     (
         timeloop,
         diffusion_diagnostic_state,
@@ -499,6 +520,7 @@ def icon4py_driver(
         grid_id,
         grid_root,
         grid_level,
+        icon4py_driver_backend,
     )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
