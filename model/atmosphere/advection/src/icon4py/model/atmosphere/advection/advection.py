@@ -52,8 +52,12 @@ class HorizontalAdvectionType(Enum):
 
     #: no horizontal advection
     NO_ADVECTION = auto()
+    #: 1st order upwind
+    UPWIND_1ST_ORDER = auto()
     #: 2nd order MIURA with linear reconstruction
     LINEAR_2ND_ORDER = auto()
+    #: broken 2nd order MIURA with linear reconstruction
+    BROKEN_LINEAR_2ND_ORDER = auto()
 
 
 class HorizontalAdvectionLimiter(Enum):
@@ -393,8 +397,33 @@ def convert_config_to_horizontal_vertical_advection(
     match config.horizontal_advection_type:
         case HorizontalAdvectionType.NO_ADVECTION:
             horizontal_advection = advection_horizontal.NoAdvection(grid=grid)
+        case HorizontalAdvectionType.UPWIND_1ST_ORDER:
+            horizontal_advection = advection_horizontal.FirstOrderUpwind(
+                grid=grid,
+                interpolation_state=interpolation_state,
+                metric_state=metric_state,
+                backend=backend,
+            )
         case HorizontalAdvectionType.LINEAR_2ND_ORDER:
             tracer_flux = advection_horizontal.SecondOrderMiura(
+                grid=grid,
+                least_squares_state=least_squares_state,
+                horizontal_limiter=horizontal_limiter,
+                backend=backend,
+            )
+            horizontal_advection = advection_horizontal.SemiLagrangian(
+                tracer_flux=tracer_flux,
+                grid=grid,
+                interpolation_state=interpolation_state,
+                least_squares_state=least_squares_state,
+                metric_state=metric_state,
+                edge_params=edge_params,
+                cell_params=cell_params,
+                backend=backend,
+                exchange=exchange,
+            )
+        case HorizontalAdvectionType.BROKEN_LINEAR_2ND_ORDER:
+            tracer_flux = advection_horizontal.BrokenSecondOrderMiura(
                 grid=grid,
                 least_squares_state=least_squares_state,
                 horizontal_limiter=horizontal_limiter,
