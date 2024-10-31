@@ -260,6 +260,9 @@ def test_compute_cells_aw_verts(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
 ):
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
+    cells_aw_verts_zeros = cells_aw_verts_ref
+    cells_aw_verts_zeros[:, :] = 0.
+    h = np.zeros_like(cells_aw_verts_ref)
     dual_area = grid_savepoint.v_dual_area().asnumpy()
     edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
@@ -273,7 +276,7 @@ def test_compute_cells_aw_verts(
     )
 
     cells_aw_verts = compute_cells_aw_verts(
-        cells_aw_verts_ref,
+        cells_aw_verts_zeros,
         dual_area,
         edge_vert_length,
         edge_cell_length,
@@ -282,7 +285,6 @@ def test_compute_cells_aw_verts(
         e2v,
         v2c,
         e2c,
-        horizontal_start_vertex,
     )
     assert test_helpers.dallclose(cells_aw_verts, cells_aw_verts_ref)
 

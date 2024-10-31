@@ -392,6 +392,7 @@ def weighting_factors(
 
 
 def compute_c_bln_avg(
+    c_bln_avg_zeros: np.ndarray,
     divavg_cntrwgt: ta.wpfloat,
     owner_mask: np.ndarray,
     c2e2c: np.ndarray,
@@ -415,7 +416,8 @@ def compute_c_bln_avg(
     """
     llb = horizontal_start
     num_cells = c2e2c.shape[0]
-    c_bln_avg = np.zeros([num_cells, 4])
+    #c_bln_avg = np.zeros([num_cells, 4])
+    c_bln_avg = c_bln_avg_zeros
     wgt_loc = divavg_cntrwgt
     yloc = np.zeros(num_cells)
     xloc = np.zeros(num_cells)
@@ -679,7 +681,6 @@ def compute_cells_aw_verts(
     e2v: np.ndarray,
     v2c: np.ndarray,
     e2c: np.ndarray,
-    horizontal_start: np.int32,
 ) -> np.ndarray:
     """
     Compute cells_aw_verts.
@@ -698,26 +699,24 @@ def compute_cells_aw_verts(
     Returns:
         aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
-    llb = horizontal_start
-    cells_aw_verts[llb:, :] = 0
     for i in range(e2c.shape[1]):
         for je in range(v2e.shape[1]):
             for jc in range(v2c.shape[1]):
                 mask = np.where(
-                    np.logical_and(v2e[llb:, je] >= 0, e2c[v2e[llb:, je], i] == v2c[llb:, jc]),
-                    owner_mask[llb:],
+                    np.logical_and(v2e[:, je] >= 0, e2c[v2e[:, je], i] == v2c[:, jc]),
+                    owner_mask[:],
                     False,
                 )
-                index = np.arange(llb, v2e.shape[0])
-                idx_ve = np.where(e2v[v2e[llb:, je], 0] == index, 0, 1)
-                cells_aw_verts[llb:, jc] = np.where(
+                index = np.arange(v2e.shape[0])
+                idx_ve = np.where(e2v[v2e[:, je], 0] == index, 0, 1)
+                cells_aw_verts[:, jc] = np.where(
                     mask,
-                    cells_aw_verts[llb:, jc]
+                    cells_aw_verts[:, jc]
                     + 0.5
-                    / dual_area[llb:]
-                    * edge_vert_length[v2e[llb:, je], idx_ve]
-                    * edge_cell_length[v2e[llb:, je], i],
-                    cells_aw_verts[llb:, jc],
+                    / dual_area[:]
+                    * edge_vert_length[v2e[:, je], idx_ve]
+                    * edge_cell_length[v2e[:, je], i],
+                    cells_aw_verts[:, jc],
                 )
     return cells_aw_verts
 
