@@ -10,6 +10,7 @@ import logging
 import uuid
 
 import gt4py.next as gtx
+import numpy as np
 import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -20,7 +21,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state
-import numpy as np
+
 
 log = logging.getLogger(__name__)
 
