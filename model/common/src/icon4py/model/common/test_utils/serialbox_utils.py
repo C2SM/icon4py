@@ -20,7 +20,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state
-
+import numpy as np
 
 log = logging.getLogger(__name__)
 
@@ -428,8 +428,8 @@ class IconGridSavepoint(IconSavepoint):
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
-        c2e2c0 = xp.column_stack(((range(c2e2c.shape[0])), c2e2c))
-        e2c2e0 = xp.column_stack(((range(e2c2e.shape[0])), e2c2e))
+        c2e2c0 = np.column_stack(((range(c2e2c.shape[0])), c2e2c))
+        e2c2e0 = np.column_stack(((range(e2c2e.shape[0])), e2c2e))
         grid = (
             icon.IconGrid(self._grid_id)
             .with_config(config)
