@@ -8,7 +8,7 @@
 
 import re
 
-def get_latex_macros(filename):
+def tex_macros_to_mathjax(filename: str) -> dict[str, str]:
     latex_macros = {}
     with open(filename, 'r') as f:
         for line in f:

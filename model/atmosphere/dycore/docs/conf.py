@@ -59,9 +59,9 @@ mathjax3_config = {
         'inlineMath': [['\\(', '\\)']],
         'displayMath': [["\\[", "\\]"]],
     },
+    # Create mathjax macros from latex file
+    'macros': latex_sphinx.tex_macros_to_mathjax('latex_macros.tex') 
 }
-# Import latex macros
-mathjax3_config['tex']['macros'] = latex_sphinx.get_latex_macros('latex_macros.tex')
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
