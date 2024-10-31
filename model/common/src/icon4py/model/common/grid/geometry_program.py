@@ -14,7 +14,6 @@ from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
 from icon4py.model.common.math.helpers import (
     arc_length,
     cross_product,
-    dot_product,
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertex,
     normalize_cartesian_vector,
@@ -55,10 +54,6 @@ def cartesian_coordinates_of_edge_tangent(
 
 @gtx.field_operator
 def cartesian_coordinates_of_edge_normal(
-    cell_neighbor0_to_edge_lat: fa.EdgeField[ta.wpfloat],
-    cell_neighbor0_to_edge_lon: fa.EdgeField[ta.wpfloat],
-    cell_neighbor1_to_edge_lat: fa.EdgeField[ta.wpfloat],
-    cell_neighbor1_to_edge_lon: fa.EdgeField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
     edge_lon: fa.EdgeField[ta.wpfloat],
     edge_tangent_x: fa.EdgeField[ta.wpfloat],
@@ -72,16 +67,9 @@ def cartesian_coordinates_of_edge_normal(
     """
     Compute the normal to the edge tangent vector.
 
-    The normal is the the cross product of the edge center (cartesian vector) and the edge tangent (cartesian_vector): (edge_center) x (edge_tangent)
-    The orientation of the resulting normal is determined by the projection on to the distance of the two neighboring cell centers.
-    In order to allow account for boundary edges on the missing cell center at the boundary edge is replaced by the edge center s coordinates. This neighboring
-    coordinates are computed outside the stencil and passed in as arguments.
+    The normal is  the cross product of the edge center (cartesian vector) and the edge tangent (cartesian_vector): (edge_center) x (edge_tangent)
 
     Args:
-        cell_neighbor0_to_edge_lat: latitude of the cell center at E2C[0] or edge center
-        cell_neighbor0_to_edge_lon: longitude of the cell center at E2C[0] or edge center
-        cell_neighbor1_to_edge_lat: latitude of the cell center at E2C[0] or edge center
-        cell_neighbor1_to_edge_lon: longitude of the cell center at E2C[0] or edge center
         edge_lat: latitude of edge center
         edge_lon: longitude of edge center
         edge_tangent_x: x coordinate of edge tangent
@@ -95,34 +83,14 @@ def cartesian_coordinates_of_edge_normal(
     edge_center_x, edge_center_y, edge_center_z = geographical_to_cartesian_on_edges(
         edge_lat, edge_lon
     )
-    x0, y0, z0 = geographical_to_cartesian_on_edges(
-        cell_neighbor0_to_edge_lat, cell_neighbor0_to_edge_lon
-    )
-    x1, y1, z1 = geographical_to_cartesian_on_edges(
-        cell_neighbor1_to_edge_lat, cell_neighbor1_to_edge_lon
-    )
-
-    cell_distance_x = x1 - x0
-    cell_distance_y = y1 - y0
-    cell_distance_z = z1 - z0
-
     x, y, z = cross_product(
         edge_center_x, edge_tangent_x, edge_center_y, edge_tangent_y, edge_center_z, edge_tangent_z
     )
-    x, y, z = normalize_cartesian_vector(x, y, z)
-    normal_orientation = dot_product(cell_distance_x, x, cell_distance_y, y, cell_distance_z, z)
-    edge_normal_x = where(normal_orientation < 0.0, -1.0 * x, x)
-    edge_normal_y = where(normal_orientation < 0.0, -1.0 * y, y)
-    edge_normal_z = where(normal_orientation < 0.0, -1.0 * z, z)
-    return edge_normal_x, edge_normal_y, edge_normal_z
+    return normalize_cartesian_vector(x, y, z)
 
 
 @gtx.field_operator
 def cartesian_coordinates_edge_tangent_and_normal(
-    edge_neighbor0_lat: fa.EdgeField[ta.wpfloat],
-    edge_neighbor0_lon: fa.EdgeField[ta.wpfloat],
-    edge_neighbor1_lat: fa.EdgeField[ta.wpfloat],
-    edge_neighbor1_lon: fa.EdgeField[ta.wpfloat],
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
@@ -141,10 +109,6 @@ def cartesian_coordinates_edge_tangent_and_normal(
         vertex_lat, vertex_lon, edge_orientation
     )
     normal_x, normal_y, normal_z = cartesian_coordinates_of_edge_normal(
-        edge_neighbor0_lat,
-        edge_neighbor0_lon,
-        edge_neighbor1_lat,
-        edge_neighbor1_lon,
         edge_lat,
         edge_lon,
         tangent_x,
@@ -157,12 +121,6 @@ def cartesian_coordinates_edge_tangent_and_normal(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cartesian_coordinates_of_edge_tangent_and_normal(
-    cell_lat: fa.CellField[ta.wpfloat],
-    cell_lon: fa.CellField[ta.wpfloat],
-    edge_neighbor0_lat: fa.EdgeField[ta.wpfloat],
-    edge_neighbor0_lon: fa.EdgeField[ta.wpfloat],
-    edge_neighbor1_lat: fa.EdgeField[ta.wpfloat],
-    edge_neighbor1_lon: fa.EdgeField[ta.wpfloat],
     vertex_lat: fa.VertexField[ta.wpfloat],
     vertex_lon: fa.VertexField[ta.wpfloat],
     edge_lat: fa.EdgeField[ta.wpfloat],
@@ -178,12 +136,6 @@ def compute_cartesian_coordinates_of_edge_tangent_and_normal(
     horizontal_end: gtx.int32,
 ):
     cartesian_coordinates_edge_tangent_and_normal(
-        cell_lat,
-        cell_lon,
-        edge_neighbor0_lat,
-        edge_neighbor0_lon,
-        edge_neighbor1_lat,
-        edge_neighbor1_lon,
         vertex_lat,
         vertex_lon,
         edge_lat,
@@ -265,7 +217,6 @@ def zonal_and_meridional_component_of_edge_field_at_vertex(
     )
 
 
-# TODO (@halungge rename! remove primal normal from name)
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_zonal_and_meridional_component_of_edge_field_at_vertex(
     vertex_lat: fa.VertexField[ta.wpfloat],

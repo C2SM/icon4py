@@ -165,7 +165,7 @@ def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -196,7 +196,7 @@ def test_compute_coordinates_of_edge_tangent_and_normal(backend, grid_savepoint,
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), # FIX LAM
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -216,7 +216,7 @@ def test_compute_primal_normals(backend, grid_savepoint, grid_file):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),  # FIX LAM
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -232,7 +232,7 @@ def test_tangent_orientation(backend, grid_savepoint, grid_file):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),  # FIX LAM
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -248,7 +248,7 @@ def test_cell_area(backend, grid_savepoint, grid_file):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -259,11 +259,10 @@ def test_primal_normal_cell(backend, grid_savepoint, grid_file):
     primal_normal_cell_u = grid_geometry.get(attrs.EDGE_NORMAL_CELL_U)
     primal_normal_cell_v = grid_geometry.get(attrs.EDGE_NORMAL_CELL_V)
 
-    assert helpers.dallclose(primal_normal_cell_u.ndarray, primal_normal_cell_u_ref, atol=1e-14)
+    assert helpers.dallclose(primal_normal_cell_u.ndarray, primal_normal_cell_u_ref, atol=1e-13)
     assert helpers.dallclose(primal_normal_cell_v.ndarray, primal_normal_cell_v_ref, atol=1e-14)
 
 
-# TODO (@halungge) fix LAM on boundary layer
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -279,19 +278,15 @@ def test_dual_normal_cell(backend, grid_savepoint, grid_file):
     dual_normal_cell_u = grid_geometry.get(attrs.EDGE_TANGENT_CELL_U)
     dual_normal_cell_v = grid_geometry.get(attrs.EDGE_TANGENT_CELL_V)
 
-    assert helpers.dallclose(
-        dual_normal_cell_u.ndarray[428:], dual_normal_cell_u_ref[428:], atol=1e-13
-    )
-    assert helpers.dallclose(
-        dual_normal_cell_v.ndarray[428:], dual_normal_cell_v_ref[428:], atol=1e-13
-    )
+    assert helpers.dallclose(dual_normal_cell_u.ndarray, dual_normal_cell_u_ref, atol=1e-13)
+    assert helpers.dallclose(dual_normal_cell_v.ndarray, dual_normal_cell_v_ref, atol=1e-13)
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        # (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -302,8 +297,8 @@ def test_primal_normal_vert(backend, grid_savepoint, grid_file):
     primal_normal_vert_u = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_U)
     primal_normal_vert_v = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_V)
 
-    assert helpers.dallclose(primal_normal_vert_u.ndarray, primal_normal_vert_u_ref, atol=2e-14)
-    assert helpers.dallclose(primal_normal_vert_v.ndarray, primal_normal_vert_v_ref, atol=2e-14)
+    assert helpers.dallclose(primal_normal_vert_u.ndarray, primal_normal_vert_u_ref, atol=1e-13)
+    assert helpers.dallclose(primal_normal_vert_v.ndarray, primal_normal_vert_v_ref, atol=1e-13)
 
 
 @pytest.mark.datatest

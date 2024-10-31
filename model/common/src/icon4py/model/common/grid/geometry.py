@@ -59,26 +59,26 @@ reading is done in mo_domimp_patches.f90, computation of derived fields in mo_gr
 class EdgeParams:
     def __init__(
         self,
-        tangent_orientation=None,  # from grid file, computation still buggy
-        primal_edge_lengths=None,  # computed, see below (computed does not match, from grid file matches serialized)
-        inverse_primal_edge_lengths=None,  # computed, inverse
-        dual_edge_lengths=None,  # computed, see below (computed does not match, from grid file matches serialized)
-        inverse_dual_edge_lengths=None,  # computed, inverse
-        inverse_vertex_vertex_lengths=None,  # computed inverse , see below
-        primal_normal_vert_x=None,  # computed
-        primal_normal_vert_y=None,  # computed
-        dual_normal_vert_x=None,  # computed
-        dual_normal_vert_y=None,  # computed
-        primal_normal_cell_x=None,  # computed
-        dual_normal_cell_x=None,  # computed
-        primal_normal_cell_y=None,  # computed
-        dual_normal_cell_y=None,  # computed
-        edge_areas=None,  # computed, verifies
-        f_e=None,  # computed, verifies
-        edge_center_lat=None,  # coordinate in gridfile - "lat_edge_center" units:radians (what is the difference to elat?)
-        edge_center_lon=None,  # coordinate in gridfile - "lon_edge_center" units:radians (what is the difference to elon?
-        primal_normal_x=None,  # from gridfile (computed in bridge code?)
-        primal_normal_y=None,  # from gridfile (computed in bridge code?)
+        tangent_orientation=None,
+        primal_edge_lengths=None,
+        inverse_primal_edge_lengths=None,
+        dual_edge_lengths=None,
+        inverse_dual_edge_lengths=None,
+        inverse_vertex_vertex_lengths=None,
+        primal_normal_vert_x=None,
+        primal_normal_vert_y=None,
+        dual_normal_vert_x=None,
+        dual_normal_vert_y=None,
+        primal_normal_cell_x=None,
+        dual_normal_cell_x=None,
+        primal_normal_cell_y=None,
+        dual_normal_cell_y=None,
+        edge_areas=None,
+        f_e=None,
+        edge_center_lat=None,
+        edge_center_lon=None,
+        primal_normal_x=None,
+        primal_normal_y=None,
     ):
         self.tangent_orientation: fa.EdgeField[float] = tangent_orientation
         """
@@ -369,8 +369,6 @@ class GridGeometry(state_utils.FieldSource):
             }
         )
         self.register_provider(input_fields_provider)
-        # TODO (@halungge): remove if it works with the providers
-        self._fields = coordinates
 
     def register_provider(self, provider: factory.FieldProvider):
         for dependency in provider.dependencies:
@@ -516,10 +514,6 @@ class GridGeometry(state_utils.FieldSource):
         tangent_normal_coordinates = ProgramFieldProvider(
             func=compute_cartesian_coordinates_of_edge_tangent_and_normal,
             deps={
-                "edge_neighbor0_lat": "latitude_of_edge_cell_neighbor_0",
-                "edge_neighbor0_lon": "longitude_of_edge_cell_neighbor_0",
-                "edge_neighbor1_lat": "latitude_of_edge_cell_neighbor_1",
-                "edge_neighbor1_lon": "longitude_of_edge_cell_neighbor_1",
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
                 "edge_lat": attrs.EDGE_LAT,
