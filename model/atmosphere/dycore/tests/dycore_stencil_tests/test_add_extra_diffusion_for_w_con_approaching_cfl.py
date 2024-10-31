@@ -6,56 +6,56 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
     grid,
-    levmask: np.array,
-    cfl_clipping: np.array,
-    owner_mask: np.array,
-    z_w_con_c: np.array,
-    ddqz_z_half: np.array,
-    area: np.array,
-    geofac_n2s: np.array,
-    w: np.array,
-    ddt_w_adv: np.array,
+    levmask: xp.array,
+    cfl_clipping: xp.array,
+    owner_mask: xp.array,
+    z_w_con_c: xp.array,
+    ddqz_z_half: xp.array,
+    area: xp.array,
+    geofac_n2s: xp.array,
+    w: xp.array,
+    ddt_w_adv: xp.array,
     scalfac_exdiff: float,
     cfl_w_limit: float,
     dtime: float,
-) -> np.array:
-    levmask = np.expand_dims(levmask, axis=0)
-    owner_mask = np.expand_dims(owner_mask, axis=-1)
-    area = np.expand_dims(area, axis=-1)
-    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+) -> xp.array:
+    levmask = xp.expand_dims(levmask, axis=0)
+    owner_mask = xp.expand_dims(owner_mask, axis=-1)
+    area = xp.expand_dims(area, axis=-1)
+    geofac_n2s = xp.expand_dims(geofac_n2s, axis=-1)
 
-    difcoef = np.where(
+    difcoef = xp.where(
         (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
         scalfac_exdiff
-        * np.minimum(
+        * xp.minimum(
             0.85 - cfl_w_limit * dtime,
-            np.abs(z_w_con_c) * dtime / ddqz_z_half - cfl_w_limit * dtime,
+            xp.abs(z_w_con_c) * dtime / ddqz_z_half - cfl_w_limit * dtime,
         ),
         0,
     )
 
-    ddt_w_adv = np.where(
+    ddt_w_adv = xp.where(
         (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
         ddt_w_adv
         + difcoef
         * area
-        * np.sum(
-            np.where(
-                (grid.connectivities[dims.C2E2CODim] != -1)[:, :, np.newaxis],
-                w[grid.connectivities[dims.C2E2CODim]] * geofac_n2s,
+        * xp.sum(
+            xp.where(
+                (xp.asarray(grid.connectivities[dims.C2E2CODim]) != -1)[:, :, xp.newaxis],
+                w[xp.asarray(grid.connectivities[dims.C2E2CODim])] * geofac_n2s,
                 0,
             ),
             axis=1,
@@ -72,15 +72,15 @@ class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
     @staticmethod
     def reference(
         grid,
-        levmask: np.array,
-        cfl_clipping: np.array,
-        owner_mask: np.array,
-        z_w_con_c: np.array,
-        ddqz_z_half: np.array,
-        area: np.array,
-        geofac_n2s: np.array,
-        w: np.array,
-        ddt_w_adv: np.array,
+        levmask: xp.array,
+        cfl_clipping: xp.array,
+        owner_mask: xp.array,
+        z_w_con_c: xp.array,
+        ddqz_z_half: xp.array,
+        area: xp.array,
+        geofac_n2s: xp.array,
+        w: xp.array,
+        ddt_w_adv: xp.array,
         scalfac_exdiff: wpfloat,
         cfl_w_limit: wpfloat,
         dtime: wpfloat,

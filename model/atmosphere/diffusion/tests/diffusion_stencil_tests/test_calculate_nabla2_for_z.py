@@ -29,7 +29,7 @@ def calculate_nabla2_for_z_numpy(
     z_nabla2_e_cp = z_nabla2_e.copy()
     inv_dual_edge_length = xp.expand_dims(xp.asarray(inv_dual_edge_length), axis=-1)
 
-    theta_v_e2c = theta_v[grid.connectivities[dims.E2CDim]]
+    theta_v_e2c = theta_v[xp.asarray(grid.connectivities[dims.E2CDim])]
     theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
     z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted

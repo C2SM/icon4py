@@ -36,7 +36,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
         diff_multfac_smag: xp.array,
         **kwargs,
     ) -> dict:
-        c2e = grid.connectivities[dims.C2EDim]
+        c2e = xp.asarray(grid.connectivities[dims.C2EDim])
         c2ce = grid.get_offset_provider("C2CE").table
 
         geofac_div = xp.expand_dims(xp.asarray(geofac_div), axis=-1)

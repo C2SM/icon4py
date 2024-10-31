@@ -25,7 +25,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
     def reference(
         grid, theta_v: xp.array, theta_ref_mc: xp.array, thresh_tdiff, smallest_vpfloat, **kwargs
     ) -> dict:
-        c2e2c = grid.connectivities[dims.C2E2CDim]
+        c2e2c = xp.asarray(grid.connectivities[dims.C2E2CDim])
         tdiff = (
             theta_v
             - xp.sum(xp.where((c2e2c != -1)[:, :, xp.newaxis], theta_v[c2e2c], 0), axis=1) / 3
