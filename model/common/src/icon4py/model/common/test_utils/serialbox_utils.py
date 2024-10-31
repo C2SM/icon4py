@@ -771,6 +771,66 @@ class MetricSavepoint(IconSavepoint):
         return xp.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
 
+class LeastSquaresSavepoint(IconSavepoint):
+    def lsq_pseudoinv_1(self):
+        field = self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
+        return helpers.as_1D_sparse_field(field, dims.CECDim)
+
+    def lsq_pseudoinv_2(self):
+        field = self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
+        return helpers.as_1D_sparse_field(field, dims.CECDim)
+
+
+class AdvectionInitSavepoint(IconSavepoint):
+    def airmass_now(self):
+        return self._get_field("airmass_now", dims.CellDim, dims.KDim)
+
+    def airmass_new(self):
+        return self._get_field("airmass_new", dims.CellDim, dims.KDim)
+
+    def vn_traj(self):
+        return self._get_field("vn_traj", dims.EdgeDim, dims.KDim)
+
+    def mass_flx_me(self):
+        return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
+
+    def mass_flx_ic(self):
+        return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
+
+    def grf_tend_tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"grf_tend_tracer_{i}", dims.CellDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+
+    def tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"tracer_{i}", dims.CellDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+
+
+class AdvectionExitSavepoint(IconSavepoint):
+    def hfl_tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"hfl_tracer_{i}", dims.EdgeDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+
+    def vfl_tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                # TODO (dastrm): should be KHalfDim
+                return self._get_field(f"vfl_tracer_{i}", dims.CellDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+
+    def tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"tracer_{i}", dims.CellDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+
+
 class IconDiffusionInitSavepoint(IconSavepoint):
     @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
     def hdef_ic(self):
@@ -1693,14 +1753,15 @@ class IconGraupelInitSavepoint(IconSavepoint):
 
 
 class IconSerialDataProvider:
-    def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0):
+    def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0, advection=False):
         self.rank = mpi_rank
         self.serializer: serialbox.Serializer = None
         self.file_path: str = path
         self.fname = f"{fname_prefix}_rank{self.rank!s}"
         self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
-        self.grid_size = self._grid_size()
+        if not advection:  # TODO (dastrm): somebody should make this class load only what it needs
+            self.grid_size = self._grid_size()
 
     def _init_serializer(self, do_print: bool):
         if not self.fname:
@@ -1784,6 +1845,18 @@ class IconSerialDataProvider:
     def from_metrics_savepoint(self) -> MetricSavepoint:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
         return MetricSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_least_squares_savepoint(self, size: dict) -> LeastSquaresSavepoint:
+        savepoint = self.serializer.savepoint["least_squares_state"].jg[1].as_savepoint()
+        return LeastSquaresSavepoint(savepoint, self.serializer, size=size)
+
+    def from_advection_init_savepoint(self, size: dict, date: str) -> AdvectionInitSavepoint:
+        savepoint = self.serializer.savepoint["advection_init"].jg[1].date[date].as_savepoint()
+        return AdvectionInitSavepoint(savepoint, self.serializer, size=size)
+
+    def from_advection_exit_savepoint(self, size: dict, date: str) -> AdvectionExitSavepoint:
+        savepoint = self.serializer.savepoint["advection_exit"].jg[1].date[date].as_savepoint()
+        return AdvectionExitSavepoint(savepoint, self.serializer, size=size)
 
     def from_savepoint_diffusion_exit(self, linit: bool, date: str) -> IconDiffusionExitSavepoint:
         savepoint = (
