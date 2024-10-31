@@ -75,4 +75,4 @@ add_module_names = False
 # -- More involved stuff ------------------------------------------------------
 
 def setup(app):
-    app.add_autodocumenter(icon4py_sphinx.FullMethodDocumenter)
+    app.add_autodocumenter(icon4py_sphinx.ScidocMethodDocumenter)

@@ -11,14 +11,16 @@ import re
 import inspect
 import types, typing
 import ast
+from typing import Final
+import textwrap
 
-class FullMethodDocumenter(autodoc.MethodDocumenter):
+class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     """
     'Fully' document a method, i.e. picking up and processing all 'tagged'
     comment blocks in its source code.
     """
 
-    objtype = 'full'
+    objtype = 'scidoc'
     priority = autodoc.MethodDocumenter.priority - 1
 
     # Configuration options
@@ -26,141 +28,164 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
     var_type_in_inputs = True
     var_type_formatting = '``'
     print_variable_longnames = True
+    #: Footer lines with a horizontal line at the end  
+    SCIDOC_FOOTER_LINES: Final[list[str]] = ["", ".. raw:: html", "",  "   <hr>"]  
+    #: Code block lines for the source code of the next method call
+    SCIDOC_CODE_BLOCK_LINES: Final[list[str]] = ["", ".. collapse:: Source code", "", " .. code-block:: python", ""]
 
-    def get_doc(self):
-        # Override the default get_doc method to pick up all docstrings in the
-        # source code
+    def get_doc(self) -> list[list[str]]:
+        # Override the default get_doc method to pick up all tagged comment
+        # blocks in the source code of the method
         source = inspect.getsource(self.object) # this is only the source of the method, not the whole file
 
         docstrings = self.get_docstring_blocks(source, self.docstring_keyword)
 
         docstrings_list = []
-        for idocstr, docstring in enumerate(docstrings):
+        for i, docstring in enumerate(docstrings):
             formatted_docstr = None
 
             # Get some useful information on the following method call
             call_string = self.get_next_method_call(source, source.find(docstring) + len(docstring))
             next_method_info = self.get_method_info(call_string)
-            # and process a scientific documentation docstring
+            # and process the scidoc block
             formatted_docstr = docstring.splitlines()
             formatted_docstr = self.format_docstring_block(formatted_docstr, self.docstring_keyword)
-            formatted_docstr = self.add_header(formatted_docstr, next_method_info)
+            formatted_docstr = self.make_header(next_method_info) + formatted_docstr
             formatted_docstr = self.process_scidocstrlines(formatted_docstr, next_method_info)
-            formatted_docstr = self.add_next_method_call(formatted_docstr, call_string)
+            formatted_docstr += self.SCIDOC_CODE_BLOCK_LINES + [" "*6 + line for line in call_string]
 
-            if formatted_docstr is not None:
-                if idocstr < len(docstrings)-1: # Add footer
-                    formatted_docstr = self.add_footer(formatted_docstr)
+            if formatted_docstr:
+                if i < len(docstrings)-1: # Add footer
+                    formatted_docstr += self.SCIDOC_FOOTER_LINES  
                 # add the processed docstring to the list
                 docstrings_list.append(formatted_docstr)
 
         return docstrings_list
     
-    def get_docstring_blocks(self, source, keyword):
+    def get_docstring_blocks(self, source: str, keyword: str) -> list[str]:
+        """
+        Extract blocks of comments from the source code that start with a specific keyword.
+
+        Args:
+            source: The source code as a string.
+            keyword: The keyword to look for in the comment blocks.
+
+        Returns:
+            A list of comment blocks that start with the specified keyword.
+        """
         # which in this implementation are comment blocks
         comment_blocks = []
-        source_lines = source.splitlines()
         in_block = False
-        current_block = []
-        for line in source_lines:
+        for line in source.splitlines():
             stripped_line = line.strip()
+            is_comment = stripped_line.startswith('#')
             if stripped_line.startswith(f'# {keyword}:'):
-                if in_block:
-                    comment_blocks.append('\n'.join(current_block))
-                    current_block = []
+                comment_blocks.append(line)
                 in_block = True
-                current_block.append(line)
-            elif in_block:
-                if stripped_line.startswith('#'):
-                    current_block.append(line)
-                else:
-                    in_block = False
-                    comment_blocks.append('\n'.join(current_block))
-                    current_block = []
-        if current_block:
-            comment_blocks.append('\n'.join(current_block))
+            elif in_block and is_comment:
+                comment_blocks[-1] += '\n' + line
+            in_block = is_comment and in_block # continue the block if the line is a comment (but don't start one if now with the keyword)
         return comment_blocks
 
-    def format_docstring_block(self, docstr_lines, keyword):
-        # Clean up and format
+    def format_docstring_block(self, docstr_lines: list[str], keyword: str) -> list[str]:
+        """
+        Format a block of docstring lines by cleaning up and removing keyword,
+        whitespace and empty lines.
+
+        Args:
+            docstr_lines: The lines of the docstring to be formatted.
+            keyword: The keyword to look for and remove from the beginning of the docstring.
+
+        Returns:
+            The formatted docstring lines.
+        """
         if docstr_lines[0].strip().startswith(f'# {keyword}:'):
-            docstr_lines.pop(0) # remove the {keyword} prefix
-        while docstr_lines[0].strip() == '#':
-            # strip empty lines from the beginning
+            docstr_lines.pop(0)  # remove the {keyword} prefix
+        while docstr_lines and docstr_lines[0].strip() == '#':
+            # Remove leading empty lines
             docstr_lines.pop(0)
-        # strip leading and trailing whitespace of every line (maintain indentation)
-        # as well as comment character and space (indent+2)
-        indent = len(docstr_lines[0]) - len(docstr_lines[0].lstrip(' '))
-        docstr_lines = [line[min(indent+2,len(line)):].rstrip() for line in docstr_lines]
-        # strip empty lines from the end
-        while docstr_lines[-1] == '':
+        while docstr_lines and docstr_lines[-1].strip() == '#':
+            # Remove trailing empty lines
             docstr_lines.pop(-1)
-        return docstr_lines
-    
-    def add_header(self, docstr_lines, method_info):
-        # Add a title with ReST formatting
-        method_name = method_info['module_local_name'] + '.' + method_info['method_name']
-        method_full_name = method_info['module_full_name'] + '.' + method_name
-        title = f':meth:`{method_name}()<{method_full_name}>`'
-        docstr_lines.insert(0, title)
-        docstr_lines.insert(1, '='*len(title))
-        docstr_lines.insert(2, '')
-        return docstr_lines
+        # Dedent the comment block
+        dedented_lines = textwrap.dedent('\n'.join(docstr_lines)).splitlines()
+        # Remove leading '#'
+        uncommented_lines = [line.lstrip('#') for line in dedented_lines]
+        # Dedent again
+        formatted_lines = textwrap.dedent('\n'.join(uncommented_lines)).splitlines()
+        return formatted_lines
 
-    def add_footer(self, docstr_lines):
-        # Add a horizontal line at the end of the docstring
-        docstr_lines.append('')
-        docstr_lines.append('.. raw:: html')
-        docstr_lines.append('')
-        docstr_lines.append('   <hr>')
-        # and add one empty line at the end
-        docstr_lines.append('')
-        return docstr_lines
+    def make_header(self, method_info: dict) -> list[str]:
+        """
+        Generate the header.
 
-    def process_scidocstrlines(self, docstr_lines, next_method_info):
-        # "Special" treatment of specific lines / blocks
+        Args:
+            method_info: A dictionary information about the next method.
 
-        latex_multiline_block = False
+        Returns:
+            A list containing the formatted title and its underline.
+        """
+        method_name = f"{method_info['module_local_name']}.{method_info['method_name']}"  
+        method_full_name = f"{method_info['module_full_name']}.{method_name}"
+        title = f":meth:`{method_name}()<{method_full_name}>`" 
+        return [title, '='*len(title), '']
+
+    def process_scidocstrlines(self, docstr_lines: list[str], method_info: dict) -> list[str]:
+        """
+        Process a list of documentation string lines and apply specific formatting rules.
+        - Make the "Inputs" section collapsible.
+        - Identify LaTeX multiline blocks and align equations to the left.
+        - Add type information to variable names in bullet point lines.
+        - Optionally print the long names of variables.
+
+        Args:
+            docstr_lines: The lines of the documentation string to process.
+            method_info: A dictionary containing information about the next method.
+
+        Returns:
+            The processed documentation string lines with applied formatting rules.
+        """
+        
+        latex_math_multiline = False
         past_inputs = False
 
-        def insert_before_first_non_space(s, char_to_insert):
-            for i, char in enumerate(s):
-                if char != ' ':
-                    return s[:i] + char_to_insert + s[i:]
-            return s
-
-        for iline, line in enumerate(docstr_lines):
+        for line_num, line in enumerate(docstr_lines):
 
             # Make collapsible Inputs section
             if line.startswith('Inputs:'):
                 past_inputs = True
-                docstr_lines[iline] = '.. collapse:: Inputs'
-                docstr_lines.insert(iline+1, '')
+                #docstr_lines = docstr_lines[:line_num] + [ ".. collapse:: Inputs", ""] + docstr_lines[line_num+1:] # temporarily keep here to understand with @egparedes
+                docstr_lines[line_num] = ".. collapse:: Inputs"
+                docstr_lines.insert(line_num+1, "")
+                continue
 
             # Identify LaTeX multiline blocks and align equations to the left
-            elif '$$' in line:
-                if not latex_multiline_block and '\\\\' in docstr_lines[iline+1]:
-                    latex_multiline_block=True
-                    continue
-                else:
-                    latex_multiline_block=False
-            if latex_multiline_block:
-                docstr_lines[iline] = insert_before_first_non_space(line, '&')
+            # (single line equations are already left-aligned)
+            if line.strip().startswith('$$'):
+                if docstr_lines[line_num+1].rstrip().endswith(r'\\'): # multiline math block :
+                    latex_math_multiline = not latex_math_multiline  
+                else: # single line math block or end of multiline math block
+                    latex_math_multiline = False
+                continue
+            if latex_math_multiline:
+                start_idx = len(line) - len(line.lstrip()) 
+                docstr_lines[line_num] = f"{line[:start_idx]}&{line[start_idx:]}"  
+
 
             # Add type information to variable names (only in bullet point lines)
-            if (not latex_multiline_block) and ('-' in line) and (':' in line):
+            if (not latex_math_multiline) and ('-' in line) and (':' in line):
                 if past_inputs and not self.var_type_in_inputs:
                     continue
                 indent = len(line) - len(line.lstrip())
                 split_line = line.split()
-                for variable, var_type in next_method_info['var_types'].items():
+                for variable, var_type in method_info['var_types'].items():
                     if variable in split_line:
                         # Replace only exact matches
                         for j, part in enumerate(split_line):
                             if part == variable:
                                 if self.print_variable_longnames:
                                     # long name version
-                                    var_longname = next_method_info['var_longnames_map'][variable]
+                                    var_longname = method_info['var_longnames_map'][variable]
                                     prefix = '.'.join(var_longname.split('.')[:-1])
                                     suffix = var_longname.split('.')[-1]
                                     if prefix:
@@ -171,23 +196,25 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
                                     # short name version
                                     vname = variable
                                 split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
-                        docstr_lines[iline] = ' '*indent + ' '.join(split_line)
+                        docstr_lines[line_num] = ' '*indent + ' '.join(split_line)
 
         return docstr_lines
 
-    def add_next_method_call(self, docstr_lines, formatted_call):
-        # Add the source string of the next method call as a collapsible block
-        docstr_lines.append('')
-        docstr_lines.append('.. collapse:: Source code')
-        docstr_lines.append('')
-        docstr_lines.append('   .. code-block:: python')
-        docstr_lines.append('')
-        docstr_lines += ['      ' + line for line in formatted_call]
-        return docstr_lines
+    def get_next_method_call(self, source: str, index_start: int) -> list[str]:
+        """
+        Find the next method call in the source code starting from a given index.
 
-    def get_next_method_call(self, source, index_start):
-        # Find the next method call in the source code using a stack to find the
-        # matching closing round brackets
+        This method scans the source code starting from `index_start` to locate the
+        next method call by identifying the matching closing round brackets using a stack.
+
+        Args:
+            source: The source code as a string.
+            index_start: The index from which to start searching for the next method call.
+
+        Returns:
+            A list of strings representing the lines of code for the next method
+            call. Returns None if no method call is found (hopefully never).
+        """
         remaining_source = source[index_start:]
         stack = []
         start_index = None
@@ -209,21 +236,41 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
             return call_string
         return None
 
-    def format_code_block(self, code_lines):
-        # Clean up and format
-        while code_lines[0] == '':
-            # strip empty lines from the beginning
-            code_lines.pop(0)
-        # strip leading and trailing whitespace of every line (maintain indentation)
-        indent = len(code_lines[0]) - len(code_lines[0].lstrip(' '))
-        code_lines = [line[indent:].rstrip() for line in code_lines]
-        # strip empty lines from the end
-        while code_lines[-1] == '':
-            code_lines.pop(-1)
-        return code_lines
+    def format_code_block(self, code_lines: list[str]) -> list[str]:
+        """
+        Clean up and format a block of code by removing leading and trailing
+        empty lines, and stripping leading and trailing whitespace from each
+        line while maintaining indentation.
 
+        Args:
+            code_lines: A list of strings representing lines of code.
 
-    def get_method_info(self, call_string):
+        Returns:
+            A list of formatted code lines.
+        """
+        # Remove leading and trailing empty lines
+        code_lines = [line for line in code_lines if line.strip()]
+        # Dedent the code block
+        return textwrap.dedent('\n'.join(code_lines)).splitlines()
+
+    def get_method_info(self, call_string: list[str]) -> dict:
+        """
+        Extracts and returns detailed information about a method based on the provided call string.
+
+        Args:
+            call_string: A list containing the method call string.
+
+        Returns:
+            dict: A dictionary containing the following keys:
+            - 'call_string': The original call string.
+            - 'method_name': The name of the method.
+            - 'module_local_name': The local name of the module where the method is defined.
+            - 'module_full_name': The full name of the module where the method is defined.
+            - 'annotations': The annotations of the method.
+            - 'var_names_map': A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
+            - 'var_longnames_map': A dictionary mapping variable short and long names in the present scope.
+            - 'var_types': A dictionary mapping variable short names and their types.
+        """
         method_info = {}
         local_method_name = call_string[0].split('(')[0] # get the method name from the call string (remove open bracket)
         # Get the module of this method from its name
@@ -319,7 +366,23 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
         method_info['var_types'] = self.map_variable_types(method_info)
         return method_info
 
-    def map_variable_names(self, function_call_str):
+    def map_variable_names(self, function_call_str: list[str]) -> tuple[dict[str,str], dict[str,str]]:
+        """
+        Map variable short names to their corresponding long names and argument names.
+
+        This function takes a string representation of a function call, extracts the argument names
+        and their values, and creates two dictionaries:
+        - One mapping the argument names to their short names (the part after the last period).
+        - Another mapping the short names to their full names.
+
+        Args:
+            function_call_str: A string representation of a function call with arguments.
+
+        Returns:
+            A tuple containing two dictionaries:
+                - variable_map: A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
+                - variable_longnames_map: A dictionary mapping variable short and long names in the present scope.
+        """
         # Extract argument names and their values using regex
         pattern = r'(\w+)\s*=\s*([^,]+)'
         matches = re.findall(pattern, ''.join(function_call_str))
@@ -333,17 +396,45 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
             variable_longnames_map[short_name] = arg_value
         return variable_map, variable_longnames_map
     
-    def map_variable_types(self, method_info):
-        # Map variable short names (*not arg name*) to their types using the
-        # annotations
+    def map_variable_types(self, method_info: dict) -> dict[str,str]:
+        """
+        Map variable short names to their types using the annotations provided in the method information.
+
+        Args:
+            method_info: A dictionary containing method information, including:
+                - 'annotations': A dictionary where keys are argument names and values are their types.
+                - 'var_names_map': A dictionary mapping argument names to their short names.
+
+        Returns:
+            A dictionary where keys are variable short names and values are their formatted types.
+        """
         var_types = {}
         for arg_name, var_type in method_info['annotations'].items():
             if arg_name in method_info['var_names_map'].keys():
                 var_types[method_info['var_names_map'][arg_name]] = self.format_type_string(var_type)
         return var_types
     
-    # TODO: Implement a more sophisticated way to convert type strings to human-readable format
-    def format_type_string(self, var_type):
+    def format_type_string(self, var_type: typing.Type) -> str:
+        """
+        Formats a type annotation into a string representation.
+
+        Args:
+            var_type: The type annotation to format.
+
+        Returns:
+            The formatted type string.
+
+        Raises:
+            AssertionError: If the origin of a generic alias is not 'Field' from the 'gt4py' module.
+
+        Notes:
+            - For generic types, the function recursively formats each argument.
+            - For class types, it extracts and returns the class name.
+            - It performs specific replacements for certain patterns:
+                - Replaces class types like <class 'numpy.int32'> with 'int32'.
+                - Replaces 'gt4py.next.common.Field[...]' with 'Field[...]'.
+                - Replaces 'Dimension(value='K', kind=<DimensionKind.VERTICAL: 'vertical'>)' with 'K'.
+        """
         if isinstance(var_type, typing._GenericAlias):
             origin = var_type.__origin__
             assert origin.__name__ == 'Field' and origin.__module__.startswith('gt4py')
