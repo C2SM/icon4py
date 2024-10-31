@@ -22,3 +22,9 @@ typing-extensions>=4.6.0
 types-cffi>=1.15
 wheel>=0.37.1
 wget>=3.2
+sphinx==7.3.7
+myst-parser>=4.0.0
+sphinx-rtd-theme>=3.0.1
+sphinx-math-dollar>=1.2.1
+sphinx-toolbox>=3.8.1
+TexSoup>=0.3.1
