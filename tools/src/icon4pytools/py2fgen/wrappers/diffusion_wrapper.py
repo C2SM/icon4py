@@ -47,7 +47,7 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
-from icon4pytools.py2fgen.wrappers.settings import backend, device, parallel_run
+from icon4pytools.py2fgen.wrappers.settings import Icon4PyConfig, backend, device
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellGlobalIndexDim,
     CellIndexDim,
@@ -353,7 +353,7 @@ def grid_init(
         on_gpu=True if settings.device == "GPU" else False,
     )
 
-    if parallel_run:
+    if Icon4PyConfig.parallel_run:
         # Set MultiNodeExchange as exchange runtime
         processor_props, decomposition_info, exchange_runtime = common.construct_decomposition(
             c_glb_index,
