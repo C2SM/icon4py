@@ -47,7 +47,7 @@ def is_roundtrip(backend) -> bool:
 
 
 def is_gpu(backend) -> bool:
-    return  "gpu" in backend.name if backend else False
+    return "gpu" in backend.name if backend else False
 
 
 def _shape(

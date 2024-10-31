@@ -8,7 +8,7 @@
 
 from gt4py import next as gtx
 from gt4py.next import field_operator
-from gt4py.next.ffront.fbuiltins import cos, sin, sqrt, where
+from gt4py.next.ffront.fbuiltins import arccos, cos, sin, sqrt, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2V, Koff
@@ -118,9 +118,22 @@ def _grad_fd_tang(
 
 
 @gtx.field_operator
-def spherical_to_cartesian_on_cells(
+def geographical_to_cartesian_on_cells(
     lat: fa.CellField[ta.wpfloat], lon: fa.CellField[ta.wpfloat]
 ) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+    """
+    Convert geographical (lat, lon) coordinates to cartesian coordinates on the unit sphere.
+
+    Args:
+        lat: latitude
+        lon: longitude
+
+    Returns:
+        x: x coordinate
+        y: y coordinate
+        z: z coordinate
+
+    """
     x = cos(lat) * cos(lon)
     y = cos(lat) * sin(lon)
     z = sin(lat)
@@ -128,9 +141,22 @@ def spherical_to_cartesian_on_cells(
 
 
 @gtx.field_operator
-def spherical_to_cartesian_on_edges(
+def geographical_to_cartesian_on_edges(
     lat: fa.EdgeField[ta.wpfloat], lon: fa.EdgeField[ta.wpfloat]
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    """
+    Convert geographical (lat, lon) coordinates to cartesian coordinates on the unit sphere.
+
+    Args:
+        lat: latitude
+        lon: longitude
+
+    Returns:
+        x: x coordinate
+        y: y coordinate
+        z: z coordinate
+
+    """
     x = cos(lat) * cos(lon)
     y = cos(lat) * sin(lon)
     z = sin(lat)
@@ -138,9 +164,22 @@ def spherical_to_cartesian_on_edges(
 
 
 @gtx.field_operator
-def spherical_to_cartesian_on_vertex(
+def geographical_to_cartesian_on_vertex(
     lat: fa.VertexField[ta.wpfloat], lon: fa.VertexField[ta.wpfloat]
 ) -> tuple[fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat], fa.VertexField[ta.wpfloat]]:
+    """
+    Convert geographical (lat, lon) coordinates to cartesian coordinates on the unit sphere.
+
+    Args:
+        lat: latitude
+        lon: longitude
+
+    Returns:
+        x: x coordinate
+        y: y coordinate
+        z: z coordinate
+
+    """
     x = cos(lat) * cos(lon)
     y = cos(lat) * sin(lon)
     z = sin(lat)
@@ -180,6 +219,17 @@ def cross_product(
 def norm2(
     x: fa.EdgeField[ta.wpfloat], y: fa.EdgeField[ta.wpfloat], z: fa.EdgeField[ta.wpfloat]
 ) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Compute 2 norm of a cartesian vector (x, y, z)
+    Args:
+        x: x coordinate
+        y: y coordinate
+        z: z coordinate
+
+    Returns:
+        norma
+
+    """
     return sqrt(dot_product(x, x, y, y, z, z))
 
 
@@ -187,12 +237,32 @@ def norm2(
 def normalize_cartesian_vector(
     v_x: fa.EdgeField[ta.wpfloat], v_y: fa.EdgeField[ta.wpfloat], v_z: fa.EdgeField[ta.wpfloat]
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    """
+    Normalize a cartesian vector.
+
+    Args:
+        v_x: x coordinate
+        v_y: y coordinate
+        v_z: z coordinate
+
+    Returns:
+        normalized vector
+
+    """
     norm = norm2(v_x, v_y, v_z)
     return v_x / norm, v_y / norm, v_z / norm
 
 
 @gtx.field_operator
 def invert(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
+    """
+    Invert values.
+    Args:
+        f: values
+
+    Returns:
+        1/f where f is not zero.
+    """
     return where(f != 0.0, 1.0 / f, f)
 
 
@@ -214,6 +284,21 @@ def zonal_and_meridional_components_on_cells(
     y: fa.CellField[ta.wpfloat],
     z: fa.CellField[ta.wpfloat],
 ) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+    """
+    Compute normalized zonal and meridional components of a cartesian vector (x, y, z) at point (lat, lon)
+
+    Args:
+        lat: latitude
+        lon: longitude
+        x: x coordinate
+        y: y coordinate
+        z: z coordinate
+
+    Returns:
+        u zonal component
+        v meridional component
+
+    """
     cos_lat = cos(lat)
     sin_lat = sin(lat)
     cos_lon = cos(lon)
@@ -233,6 +318,21 @@ def zonal_and_meridional_components_on_edges(
     y: fa.EdgeField[ta.wpfloat],
     z: fa.EdgeField[ta.wpfloat],
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    """
+    Compute the zonal and meridional component of a vector (x, y, z) at position (lat, lon)
+
+    Args:
+        lat: latitude
+        lon: longitude
+        x: x component of cartesian vector
+        y: y component of cartesian vector
+        z: z component of cartesian vector
+
+    Returns:
+        zonal (eastward) component of (x, y, z) at (lat, lon)
+        meridional (northward) component of (x, y, z) at (lat, lon)
+
+    """
     cos_lat = cos(lat)
     sin_lat = sin(lat)
     cos_lon = cos(lon)
@@ -268,6 +368,18 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     u: fa.EdgeField[ta.wpfloat],
     v: fa.EdgeField[ta.wpfloat],
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
+    """
+    Compute cartesian coordinates form zonal an meridonal components at position (lat, lon)
+    Args:
+        lat: latitude
+        lon: longitude
+        u: zonal component
+        v: meridional component
+
+    Returns:
+        x, y, z cartesian components
+
+    """
     cos_lat = cos(lat)
     sin_lat = sin(lat)
     cos_lon = cos(lon)
@@ -301,3 +413,34 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
         out=(x, y, z),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
+
+
+@gtx.field_operator
+def arc_length(
+    x0: fa.EdgeField[ta.wpfloat],
+    x1: fa.EdgeField[ta.wpfloat],
+    y0: fa.EdgeField[ta.wpfloat],
+    y1: fa.EdgeField[ta.wpfloat],
+    z0: fa.EdgeField[ta.wpfloat],
+    z1: fa.EdgeField[ta.wpfloat],
+    radius: ta.wpfloat,
+):
+    """
+    Compute the arc length between two points on the sphere.
+
+    Inputs are cartesian coordinates of the points.
+
+    Args:
+        x0: x coordinate of point_0
+        x1: x coordinate of point_1
+        y0: y coordiante of point_0
+        y1: y coordiante of point_1
+        z0: z coordinate of point_0
+        z1: z coordinate of point_1
+        radius: sphere radius
+
+    Returns:
+        arc length
+
+    """
+    return radius * arccos(dot_product(x0, x1, y0, y1, z0, z1))

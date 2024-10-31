@@ -25,14 +25,14 @@ from icon4py.model.common import (
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid, icon
 from icon4py.model.common.grid.geometry_program import (
+    compute_arc_distance_of_far_edges_in_diamond,
     compute_cartesian_coordinates_of_edge_tangent_and_normal,
+    compute_cell_center_arc_distance,
     compute_coriolis_parameter_on_edges,
-    compute_dual_edge_length,
     compute_edge_area,
     compute_edge_length,
-    compute_edge_primal_normal_cell,
-    compute_edge_primal_normal_vertex,
-    compute_far_vertex_distance_in_diamond,
+    compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
+    compute_zonal_and_meridional_component_of_edge_field_at_vertex,
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
@@ -369,7 +369,7 @@ class GridGeometry(state_utils.FieldSource):
             }
         )
         self.register_provider(input_fields_provider)
-        # TODO: remove if it works with the providers
+        # TODO (@halungge): remove if it works with the providers
         self._fields = coordinates
 
     def register_provider(self, provider: factory.FieldProvider):
@@ -390,7 +390,7 @@ class GridGeometry(state_utils.FieldSource):
                 )
             },
             fields={
-                "edge_length": attrs.EDGE_LENGTH,
+                "length": attrs.EDGE_LENGTH,
             },
             deps={
                 "vertex_lat": attrs.VERTEX_LAT,
@@ -415,7 +415,7 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(inverse_edge_length)
 
         dual_length_provider = factory.ProgramFieldProvider(
-            func=compute_dual_edge_length,
+            func=compute_cell_center_arc_distance,
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
@@ -450,8 +450,8 @@ class GridGeometry(state_utils.FieldSource):
         )
         self.register_provider(inverse_dual_length)
 
-        provider = factory.ProgramFieldProvider(
-            func=compute_far_vertex_distance_in_diamond,
+        vertex_vertex_distance = factory.ProgramFieldProvider(
+            func=compute_arc_distance_of_far_edges_in_diamond,
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
@@ -465,7 +465,7 @@ class GridGeometry(state_utils.FieldSource):
             },
             params={"radius": self._grid.global_properties.length},
         )
-        self.register_provider(provider)
+        self.register_provider(vertex_vertex_distance)
         name, meta = attrs.data_for_inverse(attrs.attrs[attrs.VERTEX_VERTEX_LENGTH])
         self._attrs.update({name: meta})
         inverse_far_edge_distance_provider = ProgramFieldProvider(
@@ -513,11 +513,9 @@ class GridGeometry(state_utils.FieldSource):
 
         # normals:
         # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal
-        provider = ProgramFieldProvider(
+        tangent_normal_coordinates = ProgramFieldProvider(
             func=compute_cartesian_coordinates_of_edge_tangent_and_normal,
             deps={
-                "cell_lat": attrs.CELL_LAT,
-                "cell_lon": attrs.CELL_LON,
                 "edge_neighbor0_lat": "latitude_of_edge_cell_neighbor_0",
                 "edge_neighbor0_lon": "longitude_of_edge_cell_neighbor_0",
                 "edge_neighbor1_lat": "latitude_of_edge_cell_neighbor_1",
@@ -543,9 +541,9 @@ class GridGeometry(state_utils.FieldSource):
                 )
             },
         )
-        self.register_provider(provider)
+        self.register_provider(tangent_normal_coordinates)
         # 2. primal_normals: gridfile%zonal_normal_primal_edge - edges%primal_normal%v1, gridfile%meridional_normal_primal_edge - edges%primal_normal%v2,
-        provider = ProgramFieldProvider(
+        normal_uv = ProgramFieldProvider(
             func=math_helpers.compute_zonal_and_meridional_components_on_edges,
             deps={
                 "lat": attrs.EDGE_LAT,
@@ -565,11 +563,11 @@ class GridGeometry(state_utils.FieldSource):
                 )
             },
         )
-        self.register_provider(provider)
+        self.register_provider(normal_uv)
 
         # 3. primal_normal_vert, primal_normal_cell
-        wrapped_provider = ProgramFieldProvider(
-            func=compute_edge_primal_normal_vertex,
+        normal_vert = ProgramFieldProvider(
+            func=compute_zonal_and_meridional_component_of_edge_field_at_vertex,
             deps={
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
@@ -594,8 +592,8 @@ class GridGeometry(state_utils.FieldSource):
                 )
             },
         )
-        provider = SparseFieldProviderWrapper(
-            wrapped_provider,
+        normal_vert_wrapper = SparseFieldProviderWrapper(
+            normal_vert,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_VERTEX_U]["dims"],
             fields=(attrs.EDGE_NORMAL_VERTEX_U, attrs.EDGE_NORMAL_VERTEX_V),
             pairs=(
@@ -603,9 +601,9 @@ class GridGeometry(state_utils.FieldSource):
                 ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
             ),
         )
-        self.register_provider(provider)
-        wrapped_provider = ProgramFieldProvider(
-            func=compute_edge_primal_normal_cell,
+        self.register_provider(normal_vert_wrapper)
+        normal_cell = ProgramFieldProvider(
+            func=compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
             deps={
                 "cell_lat": attrs.CELL_LAT,
                 "cell_lon": attrs.CELL_LON,
@@ -626,16 +624,16 @@ class GridGeometry(state_utils.FieldSource):
                 )
             },
         )
-        provider = SparseFieldProviderWrapper(
-            wrapped_provider,
+        normal_cell_wrapper = SparseFieldProviderWrapper(
+            normal_cell,
             target_dims=attrs.attrs[attrs.EDGE_NORMAL_CELL_U]["dims"],
             fields=(attrs.EDGE_NORMAL_CELL_U, attrs.EDGE_NORMAL_CELL_V),
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
         )
-        self.register_provider(provider)
+        self.register_provider(normal_cell_wrapper)
         # 3. dual normals: the dual normals are the edge tangents
-        wrapped_provider = ProgramFieldProvider(
-            func=compute_edge_primal_normal_vertex,
+        tangent_vert = ProgramFieldProvider(
+            func=compute_zonal_and_meridional_component_of_edge_field_at_vertex,
             deps={
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
@@ -660,8 +658,8 @@ class GridGeometry(state_utils.FieldSource):
                 )
             },
         )
-        provider = SparseFieldProviderWrapper(
-            wrapped_provider,
+        tangent_vert_wrapper = SparseFieldProviderWrapper(
+            tangent_vert,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_VERTEX_U]["dims"],
             fields=(attrs.EDGE_TANGENT_VERTEX_U, attrs.EDGE_TANGENT_VERTEX_V),
             pairs=(
@@ -669,9 +667,9 @@ class GridGeometry(state_utils.FieldSource):
                 ("v_vertex_1", "v_vertex_2", "v_vertex_3", "v_vertex_4"),
             ),
         )
-        self.register_provider(provider)
-        wrapped_provider = ProgramFieldProvider(
-            func=compute_edge_primal_normal_cell,
+        self.register_provider(tangent_vert_wrapper)
+        tangent_cell = ProgramFieldProvider(
+            func=compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
             deps={
                 "cell_lat": attrs.CELL_LAT,
                 "cell_lon": attrs.CELL_LON,
@@ -692,13 +690,13 @@ class GridGeometry(state_utils.FieldSource):
                 )
             },
         )
-        provider = SparseFieldProviderWrapper(
-            wrapped_provider,
+        tangent_cell_wrapper = SparseFieldProviderWrapper(
+            tangent_cell,
             target_dims=attrs.attrs[attrs.EDGE_TANGENT_CELL_U]["dims"],
             fields=(attrs.EDGE_TANGENT_CELL_U, attrs.EDGE_TANGENT_CELL_V),
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
         )
-        self.register_provider(provider)
+        self.register_provider(tangent_cell_wrapper)
 
     def get(
         self, field_name: str, type_: state_utils.RetrievalType = state_utils.RetrievalType.FIELD
