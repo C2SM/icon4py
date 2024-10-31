@@ -20,7 +20,7 @@ def calculate_nabla2_for_w_numpy(grid, w: xp.array, geofac_n2s: xp.array):
     c2e2cO = xp.asarray(grid.connectivities[dims.C2E2CODim])
     geofac_n2s = xp.expand_dims(xp.asarray(geofac_n2s), axis=-1)
     z_nabla2_c = xp.sum(
-        xp.where((c2e2cO != -1)[:, :, xp.newaxis], w[c2e2cO] * geofac_n2s, 0), axis=1
+        xp.where((c2e2cO != -1)[:, :, xp.newaxis], xp.asarray(w)[c2e2cO] * geofac_n2s, 0), axis=1
     )
     return z_nabla2_c
 

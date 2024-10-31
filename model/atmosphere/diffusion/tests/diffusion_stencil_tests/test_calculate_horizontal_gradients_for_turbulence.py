@@ -18,6 +18,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def calculate_horizontal_gradients_for_turbulence_numpy(grid, w, geofac_grg_x, geofac_grg_y):
+    w = xp.asarray(w)
+    geofac_grg_x = xp.asarray(geofac_grg_x)
+    geofac_grg_y = xp.asarray(geofac_grg_y)
     c2e2cO = xp.asarray(grid.connectivities[dims.C2E2CODim])
     geofac_grg_x = xp.expand_dims(xp.asarray(geofac_grg_x), axis=-1)
     dwdx = xp.sum(xp.where((c2e2cO != -1)[:, :, xp.newaxis], geofac_grg_x * w[c2e2cO], 0.0), axis=1)

@@ -24,9 +24,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 def calculate_nabla2_of_theta_numpy(grid, z_nabla2_e: xp.array, geofac_div: xp.array) -> xp.array:
     c2e = xp.asarray(grid.connectivities[dims.C2EDim])
-    geofac_div = geofac_div.reshape(c2e.shape)
-    geofac_div = xp.expand_dims(xp.asarray(geofac_div), axis=-1)
-    z_temp = xp.sum(z_nabla2_e[c2e] * geofac_div, axis=1)  # sum along edge dimension
+    geofac_div = xp.asarray(geofac_div).reshape(c2e.shape)
+    geofac_div = xp.expand_dims(geofac_div, axis=-1)
+    z_temp = xp.sum(xp.asarray(z_nabla2_e)[c2e] * geofac_div, axis=1)  # sum along edge dimension
     return z_temp
 
 
