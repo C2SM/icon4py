@@ -101,9 +101,13 @@ def model_initialization_gauss3d(
     mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
     mask = xp.repeat(
-        xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1
+        xp.expand_dims(xp.asarray(mask_array_edge_start_plus1_to_edge_end), axis=-1),
+        num_levels,
+        axis=1,
     )
-    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
+    primal_normal_x = xp.repeat(
+        xp.expand_dims(xp.asarray(primal_normal_x), axis=-1), num_levels, axis=1
+    )
 
     # Define test case parameters
     # The topography can only be read from serialized data for now, then these

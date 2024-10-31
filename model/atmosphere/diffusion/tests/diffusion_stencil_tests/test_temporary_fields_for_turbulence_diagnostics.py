@@ -39,9 +39,9 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
         c2e = grid.connectivities[dims.C2EDim]
         c2ce = grid.get_offset_provider("C2CE").table
 
-        geofac_div = xp.expand_dims(geofac_div, axis=-1)
-        e_bln_c_s = xp.expand_dims(e_bln_c_s, axis=-1)
-        diff_multfac_smag = xp.expand_dims(diff_multfac_smag, axis=0)
+        geofac_div = xp.expand_dims(xp.asarray(geofac_div), axis=-1)
+        e_bln_c_s = xp.expand_dims(xp.asarray(e_bln_c_s), axis=-1)
+        diff_multfac_smag = xp.expand_dims(xp.asarray(diff_multfac_smag), axis=0)
 
         vn_geofac = vn[c2e] * geofac_div[c2ce]
         div = xp.sum(vn_geofac, axis=1)

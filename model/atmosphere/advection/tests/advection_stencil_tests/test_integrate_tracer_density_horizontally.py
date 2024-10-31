@@ -41,7 +41,7 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
     ) -> dict:
         c2e = grid.connectivities[dims.C2EDim]
         p_mass_flx_e_c2e = p_mass_flx_e[c2e]
-        geofac_div = xp.expand_dims(geofac_div, axis=-1)
+        geofac_div = xp.expand_dims(xp.asarray(geofac_div), axis=-1)
         z_tracer_mflx_c2e = z_tracer_mflx[c2e]
 
         z_rhofluxdiv_c_out = (

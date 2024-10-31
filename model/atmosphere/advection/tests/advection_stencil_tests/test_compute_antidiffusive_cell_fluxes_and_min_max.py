@@ -43,7 +43,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
         z_anti_c2e = z_anti[c2e]
 
         geofac_div = helpers.reshape(geofac_div, c2e.shape)
-        geofac_div = xp.expand_dims(geofac_div, axis=-1)
+        geofac_div = xp.expand_dims(xp.asarray(geofac_div), axis=-1)
 
         zero_array = xp.zeros(p_rhodz_now.shape)
 

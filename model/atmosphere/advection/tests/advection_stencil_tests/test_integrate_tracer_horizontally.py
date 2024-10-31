@@ -34,7 +34,7 @@ class TestIntegrateTracerHorizontally(helpers.StencilTest):
         **kwargs,
     ) -> dict:
         geofac_div = helpers.reshape(geofac_div, grid.connectivities[dims.C2EDim].shape)
-        geofac_div = xp.expand_dims(geofac_div, axis=-1)
+        geofac_div = xp.expand_dims(xp.asarray(geofac_div), axis=-1)
         tracer_new_hor = (
             tracer_now * rhodz_now
             - p_dtime

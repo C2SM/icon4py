@@ -33,7 +33,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
         **kwargs,
     ) -> dict:
         geofac_div = helpers.reshape(geofac_div, grid.connectivities[dims.C2EDim].shape)
-        geofac_div = xp.expand_dims(geofac_div, axis=-1)
+        geofac_div = xp.expand_dims(xp.asarray(geofac_div), axis=-1)
         p_m_0 = xp.maximum(
             0.0,
             p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 0]] * geofac_div[:, 0] * p_dtime,

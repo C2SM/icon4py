@@ -135,9 +135,11 @@ def zonalwind_2_normalwind_numpy(
         0 : grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         :,
     ] = False
-    edge_lat = xp.repeat(xp.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
-    edge_lon = xp.repeat(xp.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
-    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
+    edge_lat = xp.repeat(xp.expand_dims(xp.asarray(edge_lat), axis=-1), eta_v_e.shape[1], axis=1)
+    edge_lon = xp.repeat(xp.expand_dims(xp.asarray(edge_lon), axis=-1), eta_v_e.shape[1], axis=1)
+    primal_normal_x = xp.repeat(
+        xp.expand_dims(xp.asarray(primal_normal_x), axis=-1), eta_v_e.shape[1], axis=1
+    )
     u = xp.where(mask, jw_u0 * (xp.cos(eta_v_e) ** 1.5) * (xp.sin(2.0 * edge_lat) ** 2), 0.0)
     if jw_up > 1.0e-20:
         u = xp.where(
