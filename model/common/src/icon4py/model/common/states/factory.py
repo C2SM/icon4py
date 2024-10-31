@@ -307,7 +307,7 @@ class NumpyFieldsProvider(FieldProvider):
     """
     Computes a field defined by a numpy function.
 
-    TODO (halungge): need to specify a parameter source to be able to postpone evaluation
+    TODO (halungge): need to specify a parameter source(s) to be able to postpone evaluation
 
 
     Args:

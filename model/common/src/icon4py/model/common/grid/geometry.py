@@ -23,37 +23,14 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid, icon
-from icon4py.model.common.grid.geometry_program import (
-    compute_arc_distance_of_far_edges_in_diamond,
-    compute_cartesian_coordinates_of_edge_tangent_and_normal,
-    compute_cell_center_arc_distance,
-    compute_coriolis_parameter_on_edges,
-    compute_edge_area,
-    compute_edge_length,
-    compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
-    compute_zonal_and_meridional_component_of_edge_field_at_vertex,
+from icon4py.model.common.grid import (
+    geometry_program as func,
+    grid_manager as gm,
+    horizontal as h_grid,
+    icon,
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.common.states.factory import ProgramFieldProvider
-
-
-"""
-
-
-Edges:
-: "elat" or "lat_edge_center" (DWD units radians), what is the difference between those two?
-edge_center_lon: "elat" or "lat_edge_center" (DWD units radians), what is the difference between those two?
-tangent_orientation: "edge_system_orientation" from grid file
-edge_orientation: "orientation_of_normal"  from grid file
-vertex_edge_orientation:
-edge_vert_length:
-v_dual_area or vertex_dual_area:
-
-reading is done in mo_domimp_patches.f90, computation of derived fields in mo_grid_tools.f90, mo_intp_coeffs.f90
-
-"""
 
 
 class EdgeParams:
@@ -81,7 +58,7 @@ class EdgeParams:
         primal_normal_y=None,
     ):
         self.tangent_orientation: fa.EdgeField[float] = tangent_orientation
-        """
+        r"""
         Orientation of vector product of the edge and the adjacent cell centers
              v3
             /  \
@@ -324,12 +301,6 @@ class GridGeometry(state_utils.FieldSource):
         self._attrs = metadata
         self._geometry_type: icon.GeometryType = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
-        self._edge_local_end = self._grid.end_index(self._edge_domain(h_grid.Zone.LOCAL))
-        self._edge_local_start = self._grid.start_index(self._edge_domain(h_grid.Zone.LOCAL))
-        self._edge_second_boundary_level_start = self._grid.start_index(
-            self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        )
-
         self._providers: dict[str, factory.FieldProvider] = {}
 
         (
@@ -380,7 +351,7 @@ class GridGeometry(state_utils.FieldSource):
 
     def __call__(self):
         edge_length_provider = factory.ProgramFieldProvider(
-            func=compute_edge_length,
+            func=func.compute_edge_length,
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
@@ -399,7 +370,7 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(edge_length_provider)
         name, meta = attrs.data_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         self._attrs.update({name: meta})
-        inverse_edge_length = ProgramFieldProvider(
+        inverse_edge_length = factory.ProgramFieldProvider(
             func=math_helpers.compute_inverse,
             deps={"f": attrs.EDGE_LENGTH},
             fields={"f_inverse": name},
@@ -413,7 +384,7 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(inverse_edge_length)
 
         dual_length_provider = factory.ProgramFieldProvider(
-            func=compute_cell_center_arc_distance,
+            func=func.compute_cell_center_arc_distance,
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LOCAL),
@@ -435,7 +406,7 @@ class GridGeometry(state_utils.FieldSource):
 
         name, meta = attrs.data_for_inverse(attrs.attrs[attrs.DUAL_EDGE_LENGTH])
         self._attrs.update({name: meta})
-        inverse_dual_length = ProgramFieldProvider(
+        inverse_dual_length = factory.ProgramFieldProvider(
             func=math_helpers.compute_inverse,
             deps={"f": attrs.DUAL_EDGE_LENGTH},
             fields={"f_inverse": name},
@@ -449,7 +420,7 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(inverse_dual_length)
 
         vertex_vertex_distance = factory.ProgramFieldProvider(
-            func=compute_arc_distance_of_far_edges_in_diamond,
+            func=func.compute_arc_distance_of_far_edges_in_diamond,
             domain={
                 dims.EdgeDim: (
                     self._edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
@@ -466,7 +437,7 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(vertex_vertex_distance)
         name, meta = attrs.data_for_inverse(attrs.attrs[attrs.VERTEX_VERTEX_LENGTH])
         self._attrs.update({name: meta})
-        inverse_far_edge_distance_provider = ProgramFieldProvider(
+        inverse_far_edge_distance_provider = factory.ProgramFieldProvider(
             func=math_helpers.compute_inverse,
             deps={"f": attrs.VERTEX_VERTEX_LENGTH},
             fields={"f_inverse": name},
@@ -480,7 +451,7 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(inverse_far_edge_distance_provider)
 
         edge_areas = factory.ProgramFieldProvider(
-            func=compute_edge_area,
+            func=func.compute_edge_area,
             deps={
                 "owner_mask": "edge_owner_mask",
                 "primal_edge_length": attrs.EDGE_LENGTH,
@@ -496,7 +467,7 @@ class GridGeometry(state_utils.FieldSource):
         )
         self.register_provider(edge_areas)
         coriolis_params = factory.ProgramFieldProvider(
-            func=compute_coriolis_parameter_on_edges,
+            func=func.compute_coriolis_parameter_on_edges,
             deps={"edge_center_lat": attrs.EDGE_LAT},
             params={"angular_velocity": constants.EARTH_ANGULAR_VELOCITY},
             fields={"coriolis_parameter": attrs.CORIOLIS_PARAMETER},
@@ -511,8 +482,8 @@ class GridGeometry(state_utils.FieldSource):
 
         # normals:
         # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal
-        tangent_normal_coordinates = ProgramFieldProvider(
-            func=compute_cartesian_coordinates_of_edge_tangent_and_normal,
+        tangent_normal_coordinates = factory.ProgramFieldProvider(
+            func=func.compute_cartesian_coordinates_of_edge_tangent_and_normal,
             deps={
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
@@ -537,7 +508,7 @@ class GridGeometry(state_utils.FieldSource):
         )
         self.register_provider(tangent_normal_coordinates)
         # 2. primal_normals: gridfile%zonal_normal_primal_edge - edges%primal_normal%v1, gridfile%meridional_normal_primal_edge - edges%primal_normal%v2,
-        normal_uv = ProgramFieldProvider(
+        normal_uv = factory.ProgramFieldProvider(
             func=math_helpers.compute_zonal_and_meridional_components_on_edges,
             deps={
                 "lat": attrs.EDGE_LAT,
@@ -560,8 +531,8 @@ class GridGeometry(state_utils.FieldSource):
         self.register_provider(normal_uv)
 
         # 3. primal_normal_vert, primal_normal_cell
-        normal_vert = ProgramFieldProvider(
-            func=compute_zonal_and_meridional_component_of_edge_field_at_vertex,
+        normal_vert = factory.ProgramFieldProvider(
+            func=func.compute_zonal_and_meridional_component_of_edge_field_at_vertex,
             deps={
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
@@ -596,8 +567,8 @@ class GridGeometry(state_utils.FieldSource):
             ),
         )
         self.register_provider(normal_vert_wrapper)
-        normal_cell = ProgramFieldProvider(
-            func=compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
+        normal_cell = factory.ProgramFieldProvider(
+            func=func.compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
             deps={
                 "cell_lat": attrs.CELL_LAT,
                 "cell_lon": attrs.CELL_LON,
@@ -626,8 +597,8 @@ class GridGeometry(state_utils.FieldSource):
         )
         self.register_provider(normal_cell_wrapper)
         # 3. dual normals: the dual normals are the edge tangents
-        tangent_vert = ProgramFieldProvider(
-            func=compute_zonal_and_meridional_component_of_edge_field_at_vertex,
+        tangent_vert = factory.ProgramFieldProvider(
+            func=func.compute_zonal_and_meridional_component_of_edge_field_at_vertex,
             deps={
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
@@ -662,8 +633,8 @@ class GridGeometry(state_utils.FieldSource):
             ),
         )
         self.register_provider(tangent_vert_wrapper)
-        tangent_cell = ProgramFieldProvider(
-            func=compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
+        tangent_cell = factory.ProgramFieldProvider(
+            func=func.compute_zonal_and_meridional_component_of_edge_field_at_cell_center,
             deps={
                 "cell_lat": attrs.CELL_LAT,
                 "cell_lon": attrs.CELL_LON,
