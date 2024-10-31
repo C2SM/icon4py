@@ -24,7 +24,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     priority = autodoc.MethodDocumenter.priority - 1
 
     # Configuration options
-    docstring_keyword = 'scidoc'
+    docblock_keyword = 'scidoc'
     var_type_in_inputs = True
     var_type_formatting = '``'
     print_variable_longnames = True
@@ -38,31 +38,31 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         # blocks in the source code of the method
         source = inspect.getsource(self.object) # this is only the source of the method, not the whole file
 
-        docstrings = self.get_docstring_blocks(source, self.docstring_keyword)
+        docblocks = self.get_documentation_blocks(source, self.docblock_keyword)
 
-        docstrings_list = []
-        for i, docstring in enumerate(docstrings):
-            formatted_docstr = None
+        docblocks_list = []
+        for i, docblock in enumerate(docblocks):
+            formatted_docblock = None
 
             # Get some useful information on the following method call
-            call_string = self.get_next_method_call(source, source.find(docstring) + len(docstring))
+            call_string = self.get_next_method_call(source, source.find(docblock) + len(docblock))
             next_method_info = self.get_method_info(call_string)
             # and process the scidoc block
-            formatted_docstr = docstring.splitlines()
-            formatted_docstr = self.format_docstring_block(formatted_docstr, self.docstring_keyword)
-            formatted_docstr = self.make_header(next_method_info) + formatted_docstr
-            formatted_docstr = self.process_scidocstrlines(formatted_docstr, next_method_info)
-            formatted_docstr += self.SCIDOC_CODE_BLOCK_LINES + [" "*6 + line for line in call_string]
+            formatted_docblock = docblock.splitlines()
+            formatted_docblock = self.format_docblock(formatted_docblock, self.docblock_keyword)
+            formatted_docblock = self.make_header(next_method_info) + formatted_docblock
+            formatted_docblock = self.process_scidoc_lines(formatted_docblock, next_method_info)
+            formatted_docblock += self.SCIDOC_CODE_BLOCK_LINES + [" "*6 + line for line in call_string]
 
-            if formatted_docstr:
-                if i < len(docstrings)-1: # Add footer
-                    formatted_docstr += self.SCIDOC_FOOTER_LINES  
-                # add the processed docstring to the list
-                docstrings_list.append(formatted_docstr)
+            if formatted_docblock:
+                if i < len(docblocks)-1: # Add footer
+                    formatted_docblock += self.SCIDOC_FOOTER_LINES  
+                # add the processed docblock to the list
+                docblocks_list.append(formatted_docblock)
 
-        return docstrings_list
+        return docblocks_list
     
-    def get_docstring_blocks(self, source: str, keyword: str) -> list[str]:
+    def get_documentation_blocks(self, source: str, keyword: str) -> list[str]:
         """
         Extract blocks of comments from the source code that start with a specific keyword.
 
@@ -87,28 +87,28 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             in_block = is_comment and in_block # continue the block if the line is a comment (but don't start one if now with the keyword)
         return comment_blocks
 
-    def format_docstring_block(self, docstr_lines: list[str], keyword: str) -> list[str]:
+    def format_docblock(self, docblock_lines: list[str], keyword: str) -> list[str]:
         """
-        Format a block of docstring lines by cleaning up and removing keyword,
+        Format a block of documentation lines by cleaning up and removing keyword,
         whitespace and empty lines.
 
         Args:
-            docstr_lines: The lines of the docstring to be formatted.
-            keyword: The keyword to look for and remove from the beginning of the docstring.
+            docblock_lines: The lines of the documentation block to be formatted.
+            keyword: The keyword to look for and remove from the beginning of the docblock.
 
         Returns:
-            The formatted docstring lines.
+            The formatted documentation lines.
         """
-        if docstr_lines[0].strip().startswith(f'# {keyword}:'):
-            docstr_lines.pop(0)  # remove the {keyword} prefix
-        while docstr_lines and docstr_lines[0].strip() == '#':
+        if docblock_lines[0].strip().startswith(f'# {keyword}:'):
+            docblock_lines.pop(0)  # remove the {keyword} prefix
+        while docblock_lines and docblock_lines[0].strip() == '#':
             # Remove leading empty lines
-            docstr_lines.pop(0)
-        while docstr_lines and docstr_lines[-1].strip() == '#':
+            docblock_lines.pop(0)
+        while docblock_lines and docblock_lines[-1].strip() == '#':
             # Remove trailing empty lines
-            docstr_lines.pop(-1)
+            docblock_lines.pop(-1)
         # Dedent the comment block
-        dedented_lines = textwrap.dedent('\n'.join(docstr_lines)).splitlines()
+        dedented_lines = textwrap.dedent('\n'.join(docblock_lines)).splitlines()
         # Remove leading '#'
         uncommented_lines = [line.lstrip('#') for line in dedented_lines]
         # Dedent again
@@ -130,7 +130,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         title = f":meth:`{method_name}()<{method_full_name}>`" 
         return [title, '='*len(title), '']
 
-    def process_scidocstrlines(self, docstr_lines: list[str], method_info: dict) -> list[str]:
+    def process_scidoc_lines(self, docblock_lines: list[str], method_info: dict) -> list[str]:
         """
         Process a list of documentation string lines and apply specific formatting rules.
         - Make the "Inputs" section collapsible.
@@ -139,7 +139,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         - Optionally print the long names of variables.
 
         Args:
-            docstr_lines: The lines of the documentation string to process.
+            docblock _lines: The lines of the documentation string to process.
             method_info: A dictionary containing information about the next method.
 
         Returns:
@@ -149,27 +149,27 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         latex_math_multiline = False
         past_inputs = False
 
-        for line_num, line in enumerate(docstr_lines):
+        for line_num, line in enumerate(docblock_lines):
 
             # Make collapsible Inputs section
             if line.startswith('Inputs:'):
                 past_inputs = True
-                #docstr_lines = docstr_lines[:line_num] + [ ".. collapse:: Inputs", ""] + docstr_lines[line_num+1:] # temporarily keep here to understand with @egparedes
-                docstr_lines[line_num] = ".. collapse:: Inputs"
-                docstr_lines.insert(line_num+1, "")
+                #docblock_lines = docblock_lines[:line_num] + [ ".. collapse:: Inputs", ""] + docblock_lines[line_num+1:] # temporarily keep here to understand with @egparedes
+                docblock_lines[line_num] = ".. collapse:: Inputs"
+                docblock_lines.insert(line_num+1, "")
                 continue
 
             # Identify LaTeX multiline blocks and align equations to the left
             # (single line equations are already left-aligned)
             if line.strip().startswith('$$'):
-                if docstr_lines[line_num+1].rstrip().endswith(r'\\'): # multiline math block :
+                if docblock_lines[line_num+1].rstrip().endswith(r'\\'): # multiline math block :
                     latex_math_multiline = not latex_math_multiline  
                 else: # single line math block or end of multiline math block
                     latex_math_multiline = False
                 continue
             if latex_math_multiline:
                 start_idx = len(line) - len(line.lstrip()) 
-                docstr_lines[line_num] = f"{line[:start_idx]}&{line[start_idx:]}"  
+                docblock_lines[line_num] = f"{line[:start_idx]}&{line[start_idx:]}"  
 
 
             # Add type information to variable names (only in bullet point lines)
@@ -196,9 +196,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                                     # short name version
                                     vname = variable
                                 split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
-                        docstr_lines[line_num] = ' '*indent + ' '.join(split_line)
+                        docblock_lines[line_num] = ' '*indent + ' '.join(split_line)
 
-        return docstr_lines
+        return docblock_lines
 
     def get_next_method_call(self, source: str, index_start: int) -> list[str]:
         """
