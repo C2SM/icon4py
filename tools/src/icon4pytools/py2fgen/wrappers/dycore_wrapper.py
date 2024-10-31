@@ -36,7 +36,7 @@ from gt4py.next import common as gt4py_common
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import SolveNonhydro
 from icon4py.model.atmosphere.dycore.state_utils import states as nh_states
-from icon4py.model.common import dimension as dims, settings
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import (
     C2E2CODim,
     C2EDim,
@@ -68,7 +68,7 @@ from icon4py.model.common.test_utils.helpers import (
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
-from icon4pytools.py2fgen.wrappers.settings import backend
+from icon4pytools.py2fgen.wrappers.settings import backend, device
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellIndexDim,
     EdgeIndexDim,
@@ -389,7 +389,7 @@ def solve_nh_run(
     nnew: gtx.int32,
     nnow: gtx.int32,
 ):
-    logger.info(f"Using Device = {settings.device}")
+    logger.info(f"Using Device = {device}")
 
     prep_adv = nh_states.PrepAdvection(
         vn_traj=vn_traj,
@@ -498,7 +498,7 @@ def grid_init(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
+        on_gpu=True if device == "GPU" else False,
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,

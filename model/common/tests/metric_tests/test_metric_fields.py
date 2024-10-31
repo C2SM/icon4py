@@ -455,7 +455,7 @@ def test_compute_ddxt_z_full(
     vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
     z_ifv = zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
-    compute_cell_2_vertex_interpolation(
+    compute_cell_2_vertex_interpolation.with_backend(backend)(
         z_ifc,
         gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts),
         z_ifv,
