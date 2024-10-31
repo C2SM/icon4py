@@ -6,16 +6,29 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import re
+import TexSoup
 
 def tex_macros_to_mathjax(filename: str) -> dict[str, str]:
+    """
+    Parses a LaTeX file to extract macros and converts them to MathJax format.
+
+    Args:
+        filename (str): The path to the LaTeX file containing the macros.
+
+    Returns:
+        dict[str, str]: A dictionary where the keys are the macro names and the
+        values are the corresponding MathJax representations. If the macro has
+        arguments, the value is a list where the first element is the MathJax
+        representation and the second element is the number of arguments.
+    """
     latex_macros = {}
     with open(filename, 'r') as f:
-        for line in f:
-            macros = re.findall(r'\\(DeclareRobustCommand|newcommand|renewcommand){\\(.*?)}(\[(\d)\])?{(.+)}', line)
-            for macro in macros:
-                if len(macro[2]) == 0:
-                    latex_macros[macro[1]] = "{"+macro[4]+"}"
-                else:
-                    latex_macros[macro[1]] = ["{"+macro[4]+"}", int(macro[3])]
+        soup = TexSoup.TexSoup(f.read())
+        for command in ['newcommand', 'renewcommand']:
+            for macro in soup.find_all(command):
+                name = macro.args[0].string.strip('\\')
+                if len(macro.args) == 2:
+                    latex_macros[name] = "{" + macro.args[1].string + "}"
+                elif len(macro.args) == 3:
+                    latex_macros[name] = ["{" + macro.args[2].string + "}", int(macro.args[1].string)]
     return latex_macros

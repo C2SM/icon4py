@@ -137,7 +137,7 @@ The documentation is at a very early stage given the constant state of developme
 
 ```bash
 # Install the required packages
-pip install sphinx==7.3.7 myst-parser sphinx-rtd-theme sphinx-math-dollar sphinx-toolbox
+pip install sphinx==7.3.7 myst-parser sphinx-rtd-theme sphinx-math-dollar sphinx-toolbox TexSoup
 
 # Move to the dycore docs folder
 cd model/atmosphere/dycore/docs
