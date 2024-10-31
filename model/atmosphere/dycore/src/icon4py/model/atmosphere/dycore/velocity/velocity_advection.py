@@ -230,7 +230,7 @@ class VelocityAdvection:
 
         # scidoc:
         # Outputs:
-        #  - vt (0:nlev-1):
+        #  - vt :
         #     $$
         #     \vt{\n}{\e}{\k} = \sum_{\e=\eTcTe} \Wrbf \vn{\n}{\e}{\k}, \qquad \k \in [0, \nlev)
         #     $$
