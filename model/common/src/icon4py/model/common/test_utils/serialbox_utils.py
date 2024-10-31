@@ -10,7 +10,6 @@ import logging
 import uuid
 
 import gt4py.next as gtx
-import cupy as cp
 import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -429,8 +428,8 @@ class IconGridSavepoint(IconSavepoint):
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
-        c2e2c0 = cp.column_stack(((range(c2e2c.shape[0])), c2e2c))
-        e2c2e0 = cp.column_stack(((range(e2c2e.shape[0])), e2c2e))
+        c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c))
+        e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
         grid = (
             icon.IconGrid(self._grid_id)
             .with_config(config)
