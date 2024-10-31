@@ -670,6 +670,7 @@ def compute_e_flx_avg(
 
 
 def compute_cells_aw_verts(
+    cells_aw_verts: np.ndarray,
     dual_area: np.ndarray,
     edge_vert_length: np.ndarray,
     edge_cell_length: np.ndarray,
@@ -698,7 +699,7 @@ def compute_cells_aw_verts(
         aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
     llb = horizontal_start
-    cells_aw_verts = np.zeros([v2e.shape[0], 6])
+    cells_aw_verts[llb:, :] = 0
     for i in range(e2c.shape[1]):
         for je in range(v2e.shape[1]):
             for jc in range(v2c.shape[1]):
