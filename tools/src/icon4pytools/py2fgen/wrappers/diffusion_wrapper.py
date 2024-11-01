@@ -350,7 +350,7 @@ def grid_init(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
+        on_gpu=True if Icon4PyConfig.device == "GPU" else False,
     )
 
     if Icon4PyConfig.parallel_run:

@@ -126,7 +126,7 @@ class VerticalGrid:
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
-            self._determine_damping_height_index(vct_a_array, self.config.rayleigh_damping_height),
+            self._determine_damping_height_index(xp.asarray(vct_a_array), self.config.rayleigh_damping_height),
         )
         object.__setattr__(
             self,
