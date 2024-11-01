@@ -144,14 +144,22 @@ def geometry_params(grid_geometry, grid_manager):
         primal_normal_y=grid_geometry.get(geometry_meta.EDGE_PRIMAL_NORMAL_V),
         primal_normal_cell_x=grid_geometry.get(geometry_meta.EDGE_NORMAL_CELL_U),
         primal_normal_cell_y=grid_geometry.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        primal_normal_vert_x=grid_geometry.get(geometry_meta.EDGE_NORMAL_VERTEX_U),
-        primal_normal_vert_y=grid_geometry.get(geometry_meta.EDGE_PRIMAL_NORMAL_V),
+        primal_normal_vert_x=helpers.as_1D_sparse_field(
+            grid_geometry.get(geometry_meta.EDGE_NORMAL_VERTEX_U), target_dim=dims.ECVDim
+        ),
+        primal_normal_vert_y=helpers.as_1D_sparse_field(
+            grid_geometry.get(geometry_meta.EDGE_NORMAL_VERTEX_V), target_dim=dims.ECVDim
+        ),
         dual_normal_cell_x=grid_geometry.get(geometry_meta.EDGE_TANGENT_CELL_U),
         dual_normal_cell_y=grid_geometry.get(geometry_meta.EDGE_TANGENT_CELL_V),
-        dual_normal_vert_x=grid_geometry.get(geometry_meta.EDGE_TANGENT_VERTEX_U),
-        dual_normal_vert_y=grid_geometry.get(geometry_meta.EDGE_TANGENT_VERTEX_V),
+        dual_normal_vert_x=helpers.as_1D_sparse_field(
+            grid_geometry.get(geometry_meta.EDGE_TANGENT_VERTEX_U), target_dim=dims.ECVDim
+        ),
+        dual_normal_vert_y=helpers.as_1D_sparse_field(
+            grid_geometry.get(geometry_meta.EDGE_TANGENT_VERTEX_V), target_dim=dims.ECVDim
+        ),
     )
-    yield cell_params, edge_params
+    yield {"cell": cell_params, "edge": edge_params}
 
 
 @pytest.mark.datatest
@@ -175,8 +183,8 @@ def test_diffusion_init(
     additional_parameters = diffusion.DiffusionParams(config)
 
     grid = grid_manager.grid
-    cell_params = geometry_params[0]
-    edge_params = geometry_params[1]
+    cell_params = geometry_params["cell"]
+    edge_params = geometry_params["edge"]
 
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -320,8 +328,9 @@ def test_verify_diffusion_init_against_savepoint(
     damping_height,
     ndyn_substeps,
     backend,
-    grid_manager):
-
+    grid_manager,
+    geometry_params,
+):
     icon_grid = grid_manager.grid
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
@@ -356,8 +365,8 @@ def test_verify_diffusion_init_against_savepoint(
         zd_vertoffset=metrics_savepoint.zd_vertoffset(),
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
-    edge_params = grid_savepoint.construct_edge_geometry()
-    cell_params = grid_savepoint.construct_cell_geometry()
+    cell_params = geometry_params["cell"]
+    edge_params = geometry_params["edge"]
 
     diffusion_granule = diffusion.Diffusion(backend=backend)
     diffusion_granule.init(
@@ -397,11 +406,13 @@ def test_run_diffusion_single_step(
     ndyn_substeps,
     backend,
     grid_manager,
+    geometry_params,
 ):
     icon_grid = grid_manager.grid
+
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    cell_geometry = geometry_params["cell"]
+    edge_geometry = geometry_params["edge"]
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
@@ -447,7 +458,9 @@ def test_run_diffusion_single_step(
     config = construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion.Diffusion(backend)  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    diffusion_granule = diffusion.Diffusion(
+        backend
+    )  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
     diffusion_granule.init(
         grid=icon_grid,
         config=config,
@@ -492,8 +505,8 @@ def test_run_diffusion_multiple_steps(
     damping_height,
     ndyn_substeps,
     backend,
-    diffusion_instance,
-    grid_manager
+    diffusion_instance,  # noqa F811 fixture
+    grid_manager,
 ):
     icon_grid = grid_manager.grid
     if settings.dace_orchestration is None:
@@ -633,13 +646,14 @@ def test_run_diffusion_initial_step(
     metrics_savepoint,
     grid_savepoint,
     backend,
-    diffusion_instance,
-    grid_manager
+    diffusion_instance,  # noqa : F811 fixture
+    grid_manager,
+    geometry_params,
 ):
     icon_grid = grid_manager.grid
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = geometry_params["edge"]
+    cell_geometry: geometry.CellParams = geometry_params["cell"]
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),

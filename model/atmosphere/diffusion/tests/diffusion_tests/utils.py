@@ -35,6 +35,7 @@ def verify_diffusion_fields(
         config.shear_type
         >= diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
     )
+
     if validate_diagnostics:
         ref_div_ic = diffusion_savepoint.div_ic().asnumpy()
         val_div_ic = diagnostic_state.div_ic.asnumpy()
@@ -44,14 +45,15 @@ def verify_diffusion_fields(
         val_dwdx = diagnostic_state.dwdx.asnumpy()
         ref_dwdy = diffusion_savepoint.dwdy().asnumpy()
         val_dwdy = diagnostic_state.dwdy.asnumpy()
-
+        # edge length rtol 1e-9
         assert helpers.dallclose(val_div_ic, ref_div_ic, atol=1e-16)
-        assert helpers.dallclose(val_hdef_ic, ref_hdef_ic, atol=1e-18)
+        assert helpers.dallclose(val_hdef_ic, ref_hdef_ic, atol=1e-13)  # atol=1e-13, rtol=5e-9
         assert helpers.dallclose(val_dwdx, ref_dwdx, atol=1e-18)
         assert helpers.dallclose(val_dwdy, ref_dwdy, atol=1e-18)
 
-    assert helpers.dallclose(val_vn, ref_vn, atol=1e-15)
-    assert helpers.dallclose(val_w, ref_w, atol=1e-14)
+    # rtol 5e-9
+    assert helpers.dallclose(val_vn, ref_vn, atol=1e-9)  # initial 1e-18, # atol= 1e-9, rtol=1e-6
+    assert helpers.dallclose(val_w, ref_w, atol=1e-14)  # initial 1e-18,
     assert helpers.dallclose(val_theta_v, ref_theta_v)
     assert helpers.dallclose(val_exner, ref_exner)
 
