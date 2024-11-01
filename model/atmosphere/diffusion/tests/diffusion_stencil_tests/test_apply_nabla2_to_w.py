@@ -23,11 +23,7 @@ def apply_nabla2_to_w_numpy(
     w: xp.array,
     diff_multfac_w: float,
 ) -> xp.array:
-    geofac_n2s = xp.asarray(geofac_n2s)
-    area = xp.asarray(area)
-    z_nabla2_c = xp.asarray(z_nabla2_c)
-    diff_multfac_w = xp.asarray(diff_multfac_w)
-    c2e2cO = xp.asarray(grid.connectivities[dims.C2E2CODim])
+    c2e2cO = grid.connectivities[dims.C2E2CODim]
     geofac_n2s = xp.expand_dims(geofac_n2s, axis=-1)
     area = xp.expand_dims(area, axis=-1)
     w = w - diff_multfac_w * area * area * xp.sum(
