@@ -42,7 +42,7 @@ TODO (halungge): except for domain parameters and other fields managed by the sa
 TODO: for the numpy functions we might have to work on the func interfaces to make them a bit more uniform.
 
 """
-
+import enum
 import functools
 import inspect
 from typing import (
@@ -61,6 +61,7 @@ import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import gt4py.next.ffront.decorator as gtx_decorator
 import xarray as xa
+from gt4py.next import backend
 
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.grid import (
@@ -71,6 +72,8 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import model, utils as state_utils
+from icon4py.model.common.states.model import FieldMetaData
+from icon4py.model.common.states.utils import FieldType, to_data_array
 from icon4py.model.common.utils import builder
 
 
@@ -104,7 +107,7 @@ class FieldProvider(Protocol):
     def __call__(
         self,
         field_name: str,
-        field_src: Optional[state_utils.FieldSource],
+        field_src: Optional["FieldSource"],
         backend: Optional[gtx_backend.Backend],
         grid: Optional[GridProvider],
     ) -> state_utils.FieldType:
@@ -121,6 +124,70 @@ class FieldProvider(Protocol):
     @property
     def func(self) -> Callable:
         ...
+
+
+class RetrievalType(enum.Enum):
+    FIELD = 0
+    DATA_ARRAY = 1
+    METADATA = 2
+
+
+class FieldSource(Protocol):
+    """
+    Protocol for object that can be queried for fields and field metadata
+
+    Provides a default implementation of the get method.
+    """
+
+    @property
+    def metadata(self) -> dict[str, FieldMetaData]:
+        ...
+
+    @property
+    def providers(self) -> dict[str, FieldProvider]:
+        ...
+
+    @property
+    def backend(self) -> backend.Backend:
+        ...
+
+    @property
+    def grid_provider(self) -> GridProvider:
+        ...
+
+    def get(
+        self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
+    ) -> Union[FieldType, xa.DataArray, model.FieldMetaData]:
+        if field_name not in self.providers:
+            raise ValueError(f"Field {field_name} not provided by the source {self.__class__}")
+        match type_:
+            case RetrievalType.METADATA:
+                return self.metadata[field_name]
+            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY:
+                provider = self.providers[field_name]
+                if field_name not in provider.fields:
+                    raise ValueError(
+                        f"Field {field_name} not provided by f{provider.func.__name__}."
+                    )
+
+                buffer = provider(field_name, self, self.backend, self.grid_provider)
+                return (
+                    buffer
+                    if type_ == RetrievalType.FIELD
+                    else to_data_array(buffer, self.metadata[field_name])
+                )
+            case _:
+                raise ValueError(f"Invalid retrieval type {type_}")
+
+    def register_provider(self, provider: FieldProvider):
+        for dependency in provider.dependencies:
+            if dependency not in self.providers.keys():
+                raise ValueError(
+                    f"Dependency '{dependency}' not found in registered providers of source {self.__class__}"
+                )
+
+        for field in provider.fields:
+            self.providers[field] = provider
 
 
 class PrecomputedFieldProvider(FieldProvider):
@@ -258,7 +325,7 @@ class ProgramFieldProvider(FieldProvider):
     def __call__(
         self,
         field_name: str,
-        factory: state_utils.FieldSource,
+        factory: FieldSource,
         backend: gtx_backend.Backend,
         grid_provider: GridProvider,
     ):
@@ -268,13 +335,11 @@ class ProgramFieldProvider(FieldProvider):
 
     def _compute(
         self,
-        factory: state_utils.FieldSource,
+        factory: FieldSource,
         backend: gtx_backend.Backend,
         grid_provider: GridProvider,
     ) -> None:
-        metadata = {
-            v: factory.get(v, state_utils.RetrievalType.METADATA) for k, v in self._output.items()
-        }
+        metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
         self._fields = self._allocate(backend, grid_provider.grid, metadata)
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
@@ -301,7 +366,8 @@ class NumpyFieldsProvider(FieldProvider):
     """
     Computes a field defined by a numpy function.
 
-    TODO (halungge): need to specify a parameter source to be able to postpone evaluation
+    TODO (halungge): need to specify a parameter source to be able to postpone evaluation:  paramters are mostly
+                    configuration values
 
 
     Args:
@@ -334,7 +400,7 @@ class NumpyFieldsProvider(FieldProvider):
     def __call__(
         self,
         field_name: str,
-        factory: state_utils.FieldSource,
+        factory: FieldSource,
         backend: gtx_backend.Backend,
         grid: GridProvider,
     ) -> state_utils.FieldType:
@@ -344,7 +410,7 @@ class NumpyFieldsProvider(FieldProvider):
 
     def _compute(
         self,
-        factory: state_utils.FieldSource,
+        factory: FieldSource,
         backend: gtx_backend.Backend,
         grid_provider: GridProvider,
     ) -> None:
@@ -429,7 +495,7 @@ class PartialConfigurable(Protocol):
         return wrapper
 
 
-class FieldsFactory(state_utils.FieldSource, PartialConfigurable, GridProvider):
+class FieldsFactory(FieldSource, PartialConfigurable, GridProvider):
     def __init__(
         self,
         metadata: dict[str, model.FieldMetaData],
@@ -465,8 +531,20 @@ class FieldsFactory(state_utils.FieldSource, PartialConfigurable, GridProvider):
         self._backend = backend
 
     @property
+    def providers(self) -> dict[str, FieldProvider]:
+        return self._providers
+
+    @property
     def backend(self):
         return self._backend
+
+    @property
+    def metadata(self) -> dict[str, FieldMetaData]:
+        return self._metadata
+
+    @property
+    def grid_provider(self):
+        return self
 
     @property
     def grid(self):
@@ -476,35 +554,8 @@ class FieldsFactory(state_utils.FieldSource, PartialConfigurable, GridProvider):
     def vertical_grid(self):
         return self._vertical
 
-    def register_provider(self, provider: FieldProvider):
-        for dependency in provider.dependencies:
-            if dependency not in self._providers.keys():
-                raise ValueError(f"Dependency '{dependency}' not found in registered providers")
-
-        for field in provider.fields:
-            self._providers[field] = provider
-
     @PartialConfigurable.check_setup
     def get(
-        self, field_name: str, type_: state_utils.RetrievalType = state_utils.RetrievalType.FIELD
-    ) -> Union[state_utils.FieldType, xa.DataArray, model.FieldMetaData]:
-        if field_name not in self._providers:
-            raise ValueError(f"Field {field_name} not provided by the factory")
-        match type_:
-            case state_utils.RetrievalType.METADATA:
-                return self._metadata[field_name]
-            case state_utils.RetrievalType.FIELD | state_utils.RetrievalType.DATA_ARRAY:
-                provider = self._providers[field_name]
-                if field_name not in provider.fields:
-                    raise ValueError(
-                        f"Field {field_name} not provided by f{provider.func.__name__}."
-                    )
-
-                buffer = provider(field_name, self, self.backend, self)
-                return (
-                    buffer
-                    if type_ == state_utils.RetrievalType.FIELD
-                    else state_utils.to_data_array(buffer, self._metadata[field_name])
-                )
-            case _:
-                raise ValueError(f"Invalid retrieval type {type_}")
+        self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
+    ) -> Union[FieldType, xa.DataArray, model.FieldMetaData]:
+        return super().get(field_name, type_)

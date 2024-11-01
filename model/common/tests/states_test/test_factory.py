@@ -9,7 +9,7 @@
 import gt4py.next as gtx
 import pytest
 
-import icon4py.model.common.states.utils as state_utils
+import icon4py.model.common.states.factory
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -30,7 +30,7 @@ interface_level = v_grid.domain(dims.KHalfDim)
 
 @pytest.mark.datatest
 def test_factory_check_dependencies_on_register(grid_savepoint, backend):
-    grid = grid_savepoint.construct_icon_grid(False)
+    grid = grid_savepoint.construct_icon_grid(on_gpu=helpers.is_gpu(backend))
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=10),
         grid_savepoint.vct_a(),
@@ -55,24 +55,22 @@ def test_factory_check_dependencies_on_register(grid_savepoint, backend):
         assert e.value.match("'height_on_interface_levels' not found")
 
 
-@pytest.mark.datatest
-def test_factory_raise_error_if_no_grid_is_set(metrics_savepoint, backend):
-    z_ifc = metrics_savepoint.z_ifc()
-    k_index = gtx.as_field((dims.KDim,), xp.arange(1, dtype=gtx.int32))
+def test_factory_raise_error_if_no_grid_is_set(backend):
+    k_index = gtx.as_field((dims.KDim,), xp.arange(10, dtype=gtx.int32))
     pre_computed_fields = factory.PrecomputedFieldProvider(
-        {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
+        {cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
     fields_factory = factory.FieldsFactory(metadata=metadata.attrs).with_backend(backend)
     fields_factory.register_provider(pre_computed_fields)
     with pytest.raises(exceptions.IncompleteSetupError) or pytest.raises(AssertionError) as e:
-        fields_factory.get("height_on_interface_levels")
+        fields_factory.get(cf_utils.INTERFACE_LEVEL_STANDARD_NAME)
         assert e.value.match("grid")
 
 
 @pytest.mark.datatest
 def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
     z_ifc = metrics_savepoint.z_ifc()
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    grid = grid_savepoint.construct_icon_grid(on_gpu=helpers.is_gpu(backend))
     num_levels = grid_savepoint.num(dims.KDim)
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=num_levels),
@@ -86,9 +84,13 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
     fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
     fields_factory.register_provider(pre_computed_fields)
     fields_factory.with_grid(grid, vertical).with_backend(backend)
-    field = fields_factory.get("height_on_interface_levels", state_utils.RetrievalType.FIELD)
+    field = fields_factory.get(
+        "height_on_interface_levels", icon4py.model.common.states.factory.RetrievalType.FIELD
+    )
     assert field.ndarray.shape == (grid.num_cells, num_levels + 1)
-    meta = fields_factory.get("height_on_interface_levels", state_utils.RetrievalType.METADATA)
+    meta = fields_factory.get(
+        "height_on_interface_levels", icon4py.model.common.states.factory.RetrievalType.METADATA
+    )
     assert meta["standard_name"] == "height_on_interface_levels"
     assert meta["dims"] == (
         dims.CellDim,
@@ -96,7 +98,7 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
     )
     assert meta["units"] == "m"
     data_array = fields_factory.get(
-        "height_on_interface_levels", state_utils.RetrievalType.DATA_ARRAY
+        "height_on_interface_levels", icon4py.model.common.states.factory.RetrievalType.DATA_ARRAY
     )
     assert data_array.data.shape == (grid.num_cells, num_levels + 1)
     assert data_array.data.dtype == xp.float64
@@ -106,7 +108,10 @@ def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
 
 @pytest.mark.datatest
 def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
-    horizontal_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    if helpers.is_embedded(backend):
+        pytest.xfail("fails due to slicing issue in embedded")
+    on_gpu = helpers.is_gpu(backend)
+    horizontal_grid = grid_savepoint.construct_icon_grid(on_gpu=on_gpu)
     num_levels = grid_savepoint.num(dims.KDim)
     vertical_grid = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=num_levels),
@@ -161,7 +166,7 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
     fields_factory.with_grid(horizontal_grid, vertical_grid).with_backend(backend)
     data = fields_factory.get(
         "functional_determinant_of_metrics_on_interface_levels",
-        type_=state_utils.RetrievalType.FIELD,
+        type_=icon4py.model.common.states.factory.RetrievalType.FIELD,
     )
     ref = metrics_savepoint.ddqz_z_half().ndarray
     assert helpers.dallclose(data.ndarray, ref)
@@ -170,7 +175,7 @@ def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
 def test_field_provider_for_numpy_function(
     grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    grid = grid_savepoint.construct_icon_grid(False)
+    grid = grid_savepoint.construct_icon_grid(on_gpu=helpers.is_gpu(backend))
     vertical_grid = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=grid.num_levels),
         grid_savepoint.vct_a(),
@@ -207,7 +212,7 @@ def test_field_provider_for_numpy_function(
 
     wgtfacq_c = fields_factory.get(
         "weighting_factor_for_quadratic_interpolation_to_cell_surface",
-        state_utils.RetrievalType.FIELD,
+        icon4py.model.common.states.factory.RetrievalType.FIELD,
     )
 
     assert helpers.dallclose(wgtfacq_c.asnumpy(), wgtfacq_c_ref.asnumpy())
@@ -216,7 +221,7 @@ def test_field_provider_for_numpy_function(
 def test_field_provider_for_numpy_function_with_offsets(
     grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    grid = grid_savepoint.construct_icon_grid(False)  # TODO fix this should be come obsolete
+    grid = grid_savepoint.construct_icon_grid(on_gpu=helpers.is_gpu(backend))
     vertical = v_grid.VerticalGrid(
         v_grid.VerticalGridConfig(num_levels=grid.num_levels),
         grid_savepoint.vct_a(),
@@ -268,7 +273,7 @@ def test_field_provider_for_numpy_function_with_offsets(
     fields_factory.register_provider(wgtfacq_e_provider)
     wgtfacq_e = fields_factory.get(
         "weighting_factor_for_quadratic_interpolation_to_edge_center",
-        state_utils.RetrievalType.FIELD,
+        icon4py.model.common.states.factory.RetrievalType.FIELD,
     )
 
     assert helpers.dallclose(wgtfacq_e.asnumpy(), wgtfacq_e_ref.asnumpy())
