@@ -133,18 +133,15 @@ We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) 
 
 ### Documentation
 
-The documentation is at a very early stage given the constant state of development. Some effort is ongoing to document the dycore and can be compiled as follows:
+The documentation is at a very early stage given the constant state of development. Some effort is ongoing to document the dycore and can be compiled as follows.
+
+You can install the required packages by using the provided `requirements-dev.txt` file in the root of the repository.
+
+Then move to the dycore docs folder and build the html documentation with the provided makefile:
 
 ```bash
-# Install the required packages
-pip install sphinx==7.3.7 myst-parser sphinx-rtd-theme sphinx-math-dollar sphinx-toolbox
-
-# Move to the dycore docs folder
 cd model/atmosphere/dycore/docs
-
-# Build the documentation
-sphinx-apidoc --implicit-namespaces -o . ../src/icon4py/
-sphinx-build -j 4 . _build/html
+make html
 ```
 
 The documentation can then be accessed at `docs/_build/html/index.html`

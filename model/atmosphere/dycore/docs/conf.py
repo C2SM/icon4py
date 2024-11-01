@@ -8,7 +8,7 @@
 
 import sys, os
 # Add the directory containing icon4py_sphinx to sys.path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "_ext")))
 import icon4py_sphinx
 import latex_sphinx
 
@@ -58,10 +58,10 @@ mathjax3_config = {
     'tex': {
         'inlineMath': [['\\(', '\\)']],
         'displayMath': [["\\[", "\\]"]],
+        # Create mathjax macros from latex file
+        'macros': latex_sphinx.tex_macros_to_mathjax('latex_macros.tex'),
     },
 }
-# Import latex macros
-mathjax3_config['tex']['macros'] = latex_sphinx.get_latex_macros('latex_macros.tex')
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -75,4 +75,4 @@ add_module_names = False
 # -- More involved stuff ------------------------------------------------------
 
 def setup(app):
-    app.add_autodocumenter(icon4py_sphinx.FullMethodDocumenter)
+    app.add_autodocumenter(icon4py_sphinx.ScidocMethodDocumenter)

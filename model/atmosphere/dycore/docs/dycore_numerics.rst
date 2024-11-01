@@ -13,5 +13,5 @@ The advection terms are computed separately in dycore/advection
 
    dycore_numerics_advection.rst
 
-.. autofull:: icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.run_predictor_step
+.. autoscidoc:: icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.run_predictor_step
    :no-index:
