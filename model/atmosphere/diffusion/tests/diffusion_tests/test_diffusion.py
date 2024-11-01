@@ -5,19 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import settings
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
     geometry_attributes as geometry_meta,
+    icon,
     vertical as v_grid,
 )
-from icon4py.model.common.settings import backend
+from icon4py.model.common.settings import backend, xp
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     grid_utils,
@@ -25,6 +25,7 @@ from icon4py.model.common.test_utils import (
     reference_funcs as ref_funcs,
     serialbox_utils as sb,
 )
+from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,
@@ -33,6 +34,87 @@ from .utils import (
     smag_limit_numpy,
     verify_diffusion_fields,
 )
+
+
+grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT : {}}
+
+def get_grid_for_experiment(experiment, backend):
+    return _get_or_initialize(experiment, backend, "grid")
+
+def get_edge_geometry_for_experiment(experiment, backend):
+    return _get_or_initialize(experiment, backend, "edge_geometry")
+
+def get_cell_geometry_for_experiment(experiment, backend):
+    return _get_or_initialize(experiment, backend, "cell_geometry")
+
+
+
+def _get_or_initialize(experiment, backend, name):
+    def _construct_minimal_decomposition_info(grid: icon.IconGrid):
+        edge_indices = alloc.allocate_indices(dims.EdgeDim, grid)
+        owner_mask = xp.ones((grid.num_edges,), dtype=bool)
+        decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
+        decomposition_info.with_dimension(dims.EdgeDim, edge_indices.ndarray, owner_mask)
+        return decomposition_info
+
+    if not grid_functionality[experiment].get(name):
+        on_gpu = helpers.is_gpu(backend)
+        gm = grid_utils.get_icon_grid_from_gridfile(experiment, on_gpu)
+        gm()
+        grid = gm.grid
+        decomposition_info = _construct_minimal_decomposition_info(grid)
+        geometry_ = geometry.GridGeometry(
+            grid=grid,
+            decomposition_info=decomposition_info,
+            backend=backend,
+            coordinates=gm.coordinates,
+            extra_fields=gm.geometry,
+            metadata=geometry_meta.attrs,
+        )
+        cell_params = geometry.CellParams.from_global_num_cells(
+            cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
+            cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
+            area=geometry_.get(geometry_meta.CELL_AREA),
+            global_num_cells=grid.global_num_cells,
+        )
+        edge_params = geometry.EdgeParams(
+            edge_center_lat=geometry_.get(geometry_meta.EDGE_LAT),
+            edge_center_lon=geometry_.get(geometry_meta.EDGE_LON),
+            tangent_orientation=geometry_.get(geometry_meta.TANGENT_ORIENTATION),
+            f_e=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
+            edge_areas=geometry_.get(geometry_meta.EDGE_AREA),
+            primal_edge_lengths=geometry_.get(geometry_meta.EDGE_LENGTH),
+            inverse_primal_edge_lengths=geometry_.get(
+                f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
+            dual_edge_lengths=geometry_.get(geometry_meta.DUAL_EDGE_LENGTH),
+            inverse_dual_edge_lengths=geometry_.get(
+                f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
+            inverse_vertex_vertex_lengths=geometry_.get(
+                f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
+            ),
+            primal_normal_x=geometry_.get(geometry_meta.EDGE_NORMAL_U),
+            primal_normal_y=geometry_.get(geometry_meta.EDGE_NORMAL_V),
+            primal_normal_cell_x=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
+            primal_normal_cell_y=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
+            primal_normal_vert_x=helpers.as_1D_sparse_field(
+                geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U), target_dim=dims.ECVDim
+            ),
+            primal_normal_vert_y=helpers.as_1D_sparse_field(
+                geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V), target_dim=dims.ECVDim
+            ),
+            dual_normal_cell_x=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
+            dual_normal_cell_y=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
+            dual_normal_vert_x=helpers.as_1D_sparse_field(
+                geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U), target_dim=dims.ECVDim
+            ),
+            dual_normal_vert_y=helpers.as_1D_sparse_field(
+                geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V), target_dim=dims.ECVDim
+            ),
+        )
+        grid_functionality[experiment]["grid"] = grid
+        grid_functionality[experiment]["edge_geometry"] = edge_params
+        grid_functionality[experiment]["cell_geometry"] = cell_params
+    return grid_functionality[experiment].get(name)
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
@@ -93,71 +175,7 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     params = diffusion.DiffusionParams(construct_diffusion_config(experiment, ndyn_substeps=5))
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
-    assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
-
-
-@pytest.fixture
-def grid_manager(backend, experiment):
-    on_gpu = helpers.is_gpu(backend)
-    gm = grid_utils.get_icon_grid_from_gridfile(experiment, on_gpu)
-    gm()
-    yield gm
-
-
-@pytest.fixture
-def grid_geometry(grid_manager, decomposition_info, backend):
-    grid_geometry = geometry.GridGeometry(
-        grid=grid_manager.grid,
-        decomposition_info=decomposition_info,
-        backend=backend,
-        coordinates=grid_manager.coordinates,
-        extra_fields=grid_manager.geometry,
-        metadata=geometry_meta.attrs,
-    )
-    yield grid_geometry
-
-
-@pytest.fixture
-def geometry_params(grid_geometry, grid_manager):
-    cell_params = geometry.CellParams.from_global_num_cells(
-        cell_center_lat=grid_geometry.get(geometry_meta.CELL_LAT),
-        cell_center_lon=grid_geometry.get(geometry_meta.CELL_LON),
-        area=grid_geometry.get(geometry_meta.CELL_AREA),
-        global_num_cells=grid_manager.grid.global_num_cells,
-    )
-    edge_params = geometry.EdgeParams(
-        edge_center_lat=grid_geometry.get(geometry_meta.EDGE_LAT),
-        edge_center_lon=grid_geometry.get(geometry_meta.EDGE_LON),
-        tangent_orientation=grid_geometry.get(geometry_meta.TANGENT_ORIENTATION),
-        f_e=grid_geometry.get(geometry_meta.CORIOLIS_PARAMETER),
-        edge_areas=grid_geometry.get(geometry_meta.EDGE_AREA),
-        primal_edge_lengths=grid_geometry.get(geometry_meta.EDGE_LENGTH),
-        inverse_primal_edge_lengths=grid_geometry.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
-        dual_edge_lengths=grid_geometry.get(geometry_meta.DUAL_EDGE_LENGTH),
-        inverse_dual_edge_lengths=grid_geometry.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
-        inverse_vertex_vertex_lengths=grid_geometry.get(
-            f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
-        ),
-        primal_normal_x=grid_geometry.get(geometry_meta.EDGE_NORMAL_U),
-        primal_normal_y=grid_geometry.get(geometry_meta.EDGE_NORMAL_V),
-        primal_normal_cell_x=grid_geometry.get(geometry_meta.EDGE_NORMAL_CELL_U),
-        primal_normal_cell_y=grid_geometry.get(geometry_meta.EDGE_NORMAL_CELL_V),
-        primal_normal_vert_x=helpers.as_1D_sparse_field(
-            grid_geometry.get(geometry_meta.EDGE_NORMAL_VERTEX_U), target_dim=dims.ECVDim
-        ),
-        primal_normal_vert_y=helpers.as_1D_sparse_field(
-            grid_geometry.get(geometry_meta.EDGE_NORMAL_VERTEX_V), target_dim=dims.ECVDim
-        ),
-        dual_normal_cell_x=grid_geometry.get(geometry_meta.EDGE_TANGENT_CELL_U),
-        dual_normal_cell_y=grid_geometry.get(geometry_meta.EDGE_TANGENT_CELL_V),
-        dual_normal_vert_x=helpers.as_1D_sparse_field(
-            grid_geometry.get(geometry_meta.EDGE_TANGENT_VERTEX_U), target_dim=dims.ECVDim
-        ),
-        dual_normal_vert_y=helpers.as_1D_sparse_field(
-            grid_geometry.get(geometry_meta.EDGE_TANGENT_VERTEX_V), target_dim=dims.ECVDim
-        ),
-    )
-    yield {"cell": cell_params, "edge": edge_params}
+    assert xp.all(params.smagorinski_factor >= xp.zeros(len(params.smagorinski_factor)))
 
 
 @pytest.mark.datatest
@@ -174,15 +192,13 @@ def test_diffusion_init(
     damping_height,
     ndyn_substeps,
     backend,
-    grid_manager,
-    geometry_params,
 ):
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
-    grid = grid_manager.grid
-    cell_params = geometry_params["cell"]
-    edge_params = geometry_params["edge"]
+    grid = get_grid_for_experiment(experiment, backend)
+    cell_params = get_cell_geometry_for_experiment(experiment,backend)
+    edge_params = get_edge_geometry_for_experiment(experiment, backend)
 
     vertical_config = v_grid.VerticalGridConfig(
         grid.num_levels,
@@ -326,14 +342,15 @@ def test_verify_diffusion_init_against_savepoint(
     damping_height,
     ndyn_substeps,
     backend,
-    grid_manager,
-    geometry_params,
+
 ):
-    icon_grid = grid_manager.grid
+    grid = get_grid_for_experiment(experiment, backend)
+    cell_params = get_cell_geometry_for_experiment(experiment,backend)
+    edge_params = get_edge_geometry_for_experiment(experiment, backend)
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
     vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
+        grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
@@ -363,11 +380,10 @@ def test_verify_diffusion_init_against_savepoint(
         zd_vertoffset=metrics_savepoint.zd_vertoffset(),
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
-    cell_params = geometry_params["cell"]
-    edge_params = geometry_params["edge"]
+
 
     diffusion_granule = diffusion.Diffusion(
-        icon_grid,
+        grid,
         config,
         additional_parameters,
         vertical_params,
@@ -403,14 +419,14 @@ def test_run_diffusion_single_step(
     damping_height,
     ndyn_substeps,
     backend,
-    grid_manager,
-    geometry_params,
+
 ):
-    icon_grid = grid_manager.grid
+    grid = get_grid_for_experiment(experiment, backend)
+    cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
+    edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
 
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    cell_geometry = geometry_params["cell"]
-    edge_geometry = geometry_params["edge"]
+
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
@@ -439,7 +455,7 @@ def test_run_diffusion_single_step(
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
 
     vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
+        grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
@@ -457,7 +473,7 @@ def test_run_diffusion_single_step(
     additional_parameters = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion.Diffusion(
-        grid=icon_grid,
+        grid=grid,
         config=config,
         params=additional_parameters,
         vertical_grid=vertical_params,
@@ -501,9 +517,9 @@ def test_run_diffusion_multiple_steps(
     ndyn_substeps,
     backend,
     diffusion_instance,  # F811 fixture
-    grid_manager,
+    icon_grid,
 ):
-    icon_grid = grid_manager.grid
+
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
@@ -631,15 +647,14 @@ def test_run_diffusion_initial_step(
     metrics_savepoint,
     grid_savepoint,
     backend,
-    grid_manager,
-    geometry_params,
 ):
-    icon_grid = grid_manager.grid
+    grid = get_grid_for_experiment(experiment, backend)
+    cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
+    edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    edge_geometry: geometry.EdgeParams = geometry_params["edge"]
-    cell_geometry: geometry.CellParams = geometry_params["cell"]
+
     vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
+        grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
@@ -679,7 +694,7 @@ def test_run_diffusion_initial_step(
     config = construct_diffusion_config(experiment, ndyn_substeps=2)
     params = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion.Diffusion(grid=icon_grid,
+    diffusion_granule = diffusion.Diffusion(grid=grid,
                                             config = config,
                                             params = params,
                                             vertical_grid=vertical_grid,

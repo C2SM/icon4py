@@ -15,7 +15,6 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
-from ..utils import diffusion_instance  # noqa
 
 
 @pytest.mark.mpi
@@ -41,7 +40,7 @@ def test_parallel_diffusion(
     damping_height,
     caplog,
     backend,
-    diffusion_instance,  # noqa: F811
+    diffusion_instance,
 ):
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -169,7 +168,7 @@ def test_parallel_diffusion_multiple_steps(
     damping_height,
     caplog,
     backend,
-    diffusion_instance,  # noqa: F811
+    diffusion_instance,
 ):
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")

@@ -63,7 +63,7 @@ def test_damping_layer_calculation_from_icon_input(
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
     )
     assert nrdmax == vertical_grid.end_index_of_damping_layer
-    a_array = a.asnumpy()
+    a_array = a.ndarray
     assert a_array[nrdmax] > damping_height
     assert a_array[nrdmax + 1] < damping_height
     assert vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.DAMPING)) == nrdmax
@@ -131,7 +131,7 @@ def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_leve
 def test_interface_physical_height(grid_savepoint):
     vertical_grid = configure_vertical_grid(grid_savepoint)
     assert helpers.dallclose(
-        grid_savepoint.vct_a().asnumpy(), vertical_grid.interface_physical_height.asnumpy()
+        grid_savepoint.vct_a().ndarray, vertical_grid.interface_physical_height.ndarray
     )
 
 
@@ -291,5 +291,5 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     )
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
 
-    assert helpers.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
-    assert helpers.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
+    assert helpers.dallclose(vct_a.ndarray, grid_savepoint.vct_a().ndarray)
+    assert helpers.dallclose(vct_b.ndarray, grid_savepoint.vct_b().ndarray)
