@@ -13,11 +13,10 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, grid_utils, helpers
 
 
-NUM_LEVELS = 65
-
+NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS
 
 @pytest.mark.parametrize(
     "max_h,damping_height,delta",

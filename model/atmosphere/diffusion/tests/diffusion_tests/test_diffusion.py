@@ -183,7 +183,6 @@ def test_diffusion_init(
     savepoint_diffusion_init,
     interpolation_savepoint,
     metrics_savepoint,
-    grid_savepoint,
     experiment,
     step_date_init,
     lowest_layer_thickness,
@@ -207,11 +206,11 @@ def test_diffusion_init(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        vct_a=vct_a,
+        vct_b=vct_b,
     )
 
     meta = savepoint_diffusion_init.get_metadata("linit", "date")
@@ -276,11 +275,12 @@ def test_diffusion_init(
     expected_diff_multfac_vn = diff_multfac_vn_numpy(
         shape_k, additional_parameters.K4, config.substep_as_float
     )
+
     assert helpers.dallclose(diffusion_granule.diff_multfac_vn.asnumpy(), expected_diff_multfac_vn)
     expected_enh_smag_fac = ref_funcs.enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
-        grid_savepoint.vct_a().asnumpy(),
+        vertical_params.vct_a.ndarray,
     )
     assert helpers.dallclose(diffusion_granule.enh_smag_fac.asnumpy(), expected_enh_smag_fac)
 
@@ -332,7 +332,6 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_verify_diffusion_init_against_savepoint(
     experiment,
-    grid_savepoint,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_diffusion_init,
@@ -356,11 +355,11 @@ def test_verify_diffusion_init_against_savepoint(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        vct_a=vct_a,
+        vct_b=vct_b,
     )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
@@ -411,7 +410,6 @@ def test_run_diffusion_single_step(
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    grid_savepoint,
     experiment,
     lowest_layer_thickness,
     model_top_height,
@@ -461,12 +459,11 @@ def test_run_diffusion_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        vct_a=vct_a,
+        vct_b=vct_b,
     )
 
     config = construct_diffusion_config(experiment, ndyn_substeps)
@@ -645,7 +642,6 @@ def test_run_diffusion_initial_step(
     savepoint_diffusion_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    grid_savepoint,
     backend,
 ):
     grid = get_grid_for_experiment(experiment, backend)
@@ -660,11 +656,11 @@ def test_run_diffusion_initial_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+        vct_a=vct_a,
+        vct_b=vct_b,
     )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
