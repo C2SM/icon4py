@@ -560,3 +560,6 @@ def grid_init_dycore(
         )
         # set exchange runtime to MultiNodeExchange
         dycore_wrapper_state["exchange_runtime"] = exchange_runtime
+    else:
+        # set exchange runtime to SingleNodeExchange
+        dycore_wrapper_state["exchange_runtime"] = definitions.SingleNodeExchange()

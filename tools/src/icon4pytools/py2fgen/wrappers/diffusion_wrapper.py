@@ -384,3 +384,6 @@ def grid_init_diffusion(
         )
         # set exchange runtime to MultiNodeExchange
         diffusion_wrapper_state["exchange_runtime"] = exchange_runtime
+    else:
+        # set exchange runtime to SingleNodeExchange
+        diffusion_wrapper_state["exchange_runtime"] = definitions.SingleNodeExchange()
