@@ -56,7 +56,7 @@ def compute_icosahedron_num_cells(root: int, level: int):
 
 
 def compute_torus_num_cells(x: int, y: int):
-    # TODO (halungge) fix this
+    # TODO (@halungge) fix this
     raise NotImplementedError("TODO : lookup torus cell number computation")
 
 
@@ -105,8 +105,9 @@ class IconGrid(base.BaseGrid):
             ),
             "E2C2E": (self._get_offset_provider, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
             "E2C2EO": (self._get_offset_provider, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
+            "C2E2C2E2C": (self._get_offset_provider, dims.C2E2C2E2CDim, dims.CellDim, dims.CellDim),
             "Koff": (lambda: dims.KDim,),  # Koff is a special case
-            "C2CECEC ": (
+            "C2CECEC": (
                 self._get_offset_provider_for_sparse_fields,
                 dims.C2E2C2E2CDim,
                 dims.CellDim,

@@ -30,7 +30,7 @@ from .utils import (
     compare_dace_orchestration_multiple_steps,
     construct_diffusion_config,
     diff_multfac_vn_numpy,
-    diffusion_instance,  # noqa
+    diffusion_instance,
     smag_limit_numpy,
     verify_diffusion_fields,
 )
@@ -225,9 +225,8 @@ def test_diffusion_init(
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
 
-    diffusion_granule = diffusion.Diffusion(backend=backend)
-    diffusion_granule.init(
-        grid=grid,
+    diffusion_granule = diffusion.Diffusion(
+        grid=icon_grid,
         config=config,
         params=additional_parameters,
         vertical_grid=vertical_params,
@@ -235,6 +234,7 @@ def test_diffusion_init(
         interpolation_state=interpolation_state,
         edge_params=edge_params,
         cell_params=cell_params,
+        backend=backend,
     )
 
     assert diffusion_granule.diff_multfac_w == min(
@@ -307,7 +307,7 @@ def _verify_init_values_against_savepoint(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init",
+    "experiment,step_date_init",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000"),
@@ -368,8 +368,7 @@ def test_verify_diffusion_init_against_savepoint(
     cell_params = geometry_params["cell"]
     edge_params = geometry_params["edge"]
 
-    diffusion_granule = diffusion.Diffusion(backend=backend)
-    diffusion_granule.init(
+    diffusion_granule = diffusion.Diffusion(
         icon_grid,
         config,
         additional_parameters,
@@ -378,6 +377,7 @@ def test_verify_diffusion_init_against_savepoint(
         interpolation_state,
         edge_params,
         cell_params,
+        backend=backend,
     )
 
     _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule)
@@ -458,19 +458,7 @@ def test_run_diffusion_single_step(
     config = construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion.Diffusion(
-        backend
-    )  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
-    diffusion_granule.init(
-        grid=icon_grid,
-        config=config,
-        params=additional_parameters,
-        vertical_grid=vertical_params,
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-    )
+    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
 
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -505,7 +493,7 @@ def test_run_diffusion_multiple_steps(
     damping_height,
     ndyn_substeps,
     backend,
-    diffusion_instance,  # noqa F811 fixture
+    diffusion_instance,  # F811 fixture
     grid_manager,
 ):
     icon_grid = grid_manager.grid
@@ -568,8 +556,7 @@ def test_run_diffusion_multiple_steps(
     )
     prognostic_state_dace_non_orch = savepoint_diffusion_init.construct_prognostics()
 
-    diffusion_granule = diffusion.Diffusion(backend=backend)
-    diffusion_granule.init(
+    diffusion_granule = diffusion.Diffusion(
         grid=icon_grid,
         config=config,
         params=additional_parameters,
@@ -578,6 +565,7 @@ def test_run_diffusion_multiple_steps(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        backend=backend,
     )
 
     for _ in range(3):
@@ -601,16 +589,6 @@ def test_run_diffusion_multiple_steps(
     prognostic_state_dace_orch = savepoint_diffusion_init.construct_prognostics()
 
     diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
-    diffusion_granule.init(
-        grid=icon_grid,
-        config=config,
-        params=additional_parameters,
-        vertical_grid=vertical_params,
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-    )
 
     for _ in range(3):
         diffusion_granule.run(
@@ -646,7 +624,7 @@ def test_run_diffusion_initial_step(
     metrics_savepoint,
     grid_savepoint,
     backend,
-    diffusion_instance,  # noqa : F811 fixture
+    diffusion_instance,  # : F811 fixture
     grid_manager,
     geometry_params,
 ):
@@ -679,33 +657,9 @@ def test_run_diffusion_initial_step(
         dwdy=savepoint_diffusion_init.dwdy(),
     )
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
-    )
     config = construct_diffusion_config(experiment, ndyn_substeps=2)
-    additional_parameters = diffusion.DiffusionParams(config)
 
     diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
-    diffusion_granule.init(
-        grid=icon_grid,
-        config=config,
-        params=additional_parameters,
-        vertical_grid=vertical_params,
-        metric_state=metric_state,
-        interpolation_state=interpolation_state,
-        edge_params=edge_geometry,
-        cell_params=cell_geometry,
-    )
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
     if linit:

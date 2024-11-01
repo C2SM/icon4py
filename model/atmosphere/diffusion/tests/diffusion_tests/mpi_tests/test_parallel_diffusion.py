@@ -99,7 +99,7 @@ def test_parallel_diffusion(
 
     diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
 
-    diffusion.init(
+    diffusion.Diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -237,9 +237,7 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     settings.dace_orchestration = None
 
-    diffusion = diffusion_.Diffusion(backend, exchange)
-
-    diffusion.init(
+    diffusion = diffusion_.Diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -250,7 +248,10 @@ def test_parallel_diffusion_multiple_steps(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        backend=backend,
+        exchange=exchange,
     )
+
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
     diagnostic_state_dace_non_orch = diffusion_states.DiffusionDiagnosticState(

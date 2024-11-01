@@ -16,6 +16,8 @@ from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 
+from icon4py.model.common.settings import xp
+
 from ..grid.base import BaseGrid
 from ..type_alias import wpfloat
 
@@ -103,7 +105,7 @@ def zero_field(
     dtype=wpfloat,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> gt_common.Field:
-    return as_field(dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
+    return as_field(dims, xp.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
 
 
 def constant_field(
@@ -172,7 +174,7 @@ def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
         **{
-            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
+            k: v.ndarray if isinstance(v, gt_common.Field) else np.array(v)
             for k, v in input_data.items()
         },
     )
@@ -191,7 +193,7 @@ def _test_validation(self, grid, backend, input_data):
         )
 
         assert np.allclose(
-            input_data[name].asnumpy()[gtslice],
+            input_data[name].ndarray[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
         ), f"Validation failed for '{name}'"
