@@ -30,7 +30,6 @@ from .utils import (
     compare_dace_orchestration_multiple_steps,
     construct_diffusion_config,
     diff_multfac_vn_numpy,
-    diffusion_instance,
     smag_limit_numpy,
     verify_diffusion_fields,
 )
@@ -115,7 +114,6 @@ def grid_geometry(grid_manager, decomposition_info, backend):
         extra_fields=grid_manager.geometry,
         metadata=geometry_meta.attrs,
     )
-    grid_geometry()
     yield grid_geometry
 
 
@@ -226,7 +224,7 @@ def test_diffusion_init(
     )
 
     diffusion_granule = diffusion.Diffusion(
-        grid=icon_grid,
+        grid=grid,
         config=config,
         params=additional_parameters,
         vertical_grid=vertical_params,
@@ -458,8 +456,17 @@ def test_run_diffusion_single_step(
     config = construct_diffusion_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
-
+    diffusion_granule = diffusion.Diffusion(
+        grid=icon_grid,
+        config=config,
+        params=additional_parameters,
+        vertical_grid=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+        backend=backend,
+    )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
@@ -624,7 +631,6 @@ def test_run_diffusion_initial_step(
     metrics_savepoint,
     grid_savepoint,
     backend,
-    diffusion_instance,  # : F811 fixture
     grid_manager,
     geometry_params,
 ):
@@ -632,6 +638,19 @@ def test_run_diffusion_initial_step(
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
     edge_geometry: geometry.EdgeParams = geometry_params["edge"]
     cell_geometry: geometry.CellParams = geometry_params["cell"]
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_grid = v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
@@ -658,8 +677,19 @@ def test_run_diffusion_initial_step(
     )
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
     config = construct_diffusion_config(experiment, ndyn_substeps=2)
+    params = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    diffusion_granule = diffusion.Diffusion(grid=icon_grid,
+                                            config = config,
+                                            params = params,
+                                            vertical_grid=vertical_grid,
+                                            metric_state = metric_state,
+                                            interpolation_state=interpolation_state,
+                                            edge_params=edge_geometry,
+                                            cell_params= cell_geometry,
+                                            backend = backend
+                                            )
+    
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
     if linit:
