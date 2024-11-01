@@ -31,7 +31,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import geometry, icon

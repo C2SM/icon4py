@@ -115,7 +115,12 @@ class BaseGrid(ABC):
 
     @builder.builder
     def with_connectivities(self, connectivity: Dict[gtx.Dimension, np.ndarray]):
-        self.connectivities.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
+        self.connectivities.update(
+            {
+                d: k.ndarray.astype(gtx.int32) if hasattr(k, "ndarray") else k.astype(gtx.int32)
+                for d, k in connectivity.items()
+            }
+        )
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     @builder.builder

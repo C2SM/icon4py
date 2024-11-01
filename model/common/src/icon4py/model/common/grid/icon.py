@@ -91,8 +91,16 @@ class IconGrid(base.BaseGrid):
         self, dim: gtx.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
         log.debug(f"Using start_indices {dim} {start_indices}, end_indices {dim} {end_indices}")
-        self._start_indices[dim] = start_indices.astype(gtx.int32)
-        self._end_indices[dim] = end_indices.astype(gtx.int32)
+        self._start_indices[dim] = (
+            start_indices.ndarray.astype(gtx.int32)
+            if hasattr(start_indices, "ndarray")
+            else start_indices.astype(gtx.int32)
+        )
+        self._end_indices[dim] = (
+            end_indices.ndarray.astype(gtx.int32)
+            if hasattr(end_indices, "ndarray")
+            else end_indices.astype(gtx.int32)
+        )
 
     @builder.builder
     def with_global_params(self, global_params: GlobalGridParams):

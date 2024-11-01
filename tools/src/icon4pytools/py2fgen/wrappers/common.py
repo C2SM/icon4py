@@ -20,7 +20,11 @@ log = logging.getLogger(__name__)
 
 def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
-    return xp.subtract(xp.asarray(inp), offset).ndarray
+    # return xp.subtract(inp.ndarray, offset)
+    # if inp is not None:
+    #     return xp.subtract(xp.asarray(inp), offset)
+    if inp is not None:
+        return inp - offset
 
 
 def construct_icon_grid(
@@ -61,9 +65,9 @@ def construct_icon_grid(
     vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
     edge_start_index = adjust_fortran_indices(edge_starts, offset)
 
-    cells_end_index = cell_ends.ndarray
-    vertex_end_index = vertex_ends.ndarray
-    edge_end_index = edge_ends.ndarray
+    cells_end_index = cell_ends
+    vertex_end_index = vertex_ends
+    edge_end_index = edge_ends
 
     c2e = adjust_fortran_indices(c2e, offset)
     c2v = adjust_fortran_indices(c2v, offset)
@@ -78,8 +82,8 @@ def construct_icon_grid(
     e2c2e = adjust_fortran_indices(e2c2e, offset)
 
     # stacked arrays
-    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c))
-    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
+    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), xp.asarray(c2e2c.asnumpy())))
+    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), xp.asarray(e2c2e.asnumpy())))
 
     config = base.GridConfig(
         horizontal_config=horizontal.HorizontalGridSize(
@@ -153,9 +157,9 @@ def construct_decomposition(
     e_glb_index = adjust_fortran_indices(e_glb_index, offset)
     v_glb_index = adjust_fortran_indices(v_glb_index, offset)
 
-    c_owner_mask = c_owner_mask.ndarray[:num_cells]
-    e_owner_mask = e_owner_mask.ndarray[:num_edges]
-    v_owner_mask = v_owner_mask.ndarray[:num_vertices]
+    c_owner_mask = c_owner_mask[:num_cells] if c_owner_mask is not None else c_owner_mask
+    e_owner_mask = e_owner_mask[:num_edges] if e_owner_mask is not None else e_owner_mask
+    v_owner_mask = v_owner_mask[:num_vertices] if v_owner_mask is not None else v_owner_mask
 
     decomposition_info = (
         definitions.DecompositionInfo(
