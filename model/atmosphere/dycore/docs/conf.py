@@ -8,7 +8,7 @@
 
 import sys, os
 # Add the directory containing icon4py_sphinx to sys.path
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "_ext")))
 import icon4py_sphinx
 import latex_sphinx
 
