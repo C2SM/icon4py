@@ -453,7 +453,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
         grid_id=simple_grid.id,
         output_path=test_path,
     )
-    with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing in state"):
+    with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
         group_monitor.store(
             model_state(simple_grid), dt.datetime.fromisoformat("2023-04-04T11:00:00")
         )

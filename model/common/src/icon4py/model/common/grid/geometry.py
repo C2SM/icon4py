@@ -8,11 +8,10 @@
 import dataclasses
 import functools
 import math
-from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar, Union
+from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
 
-import xarray as xa
 from gt4py import next as gtx
-from gt4py.next import backend as gtx_backend
+from gt4py.next import backend, backend as gtx_backend
 
 import icon4py.model.common.grid.geometry_attributes as attrs
 import icon4py.model.common.math.helpers as math_helpers
@@ -31,6 +30,8 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
+from icon4py.model.common.states.factory import FieldProvider
+from icon4py.model.common.states.model import FieldMetaData
 
 
 class EdgeParams:
@@ -284,7 +285,7 @@ def compute_mean_cell_area_for_sphere(radius, num_cells):
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
 
 
-class GridGeometry(state_utils.FieldSource):
+class GridGeometry(factory.FieldSource):
     def __init__(
         self,
         grid: icon.IconGrid,
@@ -340,16 +341,9 @@ class GridGeometry(state_utils.FieldSource):
             }
         )
         self.register_provider(input_fields_provider)
+        self._register_computed_fields()
 
-    def register_provider(self, provider: factory.FieldProvider):
-        for dependency in provider.dependencies:
-            if dependency not in self._providers.keys():
-                raise ValueError(f"Dependency '{dependency}' not found in registered providers")
-
-        for field in provider.fields:
-            self._providers[field] = provider
-
-    def __call__(self):
+    def _register_computed_fields(self):
         edge_length_provider = factory.ProgramFieldProvider(
             func=func.compute_edge_length,
             domain={
@@ -518,8 +512,8 @@ class GridGeometry(state_utils.FieldSource):
                 "z": attrs.EDGE_NORMAL_Z,
             },
             fields={
-                "u": attrs.EDGE_PRIMAL_NORMAL_U,
-                "v": attrs.EDGE_PRIMAL_NORMAL_V,
+                "u": attrs.EDGE_NORMAL_U,
+                "v": attrs.EDGE_NORMAL_V,
             },
             domain={
                 dims.EdgeDim: (
@@ -663,29 +657,21 @@ class GridGeometry(state_utils.FieldSource):
         )
         self.register_provider(tangent_cell_wrapper)
 
-    def get(
-        self, field_name: str, type_: state_utils.RetrievalType = state_utils.RetrievalType.FIELD
-    ) -> Union[state_utils.FieldType, xa.DataArray, model.FieldMetaData]:
-        if field_name not in self._providers.keys():
-            raise ValueError(f"Field {field_name}: unknown geometry field")
-        match type_:
-            case state_utils.RetrievalType.METADATA:
-                return self._attrs[field_name]
-            case state_utils.RetrievalType.FIELD | state_utils.RetrievalType.DATA_ARRAY:
-                provider = self._providers[field_name]
-                if field_name not in provider.fields:
-                    raise ValueError(
-                        f"Field {field_name} not provided by f{provider.func.__name__}."
-                    )
+    @property
+    def providers(self) -> dict[str, FieldProvider]:
+        return self._providers
 
-                buffer = provider(field_name, self, self._backend, self)
-                return (
-                    buffer
-                    if type_ == state_utils.RetrievalType.FIELD
-                    else state_utils.to_data_array(buffer, attrs=attrs[field_name])
-                )
-            case _:
-                raise NotImplementedError("not yet implemented")
+    @property
+    def metadata(self) -> dict[str, FieldMetaData]:
+        return self._attrs
+
+    @property
+    def backend(self) -> backend.Backend:
+        return self._backend
+
+    @property
+    def grid_provider(self):
+        return self
 
     @property
     def grid(self):
@@ -716,7 +702,7 @@ class SparseFieldProviderWrapper(factory.FieldProvider):
     def __call__(
         self,
         field_name: str,
-        field_src: Optional[state_utils.FieldSource],
+        field_src: Optional[factory.FieldSource],
         backend: Optional[gtx_backend.Backend],
         grid: Optional[factory.GridProvider],
     ):

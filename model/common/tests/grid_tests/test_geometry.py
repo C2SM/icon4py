@@ -43,12 +43,19 @@ def get_grid_geometry(backend, grid_file):
         geometry_source = geometry.GridGeometry(
             grid, decomposition_info, backend, gm.coordinates, gm.geometry, attrs.attrs
         )
-        geometry_source()
         return geometry_source
 
     if not grid_geometries.get(grid_file):
         grid_geometries[grid_file] = construct_grid_geometry(grid_file)
     return grid_geometries[grid_file]
+
+
+def test_geometry_raises_for_unknown_field(backend):
+    geometry = get_grid_geometry(backend, dt_utils.R02B04_GLOBAL)
+    with pytest.raises(ValueError) as e:
+        geometry.get("foo")
+        assert "'foo'" in e.value
+        assert "'GridGeometry'" in e.value
 
 
 @pytest.mark.parametrize(
@@ -202,8 +209,8 @@ def test_compute_coordinates_of_edge_tangent_and_normal(backend, grid_savepoint,
 )
 def test_compute_primal_normals(backend, grid_savepoint, grid_file):
     grid_geometry = get_grid_geometry(backend, grid_file)
-    primal_normal_u = grid_geometry.get(attrs.EDGE_PRIMAL_NORMAL_U)
-    primal_normal_v = grid_geometry.get(attrs.EDGE_PRIMAL_NORMAL_V)
+    primal_normal_u = grid_geometry.get(attrs.EDGE_NORMAL_U)
+    primal_normal_v = grid_geometry.get(attrs.EDGE_NORMAL_V)
 
     primal_normal_u_ref = grid_savepoint.primal_normal_v1()
     primal_normal_v_ref = grid_savepoint.primal_normal_v2()

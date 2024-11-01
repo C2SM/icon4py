@@ -5,53 +5,63 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Final
 
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
 
-EDGE_LON = "grid_longitude_of_edge_midpoint"
+EDGE_LON: Final[str] = "grid_longitude_of_edge_midpoint"
+EDGE_LAT: Final[str] = "grid_latitude_of_edge_midpoint"
+VERTEX_LON: Final[str] = "grid_longitude_of_vertex"
+VERTEX_LAT: Final[str] = "grid_latitude_of_vertex"
 
-EDGE_LAT = "grid_latitude_of_edge_midpoint"
-
-VERTEX_LON = "grid_longitude_of_vertex"
-
-VERTEX_LAT = "grid_latitude_of_vertex"
-
-CELL_LON = "grid_longitude_of_cell_center"
-CELL_LAT = "grid_latitude_of_cell_center"
-CELL_AREA = "cell_area"
-EDGE_AREA = "edge_area"
-
-CORIOLIS_PARAMETER = "coriolis_parameter"
-
-INVERSE_VERTEX_VERTEX_LENGTH = "inverse_of_vertex_vertex_length"
-
-VERTEX_VERTEX_LENGTH = "vertex_vertex_length"
-
-EDGE_LENGTH = "edge_length"
-
-EDGE_PRIMAL_NORMAL_U = "eastward_component_of_edge_normal"
-EDGE_PRIMAL_NORMAL_V = "northward_component_of_edge_normal"
-TANGENT_ORIENTATION = "edge_orientation"
+CELL_LON: Final[str] = "grid_longitude_of_cell_center"
+CELL_LAT: Final[str] = "grid_latitude_of_cell_center"
+CELL_AREA: Final[str] = "cell_area"
+EDGE_AREA: Final[str] = "edge_area"
+TANGENT_ORIENTATION: Final[str] = "edge_orientation"
 
 
-DUAL_EDGE_LENGTH = "length_of_dual_edge"
-EDGE_TANGENT_X = "x_component_of_edge_tangential_unit_vector"
-EDGE_TANGENT_Y = "y_component_of_edge_tangential_unit_vector"
-EDGE_TANGENT_Z = "z_component_of_edge_tangential_unit_vector"
-EDGE_TANGENT_VERTEX_U = "eastward_component_of_edge_tangent_on_vertex"  # TODO @halungge check name
-EDGE_TANGENT_VERTEX_V = "northward_component_of_edge_tangent_on_vertex"  # TODO @halungge check name
-EDGE_TANGENT_CELL_U = "eastward_component_of_edge_tangent_on_cell"  # TODO @halungge check name
-EDGE_TANGENT_CELL_V = "northward_component_of_edge_tangent_on_cell"  # TODO @halungge check name
-EDGE_NORMAL_X = "x_component_of_edge_normal_unit_vector"
-EDGE_NORMAL_Y = "y_component_of_edge_normal_unit_vector"
-EDGE_NORMAL_Z = "z_component_of_edge_normal_unit_vector"
-EDGE_NORMAL_VERTEX_U = "eastward_component_of_edge_normal_on_vertex"  # TODO @halungge check name
-EDGE_NORMAL_VERTEX_V = "northward_component_of_edge_normal_on_vertex"  # TODO @halungge check name
-EDGE_NORMAL_CELL_U = "eastward_component_of_edge_normal_on_cell"  # TODO @halungge check name
-EDGE_NORMAL_CELL_V = "northward_component_of_edge_normal_on_cell"  # TODO @halungge check name
+CORIOLIS_PARAMETER: Final[str] = "coriolis_parameter"
+VERTEX_VERTEX_LENGTH: Final[str] = "vertex_vertex_length"
+INVERSE_VERTEX_VERTEX_LENGTH: Final[str] = "inverse_of_vertex_vertex_length"
+EDGE_LENGTH: Final[str] = "edge_length"
+DUAL_EDGE_LENGTH: Final[str] = "length_of_dual_edge"
 
+EDGE_TANGENT_X: Final[str] = "x_component_of_edge_tangential_unit_vector"
+EDGE_TANGENT_Y: Final[str] = "y_component_of_edge_tangential_unit_vector"
+EDGE_TANGENT_Z: Final[str] = "z_component_of_edge_tangential_unit_vector"
+EDGE_TANGENT_VERTEX_U: Final[
+    str
+] = "eastward_component_of_edge_tangent_on_vertex"  # TODO @halungge check name
+EDGE_TANGENT_VERTEX_V: Final[
+    str
+] = "northward_component_of_edge_tangent_on_vertex"  # TODO @halungge check name
+EDGE_TANGENT_CELL_U: Final[
+    str
+] = "eastward_component_of_edge_tangent_on_cell"  # TODO @halungge check name
+EDGE_TANGENT_CELL_V: Final[
+    str
+] = "northward_component_of_edge_tangent_on_cell"  # TODO @halungge check name
+
+EDGE_NORMAL_X: Final[str] = "x_component_of_edge_normal_unit_vector"
+EDGE_NORMAL_Y: Final[str] = "y_component_of_edge_normal_unit_vector"
+EDGE_NORMAL_Z: Final[str] = "z_component_of_edge_normal_unit_vector"
+EDGE_NORMAL_U: Final[str] = "eastward_component_of_edge_normal"
+EDGE_NORMAL_V: Final[str] = "northward_component_of_edge_normal"
+EDGE_NORMAL_VERTEX_U: Final[
+    str
+] = "eastward_component_of_edge_normal_on_vertex"  # TODO @halungge check name
+EDGE_NORMAL_VERTEX_V: Final[
+    str
+] = "northward_component_of_edge_normal_on_vertex"  # TODO @halungge check name
+EDGE_NORMAL_CELL_U: Final[
+    str
+] = "eastward_component_of_edge_normal_on_cell"  # TODO @halungge check name
+EDGE_NORMAL_CELL_V: Final[
+    str
+] = "northward_component_of_edge_normal_on_cell"  # TODO @halungge check name
 
 attrs: dict[str, model.FieldMetaData] = {
     CELL_LAT: dict(
@@ -160,17 +170,17 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="",  # TODO
         dtype=ta.wpfloat,
     ),
-    EDGE_PRIMAL_NORMAL_V: dict(
-        standard_name=EDGE_PRIMAL_NORMAL_V,
-        long_name=EDGE_PRIMAL_NORMAL_V + " (zonal component)",
+    EDGE_NORMAL_V: dict(
+        standard_name=EDGE_NORMAL_V,
+        long_name=EDGE_NORMAL_V + " (zonal component)",
         units="",  # TODO
         dims=(dims.EdgeDim,),
         icon_var_name="primal_normal%v1",
         dtype=ta.wpfloat,
     ),
-    EDGE_PRIMAL_NORMAL_U: dict(
-        standard_name=EDGE_PRIMAL_NORMAL_U,
-        long_name=EDGE_PRIMAL_NORMAL_V + " (meridional component)",
+    EDGE_NORMAL_U: dict(
+        standard_name=EDGE_NORMAL_U,
+        long_name=EDGE_NORMAL_V + " (meridional component)",
         units="",  # TODO
         dims=(dims.EdgeDim,),
         icon_var_name="primal_normal%v2",

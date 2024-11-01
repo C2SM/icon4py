@@ -140,8 +140,8 @@ def geometry_params(grid_geometry, grid_manager):
         inverse_vertex_vertex_lengths=grid_geometry.get(
             f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
         ),
-        primal_normal_x=grid_geometry.get(geometry_meta.EDGE_PRIMAL_NORMAL_U),
-        primal_normal_y=grid_geometry.get(geometry_meta.EDGE_PRIMAL_NORMAL_V),
+        primal_normal_x=grid_geometry.get(geometry_meta.EDGE_NORMAL_U),
+        primal_normal_y=grid_geometry.get(geometry_meta.EDGE_NORMAL_V),
         primal_normal_cell_x=grid_geometry.get(geometry_meta.EDGE_NORMAL_CELL_U),
         primal_normal_cell_y=grid_geometry.get(geometry_meta.EDGE_NORMAL_CELL_V),
         primal_normal_vert_x=helpers.as_1D_sparse_field(
