@@ -62,6 +62,7 @@ logger = setup_logger(__name__)
 
 diffusion_wrapper_state = {
     "profiler": cProfile.Profile(),
+    "exchange_runtime": definitions.ExchangeRuntime,
 }
 
 
@@ -247,7 +248,7 @@ def diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
-        exchange=definitions.SingleNodeExchange(),
+        exchange=diffusion_wrapper_state["exchange_runtime"],
     )
 
 
@@ -356,7 +357,6 @@ def grid_init_diffusion(
     )
 
     if parallel_run:
-        # Set MultiNodeExchange as exchange runtime
         (
             processor_props,
             decomposition_info,
@@ -382,3 +382,5 @@ def grid_init_diffusion(
             num_edges,
             num_vertices,
         )
+        # set exchange runtime to MultiNodeExchange
+        diffusion_wrapper_state["exchange_runtime"] = exchange_runtime

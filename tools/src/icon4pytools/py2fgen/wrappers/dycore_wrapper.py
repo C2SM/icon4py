@@ -85,6 +85,7 @@ logger = setup_logger(__name__)
 
 dycore_wrapper_state = {
     "profiler": cProfile.Profile(),
+    "exchange_runtime": definitions.ExchangeRuntime,
 }
 
 
@@ -350,6 +351,7 @@ def solve_nh_init(
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
         backend=backend,
+        exchange=dycore_wrapper_state["exchange_runtime"],
     )
 
 
@@ -531,7 +533,6 @@ def grid_init_dycore(
     )
 
     if parallel_run:
-        # Set MultiNodeExchange as exchange runtime
         (
             processor_props,
             decomposition_info,
@@ -557,10 +558,5 @@ def grid_init_dycore(
             num_edges,
             num_vertices,
         )
-    else:
-        exchange_runtime = definitions.SingleNodeExchange()
-
-    # initialise the Diffusion granule
-    dycore_wrapper_state["granule"] = solve_nonhydro.SolveNonhydro(
-        backend=settings.backend, exchange=exchange_runtime
-    )
+        # set exchange runtime to MultiNodeExchange
+        dycore_wrapper_state["exchange_runtime"] = exchange_runtime
