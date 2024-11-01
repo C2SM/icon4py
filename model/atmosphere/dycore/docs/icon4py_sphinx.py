@@ -73,17 +73,16 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         Returns:
             A list of comment blocks that start with the specified keyword.
         """
-        # which in this implementation are comment blocks
         comment_blocks = []
         in_block = False
         for line in source.splitlines():
             stripped_line = line.strip()
             is_comment = stripped_line.startswith('#')
             if stripped_line.startswith(f'# {keyword}:'):
-                comment_blocks.append(line)
+                comment_blocks.append(f'{line}')
                 in_block = True
             elif in_block and is_comment:
-                comment_blocks[-1] += '\n' + line
+                comment_blocks[-1] += f'\n{line}'
             in_block = is_comment and in_block # continue the block if the line is a comment (but don't start one if now with the keyword)
         return comment_blocks
 
@@ -154,7 +153,6 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             # Make collapsible Inputs section
             if line.startswith('Inputs:'):
                 past_inputs = True
-                #docblock_lines = docblock_lines[:line_num] + [ ".. collapse:: Inputs", ""] + docblock_lines[line_num+1:] # temporarily keep here to understand with @egparedes
                 docblock_lines[line_num] = ".. collapse:: Inputs"
                 docblock_lines.insert(line_num+1, "")
                 continue
@@ -163,7 +161,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             # (single line equations are already left-aligned)
             if line.strip().startswith('$$'):
                 if docblock_lines[line_num+1].rstrip().endswith(r'\\'): # multiline math block :
-                    latex_math_multiline = not latex_math_multiline  
+                    latex_math_multiline = True
                 else: # single line math block or end of multiline math block
                     latex_math_multiline = False
                 continue
