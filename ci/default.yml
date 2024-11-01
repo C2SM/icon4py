@@ -34,7 +34,7 @@ test_tools_aarch64:
     - tox -r -e run_model_tests -c model/ -- --backend=$BACKEND $COMPONENT
   parallel:
     matrix:
-    - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, atmosphere/subgrid_scale_physics/microphysics/tests, common/tests, driver/tests]
+    - COMPONENT: [atmosphere/advection/tests/advection_tests atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, atmosphere/subgrid_scale_physics/microphysics/tests, common/tests, driver/tests]
       BACKEND: [gtfn_cpu]
 test_model_datatests_x86_64:
   extends: [.test_model_datatests, .test_template_x86_64]

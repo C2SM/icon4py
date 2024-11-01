@@ -210,7 +210,7 @@ class VerticalGrid:
     @functools.cached_property
     def nflatlev(self) -> gtx.int32:
         """Vertical index for bottom most level at which coordinate surfaces are flat."""
-        return self.index(Domain(dims.KDim, Zone.FLAT))
+        return gtx.int32(self.index(Domain(dims.KDim, Zone.FLAT)))
 
     @functools.cached_property
     def nrdmax(self) -> gtx.int32:
