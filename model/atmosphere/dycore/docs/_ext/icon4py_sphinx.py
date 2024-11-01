@@ -151,6 +151,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             The processed documentation string lines with applied formatting rules.
         """
         
+        latex_math = False
         latex_math_multiline = False
         past_inputs = False
 
@@ -168,18 +169,20 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 docblock_lines.insert(line_num+1, "")
                 continue
 
-            # Identify LaTeX multiline blocks and align equations to the left
-            # (single line equations are already left-aligned)
+            # Identify LaTeX math (multiline) blocks
             if line.strip().startswith('$$'):
+                latex_math = not latex_math
                 if docblock_lines[line_num+1].rstrip().endswith(r'\\'): # multiline math block :
                     latex_math_multiline = True
-                else: # single line math block or end of multiline math block
+                else: # single line math block or end of block
                     latex_math_multiline = False
                 continue
+
+            # Align multiline equations to the left
+            # (single line equations are already left-aligned)
             if latex_math_multiline:
                 start_idx = len(line) - len(line.lstrip()) 
                 docblock_lines[line_num] = f"{line[:start_idx]}&{line[start_idx:]}"  
-
 
             # Only in bullet point lines:
             # Add type information to variable names.
