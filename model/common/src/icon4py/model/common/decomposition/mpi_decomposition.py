@@ -13,7 +13,6 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Union
 
-from ghex.util import Architecture
 from gt4py.next import Dimension, Field
 
 from icon4py.model.common import dimension as dims
@@ -34,6 +33,7 @@ try:
         make_field_descriptor,
         make_pattern,
     )
+    from ghex.util import Architecture
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
