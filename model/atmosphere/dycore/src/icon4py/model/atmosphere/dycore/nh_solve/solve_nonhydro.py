@@ -1515,9 +1515,9 @@ class SolveNonhydro:
         )
 
         """
-        z_flxdiv_mass (0:nlev-1):
+        mass_fl_e (0:nlev-1):
             Compute the mass flux at full levels (edge center) by multiplying density with averaged normal velocity (z_vn_avg) computed above.
-        z_flxdiv_theta (0:nlev-1):
+        z_theta_v_fl_e (0:nlev-1):
             Compute the energy (theta_v * mass) flux by multiplying density with averaged normal velocity (z_vn_avg) computed above.
         """
         self._compute_mass_flux(
@@ -2284,9 +2284,9 @@ class SolveNonhydro:
 
         log.debug("corrector: start stencil 32")
         """
-        z_flxdiv_mass (0:nlev-1):
+        mass_fl_e (0:nlev-1):
             Compute the mass flux at full levels (edge center) by multiplying density with averaged normal velocity (z_vn_avg) computed above.
-        z_flxdiv_theta (0:nlev-1):
+        z_theta_v_fl_e (0:nlev-1):
             Compute the energy (theta_v * mass) flux by multiplying density with averaged normal velocity (z_vn_avg) computed above.
         """
         self._compute_mass_flux(
