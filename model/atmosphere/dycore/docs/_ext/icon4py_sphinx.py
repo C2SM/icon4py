@@ -178,11 +178,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                     latex_math_multiline = False
                 continue
 
-            # Align multiline equations to the left
-            # (single line equations are already left-aligned)
-            if latex_math_multiline:
-                start_idx = len(line) - len(line.lstrip()) 
-                docblock_lines[line_num] = f"{line[:start_idx]}&{line[start_idx:]}"  
+            # Process math lines
+            if latex_math:
+                docblock_lines[line_num] = self.process_math_line(line, latex_math_multiline)
 
             # Only in bullet point lines:
             # Add type information to variable names.
@@ -208,6 +206,31 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                         docblock_lines[line_num] = ' '*indent + ' '.join(split_line)
 
         return docblock_lines
+
+    def process_math_line(self, line: str, multiline: bool) -> str:
+        """
+        Process a line of LaTeX math and apply specific formatting rules.
+
+        Args:
+            line: The line of the LaTeX math to process.
+            multiline: A boolean flag indicating if the math block is multiline.
+
+        Returns:
+            The processed LaTeX math line with applied formatting rules.
+        """
+        symbols_needing_space = ['\Wrbf', '\Wlev']
+
+        if multiline:
+            # Align multiline equations to the left
+            # (single line equations are already left-aligned)
+            start_idx = len(line) - len(line.lstrip()) 
+            line = f"{line[:start_idx]}&{line[start_idx:]}"  
+
+        # Add latex space character '\:' after symbols if followed by other symbols starting with '\' and a letter
+        for symbol in symbols_needing_space:
+            line = re.sub(rf'({symbol})\s*(\\[a-zA-Z])', r'\1\\:\2', line)
+
+        return line
 
     def get_next_method_call(self, source: str, index_start: int) -> list[str]:
         """
