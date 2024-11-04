@@ -218,7 +218,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         Returns:
             The processed LaTeX math line with applied formatting rules.
         """
-        symbols_needing_space = ['\Wrbf', '\Wlev']
+        symbols_needing_space = ['\Wrbf', '\Wlev', '\WtimeExner']
 
         if multiline:
             # Align multiline equations to the left
@@ -228,7 +228,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
 
         # Add latex space character '\:' after symbols if followed by other symbols starting with '\' and a letter
         for symbol in symbols_needing_space:
-            line = re.sub(rf'({symbol})\s*(\\[a-zA-Z])', r'\1\\:\2', line)
+            if symbol in line:
+                line = re.sub(rf'(\{symbol})\s*(\\[a-zA-Z])', r'\1\\,\2', line)
 
         return line
 
