@@ -10,6 +10,7 @@ import dataclasses
 import datetime
 import enum
 import logging
+from functools import cached_property
 
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
@@ -27,12 +28,12 @@ log = logging.getLogger(__name__)
 n_substeps_reduced = 2
 
 
-class DriverBackends(enum.Enum):
+class DriverBackends(str, enum.Enum):
     GTFN_CPU = "gtfn_cpu"
     GTFN_GPU = "gtfn_gpu"
 
 
-@dataclasses.dataclass()
+@dataclasses.dataclass
 class Icon4pyRunConfig:
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
@@ -51,13 +52,20 @@ class Icon4pyRunConfig:
 
     restart_mode: bool = False
 
-    backend_name: DriverBackends = DriverBackends.GTFN_CPU
+    backend_name: str = DriverBackends.GTFN_CPU.value
 
-    @property
+    def __post_init__(self):
+        if self.backend_name not in [member.value for member in DriverBackends]:
+            raise ValueError(
+                f"Invalid driver backend: {self.backend_name}. \n"
+                f"Available backends are {', '.join([f'{k}' for k in [member.value for member in DriverBackends]])}"
+            )
+
+    @cached_property
     def backend(self):
         backend_map = {
-            DriverBackends.GTFN_CPU.name: run_gtfn_cached,
-            DriverBackends.GTFN_GPU.name: run_gtfn_gpu_cached,
+            DriverBackends.GTFN_CPU.value: run_gtfn_cached,
+            DriverBackends.GTFN_GPU.value: run_gtfn_gpu_cached,
         }
         return backend_map[self.backend_name]
 
@@ -71,7 +79,7 @@ class Icon4pyConfig:
 
 
 def read_config(
-    icon4py_driver_backend: DriverBackends,
+    icon4py_driver_backend: str,
     experiment_type: driver_init.ExperimentType = driver_init.ExperimentType.ANY,
 ) -> Icon4pyConfig:
     def _mch_ch_r04b09_vertical_config():
@@ -192,7 +200,7 @@ def read_config(
             end_date=datetime.datetime(1, 1, 1, 0, 0, 4),
             apply_initial_stabilization=False,
             n_substeps=5,
-            backend=icon4py_driver_backend,
+            backend_name=icon4py_driver_backend,
         )
         vertical_config = _gauss3d_vertical_config()
         diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)

@@ -183,7 +183,9 @@ def model_initialization_serialbox(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
         mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ),
     )
 
     return (
@@ -240,7 +242,12 @@ def read_initial_state(
             prognostic_state_now,
             prognostic_state_next,
         ) = jablonowski_williamson.model_initialization_jabw(
-            grid, cell_param, edge_param, path, backend, rank
+            grid=grid,
+            cell_param=cell_param,
+            edge_param=edge_param,
+            path=path,
+            backend=backend,
+            rank=rank,
         )
     elif experiment_type == ExperimentType.GAUSS3D:
         (
@@ -251,7 +258,13 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = gauss3d.model_initialization_gauss3d(grid, edge_param, path, backend, rank)
+        ) = gauss3d.model_initialization_gauss3d(
+            grid=grid,
+            edge_param=edge_param,
+            path=path,
+            backend=backend,
+            rank=rank,
+        )
     elif experiment_type == ExperimentType.ANY:
         (
             diffusion_diagnostic_state,
@@ -261,7 +274,12 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = model_initialization_serialbox(grid, path, rank)
+        ) = model_initialization_serialbox(
+            grid=grid,
+            path=path,
+            backend=backend,
+            rank=rank,
+        )
     else:
         raise NotImplementedError(INITIALIZATION_ERROR_MSG)
 

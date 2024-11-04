@@ -429,8 +429,8 @@ class IconGridSavepoint(IconSavepoint):
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
-        c2e2c0 = xp.column_stack(((range(c2e2c.shape[0])), c2e2c))
-        e2c2e0 = xp.column_stack(((range(e2c2e.shape[0])), e2c2e))
+        c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c))
+        e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
         grid = (
             icon.IconGrid(self._grid_id)
             .with_config(config)
@@ -729,7 +729,7 @@ class MetricSavepoint(IconSavepoint):
     ):  # TODO: @abishekg7 Simplify this after serialized data is fixed
         ar = xp.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
         k = k_level - 3
-        ar = xp.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
+        ar = xp.pad(xp.asarray(ar[:, ::-1]), ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, dims.EdgeDim, dims.KDim)
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)

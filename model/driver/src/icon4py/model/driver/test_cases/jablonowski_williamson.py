@@ -197,7 +197,7 @@ def model_initialization_jabw(
     log.info("Newton iteration completed!")
 
     eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
-    eta_v_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid)
+    eta_v_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend)
     cell_2_edge_interpolation.cell_2_edge_interpolation(
         eta_v,
         cell_2_edge_coeff,
@@ -285,7 +285,7 @@ def model_initialization_jabw(
     log.info("U, V computation completed.")
 
     exner_pr = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend)
-    testcases_utils.compute_perturbed_exner(
+    testcases_utils.compute_perturbed_exner.with_backend(backend)(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
         exner_pr,
