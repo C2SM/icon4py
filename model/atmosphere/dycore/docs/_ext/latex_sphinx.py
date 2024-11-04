@@ -27,8 +27,7 @@ def tex_macros_to_mathjax(filename: str) -> dict[str, str]:
         for command in ['newcommand', 'renewcommand']:
             for macro in soup.find_all(command):
                 name = macro.args[0].string.strip('\\')
-                if len(macro.args) == 2:
-                    latex_macros[name] = "{" + macro.args[1].string + "}"
-                elif len(macro.args) == 3:
-                    latex_macros[name] = ["{" + macro.args[2].string + "}", int(macro.args[1].string)]
+                latex_macros[name] = f"{{{macro.args[-1].string}}}"
+                if len(macro.args) == 3:
+                    latex_macros[name] = [latex_macros[name], int(macro.args[1].string)]
     return latex_macros
