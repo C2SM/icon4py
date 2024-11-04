@@ -197,7 +197,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             var_longname = method_info['var_longnames_map'][variable]
                             prefix = '.'.join(var_longname.split('.')[:-1])
                             suffix = var_longname.split('.')[-1]
-                            vname = (f"$\scriptscriptstyle{{\\texttt{{{prefix}.}}}}$" if prefix else "") + f" **{suffix}**"
+                            vname = (f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$" if prefix else "") + f" **{suffix}**"
                         else:
                             # short name version
                             vname = variable
