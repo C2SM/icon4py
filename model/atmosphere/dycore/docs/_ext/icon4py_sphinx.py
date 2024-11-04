@@ -344,12 +344,12 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 - 'shortname': The short name of the method.
         """
         if local_parent_name in self.module.__dict__.keys():
-            # we are importing directly from a module
+            # Importing directly from a module
             module_obj = getattr(self.module, local_parent_name)
             method_obj = getattr(module_obj, local_shortname)
             parent_name = module_obj.__name__
         elif local_parent_name == 'self':
-            # the method was renamed in the present class
+            # The method is defined or renamed in the present class
             class_and_method_name = re.sub(self.modname, '', self.fullname)[1:]
             class_name = class_and_method_name.split('.')[0]
             class_obj = getattr(self.module, class_name)
@@ -365,70 +365,82 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                         break
                 else:
                     # Handle the case where the method is assigned to an instance variable using AST
-                    source = inspect.getsource(class_obj)
-                    tree = ast.parse(source)
-                    for node in ast.walk(tree):
-                        if isinstance(node, ast.FunctionDef) and node.name == '__init__':
-                            for stmt in node.body:
-                                if isinstance(stmt, ast.Assign):
-                                    for target in stmt.targets:
-                                        if isinstance(target, ast.Attribute) and target.attr == local_shortname:
-                                            if isinstance(stmt.value, ast.Attribute):
-                                                original_method_name = stmt.value.attr
-                                                if hasattr(class_obj, original_method_name):
-                                                    method_obj = getattr(class_obj, original_method_name)
-                                                    break
-                                            elif isinstance(stmt.value, ast.Name):
-                                                original_method_name = stmt.value.id
-                                                if original_method_name in self.module.__dict__.keys():
-                                                    module_obj = getattr(self.module, original_method_name)
-                                                    method_obj = getattr(module_obj, local_shortname)
-                                                    parent_name = module_obj.__name__
-                                                    break
-                                            elif isinstance(stmt.value, ast.Call):
-                                                # Traverse the call chain to get the original method and module
-                                                call_chain = []
-                                                current_node = stmt.value.func
-                                                while isinstance(current_node, (ast.Attribute, ast.Name)):
-                                                    if isinstance(current_node, ast.Attribute):
-                                                       call_chain.append(current_node.attr)
-                                                       current_node = current_node.value
-                                                    elif isinstance(current_node, ast.Name):
-                                                        call_chain.append(current_node.id)
-                                                        break
-                                                call_chain.reverse()
-                                                if call_chain[-1] == 'with_backend':
-                                                    # remove it from the call chain
-                                                    call_chain.pop()
-                                                if len(call_chain) == 1:
-                                                    # the method is imported directly, e.g.
-                                                    # from solve_nonhydro_program import stencil
-                                                    # self._stencil = stencil.with_backend(...)
-                                                    original_method_name = call_chain[0]
-                                                    if original_method_name in self.module.__dict__.keys() and not isinstance(getattr(self.module, original_method_name), types.ModuleType):
-                                                        # method_obj.definition_stage.definition.__module__
-                                                        method_obj = getattr(self.module, original_method_name)
-                                                        if type(method_obj).__module__.startswith('gt4py') and type(method_obj).__name__ == 'Program':
-                                                            # it's a decorated gt4py program
-                                                            parent_name = method_obj.definition_stage.definition.__module__
-                                                            break
-                                                elif len(call_chain) >= 2:
-                                                    # the method is called from a module import, e.g.
-                                                    # import solve_nonhydro_program as nhsolve_prog
-                                                    # self._stencil = nhsolve_prog.stencil.with_backend(...)
-                                                    module_name = call_chain[0]
-                                                    original_method_name = call_chain[1]
-                                                    if module_name in self.module.__dict__.keys() and isinstance(getattr(self.module, module_name), types.ModuleType):
-                                                        module_obj = getattr(self.module, module_name)
-                                                        method_obj = getattr(module_obj, original_method_name)
-                                                        parent_name = module_obj.__name__
-                                                        break
+                    method_obj, parent_name = self.get_method_from_ast(class_obj, local_shortname)
         info = {
             'method_obj': method_obj,
             'parent_name': parent_name,
             'shortname': method_obj.__name__,
             }
         return info
+
+    def get_method_from_ast(self, class_obj: object, local_shortname: str) -> tuple[object, str]:
+        """
+        Retrieve the original method object and its parent module or class name using AST parsing.
+
+        Args:
+            class_obj: The class object where the method is defined.
+            local_shortname: The local short name of the method.
+
+        Returns:
+            A tuple containing:
+                - The original method object.
+                - The name of the parent module or class.
+        """
+        source = inspect.getsource(class_obj)
+        tree = ast.parse(source)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == '__init__':
+                for stmt in node.body:
+                    if isinstance(stmt, ast.Assign):
+                        for target in stmt.targets:
+                            if isinstance(target, ast.Attribute) and target.attr == local_shortname:
+                                if isinstance(stmt.value, ast.Attribute):
+                                    original_method_name = stmt.value.attr
+                                    if hasattr(class_obj, original_method_name):
+                                        method_obj = getattr(class_obj, original_method_name)
+                                        return method_obj, class_obj.__module__
+                                elif isinstance(stmt.value, ast.Name):
+                                    original_method_name = stmt.value.id
+                                    if original_method_name in self.module.__dict__.keys():
+                                        module_obj = getattr(self.module, original_method_name)
+                                        method_obj = getattr(module_obj, local_shortname)
+                                        return method_obj, module_obj.__name__
+                                elif isinstance(stmt.value, ast.Call):
+                                    # Traverse the call chain to get the original method and module
+                                    call_chain = []
+                                    current_node = stmt.value.func
+                                    while isinstance(current_node, (ast.Attribute, ast.Name)):
+                                        if isinstance(current_node, ast.Attribute):
+                                            call_chain.append(current_node.attr)
+                                            current_node = current_node.value
+                                        elif isinstance(current_node, ast.Name):
+                                            call_chain.append(current_node.id)
+                                            break
+                                    call_chain.reverse()
+                                    if call_chain[-1] == 'with_backend':
+                                        # Remove it from the call chain
+                                        call_chain.pop()
+                                    if len(call_chain) == 1:
+                                        # The method is imported directly, e.g.
+                                        # from solve_nonhydro_program import stencil
+                                        # self._stencil = stencil.with_backend(...)
+                                        original_method_name = call_chain[0]
+                                        if original_method_name in self.module.__dict__.keys() and not isinstance(getattr(self.module, original_method_name), types.ModuleType):
+                                            method_obj = getattr(self.module, original_method_name)
+                                            if type(method_obj).__module__.startswith('gt4py') and type(method_obj).__name__ == 'Program':
+                                                # it's a decorated gt4py program
+                                                return method_obj, method_obj.definition_stage.definition.__module__
+                                    elif len(call_chain) >= 2:
+                                        # The method is called from a module import, e.g.
+                                        # import solve_nonhydro_program as nhsolve_prog
+                                        # self._stencil = nhsolve_prog.stencil.with_backend(...)
+                                        module_name = call_chain[0]
+                                        original_method_name = call_chain[1]
+                                        if module_name in self.module.__dict__.keys() and isinstance(getattr(self.module, module_name), types.ModuleType):
+                                            module_obj = getattr(self.module, module_name)
+                                            method_obj = getattr(module_obj, original_method_name)
+                                            return method_obj, module_obj.__name__
+        return None, None
 
     def map_variable_names(self, function_call_str: list[str]) -> tuple[dict[str,str], dict[str,str]]:
         """
