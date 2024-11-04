@@ -197,7 +197,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             var_longname = method_info['var_longnames_map'][variable]
                             prefix = '.'.join(var_longname.split('.')[:-1])
                             suffix = var_longname.split('.')[-1]
-                            vname = (f"*{prefix}*." if prefix else "") + f" **{suffix}**"
+                            vname = (f"*{prefix}.*" if prefix else "") + f" **{suffix}**"
                         else:
                             # short name version
                             vname = variable
@@ -391,7 +391,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                                                 current_node = stmt.value.func
                                                 while isinstance(current_node, (ast.Attribute, ast.Name)):
                                                     if isinstance(current_node, ast.Attribute):
-                                                        call_chain.append(current_node.attr)
+                                                       call_chain.append(current_node.attr)
                                                         current_node = current_node.value
                                                     elif isinstance(current_node, ast.Name):
                                                         call_chain.append(current_node.id)
