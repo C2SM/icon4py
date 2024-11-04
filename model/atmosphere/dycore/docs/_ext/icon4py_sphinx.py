@@ -6,13 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from sphinx.ext import autodoc
-import re
-import inspect
-import types, typing
 import ast
-from typing import Final
+import inspect
+import re
 import textwrap
+import types
+import typing
+from typing import Final
+
+from sphinx.ext import autodoc
 
 class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     """
@@ -79,6 +81,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             stripped_line = line.strip()
             is_comment = stripped_line.startswith('#')
             if stripped_line.startswith(f'# {keyword}:'):
+                if in_block:
+                    raise RuntimeError("Nesting of documentation blocks is not supported ")
                 comment_blocks.append(f'{line}')
                 in_block = True
             elif in_block and is_comment:
@@ -98,13 +102,14 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         Returns:
             The formatted documentation lines.
         """
-        if docblock_lines[0].strip().startswith(f'# {keyword}:'):
-            docblock_lines.pop(0)  # remove the {keyword} prefix
+        assert docblock_lines[0].strip().startswith(f'# {keyword}:')  
+        docblock_lines.pop(0)  # remove the {keyword} prefix
+        # Remove leading and trailing blank lines.
+        # Blank lines in the middle are kept because they are used to separate
+        # paragraphs and lists.
         while docblock_lines and docblock_lines[0].strip() == '#':
-            # Remove leading empty lines
             docblock_lines.pop(0)
         while docblock_lines and docblock_lines[-1].strip() == '#':
-            # Remove trailing empty lines
             docblock_lines.pop(-1)
         # Dedent the comment block
         dedented_lines = textwrap.dedent('\n'.join(docblock_lines)).splitlines()
@@ -124,14 +129,15 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         Returns:
             A list containing the formatted title and its underline.
         """
-        method_name = f"{method_info['module_local_name']}.{method_info['method_name']}"  
-        method_full_name = f"{method_info['module_full_name']}.{method_name}"
-        title = f":meth:`{method_name}()<{method_full_name}>`" 
+        label = f"{method_info['local_parent_name']}.{method_info['local_shortname']}"  
+        link_destination = f"{method_info['orig_parent_name']}.{method_info['orig_shortname']}"
+        title = f":meth:`{label}()<{link_destination}>`" 
         return [title, '='*len(title), '']
 
     def process_scidoc_lines(self, docblock_lines: list[str], method_info: dict) -> list[str]:
         """
         Process a list of documentation string lines and apply specific formatting rules.
+        - Drop the colons from the Outputs and Inputs sections.
         - Make the "Inputs" section collapsible.
         - Identify LaTeX multiline blocks and align equations to the left.
         - Add type information to variable names in bullet point lines.
@@ -151,7 +157,12 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
 
         for line_num, line in enumerate(docblock_lines):
 
-            # Make collapsible Inputs section
+            # Drop the colon from the Outputs section
+            if line.startswith('Outputs:'):
+                docblock_lines[line_num] = 'Outputs'
+                continue
+
+            # Drop the colon from the Inputs section and make it collapsible
             if line.startswith('Inputs:'):
                 past_inputs = True
                 docblock_lines[line_num] = ".. collapse:: Inputs"
@@ -173,7 +184,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 start_idx = len(line) - len(line.lstrip()) 
                 docblock_lines[line_num] = f"{line[:start_idx]}&{line[start_idx:]}"  
 
-            # Add type information to variable names (only in bullet point lines)
+            # Only in bullet point lines:
+            # Add type information to variable names.
+            # Optionally print the long names of variables.
             if (not latex_math_multiline) and ('-' in line) and (':' in line):
                 if past_inputs and not self.var_type_in_inputs:
                     continue
@@ -181,22 +194,17 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 split_line = line.split()
                 for variable, var_type in method_info['var_types'].items():
                     if variable in split_line:
-                        # Replace only exact matches
-                        for j, part in enumerate(split_line):
-                            if part == variable:
-                                if self.print_variable_longnames:
-                                    # long name version
-                                    var_longname = method_info['var_longnames_map'][variable]
-                                    prefix = '.'.join(var_longname.split('.')[:-1])
-                                    suffix = var_longname.split('.')[-1]
-                                    if prefix:
-                                        vname = '*' + prefix + '*. **' + suffix + '**'
-                                    else:
-                                        vname = '**' + suffix + '**'
-                                else:
-                                    # short name version
-                                    vname = variable
-                                split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
+                        if self.print_variable_longnames:
+                            # long name version
+                            var_longname = method_info['var_longnames_map'][variable]
+                            prefix = '.'.join(var_longname.split('.')[:-1])
+                            suffix = var_longname.split('.')[-1]
+                            vname = (f"*{prefix}*." if prefix else "") + f" **{suffix}**"
+                        else:
+                            # short name version
+                            vname = variable
+                        j = split_line.index(variable)
+                        split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
                         docblock_lines[line_num] = ' '*indent + ' '.join(split_line)
 
         return docblock_lines
@@ -263,38 +271,73 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
 
         Returns:
             dict: A dictionary containing the following keys:
-            - 'call_string': The original call string.
-            - 'method_name': The name of the method.
-            - 'module_local_name': The local name of the module where the method is defined.
-            - 'module_full_name': The full name of the module where the method is defined.
+            - 'call_string': The call string.
+            - 'local_shortname': The local shortname of the method.
+            - 'local_parent_name': The local name of the parent/module where the method is defined.
+            - 'orig_shortname': The original shortname of the method.
+            - 'orig_parent_name': The original name of the parent/module where the method is defined.
             - 'annotations': The annotations of the method.
             - 'var_names_map': A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
             - 'var_longnames_map': A dictionary mapping variable short and long names in the present scope.
             - 'var_types': A dictionary mapping variable short names and their types.
         """
         method_info = {}
-        local_method_name = call_string[0].split('(')[0] # get the method name from the call string (remove open bracket)
-        # Get the module of this method from its name
-        parent_name = local_method_name.split('.')[0]
-        method_name = local_method_name.split('.')[-1]
-        if parent_name in self.module.__dict__.keys():
+
+        local_longname = call_string[0][:call_string[0].index("(")] # get the method name from the call string (remove open bracket)
+        local_parent_name = local_longname.split('.')[0]
+        local_shortname = local_longname.split('.')[-1]
+
+        # Get the original method information
+        orig = self.get_original_method_info(local_parent_name, local_shortname)
+
+        method_info['call_string'] = call_string
+        method_info['local_shortname'] = local_shortname
+        method_info['local_parent_name'] = local_parent_name
+        method_info['orig_shortname'] = orig['shortname']
+        method_info['orig_parent_name'] = orig['parent_name']
+        method_info['annotations'] = orig['method_obj'].definition_stage.definition.__annotations__ if type(orig['method_obj']).__name__ == 'Program' else orig['method_obj'].__annotations__
+        method_info['var_names_map'], method_info['var_longnames_map'] = self.map_variable_names(call_string)
+        method_info['var_types'] = self.map_variable_types(method_info)
+        return method_info
+
+    def get_original_method_info(self, local_parent_name: str, local_shortname: str) -> dict:
+        """
+        Retrieve information about a method based on the local parent name and short name.
+
+        This method attempts to locate the original method object and its parent module or class name
+        by examining the provided local parent name and short name. It handles various scenarios such as:
+        - Direct import from a module
+        - Method renamed in the current class
+        - Method assigned to an instance variable using AST parsing
+
+        Args:
+            local_parent_name: The local name of the parent (module or class).
+            local_shortname: The local short name of the method.
+
+        Returns:
+            dict: A dictionary containing the following keys:
+                - 'method_obj': The original method object.
+                - 'parent_name': The name of the parent module or class.
+                - 'shortname': The short name of the method.
+        """
+        if local_parent_name in self.module.__dict__.keys():
             # we are importing directly from a module
-            module_obj = getattr(self.module, parent_name)
-            method_obj = getattr(module_obj, method_name)
-            module_full_name = module_obj.__name__
-        elif parent_name == 'self':
+            module_obj = getattr(self.module, local_parent_name)
+            method_obj = getattr(module_obj, local_shortname)
+            parent_name = module_obj.__name__
+        elif local_parent_name == 'self':
             # the method was renamed in the present class
             class_and_method_name = re.sub(self.modname, '', self.fullname)[1:]
             class_name = class_and_method_name.split('.')[0]
             class_obj = getattr(self.module, class_name)
             # Check if the method is defined in the class
-            if hasattr(class_obj, method_name):
-                method_obj = getattr(class_obj, method_name)
+            if hasattr(class_obj, local_shortname):
+                method_obj = getattr(class_obj, local_shortname)
             else:
                 # Handle the case where the method is imported and renamed in the class
                 for attr_name in dir(class_obj):
                     attr = getattr(class_obj, attr_name)
-                    if callable(attr) and hasattr(attr, '__name__') and attr.__name__ == method_name:
+                    if callable(attr) and hasattr(attr, '__name__') and attr.__name__ == local_shortname:
                         method_obj = attr
                         break
                 else:
@@ -306,7 +349,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             for stmt in node.body:
                                 if isinstance(stmt, ast.Assign):
                                     for target in stmt.targets:
-                                        if isinstance(target, ast.Attribute) and target.attr == method_name:
+                                        if isinstance(target, ast.Attribute) and target.attr == local_shortname:
                                             if isinstance(stmt.value, ast.Attribute):
                                                 original_method_name = stmt.value.attr
                                                 if hasattr(class_obj, original_method_name):
@@ -316,8 +359,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                                                 original_method_name = stmt.value.id
                                                 if original_method_name in self.module.__dict__.keys():
                                                     module_obj = getattr(self.module, original_method_name)
-                                                    method_obj = getattr(module_obj, method_name)
-                                                    module_full_name = module_obj.__name__
+                                                    method_obj = getattr(module_obj, local_shortname)
+                                                    parent_name = module_obj.__name__
                                                     break
                                             elif isinstance(stmt.value, ast.Call):
                                                 # Traverse the call chain to get the original method and module
@@ -344,7 +387,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                                                         method_obj = getattr(self.module, original_method_name)
                                                         if type(method_obj).__module__.startswith('gt4py') and type(method_obj).__name__ == 'Program':
                                                             # it's a decorated gt4py program
-                                                            module_full_name = method_obj.definition_stage.definition.__module__
+                                                            parent_name = method_obj.definition_stage.definition.__module__
                                                             break
                                                 elif len(call_chain) >= 2:
                                                     # the method is called from a module import, e.g.
@@ -355,17 +398,14 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                                                     if module_name in self.module.__dict__.keys() and isinstance(getattr(self.module, module_name), types.ModuleType):
                                                         module_obj = getattr(self.module, module_name)
                                                         method_obj = getattr(module_obj, original_method_name)
-                                                        module_full_name = module_obj.__name__
+                                                        parent_name = module_obj.__name__
                                                         break
-        #
-        method_info['call_string'] = call_string
-        method_info['method_name'] = method_name
-        method_info['module_local_name'] = parent_name
-        method_info['module_full_name'] = module_full_name
-        method_info['annotations'] = method_obj.definition_stage.definition.__annotations__ if type(method_obj).__name__ == 'Program' else method_obj.__annotations__
-        method_info['var_names_map'], method_info['var_longnames_map'] = self.map_variable_names(call_string)
-        method_info['var_types'] = self.map_variable_types(method_info)
-        return method_info
+        info = {
+            'method_obj': method_obj,
+            'parent_name': parent_name,
+            'shortname': method_obj.__name__,
+            }
+        return info
 
     def map_variable_names(self, function_call_str: list[str]) -> tuple[dict[str,str], dict[str,str]]:
         """
