@@ -13,13 +13,13 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Union
 
+import numpy as np
 from gt4py.next import Dimension, Field
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.config import Device
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
-from icon4py.model.common.settings import device, xp
+from icon4py.model.common.settings import xp
 
 
 try:
@@ -229,14 +229,16 @@ class GHexMultiNodeExchange:
         # Slice the fields based on the dimension
         sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
 
-        # todo: `arch` Required until GHEX make_field_descriptor function is fixed with arch not having any defaults.
-        #   Currently the default is Architecture.CPU and this breaks passing in cupy arrays without the arch
-        #   keyword as it will do checks as if was a numpy array.
-        arch = Architecture.GPU if device == Device.GPU else Architecture.CPU
-
         # Create field descriptors and perform the exchange
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f, arch=arch)) for f in sliced_fields
+            pattern(
+                make_field_descriptor(
+                    domain_descriptor,
+                    f,
+                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
+                )
+            )
+            for f in sliced_fields
         ]
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
