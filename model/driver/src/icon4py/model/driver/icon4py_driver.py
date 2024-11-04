@@ -162,13 +162,13 @@ class TimeLoop:
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.info(
+            log.debug(
                 f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.15e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.15e}"
             )
-            log.info(
+            log.debug(
                 f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.15e}"
             )
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
+            # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
@@ -364,7 +364,7 @@ def initialize(
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        backend=config.run_config.backend,
+        grid=icon_grid,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
@@ -373,6 +373,7 @@ def initialize(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
+        backend=config.run_config.backend,
     )
 
     (
@@ -425,13 +426,13 @@ def initialize(
 )
 @click.option(
     "--serialization_type",
-    default="serialbox",
+    default=driver_init.SerializationType.SB.value,
     show_default=True,
     help="Serialization type for grid info and static fields. This is currently the only possible way to load the grid info and static fields.",
 )
 @click.option(
     "--experiment_type",
-    default="any",
+    default=driver_init.ExperimentType.ANY.value,
     show_default=True,
     help="Option for configuration and how the initial state is generated. "
     "Setting it to the default value will instruct the model to use the default configuration of MeteoSwiss regional experiment and read the initial state from serialized data. "
@@ -461,7 +462,7 @@ def initialize(
 )
 @click.option(
     "--icon4py_driver_backend",
-    default=driver_config.DriverBackends.GTFN_CPU,
+    default=driver_config.DriverBackends.GTFN_CPU.value,
     show_default=True,
     help="Backend for all components executed in icon4py driver. Choose between GTFN_CPU or GTFN_GPU. Please see abs_path_to_icon4py/model/driver/src/icon4py/model/driver/icon4py_configuration/) ",
 )

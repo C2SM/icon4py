@@ -127,7 +127,11 @@ def test_run_timeloop_single_step(
     backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
-        config = icon4py_configuration.read_config(experiment)
+        # it does not matter what backend is set here because the granules are set externally in this test
+        config = icon4py_configuration.read_config(
+            icon4py_driver_backend=None,
+            experiment_type=experiment,
+        )
         diffusion_config = config.diffusion_config
         nonhydro_config = config.solve_nonhydro_config
         icon4pyrun_config = config.run_config
@@ -259,7 +263,9 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+        ),
     )
 
     nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
@@ -325,29 +331,29 @@ def test_run_timeloop_single_step(
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].vn.ndarray,
-        vn_sp.ndarray,
+        prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+        vn_sp.asnumpy(),
         atol=6e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].w.ndarray,
-        w_sp.ndarray,
+        prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+        w_sp.asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].exner.ndarray,
-        exner_sp.ndarray,
+        prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
+        exner_sp.asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].theta_v.ndarray,
-        theta_sp.ndarray,
+        prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
+        theta_sp.asnumpy(),
         atol=4e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].rho.ndarray,
-        rho_sp.ndarray,
+        prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
+        rho_sp.asnumpy(),
     )

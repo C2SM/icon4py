@@ -22,6 +22,7 @@ from icon4py.model.driver.test_cases import gauss3d
 def test_gauss3d_initial_condition(
     experiment,
     ranked_data_path,
+    backend,
     rank,
     data_provider,
     grid_savepoint,
@@ -41,27 +42,28 @@ def test_gauss3d_initial_condition(
         icon_grid,
         edge_geometry,
         ranked_data_path.joinpath(f"{experiment}/ser_data"),
+        backend,
         rank,
     )
 
     # only verifying those assigned in the IC rather than all (at least for now)
     assert helpers.dallclose(
-        prognostic_state_now.rho.ndarray,
+        prognostic_state_now.rho.asnumpy(),
         data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
         .rho_now()
-        .ndarray,
+        .asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_now.exner.ndarray,
+        prognostic_state_now.exner.asnumpy(),
         data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
         .exner_now()
-        .ndarray,
+        .asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_now.theta_v.ndarray,
+        prognostic_state_now.theta_v.asnumpy(),
         data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
         .theta_v_now()
-        .ndarray,
+        .asnumpy(),
     )

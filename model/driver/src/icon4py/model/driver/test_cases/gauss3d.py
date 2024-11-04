@@ -158,8 +158,8 @@ def model_initialization_gauss3d(
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray)
-    eta_v_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid)
+    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
+    eta_v_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend)
     cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
         eta_v,
         cell_2_edge_coeff,
@@ -173,9 +173,6 @@ def model_initialization_gauss3d(
     log.info("Cell-to-edge eta_v computation completed.")
 
     pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
-    pressure_ifc_ndarray[
-        :, -1
-    ] = phy_const.P0REF  # set surface pressure to the prescribed value (only used for IC in JABW test case, then actually computed in the dycore)
     (
         vn,
         w,
@@ -206,7 +203,7 @@ def model_initialization_gauss3d(
         backend=backend,
     )
 
-    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation(
+    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation.with_backend(backend)(
         vn,
         rbf_vec_coeff_c1,
         rbf_vec_coeff_c2,
@@ -220,7 +217,7 @@ def model_initialization_gauss3d(
     )
     log.info("U, V computation completed.")
 
-    exner_pr = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
+    exner_pr = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend)
     testcases_utils.compute_perturbed_exner.with_backend(backend)(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
