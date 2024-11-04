@@ -232,7 +232,7 @@ class VelocityAdvection:
         # Outputs:
         #  - vt :
         #     $$
-        #     \vt{\n}{\e}{\k} = \sum_{\e=\eTcTe} \Wrbf \vn{\n}{\e}{\k}, \qquad \k \in [0, \nlev)
+        #     \vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k}, \qquad \k \in [0, \nlev)
         #     $$
         #     Compute the tangential velocity by RBF interpolation from four neighboring
         #     edges (diamond shape) and projected to tangential direction.

@@ -990,7 +990,7 @@ class SolveNonhydro:
         # Outputs:
         #  - z_exner_ex_pr :
         #     $$
-        #     \exnerprime{\ntilde}{\c}{\k} = (1 + \gamma) \exnerprime{\n}{\c}{\k} - \gamma \exnerprime{\n-1}{\c}{\k}, \quad \k \in [0, \nlev) \\
+        #     \exnerprime{\ntilde}{\c}{\k} = (1 + \WtimeExner) \exnerprime{\n}{\c}{\k} - \WtimeExner \exnerprime{\n-1}{\c}{\k}, \quad \k \in [0, \nlev) \\
         #     \exnerprime{\ntilde}{\c}{\nlev} = 0
         #     $$
         #     Compute the temporal extrapolation of perturbed exner function
@@ -1003,7 +1003,7 @@ class SolveNonhydro:
         #     Store perturbed exner function from previous time step.
         #
         # Inputs:
-        #  - $\gamma$ : exner_exfac
+        #  - $\WtimeExner$ : exner_exfac
         #  - $\exnerprime{\n}{\c}{\k}$ : exner - exner_ref_mc
         #  - $\exnerprime{\n-1}{\c}{\k}$ : exner_pr
         #
@@ -1025,12 +1025,13 @@ class SolveNonhydro:
             # Outputs:
             #  - z_exner_ic :
             #     $$
-            #     \exnerprime{\ntilde}{\c}{\k-1/2} = \nu \exnerprime{\ntilde}{\c}{\k} + (1 - \nu) \exnerprime{\ntilde}{\c}{\k-1}, \quad && \k \in [\max(1,\nflatlev), \nlev) \\
-            #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \beta_{\k} \exnerprime{\ntilde}{\c}{\k}
+            #     \exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad && \k \in [\max(1,\nflatlev), \nlev) \\
+            #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
             #     $$
             #     Linearly interpolate the perturbation exner computed in
-            #     previous stencil to half levels. The ground level is based
-            #     on quadratic extrapolation (with hydrostatic assumption?).
+            #     previous stencil from full to half levels. The ground level is
+            #     based on quadratic extrapolation (with hydrostatic
+            #     assumption?).
             #  - z_dexner_dz_c_1 :
             #     $$
             #     \pdz{\exnerprime{\ntilde}{\c}{\k}} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
@@ -1041,8 +1042,8 @@ class SolveNonhydro:
             #     grid is not affected by terrain following.
             #
             # Inputs:
-            #  - $\nu$ : wgtfac_c
-            #  - $\beta_{\k}$ : wgtfacq_c
+            #  - $\Wlev$ : wgtfac_c
+            #  - $\Wlev_{\k}$ : wgtfacq_c
             #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
             #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
             #

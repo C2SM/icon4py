@@ -88,7 +88,10 @@
 \renewcommand{\v}{{\horicolor{v}}}
 
 % Horizontal offsets
-\newcommand{\eTcTe}{\horicolor{e2c2e}}
+\newcommand{\offProv}[1]{\horicolor{#1}}
 
-% Interpolation weights
-\newcommand{\Wrbf}{W_{rbf}}
+% Inter/extrapolation weights
+\newcommand{\Wrbf}{\overset{\scriptscriptstyle{\text{rbf}}}{\chi}}
+\newcommand{\Wlev}{\overset{\scriptscriptstyle{\text{lev}}}{\chi}}
+\newcommand{\WtimeExner}{\gamma}
+\newcommand{\WtimeVWind}{\eta}
