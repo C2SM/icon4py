@@ -193,11 +193,11 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 for variable, var_type in method_info['var_types'].items():
                     if variable in split_line:
                         if self.print_variable_longnames:
-                            # long name version
+                            # long name version, with small font size for the prefix
                             var_longname = method_info['var_longnames_map'][variable]
                             prefix = '.'.join(var_longname.split('.')[:-1])
                             suffix = var_longname.split('.')[-1]
-                            vname = (f"*{prefix}.*" if prefix else "") + f" **{suffix}**"
+                            vname = (f"$\scriptscriptstyle{{\\texttt{{{prefix}.}}}}$" if prefix else "") + f" **{suffix}**"
                         else:
                             # short name version
                             vname = variable
@@ -392,7 +392,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                                                 while isinstance(current_node, (ast.Attribute, ast.Name)):
                                                     if isinstance(current_node, ast.Attribute):
                                                        call_chain.append(current_node.attr)
-                                                        current_node = current_node.value
+                                                       current_node = current_node.value
                                                     elif isinstance(current_node, ast.Name):
                                                         call_chain.append(current_node.id)
                                                         break
