@@ -18,6 +18,7 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_gpu_cached,
 )
+from gt4py.next.program_processors.runners.roundtrip import gtir as gtir_python
 
 
 try:
@@ -44,6 +45,7 @@ class GT4PyBackend(Enum):
     CPU = "run_gtfn_cached"
     GPU = "run_gtfn_gpu_cached"
     ROUNDTRIP = "run_roundtrip"
+    GTIR_PYTHON = "gtir_python"
     DACE_CPU = "run_dace_cpu"
     DACE_GPU = "run_dace_gpu"
     DACE_CPU_NOOPT = "run_dace_cpu_noopt"
@@ -83,6 +85,7 @@ class Icon4PyConfig:
             GT4PyBackend.CPU.name: run_gtfn_cached,
             GT4PyBackend.GPU.name: run_gtfn_gpu_cached,
             GT4PyBackend.ROUNDTRIP.name: run_roundtrip,
+            GT4PyBackend.GTIR_PYTHON.name: gtir_python,
         }
         if dace:
             backend_map |= {

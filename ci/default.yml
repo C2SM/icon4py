@@ -7,11 +7,11 @@ include:
     - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
-    - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
+    - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip, gtir_python]
       GRID: [simple_grid, icon_grid]
   rules:
     # exclude slow test configurations
-    - if: $BACKEND == "roundtrip" && $GRID == "icon_grid"
+    - if: $BACKEND in ["roundtrip", "gtir_python"] && $GRID == "icon_grid"
       when: never
     - when: on_success
 test_model_stencils_x86_64:

@@ -10,6 +10,7 @@ import os
 
 import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
+from gt4py.next.program_processors.runners.roundtrip import gtir as gtir_python
 
 import icon4py.model.common.settings as settings
 from icon4py.model.common.test_utils.datatest_utils import (
@@ -21,6 +22,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
 backends = {
     "embedded": None,
     "roundtrip": itir_python,
+    "gtir_python": gtir_python,
     "gtfn_cpu": gtfn_cpu,
     "gtfn_gpu": gtfn_gpu,
 }
