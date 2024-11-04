@@ -398,58 +398,63 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         """
         source = inspect.getsource(class_obj)
         tree = ast.parse(source)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.FunctionDef) and node.name == '__init__':
-                for stmt in node.body:
-                    if isinstance(stmt, ast.Assign):
-                        for target in stmt.targets:
-                            if isinstance(target, ast.Attribute) and target.attr == local_shortname:
-                                if isinstance(stmt.value, ast.Attribute):
-                                    original_method_name = stmt.value.attr
-                                    if hasattr(class_obj, original_method_name):
-                                        method_obj = getattr(class_obj, original_method_name)
-                                        return method_obj, class_obj.__module__
-                                elif isinstance(stmt.value, ast.Name):
-                                    original_method_name = stmt.value.id
-                                    if original_method_name in self.module.__dict__.keys():
-                                        module_obj = getattr(self.module, original_method_name)
-                                        method_obj = getattr(module_obj, local_shortname)
-                                        return method_obj, module_obj.__name__
-                                elif isinstance(stmt.value, ast.Call):
-                                    # Traverse the call chain to get the original method and module
-                                    call_chain = []
-                                    current_node = stmt.value.func
-                                    while isinstance(current_node, (ast.Attribute, ast.Name)):
-                                        if isinstance(current_node, ast.Attribute):
-                                            call_chain.append(current_node.attr)
-                                            current_node = current_node.value
-                                        elif isinstance(current_node, ast.Name):
-                                            call_chain.append(current_node.id)
-                                            break
-                                    call_chain.reverse()
-                                    if call_chain[-1] == 'with_backend':
-                                        # Remove it from the call chain
-                                        call_chain.pop()
-                                    if len(call_chain) == 1:
-                                        # The method is imported directly, e.g.
-                                        # from solve_nonhydro_program import stencil
-                                        # self._stencil = stencil.with_backend(...)
-                                        original_method_name = call_chain[0]
-                                        if original_method_name in self.module.__dict__.keys() and not isinstance(getattr(self.module, original_method_name), types.ModuleType):
-                                            method_obj = getattr(self.module, original_method_name)
-                                            if type(method_obj).__module__.startswith('gt4py') and type(method_obj).__name__ == 'Program':
-                                                # it's a decorated gt4py program
-                                                return method_obj, method_obj.definition_stage.definition.__module__
-                                    elif len(call_chain) >= 2:
-                                        # The method is called from a module import, e.g.
-                                        # import solve_nonhydro_program as nhsolve_prog
-                                        # self._stencil = nhsolve_prog.stencil.with_backend(...)
-                                        module_name = call_chain[0]
-                                        original_method_name = call_chain[1]
-                                        if module_name in self.module.__dict__.keys() and isinstance(getattr(self.module, module_name), types.ModuleType):
-                                            module_obj = getattr(self.module, module_name)
-                                            method_obj = getattr(module_obj, original_method_name)
-                                            return method_obj, module_obj.__name__
+        
+        # Capture relevant `ast.Assign` nodes
+        init_func = next(
+            node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == "__init__"
+        )
+        assigns = (
+            node
+            for node in init_func.body
+            if isinstance(node, ast.Assign)
+            and any(t for t in node.targets if isinstance(t, ast.Attribute) and t.attr == local_shortname)
+        )
+
+        # Process them according to the type of the assigned value
+        for node in assigns:
+            match node.value:
+                case ast.Attribute():
+                    original_method_name = node.value.attr
+                    if hasattr(class_obj, original_method_name):
+                        method_obj = getattr(class_obj, original_method_name)
+                        return method_obj, class_obj.__module__
+                case ast.Name():
+                    original_method_name = node.value.id
+                    if original_method_name in self.module.__dict__.keys():
+                        module_obj = getattr(self.module, original_method_name)
+                        method_obj = getattr(module_obj, local_shortname)
+                        return method_obj, module_obj.__name__
+                case ast.Call():
+                    # Traverse the call chain to get the original method and module
+                    call_chain = []
+                    current_node = node.value.func
+                    while isinstance(current_node, (ast.Attribute, ast.Name)):
+                        if isinstance(current_node, ast.Attribute):
+                            call_chain.append(current_node.attr)
+                            current_node = current_node.value
+                        elif isinstance(current_node, ast.Name):
+                            call_chain.append(current_node.id)
+                            break
+                    call_chain.reverse()
+                    if call_chain[-1] == 'with_backend':
+                        # Remove it from the call chain
+                        call_chain.pop()
+                    if len(call_chain) == 1:
+                        # The method is imported directly
+                        original_method_name = call_chain[0]
+                        if original_method_name in self.module.__dict__.keys() and not isinstance(getattr(self.module, original_method_name), types.ModuleType):
+                            method_obj = getattr(self.module, original_method_name)
+                            if type(method_obj).__module__.startswith('gt4py') and type(method_obj).__name__ == 'Program':
+                                # it's a decorated gt4py program
+                                return method_obj, method_obj.definition_stage.definition.__module__
+                    elif len(call_chain) >= 2:
+                        # The method is called from a module import
+                        module_name = call_chain[0]
+                        original_method_name = call_chain[1]
+                        if module_name in self.module.__dict__.keys() and isinstance(getattr(self.module, module_name), types.ModuleType):
+                            module_obj = getattr(self.module, module_name)
+                            method_obj = getattr(module_obj, original_method_name)
+                            return method_obj, module_obj.__name__
         return None, None
 
     def map_variable_names(self, function_call_str: list[str]) -> tuple[dict[str,str], dict[str,str]]:
