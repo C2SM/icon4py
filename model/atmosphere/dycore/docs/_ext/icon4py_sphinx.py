@@ -144,7 +144,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         - Optionally print the long names of variables.
 
         Args:
-            docblock _lines: The lines of the documentation string to process.
+            docblock_lines: The lines of the documentation string to process.
             method_info: A dictionary containing information about the next method.
 
         Returns:
@@ -154,19 +154,20 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         latex_math = False
         latex_math_multiline = False
         past_inputs = False
+        processed_lines = []
 
         for line_num, line in enumerate(docblock_lines):
 
             # Drop the colon from the Outputs section
             if line.startswith('Outputs:'):
-                docblock_lines[line_num] = 'Outputs'
+                processed_lines.append('Outputs')
                 continue
 
             # Drop the colon from the Inputs section and make it collapsible
             if line.startswith('Inputs:'):
                 past_inputs = True
-                docblock_lines[line_num] = ".. collapse:: Inputs"
-                docblock_lines.insert(line_num+1, "")
+                processed_lines.append(".. collapse:: Inputs")
+                processed_lines.append("")
                 continue
 
             # Identify LaTeX math (multiline) blocks
@@ -176,36 +177,45 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                     latex_math_multiline = True
                 else: # single line math block or end of block
                     latex_math_multiline = False
+                processed_lines.append(line)
                 continue
 
             # Process math lines
             if latex_math:
-                docblock_lines[line_num] = self.process_math_line(line, latex_math_multiline)
+                processed_lines.append(self.process_math_line(line, latex_math_multiline))
+                continue
 
             # Only in bullet point lines:
             # Add type information to variable names.
             # Optionally print the long names of variables.
-            if (not latex_math_multiline) and ('-' in line) and (':' in line):
+            if ('-' in line) and (':' in line) and (not latex_math_multiline):
                 if past_inputs and not self.var_type_in_inputs:
-                    continue
-                indent = len(line) - len(line.lstrip())
-                split_line = line.split()
-                for variable, var_type in method_info['var_types'].items():
-                    if variable in split_line:
-                        if self.print_variable_longnames:
-                            # long name version, with small font size for the prefix
-                            var_longname = method_info['var_longnames_map'][variable]
-                            prefix = '.'.join(var_longname.split('.')[:-1])
-                            suffix = var_longname.split('.')[-1]
-                            vname = (f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$" if prefix else "") + f" **{suffix}**"
-                        else:
-                            # short name version
-                            vname = variable
-                        j = split_line.index(variable)
-                        split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
-                        docblock_lines[line_num] = ' '*indent + ' '.join(split_line)
+                    # Skip adding type information to variable names in the Inputs section
+                    processed_lines.append(line)
+                else:
+                    # Add type information to variable names and optionally print the long names
+                    indent = len(line) - len(line.lstrip())
+                    split_line = line.split()
+                    for variable, var_type in method_info['var_types'].items():
+                        if variable in split_line:
+                            if self.print_variable_longnames:
+                                # long name version, with small font size for the prefix
+                                var_longname = method_info['var_longnames_map'][variable]
+                                prefix = '.'.join(var_longname.split('.')[:-1])
+                                suffix = var_longname.split('.')[-1]
+                                vname = (f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$" if prefix else "") + f" **{suffix}**"
+                            else:
+                                # short name version
+                                vname = variable
+                            j = split_line.index(variable)
+                            split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
+                            processed_lines.append(' '*indent + ' '.join(split_line))
+                continue
+            
+            # Keep the line as is
+            processed_lines.append(line)
 
-        return docblock_lines
+        return processed_lines
 
     def process_math_line(self, line: str, multiline: bool) -> str:
         """
@@ -359,8 +369,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 method_obj = getattr(class_obj, local_shortname)
             else:
                 # Handle the case where the method is imported and renamed in the class
-                for attr_name in dir(class_obj):
-                    attr = getattr(class_obj, attr_name)
+                for _, attr in vars(class_obj).items():
                     if callable(attr) and hasattr(attr, '__name__') and attr.__name__ == local_shortname:
                         method_obj = attr
                         break
