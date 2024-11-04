@@ -9,8 +9,7 @@
 %===============================================================================
 % This file contains macro definitions that can be used in docstrings and are
 % parsed by the MathJax processor within Sphinx.
-% These macros are loaded into `mathjax3_config` by conf.py
-% *** AT THE MOMENT ONLY SINGLE LINE MACROS WORK ***
+% These macros are loaded into `mathjax3_config` in conf.py
 
 % The predefined color names are defined on this page
 % https://en.wikibooks.org/wiki/LaTeX/Colors
@@ -42,7 +41,7 @@
 \newcommand{\dif}{\mathrm{d}}
 \newcommand{\Dt}{{\Delta t}}
 \newcommand{\Dz}[1]{{\Delta z}_\vertlevel{#1}}
-\newcommand{\hdivergence}[1]{\vec{\nabla}\!_h\cdot\left(#1\right)}
+\newcommand{\divhori}[1]{\vec{\nabla}\!_h\cdot\left(#1\right)}
 
 % Derivatives
 \newcommand{\ddt}[1]{\frac{\dif #1}{\dif t}}
@@ -57,6 +56,9 @@
 \newcommand{\vt}[3]{        \variable{v_t      }{#1}{#2}{#3}}
 \newcommand{\vh}[3]{        \variable{\vec{v_h}}{#1}{#2}{#3}}
 \newcommand{\w}[3]{         \variable{w        }{#1}{#2}{#3}}
+\newcommand{\kinehori}[3]{  \variable{K_h      }{#1}{#2}{#3}}
+\newcommand{\vortvert}[3]{  \variable{\zeta    }{#1}{#2}{#3}}
+\newcommand{\coriolis}[3]{  \variable{f        }{#1}{#2}{#3}}
 \newcommand{\density}[3]{   \variable{\rho     }{#1}{#2}{#3}}
 \newcommand{\vtemp}[3]{     \variable{\theta_v }{#1}{#2}{#3}}
 \newcommand{\vtempprime}[3]{\variable{\theta_v'}{#1}{#2}{#3}}
@@ -83,3 +85,12 @@
 \renewcommand{\c}{{\horicolor{c}}}
 \newcommand{\e}{{\horicolor{e}}}
 \renewcommand{\v}{{\horicolor{v}}}
+
+% Horizontal offsets
+\newcommand{\offProv}[1]{\horicolor{#1}}
+
+% Inter/extrapolation weights
+\newcommand{\Wrbf}{\overset{\scriptscriptstyle{\text{rbf}}}{\chi}}
+\newcommand{\Wlev}{\overset{\scriptscriptstyle{\text{lev}}}{\chi}}
+\newcommand{\WtimeExner}{\gamma}
+\newcommand{\WtimeVWind}{\eta}
