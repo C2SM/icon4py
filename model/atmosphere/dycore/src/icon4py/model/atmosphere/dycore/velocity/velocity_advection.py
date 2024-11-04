@@ -256,7 +256,7 @@ class VelocityAdvection:
         # Outputs:
         #  - vn_ie :
         #     $$
-        #     \vn{\n}{\e}{\k-1/2} = \nu \vn{\n}{\e}{\k} + (1 - \nu) \vn{\n}{\e}{\k-1}, \qquad \k \in [1, \nlev)
+        #     \vn{\n}{\e}{\k-1/2} = \Wlev \vn{\n}{\e}{\k} + (1 - \Wlev) \vn{\n}{\e}{\k-1}, \qquad \k \in [1, \nlev)
         #     $$
         #     Linearly interpolate the normal velocity from full levels to half levels.
         #  - z_kin_hor_e :
@@ -266,7 +266,7 @@ class VelocityAdvection:
         #     Compute the horizontal kinetic energy.
         #
         # Inputs:
-        #  - $\nu$ : wgtfac_e
+        #  - $\Wlev$ : wgtfac_e
         #  - $\vn{\n}{\e}{\k}$ : vn
         #  - $\vt{\n}{\e}{\k}$ : vt
         #
