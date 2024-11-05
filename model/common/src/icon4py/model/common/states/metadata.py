@@ -9,10 +9,13 @@ from typing import Final
 
 import gt4py.next as gtx
 
-import icon4py.model.common.io.cf_utils as cf_utils
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
+
+INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
+
+INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
 
 attrs: Final[dict[str, model.FieldMetaData]] = {
     "functional_determinant_of_metrics_on_interface_levels": dict(
@@ -47,8 +50,8 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="k_index",
         dtype=gtx.int32,
     ),
-    cf_utils.INTERFACE_LEVEL_STANDARD_NAME: dict(
-        standard_name=cf_utils.INTERFACE_LEVEL_STANDARD_NAME,
+    INTERFACE_LEVEL_STANDARD_NAME: dict(
+        standard_name=INTERFACE_LEVEL_STANDARD_NAME,
         long_name="model interface level number",
         units="",
         dims=(dims.KHalfDim,),
