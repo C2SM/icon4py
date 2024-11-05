@@ -12,7 +12,7 @@ import re
 import textwrap
 import types
 import typing
-from typing import Final
+from typing import ClassVar, Literal
 
 from sphinx.ext import autodoc
 
@@ -25,15 +25,19 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     objtype = 'scidoc'
     priority = autodoc.MethodDocumenter.priority - 1
 
-    # Configuration options
-    docblock_keyword = 'scidoc'
-    var_type_in_inputs = True
-    var_type_formatting = '``'
-    print_variable_longnames = True
+    # Configuration options:
+    #: The keyword identifying the start of a documentation block
+    docblock_keyword: ClassVar[str] = 'scidoc'
+    #: Add type information to variable names in the Inputs section
+    var_type_in_inputs: ClassVar[bool] = True
+    #: The font format for variable types in the rendered documentation
+    var_type_formatting: ClassVar[str] = '``'
+    #: Print the long names of variables in the rendered documentation
+    print_variable_longnames: ClassVar[bool] = True
     #: Footer lines with a horizontal line at the end  
-    SCIDOC_FOOTER_LINES: Final[list[str]] = ["", ".. raw:: html", "",  "   <hr>"]  
+    scidoc_footer_lines: ClassVar[list[str]] = ["", ".. raw:: html", "",  "   <hr>"]  
     #: Code block lines for the source code of the next method call
-    SCIDOC_CODE_BLOCK_LINES: Final[list[str]] = ["", ".. collapse:: Source code", "", " .. code-block:: python", ""]
+    scidoc_code_block_lines: ClassVar[list[str]] = ["", ".. collapse:: Source code", "", " .. code-block:: python", ""]
 
     def get_doc(self) -> list[list[str]]:
         """
@@ -64,11 +68,11 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             formatted_docblock = self.format_docblock(formatted_docblock, self.docblock_keyword)
             formatted_docblock = self.make_header(next_method_info) + formatted_docblock
             formatted_docblock = self.process_scidoc_lines(formatted_docblock, next_method_info)
-            formatted_docblock += self.SCIDOC_CODE_BLOCK_LINES + [" "*6 + line for line in call_string]
+            formatted_docblock += self.scidoc_code_block_lines + [" "*6 + line for line in call_string]
 
             if formatted_docblock:
                 if i < len(docblocks)-1: # Add footer
-                    formatted_docblock += self.SCIDOC_FOOTER_LINES  
+                    formatted_docblock += self.scidoc_footer_lines  
                 # add the processed docblock to the list
                 docblocks_list.append(formatted_docblock)
 
@@ -161,45 +165,45 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             The processed documentation string lines with applied formatting rules.
         """
         
-        latex_math = False
-        latex_math_multiline = False
-        past_inputs = False
+        section: Literal["Inputs", "Outputs", None] = None
+        latex = {'Math': False, 'MathMultiline': False}
         processed_lines = []
 
         for line_num, line in enumerate(docblock_lines):
 
-            # Drop the colon from the Outputs section
+            # Identify and process section headers
             if line.startswith('Outputs:'):
+                section = 'Outputs' 
+                # Drop the colon from the Outputs section
                 processed_lines.append('Outputs')
                 continue
-
-            # Drop the colon from the Inputs section and make it collapsible
-            if line.startswith('Inputs:'):
-                past_inputs = True
+            elif line.startswith('Inputs:'):
+                section = 'Inputs'
+                # Drop the colon from the Inputs section and make it collapsible
                 processed_lines.append(".. collapse:: Inputs")
                 processed_lines.append("")
                 continue
 
             # Identify LaTeX math (multiline) blocks
             if line.strip().startswith('$$'):
-                latex_math = not latex_math
+                latex['Math'] = not latex['Math']
                 if docblock_lines[line_num+1].rstrip().endswith(r'\\'): # multiline math block :
-                    latex_math_multiline = True
+                    latex['MathMultiline'] = True
                 else: # single line math block or end of block
-                    latex_math_multiline = False
+                    latex['MathMultiline'] = False
                 processed_lines.append(line)
                 continue
 
             # Process math lines
-            if latex_math:
-                processed_lines.append(self.process_math_line(line, latex_math_multiline))
+            if latex['Math']:
+                processed_lines.append(self.process_math_line(line, latex['MathMultiline']))
                 continue
 
             # Only in bullet point lines:
             # Add type information to variable names.
             # Optionally print the long names of variables.
-            if ('-' in line) and (':' in line) and (not latex_math_multiline):
-                if past_inputs and not self.var_type_in_inputs:
+            if line.strip().startswith('-') and (':' in line):
+                if section == 'Inputs' and not self.var_type_in_inputs:
                     # Skip adding type information to variable names in the Inputs section
                     processed_lines.append(line)
                 else:
@@ -207,17 +211,23 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                     indent = len(line) - len(line.lstrip())
                     split_line = line.split()
                     for i, element in enumerate(split_line):
-                        if element in method_info['map_shortname_to_type'].keys():
+                        if element in method_info['map_shortname_to_type']:
                             if self.print_variable_longnames:
                                 # long name version, with small font size for the prefix
                                 var_longname = method_info['map_shortname_to_longname'][element]
                                 prefix = '.'.join(var_longname.split('.')[:-1])
                                 suffix = var_longname.split('.')[-1]
-                                vname = (f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$" if prefix else "") + f" **{suffix}**"
+                                vname = (f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$" if prefix else "") + f" **{suffix}**\\ "
                             else:
                                 # short name version
                                 vname = element
-                            split_line[i] = f"{vname} {self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
+                            split_line[i] = f"{vname}:{self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
+                        elif element == ':':
+                            if section == 'Outputs':
+                                # Drop the colon from the bullet point line
+                                split_line[i] = ''
+                            elif section == 'Inputs':
+                                split_line[i] = '$\\rightarrow$'
                     processed_lines.append(' '*indent + ' '.join(split_line))
                 continue
             
