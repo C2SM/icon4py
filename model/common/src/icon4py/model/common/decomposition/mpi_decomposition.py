@@ -13,6 +13,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Union
 
+import numpy as np
 from gt4py.next import Dimension, Field
 
 from icon4py.model.common import dimension as dims
@@ -32,6 +33,7 @@ try:
         make_field_descriptor,
         make_pattern,
     )
+    from ghex.util import Architecture
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -229,7 +231,14 @@ class GHexMultiNodeExchange:
 
         # Create field descriptors and perform the exchange
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f)) for f in sliced_fields
+            pattern(
+                make_field_descriptor(
+                    domain_descriptor,
+                    f,
+                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
+                )
+            )
+            for f in sliced_fields
         ]
         handle = self._comm.exchange(applied_patterns)
         log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
