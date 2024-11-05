@@ -263,7 +263,7 @@ class VelocityAdvection:
         #     $$
         #     \kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right), \qquad \k \in [1, \nlev)
         #     $$
-        #     Compute the horizontal kinetic energy.
+        #     Compute the horizontal kinetic energy. Exclude the first full level.
         #
         # Inputs:
         #  - $\Wlev$ : wgtfac_e
@@ -301,17 +301,41 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        """
-        z_w_concorr_me (flat_lev:nlev-1):
-            Compute contravariant correction (due to terrain-following coordinates) to vertical wind at
-            full levels (edge center). The correction is equal to vn dz/dn + vt dz/dt, where t is tangent.
-        vn_ie (0):
-            Compute normal wind at model top (edge center). It is simply set equal to normal wind.
-        z_vt_ie (0):
-            Compute tangential wind at model top (edge center). It is simply set equal to tangential wind.
-        z_kin_hor_e (0):
-            Compute the horizontal kinetic energy (vn^2 + vt^2)/2 at first full level (edge center).
-        """
+        # scidoc:
+        # Outputs:
+        #  - z_w_concorr_me :
+        #     $$
+        #     \wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \qquad \k \in [\nflatlev, \nlev)
+        #     $$
+        #     Compute the contravariant correction (due to terrain-following
+        #     coordinates) to vertical wind. Note that here $\pdxt{}$ is the
+        #     horizontal derivative along the tangent direction.
+        #     See eq. 17 in |ICONdycorePaper|.
+        #  - vn_ie :
+        #     $$
+        #     \vn{\n}{\e}{-1/2} = \vn{\n}{\e}{1}
+        #     $$
+        #     Set the normal wind at model top equal to the normal wind at the
+        #     first full level (zeroth order interpolation).
+        #  - z_vt_ie :
+        #     $$
+        #     \vt{\n}{\e}{-1/2} = \vt{\n}{\e}{1}
+        #     $$
+        #     Set the tangential wind at model top equal to the tangential wind
+        #     at the first full level (zeroth order interpolation).
+        #     ### Compute tangential wind at model top (edge center). It is simply set equal to tangential wind.
+        #  - z_kin_hor_e :
+        #     $$
+        #     \kinehori{\n}{\e}{0} = \frac{1}{2} \left( \vn{\n}{\e}{0}^2 + \vt{\n}{\e}{0}^2 \right)
+        #     $$
+        #     Compute the horizontal kinetic energy on the first full level.
+        #
+        # Inputs:
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #  - $\vt{\n}{\e}{\k}$ : vt
+        #  - $\pdxn{z}$ : ddxn_z_full
+        #  - $\pdxt{z}$ : ddxt_z_full
+        #
         self._fused_stencils_4_5(
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
