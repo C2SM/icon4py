@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -146,16 +145,6 @@ def print_grid_decomp_info(
         f"local edges = {decomposition_info.global_index(EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
         f"local vertices = {decomposition_info.global_index(VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
     )
-    owned_cells = decomposition_info.owner_mask(CellDim)
     log.info(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
-    )
-    log.info(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
-    )
-    log.info(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo edges {np.count_nonzero(np.invert(decomposition_info.owner_mask(EdgeDim)))}"
-    )
-    log.info(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )

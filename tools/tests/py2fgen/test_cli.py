@@ -261,7 +261,7 @@ def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test
     run_test_case(
         cli_runner,
         "icon4pytools.py2fgen.wrappers.dycore_wrapper",
-        "solve_nh_init,solve_nh_run,grid_init,profile_enable,profile_disable",
+        "solve_nh_init,solve_nh_run,grid_init_dycore,profile_enable,profile_disable",
         "dycore_plugin",
         "CPU",
         samples_path,

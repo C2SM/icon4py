@@ -9,6 +9,7 @@ import logging
 import pathlib
 
 import gt4py.next as gtx
+from gt4py.next import backend as gt4py_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
@@ -35,6 +36,7 @@ def model_initialization_gauss3d(
     grid: icon_grid.IconGrid,
     edge_param: geometry.EdgeParams,
     path: pathlib.Path,
+    backend: gt4py_backend.Backend,
     rank=0,
 ) -> tuple[
     diffus_states.DiffusionDiagnosticState,
@@ -52,6 +54,7 @@ def model_initialization_gauss3d(
         grid: IconGrid
         edge_param: edge properties
         path: path where to find the input data
+        backend: GT4Py backend
         rank: mpi rank of the current compute node
     Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
         PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
@@ -61,15 +64,15 @@ def model_initialization_gauss3d(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
 
-    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().asnumpy()
-    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().asnumpy()
-    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().asnumpy()
-    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().asnumpy()
-    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().asnumpy()
-    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().asnumpy()
-    geopot = data_provider.from_metrics_savepoint().geopot().asnumpy()
+    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
+    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
+    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
+    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
+    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
+    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
+    geopot = data_provider.from_metrics_savepoint().geopot().ndarray
 
-    primal_normal_x = edge_param.primal_normal[0].asnumpy()
+    primal_normal_x = edge_param.primal_normal[0].ndarray
 
     cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
@@ -90,13 +93,13 @@ def model_initialization_gauss3d(
     )
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    w_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
-    exner_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    rho_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    temperature_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    pressure_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    theta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    eta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    temperature_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
 
     mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
@@ -120,44 +123,44 @@ def model_initialization_gauss3d(
 
     # Horizontal wind field
     u = xp.where(mask, nh_u0, 0.0)
-    vn_numpy = u * primal_normal_x
+    vn_ndarray = u * primal_normal_x
     log.info("Wind profile assigned.")
 
     # Vertical temperature profile
     for k_index in range(num_levels - 1, -1, -1):
         z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
         # profile of theta is explicitly given
-        theta_v_numpy[:, k_index] = nh_t0 * xp.exp(z_help)
+        theta_v_ndarray[:, k_index] = nh_t0 * xp.exp(z_help)
 
     # Lower boundary condition for exner pressure
     if nh_brunt_vais != 0.0:
         z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, num_levels - 1]
-        exner_numpy[:, num_levels - 1] = (
+        exner_ndarray[:, num_levels - 1] = (
             phy_const.GRAV / nh_brunt_vais
         ) ** 2 / nh_t0 / phy_const.CPD * (xp.exp(-z_help) - 1.0) + 1.0
     else:
-        exner_numpy[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / phy_const.CPD / nh_t0
+        exner_ndarray[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / phy_const.CPD / nh_t0
     log.info("Vertical computations completed.")
 
     # Compute hydrostatically balanced exner, by integrating the (discretized!)
     # 3rd equation of motion under the assumption thetav=const.
-    rho_numpy, exner_numpy = testcases_utils.hydrostatic_adjustment_constant_thetav_numpy(
+    rho_ndarray, exner_ndarray = testcases_utils.hydrostatic_adjustment_constant_thetav_ndarray(
         wgtfac_c,
         ddqz_z_half,
         exner_ref_mc,
         d_exner_dz_ref_ic,
         theta_ref_mc,
         theta_ref_ic,
-        rho_numpy,
-        exner_numpy,
-        theta_v_numpy,
+        rho_ndarray,
+        exner_ndarray,
+        theta_v_ndarray,
         num_levels,
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_numpy)
+    eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray)
     eta_v_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid)
-    cell_2_edge_interpolation.cell_2_edge_interpolation(
+    cell_2_edge_interpolation.cell_2_edge_interpolation.with_backend(backend)(
         eta_v,
         cell_2_edge_coeff,
         eta_v_e,
@@ -169,28 +172,40 @@ def model_initialization_gauss3d(
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
-    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_numpy)
-    w = gtx.as_field((dims.CellDim, dims.KDim), w_numpy)
-    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_numpy)
-    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_numpy)
-    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_numpy)
-    virtual_temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_numpy)
-    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_numpy)
-    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_numpy)
-    pressure_ifc_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
-    pressure_ifc_numpy[
+    pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    pressure_ifc_ndarray[
         :, -1
     ] = phy_const.P0REF  # set surface pressure to the prescribed value (only used for IC in JABW test case, then actually computed in the dycore)
-    pressure_ifc = gtx.as_field((dims.CellDim, dims.KDim), pressure_ifc_numpy)
+    (
+        vn,
+        w,
+        exner,
+        rho,
+        theta_v,
+        vn_next,
+        w_next,
+        exner_next,
+        rho_next,
+        theta_v_next,
+        temperature,
+        virtual_temperature,
+        pressure,
+        pressure_ifc,
+        u,
+        v,
+    ) = testcases_utils.create_gt4py_field_for_prognostic_and_diagnostic_variables(
+        vn_ndarray,
+        w_ndarray,
+        exner_ndarray,
+        rho_ndarray,
+        theta_v_ndarray,
+        temperature_ndarray,
+        pressure_ndarray,
+        pressure_ifc_ndarray,
+        grid=grid,
+        backend=backend,
+    )
 
-    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_numpy)
-    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_numpy)
-    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_numpy)
-    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_numpy)
-    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_numpy)
-
-    u = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
-    v = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation(
         vn,
         rbf_vec_coeff_c1,
@@ -206,7 +221,7 @@ def model_initialization_gauss3d(
     log.info("U, V computation completed.")
 
     exner_pr = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
-    testcases_utils.compute_perturbed_exner(
+    testcases_utils.compute_perturbed_exner.with_backend(backend)(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
         exner_pr,
@@ -242,54 +257,14 @@ def model_initialization_gauss3d(
         exner=exner_next,
     )
 
-    diffusion_diagnostic_state = diffus_states.DiffusionDiagnosticState(
-        hdef_ic=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
-        div_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
-        dwdx=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
-        dwdy=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
+    diffusion_diagnostic_state = testcases_utils.initialize_diffusion_diagnostic_state(
+        grid=grid, backend=backend
     )
-    solve_nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
-        theta_v_ic=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
-        exner_pr=exner_pr,
-        rho_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
-        ddt_exner_phy=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        grf_tend_rho=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        grf_tend_thv=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        grf_tend_w=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
-        mass_fl_e=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        ddt_vn_phy=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        grf_tend_vn=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        ddt_vn_apc_ntl1=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        ddt_vn_apc_ntl2=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        ddt_w_adv_ntl1=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
-        ddt_w_adv_ntl2=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
-        vt=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        vn_ie=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, is_halfdim=True),
-        w_concorr_c=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
-        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
-        vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
-        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
-        exner_dyn_incr=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+    solve_nonhydro_diagnostic_state = testcases_utils.initialize_solve_nonhydro_diagnostic_state(
+        exner_pr=exner_pr, grid=grid, backend=backend
     )
 
-    prep_adv = solve_nh_states.PrepAdvection(
-        vn_traj=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        mass_flx_me=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        mass_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-    )
+    prep_adv = testcases_utils.initialize_prep_advection(grid=grid, backend=backend)
     log.info("Initialization completed.")
 
     return (

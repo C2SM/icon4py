@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 
-import numpy.ma as ma
 from gt4py.next import Dimension
 
 from icon4py.model.common.settings import xp
@@ -125,7 +124,7 @@ class DecompositionInfo:
                 return index[mask]
 
     def _to_local_index(self, dim):
-        data = ma.getdata(self._global_index[dim], subok=False)
+        data = self._global_index[dim]
         assert data.ndim == 1
         return xp.arange(data.shape[0])
 
