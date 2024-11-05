@@ -36,8 +36,18 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     SCIDOC_CODE_BLOCK_LINES: Final[list[str]] = ["", ".. collapse:: Source code", "", " .. code-block:: python", ""]
 
     def get_doc(self) -> list[list[str]]:
-        # Override the default get_doc method to pick up all tagged comment
-        # blocks in the source code of the method
+        """
+        Extracts and processes documentation blocks from the source code of a method.
+
+        This method overrides the default `get_doc` method to pick up all tagged comment
+        blocks in the source code of the method. It retrieves the source code of the method,
+        identifies documentation blocks based on a specified keyword, and processes each
+        documentation block to format it and add relevant information.
+
+        Returns:
+            A list of formatted documentation blocks, where each block is
+            represented as a list of strings.
+        """
         source = inspect.getsource(self.object) # this is only the source of the method, not the whole file
 
         docblocks = self.get_documentation_blocks(source, self.docblock_keyword)
@@ -87,7 +97,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 in_block = True
             elif in_block and is_comment:
                 comment_blocks[-1] += f'\n{line}'
-            in_block = is_comment and in_block # continue the block if the line is a comment (but don't start one if now with the keyword)
+            in_block = is_comment and in_block # continue the block if the line is a comment (but don't start one unless the keyword is found)
         return comment_blocks
 
     def format_docblock(self, docblock_lines: list[str], keyword: str) -> list[str]:
@@ -105,8 +115,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         assert docblock_lines[0].strip().startswith(f'# {keyword}:')  
         docblock_lines.pop(0)  # remove the {keyword} prefix
         # Remove leading and trailing blank lines.
-        # Blank lines in the middle are kept because they are used to separate
-        # paragraphs and lists.
+        # Blank lines in the middle must be kept because they are used to
+        # separate paragraphs and lists.
         while docblock_lines and docblock_lines[0].strip() == '#':
             docblock_lines.pop(0)
         while docblock_lines and docblock_lines[-1].strip() == '#':
@@ -131,7 +141,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         """
         label = f"{method_info['local_parent_name']}.{method_info['local_shortname']}"  
         link_destination = f"{method_info['orig_parent_name']}.{method_info['orig_shortname']}"
-        title = f":meth:`{label}()<{link_destination}>`" 
+        title = f":meth:`{label}<{link_destination}>`" 
         return [title, '='*len(title), '']
 
     def process_scidoc_lines(self, docblock_lines: list[str], method_info: dict) -> list[str]:
@@ -196,11 +206,11 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                     # Add type information to variable names and optionally print the long names
                     indent = len(line) - len(line.lstrip())
                     split_line = line.split()
-                    for variable, var_type in method_info['var_types'].items():
+                    for variable, var_type in method_info['map_shortname_to_type'].items():
                         if variable in split_line:
                             if self.print_variable_longnames:
                                 # long name version, with small font size for the prefix
-                                var_longname = method_info['var_longnames_map'][variable]
+                                var_longname = method_info['map_shortname_to_longname'][variable]
                                 prefix = '.'.join(var_longname.split('.')[:-1])
                                 suffix = var_longname.split('.')[-1]
                                 vname = (f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$" if prefix else "") + f" **{suffix}**"
@@ -236,7 +246,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             start_idx = len(line) - len(line.lstrip()) 
             line = f"{line[:start_idx]}&{line[start_idx:]}"  
 
-        # Add latex space character '\:' after symbols if followed by other symbols starting with '\' and a letter
+        # Add a small space character '\,' after symbols if followed by other symbols starting with '\' and a letter
         for symbol in symbols_needing_space:
             if symbol in line:
                 line = re.sub(rf'(\{symbol})\s*(\\[a-zA-Z])', r'\1\\,\2', line)
@@ -311,9 +321,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             - 'orig_shortname': The original shortname of the method.
             - 'orig_parent_name': The original name of the parent/module where the method is defined.
             - 'annotations': The annotations of the method.
-            - 'var_names_map': A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
-            - 'var_longnames_map': A dictionary mapping variable short and long names in the present scope.
-            - 'var_types': A dictionary mapping variable short names and their types.
+            - 'map_argname_to_shortname': A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
+            - 'map_shortname_to_longname': A dictionary mapping variable short to long names in the present scope.
+            - 'map_shortname_to_type': A dictionary mapping variable short names to their types.
         """
         method_info = {}
 
@@ -330,8 +340,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         method_info['orig_shortname'] = orig['shortname']
         method_info['orig_parent_name'] = orig['parent_name']
         method_info['annotations'] = orig['method_obj'].definition_stage.definition.__annotations__ if type(orig['method_obj']).__name__ == 'Program' else orig['method_obj'].__annotations__
-        method_info['var_names_map'], method_info['var_longnames_map'] = self.map_variable_names(call_string)
-        method_info['var_types'] = self.map_variable_types(method_info)
+        method_info['map_argname_to_shortname'], method_info['map_shortname_to_longname'] = self.map_variable_names(call_string)
+        method_info['map_shortname_to_type'] = self.map_variable_types(method_info)
         return method_info
 
     def get_original_method_info(self, local_parent_name: str, local_shortname: str) -> dict:
@@ -471,21 +481,21 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
 
         Returns:
             A tuple containing two dictionaries:
-                - variable_map: A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
-                - variable_longnames_map: A dictionary mapping variable short and long names in the present scope.
+                - map_argname_to_shortname: A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
+                - map_shortname_to_longname: A dictionary mapping variable short and long names in the present scope.
         """
         # Extract argument names and their values using regex
         pattern = r'(\w+)\s*=\s*([^,]+)'
         matches = re.findall(pattern, ''.join(function_call_str))
         # Create a dictionary to map variable names to their full argument names
-        variable_map = {}
-        variable_longnames_map = {}
+        map_argname_to_shortname = {}
+        map_shortname_to_longname = {}
         for arg_name, arg_value in matches:
-            # Extract the last part of the argument value after the last period
+            # Extract the shortname: last part of the argument value after the last period
             short_name = arg_value.split('.')[-1]
-            variable_map[arg_name] = short_name
-            variable_longnames_map[short_name] = arg_value
-        return variable_map, variable_longnames_map
+            map_argname_to_shortname[arg_name] = short_name
+            map_shortname_to_longname[short_name] = arg_value
+        return map_argname_to_shortname, map_shortname_to_longname
     
     def map_variable_types(self, method_info: dict) -> dict[str,str]:
         """
@@ -494,16 +504,16 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         Args:
             method_info: A dictionary containing method information, including:
                 - 'annotations': A dictionary where keys are argument names and values are their types.
-                - 'var_names_map': A dictionary mapping argument names to their short names.
+                - 'map_argname_to_shortname': A dictionary mapping argument names to their short names.
 
         Returns:
             A dictionary where keys are variable short names and values are their formatted types.
         """
-        var_types = {}
+        map_shortname_to_type = {}
         for arg_name, var_type in method_info['annotations'].items():
-            if arg_name in method_info['var_names_map'].keys():
-                var_types[method_info['var_names_map'][arg_name]] = self.format_type_string(var_type)
-        return var_types
+            if arg_name in method_info['map_argname_to_shortname'].keys():
+                map_shortname_to_type[method_info['map_argname_to_shortname'][arg_name]] = self.format_type_string(var_type)
+        return map_shortname_to_type
     
     def format_type_string(self, var_type: typing.Type) -> str:
         """
