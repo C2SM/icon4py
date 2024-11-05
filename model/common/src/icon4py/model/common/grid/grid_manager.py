@@ -430,6 +430,8 @@ class GridManager:
 
     def _read_geometry_fields(self):
         return {
+            # TODO (@halungge) still needs to ported, values from "our" grid files contains (wrong) values:
+            #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
             GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA)
             ),

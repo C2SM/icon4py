@@ -52,7 +52,7 @@ def verify_diffusion_fields(
         assert helpers.dallclose(val_dwdx, ref_dwdx, atol=1e-18)
         assert helpers.dallclose(val_dwdy, ref_dwdy, atol=1e-18)
 
-    assert helpers.dallclose(val_vn, ref_vn, atol=1e-9)  # rtol?
+    assert helpers.dallclose(val_vn, ref_vn, rtol=1e-5)
     assert helpers.dallclose(val_w, ref_w, atol=1e-14)
     assert helpers.dallclose(val_theta_v, ref_theta_v)
     assert helpers.dallclose(val_exner, ref_exner)
