@@ -206,20 +206,19 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                     # Add type information to variable names and optionally print the long names
                     indent = len(line) - len(line.lstrip())
                     split_line = line.split()
-                    for variable, var_type in method_info['map_shortname_to_type'].items():
-                        if variable in split_line:
+                    for i, element in enumerate(split_line):
+                        if element in method_info['map_shortname_to_type'].keys():
                             if self.print_variable_longnames:
                                 # long name version, with small font size for the prefix
-                                var_longname = method_info['map_shortname_to_longname'][variable]
+                                var_longname = method_info['map_shortname_to_longname'][element]
                                 prefix = '.'.join(var_longname.split('.')[:-1])
                                 suffix = var_longname.split('.')[-1]
                                 vname = (f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$" if prefix else "") + f" **{suffix}**"
                             else:
                                 # short name version
-                                vname = variable
-                            j = split_line.index(variable)
-                            split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
-                            processed_lines.append(' '*indent + ' '.join(split_line))
+                                vname = element
+                            split_line[i] = f"{vname} {self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
+                    processed_lines.append(' '*indent + ' '.join(split_line))
                 continue
             
             # Keep the line as is
