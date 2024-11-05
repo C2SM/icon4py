@@ -364,22 +364,57 @@ class IconGridSavepoint(IconSavepoint):
             return self._v2c2v()
 
     def v2c2e(self):
-        v2c = np.asarray(self.v2c())
-        c2e = np.asarray(self.c2e())
-        v2e = np.asarray(self.v2e())
+        v2c = xp.asarray(self.v2c())
+        c2e = xp.asarray(self.c2e())
+        v2e = xp.asarray(self.v2e())
 
+        # log.info(f"new slice method")
+        # temp_v2c2eall = c2e[v2c, :]
+        # temp_v2c2eall_shape = temp_v2c2eall.shape
+        # v2c2eall = temp_v2c2eall.reshape(
+        #     temp_v2c2eall_shape[0], temp_v2c2eall_shape[1] * temp_v2c2eall_shape[2]
+        # )
+        # v2c2e = xp.zeros_like(v2c)
+        # v2c2eall_shape = temp_v2c2eall.shape
+        # slice_number = 20
+        # slice_element_number = v2c2eall_shape[0] / slice_number
+        # if slice_element_number > int(slice_element_number):
+        #     last_slice_element_number = v2c2eall_shape[0] - int(slice_element_number) * slice_number
+        # else:
+        #     last_slice_element_number = 0
+        # slice_element_number = int(slice_element_number)
+        # log.info(f"total element number, slice number, and slice element number: {v2c2eall_shape[0]}, {slice_number}, {slice_element_number}, {last_slice_element_number}")
+        # for i in range(slice_number):
+        #     for j in range(slice_element_number):
+        #         v2c2e[i*slice_element_number + j] = v2c2eall[i*slice_element_number + j, ~xp.isin(v2c2eall[i*slice_element_number + j, :], v2e[i*slice_element_number + j, :])]
+        #     # v2c2e[i*slice_element_number:(i + 1)*slice_element_number] = v2c2eall[i*slice_element_number:(i + 1)*slice_element_number, ~xp.isin(v2c2eall[i*slice_element_number:(i + 1)*slice_element_number, :], v2e[i*slice_element_number:(i + 1)*slice_element_number, :])]
+        # for j in range(last_slice_element_number):
+        #     v2c2e[slice_number*slice_element_number + j] = v2c2eall[slice_number*slice_element_number + j, ~xp.isin(v2c2eall[slice_number*slice_element_number + j, :], v2e[slice_number*slice_element_number + j, :])]
+        # v2c2e[(slice_number - 1)*slice_element_number:v2c2eall_shape[0]] = v2c2eall[(slice_number - 1)*slice_element_number:v2c2eall_shape[0], ~xp.isin(v2c2eall[(slice_number - 1)*slice_element_number:v2c2eall_shape[0], :], v2e[(slice_number - 1)*slice_element_number:v2c2eall_shape[0], :])]
+        # log.info(f"1d expand method")
+        # v2c2e_1d = v2c2e.reshape(v2c2e.shape[0]*v2c2e.shape[1])
+        # v2c2eall_1d = v2c2eall.reshape(v2c2eall.shape[0]*v2c2eall.shape[1])
+        # for i in range()
+        # debug_v2c2e[:] = debug_v2c2eall[i, ~xp.isin(debug_v2c2eall[i, :], v2e[i, :])]
+        log.info(f"old slice method")
         temp_v2c2eall = c2e[v2c, :]
         temp_v2c2eall_shape = temp_v2c2eall.shape
         v2c2eall = temp_v2c2eall.reshape(
             temp_v2c2eall_shape[0], temp_v2c2eall_shape[1] * temp_v2c2eall_shape[2]
         )
-        v2c2e = np.zeros_like(v2c)
         v2c2eall_shape = temp_v2c2eall.shape
+        v2c2e = xp.zeros_like(v2c)
         for i in range(v2c2eall_shape[0]):
-            v2c2e[i] = v2c2eall[i, ~np.isin(v2c2eall[i, :], v2e[i, :])]
-        for i in range(v2c2e.shape[0]):
-            if -1 in v2c2e[i]:
-                print(i, " v2c2e: ", v2c2e[i])
+            v2c2e[i] = v2c2eall[i, ~xp.isin(v2c2eall[i, :], v2e[i, :])]
+        log.info(f"debugging new slice method")
+        # for i in range(v2c2e.shape[0]):
+        #     if any(debug_v2c2e[i] != v2c2e[i]):
+        #         log.info(f"different values: {i}, {debug_v2c2e[i]} === {v2c2e[i]}")
+        # assert xp.allclose(debug_v2c2e, v2c2e)
+
+        # for i in range(v2c2e.shape[0]):
+        #     if -1 in v2c2e[i]:
+        #         print(i, " v2c2e: ", v2c2e[i])
 
         """
         v2c_shape = v2c.shape

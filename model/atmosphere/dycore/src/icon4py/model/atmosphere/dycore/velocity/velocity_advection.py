@@ -182,7 +182,7 @@ class VelocityAdvection:
 
         """
         vt (0:nlev-1):
-            Compute tangential velocity at half levels (edge center) by RBF interpolation from four neighboring
+            Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
             edges (diamond shape) and projected to tangential direction.
         """
         compute_tangential_wind(

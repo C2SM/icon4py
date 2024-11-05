@@ -238,16 +238,16 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
     def _jabw_diffusion_config(n_substeps: int):
         return DiffusionConfig(
             diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
+            hdiff_w=False,
+            hdiff_vn=False,
             hdiff_temp=False,
             n_substeps=n_substeps,
             type_t_diffu=2,
             type_vn_diffu=1,
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
-            # smagorinski_scaling_factor=0.025,
-            smagorinski_scaling_factor=0.0000025,
+            smagorinski_scaling_factor=0.025,
+            # smagorinski_scaling_factor=0.0000025,
             zdiffu_t=False,
             velocity_boundary_diffusion_denom=200.0,
             max_nudging_coeff=0.075,
@@ -260,8 +260,10 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
             divdamp_fac=0.0025,
-            do_3d_divergence_damping=True,
-            do_second_order_3d_divergence_damping=True,
+            do_o2_divdamp=False,
+            do_3d_divergence_damping=False,
+            do_second_order_3d_divergence_damping=False,
+            do_multiple_divdamp=True,
         )
 
     def _mch_ch_r04b09_config():
@@ -719,8 +721,8 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
 
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=300.0),
-            end_date=datetime(1, 1, 1, 0, 30, 0),
+            dtime=timedelta(seconds=600.0),
+            end_date=datetime(1, 1, 15, 0, 0, 0),
             # end_date=datetime(1, 1, 1, 0, 2, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,

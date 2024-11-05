@@ -214,6 +214,8 @@ from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_swee
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     compute_z_raylfac as compute_z_raylfac_orig,
+    calculate_scal_divdamp_half as calculate_scal_divdamp_half_orig,
+    calculate_divdamp_fields as calculate_divdamp_fields_orig,
 )
 from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment as update_dynamical_exner_time_increment_orig,
@@ -527,3 +529,7 @@ stencils_61_62 = CachedProgram(stencils_61_62_orig)
 stencils_42_44_45_45b = CachedProgram(stencils_42_44_45_45b_orig)
 
 compute_z_raylfac = CachedProgram(compute_z_raylfac_orig, with_domain=False)
+
+calculate_scal_divdamp_half = CachedProgram(calculate_scal_divdamp_half_orig)
+
+calculate_divdamp_fields = CachedProgram(calculate_divdamp_fields_orig, with_domain=False)

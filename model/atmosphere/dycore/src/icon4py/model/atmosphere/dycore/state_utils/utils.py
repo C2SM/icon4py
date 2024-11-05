@@ -85,13 +85,13 @@ def _calculate_scal_divdamp(
     divdamp_order: int32,
     mean_cell_area: float,
     divdamp_fac_o2: float,
-) -> Field[[KDim], float]:
+) -> tuple[Field[[KDim], float], Field[[KDim], float]]:
     enh_divdamp_fac = (
         maximum(0.0, enh_divdamp_fac - 0.25 * divdamp_fac_o2)
         if divdamp_order == 24
         else enh_divdamp_fac
     )
-    return -enh_divdamp_fac * mean_cell_area**2
+    return -enh_divdamp_fac * mean_cell_area**2, enh_divdamp_fac * mean_cell_area
 
 
 @field_operator
@@ -102,14 +102,36 @@ def _calculate_divdamp_fields(
     divdamp_fac_o2: float,
     nudge_max_coeff: float,
     dbl_eps: float,
-) -> tuple[Field[[KDim], float], Field[[KDim], float]]:
-    scal_divdamp = _calculate_scal_divdamp(
+) -> tuple[Field[[KDim], float], Field[[KDim], float], Field[[KDim], float]]:
+    scal_divdamp, scal_divdamp_o2 = _calculate_scal_divdamp(
         enh_divdamp_fac, divdamp_order, mean_cell_area, divdamp_fac_o2
     )
     bdy_divdamp = _calculate_bdy_divdamp(scal_divdamp, nudge_max_coeff, dbl_eps)
-    return (scal_divdamp, bdy_divdamp)
+    return (scal_divdamp, scal_divdamp_o2, bdy_divdamp)
 
 
+@program(backend=backend)
+def calculate_divdamp_fields(
+    enh_divdamp_fac: Field[[KDim], float],
+    scal_divdamp: Field[[KDim], float],
+    scal_divdamp_o2: Field[[KDim], float],
+    bdy_divdamp: Field[[KDim], float],
+    divdamp_order: int32,
+    mean_cell_area: float,
+    divdamp_fac_o2: float,
+    nudge_max_coeff: float,
+    dbl_eps: float,
+):
+    _calculate_divdamp_fields(
+        enh_divdamp_fac,
+        divdamp_order,
+        mean_cell_area,
+        divdamp_fac_o2,
+        nudge_max_coeff,
+        dbl_eps,
+        out=(scal_divdamp, scal_divdamp_o2, bdy_divdamp),
+    )
+    
 @field_operator
 def _compute_z_raylfac(rayleigh_w: Field[[KDim], float], dtime: float) -> Field[[KDim], float]:
     return 1.0 / (1.0 + dtime * rayleigh_w)
@@ -125,24 +147,31 @@ def compute_z_raylfac(
 @field_operator
 def _calculate_scal_divdamp_half(
     scal_divdamp: Field[[KDim], float],
+    scal_divdamp_o2: Field[[KDim], float],
     vct_a: Field[[KDim], float],
-) -> Field[[KDim], float]:
+) -> tuple[Field[[KDim], float], Field[[KDim], float]]:
     level_above_height = 0.5 * (vct_a + vct_a(Koff[-1]))
     level_below_height = 0.5 * (vct_a + vct_a(Koff[1]))
-    return (scal_divdamp*(vct_a - level_below_height) + scal_divdamp(Koff[1])*(level_above_height - vct_a)) / (level_above_height - level_below_height)
+    return (
+        (scal_divdamp*(vct_a - level_below_height) + scal_divdamp(Koff[1])*(level_above_height - vct_a)) / (level_above_height - level_below_height),
+        (scal_divdamp_o2*(vct_a - level_below_height) + scal_divdamp_o2(Koff[1])*(level_above_height - vct_a)) / (level_above_height - level_below_height)
+    )
 
 
 @program(backend=backend)
 def calculate_scal_divdamp_half(
     scal_divdamp: Field[[KDim], float],
+    scal_divdamp_o2: Field[[KDim], float],
     vct_a: Field[[KDim], float],
     scal_divdamp_half: Field[[KDim], float],
+    scal_divdamp_o2_half: Field[[KDim], float],
     vertical_start: int32,
     vertical_end: int32,
 ):
     _calculate_scal_divdamp_half(
         scal_divdamp,
+        scal_divdamp_o2,
         vct_a,
-        out=scal_divdamp_half,
+        out=(scal_divdamp_half, scal_divdamp_o2_half),
         domain={KDim: (vertical_start, vertical_end)},
     )

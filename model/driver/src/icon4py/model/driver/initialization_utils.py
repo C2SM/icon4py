@@ -192,7 +192,7 @@ def model_initialization_jabw(
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
     p_sfc = 100000.0
-    jw_up = 0.0  # 1.e-4  # if doing baroclinic wave test, please set it to a nonzero value
+    jw_up = 1.0  # 1.e-4  # if doing baroclinic wave test, please set it to a nonzero value
     jw_u0 = 35.0  # 35.0
     jw_temp0 = 288.0
     # DEFINED PARAMETERS for jablonowski williamson:
@@ -736,6 +736,7 @@ def read_decomp_info(
 
 
 def read_static_fields(
+    enable_debug_message: bool,
     path: Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
@@ -786,24 +787,44 @@ def read_static_fields(
         c2e_connectivity = grid_savepoint.c2e()
         v2c2e_connectivity = grid_savepoint.v2c2e()
         geofac_2order_div_array = np.zeros((icon_grid.num_vertices, 6), dtype=float)
-        for i in range(icon_grid.num_vertices):
-            hexagon_area = np.sum(cell_area[v2c_connectivity[i,:]])
-            #print(i, v2c2e_connectivity[i].shape[0], cell_area[v2c_connectivity[i,:]].shape)
-            #print(cell_edge_orientation.shape, primal_edge_length.shape)
-            for j in range(v2c2e_connectivity[i].shape[0]):
-                edge_index = v2c2e_connectivity[i,j]
-                for k in range(v2c_connectivity[i].shape[0]):
-                    if edge_index in c2e_connectivity[v2c_connectivity[i,k]]:
-                        cell_index = v2c_connectivity[i,k]
-                        edge_in_local_cell_index = xp.where(c2e_connectivity[v2c_connectivity[i,k]] == edge_index)[0]
-                        if edge_in_local_cell_index > 2 or edge_in_local_cell_index < 0:
-                            raise ValueError(f"Something wrong when obtaining edge_in_local_cell_index: {edge_in_local_cell_index}. The vertex index: {i}. The edge index: {edge_index}. The cell index: {cell_index}")
-                        break
-                geofac_2order_div_array[i,j] = cell_edge_orientation[cell_index,edge_in_local_cell_index] * primal_edge_length[edge_index] / hexagon_area
-                if j == 5:
-                    if edge_index == v2c2e_connectivity[i,j-1]:
-                        print ("PENTAGON POINT", i, v2c2e_connectivity[i])
-                        geofac_2order_div_array[i, j] = 0.0
+        slice_number = 20
+        slice_element_number = icon_grid.num_vertices / slice_number
+        # for i in range(slice_number - 1):
+        #     hexagon_area = np.sum(cell_area[v2c_connectivity[i*slice_element_number:(i + 1)*slice_element_number,:]])
+        #     #print(i, v2c2e_connectivity[i].shape[0], cell_area[v2c_connectivity[i,:]].shape)
+        #     #print(cell_edge_orientation.shape, primal_edge_length.shape)
+        #     for j in range(v2c2e_connectivity[i].shape[0]):
+        #         edge_index = v2c2e_connectivity[i,j]
+        #         for k in range(v2c_connectivity[i].shape[0]):
+        #             if edge_index in c2e_connectivity[v2c_connectivity[i,k]]:
+        #                 cell_index = v2c_connectivity[i,k]
+        #                 edge_in_local_cell_index = xp.where(c2e_connectivity[v2c_connectivity[i,k]] == edge_index)[0]
+        #                 if edge_in_local_cell_index > 2 or edge_in_local_cell_index < 0:
+        #                     raise ValueError(f"Something wrong when obtaining edge_in_local_cell_index: {edge_in_local_cell_index}. The vertex index: {i}. The edge index: {edge_index}. The cell index: {cell_index}")
+        #                 break
+        #         geofac_2order_div_array[i,j] = cell_edge_orientation[cell_index,edge_in_local_cell_index] * primal_edge_length[edge_index] / hexagon_area
+        #         if j == 5:
+        #             if edge_index == v2c2e_connectivity[i,j-1]:
+        #                 print ("PENTAGON POINT", i, v2c2e_connectivity[i])
+        #                 geofac_2order_div_array[i, j] = 0.0
+        # for i in range(icon_grid.num_vertices):
+        #     hexagon_area = np.sum(cell_area[v2c_connectivity[i,:]])
+        #     #print(i, v2c2e_connectivity[i].shape[0], cell_area[v2c_connectivity[i,:]].shape)
+        #     #print(cell_edge_orientation.shape, primal_edge_length.shape)
+        #     for j in range(v2c2e_connectivity[i].shape[0]):
+        #         edge_index = v2c2e_connectivity[i,j]
+        #         for k in range(v2c_connectivity[i].shape[0]):
+        #             if edge_index in c2e_connectivity[v2c_connectivity[i,k]]:
+        #                 cell_index = v2c_connectivity[i,k]
+        #                 edge_in_local_cell_index = xp.where(c2e_connectivity[v2c_connectivity[i,k]] == edge_index)[0]
+        #                 if edge_in_local_cell_index > 2 or edge_in_local_cell_index < 0:
+        #                     raise ValueError(f"Something wrong when obtaining edge_in_local_cell_index: {edge_in_local_cell_index}. The vertex index: {i}. The edge index: {edge_index}. The cell index: {cell_index}")
+        #                 break
+        #         geofac_2order_div_array[i,j] = cell_edge_orientation[cell_index,edge_in_local_cell_index] * primal_edge_length[edge_index] / hexagon_area
+        #         if j == 5:
+        #             if edge_index == v2c2e_connectivity[i,j-1]:
+        #                 print ("PENTAGON POINT", i, v2c2e_connectivity[i])
+        #                 geofac_2order_div_array[i, j] = 0.0
         geofac_2order_div = as_field((VertexDim, V2C2EDim), geofac_2order_div_array)
         print("geofac_div shape: ", interpolation_savepoint.geofac_div().ndarray.shape)
         print("geofac_div 0: ", interpolation_savepoint.geofac_div().ndarray[0])

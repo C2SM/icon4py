@@ -1229,6 +1229,7 @@ def initialize(
     grid_root,
     grid_level,
     enable_output: bool,
+    enable_debug_message: bool,
 ):
     """
     Inititalize the driver run.
@@ -1284,6 +1285,7 @@ def initialize(
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
     ) = read_static_fields(
+        enable_debug_message,
         file_path,
         rank=props.rank,
         ser_type=serialization_type,
@@ -1295,20 +1297,21 @@ def initialize(
     log.info(
         f"geofac_rot shape {solve_nonhydro_interpolation_state.geofac_rot.ndarray.shape} {icon_grid.num_vertices} {icon_grid.num_cells}"
     )
-    for i in range(icon_grid.num_vertices):
-        for v2c_neighbor in v2c[i]:
-            if v2c_neighbor < 0:
-                log.info(f"{i} v2c table: {v2c[i]}")
-    for i in range(icon_grid.num_vertices):
-        v2c_neighbors_noduplicate = []
-        for v2c_neighbor in v2c[i]:
-            if v2c_neighbor not in v2c_neighbors_noduplicate:
-                v2c_neighbors_noduplicate.append(v2c_neighbor)
-        if not np.array_equal(v2c_neighbors_noduplicate, v2c[i]):
-            log.info(f"{i} v2c table duplicate: {v2c[i]}")
-            log.info(
-                f"{i} geofac_rot table: {solve_nonhydro_interpolation_state.geofac_rot.ndarray[i]}"
-            )
+    if enable_debug_message:
+        for i in range(icon_grid.num_vertices):
+            for v2c_neighbor in v2c[i]:
+                if v2c_neighbor < 0:
+                    log.info(f"{i} v2c table: {v2c[i]}")
+        for i in range(icon_grid.num_vertices):
+            v2c_neighbors_noduplicate = []
+            for v2c_neighbor in v2c[i]:
+                if v2c_neighbor not in v2c_neighbors_noduplicate:
+                    v2c_neighbors_noduplicate.append(v2c_neighbor)
+            if not np.array_equal(v2c_neighbors_noduplicate, v2c[i]):
+                log.info(f"{i} v2c table duplicate: {v2c[i]}")
+                log.info(
+                    f"{i} geofac_rot table: {solve_nonhydro_interpolation_state.geofac_rot.ndarray[i]}"
+                )
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
@@ -1468,8 +1471,9 @@ def initialize(
 @click.option("--grid_root", default=2, help="experiment selection")
 @click.option("--grid_level", default=4, help="experiment selection")
 @click.option("--profile", default=False, help="Whether to profile code using cProfile.")
-@click.option("--disable_logging", is_flag=False, help="Disable all logging output.")
-@click.option("--enable_output", is_flag=False, help="Enable output.")
+@click.option("--disable_logging", is_flag=True, help="Disable all logging output.")
+@click.option("--enable_output", is_flag=True, help="Enable output.")
+@click.option("--enable_debug_message", is_flag=True, help="Enable debug message which requires some computation.")
 def main(
     input_path,
     run_path,
@@ -1482,6 +1486,7 @@ def main(
     profile,
     disable_logging,
     enable_output,
+    enable_debug_message,
 ):
     """
     Run the driver.
@@ -1507,6 +1512,7 @@ def main(
     """
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
     configure_logging(run_path, experiment_type, parallel_props, disable_logging)
+    log.info(f"flag value (disable_logging, enable_output, enable_debug_message): {disable_logging} {enable_output} {enable_debug_message}")
     (
         timeloop,
         diffusion_diagnostic_state,
@@ -1525,6 +1531,7 @@ def main(
         grid_root,
         grid_level,
         enable_output,
+        enable_debug_message,
     )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
