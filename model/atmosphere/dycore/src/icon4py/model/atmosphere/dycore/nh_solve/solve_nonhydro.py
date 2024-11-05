@@ -995,7 +995,7 @@ class SolveNonhydro:
         #     $$
         #     Compute the temporal extrapolation of perturbed exner function
         #     using the time backward scheme for horizontal momentum equations
-        #     (see the |ICONTutorial| page 74).
+        #     (see the |ICONtutorial| page 74).
         #  - exner_pr :
         #     $$
         #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}, \qquad \k \in [0, \nlev)
