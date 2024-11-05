@@ -36,17 +36,19 @@ from .utils import (
 )
 
 
-grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT : {}}
+grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
+
 
 def get_grid_for_experiment(experiment, backend):
     return _get_or_initialize(experiment, backend, "grid")
 
+
 def get_edge_geometry_for_experiment(experiment, backend):
     return _get_or_initialize(experiment, backend, "edge_geometry")
 
+
 def get_cell_geometry_for_experiment(experiment, backend):
     return _get_or_initialize(experiment, backend, "cell_geometry")
-
 
 
 def _get_or_initialize(experiment, backend, name):
@@ -84,11 +86,9 @@ def _get_or_initialize(experiment, backend, name):
             f_e=geometry_.get(geometry_meta.CORIOLIS_PARAMETER),
             edge_areas=geometry_.get(geometry_meta.EDGE_AREA),
             primal_edge_lengths=geometry_.get(geometry_meta.EDGE_LENGTH),
-            inverse_primal_edge_lengths=geometry_.get(
-                f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
+            inverse_primal_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.EDGE_LENGTH}"),
             dual_edge_lengths=geometry_.get(geometry_meta.DUAL_EDGE_LENGTH),
-            inverse_dual_edge_lengths=geometry_.get(
-                f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
+            inverse_dual_edge_lengths=geometry_.get(f"inverse_of_{geometry_meta.DUAL_EDGE_LENGTH}"),
             inverse_vertex_vertex_lengths=geometry_.get(
                 f"inverse_of_{geometry_meta.VERTEX_VERTEX_LENGTH}"
             ),
@@ -196,7 +196,7 @@ def test_diffusion_init(
     additional_parameters = diffusion.DiffusionParams(config)
 
     grid = get_grid_for_experiment(experiment, backend)
-    cell_params = get_cell_geometry_for_experiment(experiment,backend)
+    cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
 
     vertical_config = v_grid.VerticalGridConfig(
@@ -341,10 +341,9 @@ def test_verify_diffusion_init_against_savepoint(
     damping_height,
     ndyn_substeps,
     backend,
-
 ):
     grid = get_grid_for_experiment(experiment, backend)
-    cell_params = get_cell_geometry_for_experiment(experiment,backend)
+    cell_params = get_cell_geometry_for_experiment(experiment, backend)
     edge_params = get_edge_geometry_for_experiment(experiment, backend)
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
@@ -379,7 +378,6 @@ def test_verify_diffusion_init_against_savepoint(
         zd_vertoffset=metrics_savepoint.zd_vertoffset(),
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
-
 
     diffusion_granule = diffusion.Diffusion(
         grid,
@@ -417,7 +415,6 @@ def test_run_diffusion_single_step(
     damping_height,
     ndyn_substeps,
     backend,
-
 ):
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
@@ -516,7 +513,6 @@ def test_run_diffusion_multiple_steps(
     diffusion_instance,  # F811 fixture
     icon_grid,
 ):
-
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
@@ -690,17 +686,18 @@ def test_run_diffusion_initial_step(
     config = construct_diffusion_config(experiment, ndyn_substeps=2)
     params = diffusion.DiffusionParams(config)
 
-    diffusion_granule = diffusion.Diffusion(grid=grid,
-                                            config = config,
-                                            params = params,
-                                            vertical_grid=vertical_grid,
-                                            metric_state = metric_state,
-                                            interpolation_state=interpolation_state,
-                                            edge_params=edge_geometry,
-                                            cell_params= cell_geometry,
-                                            backend = backend
-                                            )
-    
+    diffusion_granule = diffusion.Diffusion(
+        grid=grid,
+        config=config,
+        params=params,
+        vertical_grid=vertical_grid,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+        backend=backend,
+    )
+
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
     if linit:

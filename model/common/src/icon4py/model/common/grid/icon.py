@@ -38,7 +38,7 @@ class GlobalGridParams:
     root: int
     level: int
     geometry_type: Final[GeometryType] = GeometryType.SPHERE
-    length = constants.EARTH_RADIUS
+    radius = constants.EARTH_RADIUS
 
     @functools.cached_property
     def num_cells(self):

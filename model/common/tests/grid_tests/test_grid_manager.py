@@ -539,15 +539,9 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
 )
 def test_read_geometry_fields(grid_savepoint, grid_file):
     gm = utils.run_grid_manager(grid_file)
-    edge_length = gm.geometry[GeometryName.EDGE_LENGTH.value]
-    dual_edge_length = gm.geometry[GeometryName.DUAL_EDGE_LENGTH.value]
     cell_area = gm.geometry[GeometryName.CELL_AREA.value]
     tangent_orientation = gm.geometry[GeometryName.TANGENT_ORIENTATION.value]
 
-    assert helpers.dallclose(edge_length.asnumpy(), grid_savepoint.primal_edge_length().asnumpy())
-    assert helpers.dallclose(
-        dual_edge_length.asnumpy(), grid_savepoint.dual_edge_length().asnumpy()
-    )
     assert helpers.dallclose(cell_area.asnumpy(), grid_savepoint.cell_areas().asnumpy())
     assert helpers.dallclose(
         tangent_orientation.asnumpy(), grid_savepoint.tangent_orientation().asnumpy()

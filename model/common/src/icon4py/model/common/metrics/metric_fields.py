@@ -26,7 +26,7 @@ from gt4py.next import (
     where,
 )
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import (
     C2E,
     C2E2C,
@@ -59,7 +59,7 @@ class MetricsConfig:
     exner_expol: Final[wpfloat] = 0.3333333333333
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_z_mc(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
@@ -107,7 +107,7 @@ def _compute_ddqz_z_half(
     return ddqz_z_half
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=None)
 def compute_ddqz_z_half(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],

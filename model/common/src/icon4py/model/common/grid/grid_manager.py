@@ -182,19 +182,10 @@ class ConnectivityName(FieldName):
 
 
 class GeometryName(FieldName):
-    CELL_AREA = "cell_area"  # steradian (DWD), m^2 (MPI-M)
-    EDGE_LENGTH = "edge_length"  # radians (DWD), m (MPI-M) -> primal_edge_length = EdgeParams.primal_edge_lengths
-    DUAL_EDGE_LENGTH = "dual_edge_length"  # radians (DWD), m (MPI-M) -> dual_edge_length = EdgeParams.dual_edge_length
-    EDGE_NORMAL_ORIENTATION = "orientation_of_normal"  # p_p%cells%edge_orientation(:,:,:)
-    CELL_AREA_P = "cell_area_p"  # p_p%cells%area(:,:) =  CellParams.area might be same field as CELL_AREA in the grid file
-    TANGENT_ORIENTATION = "edge_system_orientation"  # p_p%edges%tangent_orientation(:,:) = EdgeParams.tangent_orientation
-    ZONAL_NORMAL_PRIMAL_EDGE = "zonal_normal_primal_edge"  # p_p % edges % primal_normal(:,:) %v1 = EdgeParams.primal_normal_x
-    MERIDIONAL_NORMAL_PRIMAL_EDGE = "meridional_normal_primal_edge"  # p_p%edges%primal_normal(:,:)%v2 = EdgeParams.primal_normal_y
-    ZONAL_NORMAL_DUAL_EDGE = "zonal_normal_dual_edge"  # p_p%edges%dual_normal(:,:)%v1
-    MERIDIONAL_NORMAL_DUAL_EDGE = "meridional_normal_dual_edge"  # p_p%edges%dual_normal(:,:)%v2
-    EDGE_VERTEX_DISTANCE = "edge_vert_distance"  # p_p%edges%edge_vert_length(:,:,1:2)
-    EDGE_CELL_CENTER_DISTANCE = "edge_cell_distance"  # p_p%edges%edge_cell_length(:,:,1:2)
-    EDGE_ORIENTATION_ = "edge_orientation"  # p_p%verts%edge_orientation(:,:,:)
+    CELL_AREA = "cell_area"
+    EDGE_NORMAL_ORIENTATION = "orientation_of_normal"
+    TANGENT_ORIENTATION = "edge_system_orientation"
+    EDGE_ORIENTATION_ = "edge_orientation"
 
 
 class CoordinateName(FieldName):
@@ -205,9 +196,6 @@ class CoordinateName(FieldName):
 
     CELL_LONGITUDE = "clon"
     CELL_LATITUDE = "clat"
-    CELL_CENTER_LATITUDE = "lat_cell_centre"
-    CELL_CENTER_LONGITUDE = "lon_cell_centre"
-
     EDGE_LONGITUDE = "elon"
     EDGE_LATITUDE = "elat"
     VERTEX_LONGITUDE = "vlon"
@@ -441,12 +429,6 @@ class GridManager:
 
     def _read_geometry_fields(self):
         return {
-            GeometryName.EDGE_LENGTH.value: gtx.as_field(
-                (dims.EdgeDim,), self._reader.variable(GeometryName.EDGE_LENGTH)
-            ),
-            GeometryName.DUAL_EDGE_LENGTH.value: gtx.as_field(
-                (dims.EdgeDim,), self._reader.variable(GeometryName.DUAL_EDGE_LENGTH)
-            ),
             GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA)
             ),
