@@ -332,6 +332,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
 
 
 CoordinateDict: TypeAlias = dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+GeometryDict: TypeAlias = dict[GeometryName, gtx.Field]
 
 
 class GridManager:
@@ -357,7 +358,7 @@ class GridManager:
         self._vertical_config = config
         self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
-        self._geometry = {}
+        self._geometry: GeometryDict = {}
         self._reader = None
         self._coordinates: CoordinateDict = {}
 
@@ -526,14 +527,11 @@ class GridManager:
         return self._refinement
 
     @property
-    def geometry(self):
+    def geometry(self) -> GeometryDict:
         return self._geometry
 
-    def get_coordinates(self, dim: gtx.Dimension) -> dict[str, gtx.Field]:
-        return self._coordinates.get(dim)
-
     @property
-    def coordinates(self):
+    def coordinates(self) -> CoordinateDict:
         return self._coordinates
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:

@@ -14,12 +14,13 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.settings import xp
 
 
-T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
 DimT = TypeVar("DimT", dims.KDim, dims.KHalfDim, dims.CellDim, dims.EdgeDim, dims.VertexDim)
+
 FloatType: TypeAlias = Union[ta.wpfloat, ta.vpfloat, float]
 IntegerType: TypeAlias = Union[gtx.int32, gtx.int64, int]
 ScalarType: TypeAlias = Union[FloatType, bool, IntegerType]
 
+T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
 
 FieldType: TypeAlias = Union[gtx.Field[Sequence[gtx.Dims[DimT]], T], xp.ndarray]
 

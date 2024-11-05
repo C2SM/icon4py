@@ -359,7 +359,7 @@ class GridGeometry(factory.FieldSource):
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
             },
-            params={"radius": self._grid.global_properties.length},
+            params={"radius": self._grid.global_properties.radius},
         )
         self.register_provider(edge_length_provider)
         name, meta = attrs.data_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
@@ -394,7 +394,7 @@ class GridGeometry(factory.FieldSource):
                 "edge_neighbor_1_lat": "latitude_of_edge_cell_neighbor_1",
                 "edge_neighbor_1_lon": "longitude_of_edge_cell_neighbor_1",
             },
-            params={"radius": self._grid.global_properties.length},
+            params={"radius": self._grid.global_properties.radius},
         )
         self.register_provider(dual_length_provider)
 
@@ -426,7 +426,7 @@ class GridGeometry(factory.FieldSource):
                 "vertex_lat": attrs.VERTEX_LAT,
                 "vertex_lon": attrs.VERTEX_LON,
             },
-            params={"radius": self._grid.global_properties.length},
+            params={"radius": self._grid.global_properties.radius},
         )
         self.register_provider(vertex_vertex_distance)
         name, meta = attrs.data_for_inverse(attrs.attrs[attrs.VERTEX_VERTEX_LENGTH])

@@ -56,7 +56,7 @@ def compute_icosahedron_num_cells(root: int, level: int):
 
 
 def compute_torus_num_cells(x: int, y: int):
-    # TODO (@halungge) fix this
+    # TODO (@halungge) add implementation
     raise NotImplementedError("TODO : lookup torus cell number computation")
 
 

@@ -559,8 +559,8 @@ def test_read_geometry_fields(grid_savepoint, grid_file):
 @pytest.mark.parametrize("dim", (dims.CellDim, dims.EdgeDim, dims.VertexDim))
 def test_coordinates(grid_savepoint, grid_file, experiment, dim):
     gm = utils.run_grid_manager(grid_file)
-    lat = gm.get_coordinates(dim)["lat"]
-    lon = gm.get_coordinates(dim)["lon"]
+    lat = gm.coordinates[dim]["lat"]
+    lon = gm.coordinates[dim]["lon"]
     assert helpers.dallclose(lat.asnumpy(), grid_savepoint.lat(dim).asnumpy())
     assert helpers.dallclose(lon.asnumpy(), grid_savepoint.lon(dim).asnumpy())
 
