@@ -6,15 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
-
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple
 from icon4py.model.common.math import helpers
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import helpers as test_helpers
 
 
-def test_cross_product():
+def test_cross_product(backend):
     mesh = simple.SimpleGrid()
     x1 = test_helpers.random_field(mesh, dims.EdgeDim)
     y1 = test_helpers.random_field(mesh, dims.EdgeDim)
@@ -26,10 +25,10 @@ def test_cross_product():
     y = test_helpers.zero_field(mesh, dims.EdgeDim)
     z = test_helpers.zero_field(mesh, dims.EdgeDim)
 
-    helpers.cross_product(x1, x2, y1, y2, z1, z2, out=(x, y, z), offset_provider={})
-    a = np.column_stack((x1.ndarray, y1.ndarray, z1.ndarray))
-    b = np.column_stack((x2.ndarray, y2.ndarray, z2.ndarray))
-    c = np.cross(a, b)
+    helpers.cross_product.with_backend(backend)(x1, x2, y1, y2, z1, z2, out=(x, y, z), offset_provider={})
+    a = xp.column_stack((x1.ndarray, y1.ndarray, z1.ndarray))
+    b = xp.column_stack((x2.ndarray, y2.ndarray, z2.ndarray))
+    c = xp.cross(a, b)
 
     assert test_helpers.dallclose(c[:, 0], x.ndarray)
     assert test_helpers.dallclose(c[:, 1], y.ndarray)
