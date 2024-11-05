@@ -115,7 +115,12 @@ def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
+def get_datapath_for_experiment_advection(ranked_base_path, experiment=REGIONAL_EXPERIMENT):
+    return ranked_base_path.joinpath(f"{experiment}/advection/ser_data")
+
+
 def create_icon_serial_data_provider(datapath, processor_props):
+    # note: this needs to be here, otherwise spack doesn't find serialbox
     from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
 
     return IconSerialDataProvider(
@@ -123,4 +128,17 @@ def create_icon_serial_data_provider(datapath, processor_props):
         path=str(datapath),
         mpi_rank=processor_props.rank,
         do_print=True,
+    )
+
+
+def create_icon_serial_data_provider_advection(datapath, processor_props):
+    # note: this needs to be here, otherwise spack doesn't find serialbox
+    from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
+
+    return IconSerialDataProvider(
+        fname_prefix="icon_pyadvection",
+        path=str(datapath),
+        mpi_rank=processor_props.rank,
+        do_print=True,
+        advection=True,
     )

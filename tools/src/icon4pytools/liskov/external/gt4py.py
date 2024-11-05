@@ -29,7 +29,7 @@ logger = setup_logger(__name__)
 class UpdateFieldsWithGt4PyStencils(Step):
     _STENCIL_PACKAGES: ClassVar[list[str]] = [
         "atmosphere.dycore",
-        "atmosphere.advection",
+        "atmosphere.advection.stencils",
         "atmosphere.diffusion.stencils",
         "common.interpolation.stencils",
     ]

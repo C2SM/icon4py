@@ -36,8 +36,18 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     SCIDOC_CODE_BLOCK_LINES: Final[list[str]] = ["", ".. collapse:: Source code", "", " .. code-block:: python", ""]
 
     def get_doc(self) -> list[list[str]]:
-        # Override the default get_doc method to pick up all tagged comment
-        # blocks in the source code of the method
+        """
+        Extracts and processes documentation blocks from the source code of a method.
+
+        This method overrides the default `get_doc` method to pick up all tagged comment
+        blocks in the source code of the method. It retrieves the source code of the method,
+        identifies documentation blocks based on a specified keyword, and processes each
+        documentation block to format it and add relevant information.
+
+        Returns:
+            A list of formatted documentation blocks, where each block is
+            represented as a list of strings.
+        """
         source = inspect.getsource(self.object) # this is only the source of the method, not the whole file
 
         docblocks = self.get_documentation_blocks(source, self.docblock_keyword)
@@ -87,7 +97,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 in_block = True
             elif in_block and is_comment:
                 comment_blocks[-1] += f'\n{line}'
-            in_block = is_comment and in_block # continue the block if the line is a comment (but don't start one if now with the keyword)
+            in_block = is_comment and in_block # continue the block if the line is a comment (but don't start one unless the keyword is found)
         return comment_blocks
 
     def format_docblock(self, docblock_lines: list[str], keyword: str) -> list[str]:
@@ -105,8 +115,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         assert docblock_lines[0].strip().startswith(f'# {keyword}:')  
         docblock_lines.pop(0)  # remove the {keyword} prefix
         # Remove leading and trailing blank lines.
-        # Blank lines in the middle are kept because they are used to separate
-        # paragraphs and lists.
+        # Blank lines in the middle must be kept because they are used to
+        # separate paragraphs and lists.
         while docblock_lines and docblock_lines[0].strip() == '#':
             docblock_lines.pop(0)
         while docblock_lines and docblock_lines[-1].strip() == '#':
@@ -131,7 +141,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         """
         label = f"{method_info['local_parent_name']}.{method_info['local_shortname']}"  
         link_destination = f"{method_info['orig_parent_name']}.{method_info['orig_shortname']}"
-        title = f":meth:`{label}()<{link_destination}>`" 
+        title = f":meth:`{label}<{link_destination}>`" 
         return [title, '='*len(title), '']
 
     def process_scidoc_lines(self, docblock_lines: list[str], method_info: dict) -> list[str]:
@@ -144,7 +154,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         - Optionally print the long names of variables.
 
         Args:
-            docblock _lines: The lines of the documentation string to process.
+            docblock_lines: The lines of the documentation string to process.
             method_info: A dictionary containing information about the next method.
 
         Returns:
@@ -154,19 +164,20 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         latex_math = False
         latex_math_multiline = False
         past_inputs = False
+        processed_lines = []
 
         for line_num, line in enumerate(docblock_lines):
 
             # Drop the colon from the Outputs section
             if line.startswith('Outputs:'):
-                docblock_lines[line_num] = 'Outputs'
+                processed_lines.append('Outputs')
                 continue
 
             # Drop the colon from the Inputs section and make it collapsible
             if line.startswith('Inputs:'):
                 past_inputs = True
-                docblock_lines[line_num] = ".. collapse:: Inputs"
-                docblock_lines.insert(line_num+1, "")
+                processed_lines.append(".. collapse:: Inputs")
+                processed_lines.append("")
                 continue
 
             # Identify LaTeX math (multiline) blocks
@@ -176,36 +187,45 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                     latex_math_multiline = True
                 else: # single line math block or end of block
                     latex_math_multiline = False
+                processed_lines.append(line)
                 continue
 
             # Process math lines
             if latex_math:
-                docblock_lines[line_num] = self.process_math_line(line, latex_math_multiline)
+                processed_lines.append(self.process_math_line(line, latex_math_multiline))
+                continue
 
             # Only in bullet point lines:
             # Add type information to variable names.
             # Optionally print the long names of variables.
-            if (not latex_math_multiline) and ('-' in line) and (':' in line):
+            if ('-' in line) and (':' in line) and (not latex_math_multiline):
                 if past_inputs and not self.var_type_in_inputs:
-                    continue
-                indent = len(line) - len(line.lstrip())
-                split_line = line.split()
-                for variable, var_type in method_info['var_types'].items():
-                    if variable in split_line:
-                        if self.print_variable_longnames:
-                            # long name version
-                            var_longname = method_info['var_longnames_map'][variable]
-                            prefix = '.'.join(var_longname.split('.')[:-1])
-                            suffix = var_longname.split('.')[-1]
-                            vname = (f"*{prefix}*." if prefix else "") + f" **{suffix}**"
-                        else:
-                            # short name version
-                            vname = variable
-                        j = split_line.index(variable)
-                        split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
-                        docblock_lines[line_num] = ' '*indent + ' '.join(split_line)
+                    # Skip adding type information to variable names in the Inputs section
+                    processed_lines.append(line)
+                else:
+                    # Add type information to variable names and optionally print the long names
+                    indent = len(line) - len(line.lstrip())
+                    split_line = line.split()
+                    for variable, var_type in method_info['map_shortname_to_type'].items():
+                        if variable in split_line:
+                            if self.print_variable_longnames:
+                                # long name version, with small font size for the prefix
+                                var_longname = method_info['map_shortname_to_longname'][variable]
+                                prefix = '.'.join(var_longname.split('.')[:-1])
+                                suffix = var_longname.split('.')[-1]
+                                vname = (f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$" if prefix else "") + f" **{suffix}**"
+                            else:
+                                # short name version
+                                vname = variable
+                            j = split_line.index(variable)
+                            split_line[j] = f"{vname} {self.var_type_formatting}{var_type}{self.var_type_formatting}"
+                            processed_lines.append(' '*indent + ' '.join(split_line))
+                continue
+            
+            # Keep the line as is
+            processed_lines.append(line)
 
-        return docblock_lines
+        return processed_lines
 
     def process_math_line(self, line: str, multiline: bool) -> str:
         """
@@ -226,7 +246,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             start_idx = len(line) - len(line.lstrip()) 
             line = f"{line[:start_idx]}&{line[start_idx:]}"  
 
-        # Add latex space character '\:' after symbols if followed by other symbols starting with '\' and a letter
+        # Add a small space character '\,' after symbols if followed by other symbols starting with '\' and a letter
         for symbol in symbols_needing_space:
             if symbol in line:
                 line = re.sub(rf'(\{symbol})\s*(\\[a-zA-Z])', r'\1\\,\2', line)
@@ -301,9 +321,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             - 'orig_shortname': The original shortname of the method.
             - 'orig_parent_name': The original name of the parent/module where the method is defined.
             - 'annotations': The annotations of the method.
-            - 'var_names_map': A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
-            - 'var_longnames_map': A dictionary mapping variable short and long names in the present scope.
-            - 'var_types': A dictionary mapping variable short names and their types.
+            - 'map_argname_to_shortname': A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
+            - 'map_shortname_to_longname': A dictionary mapping variable short to long names in the present scope.
+            - 'map_shortname_to_type': A dictionary mapping variable short names to their types.
         """
         method_info = {}
 
@@ -320,8 +340,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         method_info['orig_shortname'] = orig['shortname']
         method_info['orig_parent_name'] = orig['parent_name']
         method_info['annotations'] = orig['method_obj'].definition_stage.definition.__annotations__ if type(orig['method_obj']).__name__ == 'Program' else orig['method_obj'].__annotations__
-        method_info['var_names_map'], method_info['var_longnames_map'] = self.map_variable_names(call_string)
-        method_info['var_types'] = self.map_variable_types(method_info)
+        method_info['map_argname_to_shortname'], method_info['map_shortname_to_longname'] = self.map_variable_names(call_string)
+        method_info['map_shortname_to_type'] = self.map_variable_types(method_info)
         return method_info
 
     def get_original_method_info(self, local_parent_name: str, local_shortname: str) -> dict:
@@ -345,12 +365,12 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 - 'shortname': The short name of the method.
         """
         if local_parent_name in self.module.__dict__.keys():
-            # we are importing directly from a module
+            # Importing directly from a module
             module_obj = getattr(self.module, local_parent_name)
             method_obj = getattr(module_obj, local_shortname)
             parent_name = module_obj.__name__
         elif local_parent_name == 'self':
-            # the method was renamed in the present class
+            # The method is defined or renamed in the present class
             class_and_method_name = re.sub(self.modname, '', self.fullname)[1:]
             class_name = class_and_method_name.split('.')[0]
             class_obj = getattr(self.module, class_name)
@@ -359,77 +379,93 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 method_obj = getattr(class_obj, local_shortname)
             else:
                 # Handle the case where the method is imported and renamed in the class
-                for attr_name in dir(class_obj):
-                    attr = getattr(class_obj, attr_name)
+                for _, attr in vars(class_obj).items():
                     if callable(attr) and hasattr(attr, '__name__') and attr.__name__ == local_shortname:
                         method_obj = attr
                         break
                 else:
                     # Handle the case where the method is assigned to an instance variable using AST
-                    source = inspect.getsource(class_obj)
-                    tree = ast.parse(source)
-                    for node in ast.walk(tree):
-                        if isinstance(node, ast.FunctionDef) and node.name == '__init__':
-                            for stmt in node.body:
-                                if isinstance(stmt, ast.Assign):
-                                    for target in stmt.targets:
-                                        if isinstance(target, ast.Attribute) and target.attr == local_shortname:
-                                            if isinstance(stmt.value, ast.Attribute):
-                                                original_method_name = stmt.value.attr
-                                                if hasattr(class_obj, original_method_name):
-                                                    method_obj = getattr(class_obj, original_method_name)
-                                                    break
-                                            elif isinstance(stmt.value, ast.Name):
-                                                original_method_name = stmt.value.id
-                                                if original_method_name in self.module.__dict__.keys():
-                                                    module_obj = getattr(self.module, original_method_name)
-                                                    method_obj = getattr(module_obj, local_shortname)
-                                                    parent_name = module_obj.__name__
-                                                    break
-                                            elif isinstance(stmt.value, ast.Call):
-                                                # Traverse the call chain to get the original method and module
-                                                call_chain = []
-                                                current_node = stmt.value.func
-                                                while isinstance(current_node, (ast.Attribute, ast.Name)):
-                                                    if isinstance(current_node, ast.Attribute):
-                                                        call_chain.append(current_node.attr)
-                                                        current_node = current_node.value
-                                                    elif isinstance(current_node, ast.Name):
-                                                        call_chain.append(current_node.id)
-                                                        break
-                                                call_chain.reverse()
-                                                if call_chain[-1] == 'with_backend':
-                                                    # remove it from the call chain
-                                                    call_chain.pop()
-                                                if len(call_chain) == 1:
-                                                    # the method is imported directly, e.g.
-                                                    # from solve_nonhydro_program import stencil
-                                                    # self._stencil = stencil.with_backend(...)
-                                                    original_method_name = call_chain[0]
-                                                    if original_method_name in self.module.__dict__.keys() and not isinstance(getattr(self.module, original_method_name), types.ModuleType):
-                                                        # method_obj.definition_stage.definition.__module__
-                                                        method_obj = getattr(self.module, original_method_name)
-                                                        if type(method_obj).__module__.startswith('gt4py') and type(method_obj).__name__ == 'Program':
-                                                            # it's a decorated gt4py program
-                                                            parent_name = method_obj.definition_stage.definition.__module__
-                                                            break
-                                                elif len(call_chain) >= 2:
-                                                    # the method is called from a module import, e.g.
-                                                    # import solve_nonhydro_program as nhsolve_prog
-                                                    # self._stencil = nhsolve_prog.stencil.with_backend(...)
-                                                    module_name = call_chain[0]
-                                                    original_method_name = call_chain[1]
-                                                    if module_name in self.module.__dict__.keys() and isinstance(getattr(self.module, module_name), types.ModuleType):
-                                                        module_obj = getattr(self.module, module_name)
-                                                        method_obj = getattr(module_obj, original_method_name)
-                                                        parent_name = module_obj.__name__
-                                                        break
+                    method_obj, parent_name = self.get_method_from_ast(class_obj, local_shortname)
         info = {
             'method_obj': method_obj,
             'parent_name': parent_name,
             'shortname': method_obj.__name__,
             }
         return info
+
+    def get_method_from_ast(self, class_obj: object, local_shortname: str) -> tuple[object, str]:
+        """
+        Retrieve the original method object and its parent module or class name using AST parsing.
+
+        Args:
+            class_obj: The class object where the method is defined.
+            local_shortname: The local short name of the method.
+
+        Returns:
+            A tuple containing:
+                - The original method object.
+                - The name of the parent module or class.
+        """
+        source = inspect.getsource(class_obj)
+        tree = ast.parse(source)
+        
+        # Capture relevant `ast.Assign` nodes
+        init_func = next(
+            node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name == "__init__"
+        )
+        assigns = (
+            node
+            for node in init_func.body
+            if isinstance(node, ast.Assign)
+            and any(t for t in node.targets if isinstance(t, ast.Attribute) and t.attr == local_shortname)
+        )
+
+        # Process them according to the type of the assigned value
+        for node in assigns:
+            match node.value:
+                case ast.Attribute():
+                    original_method_name = node.value.attr
+                    if hasattr(class_obj, original_method_name):
+                        method_obj = getattr(class_obj, original_method_name)
+                        return method_obj, class_obj.__module__
+                case ast.Name():
+                    original_method_name = node.value.id
+                    if original_method_name in self.module.__dict__.keys():
+                        module_obj = getattr(self.module, original_method_name)
+                        method_obj = getattr(module_obj, local_shortname)
+                        return method_obj, module_obj.__name__
+                case ast.Call():
+                    # Traverse the call chain to get the original method and module
+                    call_chain = []
+                    current_node = node.value.func
+                    while isinstance(current_node, (ast.Attribute, ast.Name)):
+                        if isinstance(current_node, ast.Attribute):
+                            call_chain.append(current_node.attr)
+                            current_node = current_node.value
+                        elif isinstance(current_node, ast.Name):
+                            call_chain.append(current_node.id)
+                            break
+                    call_chain.reverse()
+                    if call_chain[-1] == 'with_backend':
+                        # Remove it from the call chain
+                        call_chain.pop()
+                    if len(call_chain) == 1:
+                        # The method is imported directly
+                        original_method_name = call_chain[0]
+                        if original_method_name in self.module.__dict__.keys() and not isinstance(getattr(self.module, original_method_name), types.ModuleType):
+                            method_obj = getattr(self.module, original_method_name)
+                            if type(method_obj).__module__.startswith('gt4py') and type(method_obj).__name__ == 'Program':
+                                # it's a decorated gt4py program
+                                return method_obj, method_obj.definition_stage.definition.__module__
+                    elif len(call_chain) >= 2:
+                        # The method is called from a module import
+                        module_name = call_chain[0]
+                        original_method_name = call_chain[1]
+                        if module_name in self.module.__dict__.keys() and isinstance(getattr(self.module, module_name), types.ModuleType):
+                            module_obj = getattr(self.module, module_name)
+                            method_obj = getattr(module_obj, original_method_name)
+                            return method_obj, module_obj.__name__
+        return None, None
 
     def map_variable_names(self, function_call_str: list[str]) -> tuple[dict[str,str], dict[str,str]]:
         """
@@ -445,21 +481,21 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
 
         Returns:
             A tuple containing two dictionaries:
-                - variable_map: A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
-                - variable_longnames_map: A dictionary mapping variable short and long names in the present scope.
+                - map_argname_to_shortname: A dictionary mapping variable names as argument to the called method and variable short name (or argument value) in the present scope.
+                - map_shortname_to_longname: A dictionary mapping variable short and long names in the present scope.
         """
         # Extract argument names and their values using regex
         pattern = r'(\w+)\s*=\s*([^,]+)'
         matches = re.findall(pattern, ''.join(function_call_str))
         # Create a dictionary to map variable names to their full argument names
-        variable_map = {}
-        variable_longnames_map = {}
+        map_argname_to_shortname = {}
+        map_shortname_to_longname = {}
         for arg_name, arg_value in matches:
-            # Extract the last part of the argument value after the last period
+            # Extract the shortname: last part of the argument value after the last period
             short_name = arg_value.split('.')[-1]
-            variable_map[arg_name] = short_name
-            variable_longnames_map[short_name] = arg_value
-        return variable_map, variable_longnames_map
+            map_argname_to_shortname[arg_name] = short_name
+            map_shortname_to_longname[short_name] = arg_value
+        return map_argname_to_shortname, map_shortname_to_longname
     
     def map_variable_types(self, method_info: dict) -> dict[str,str]:
         """
@@ -468,16 +504,16 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         Args:
             method_info: A dictionary containing method information, including:
                 - 'annotations': A dictionary where keys are argument names and values are their types.
-                - 'var_names_map': A dictionary mapping argument names to their short names.
+                - 'map_argname_to_shortname': A dictionary mapping argument names to their short names.
 
         Returns:
             A dictionary where keys are variable short names and values are their formatted types.
         """
-        var_types = {}
+        map_shortname_to_type = {}
         for arg_name, var_type in method_info['annotations'].items():
-            if arg_name in method_info['var_names_map'].keys():
-                var_types[method_info['var_names_map'][arg_name]] = self.format_type_string(var_type)
-        return var_types
+            if arg_name in method_info['map_argname_to_shortname'].keys():
+                map_shortname_to_type[method_info['map_argname_to_shortname'][arg_name]] = self.format_type_string(var_type)
+        return map_shortname_to_type
     
     def format_type_string(self, var_type: typing.Type) -> str:
         """

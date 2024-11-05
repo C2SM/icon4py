@@ -35,7 +35,6 @@ extensions = [
     "myst_parser",
     "sphinx_math_dollar",
     'sphinx_toolbox.collapse', # https://sphinx-toolbox.readthedocs.io/en/stable/extensions/collapse.html
-    #"icon4py.model.atmosphere.dycore.sphinx" # disable while waiting for gt4py patch
 ]
 
 # Make sure that the autosection target is unique
