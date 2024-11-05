@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+# fmt: off
 import sys, os
 # Add the directory containing icon4py_sphinx to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "_ext")))
