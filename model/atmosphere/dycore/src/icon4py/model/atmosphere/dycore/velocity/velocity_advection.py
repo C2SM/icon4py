@@ -313,17 +313,16 @@ class VelocityAdvection:
         #     |ICONdycorePaper|).
         #  - vn_ie :
         #     $$
-        #     \vn{\n}{\e}{-1/2} = \vn{\n}{\e}{1}
+        #     \vn{\n}{\e}{-1/2} = \vn{\n}{\e}{0}
         #     $$
         #     Set the normal wind at model top equal to the normal wind at the
-        #     first full level (zeroth order interpolation).
+        #     first full level.
         #  - z_vt_ie :
         #     $$
-        #     \vt{\n}{\e}{-1/2} = \vt{\n}{\e}{1}
+        #     \vt{\n}{\e}{-1/2} = \vt{\n}{\e}{0}
         #     $$
         #     Set the tangential wind at model top equal to the tangential wind
-        #     at the first full level (zeroth order interpolation).
-        #     ### Compute tangential wind at model top (edge center). It is simply set equal to tangential wind.
+        #     at the first full level.
         #  - z_kin_hor_e :
         #     $$
         #     \kinehori{\n}{\e}{0} = \frac{1}{2} \left( \vn{\n}{\e}{0}^2 + \vt{\n}{\e}{0}^2 \right)
