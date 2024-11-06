@@ -66,6 +66,7 @@ DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/downloa
 DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
 DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/IiRimdJH2ZBZ1od/download"}
 DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/91DEUGmAkBgrXO6/download"}
+DATA_URIS_ADVECTION = {1: "https://polybox.ethz.ch/index.php/s/KV6FYstcGysNDOj/download"}
 
 
 def get_global_grid_params(experiment: str) -> tuple[int, int]:
