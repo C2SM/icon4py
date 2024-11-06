@@ -7,11 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # fmt: off
-import sys, os
+import os
+import sys
+
+
 # Add the directory containing icon4py_sphinx to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "_ext")))
 import icon4py_sphinx
 import latex_sphinx
+
 
 # Configuration file for the Sphinx documentation builder.
 #

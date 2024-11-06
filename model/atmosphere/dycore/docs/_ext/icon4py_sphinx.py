@@ -246,9 +246,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             else:
                                 # short name version
                                 vname = element
-                            split_line[i] = (
-                                f"{vname}:{self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
-                            )
+                            split_line[
+                                i
+                            ] = f"{vname}:{self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
                         elif element == ":":
                             if section == "Outputs":
                                 # Drop the colon from the bullet point line
@@ -395,9 +395,10 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             if type(orig["method_obj"]).__name__ == "Program"
             else orig["method_obj"].__annotations__
         )
-        method_info["map_argname_to_shortname"], method_info["map_shortname_to_longname"] = (
-            self.map_variable_names(call_string)
-        )
+        (
+            method_info["map_argname_to_shortname"],
+            method_info["map_shortname_to_longname"],
+        ) = self.map_variable_names(call_string)
         method_info["map_shortname_to_type"] = self.map_variable_types(method_info)
         return method_info
 
@@ -600,9 +601,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         map_shortname_to_type = {}
         for arg_name, var_type in method_info["annotations"].items():
             if arg_name in method_info["map_argname_to_shortname"].keys():
-                map_shortname_to_type[method_info["map_argname_to_shortname"][arg_name]] = (
-                    self.format_type_string(var_type)
-                )
+                map_shortname_to_type[
+                    method_info["map_argname_to_shortname"][arg_name]
+                ] = self.format_type_string(var_type)
         return map_shortname_to_type
 
     def format_type_string(self, var_type: typing.Type) -> str:
