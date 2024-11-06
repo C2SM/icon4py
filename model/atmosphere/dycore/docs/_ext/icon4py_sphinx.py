@@ -188,7 +188,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         """
 
         section: Literal["Inputs", "Outputs", None] = None
-        latex = {"Math": False, "MathMultiline": False, "Indent": 0}
+        latex = {"Math": False, "NeedsAlignChar": False, "Indent": 0}
         processed_lines = []
 
         for line_num, line in enumerate(docblock_lines):
@@ -205,19 +205,19 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 processed_lines.append("")
                 continue
 
-            # Identify LaTeX math (multiline) blocks
+            # Identify LaTeX math
             if line.strip().startswith("$$"):
                 latex["Math"] = not latex["Math"]
                 latex["Indent"] = len(line) - len(line.lstrip())
-                if docblock_lines[line_num + 1].rstrip().endswith(r"\\"):  # multiline math block :
-                    latex["MathMultiline"] = True
-                else:  # single line math block or end of block
-                    latex["MathMultiline"] = False
                 processed_lines.append(line)
                 continue
 
             # Process math lines
             if latex["Math"]:
+                if line.rstrip().endswith(r"\\") or docblock_lines[line_num - 1].rstrip().endswith(r"\\"):
+                    latex["NeedsAlignChar"] = True
+                else:
+                    latex["NeedsAlignChar"] = False
                 processed_lines.append(self.process_math_line(line, latex))
                 continue
 
@@ -277,11 +277,14 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         """
         symbols_needing_space = ["\Wrbf", "\Wlev", "\WtimeExner"]
 
-        if options["MathMultiline"]:
+        if options["NeedsAlignChar"]:
             # Align multiline equations to the left
             # (single line equations are already left-aligned)
             start_idx = options["Indent"]
             line = f"{line[:start_idx]}& {line[start_idx:]}"
+        else:
+            # Remove white space except for the outer indent
+            line = ' '*options["Indent"] + line.lstrip()
 
         # Add a small space character '\,' after symbols if followed by other
         # symbols starting with '\' and a letter
