@@ -29,7 +29,7 @@ except ImportError:
 
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props):  # noqa: F811  # fixture
-    """dummy test to check whether the MPI initialization anc GHEX setup works."""
+    """dummy test to check whether the MPI initialization and GHEX setup works."""
     assert processor_props.comm
     assert isinstance(
         processor_props.comm, mpi4py.MPI.Comm
