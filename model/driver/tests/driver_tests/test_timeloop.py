@@ -8,6 +8,7 @@
 
 import pytest
 
+import icon4py.model.common.utils as imc_utils
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
@@ -307,12 +308,12 @@ def test_run_timeloop_single_step(
         exner=sp.exner_new(),
     )
 
-    prognostic_state_list = [prognostic_state, prognostic_state_new]
+    prognostic_state_swp = imc_utils.Swapping(prognostic_state, prognostic_state_new)
 
     timeloop.time_integration(
         diffusion_diagnostic_state,
         nonhydro_diagnostic_state,
-        prognostic_state_list,
+        prognostic_state_swp,
         prep_adv,
         sp.divdamp_fac_o2(),
         do_prep_adv,
@@ -325,29 +326,29 @@ def test_run_timeloop_single_step(
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+        prognostic_state_swp.current.vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+        prognostic_state_swp.current.w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
+        prognostic_state_swp.current.exner.asnumpy(),
         exner_sp.asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
+        prognostic_state_swp.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=4e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
+        prognostic_state_swp.current.rho.asnumpy(),
         rho_sp.asnumpy(),
     )
