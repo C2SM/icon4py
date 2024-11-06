@@ -403,11 +403,19 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        """
-        z_ekinh (0:nlev-1):
-            Interpolate the horizonal kinetic energy (vn^2 + vt^2)/2 at full levels from
-            edge center (three neighboring edges) to cell center.
-        """
+        # scidoc:
+        # Outputs:
+        #  - z_ekinh :
+        #     $$
+        #     \kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}, \qquad \k \in [0, \nlev)
+        #     $$
+        #     Interpolate the horizonal kinetic energy from edge center to cell
+        #     center (three neighboring edges).
+        #
+        # Inputs:
+        #  - $\Whor$ : wgtfac_c_s
+        #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
+        #
         self._interpolate_to_cell_center(
             interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
