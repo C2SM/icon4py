@@ -51,8 +51,8 @@ source_suffix = ['.rst', '.md']
 
 # -- reST epilogue: macros / aliases -----------------------------------------
 rst_epilog = """
-.. |ICONtutorial| replace:: ICON Tutorial_
-.. _Tutorial: https://www.dwd.de/EN/ourservices/nwp_icon_tutorial/nwp_icon_tutorial_en.html
+.. |ICONtutorial| replace:: ICON_Tutorial_
+.. _ICON_Tutorial: https://www.dwd.de/EN/ourservices/nwp_icon_tutorial/nwp_icon_tutorial_en.html
 .. |ICONdycorePaper| replace:: Zangl_etal_
 .. _Zangl_etal: https://doi.org/10.1002/qj.2378
 """

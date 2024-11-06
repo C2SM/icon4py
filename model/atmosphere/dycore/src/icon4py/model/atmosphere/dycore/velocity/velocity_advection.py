@@ -309,8 +309,8 @@ class VelocityAdvection:
         #     $$
         #     Compute the contravariant correction (due to terrain-following
         #     coordinates) to vertical wind. Note that here $\pdxt{}$ is the
-        #     horizontal derivative along the tangent direction.
-        #     See eq. 17 in |ICONdycorePaper|.
+        #     horizontal derivative along the tangent direction (see eq. 17 in
+        #     |ICONdycorePaper|).
         #  - vn_ie :
         #     $$
         #     \vn{\n}{\e}{-1/2} = \vn{\n}{\e}{1}
