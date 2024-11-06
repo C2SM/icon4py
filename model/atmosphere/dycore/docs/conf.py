@@ -6,11 +6,16 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import sys, os
+# fmt: off
+# ruff: noqa
+import os
+import sys
+
 # Add the directory containing icon4py_sphinx to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "_ext")))
 import icon4py_sphinx
 import latex_sphinx
+
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -46,8 +51,8 @@ source_suffix = ['.rst', '.md']
 
 # -- reST epilogue: macros / aliases -----------------------------------------
 rst_epilog = """
-.. |ICONtutorial| replace:: ICON_Tutorial_
-.. _ICON_Tutorial: https://www.dwd.de/EN/ourservices/nwp_icon_tutorial/nwp_icon_tutorial_en.html
+.. |ICONtutorial| replace:: ICON Tutorial_
+.. _Tutorial: https://www.dwd.de/EN/ourservices/nwp_icon_tutorial/nwp_icon_tutorial_en.html
 .. |ICONdycorePaper| replace:: Zangl_etal_
 .. _Zangl_etal: https://doi.org/10.1002/qj.2378
 """

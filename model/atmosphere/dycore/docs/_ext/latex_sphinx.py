@@ -8,6 +8,7 @@
 
 import TexSoup
 
+
 def tex_macros_to_mathjax(filename: str) -> dict[str, str]:
     """
     Parses a LaTeX file to extract macros and converts them to MathJax format.
@@ -22,11 +23,11 @@ def tex_macros_to_mathjax(filename: str) -> dict[str, str]:
         and the second element is the number of arguments.
     """
     latex_macros = {}
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         soup = TexSoup.TexSoup(f.read())
-        for command in ['newcommand', 'renewcommand']:
+        for command in ["newcommand", "renewcommand"]:
             for macro in soup.find_all(command):
-                name = macro.args[0].string.strip('\\')
+                name = macro.args[0].string.strip("\\")
                 latex_macros[name] = f"{{{macro.args[-1].string}}}"
                 if len(macro.args) == 3:
                     latex_macros[name] = [latex_macros[name], int(macro.args[1].string)]
