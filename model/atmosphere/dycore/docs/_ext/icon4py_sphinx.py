@@ -249,7 +249,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                                 vname = element
                             split_line[
                                 i
-                            ] = f"{vname}:{self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
+                            ] = f"{vname}: {self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
                         elif element == ":":
                             if section == "Outputs":
                                 # Drop the colon from the bullet point line
