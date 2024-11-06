@@ -243,7 +243,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                                     f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$"
                                     if prefix
                                     else ""
-                                ) + f" **{suffix}**\\ "
+                                ) + f"{suffix}"
                             else:
                                 # short name version
                                 vname = element
