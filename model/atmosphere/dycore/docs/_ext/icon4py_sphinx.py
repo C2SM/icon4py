@@ -188,7 +188,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         """
 
         section: Literal["Inputs", "Outputs", None] = None
-        latex = {"Math": False, "MathMultiline": False}
+        latex = {"Math": False, "MathMultiline": False, "Indent": 0}
         processed_lines = []
 
         for line_num, line in enumerate(docblock_lines):
@@ -208,6 +208,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             # Identify LaTeX math (multiline) blocks
             if line.strip().startswith("$$"):
                 latex["Math"] = not latex["Math"]
+                latex["Indent"] = len(line) - len(line.lstrip())
                 if docblock_lines[line_num + 1].rstrip().endswith(r"\\"):  # multiline math block :
                     latex["MathMultiline"] = True
                 else:  # single line math block or end of block
@@ -217,7 +218,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
 
             # Process math lines
             if latex["Math"]:
-                processed_lines.append(self.process_math_line(line, latex["MathMultiline"]))
+                processed_lines.append(self.process_math_line(line, latex))
                 continue
 
             # Only in bullet point lines:
@@ -263,24 +264,24 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
 
         return processed_lines
 
-    def process_math_line(self, line: str, multiline: bool) -> str:
+    def process_math_line(self, line: str, options: dict) -> str:
         """
         Process a line of LaTeX math and apply specific formatting rules.
 
         Args:
             line: The line of the LaTeX math to process.
-            multiline: A boolean flag indicating if the math block is multiline.
+            options: A dictionary containing formatting options for LaTeX math.
 
         Returns:
             The processed LaTeX math line with applied formatting rules.
         """
         symbols_needing_space = ["\Wrbf", "\Wlev", "\WtimeExner"]
 
-        if multiline:
+        if options["MathMultiline"]:
             # Align multiline equations to the left
             # (single line equations are already left-aligned)
-            start_idx = len(line) - len(line.lstrip())
-            line = f"{line[:start_idx]}&{line[start_idx:]}"
+            start_idx = options["Indent"]
+            line = f"{line[:start_idx]}& {line[start_idx:]}"
 
         # Add a small space character '\,' after symbols if followed by other
         # symbols starting with '\' and a letter
