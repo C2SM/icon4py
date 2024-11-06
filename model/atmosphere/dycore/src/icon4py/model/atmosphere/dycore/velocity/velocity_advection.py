@@ -583,17 +583,26 @@ class VelocityAdvection:
 
         self.levelmask = self.levmask
 
-        """
-        ddt_vn_apc_pc[ntnd] (0:nlev-1):
-            Compute the advection of normal wind at full levels (edge center).
-            ddt_vn_apc_pc[ntnd] = dKEH/dn + vt * (vorticity + coriolis) + w dvn/dz,
-            where vn is normal wind, vt is tangential wind, KEH is horizontal kinetic energy.
-            z_kin_hor_e is KEH at full levels (edge center).
-            zeta is vorticity at full levels (vertex). Its value at edge center is simply taken as average of vorticity at neighboring vertices.
-            w, which is vertical wind with contravariant correction, at edge center is obtained by linearly interpolating z_w_con_c_full at neighboring cells.
-            dvn/dz, the vertical derivative of normal wind, is computed by first order discretization from vn_ie.
-            TODO (Chia Rui): understand the coefficient coeff_gradekin
-        """
+        #                        &&= \kinehori{\n}{\e}{\k} (\Cgrad_0 - \Cgrad_1) + \kinehori{\n}{\c 1}{\k} \Cgrad_1 - \kinehori{\n}{\c 0}{\k} \Cgrad_0
+        #                          + \vt{\n}{\e}{\k} (\coriolis{\e} + 0.5 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k})
+
+        # scidoc:
+        # Outputs:
+        #  - ddt_vn_apc_pc[ntnd] :
+        #     $$
+        #     \advvn{\n}{\e}{\k} &&= \pdxn{\kinehori{}{}{}} + \vt{}{}{} (\vortvert{}{}{} + \coriolis{}) + \w{}{}{} \pdz{\vn{}{}{}}, \qquad \k \in [0, \nlev) \\
+        #                        &&= \kinehori{\n}{\e}{\k} (\Cgrad_0 - \Cgrad_1) + \kinehori{\n}{\c 1}{\k} \Cgrad_1 - \kinehori{\n}{\c 0}{\k} \Cgrad_0
+        #                        + \vt{\n}{\e}{\k} (\coriolis{\e} + 0.5 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k})
+        #     $$
+        #     Compute the advection of normal wind.
+        #     ddt_vn_apc_pc[ntnd] = dKEH/dn + vt * (vorticity + coriolis) + w dvn/dz,
+        #     where vn is normal wind, vt is tangential wind, KEH is horizontal kinetic energy.
+        #     z_kin_hor_e is KEH at full levels (edge center).
+        #     zeta is vorticity at full levels (vertex). Its value at edge center is simply taken as average of vorticity at neighboring vertices.
+        #     w, which is vertical wind with contravariant correction, at edge center is obtained by linearly interpolating z_w_con_c_full at neighboring cells.
+        #     dvn/dz, the vertical derivative of normal wind, is computed by first order discretization from vn_ie.
+        #     TODO (Chia Rui): understand the coefficient coeff_gradekin
+        #
         self._compute_advective_normal_wind_tendency(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
