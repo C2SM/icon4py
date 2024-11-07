@@ -369,8 +369,9 @@ class NumpyFieldsProvider(FieldProvider):
     """
     Computes a field defined by a numpy function.
 
-    TODO (halungge): need to specify a parameter source to be able to postpone evaluation:  paramters are mostly
+    TODO (halungge): - need to specify a parameter source to be able to postpone evaluation:  paramters are mostly
                     configuration values
+                    - need to able to access fields from several sources.
 
 
     Args:
@@ -378,7 +379,9 @@ class NumpyFieldsProvider(FieldProvider):
         domain: the compute domain used for the stencil computation
         fields: Seq[str] names under which the results fo the function will be registered
         deps: dict[str, str] input fields used for computing this stencil: the key is the variable name
-            used in the program and the value the name of the field it depends on.
+            used in the function and the value the name of the field it depends on.
+        connectivities: dict[str, Dimension] dict where the key is the variable named used in the
+            function and the value the sparse Dimension of the connectivity field
         params: scalar arguments for the function
     """
 
@@ -388,16 +391,15 @@ class NumpyFieldsProvider(FieldProvider):
         domain: dict[gtx.Dimension : tuple[DomainType, DomainType]],
         fields: Sequence[str],
         deps: dict[str, str],
-        offsets: Optional[dict[str, gtx.Dimension]] = None,
+        connectivities: Optional[dict[str, gtx.Dimension]] = None,
         params: Optional[dict[str, state_utils.ScalarType]] = None,
     ):
         self._func = func
         self._compute_domain = domain
-        self._offsets = offsets
         self._dims = domain.keys()
         self._fields: dict[str, Optional[state_utils.FieldType]] = {name: None for name in fields}
         self._dependencies = deps
-        self._offsets = offsets if offsets is not None else {}
+        self.connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
 
     def __call__(
@@ -419,7 +421,7 @@ class NumpyFieldsProvider(FieldProvider):
     ) -> None:
         self._validate_dependencies()
         args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
-        offsets = {k: grid_provider.grid.connectivities[v] for k, v in self._offsets.items()}
+        offsets = {k: grid_provider.grid.connectivities[v] for k, v in self._connectivities.items()}
         args.update(offsets)
         args.update(self._params)
         results = self._func(**args)
