@@ -408,7 +408,9 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(vertex_vertex_distance)
 
-        inverse_far_edge_distance_provider = self._inverse_field_provider(attrs.VERTEX_VERTEX_LENGTH)
+        inverse_far_edge_distance_provider = self._inverse_field_provider(
+            attrs.VERTEX_VERTEX_LENGTH
+        )
         self.register_provider(inverse_far_edge_distance_provider)
 
         edge_areas = factory.ProgramFieldProvider(
