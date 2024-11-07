@@ -303,7 +303,7 @@ def initialize(
     - load diagnostic and prognostic variables (serialized data)
     - setup the time loop
 
-    Args:
+    Parameters:
         file_path: Path to the serialized data.
         props: Processor properties.
         serialization_type: Serialization type.
@@ -311,6 +311,11 @@ def initialize(
         grid_id: Grid ID.
         grid_root: Grid root.
         grid_level: Grid level.
+
+    Returns:
+        TimeLoop: Time loop object.
+        DriverStates: Initial states for the driver run.
+        DriverParams: Parameters for the driver run.
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
