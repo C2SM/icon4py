@@ -6,12 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
 
-def builder(func):
-    """Use as decorator on builder functions."""
+from ._common import Swapping, chainable
 
-    def wrapper(self, *args, **kwargs):
-        func(self, *args, **kwargs)
-        return self
 
-    return wrapper
+__all__ = [
+    "chainable",
+    "Swapping",
+]
