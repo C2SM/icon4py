@@ -4,7 +4,7 @@ import numpy as np
 from typing import Final
 
 SIDE: Final = 1  # Length of each triangle side
-LABEL_TRIANGLES: Final = True  # Option to label each triangle center with its ID
+LABEL_TRIANGLES: Final = False  # Option to label each triangle center with its ID
 COLORS: Final = list(mcolors.TABLEAU_COLORS.values()) #= ['lightblue', 'lightsalmon', 'lightseagreen', 'lightcoral']
 AX_BORDER: Final = 0.05*SIDE  # Border around the axes
 
