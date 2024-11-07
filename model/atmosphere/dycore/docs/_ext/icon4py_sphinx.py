@@ -285,6 +285,10 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         else:
             # Remove white space except for the outer indent
             line = ' '*options["Indent"] + line.lstrip()
+        
+        if line.rstrip().endswith(r"\\"):
+            # add a more vertical space than the default
+            line = f"{line}[3pt]"
 
         # Add a small space character '\,' after symbols if followed by other
         # symbols starting with '\' and a letter
