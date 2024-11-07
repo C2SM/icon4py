@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import geometry as geom, vertical as v_grid
+from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 
 from icon4pytools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
@@ -166,8 +166,8 @@ def test_diffusion_wrapper_granule_inputs(
     # --- Expected objects that form inputs into init and run functions
     expected_icon_grid = icon_grid
     expected_dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    expected_edge_geometry: geom.EdgeParams = grid_savepoint.construct_edge_geometry()
-    expected_cell_geometry: geom.CellParams = grid_savepoint.construct_cell_geometry()
+    expected_edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    expected_cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     expected_interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),

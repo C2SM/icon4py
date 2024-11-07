@@ -14,6 +14,7 @@ import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.grid.geometry as geometry
+import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
@@ -445,8 +446,8 @@ class SolveNonhydro:
         metric_state_nonhydro: solve_nh_states.MetricStateNonHydro,
         interpolation_state: solve_nh_states.InterpolationState,
         vertical_params: v_grid.VerticalGrid,
-        edge_geometry: geometry.EdgeParams,
-        cell_geometry: geometry.CellParams,
+        edge_geometry: grid_states.EdgeParams,
+        cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
         backend: backend.Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),

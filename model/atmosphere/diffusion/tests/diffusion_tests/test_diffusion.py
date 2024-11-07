@@ -8,6 +8,7 @@
 import pytest
 
 import icon4py.model.common.dimension as dims
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common import settings
 from icon4py.model.common.decomposition import definitions
@@ -73,13 +74,13 @@ def _get_or_initialize(experiment, backend, name):
             extra_fields=gm.geometry,
             metadata=geometry_meta.attrs,
         )
-        cell_params = geometry.CellParams.from_global_num_cells(
+        cell_params = grid_states.CellParams.from_global_num_cells(
             cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
             cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
             area=geometry_.get(geometry_meta.CELL_AREA),
             global_num_cells=grid.global_num_cells,
         )
-        edge_params = geometry.EdgeParams(
+        edge_params = grid_states.EdgeParams(
             edge_center_lat=geometry_.get(geometry_meta.EDGE_LAT),
             edge_center_lon=geometry_.get(geometry_meta.EDGE_LON),
             tangent_orientation=geometry_.get(geometry_meta.TANGENT_ORIENTATION),
@@ -520,8 +521,8 @@ def test_run_diffusion_multiple_steps(
     # Diffusion initialization
     ######################################################################
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),

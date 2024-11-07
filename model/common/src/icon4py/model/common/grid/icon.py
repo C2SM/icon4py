@@ -114,6 +114,9 @@ class IconGrid(base.BaseGrid):
             ),
         }
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}: id={self._id}, R{self.global_properties.root}B{self.global_properties.level}"
+
     @utils.chainable
     def with_start_end_indices(
         self, dim: gtx.Dimension, start_indices: np.ndarray, end_indices: np.ndarray

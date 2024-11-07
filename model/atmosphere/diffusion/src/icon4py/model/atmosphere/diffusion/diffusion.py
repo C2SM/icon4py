@@ -15,6 +15,7 @@ import sys
 from typing import Final, Optional
 
 import gt4py.next as gtx
+import icon4py.model.common.grid.states as grid_states
 from gt4py.next import int32
 
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -361,8 +362,8 @@ class Diffusion:
         vertical_grid: v_grid.VerticalGrid,
         metric_state: diffusion_states.DiffusionMetricState,
         interpolation_state: diffusion_states.DiffusionInterpolationState,
-        edge_params: geometry.EdgeParams,
-        cell_params: geometry.CellParams,
+        edge_params: grid_states.EdgeParams,
+        cell_params: grid_states.CellParams,
         backend: backend.Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):

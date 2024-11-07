@@ -10,9 +10,8 @@ import re
 
 import pytest
 
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
-    geometry,
     grid_manager as gm,
     horizontal as h_grid,
     icon,
@@ -159,17 +158,3 @@ def test_grid_size(icon_grid):
     assert 10663 == icon_grid.size[dims.VertexDim]
     assert 20896 == icon_grid.size[dims.CellDim]
     assert 31558 == icon_grid.size[dims.EdgeDim]
-
-
-@pytest.mark.parametrize(
-    "grid_root,grid_level,expected",
-    [
-        (2, 4, 24907282236.708576),
-        (4, 9, 6080879.45232143),
-    ],
-)
-def test_mean_cell_area_calculation(grid_root, grid_level, expected):
-    params = icon.GlobalGridParams(grid_root, grid_level)
-    assert expected == geometry.compute_mean_cell_area_for_sphere(
-        constants.EARTH_RADIUS, params.num_cells
-    )

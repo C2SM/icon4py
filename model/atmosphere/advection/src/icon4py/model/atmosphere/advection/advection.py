@@ -11,6 +11,7 @@ from enum import Enum, auto
 import dataclasses
 import logging
 
+import icon4py.model.common.grid.states
 from gt4py.next import backend
 
 from icon4py.model.atmosphere.advection import (
@@ -372,8 +373,8 @@ def convert_config_to_horizontal_vertical_advection(
     interpolation_state: advection_states.AdvectionInterpolationState,
     least_squares_state: advection_states.AdvectionLeastSquaresState,
     metric_state: advection_states.AdvectionMetricState,
-    edge_params: geometry.EdgeParams,
-    cell_params: geometry.CellParams,
+    edge_params: icon4py.model.common.grid.states.EdgeParams,
+    cell_params: icon4py.model.common.grid.states.CellParams,
     backend: backend.Backend,
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
@@ -435,8 +436,8 @@ def convert_config_to_advection(
     interpolation_state: advection_states.AdvectionInterpolationState,
     least_squares_state: advection_states.AdvectionLeastSquaresState,
     metric_state: advection_states.AdvectionMetricState,
-    edge_params: geometry.EdgeParams,
-    cell_params: geometry.CellParams,
+    edge_params: icon4py.model.common.grid.states.EdgeParams,
+    cell_params: icon4py.model.common.grid.states.CellParams,
     backend: backend.Backend,
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     even_timestep: bool = False,
