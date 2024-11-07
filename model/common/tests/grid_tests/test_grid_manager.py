@@ -86,8 +86,8 @@ def test_grid_file_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
         assert parser.dimension(gm.DimensionName.CELL_NAME) == grid_savepoint.num(dims.CellDim)
         assert parser.dimension(gm.DimensionName.VERTEX_NAME) == grid_savepoint.num(dims.VertexDim)
         assert parser.dimension(gm.DimensionName.EDGE_NAME) == grid_savepoint.num(dims.EdgeDim)
-    except Exception:
-        pytest.fail()
+    except Exception as error:
+        pytest.fail(f"reading of dimension from netcdf failed: {error}")
     finally:
         parser.close()
 
