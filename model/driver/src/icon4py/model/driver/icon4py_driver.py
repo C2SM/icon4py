@@ -420,7 +420,7 @@ def initialize(
             prognostic_swp=prognostics_swp,
             diagnostic=diagnostic_state,
         ),
-        DriverParams(initial_divdamp_fac_o2),
+        DriverParams(divdamp_fac_o2=initial_divdamp_fac_o2),
     )
 
 
