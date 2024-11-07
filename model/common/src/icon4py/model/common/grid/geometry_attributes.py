@@ -161,20 +161,20 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%dual_cart_normal%x(3)",
         dtype=ta.wpfloat,
     ),
-    EDGE_NORMAL_V: dict(
-        standard_name=EDGE_NORMAL_V,
-        long_name="northward (zonal) component of edge normal",
-        units="radian",
-        dims=(dims.EdgeDim,),
-        icon_var_name="t_grid_edges%primal_normal%v1",
-        dtype=ta.wpfloat,
-    ),
     EDGE_NORMAL_U: dict(
         standard_name=EDGE_NORMAL_U,
-        long_name="eastward (meridional) component of edge normal",
+        long_name="eastward (zonal) component of edge normal",
         units="radian",
         dims=(dims.EdgeDim,),
         icon_var_name="t_grid_edges%primal_normal%v2",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_NORMAL_V: dict(
+        standard_name=EDGE_NORMAL_V,
+        long_name="northward (meridional) component of edge normal",
+        units="radian",
+        dims=(dims.EdgeDim,),
+        icon_var_name="t_grid_edges%primal_normal%v1",
         dtype=ta.wpfloat,
     ),
     EDGE_NORMAL_X: dict(
@@ -203,7 +203,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     EDGE_NORMAL_VERTEX_U: dict(
         standard_name=EDGE_NORMAL_VERTEX_U,
-        long_name="eastward (meridional) component of edge normal projected to vertex locations",
+        long_name="eastward (zonal) component of edge normal projected to vertex locations",
         units="radian",
         dims=(dims.EdgeDim, dims.E2C2VDim),
         icon_var_name="t_grid_edges%primal_normal_vert%v1",
@@ -211,7 +211,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     EDGE_NORMAL_VERTEX_V: dict(
         standard_name=EDGE_NORMAL_VERTEX_V,
-        long_name="northward (zonal) component of edge normal projected to vertex locations",
+        long_name="northward (meridional) component of edge normal projected to vertex locations",
         units="radian",
         dims=(dims.EdgeDim, dims.E2C2VDim),
         icon_var_name="t_grid_edges%primal_normal_vert%v2",
@@ -219,7 +219,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     EDGE_NORMAL_CELL_U: dict(
         standard_name=EDGE_NORMAL_CELL_U,
-        long_name="eastward (meridional) component of edge normal projected to neighbor cell centers",
+        long_name="eastward (zonal) component of edge normal projected to neighbor cell centers",
         units="radian",
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="t_grid_edges%primal_normal_cell%v1",
@@ -227,7 +227,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     EDGE_NORMAL_CELL_V: dict(
         standard_name=EDGE_NORMAL_CELL_V,
-        long_name="northward (zonal) component of edge normal projected to neighbor cell centers",
+        long_name="northward (meridional) component of edge normal projected to neighbor cell centers",
         units="radian",
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="t_grid_edges%primal_normal_cell%v2",
@@ -235,7 +235,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     EDGE_TANGENT_CELL_U: dict(
         standard_name=EDGE_TANGENT_CELL_U,
-        long_name="eastward (meridional) component of edge tangent projected to neighbor cell centers",
+        long_name="eastward (zonal) component of edge tangent projected to neighbor cell centers",
         units="radian",
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="t_grid_edges%dual_normal_cell%v1",
@@ -243,7 +243,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     EDGE_TANGENT_CELL_V: dict(
         standard_name=EDGE_TANGENT_CELL_V,
-        long_name="northward (zonal) component of edge tangent projected to neighbor cell centers",
+        long_name="northward (meridional) component of edge tangent projected to neighbor cell centers",
         units="radian",
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="t_grid_edges%dual_normal_cell%v2",
@@ -251,7 +251,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     EDGE_TANGENT_VERTEX_U: dict(
         standard_name=EDGE_TANGENT_VERTEX_U,
-        long_name="eastward (meridional) component of edge tangent projected to vertex locations",
+        long_name="eastward (zonal) component of edge tangent projected to vertex locations",
         units="radian",
         icon_var_name="t_grid_edges%dual_normal_vert%v1",
         dims=(dims.EdgeDim, dims.E2C2VDim),
@@ -259,7 +259,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     EDGE_TANGENT_VERTEX_V: dict(
         standard_name=EDGE_TANGENT_VERTEX_V,
-        long_name="eastward (meridional) component of edge tangent projected to vertex locations",
+        long_name="northward (meridional) component of edge tangent projected to vertex locations",
         units="radian",
         dims=(dims.EdgeDim, dims.E2C2VDim),
         icon_var_name="t_grid_edges%dual_normal_vert%v2",
@@ -276,7 +276,7 @@ attrs: dict[str, model.FieldMetaData] = {
 }
 
 
-def metadata_for_inverse(metadata: model.FieldMetaData) -> tuple[str, model.FieldMetaData]:
+def metadata_for_inverse(metadata: model.FieldMetaData) -> model.FieldMetaData:
     def inv_name(name: str):
         x = name.split("%", 1)
         x[-1] = f"inv_{x[-1]}"
@@ -294,4 +294,4 @@ def metadata_for_inverse(metadata: model.FieldMetaData) -> tuple[str, model.Fiel
         icon_var_name=inv_name(metadata.get("icon_var_name")),
     )
 
-    return standard_name, {k: v for k, v in inverse_meta.items() if v is not None}
+    return inverse_meta
