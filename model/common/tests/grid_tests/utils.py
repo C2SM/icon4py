@@ -105,9 +105,9 @@ def run_grid_manager(experiment_name: str, num_levels=65, transformation=None) -
     with gm.GridManager(
         transformation, file_name, v_grid.VerticalGridConfig(num_levels)
     ) as grid_manager:
-        grid_manager(limited_area=is_local(experiment_name))
+        grid_manager(limited_area=is_regional(experiment_name))
         return grid_manager
 
 
-def is_local(grid_file: str):
+def is_regional(grid_file: str):
     return grid_file == dt_utils.REGIONAL_EXPERIMENT

@@ -266,7 +266,7 @@ def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
         grid_file: name of grid file used
 
     """
-    if utils.is_local(grid_file):
+    if utils.is_regional(grid_file):
         assert has_invalid_index(e2c_table)
     else:
         assert not has_invalid_index(e2c_table)
@@ -518,7 +518,7 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
         ), f"end index wrong for domain {domain}"
 
     for domain in utils.valid_boundary_zones_for_dim(dim):
-        if not utils.is_local(grid_file):
+        if not utils.is_regional(grid_file):
             assert grid.start_index(domain) == 0
             assert grid.end_index(domain) == 0
         assert grid.start_index(domain) == serialized_grid.start_index(
