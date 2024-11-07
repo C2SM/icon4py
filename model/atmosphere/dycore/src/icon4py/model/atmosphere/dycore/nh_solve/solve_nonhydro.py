@@ -1045,6 +1045,7 @@ class SolveNonhydro:
             #  - $\Wlev$ : wgtfac_c
             #  - $\Wlev_{\k}$ : wgtfacq_c
             #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+            #  - $\exnerprime{\ntilde}{\c}{\k\pm1/2}$ : z_exner_ic
             #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
             #
             self._predictor_stencils_4_5_6(
