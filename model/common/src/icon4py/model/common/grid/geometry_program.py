@@ -470,11 +470,11 @@ def compute_cell_center_arc_distance(
     horizontal_end: gtx.int32,
 ):
     cell_center_arc_distance(
-        lat_neighbor_0=edge_neighbor_0_lat,
-        lon_neighbor_0=edge_neighbor_0_lon,
-        lat_neighbor_1=edge_neighbor_1_lat,
-        lon_neighbor_1=edge_neighbor_1_lon,
-        radius=radius,
+        edge_neighbor_0_lat,
+        edge_neighbor_0_lon,
+        edge_neighbor_1_lat,
+        edge_neighbor_1_lon,
+        radius,
         out=dual_edge_length,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
@@ -490,9 +490,9 @@ def compute_arc_distance_of_far_edges_in_diamond(
     horizontal_end: gtx.int32,
 ):
     arc_distance_of_far_edges_in_diamond(
-        vertex_lat=vertex_lat,
-        vertex_lon=vertex_lon,
-        radius=radius,
+        vertex_lat,
+        vertex_lon,
+        radius,
         out=far_vertex_distance,
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )

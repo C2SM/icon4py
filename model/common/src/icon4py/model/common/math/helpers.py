@@ -433,8 +433,8 @@ def arc_length(
     Args:
         x0: x coordinate of point_0
         x1: x coordinate of point_1
-        y0: y coordiante of point_0
-        y1: y coordiante of point_1
+        y0: y coordinate of point_0
+        y1: y coordinate of point_1
         z0: z coordinate of point_0
         z1: z coordinate of point_1
         radius: sphere radius
