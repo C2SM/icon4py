@@ -362,7 +362,7 @@ class GridGeometry(factory.FieldSource):
             params={"radius": self._grid.global_properties.radius},
         )
         self.register_provider(edge_length_provider)
-        name, meta = attrs.data_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
+        name, meta = attrs.metadata_for_inverse(attrs.attrs[attrs.EDGE_LENGTH])
         self._attrs.update({name: meta})
         inverse_edge_length = factory.ProgramFieldProvider(
             func=math_helpers.compute_inverse,
@@ -398,7 +398,7 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(dual_length_provider)
 
-        name, meta = attrs.data_for_inverse(attrs.attrs[attrs.DUAL_EDGE_LENGTH])
+        name, meta = attrs.metadata_for_inverse(attrs.attrs[attrs.DUAL_EDGE_LENGTH])
         self._attrs.update({name: meta})
         inverse_dual_length = factory.ProgramFieldProvider(
             func=math_helpers.compute_inverse,
@@ -429,7 +429,7 @@ class GridGeometry(factory.FieldSource):
             params={"radius": self._grid.global_properties.radius},
         )
         self.register_provider(vertex_vertex_distance)
-        name, meta = attrs.data_for_inverse(attrs.attrs[attrs.VERTEX_VERTEX_LENGTH])
+        name, meta = attrs.metadata_for_inverse(attrs.attrs[attrs.VERTEX_VERTEX_LENGTH])
         self._attrs.update({name: meta})
         inverse_far_edge_distance_provider = factory.ProgramFieldProvider(
             func=math_helpers.compute_inverse,
