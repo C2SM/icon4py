@@ -45,7 +45,7 @@ def is_embedded(backend) -> bool:
 
 
 def is_roundtrip(backend) -> bool:
-    return backend.name == "roundtrip" if backend else False
+    return backend.name in ["roundtrip", "gtir_python"] if backend else False
 
 
 def _shape(
