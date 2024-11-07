@@ -224,8 +224,7 @@ class TimeLoop:
         for dyn_substep in range(self._n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
-                f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}, "
-                f"nnow: {self._now}, nnew : {self._next}"
+                f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
             )
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
@@ -235,8 +234,6 @@ class TimeLoop:
                 dtime=self._substep_timestep,
                 l_recompute=do_recompute,
                 l_init=self._is_first_step_in_simulation,
-                nnew=self._next,
-                nnow=self._now,
                 lclean_mflx=do_clean_mflx,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
