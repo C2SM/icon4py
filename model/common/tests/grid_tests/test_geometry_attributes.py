@@ -21,9 +21,8 @@ from icon4py.model.common.grid import geometry_attributes
 )
 def test_data_for_inverse(name):
     metadata = geometry_attributes.attrs[name]
-    std_name, metadata_of_inverse = geometry_attributes.metadata_for_inverse(metadata)
+    metadata_of_inverse = geometry_attributes.metadata_for_inverse(metadata)
     assert "inverse_of" in metadata_of_inverse["standard_name"]
-    assert std_name == metadata_of_inverse["standard_name"]
     assert metadata["standard_name"] in metadata_of_inverse["standard_name"]
     assert metadata["units"] in metadata_of_inverse["units"]
     assert metadata_of_inverse["units"].endswith("-1")

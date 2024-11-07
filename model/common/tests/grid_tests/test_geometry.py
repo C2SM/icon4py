@@ -15,6 +15,7 @@ from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry as geometry,
     geometry_attributes as attrs,
+    horizontal as h_grid,
     icon,
     simple as simple,
 )
@@ -28,8 +29,8 @@ from . import utils
 grid_geometries = {}
 
 
-def get_grid_geometry(backend, grid_file):
-    def construct_decomposition_info(grid: icon.IconGrid):
+def get_grid_geometry(backend, grid_file) -> geometry.GridGeometry:
+    def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         edge_indices = alloc.allocate_indices(dims.EdgeDim, grid)
         owner_mask = np.ones((grid.num_edges,), dtype=bool)
         decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
@@ -149,7 +150,12 @@ def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, rt
     expected = grid_savepoint.inv_dual_edge_length()
     result = grid_geometry.get(f"inverse_of_{attrs.DUAL_EDGE_LENGTH}")
 
-    assert helpers.dallclose(result.ndarray, expected.ndarray, rtol=rtol)
+    # compared to ICON we overcompute, so we only compare the values from LATERAL_BOUNDARY_LEVEL_2
+    level = h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    start_index = grid_geometry.grid.start_index(level)
+    assert helpers.dallclose(
+        result.ndarray[start_index:], expected.ndarray[start_index:], rtol=rtol
+    )
 
 
 @pytest.mark.parametrize(
