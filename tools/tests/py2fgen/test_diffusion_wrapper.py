@@ -11,12 +11,12 @@ from unittest import mock
 import gt4py.next as gtx
 import numpy as np
 import pytest
+from icon4pytools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
+
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-
-from icon4pytools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
 
 from . import utils
 
@@ -84,8 +84,8 @@ def test_diffusion_wrapper_granule_inputs(
     cell_center_lon = grid_savepoint.cell_center_lon()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # --- Extract Metric State Parameters ---
     vct_a = grid_savepoint.vct_a()
@@ -446,8 +446,8 @@ def test_diffusion_wrapper_single_step(
     cell_center_lon = grid_savepoint.cell_center_lon()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # Metric state parameters
     vct_a = grid_savepoint.vct_a()

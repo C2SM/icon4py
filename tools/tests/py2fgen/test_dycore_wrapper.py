@@ -24,6 +24,8 @@ from unittest import mock
 
 import gt4py.next as gtx
 import pytest
+from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
+
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants, dimension as dims
@@ -35,8 +37,6 @@ from icon4py.model.common.test_utils import (
     helpers,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-
-from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 
 from . import utils
 
@@ -151,8 +151,8 @@ def test_dycore_wrapper_granule_inputs(
     f_e = grid_savepoint.f_e()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # metric state parameters
     bdy_halo_c = metrics_savepoint.bdy_halo_c()
@@ -832,8 +832,8 @@ def test_granule_solve_nonhydro_single_step_regional(
     f_e = grid_savepoint.f_e()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # metric state parameters
     bdy_halo_c = metrics_savepoint.bdy_halo_c()
@@ -1283,8 +1283,8 @@ def test_granule_solve_nonhydro_multi_step_regional(
     f_e = grid_savepoint.f_e()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # metric state parameters
     bdy_halo_c = metrics_savepoint.bdy_halo_c()
