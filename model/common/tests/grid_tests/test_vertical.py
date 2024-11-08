@@ -15,11 +15,7 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid import geometry, topography as topo
-from icon4py.model.common.test_utils.datatest_utils import (
-    GLOBAL_EXPERIMENT,
-    REGIONAL_EXPERIMENT,
-    GAUSS3D_EXPERIMENT,
-)
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.driver.test_cases import artificial_topography
 from icon4py.model.common.test_utils.helpers import dallclose
 
@@ -52,7 +48,7 @@ def test_damping_layer_calculation(max_h, damping_height, delta, flat_height):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_damping_layer_calculation_from_icon_input(
     grid_savepoint, experiment, damping_height, flat_height
 ):
@@ -125,7 +121,7 @@ def configure_vertical_grid(grid_savepoint, top_moist_threshold=22500.0):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, expected_moist_level", [(REGIONAL_EXPERIMENT, 0), (GLOBAL_EXPERIMENT, 25)]
+    "experiment, expected_moist_level", [(dt_utils.REGIONAL_EXPERIMENT, 0), (dt_utils.GLOBAL_EXPERIMENT, 25)]
 )
 def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_level):
     threshold = 22500.0
@@ -143,7 +139,7 @@ def test_interface_physical_height(grid_savepoint):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_flat_level_calculation(grid_savepoint, experiment, flat_height):
     vertical_grid = configure_vertical_grid(grid_savepoint)
 
@@ -153,7 +149,7 @@ def test_flat_level_calculation(grid_savepoint, experiment, flat_height):
     )
 
 
-@pytest.mark.parametrize("experiment, levels", [(REGIONAL_EXPERIMENT, 65), (GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(dt_utils.REGIONAL_EXPERIMENT, 65), (dt_utils.GLOBAL_EXPERIMENT, 60)])
 def test_grid_index_top(grid_savepoint, experiment, levels):
     vertical_grid = configure_vertical_grid(grid_savepoint)
     assert 0 == vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.TOP))
@@ -162,7 +158,7 @@ def test_grid_index_top(grid_savepoint, experiment, levels):
     assert 0 == vertical_grid.index(v_grid.Domain(dims.KHalfDim, v_grid.Zone.TOP))
 
 
-@pytest.mark.parametrize("experiment, levels", [(REGIONAL_EXPERIMENT, 65), (GLOBAL_EXPERIMENT, 60)])
+@pytest.mark.parametrize("experiment, levels", [(dt_utils.REGIONAL_EXPERIMENT, 65), (dt_utils.GLOBAL_EXPERIMENT, 60)])
 def test_grid_index_bottom(grid_savepoint, experiment, levels):
     vertical_grid = configure_vertical_grid(grid_savepoint)
     assert levels == vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.BOTTOM))
@@ -170,7 +166,7 @@ def test_grid_index_bottom(grid_savepoint, experiment, levels):
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_vct_a_vct_b_calculation_from_icon_input(
     grid_savepoint,
     experiment,
@@ -201,7 +197,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [GAUSS3D_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT])
 def test_init_vert_coord(
     grid_savepoint,
     interpolation_savepoint,
@@ -213,29 +209,16 @@ def test_init_vert_coord(
 
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
-    geofac_n2s = interpolation_savepoint.geofac_n2s()
-
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(dims.KDim),
-        #flat_height=flat_height,
-        #rayleigh_damping_height=damping_height,
     )
     vertical_geometry = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
     )
-
-    topography = artificial_topography.gaussian_hill(icon_grid, cell_geometry)
-    topography_smoothed = topo.compute_smooth_topo(
-        topography=topography,
-        grid=icon_grid,
-        cell_areas=cell_geometry.area,
-        geofac_n2s=geofac_n2s,
-        num_iterations=1,
-        backend=backend,
-    )
+    topography = metrics_savepoint.topo_c()
+    topography_smoothed = metrics_savepoint.topo_smt_c()
 
     z_ifc = v_grid.init_vert_coord(
         vct_a=vct_a,
