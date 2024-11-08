@@ -302,11 +302,9 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 @pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT])
 def test_init_vert_coord(
     grid_savepoint,
-    interpolation_savepoint,
     metrics_savepoint,
     experiment,
     icon_grid,
-    backend,
 ):
 
     vct_a = grid_savepoint.vct_a()
