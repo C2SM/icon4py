@@ -84,7 +84,7 @@ log = logging.getLogger(__name__)
         ),
     ],
 )
-def est_advection_run_single_step(
+def test_advection_run_single_step(
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -157,11 +157,18 @@ def est_advection_run_single_step(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiments, initial_conditions, velocity_field, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type,"
-    "vertical_advection_limiter, cfl_number, time_end, order_range, use_exact_solution, use_high_order_quadrature, enable_plots",
+    "experiments, experiment_ref, initial_conditions, velocity_field, horizontal_advection_type, horizontal_advection_limiter,"
+    "vertical_advection_type, vertical_advection_limiter, cfl_number, time_end, l1_acceptable_range, linf_acceptable_range",
     [
-        (
-            [dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2],
+        (  # test upwind on all grids
+            [
+                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1,
+                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2,
+                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_3,
+                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_4,
+                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_5,
+            ],
+            None,
             InitialConditions.GAUSSIAN_2D,
             VelocityField.CONSTANT,
             advection.HorizontalAdvectionType.UPWIND_1ST_ORDER,
@@ -170,120 +177,58 @@ def est_advection_run_single_step(
             advection.VerticalAdvectionLimiter.NO_LIMITER,
             1.0,
             1e-2,
-            [0.9, 1.1],
-            True,
+            [1 - 1e-4, 1 + 1e-4],
+            [1 - 2e-2, 1 + 2e-2],
         ),
-        (
+        (  # test second-order accuracy
             [dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2],
+            None,
             InitialConditions.GAUSSIAN_2D,
-            VelocityField.CONSTANT,
+            VelocityField.INCREASING_2D,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
             advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             advection.VerticalAdvectionType.NO_ADVECTION,
             advection.VerticalAdvectionLimiter.NO_LIMITER,
             1.0,
-            1e-2,
-            [1.8, 2.2],
-            True,
+            2e-2,
+            [2 - 3e-2, 2 + 3e-2],
+            [2 - 4e-2, 2 + 4e-2],
         ),
-        (
+        (  # test using reference solution
             [dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2],
+            dt_utils.TORUS_CONVERGENCE_EXPERIMENT_5,
             InitialConditions.GAUSSIAN_2D,
-            VelocityField.CONSTANT,
+            VelocityField.INCREASING_2D,
+            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            advection.VerticalAdvectionType.NO_ADVECTION,
+            advection.VerticalAdvectionLimiter.NO_LIMITER,
+            1.0,
+            2e-2,
+            [2 - 6e-2, 2 + 6e-2],
+            [2 - 9e-2, 2 + 9e-2],
+        ),
+        (  # test that the broken scheme is different
+            [dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2],
+            dt_utils.TORUS_CONVERGENCE_EXPERIMENT_5,
+            InitialConditions.GAUSSIAN_2D,
+            VelocityField.INCREASING_2D,
             advection.HorizontalAdvectionType.BROKEN_LINEAR_2ND_ORDER,
             advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             advection.VerticalAdvectionType.NO_ADVECTION,
             advection.VerticalAdvectionLimiter.NO_LIMITER,
             1.0,
-            1e-2,
-            [0.9, 1.1],
-            True,
+            2e-2,
+            [0, 1 + 5e-1],
+            [0, 1 + 5e-1],
         ),
-        # the next two tests work but take 10 mins each
-        # (
-        #    [dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2],
-        #    InitialConditions.GAUSSIAN_2D_OFFCENTER,
-        #    VelocityField.VORTEX_2D,
-        #    advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-        #    advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-        #    advection.VerticalAdvectionType.NO_ADVECTION,
-        #    advection.VerticalAdvectionLimiter.NO_LIMITER,
-        #    1.0,
-        #    2e0,
-        #    [2.0, 2.4],
-        #    True,
-        # ),
-        # (
-        #     [dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2],
-        #     InitialConditions.GAUSSIAN_2D_OFFCENTER,
-        #     VelocityField.VORTEX_2D,
-        #     advection.HorizontalAdvectionType.BROKEN_LINEAR_2ND_ORDER,
-        #     advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-        #     advection.VerticalAdvectionType.NO_ADVECTION,
-        #     advection.VerticalAdvectionLimiter.NO_LIMITER,
-        #     1.0,
-        #     2e0,
-        #     [0.3, 1.0],
-        #     True,
-        # ),
-        # the next two tests work and take 90 secs each
-        # (
-        #    [dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2],
-        #    InitialConditions.GAUSSIAN_2D_OFFCENTER,
-        #    VelocityField.VORTEX_2D,
-        #    advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-        #    advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-        #    advection.VerticalAdvectionType.NO_ADVECTION,
-        #    advection.VerticalAdvectionLimiter.NO_LIMITER,
-        #    1.0,
-        #    2e-1,
-        #    [2.0, 3.0],
-        #    True,
-        # ),
-        # (
-        #     [dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2],
-        #     InitialConditions.GAUSSIAN_2D_OFFCENTER,
-        #     VelocityField.VORTEX_2D,
-        #     advection.HorizontalAdvectionType.BROKEN_LINEAR_2ND_ORDER,
-        #     advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
-        #     advection.VerticalAdvectionType.NO_ADVECTION,
-        #     advection.VerticalAdvectionLimiter.NO_LIMITER,
-        #     1.0,
-        #     2e-1,
-        #     [0.8, 1.0],
-        #     True,
-        # ),
-        (
+        (  # test L1 convergence with discontinuous ICs
             [
                 dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1,
                 dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2,
                 dt_utils.TORUS_CONVERGENCE_EXPERIMENT_3,
-                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_4,
             ],
-            InitialConditions.GAUSSIAN_2D,
-            VelocityField.CONSTANT,
-            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
-            advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            advection.VerticalAdvectionType.NO_ADVECTION,
-            advection.VerticalAdvectionLimiter.NO_LIMITER,
-            1.0,
-            1e-2,
-            [1.8, 2.2],
-            False,
-            True,
-            True,
-        ),
-    ]
-    if 0
-    else [
-        (
-            [
-                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1,
-                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2,
-                # dt_utils.TORUS_CONVERGENCE_EXPERIMENT_3,
-                # dt_utils.TORUS_CONVERGENCE_EXPERIMENT_4,
-                # dt_utils.TORUS_CONVERGENCE_EXPERIMENT_5,
-            ],
+            None,
             InitialConditions.CIRCLE_2D,
             VelocityField.INCREASING_2D,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
@@ -292,10 +237,8 @@ def est_advection_run_single_step(
             advection.VerticalAdvectionLimiter.NO_LIMITER,
             1.0,
             2e-2,
-            [1.8, 2.2],
-            False,
-            True,
-            True,
+            [0, 1 + 5e-1],
+            None,
         ),
     ],
 )
@@ -303,7 +246,10 @@ def test_horizontal_advection_convergence(
     processor_props,
     ranked_data_path,
     backend,
+    use_high_order_quadrature,
+    enable_plots,
     experiments,
+    experiment_ref,
     initial_conditions,
     velocity_field,
     horizontal_advection_type,
@@ -312,10 +258,8 @@ def test_horizontal_advection_convergence(
     vertical_advection_limiter,
     cfl_number,
     time_end,
-    order_range,
-    use_exact_solution,
-    use_high_order_quadrature,
-    enable_plots,
+    l1_acceptable_range,
+    linf_acceptable_range,
 ):
     test_config = construct_test_config(
         initial_conditions=initial_conditions, velocity_field=velocity_field
@@ -331,14 +275,14 @@ def test_horizontal_advection_convergence(
     errors_linf = []
     lengths_min = []
 
-    if not use_exact_solution:
-        # obtain reference solution first
-        experiment_ref = dt_utils.TORUS_CONVERGENCE_EXPERIMENT_5
-        experiments.insert(0, experiment_ref)
-    else:
+    use_exact_solution = experiment_ref is None
+    if use_exact_solution:
         tracer_reference_high = None
         cell_center_x_high = None
         cell_center_y_high = None
+    else:
+        # obtain reference solution first
+        experiments.insert(0, experiment_ref)
 
     # run experiments sequentially
     for experiment in experiments:
@@ -372,13 +316,13 @@ def test_horizontal_advection_convergence(
             backend=backend,
         )
 
-        node_x = grid_savepoint.verts_vertex_x().asnumpy()
-        node_y = grid_savepoint.verts_vertex_y().asnumpy()
-        edges_center_x = grid_savepoint.edges_center_x().asnumpy()
-        edges_center_y = grid_savepoint.edges_center_y().asnumpy()
-        cell_center_x = grid_savepoint.cell_center_x().asnumpy()
-        cell_center_y = grid_savepoint.cell_center_y().asnumpy()
-        length_min = edge_geometry.primal_edge_lengths.asnumpy().min()
+        node_x = grid_savepoint.verts_vertex_x().ndarray
+        node_y = grid_savepoint.verts_vertex_y().ndarray
+        edges_center_x = grid_savepoint.edges_center_x().ndarray
+        edges_center_y = grid_savepoint.edges_center_y().ndarray
+        cell_center_x = grid_savepoint.cell_center_x().ndarray
+        cell_center_y = grid_savepoint.cell_center_y().ndarray
+        length_min = edge_geometry.primal_edge_lengths.ndarray.min()
         x_center, y_center, x_range, y_range = get_torus_dimensions(experiment)
 
         weights, nodes = prepare_torus_quadrature(
@@ -412,7 +356,7 @@ def test_horizontal_advection_convergence(
                 icon_grid,
                 node_x,
                 node_y,
-                p_tracer_now.asnumpy()[:, k],
+                p_tracer_now.ndarray[:, k],
                 2 * length_min,
                 out_file=f"{experiment}_{name}_start.pdf",
             )
@@ -454,7 +398,7 @@ def test_horizontal_advection_convergence(
             # note: no need to swap airmass fields here because they are equal
 
         if enable_plots:
-            tracer_end_k = p_tracer_now.asnumpy()[:, k]
+            tracer_end_k = p_tracer_now.ndarray[:, k]
             torus_helpers.plot_torus_plane(
                 icon_grid,
                 node_x,
@@ -492,7 +436,7 @@ def test_horizontal_advection_convergence(
         )
 
         if enable_plots:
-            tracer_reference_k = tracer_reference.asnumpy()[:, k]
+            tracer_reference_k = tracer_reference.ndarray[:, k]
             torus_helpers.plot_torus_plane(
                 icon_grid,
                 node_x,
@@ -546,51 +490,42 @@ def test_horizontal_advection_convergence(
         )
 
     # check observed rate of convergence
-    if 1:
+    if l1_acceptable_range is not None:
         linreg_l1 = linregress(xp.log(lengths_min), xp.log(errors_l1))
-        linreg_linf = linregress(xp.log(lengths_min), xp.log(errors_linf))
         p_l1 = linreg_l1.slope
-        p_linf = linreg_linf.slope
         log.debug(f"p_l1: {p_l1}")
+        assert l1_acceptable_range[0] <= p_l1 <= l1_acceptable_range[1]
+    if linf_acceptable_range is not None:
+        linreg_linf = linregress(xp.log(lengths_min), xp.log(errors_linf))
+        p_linf = linreg_linf.slope
         log.debug(f"p_linf: {p_linf}")
-        assert order_range[0] <= p_l1 <= order_range[1]
-        assert order_range[0] <= p_linf <= order_range[1]
-    else:
-        for i in range(n - 1):
-            # grid refinement factor
-            r = lengths_min[i] / lengths_min[i + 1]
-
-            # observed rate of convergence
-            p_l1 = math.log(errors_l1[i] / errors_l1[i + 1]) / math.log(r)
-            p_linf = math.log(errors_linf[i] / errors_linf[i + 1]) / math.log(r)
-            log.debug(f"p_l1: {p_l1}")
-            log.debug(f"p_linf: {p_linf}")
-
-            # tolerance check only for the highest resolution
-            if i == n - 2:
-                assert order_range[0] <= p_l1 <= order_range[1]
-                assert order_range[0] <= p_linf <= order_range[1]
+        assert linf_acceptable_range[0] <= p_linf <= linf_acceptable_range[1]
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiments, initial_conditions, use_high_order_quadrature, enable_plots",
+    "experiments, experiment_ref, initial_conditions",
     [
         (
-            [dt_utils.TORUS_CONVERGENCE_EXPERIMENT_5, dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1],
+            [
+                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1,
+                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_2,
+                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_3,
+                dt_utils.TORUS_CONVERGENCE_EXPERIMENT_4,
+            ],
+            dt_utils.TORUS_CONVERGENCE_EXPERIMENT_5,
             InitialConditions.GAUSSIAN_2D,
-            True,
-            True,
         ),
     ],
 )
-def est_torus_interpolation(
+def test_torus_interpolation(
     processor_props,
     ranked_data_path,
-    experiments,
-    initial_conditions,
     use_high_order_quadrature,
     enable_plots,
+    experiments,
+    experiment_ref,
+    initial_conditions,
 ):
     test_config = construct_test_config(initial_conditions=initial_conditions)
 
@@ -598,9 +533,15 @@ def est_torus_interpolation(
     grids = []
     nodes_x = []
     nodes_y = []
-    cell_centers_x = []
-    cell_centers_y = []
     lengths_min = []
+    weights_all = []
+    nodes_all = []
+
+    # obtain reference solution first
+    assert experiment_ref is not None
+    experiments.insert(0, experiment_ref)
+
+    n_exps = len(experiments)
 
     # run experiments sequentially
     for experiment in experiments:
@@ -615,11 +556,11 @@ def est_torus_interpolation(
         edge_geometry = grid_savepoint.construct_edge_geometry()
         cell_geometry = grid_savepoint.construct_cell_geometry()
 
-        node_x = grid_savepoint.verts_vertex_x().asnumpy()
-        node_y = grid_savepoint.verts_vertex_y().asnumpy()
-        cell_center_x = grid_savepoint.cell_center_x().asnumpy()
-        cell_center_y = grid_savepoint.cell_center_y().asnumpy()
-        length_min = edge_geometry.primal_edge_lengths.asnumpy().min()
+        node_x = grid_savepoint.verts_vertex_x().ndarray
+        node_y = grid_savepoint.verts_vertex_y().ndarray
+        cell_center_x = grid_savepoint.cell_center_x().ndarray
+        cell_center_y = grid_savepoint.cell_center_y().ndarray
+        length_min = edge_geometry.primal_edge_lengths.ndarray.min()
         x_center, y_center, x_range, y_range = get_torus_dimensions(experiment)
 
         weights, nodes = prepare_torus_quadrature(
@@ -632,7 +573,8 @@ def est_torus_interpolation(
             use_high_order_quadrature,
         )
 
-        p_tracer_now = construct_idealized_tracer(
+        k = 0
+        field = construct_idealized_tracer(
             test_config,
             icon_grid,
             x_center,
@@ -641,78 +583,72 @@ def est_torus_interpolation(
             y_range,
             weights,
             nodes,
+        ).ndarray[:, k]
+
+        if experiment == experiment_ref:
+            cell_center_x_high = cell_center_x
+            cell_center_y_high = cell_center_y
+            field_high = field
+            continue
+
+        field_interp = torus_helpers.interpolate_torus_plane(
+            cell_center_x_high,
+            cell_center_y_high,
+            field_high,
+            node_x,
+            node_y,
+            weights,
+            nodes,
         )
 
-        k = 0
-        fields.append(p_tracer_now.asnumpy()[:, k])
-        grids.append(icon_grid)
-        nodes_x.append(node_x)
-        nodes_y.append(node_y)
-        cell_centers_x.append(cell_center_x)
-        cell_centers_y.append(cell_center_y)
-        lengths_min.append(length_min)
-
-    if enable_plots:
-        for i in range(len(fields)):
+        if enable_plots:
             torus_helpers.plot_torus_plane(
-                grids[i],
-                nodes_x[i],
-                nodes_y[i],
-                fields[i],
-                2 * lengths_min[i],
-                out_file=f"original_{i}.pdf",
+                icon_grid,
+                node_x,
+                node_y,
+                field,
+                2 * length_min,
+                out_file=f"original_{experiment}.pdf",
+            )
+            torus_helpers.plot_torus_plane(
+                icon_grid,
+                node_x,
+                node_y,
+                field_interp,
+                2 * length_min,
+                out_file=f"interpolated_{experiment}.pdf",
+            )
+            torus_helpers.plot_torus_plane(
+                icon_grid,
+                node_x,
+                node_y,
+                field_interp - field,
+                2 * length_min,
+                out_file=f"diff_{experiment}.pdf",
             )
 
-    field_low = torus_helpers.interpolate_torus_plane(
-        cell_centers_x[0],
-        cell_centers_y[0],
-        fields[0],
-        nodes_x[1],
-        nodes_y[1],
-        weights,
-        nodes,
-    )
+        # compute errors
+        error_l1, error_linf = compute_relative_errors(field_interp, field)
+        assert math.isfinite(error_l1) and math.isfinite(error_linf)
+        log.debug(f"error_l1_{experiment}: {error_l1}")
+        log.debug(f"error_linf_{experiment}: {error_linf}")
 
-    if enable_plots:
-        torus_helpers.plot_torus_plane(
-            grids[1],
-            nodes_x[1],
-            nodes_y[1],
-            field_low,
-            2 * lengths_min[1],
-            out_file=f"interpolated.pdf",
-        )
-        torus_helpers.plot_torus_plane(
-            grids[1],
-            nodes_x[1],
-            nodes_y[1],
-            field_low - fields[1],
-            2 * lengths_min[1],
-            out_file=f"diff.pdf",
-        )
-
-    # compute errors
-    error_l1, error_linf = compute_relative_errors(field_low, fields[1])
-    assert math.isfinite(error_l1) and math.isfinite(error_linf)
-    log.debug(f"error_l1: {error_l1}")
-    log.debug(f"error_linf: {error_linf}")
-
-    # tolerance check
-    assert 0.0 <= error_l1 <= 1e-4
-    assert 0.0 <= error_linf <= 1e-4
+        # tolerance check
+        assert 0.0 <= error_l1 <= 1e-4
+        assert 0.0 <= error_linf <= 1e-4
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, initial_conditions, enable_plots",
-    [(dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, InitialConditions.CIRCLE_2D, True)],
+    "experiment, initial_conditions",
+    [(dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1, InitialConditions.CIRCLE_2D)],
 )
-def est_torus_quadrature(
+def test_torus_quadrature(
     processor_props,
     ranked_data_path,
+    enable_plots,
     experiment,
     initial_conditions,
-    enable_plots,
 ):
     test_config = construct_test_config(initial_conditions=initial_conditions)
 
@@ -727,11 +663,11 @@ def est_torus_quadrature(
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
 
-    node_x = grid_savepoint.verts_vertex_x().asnumpy()
-    node_y = grid_savepoint.verts_vertex_y().asnumpy()
-    cell_center_x = grid_savepoint.cell_center_x().asnumpy()
-    cell_center_y = grid_savepoint.cell_center_y().asnumpy()
-    length_min = edge_geometry.primal_edge_lengths.asnumpy().min()
+    node_x = grid_savepoint.verts_vertex_x().ndarray
+    node_y = grid_savepoint.verts_vertex_y().ndarray
+    cell_center_x = grid_savepoint.cell_center_x().ndarray
+    cell_center_y = grid_savepoint.cell_center_y().ndarray
+    length_min = edge_geometry.primal_edge_lengths.ndarray.min()
     x_center, y_center, x_range, y_range = get_torus_dimensions(experiment)
 
     weights, nodes = prepare_torus_quadrature(
@@ -744,7 +680,7 @@ def est_torus_quadrature(
         use_high_order_quadrature=True,
     )
 
-    # quadrature rules with negative weights should not be used
+    # nonnegativity check: quadrature rules with negative weights should not be used
     assert xp.all(weights >= 0.0)
 
     ics = construct_idealized_tracer(
@@ -759,7 +695,7 @@ def est_torus_quadrature(
     )
 
     k = 0
-    ics_k = ics.asnumpy()[:, k]
+    ics_k = ics.ndarray[:, k]
 
     if enable_plots:
         torus_helpers.plot_torus_plane(
@@ -776,6 +712,7 @@ def est_torus_quadrature(
             out_file="ics_quad.pdf",
         )
 
+    # monotonicity check: ICs are in [0,1] ==> all values should be in [0,1]
     tol = 1e-16
-    assert xp.all(0.0 - tol <= ics_k)
-    assert xp.all(ics_k <= 1.0 + tol)
+    assert xp.min(ics_k) >= 0.0 - tol
+    assert xp.max(ics_k) <= 1.0 + tol

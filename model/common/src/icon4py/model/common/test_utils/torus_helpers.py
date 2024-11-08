@@ -41,10 +41,10 @@ def create_mpl_triangulation(grid, node_x, node_y, length_max):
     # remove triangles with edge length smaller greater than some max length
     # note: this is necessary to avoid plotting artifacts due to the periodicity of torus grids
     triangles = tri.triangles
-    tri_x = node_x[triangles] - xp.roll(node_x[triangles], 1, axis=1)
-    tri_y = node_y[triangles] - xp.roll(node_y[triangles], 1, axis=1)
-    tri_max = xp.max(xp.sqrt(tri_x**2 + tri_y**2), axis=1)
-    tri.set_mask(tri_max > length_max)
+    node_x_diff = node_x[triangles] - xp.roll(node_x[triangles], 1, axis=1)
+    node_y_diff = node_y[triangles] - xp.roll(node_y[triangles], 1, axis=1)
+    node_dist_max = xp.max(xp.sqrt(node_x_diff**2 + node_y_diff**2), axis=1)
+    tri.set_mask(node_dist_max > length_max)
 
     return tri
 
@@ -126,8 +126,8 @@ def plot_torus_plane_quad(grid, node_x, node_y, values, length_max, weights, nod
     tri = create_mpl_triangulation(grid, node_x, node_y, length_max)
     fig, ax = plot_mpl_triangulation(tri, values)
     ax.scatter(
-        nodes[:, :, 0].reshape(-1),
-        nodes[:, :, 1].reshape(-1),
+        nodes[0, :, :].reshape(-1),
+        nodes[1, :, :].reshape(-1),
         marker=".",
         s=0.1,
         c=weights.reshape(-1),
@@ -252,12 +252,12 @@ def interpolate_torus_plane(
     )
 
     # evaluate fit on low-res grid
-    nq = weights.shape[1]
-    nc = nodes.shape[0]
+    nq = weights.shape[0]
+    nc = nodes.shape[2]
     vals_low = xp.zeros(nc)
     for i in range(nq):
-        nodes_flat = xp.column_stack((nodes[:, i, 0], nodes[:, i, 1]))
-        vals_low += weights[:, i] * fit(nodes_flat)
+        nodes_flat = xp.stack((nodes[0, i, :], nodes[1, i, :]), axis=1)
+        vals_low += weights[i, :] * fit(nodes_flat)
 
     return vals_low
 
@@ -279,75 +279,31 @@ def prepare_torus_quadratic_quadrature(
     Usage:
         The return values of this function are meant to be used for setting cell averages on torus grids.
         A two-dimensional scalar function f(x,y) can be projected onto a torus plane array arr as follows:
-            arr = xp.sum(weights * f(nodes[:,:,0], nodes[:,:,1]), axis=1)
+            arr = xp.sum(weights * f(nodes[0,:,:], nodes[1,:,:]), axis=0)
 
     """
-    # numpy stores data in row major order
     alpha = xp.array([[0.5, 0, 0.5], [0.5, 0.5, 0], [0, 0.5, 0.5]])
-    weights = xp.array([1 / 3, 1 / 3, 1 / 3])
-
-    nc = grid.num_cells
-    n_points = weights.size
-
-    weights = xp.tile(weights, (nc, 1))
-    nodes = xp.zeros((nc, n_points, 2))
-
-    c2v = grid.connectivities[dims.C2VDim]
-    node_x_c2v = node_x[c2v]
-    node_y_c2v = node_y[c2v]
-
-    for jc in range(nc):  # loop over cells
-        for jn in range(n_points):  # loop over quadrature points
-            nodes[jc, jn, 0] = xp.dot(alpha[jn, :], node_x_c2v[jc, :])
-            nodes[jc, jn, 1] = xp.dot(alpha[jn, :], node_y_c2v[jc, :])
-        # revert to cell centers for degenerate triangles at the domain boundary due to periodicity
-        for i in range(3):
-            ip1 = (i + 1) % 3
-            node_dist = xp.sqrt(
-                (node_x_c2v[jc, i] - node_x_c2v[jc, ip1]) ** 2
-                + (node_y_c2v[jc, i] - node_y_c2v[jc, ip1]) ** 2
-            )
-            if node_dist > 2.0 * length_min:
-                weights[jc, :] = 1 / n_points
-                nodes[jc, :, 0] = cell_center_x[jc]
-                nodes[jc, :, 1] = cell_center_y[jc]
-                break
-
-    return weights, nodes
-
-
-def prepare_torus_cubic_quadrature(grid, node_x, node_y, cell_center_x, cell_center_y, length_min):
-    # note: this only precomputes weights and nodes, i.e. it does not account for the cell area
-
-    # numpy stores data in row major order
-    alpha = xp.array([[1 / 3, 1 / 3, 1 / 3], [0.2, 0.2, 0.6], [0.6, 0.2, 0.2], [0.2, 0.6, 0.2]])
-    weights = xp.array([-27 / 48, 25 / 48, 25 / 48, 25 / 48])
+    weights_single = xp.array([1 / 3, 1 / 3, 1 / 3])
 
     n_cells = grid.num_cells
-    n_points = weights.size
+    n_points = weights_single.size
 
-    weights = xp.tile(weights, (n_cells, 1))
-    nodes = xp.zeros((n_cells, n_points, 2))
+    weights = xp.tile(weights_single[:, None], (1, n_cells))
+    nodes = xp.zeros((2, n_points, n_cells))
 
     c2v = grid.connectivities[dims.C2VDim]
     node_x_c2v = node_x[c2v]
     node_y_c2v = node_y[c2v]
 
-    for jc in range(n_cells):  # loop over cells
-        for nq in range(n_points):  # loop over quadrature points
-            nodes[jc, nq, 0] = xp.dot(alpha[nq, :], node_x_c2v[jc, :])
-            nodes[jc, nq, 1] = xp.dot(alpha[nq, :], node_y_c2v[jc, :])
-        # account for degenerate triangles at the domain edges
-        for i in range(3):
-            ip1 = (i + 1) % 3
-            node_dist = xp.sqrt(
-                (node_x_c2v[jc, i] - node_x_c2v[jc, ip1]) ** 2
-                + (node_y_c2v[jc, i] - node_y_c2v[jc, ip1]) ** 2
-            )
-            if node_dist > 2.0 * length_min:
-                weights[jc, :] = 1 / n_points
-                nodes[jc, :, 0] = cell_center_x[jc]
-                nodes[jc, :, 1] = cell_center_y[jc]
-                break
+    nodes[0, :, :] = xp.matmul(alpha, node_x_c2v.T)
+    nodes[1, :, :] = xp.matmul(alpha, node_y_c2v.T)
+
+    # revert to cell centers for degenerate triangles at the domain boundary due to periodicity
+    node_x_diff = node_x_c2v - xp.roll(node_x_c2v, 1, axis=1)
+    node_y_diff = node_y_c2v - xp.roll(node_y_c2v, 1, axis=1)
+    node_dist_max = xp.max(xp.sqrt(node_x_diff**2 + node_y_diff**2), axis=1)
+    mask = node_dist_max > 2.0 * length_min
+    weights[:, mask] = 1 / n_points
+    nodes[:, :, mask] = xp.stack((cell_center_x[None, mask], cell_center_y[None, mask]))
 
     return weights, nodes

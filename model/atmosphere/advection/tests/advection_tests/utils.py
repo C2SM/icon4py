@@ -192,8 +192,8 @@ def construct_idealized_prep_adv(
 ) -> advection_states.AdvectionPrepAdvState:
     # note: since we assume that the airmass is constant 1.0, the mass flux equals the velocity
 
-    primal_normal_x = edge_geometry.primal_normal[0].asnumpy()
-    primal_normal_y = edge_geometry.primal_normal[1].asnumpy()
+    primal_normal_x = edge_geometry.primal_normal[0].ndarray
+    primal_normal_y = edge_geometry.primal_normal[1].ndarray
 
     # impose 2D velocity field at time n+1/2 as required by the numerical scheme
     u, v = get_idealized_velocity_field(
@@ -224,9 +224,9 @@ def construct_idealized_tracer(
     nodes,
 ) -> fa.CellKField[ta.wpfloat]:
     # impose tracer ICs at the horizontal grid center
-    x = nodes[:, :, 0] - x_center
-    y = nodes[:, :, 1] - y_center
-    tracer = xp.sum(weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=1)
+    x = nodes[0, :, :] - x_center
+    y = nodes[1, :, :] - y_center
+    tracer = xp.sum(weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0)
     log_dbg(tracer, "tracer")
 
     tracer = xp.repeat(xp.expand_dims(tracer, axis=-1), icon_grid.num_levels, axis=1)
@@ -260,26 +260,26 @@ def construct_idealized_tracer_reference(
                 u, v = get_idealized_velocity_field(
                     test_config, x_range, y_range, edges_center_x, edges_center_y, time, time_end
                 )
-                x = nodes[:, :, 0] - (x_center + u * time)
-                y = nodes[:, :, 1] - (y_center + v * time)
+                x = nodes[0, :, :] - (x_center + u * time)
+                y = nodes[1, :, :] - (y_center + v * time)
                 tracer = xp.sum(
-                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=1
+                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
                 )
             case VelocityField.VORTEX_2D:
                 # ICs
-                x = nodes[:, :, 0] - x_center
-                y = nodes[:, :, 1] - y_center
+                x = nodes[0, :, :] - x_center
+                y = nodes[1, :, :] - y_center
                 tracer = xp.sum(
-                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=1
+                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
                 )
             case VelocityField.INCREASING_2D:
                 # shifted and deformed ICs
                 et = xp.exp(time)
                 emt = xp.exp(-time)
-                x = -emt * (-x_range + x_range * et - x_range * time - nodes[:, :, 0]) - x_center
-                y = -y_range + y_range * et - y_range * et * time + nodes[:, :, 1] * et - y_center
+                x = -emt * (-x_range + x_range * et - x_range * time - nodes[0, :, :]) - x_center
+                y = -y_range + y_range * et - y_range * et * time + nodes[1, :, :] * et - y_center
                 tracer = xp.sum(
-                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=1
+                    weights * get_idealized_ICs(test_config, x, y, x_range, y_range), axis=0
                 )
             case _:
                 raise NotImplementedError(
@@ -288,7 +288,7 @@ def construct_idealized_tracer_reference(
     else:
         # use high-resolution numerical solution
         k = 0
-        reference_solution_k = reference_solution.asnumpy()[:, k]
+        reference_solution_k = reference_solution.ndarray[:, k]
         tracer = torus_helpers.interpolate_torus_plane(
             cell_center_x_high,
             cell_center_y_high,
@@ -406,8 +406,8 @@ def prepare_torus_quadrature(
         )
     else:
         # use cell centers for one-point quadrature rule
-        weights = xp.ones_like(cell_center_x).reshape((-1, 1))
-        nodes = xp.stack((cell_center_x, cell_center_y), axis=-1).reshape((-1, 1, 2))
+        weights = xp.ones_like(cell_center_x).reshape((1, -1))
+        nodes = xp.stack((cell_center_x, cell_center_y)).reshape((2, 1, -1))
 
     return weights, nodes
 
