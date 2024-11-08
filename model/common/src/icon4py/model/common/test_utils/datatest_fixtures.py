@@ -43,20 +43,31 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+        advection_uri = None
         if experiment == dt_utils.GLOBAL_EXPERIMENT:
             uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
         elif experiment == dt_utils.JABW_EXPERIMENT:
             uri = dt_utils.DATA_URIS_JABW[processor_props.comm_size]
         elif experiment == dt_utils.GAUSS3D_EXPERIMENT:
             uri = dt_utils.DATA_URIS_GAUSS3D[processor_props.comm_size]
+        elif experiment == dt_utils.WEISMAN_KLEMP_EXPERIMENT:
+            uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
         else:
             uri = dt_utils.DATA_URIS[processor_props.comm_size]
+            advection_uri = dt_utils.DATA_URIS_ADVECTION.get(processor_props.comm_size)
 
         data_file = ranked_data_path.joinpath(
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
             data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
+            if advection_uri:
+                advection_path = dt_utils.get_datapath_for_experiment(
+                    ranked_data_path, f"{experiment}/advection"
+                )
+                data.download_and_extract(
+                    advection_uri, ranked_data_path, advection_path, f"advection_{data_file}"
+                )
         if processor_props.comm:
             processor_props.comm.barrier()
     except KeyError as err:
@@ -69,6 +80,12 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 def data_provider(download_ser_data, ranked_data_path, experiment, processor_props):
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props)
+
+
+@pytest.fixture
+def data_provider_advection(download_ser_data, ranked_data_path, experiment, processor_props):
+    data_path = dt_utils.get_datapath_for_experiment_advection(ranked_data_path, experiment)
+    return dt_utils.create_icon_serial_data_provider_advection(data_path, processor_props)
 
 
 @pytest.fixture
@@ -221,6 +238,39 @@ def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit):
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.from_savepoint_nonhydro_step_exit(date=step_date_exit, jstep=jstep_exit)
+
+
+@pytest.fixture
+def savepoint_diffusion_init(
+    data_provider,  # imported fixtures data_provider
+    linit,  # imported fixtures linit
+    step_date_init,  # imported fixtures data_provider
+):
+    """
+    Load data from ICON savepoint at start of diffusion module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_date_init'
+    fixture, passing 'step_date_init=<iso_string>'
+
+    linit flag can be set by overriding the 'linit' fixture
+    """
+    return data_provider.from_savepoint_diffusion_init(linit=linit, date=step_date_init)
+
+
+@pytest.fixture
+def savepoint_diffusion_exit(
+    data_provider,  # imported fixtures data_provider`
+    linit,  # imported fixtures linit`
+    step_date_exit,  # imported fixtures step_date_exit`
+):
+    """
+    Load data from ICON savepoint at exist of diffusion module.
+
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    sp = data_provider.from_savepoint_diffusion_exit(linit=linit, date=step_date_exit)
+    return sp
 
 
 @pytest.fixture

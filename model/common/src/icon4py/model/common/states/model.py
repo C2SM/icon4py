@@ -5,8 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-
 import dataclasses
 import functools
 from typing import Protocol, TypedDict, Union, runtime_checkable

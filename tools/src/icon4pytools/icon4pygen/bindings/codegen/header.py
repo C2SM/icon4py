@@ -13,8 +13,8 @@ from gt4py import eve
 from gt4py.eve import Node
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator, format_source
 
+from icon4pytools.common.utils import write_string
 from icon4pytools.icon4pygen.bindings.entities import Field
-from icon4pytools.icon4pygen.bindings.utils import write_string
 
 
 run_func_declaration = as_jinja(

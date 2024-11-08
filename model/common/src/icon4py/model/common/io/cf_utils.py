@@ -29,10 +29,10 @@ COARDS_T_POS: Final[int] = 0
 COARDS_Z_POS: Final[int] = 1
 HORIZONTAL_POS: Final[int] = 2
 """
-CF conventions encourage to use the COARDS conventions for the order of the dimensions: 
-    `T` (time), 
-    `Z` (height or depth), 
-    `Y` (latitude), 
+CF conventions encourage to use the COARDS conventions for the order of the dimensions:
+    `T` (time),
+    `Z` (height or depth),
+    `Y` (latitude),
     `X` (longitude).
 In the unstructured case `Y` and `X`  combine to the horizontal dimension.
 """

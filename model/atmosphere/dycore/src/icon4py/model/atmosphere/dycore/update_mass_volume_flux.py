@@ -5,19 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
-
-
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
 
 
 @field_operator
@@ -37,7 +30,7 @@ def _update_mass_volume_flux(
     return mass_flx_ic_wp, vol_flx_ic_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def update_mass_volume_flux(
     z_contr_w_fl_l: fa.CellKField[wpfloat],
     rho_ic: fa.CellKField[wpfloat],
@@ -46,10 +39,10 @@ def update_mass_volume_flux(
     mass_flx_ic: fa.CellKField[wpfloat],
     vol_flx_ic: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _update_mass_volume_flux(
         z_contr_w_fl_l,
@@ -61,7 +54,7 @@ def update_mass_volume_flux(
         r_nsubsteps,
         out=(mass_flx_ic, vol_flx_ic),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

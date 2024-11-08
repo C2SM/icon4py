@@ -9,7 +9,7 @@
 import pytest
 
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common import constants as constants, dimension as dims
+from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.diagnostic_calculations.stencils import (
     diagnose_pressure as pressure,
     diagnose_surface_pressure as surface_pressure,
@@ -18,8 +18,12 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
 from icon4py.model.common.interpolation.stencils import (
     edge_2_cell_vector_rbf_interpolation as rbf,
 )
-from icon4py.model.common.states import diagnostic_state as diagnostics, prognostic_state
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers as helpers
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state,
+    tracer_state as tracers,
+)
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 
 
 @pytest.mark.datatest
@@ -45,6 +49,7 @@ def test_diagnose_temperature(
     )
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        virtual_temperature=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
         pressure=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
         pressure_ifc=helpers.zero_field(
             icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}
@@ -52,20 +57,41 @@ def test_diagnose_temperature(
         u=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
         v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
+    tracer_state = tracers.TracerState(
+        qv=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qc=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qr=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qi=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qs=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qg=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+    )
 
-    temperature.diagnose_temperature(
+    temperature.diagnose_virtual_temperature_and_temperature(
+        tracer_state.qv,
+        tracer_state.qc,
+        tracer_state.qr,
+        tracer_state.qi,
+        tracer_state.qs,
+        tracer_state.qg,
         prognostic_state_now.theta_v,
         prognostic_state_now.exner,
+        diagnostic_state.virtual_temperature,
         diagnostic_state.temperature,
-        icon_grid.start_index(domain=h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR)),
-        icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.END)),
-        0,
-        icon_grid.num_levels,
+        phy_const.RV_O_RD_MINUS_1,
+        horizontal_start=0,
+        horizontal_end=icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.END)),
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
         offset_provider={},
     )
 
+    # only temperature is tested because there is no moisture in the JW test. i.e. temperature = virtual_temperature
     assert helpers.dallclose(
         diagnostic_state.temperature.asnumpy(),
+        icon_diagnostics_output_sp.temperature().asnumpy(),
+    )
+    assert helpers.dallclose(
+        diagnostic_state.virtual_temperature.asnumpy(),
         icon_diagnostics_output_sp.temperature().asnumpy(),
     )
 
@@ -99,6 +125,7 @@ def test_diagnose_meridional_and_zonal_winds(
         ),
         u=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
         v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        virtual_temperature=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
     cell_domain = h_grid.domain(dims.CellDim)
     rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
@@ -158,6 +185,7 @@ def test_diagnose_pressure(
     )
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=sp.temperature(),
+        virtual_temperature=sp.temperature(),
         pressure=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
         pressure_ifc=helpers.zero_field(
             icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}
@@ -169,13 +197,13 @@ def test_diagnose_pressure(
     cell_domain = h_grid.domain(dims.CellDim)
     surface_pressure.diagnose_surface_pressure(
         prognostic_state_now.exner,
-        diagnostic_state.temperature,
+        diagnostic_state.virtual_temperature,
         data_provider.from_metrics_savepoint().ddqz_z_full(),
         diagnostic_state.pressure_ifc,
-        constants.CPD_O_RD,
-        constants.P0REF,
-        constants.GRAV_O_RD,
-        horizontal_start=icon_grid.start_index(cell_domain(h_grid.Zone.INTERIOR)),
+        phy_const.CPD_O_RD,
+        phy_const.P0REF,
+        phy_const.GRAV_O_RD,
+        horizontal_start=0,
         horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=icon_grid.num_levels,
         vertical_end=icon_grid.num_levels + 1,
@@ -184,20 +212,20 @@ def test_diagnose_pressure(
 
     pressure.diagnose_pressure(
         data_provider.from_metrics_savepoint().ddqz_z_full(),
-        diagnostic_state.temperature,
-        diagnostic_state.pressure_sfc,
+        diagnostic_state.virtual_temperature,
+        diagnostic_state.surface_pressure,
         diagnostic_state.pressure,
         diagnostic_state.pressure_ifc,
-        constants.GRAV_O_RD,
-        icon_grid.start_index(cell_domain(h_grid.Zone.INTERIOR)),
-        icon_grid.end_index(cell_domain(h_grid.Zone.END)),
-        0,
-        icon_grid.num_levels,
+        phy_const.GRAV_O_RD,
+        horizontal_start=0,
+        horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
         offset_provider={},
     )
 
     assert helpers.dallclose(
-        diagnostic_state.pressure_sfc.asnumpy(),
+        diagnostic_state.surface_pressure.asnumpy(),
         icon_diagnostics_output_sp.pressure_sfc().asnumpy(),
     )
 

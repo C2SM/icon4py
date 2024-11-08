@@ -36,9 +36,22 @@ repos:
         pass_filenames: false
         always_run: true
 
+      - id: run-atmosphere-subgrid_scale_physics-microphysics-precommit
+        name: Run Model Atmosphere Subgrid_scale_physics Microphysics Pre-commit
+        entry: pre-commit run --config model/atmosphere/subgrid_scale_physics/microphysics/.pre-commit-config.yaml --all-files
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: run-tools-precommit
         name: Run Tools Pre-commit
         entry: pre-commit run --config tools/.pre-commit-config.yaml --all-files
         language: system
         pass_filenames: false
         always_run: true
+
+  - repo: https://github.com/gauge-sh/tach-pre-commit
+    rev: v0.10.7
+    hooks:
+    - id: tach
+      name: Check inter-package dependencies

@@ -9,38 +9,12 @@
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
 
 
-def mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
-    """Create configuration matching the mch_chR04b09_dsl experiment."""
-    config = solve_nh.NonHydrostaticConfig(
-        ndyn_substeps_var=ndyn_substeps,
-        divdamp_order=24,
-        iau_wgt_dyn=1.0,
-        divdamp_fac=0.004,
-        max_nudging_coeff=0.075,
-    )
-    return config
-
-
-def exclaim_ape_nonhydrostatic_config(ndyn_substeps):
-    """Create configuration for EXCLAIM APE experiment."""
-    return solve_nh.NonHydrostaticConfig(
-        rayleigh_coeff=0.1,
-        divdamp_order=24,
-        ndyn_substeps_var=ndyn_substeps,
-    )
-
-
-def construct_config(name: str, ndyn_substeps: int = 5):
-    if name.lower() in "mch_ch_r04b09_dsl":
-        return mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps)
-    elif name.lower() in "exclaim_ape_r02b04":
-        return exclaim_ape_nonhydrostatic_config(ndyn_substeps)
-
-
-def construct_interpolation_state_for_nonhydro(
+def construct_interpolation_state(
     savepoint: sb.InterpolationSavepoint,
 ) -> solve_nh_states.InterpolationState:
     grg = savepoint.geofac_grg()
@@ -64,7 +38,7 @@ def construct_interpolation_state_for_nonhydro(
     )
 
 
-def construct_nh_metric_state(
+def construct_metric_state(
     savepoint: sb.MetricSavepoint, num_k_lev
 ) -> solve_nh_states.MetricStateNonHydro:
     return solve_nh_states.MetricStateNonHydro(
@@ -104,3 +78,87 @@ def construct_nh_metric_state(
         coeff2_dwdz=savepoint.coeff2_dwdz(),
         coeff_gradekin=savepoint.coeff_gradekin(),
     )
+
+
+def construct_solve_nh_config(name: str, ndyn: int = 5):
+    if name.lower() in "mch_ch_r04b09_dsl":
+        return _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn)
+    elif name.lower() in "exclaim_ape_r02b04":
+        return _exclaim_ape_nonhydrostatic_config(ndyn)
+
+
+def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn: int):
+    """Create configuration matching the mch_chR04b09_dsl experiment."""
+    config = solve_nh.NonHydrostaticConfig(
+        ndyn_substeps_var=ndyn,
+        divdamp_order=24,
+        iau_wgt_dyn=1.0,
+        divdamp_fac=0.004,
+        max_nudging_coeff=0.075,
+    )
+    return config
+
+
+def _exclaim_ape_nonhydrostatic_config(ndyn: int):
+    """Create configuration for EXCLAIM APE experiment."""
+    return solve_nh.NonHydrostaticConfig(
+        rayleigh_coeff=0.1,
+        divdamp_order=24,
+        ndyn_substeps_var=ndyn,
+    )
+
+
+def create_vertical_params(
+    vertical_config: v_grid.VerticalGridConfig, sp: sb.IconSerialDataProvider
+):
+    return v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=sp.vct_a(),
+        vct_b=sp.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
+    )
+
+
+def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
+    return solve_nh_states.DiagnosticStateNonHydro(
+        theta_v_ic=init_savepoint.theta_v_ic(),
+        exner_pr=init_savepoint.exner_pr(),
+        rho_ic=init_savepoint.rho_ic(),
+        ddt_exner_phy=init_savepoint.ddt_exner_phy(),
+        grf_tend_rho=init_savepoint.grf_tend_rho(),
+        grf_tend_thv=init_savepoint.grf_tend_thv(),
+        grf_tend_w=init_savepoint.grf_tend_w(),
+        mass_fl_e=init_savepoint.mass_fl_e(),
+        ddt_vn_phy=init_savepoint.ddt_vn_phy(),
+        grf_tend_vn=init_savepoint.grf_tend_vn(),
+        ddt_vn_apc_ntl1=init_savepoint.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=init_savepoint.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=init_savepoint.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=init_savepoint.ddt_w_adv_pc(2),
+        vt=init_savepoint.vt(),
+        vn_ie=init_savepoint.vn_ie(),
+        w_concorr_c=init_savepoint.w_concorr_c(),
+        rho_incr=None,  # sp.rho_incr(),
+        vn_incr=None,  # sp.vn_incr(),
+        exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=init_savepoint.exner_dyn_incr(),
+    )
+
+
+def create_prognostic_states(sp):
+    prognostic_state_nnow = prognostics.PrognosticState(
+        w=sp.w_now(),
+        vn=sp.vn_now(),
+        theta_v=sp.theta_v_now(),
+        rho=sp.rho_now(),
+        exner=sp.exner_now(),
+    )
+    prognostic_state_nnew = prognostics.PrognosticState(
+        w=sp.w_new(),
+        vn=sp.vn_new(),
+        theta_v=sp.theta_v_new(),
+        rho=sp.rho_new(),
+        exner=sp.exner_new(),
+    )
+    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    return prognostic_state_ls

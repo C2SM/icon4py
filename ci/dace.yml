@@ -4,25 +4,46 @@ include:
 variables:
   DACE_VERSION: "0.16.1"
 
-test_model_stencils:
-  extends: .test_template
+.test_model_stencils:
   stage: test
   script:
     - pip install dace==$DACE_VERSION
-    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
+    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
       GRID: [simple_grid, icon_grid]
+test_model_stencils_x86_64:
+  extends: [.test_model_stencils, .test_template_x86_64]
+test_model_stencils_aarch64:
+  extends: [.test_model_stencils, .test_template_aarch64]
 
-benchmark_model_stencils:
-  extends: .test_template
+.test_model_datatests:
+  stage: test
+  script:
+    - pip install dace==$DACE_VERSION
+    - tox -r -e run_model_tests -c model/ -- --backend=$BACKEND $DACE_ORCHESTRATION $COMPONENT  --verbose
+  parallel:
+    matrix:
+    - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests]
+      BACKEND: [dace_cpu_noopt]
+      DACE_ORCHESTRATION: ['--dace-orchestration=True', '']
+test_model_datatests_x86_64:
+  extends: [.test_model_datatests, .test_template_x86_64]
+test_model_datatests_aarch64:
+  extends: [.test_model_datatests, .test_template_aarch64]
+
+.benchmark_model_stencils:
   stage: benchmark
   script:
     - pip install dace==$DACE_VERSION
     # force execution of tests where validation is expected to fail, because the reason for failure is wrong numpy reference
-    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --runxfail --verbose
+    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --runxfail
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
       GRID: [icon_grid, icon_grid_global]
+benchmark_model_stencils_x86_64:
+  extends: [.benchmark_model_stencils, .test_template_x86_64]
+benchmark_model_stencils_aarch64:
+  extends: [.benchmark_model_stencils, .test_template_aarch64]

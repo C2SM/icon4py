@@ -10,11 +10,10 @@
 import cProfile
 import pstats
 
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, float64
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.caching import CachedProgram
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.settings import backend
 
@@ -37,31 +36,28 @@ def profile_disable():
 
 @field_operator
 def _square(
-    inp: Field[[dims.CEDim, dims.KDim], float64],
-) -> Field[[dims.CEDim, dims.KDim], float64]:
+    inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
+) -> gtx.Field[[dims.CEDim, dims.KDim], gtx.float64]:
     return inp**2
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def square(
-    inp: Field[[dims.CEDim, dims.KDim], float64],
-    result: Field[[dims.CEDim, dims.KDim], float64],
+    inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
+    result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
 ):
     _square(inp, out=result)
 
 
-square_cached = CachedProgram(square, with_domain=False)
-
-
 def square_from_function(
-    inp: Field[[dims.CEDim, dims.KDim], float64],
-    result: Field[[dims.CEDim, dims.KDim], float64],
+    inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
+    result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
 ):
-    square_cached(inp, result, offset_provider={})
+    square(inp, result, offset_provider={})
 
 
 def square_error(
-    inp: Field[[dims.CEDim, dims.KDim], float64],
-    result: Field[[dims.CEDim, dims.KDim], float64],
+    inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
+    result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
 ):
     raise Exception("Exception foo occurred")

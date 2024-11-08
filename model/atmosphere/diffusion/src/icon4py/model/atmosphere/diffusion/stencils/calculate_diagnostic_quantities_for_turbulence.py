@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbulence import (
     _calculate_diagnostics_for_turbulence,
@@ -17,22 +16,16 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
     _temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
 
 
 @field_operator
 def _calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
-    geofac_div: Field[[dims.CEDim], wpfloat],
-    diff_multfac_smag: Field[[dims.KDim], vpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     kh_c, div = _temporary_fields_for_turbulence_diagnostics(
@@ -42,20 +35,20 @@ def _calculate_diagnostic_quantities_for_turbulence(
     return div_ic_vp, hdef_ic_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: Field[[dims.CEDim], wpfloat],
-    geofac_div: Field[[dims.CEDim], wpfloat],
-    diff_multfac_smag: Field[[dims.KDim], vpfloat],
+    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
+    diff_multfac_smag: gtx.Field[gtx.Dims[dims.KDim], vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     div_ic: fa.CellKField[vpfloat],
     hdef_ic: fa.CellKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _calculate_diagnostic_quantities_for_turbulence(
         kh_smag_ec,
@@ -66,7 +59,7 @@ def calculate_diagnostic_quantities_for_turbulence(
         wgtfac_c,
         out=(div_ic, hdef_ic),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

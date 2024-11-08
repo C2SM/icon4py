@@ -5,19 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, broadcast, int32
+from gt4py.next.ffront.fbuiltins import astype, broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
 
 
 @field_operator
@@ -28,7 +23,7 @@ def _apply_nabla2_to_w_in_upper_damping_layer(
     z_nabla2_c: fa.CellKField[vpfloat],
 ) -> fa.CellKField[wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
-    cell_area_tmp = broadcast(cell_area, (CellDim, KDim))
+    cell_area_tmp = broadcast(cell_area, (dims.CellDim, dims.KDim))
 
     w_wp = w + diff_multfac_n2w * cell_area_tmp * z_nabla2_c_wp
     return w_wp
@@ -40,10 +35,10 @@ def apply_nabla2_to_w_in_upper_damping_layer(
     diff_multfac_n2w: fa.KField[wpfloat],
     cell_area: fa.CellField[wpfloat],
     z_nabla2_c: fa.CellKField[vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _apply_nabla2_to_w_in_upper_damping_layer(
         w,
@@ -52,7 +47,7 @@ def apply_nabla2_to_w_in_upper_damping_layer(
         z_nabla2_c,
         out=w,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

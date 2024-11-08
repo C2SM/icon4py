@@ -11,7 +11,7 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import geometry, topography as topo
 from icon4py.model.common.settings import xp
-from icon4py.model.common.test_utils import helpers as test_helpers, reference_funcs
+from icon4py.model.common.test_utils import helpers, reference_funcs
 
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 
@@ -46,7 +46,7 @@ def test_topography_smoothing_withSerializedData(
         num_iterations=num_iterations,
     )
 
-    assert test_helpers.dallclose(topography_smoothed_verif_np, topography_smoothed.ndarray)
+    assert helpers.dallclose(topography_smoothed_verif_np, topography_smoothed.ndarray)
 
 @pytest.mark.datatest
 def test_topography_smoothing_withNumpy(
@@ -59,7 +59,7 @@ def test_topography_smoothing_withNumpy(
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     num_iterations = 2
-    topography = test_helpers.random_field(icon_grid, dims.CellDim, dtype=ta.wpfloat)
+    topography = helpers.random_field(icon_grid, dims.CellDim, dtype=ta.wpfloat)
     topography_np = topography.ndarray
 
     # numpy implementation
@@ -84,4 +84,4 @@ def test_topography_smoothing_withNumpy(
         num_iterations=num_iterations,
     )
 
-    assert test_helpers.dallclose(topography_smoothed_verif_np, topography_smoothed.ndarray)
+    assert helpers.dallclose(topography_smoothed_verif_np, topography_smoothed.ndarray)

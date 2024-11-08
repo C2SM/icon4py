@@ -5,19 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, int32
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
-
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
 
 
 @field_operator
@@ -47,7 +41,7 @@ def _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     return vn_nnew_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     vn_nnow: fa.EdgeKField[wpfloat],
     ddt_vn_apc_ntl1: fa.EdgeKField[vpfloat],
@@ -60,10 +54,10 @@ def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     wgt_nnow_vel: wpfloat,
     wgt_nnew_vel: wpfloat,
     cpd: wpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
         vn_nnow,
@@ -78,7 +72,7 @@ def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
         cpd,
         out=vn_nnew,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -5,20 +5,18 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.test_utils import helpers
 
 
-class TestCell2EdgeInterpolation(StencilTest):
+class TestCell2EdgeInterpolation(helpers.StencilTest):
     PROGRAM = cell_2_edge_interpolation
     OUTPUTS = ("out_field",)
 
@@ -34,16 +32,16 @@ class TestCell2EdgeInterpolation(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        in_field = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        coeff = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
-        out_field = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        in_field = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        coeff = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        out_field = helpers.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             in_field=in_field,
             coeff=coeff,
             out_field=out_field,
-            horizontal_start=0,
-            horizontal_end=int32(grid.num_edges),
-            vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(grid.num_edges),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(grid.num_levels),
         )

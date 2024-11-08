@@ -5,11 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
 import numpy as np
 
 import icon4py.model.common.field_type_aliases as fa
 from icon4py.model.common.grid import base as grid
 from icon4py.model.common.metrics.metric_fields import compute_vwind_impl_wgt_partial
+from icon4py.model.common.settings import xp
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -48,8 +50,8 @@ def compute_vwind_impl_wgt(
     )
 
     vwind_impl_wgt = (
-        np.amin(vwind_impl_wgt_k.asnumpy(), axis=1)
+        xp.amin(vwind_impl_wgt_k.ndarray, axis=1)
         if experiment == global_exp
-        else np.amax(vwind_impl_wgt_k.asnumpy(), axis=1)
+        else xp.amax(vwind_impl_wgt_k.ndarray, axis=1)
     )
     return vwind_impl_wgt

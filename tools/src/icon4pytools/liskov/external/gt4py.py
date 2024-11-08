@@ -14,7 +14,7 @@ from gt4py.next.ffront.decorator import Program
 
 from icon4pytools.common import ICON4PY_MODEL_QUALIFIED_NAME
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.icon4pygen.metadata import get_stencil_info
+from icon4pytools.common.metadata import get_stencil_info
 from icon4pytools.liskov.codegen.integration.interface import (
     BaseStartStencilData,
     IntegrationCodeInterface,
@@ -29,7 +29,7 @@ logger = setup_logger(__name__)
 class UpdateFieldsWithGt4PyStencils(Step):
     _STENCIL_PACKAGES: ClassVar[list[str]] = [
         "atmosphere.dycore",
-        "atmosphere.advection",
+        "atmosphere.advection.stencils",
         "atmosphere.diffusion.stencils",
         "common.interpolation.stencils",
     ]
