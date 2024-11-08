@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import backend as gt4py_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
@@ -17,22 +18,25 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.driver import icon4py_configuration as driver_config
 
 
 def hydrostatic_adjustment_ndarray(
-    wgtfac_c: xp.ndarray,
-    ddqz_z_half: xp.ndarray,
-    exner_ref_mc: xp.ndarray,
-    d_exner_dz_ref_ic: xp.ndarray,
-    theta_ref_mc: xp.ndarray,
-    theta_ref_ic: xp.ndarray,
-    rho: xp.ndarray,
-    exner: xp.ndarray,
-    theta_v: xp.ndarray,
+    wgtfac_c: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    exner_ref_mc: np.ndarray,
+    d_exner_dz_ref_ic: np.ndarray,
+    theta_ref_mc: np.ndarray,
+    theta_ref_ic: np.ndarray,
+    rho: np.ndarray,
+    exner: np.ndarray,
+    theta_v: np.ndarray,
     num_levels: int,
-):
+    backend: gt4py_backend.Backend,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    xp = driver_config.host_or_device_array(backend)
+
     # virtual temperature
     temp_v = theta_v * exner
 
@@ -62,17 +66,17 @@ def hydrostatic_adjustment_ndarray(
 
 
 def hydrostatic_adjustment_constant_thetav_ndarray(
-    wgtfac_c: xp.ndarray,
-    ddqz_z_half: xp.ndarray,
-    exner_ref_mc: xp.ndarray,
-    d_exner_dz_ref_ic: xp.ndarray,
-    theta_ref_mc: xp.ndarray,
-    theta_ref_ic: xp.ndarray,
-    rho: xp.ndarray,
-    exner: xp.ndarray,
-    theta_v: xp.ndarray,
+    wgtfac_c: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    exner_ref_mc: np.ndarray,
+    d_exner_dz_ref_ic: np.ndarray,
+    theta_ref_mc: np.ndarray,
+    theta_ref_ic: np.ndarray,
+    rho: np.ndarray,
+    exner: np.ndarray,
+    theta_v: np.ndarray,
     num_levels: int,
-) -> tuple[xp.ndarray, xp.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Computes a hydrostatically balanced profile. In constrast to the above
     hydrostatic_adjustment_ndarray, the virtual temperature is kept (assumed)
@@ -107,11 +111,12 @@ def zonalwind_2_normalwind_ndarray(
     jw_up: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
-    edge_lat: xp.ndarray,
-    edge_lon: xp.ndarray,
-    primal_normal_x: xp.ndarray,
-    eta_v_e: xp.ndarray,
-):
+    edge_lat: np.ndarray,
+    edge_lon: np.ndarray,
+    primal_normal_x: np.ndarray,
+    eta_v_e: np.ndarray,
+    backend: gt4py_backend.Backend,
+) -> np.ndarray:
     """
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
 
@@ -128,6 +133,8 @@ def zonalwind_2_normalwind_ndarray(
     Returns: normal wind
     """
     # TODO (Chia Rui) this function needs a test
+
+    xp = driver_config.host_or_device_array(backend)
 
     mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
@@ -307,14 +314,14 @@ def initialize_prep_advection(
 
 
 def create_gt4py_field_for_prognostic_and_diagnostic_variables(
-    vn_ndarray: xp.ndarray,
-    w_ndarray: xp.ndarray,
-    exner_ndarray: xp.ndarray,
-    rho_ndarray: xp.ndarray,
-    theta_v_ndarray: xp.ndarray,
-    temperature_ndarray: xp.ndarray,
-    pressure_ndarray: xp.ndarray,
-    pressure_ifc_ndarray: xp.ndarray,
+    vn_ndarray: np.ndarray,
+    w_ndarray: np.ndarray,
+    exner_ndarray: np.ndarray,
+    rho_ndarray: np.ndarray,
+    theta_v_ndarray: np.ndarray,
+    temperature_ndarray: np.ndarray,
+    pressure_ndarray: np.ndarray,
+    pressure_ifc_ndarray: np.ndarray,
     grid: icon_grid.IconGrid,
     backend: gt4py_backend.Backend,
 ) -> tuple[

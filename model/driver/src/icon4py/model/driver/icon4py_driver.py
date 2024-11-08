@@ -326,6 +326,7 @@ def initialize(
     ) = driver_init.read_geometry_fields(
         file_path,
         vertical_grid_config=config.vertical_grid_config,
+        backend=config.run_config.backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,

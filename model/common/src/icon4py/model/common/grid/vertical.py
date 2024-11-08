@@ -14,9 +14,10 @@ import pathlib
 from typing import Final
 
 import gt4py.next as gtx
+import numpy as np
+from gt4py.next import backend as gt4py_backend
 
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
-from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
@@ -111,7 +112,7 @@ class VerticalGrid:
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
 
-    def __post_init__(self, vct_a, vct_b):
+    def __post_init__(self, vct_a: np.ndarray, vct_b: np.ndarray):
         object.__setattr__(
             self,
             "_vct_a",
@@ -122,21 +123,20 @@ class VerticalGrid:
             "_vct_b",
             vct_b,
         )
-        vct_a_array = self._vct_a.ndarray
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
-            self._determine_damping_height_index(vct_a_array, self.config.rayleigh_damping_height),
+            self._determine_damping_height_index(vct_a, self.config.rayleigh_damping_height),
         )
         object.__setattr__(
             self,
             "_start_index_for_moist_physics",
-            self._determine_start_level_of_moist_physics(vct_a_array, self.config.htop_moist_proc),
+            self._determine_start_level_of_moist_physics(vct_a, self.config.htop_moist_proc),
         )
         object.__setattr__(
             self,
             "_end_index_of_flat_layer",
-            self._determine_end_index_of_flat_layers(vct_a_array, self.config.flat_height),
+            self._determine_end_index_of_flat_layers(vct_a, self.config.flat_height),
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
@@ -231,36 +231,36 @@ class VerticalGrid:
 
     @classmethod
     def _determine_start_level_of_moist_physics(
-        cls, vct_a: xp.ndarray, top_moist_threshold: float, nshift_total: int = 0
+        cls, vct_a: np.ndarray, top_moist_threshold: float, nshift_total: int = 0
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
-        return gtx.int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
+        return gtx.int32(np.min(np.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
-    def _determine_damping_height_index(cls, vct_a: xp.ndarray, damping_height: float) -> gtx.int32:
+    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
         return (
             0
             if damping_height > vct_a[0]
-            else gtx.int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
+            else gtx.int32(np.argmax(np.where(vct_a >= damping_height)[0]).item())
         )
 
     @classmethod
     def _determine_end_index_of_flat_layers(
-        cls, vct_a: xp.ndarray, flat_height: float
+        cls, vct_a: np.ndarray, flat_height: float
     ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
             0
             if flat_height > vct_a[0]
-            else gtx.int32(xp.max(xp.where(vct_a >= flat_height)[0]).item())
+            else gtx.int32(np.max(np.where(vct_a >= flat_height)[0]).item())
         )
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int
-) -> tuple[fa.KField, fa.KField]:
+    file_path: pathlib.Path, num_levels: int, backend: gt4py_backend.Backend
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Read vct_a and vct_b from a file.
     The file format should be as follows (the same format used for icon):
@@ -278,8 +278,8 @@ def _read_vct_a_and_vct_b_from_file(
     Returns:  one dimensional vct_a and vct_b arrays.
     """
     num_levels_plus_one = num_levels + 1
-    vct_a = xp.zeros(num_levels_plus_one, dtype=float)
-    vct_b = xp.zeros(num_levels_plus_one, dtype=float)
+    vct_a = np.zeros(num_levels_plus_one, dtype=float)
+    vct_b = np.zeros(num_levels_plus_one, dtype=float)
     try:
         with open(file_path, "r") as vertical_grid_file:
             # skip the first line that contains titles
@@ -298,10 +298,14 @@ def _read_vct_a_and_vct_b_from_file(
         ) from err
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
-    return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
+    return gtx.as_field((dims.KDim,), vct_a, allocator=backend), gtx.as_field(
+        (dims.KDim,), vct_b, allocator=backend
+    )
 
 
-def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField, fa.KField]:
+def _compute_vct_a_and_vct_b(
+    vertical_config: VerticalGridConfig, backend: gt4py_backend.Backend
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute vct_a and vct_b.
 
@@ -339,16 +343,17 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
 
     Args:
         vertical_config: Vertical grid configuration
+        backend: GT4Py backend
     Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
     """
     num_levels_plus_one = vertical_config.num_levels + 1
     if vertical_config.lowest_layer_thickness > 0.01:
-        vct_a_exponential_factor = xp.log(
+        vct_a_exponential_factor = np.log(
             vertical_config.lowest_layer_thickness / vertical_config.model_top_height
-        ) / xp.log(
+        ) / np.log(
             2.0
             / math.pi
-            * xp.arccos(
+            * np.arccos(
                 float(vertical_config.num_levels - 1) ** vertical_config.stretch_factor
                 / float(vertical_config.num_levels) ** vertical_config.stretch_factor
             )
@@ -359,8 +364,8 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
             * (
                 2.0
                 / math.pi
-                * xp.arccos(
-                    xp.arange(vertical_config.num_levels + 1, dtype=float)
+                * np.arccos(
+                    np.arange(vertical_config.num_levels + 1, dtype=float)
                     ** vertical_config.stretch_factor
                     / float(vertical_config.num_levels) ** vertical_config.stretch_factor
                 )
@@ -374,10 +379,10 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
             < 0.5 * vertical_config.top_height_limit_for_maximal_layer_thickness
         ):
             layer_thickness = vct_a[: vertical_config.num_levels] - vct_a[1:]
-            lowest_level_exceeding_limit = xp.max(
-                xp.where(layer_thickness > vertical_config.maximal_layer_thickness)
+            lowest_level_exceeding_limit = np.max(
+                np.where(layer_thickness > vertical_config.maximal_layer_thickness)
             )
-            modified_vct_a = xp.zeros(num_levels_plus_one, dtype=float)
+            modified_vct_a = np.zeros(num_levels_plus_one, dtype=float)
             lowest_level_unmodified_thickness = 0
             shifted_levels = 0
             for k in range(vertical_config.num_levels - 1, -1, -1):
@@ -385,7 +390,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
                     modified_vct_a[k + 1]
                     < vertical_config.top_height_limit_for_maximal_layer_thickness
                 ):
-                    modified_vct_a[k] = modified_vct_a[k + 1] + xp.minimum(
+                    modified_vct_a[k] = modified_vct_a[k + 1] + np.minimum(
                         vertical_config.maximal_layer_thickness, layer_thickness[k]
                     )
                 elif lowest_level_unmodified_thickness == 0:
@@ -416,7 +421,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
 
             for k in range(vertical_config.num_levels - 1, -1, -1):
                 if vct_a[k + 1] < vertical_config.top_height_limit_for_maximal_layer_thickness:
-                    vct_a[k] = vct_a[k + 1] + xp.minimum(
+                    vct_a[k] = vct_a[k + 1] + np.minimum(
                         vertical_config.maximal_layer_thickness, layer_thickness[k]
                     )
                 else:
@@ -439,7 +444,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
                     ):
                         modified_vct_a[k] = vct_a[k]
                     else:
-                        modified_layer_thickness = xp.minimum(
+                        modified_layer_thickness = np.minimum(
                             1.025 * (vct_a[k] - vct_a[k + 1]),
                             1.025
                             * (
@@ -452,7 +457,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
                             )
                             * (modified_vct_a[k + 1] - modified_vct_a[k + 2]),
                         )
-                        modified_vct_a[k] = xp.minimum(
+                        modified_vct_a[k] = np.minimum(
                             vct_a[k], modified_vct_a[k + 1] + modified_layer_thickness
                         )
                 if modified_vct_a[0] == vct_a[0]:
@@ -469,20 +474,24 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
     else:
         vct_a = (
             vertical_config.model_top_height
-            * (float(vertical_config.num_levels) - xp.arange(num_levels_plus_one, dtype=float))
+            * (float(vertical_config.num_levels) - np.arange(num_levels_plus_one, dtype=float))
             / float(vertical_config.num_levels)
         )
-    vct_b = xp.exp(-vct_a / 5000.0)
+    vct_b = np.exp(-vct_a / 5000.0)
 
-    if not xp.allclose(vct_a[0], vertical_config.model_top_height):
+    if not np.allclose(vct_a[0], vertical_config.model_top_height):
         log.warning(
             f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
         )
 
-    return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
+    return gtx.as_field((dims.KDim,), vct_a, allocator=backend), gtx.as_field(
+        (dims.KDim,), vct_b, allocator=backend
+    )
 
 
-def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField, fa.KField]:
+def get_vct_a_and_vct_b(
+    vertical_config: VerticalGridConfig, backend: gt4py_backend.Backend
+) -> tuple[np.ndarray, np.ndarray]:
     """
     get vct_a and vct_b.
     vct_a is an array that contains the height of grid interfaces (or half levels) from model surface to model top, before terrain-following coordinates are applied.
@@ -494,11 +503,14 @@ def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField,
 
     Args:
         vertical_config: Vertical grid configuration
+        backend: GT4Py backend
     Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
     """
 
     return (
-        _read_vct_a_and_vct_b_from_file(vertical_config.file_path, vertical_config.num_levels)
+        _read_vct_a_and_vct_b_from_file(
+            vertical_config.file_path, vertical_config.num_levels, backend
+        )
         if vertical_config.file_path
-        else _compute_vct_a_and_vct_b(vertical_config)
+        else _compute_vct_a_and_vct_b(vertical_config, backend)
     )
