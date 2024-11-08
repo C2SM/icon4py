@@ -11,7 +11,7 @@ from icon4py.model.common.test_utils import helpers
 from icon4py.model.driver.test_cases import utils
 
 
-def test_hydrostatic_adjustment_ndarray():
+def test_hydrostatic_adjustment_ndarray(backend):
     # TODO (Jacopo / Chia Rui) these tests could be better
     num_cells = 10
     num_levels = 10
@@ -42,6 +42,7 @@ def test_hydrostatic_adjustment_ndarray():
         exner,
         theta_v,
         num_levels,
+        backend,
     )
 
     assert r_rho.shape == (num_cells, num_levels)

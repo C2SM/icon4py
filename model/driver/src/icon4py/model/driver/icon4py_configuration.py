@@ -10,10 +10,14 @@ import dataclasses
 import datetime
 import enum
 import logging
-from functools import cached_property
+from typing import Final
 
+import numpy as np
+from gt4py.next import backend as gt4py_backend
 from gt4py.next.program_processors.runners.gtfn import (
+    run_gtfn,
     run_gtfn_cached,
+    run_gtfn_gpu,
     run_gtfn_gpu_cached,
 )
 
@@ -30,10 +34,37 @@ n_substeps_reduced = 2
 
 class DriverBackends(str, enum.Enum):
     GTFN_CPU = "gtfn_cpu"
+    GTFN_CPU_CACHED = "gtfn_cpu_cached"
     GTFN_GPU = "gtfn_gpu"
+    GTFN_GPU_CACHED = "gtfn_gpu_cached"
 
 
-@dataclasses.dataclass
+backend_map: Final[dict] = {
+    DriverBackends.GTFN_CPU.value: run_gtfn,
+    DriverBackends.GTFN_CPU_CACHED.value: run_gtfn_cached,
+    DriverBackends.GTFN_GPU.value: run_gtfn_gpu,
+    DriverBackends.GTFN_GPU_CACHED.value: run_gtfn_gpu_cached,
+}
+
+
+def host_or_device_array(backend: gt4py_backend.Backend):
+    if backend in (
+        backend_map[DriverBackends.GTFN_CPU.value],
+        backend_map[DriverBackends.GTFN_CPU_CACHED.value],
+    ):
+        return np
+    elif backend in (
+        backend_map[DriverBackends.GTFN_GPU.value],
+        backend_map[DriverBackends.GTFN_GPU_CACHED.value],
+    ):
+        import cupy as cp  # type: ignore[import-untyped]
+
+        return cp
+    else:
+        raise ValueError(f"Unknown backend {backend}.")
+
+
+@dataclasses.dataclass(frozen=True)
 class Icon4pyRunConfig:
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
@@ -61,12 +92,8 @@ class Icon4pyRunConfig:
                 f"Available backends are {', '.join([f'{k}' for k in [member.value for member in DriverBackends]])}"
             )
 
-    @cached_property
+    @property
     def backend(self):
-        backend_map = {
-            DriverBackends.GTFN_CPU.value: run_gtfn_cached,
-            DriverBackends.GTFN_GPU.value: run_gtfn_gpu_cached,
-        }
         return backend_map[self.backend_name]
 
 

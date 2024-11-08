@@ -20,13 +20,13 @@ from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
     edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.driver import icon4py_configuration as driver_config
 from icon4py.model.driver.test_cases import utils as testcases_utils
 
 
@@ -67,6 +67,8 @@ def model_initialization_jabw(
     data_provider = sb.IconSerialDataProvider(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
+
+    xp = driver_config.host_or_device_array(backend)
 
     wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
     ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
@@ -220,6 +222,7 @@ def model_initialization_jabw(
         edge_lon,
         primal_normal_x,
         eta_v_e.ndarray,
+        backend,
     )
     log.info("U2vn computation completed.")
 
@@ -234,6 +237,7 @@ def model_initialization_jabw(
         exner_ndarray,
         theta_v_ndarray,
         num_levels,
+        backend,
     )
     log.info("Hydrostatic adjustment computation completed.")
 

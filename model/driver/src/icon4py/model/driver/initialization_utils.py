@@ -297,6 +297,7 @@ def read_initial_state(
 def read_geometry_fields(
     path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
+    backend: gt4py_backend.Backend,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
@@ -327,7 +328,7 @@ def read_geometry_fields(
         sp = _grid_savepoint(path, rank, grid_id, grid_root, grid_level)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
-        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config)
+        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
         vertical_geometry = v_grid.VerticalGrid(
             config=vertical_grid_config,
             vct_a=vct_a,
