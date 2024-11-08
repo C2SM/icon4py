@@ -23,24 +23,24 @@ def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
     assert list(subroutines["diffusion_init"]) == ["in"]
     assert len(subroutines["diffusion_init"]["in"]) == 107
     assert subroutines["diffusion_init"]["in"]["codegen_ctx"] == CodegenContext(
-        first_declaration_ln=174, last_declaration_ln=264, end_subroutine_ln=385
+        first_declaration_ln=170, last_declaration_ln=260, end_subroutine_ln=381
     )
 
     assert list(subroutines["diffusion_run"]) == ["in", "inout", "out"]
     assert len(subroutines["diffusion_run"]["in"]) == 5
     assert subroutines["diffusion_run"]["in"]["codegen_ctx"] == CodegenContext(
-        first_declaration_ln=401, last_declaration_ln=476, end_subroutine_ln=1949
+        first_declaration_ln=397, last_declaration_ln=472, end_subroutine_ln=1944
     )
 
     assert len(subroutines["diffusion_run"]["inout"]) == 8
 
     assert len(subroutines["diffusion_run"]["out"]) == 5
     assert subroutines["diffusion_run"]["out"]["codegen_ctx"] == CodegenContext(
-        first_declaration_ln=401, last_declaration_ln=476, end_subroutine_ln=1949
+        first_declaration_ln=397, last_declaration_ln=472, end_subroutine_ln=1944
     )
 
     assert isinstance(subroutines, dict)
-    assert parsed_granule.last_import_ln == 44
+    assert parsed_granule.last_import_ln == 40
 
 
 def test_granule_parsing_missing_derived_typedef(diffusion_granule, samples_path):
