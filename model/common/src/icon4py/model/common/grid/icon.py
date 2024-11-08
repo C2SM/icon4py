@@ -13,9 +13,8 @@ import uuid
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import builder
 
 
 log = logging.getLogger(__name__)
@@ -86,7 +85,7 @@ class IconGrid(base.BaseGrid):
             ),
         }
 
-    @builder.builder
+    @utils.chainable
     def with_start_end_indices(
         self, dim: gtx.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
@@ -94,7 +93,7 @@ class IconGrid(base.BaseGrid):
         self._start_indices[dim] = start_indices.astype(gtx.int32)
         self._end_indices[dim] = end_indices.astype(gtx.int32)
 
-    @builder.builder
+    @utils.chainable
     def with_global_params(self, global_params: GlobalGridParams):
         self.global_properties = global_params
 

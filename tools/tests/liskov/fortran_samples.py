@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 NO_DIRECTIVES_STENCIL = """\
-    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
+    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1)
     DO jk = 1, nlev
     !DIR$ IVDEP
       DO je = i_startidx, i_endidx
@@ -42,11 +42,11 @@ SINGLE_STENCIL = """\
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, start_bdydiff_e, grf_bdywidth_e)
 
-    !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
     vn_before(:,:,:) = p_nh_prog%vn(:,:,:)
     !$ACC END PARALLEL
 
-    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
+    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1)
             DO jk = 1, nlev
     !DIR$ IVDEP
               DO je = i_startidx, i_endidx
@@ -91,11 +91,11 @@ SINGLE_STENCIL_WITH_COMMENTS = """\
         CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, start_bdydiff_e, grf_bdywidth_e)
 
-    !$ACC PARALLEL IF( i_am_accel_node .AND. acc_on ) DEFAULT(NONE) ASYNC(1)
+    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
     vn_before(:,:,:) = p_nh_prog%vn(:,:,:)
     !$ACC END PARALLEL
 
-    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
+    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1)
             DO jk = 1, nlev
     !DIR$ IVDEP
               DO je = i_startidx, i_endidx
@@ -125,7 +125,7 @@ MULTIPLE_STENCILS = """\
     !$DSL START STENCIL(name=compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers; wgtfac_c=p_nh%metrics%wgtfac_c(:,:,1); rho=p_nh%prog(nnow)%rho(:,:,1); rho_ref_mc=p_nh%metrics%rho_ref_mc(:,:,1); &
     !$DSL               theta_v=p_nh%prog(nnow)%theta_v(:,:,1); theta_ref_mc=p_nh%metrics%theta_ref_mc(:,:,1); rho_ic=p_nh%diag%rho_ic(:,:,1); z_rth_pr_1=z_rth_pr(:,:,1,1); &
     !$DSL               z_rth_pr_2=z_rth_pr(:,:,1,2); vertical_lower=2; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
-              !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
+              !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
               !$ACC LOOP GANG VECTOR TILE(32, 4)
               DO jk = 2, nlev
     !DIR$ IVDEP
@@ -157,7 +157,7 @@ MULTIPLE_STENCILS = """\
     !$DSL       fac_bdydiff_v=fac_bdydiff_v; vn=p_nh_prog%vn(:,:,1); vn_abs_tol=1e-21_wp; &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
     !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
-    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
+    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1)
             DO jk = 1, nlev
     !DIR$ IVDEP
               DO je = i_startidx, i_endidx
@@ -176,7 +176,7 @@ MULTIPLE_STENCILS = """\
     !$DSL       z_nabla2_c_rel_tol=1e-21_wp; &
     !$DSL       vertical_lower=1; vertical_upper=nlev; &
     !$DSL       horizontal_lower=i_startidx; horizontal_upper=i_endidx)
-    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1) IF( i_am_accel_node .AND. acc_on )
+    !$ACC PARALLEL LOOP DEFAULT(NONE) GANG VECTOR COLLAPSE(2) ASYNC(1)
     #ifdef __LOOP_EXCHANGE
             DO jc = i_startidx, i_endidx
     !DIR$ IVDEP
@@ -234,7 +234,7 @@ CONSECUTIVE_STENCIL = """\
     !$DSL START STENCIL(name=init_cell_kdim_field_with_zero_vp; field_with_zero_vp=z_q(:,:); vertical_lower=1; vertical_upper=1; &
     !$DSL               horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
 
-        !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
+        !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
         !$ACC LOOP GANG VECTOR
         DO jc = i_startidx, i_endidx
           z_alpha(jc,nlevp1) = 0.0_wp
@@ -393,7 +393,7 @@ MULTIPLE_FUSED = """\
         !$DSL INSERT(start_nudging_idx_c = i_startidx)
         !$DSL INSERT(end_halo_1_idx_c = i_endidx)
 
-        !$DSL INSERT(!$ACC PARALLEL IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1))
+        !$DSL INSERT(!$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1))
         !$DSL INSERT(w_old(:,:,:) = p_nh_prog%w(:,:,:))
         !$DSL INSERT(!$ACC END PARALLEL)
 
@@ -453,7 +453,7 @@ FREE_FORM_STENCIL = """\
     !$DSL START STENCIL(name=init_cell_kdim_field_with_zero_vp; field_with_zero_vp=z_alpha(:,:); vertical_lower=nlevp1; &
     !$DSL               vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
 
-        !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
+        !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
         !$ACC LOOP GANG VECTOR
         DO jc = i_startidx, i_endidx
           z_alpha(jc,nlevp1) = 0.0_wp
