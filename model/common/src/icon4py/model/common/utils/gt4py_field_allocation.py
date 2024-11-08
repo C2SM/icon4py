@@ -37,18 +37,3 @@ def allocate_indices(
 ):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
     return gtx.as_field((dim,), np.arange(shapex, dtype=dtype), allocator=backend)
-
-
-def allocate_field_from_array(
-    *dims: gtx.Dimension,
-    grid,
-    input_array: np.ndarray,
-    is_halfdim=False,
-    dtype=ta.wpfloat,
-    backend: Optional[backend.Backend] = None,
-):
-    shapex = tuple(map(lambda x: grid.size[x], dims))
-    if is_halfdim:
-        assert len(shapex) == 2
-        shapex = (shapex[0], shapex[1] + 1)
-    return gtx.as_field(dims, np.zeros(shapex, dtype=dtype), allocator=backend)
