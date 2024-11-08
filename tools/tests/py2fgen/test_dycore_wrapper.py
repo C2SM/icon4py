@@ -24,8 +24,6 @@ from unittest import mock
 
 import gt4py.next as gtx
 import pytest
-from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
-
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants, dimension as dims
@@ -37,6 +35,8 @@ from icon4py.model.common.test_utils import (
     helpers,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
+from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 
 from . import utils
 
