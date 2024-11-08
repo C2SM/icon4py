@@ -727,6 +727,12 @@ class MetricSavepoint(IconSavepoint):
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, dims.EdgeDim, dims.KDim)
 
+    def topo_c(self):
+        return self._get_field("topo_c", dims.CellDim)
+
+    def topo_smt_c(self):
+        return self._get_field("topo_smt_c", dims.CellDim)
+
     @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", dims.CellDim, dims.KDim)

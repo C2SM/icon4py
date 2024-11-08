@@ -75,6 +75,8 @@ def construct_nh_metric_state(
         exner_ref_mc=savepoint.exner_ref_mc(),
         wgtfac_c=savepoint.wgtfac_c(),
         wgtfacq_c=savepoint.wgtfacq_c_dsl(),
+        topo_c=savepoint.topo_c(),
+        topo_smt_c=savepoint.topo_smt_c(),
         inv_ddqz_z_full=savepoint.inv_ddqz_z_full(),
         rho_ref_mc=savepoint.rho_ref_mc(),
         theta_ref_mc=savepoint.theta_ref_mc(),
