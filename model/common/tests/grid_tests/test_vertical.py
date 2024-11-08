@@ -277,6 +277,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     stretch_factor,
     damping_height,
     htop_moist_proc,
+    backend,
 ):
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(dims.KDim),
@@ -289,7 +290,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
         rayleigh_damping_height=damping_height,
         htop_moist_proc=htop_moist_proc,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
     assert helpers.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
     assert helpers.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
