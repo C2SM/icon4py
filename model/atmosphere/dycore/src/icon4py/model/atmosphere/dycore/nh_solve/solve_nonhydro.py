@@ -13,7 +13,6 @@ from typing import Final, Optional
 import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
-import icon4py.model.common.grid.geometry as geometry
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend
 from icon4py.model.common import constants
