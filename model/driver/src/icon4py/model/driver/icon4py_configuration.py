@@ -40,22 +40,22 @@ class DriverBackends(str, enum.Enum):
 
 
 backend_map: Final[dict] = {
-    DriverBackends.GTFN_CPU.value: run_gtfn,
-    DriverBackends.GTFN_CPU_CACHED.value: run_gtfn_cached,
-    DriverBackends.GTFN_GPU.value: run_gtfn_gpu,
-    DriverBackends.GTFN_GPU_CACHED.value: run_gtfn_gpu_cached,
+    DriverBackends.GTFN_CPU: run_gtfn,
+    DriverBackends.GTFN_CPU_CACHED: run_gtfn_cached,
+    DriverBackends.GTFN_GPU: run_gtfn_gpu,
+    DriverBackends.GTFN_GPU_CACHED: run_gtfn_gpu_cached,
 }
 
 
 def host_or_device_array(backend: gt4py_backend.Backend):
     if backend in (
-        backend_map[DriverBackends.GTFN_CPU.value],
-        backend_map[DriverBackends.GTFN_CPU_CACHED.value],
+        backend_map[DriverBackends.GTFN_CPU],
+        backend_map[DriverBackends.GTFN_CPU_CACHED],
     ):
         return np
     elif backend in (
-        backend_map[DriverBackends.GTFN_GPU.value],
-        backend_map[DriverBackends.GTFN_GPU_CACHED.value],
+        backend_map[DriverBackends.GTFN_GPU],
+        backend_map[DriverBackends.GTFN_GPU_CACHED],
     ):
         import cupy as cp  # type: ignore[import-untyped]
 
