@@ -132,6 +132,12 @@ class IconGridSavepoint(IconSavepoint):
     def verts_vertex_lon(self):
         return self._get_field("verts_vertex_lon", dims.VertexDim)
 
+    def verts_vertex_x(self):
+        return self._get_field("verts_vertex_x", dims.VertexDim)
+
+    def verts_vertex_y(self):
+        return self._get_field("verts_vertex_y", dims.VertexDim)
+
     def primal_normal_v1(self):
         return self._get_field("primal_normal_v1", dims.EdgeDim)
 
@@ -149,6 +155,12 @@ class IconGridSavepoint(IconSavepoint):
 
     def edges_center_lon(self):
         return self._get_field("edges_center_lon", dims.EdgeDim)
+
+    def edges_center_x(self):
+        return self._get_field("edges_center_x", dims.EdgeDim)
+
+    def edges_center_y(self):
+        return self._get_field("edges_center_y", dims.EdgeDim)
 
     def v_num_edges(self):
         return self._get_field("v_num_edges", dims.VertexDim)
@@ -234,11 +246,11 @@ class IconGridSavepoint(IconSavepoint):
     def cell_center_lon(self):
         return self._get_field("cell_center_lon", dims.CellDim)
 
-    def edge_center_lat(self):
-        return self._get_field("edges_center_lat", dims.EdgeDim)
+    def cell_center_x(self):
+        return self._get_field("cell_center_x", dims.CellDim)
 
-    def edge_center_lon(self):
-        return self._get_field("edges_center_lon", dims.EdgeDim)
+    def cell_center_y(self):
+        return self._get_field("cell_center_y", dims.CellDim)
 
     def mean_cell_area(self):
         return self.serializer.read("mean_cell_area", self.savepoint).astype(float)[0]
@@ -498,6 +510,7 @@ class IconGridSavepoint(IconSavepoint):
         )
         return geometry.EdgeParams(
             tangent_orientation=self.tangent_orientation(),
+            primal_edge_lengths=self.primal_edge_length(),
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
             inverse_vertex_vertex_lengths=self.inv_vert_vert_length(),
@@ -511,8 +524,8 @@ class IconGridSavepoint(IconSavepoint):
             dual_normal_cell_y=dual_normal_cell[1],
             edge_areas=self.edge_areas(),
             f_e=self.f_e(),
-            edge_center_lat=self.edge_center_lat(),
-            edge_center_lon=self.edge_center_lon(),
+            edge_center_lat=self.edges_center_lat(),
+            edge_center_lon=self.edges_center_lon(),
             primal_normal_x=self.primal_normal_x(),
             primal_normal_y=self.primal_normal_y(),
         )
