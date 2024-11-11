@@ -71,8 +71,8 @@ C = TypeVar("C")
 
 class namedproperty(property[C, T]):
     """
-    A simple extension of the built-in `property` descriptor storing the name of the
-    attribute it is assigned to.
+    A simple extension of the built-in `property` descriptor storing
+    the name of the attribute it is assigned to.
 
     The name is stored in the `name` attribute of the property instance.
 
@@ -123,9 +123,9 @@ class Pair(Generic[T]):
     """
     A generic class representing a pair of values.
 
-    The name of the attributes can be customized by using the Pair.FIRST
-    and Pair.SECOND constants as type hint annotations of the
-    respective attributes in the subclass.
+    The name of the attributes can be customized by using the
+    Pair.FIRST and Pair.SECOND constants as type hint annotations
+    of the respective attributes in the subclass.
 
     Examples:
         >>> class MyPair(Pair[T]):
