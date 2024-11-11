@@ -177,13 +177,18 @@ class Pair(Generic[T]):
 
     @namedproperty
     def second(self) -> T:
-        """Property getter for the read-only property returning the second element of the pair."""
+        """Property getter for the second element of the pair."""
         return self.__second
 
-    #: Settable property returning the second element of the pair (for subclassing).
-    _second_settable = namedproperty(
-        fget=second.fget, fset=lambda self, value: setattr(self, "_Pair__second", value)
-    )
+    @second.setter
+    def second(self, value: T) -> None:
+        """Property setter for the secondelement of the pair."""
+        self.__second = value
+
+    @namedproperty
+    def _second_read_only(self) -> T:
+        """Read-only property for the second element of the pair (to be used in subclasses)."""
+        return self.__second
 
     def __eq__(self, other: object) -> bool:
         return type(self) is type(other) and (
@@ -214,9 +219,9 @@ class Pair(Generic[T]):
 
 class NextStepPair(Pair[T]):
     current: Annotated[T, Pair.FIRST] = copy.copy(Pair.first)
-    next: Annotated[T, Pair.SECOND] = copy.copy(Pair.second)
+    next: Annotated[T, Pair.SECOND] = copy.copy(Pair._second_read_only)
 
 
 class PreviousStepPair(Pair[T]):
     current: Annotated[T, Pair.FIRST] = copy.copy(Pair.first)
-    previous: Annotated[T, Pair.SECOND] = copy.copy(Pair.second)
+    previous: Annotated[T, Pair.SECOND] = copy.copy(Pair._second_read_only)
