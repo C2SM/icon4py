@@ -27,6 +27,7 @@ from typing import (
 
 __all__ = [
     "chainable",
+    "namedproperty",
     "Pair",
 ]
 
