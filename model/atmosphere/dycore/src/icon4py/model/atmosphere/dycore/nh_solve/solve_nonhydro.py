@@ -15,7 +15,7 @@ from gt4py.next import backend
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.grid.geometry as geometry
-import icon4py.model.common.utils as imc_utils
+import icon4py.model.common.utils as common_utils
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
@@ -805,7 +805,7 @@ class SolveNonhydro:
     def time_step(
         self,
         diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: imc_utils.NextStatePair[prognostics.PrognosticState],
+        prognostic_state_swp: common_utils.NextStatePair[prognostics.PrognosticState],
         prep_adv: solve_nh_states.PrepAdvection,
         divdamp_fac_o2: float,
         dtime: float,
@@ -912,7 +912,7 @@ class SolveNonhydro:
     def run_predictor_step(
         self,
         diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: imc_utils.NextStatePair[prognostics.PrognosticState],
+        prognostic_state_swp: common_utils.NextStatePair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         dtime: float,
         l_recompute: bool,
@@ -1637,7 +1637,7 @@ class SolveNonhydro:
     def run_corrector_step(
         self,
         diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: imc_utils.NextStatePair[prognostics.PrognosticState],
+        prognostic_state_swp: common_utils.NextStatePair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         divdamp_fac_o2: float,
         prep_adv: solve_nh_states.PrepAdvection,

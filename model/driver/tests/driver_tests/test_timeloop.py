@@ -8,7 +8,7 @@
 
 import pytest
 
-import icon4py.model.common.utils as imc_utils
+import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
@@ -308,7 +308,7 @@ def test_run_timeloop_single_step(
         exner=sp.exner_new(),
     )
 
-    prognostic_state_swp = imc_utils.NextStatePair(prognostic_state, prognostic_state_new)
+    prognostic_state_swp = common_utils.NextStatePair(prognostic_state, prognostic_state_new)
 
     timeloop.time_integration(
         diffusion_diagnostic_state,
