@@ -168,13 +168,13 @@ def pytest_generate_tests(metafunc):
                     get_icon_grid_from_gridfile,
                 )
 
-                grid_instance = get_icon_grid_from_gridfile(REGIONAL_EXPERIMENT, on_gpu)
+                grid_instance = get_icon_grid_from_gridfile(REGIONAL_EXPERIMENT, on_gpu).grid
             elif selected_grid_type == "icon_grid_global":
                 from icon4py.model.common.test_utils.grid_utils import (
                     get_icon_grid_from_gridfile,
                 )
 
-                grid_instance = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu)
+                grid_instance = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu).grid
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
