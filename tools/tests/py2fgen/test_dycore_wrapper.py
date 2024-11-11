@@ -26,7 +26,7 @@ import gt4py.next as gtx
 import pytest
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -382,8 +382,7 @@ def test_dycore_wrapper_granule_inputs(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp.ddt_vn_apc_pc(2),
+        ddt_vn_apc_pc=common_utils.Pair(sp.ddt_vn_apc_pc(1), sp.ddt_vn_apc_pc(2)),
         ddt_w_adv_ntl1=sp.ddt_w_adv_pc(1),
         ddt_w_adv_ntl2=sp.ddt_w_adv_pc(2),
         vt=sp.vt(),

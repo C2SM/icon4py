@@ -11,7 +11,7 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as nh
 from icon4py.model.atmosphere.dycore.state_utils import states
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import geometry, vertical as v_grid
 from icon4py.model.common.test_utils import helpers, parallel_helpers
@@ -118,8 +118,7 @@ def test_run_solve_nonhydro_single_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_vn_apc_pc=common_utils.Pair(sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)),
         ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
         ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
         vt=sp_v.vt(),

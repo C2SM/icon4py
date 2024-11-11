@@ -10,7 +10,7 @@ import pytest
 import icon4py.model.common.grid.geometry as geometry
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.atmosphere.dycore.velocity import velocity_advection as vel_adv
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
@@ -185,8 +185,7 @@ def test_velocity_predictor_step(
         mass_fl_e=None,
         ddt_vn_phy=None,
         grf_tend_vn=None,
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_vn_apc_pc=common_utils.Pair(sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)),
         ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
         ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
         rho_incr=None,  # sp.rho_incr(),
@@ -354,8 +353,7 @@ def test_velocity_corrector_step(
         mass_fl_e=None,
         ddt_vn_phy=None,
         grf_tend_vn=None,
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
+        ddt_vn_apc_pc=common_utils.Pair(sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)),
         ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
         ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
         rho_incr=None,  # sp.rho_incr(),

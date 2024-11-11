@@ -36,7 +36,7 @@ from gt4py.next import common as gt4py_common
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import SolveNonhydro
 from icon4py.model.atmosphere.dycore.state_utils import states as nh_states
-from icon4py.model.common import dimension as dims, settings
+from icon4py.model.common import dimension as dims, settings, utils as common_utils
 from icon4py.model.common.dimension import (
     C2E2CODim,
     C2EDim,
@@ -409,8 +409,7 @@ def solve_nh_run(
         mass_fl_e=mass_fl_e,
         ddt_vn_phy=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
-        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+        ddt_vn_apc_pc=common_utils.Pair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
         ddt_w_adv_ntl1=ddt_w_adv_ntl1,
         ddt_w_adv_ntl2=ddt_w_adv_ntl2,
         vt=vt,

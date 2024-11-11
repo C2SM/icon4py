@@ -8,7 +8,7 @@
 
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
@@ -129,8 +129,9 @@ def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
         mass_fl_e=init_savepoint.mass_fl_e(),
         ddt_vn_phy=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_ntl1=init_savepoint.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=init_savepoint.ddt_vn_apc_pc(2),
+        ddt_vn_apc_pc=common_utils.Pair(
+            init_savepoint.ddt_vn_apc_pc(1), init_savepoint.ddt_vn_apc_pc(2)
+        ),
         ddt_w_adv_ntl1=init_savepoint.ddt_w_adv_pc(1),
         ddt_w_adv_ntl2=init_savepoint.ddt_w_adv_pc(2),
         vt=init_savepoint.vt(),
