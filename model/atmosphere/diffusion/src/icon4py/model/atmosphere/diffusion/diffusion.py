@@ -26,6 +26,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
+    DiffusionOutputIntermediateFields,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     # copy_field,
@@ -169,6 +170,7 @@ class DiffusionConfig:
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+        call_frequency: int = 1,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
@@ -260,6 +262,8 @@ class DiffusionConfig:
         #: Type of shear forcing used in turbulence
         #: Called itype_shear in `mo_turbdiff_nml.f90
         self.shear_type = shear_type
+
+        self.call_frequency = call_frequency
 
         self._validate()
 
@@ -509,6 +513,7 @@ class Diffusion:
         self.w_tmp = as_field(
             (CellDim, KDim), xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
         )
+        self.output_intermediate_fields = DiffusionOutputIntermediateFields.allocate(self.grid)
 
     def initial_run(
         self,
@@ -752,6 +757,8 @@ class Diffusion:
             diff_multfac_vn=diff_multfac_vn,
             nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
             vn=prognostic_state.vn,
+            nabla2_diff=self.output_intermediate_fields.output_nabla2_diff,
+            nabla4_diff=self.output_intermediate_fields.output_nabla4_diff,
             edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
@@ -781,6 +788,7 @@ class Diffusion:
                 geofac_grg_y=self.interpolation_state.geofac_grg_y,
                 w_old=self.w_tmp,
                 w=prognostic_state.w,
+                w_nabla4_diff=self.output_intermediate_fields.output_w_nabla4_diff,
                 type_shear=int32(self.config.shear_type.value),
                 dwdx=diagnostic_state.dwdx,
                 dwdy=diagnostic_state.dwdy,

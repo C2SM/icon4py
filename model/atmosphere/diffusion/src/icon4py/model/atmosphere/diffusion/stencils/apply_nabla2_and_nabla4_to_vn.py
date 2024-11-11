@@ -29,7 +29,11 @@ def _apply_nabla2_and_nabla4_to_vn(
     nudgecoeff_e: Field[[EdgeDim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     nudgezone_diff: vpfloat,
-) -> Field[[EdgeDim, KDim], wpfloat]:
+) -> tuple[
+    Field[[EdgeDim, KDim], wpfloat],
+    Field[[EdgeDim, KDim], wpfloat],
+    Field[[EdgeDim, KDim], wpfloat]
+]:
     kh_smag_e_wp, z_nabla4_e2_wp, nudgezone_diff_wp = astype(
         (kh_smag_e, z_nabla4_e2, nudgezone_diff), wpfloat
     )
@@ -39,7 +43,9 @@ def _apply_nabla2_and_nabla4_to_vn(
         maximum(nudgezone_diff_wp * nudgecoeff_e, kh_smag_e_wp) * z_nabla2_e
         - area_edge_broadcast * diff_multfac_vn * z_nabla4_e2_wp
     )
-    return vn_wp
+    nabla2_diff = area_edge * maximum(nudgezone_diff_wp * nudgecoeff_e, kh_smag_e_wp) * z_nabla2_e
+    nabla4_diff = - area_edge * area_edge_broadcast * diff_multfac_vn * z_nabla4_e2_wp
+    return vn_wp, nabla2_diff, nabla4_diff
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -51,6 +57,8 @@ def apply_nabla2_and_nabla4_to_vn(
     diff_multfac_vn: Field[[KDim], wpfloat],
     nudgecoeff_e: Field[[EdgeDim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
+    nabla2_diff: Field[[EdgeDim, KDim], wpfloat],
+    nabla4_diff: Field[[EdgeDim, KDim], wpfloat],
     nudgezone_diff: vpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -66,7 +74,7 @@ def apply_nabla2_and_nabla4_to_vn(
         nudgecoeff_e,
         vn,
         nudgezone_diff,
-        out=vn,
+        out=(vn, nabla2_diff, nabla4_diff),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

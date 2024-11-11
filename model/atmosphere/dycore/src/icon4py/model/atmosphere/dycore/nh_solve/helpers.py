@@ -165,6 +165,9 @@ from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import (
     copy_cell_kdim_field_to_vp as copy_cell_kdim_field_to_vp_orig,
 )
+from icon4py.model.atmosphere.dycore.copy_edge_kdim_field_to_vp import (
+    copy_edge_kdim_field_to_vp as copy_edge_kdim_field_to_vp_orig,
+)
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp as init_cell_kdim_field_with_zero_wp_orig,
 )
@@ -457,6 +460,8 @@ compute_theta_and_exner = CachedProgram(compute_theta_and_exner_orig)
 compute_vn_on_lateral_boundary = CachedProgram(compute_vn_on_lateral_boundary_orig)
 
 copy_cell_kdim_field_to_vp = CachedProgram(copy_cell_kdim_field_to_vp_orig)
+
+copy_edge_kdim_field_to_vp = CachedProgram(copy_edge_kdim_field_to_vp_orig)
 
 mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = CachedProgram(
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_orig

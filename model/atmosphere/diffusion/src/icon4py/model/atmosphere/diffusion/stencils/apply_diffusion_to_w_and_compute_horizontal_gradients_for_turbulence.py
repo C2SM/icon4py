@@ -49,6 +49,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     halo_idx: int32,
 ) -> tuple[
     Field[[CellDim, KDim], wpfloat],
+    Field[[CellDim, KDim], wpfloat],
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
@@ -76,8 +77,9 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
+    w_nabla4_diff = w - w_old
 
-    return w, dwdx, dwdy
+    return w, w_nabla4_diff, dwdx, dwdy
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -88,6 +90,7 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
     w_old: Field[[CellDim, KDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
+    w_nabla4_diff: Field[[CellDim, KDim], wpfloat],
     type_shear: int32,
     dwdx: Field[[CellDim, KDim], vpfloat],
     dwdy: Field[[CellDim, KDim], vpfloat],
@@ -119,7 +122,7 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         nrdmax,
         interior_idx,
         halo_idx,
-        out=(w, dwdx, dwdy),
+        out=(w, w_nabla4_diff, dwdx, dwdy),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

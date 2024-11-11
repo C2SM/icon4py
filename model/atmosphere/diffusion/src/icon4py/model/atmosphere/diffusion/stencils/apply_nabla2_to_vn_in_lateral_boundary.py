@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, int32, broadcast
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -25,9 +25,15 @@ def _apply_nabla2_to_vn_in_lateral_boundary(
     area_edge: Field[[EdgeDim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     fac_bdydiff_v: wpfloat,
-) -> Field[[EdgeDim, KDim], wpfloat]:
+) -> tuple[
+    Field[[EdgeDim, KDim], wpfloat],
+    Field[[EdgeDim, KDim], wpfloat],
+    Field[[EdgeDim, KDim], wpfloat],
+]:
     vn_wp = vn + (area_edge * fac_bdydiff_v * z_nabla2_e)
-    return vn_wp
+    nabla2_diff = area_edge * fac_bdydiff_v * z_nabla2_e
+    nabla4_diff = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
+    return vn_wp, nabla2_diff, nabla4_diff
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -35,6 +41,8 @@ def apply_nabla2_to_vn_in_lateral_boundary(
     z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
     area_edge: Field[[EdgeDim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
+    nabla2_diff: Field[[EdgeDim, KDim], wpfloat],
+    nabla4_diff: Field[[EdgeDim, KDim], wpfloat],
     fac_bdydiff_v: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -46,7 +54,7 @@ def apply_nabla2_to_vn_in_lateral_boundary(
         area_edge,
         vn,
         fac_bdydiff_v,
-        out=vn,
+        out=(vn, nabla2_diff, nabla4_diff),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

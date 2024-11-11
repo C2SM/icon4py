@@ -194,6 +194,10 @@ class OutputIntermediateFields:
     output_graddiv_vn: Field[[EdgeDim, KDim], float]
     output_graddiv2_vn: Field[[EdgeDim, KDim], float]
     output_scal_divdamp: Field[[KDim], float]
+    output_graddiv2_normal: Field[[EdgeDim, KDim], float]
+    output_graddiv2_vertical: Field[[CellDim, KDim], float]
+    output_before_flxdiv_vn: Field[[CellDim, KDim], float]
+    output_after_flxdiv_vn: Field[[CellDim, KDim], float]
 
     @classmethod
     def allocate(cls, grid: BaseGrid):
@@ -217,4 +221,8 @@ class OutputIntermediateFields:
             output_graddiv_vn=_allocate(EdgeDim, KDim, grid=grid),
             output_graddiv2_vn=_allocate(EdgeDim, KDim, grid=grid),
             output_scal_divdamp=_allocate(KDim, grid=grid),
+            output_graddiv2_normal=_allocate(EdgeDim, KDim, grid=grid),
+            output_graddiv2_vertical=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
+            output_before_flxdiv_vn=_allocate(CellDim, KDim, grid=grid),
+            output_after_flxdiv_vn=_allocate(CellDim, KDim, grid=grid),
         )

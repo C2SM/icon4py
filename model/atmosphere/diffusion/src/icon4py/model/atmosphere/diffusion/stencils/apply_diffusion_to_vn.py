@@ -48,7 +48,11 @@ def _apply_diffusion_to_vn(
     fac_bdydiff_v: wpfloat,
     start_2nd_nudge_line_idx_e: int32,
     limited_area: bool,
-) -> Field[[EdgeDim, KDim], wpfloat]:
+) -> tuple[
+    Field[[EdgeDim, KDim], wpfloat],
+    Field[[EdgeDim, KDim], wpfloat],
+    Field[[EdgeDim, KDim], wpfloat],
+]:
     z_nabla4_e2 = _calculate_nabla4(
         u_vert,
         v_vert,
@@ -60,7 +64,7 @@ def _apply_diffusion_to_vn(
     )
 
     # TODO: Use if-else statement instead
-    vn = (
+    vn, nabla2_diff, nabla4_diff = (
         where(
             start_2nd_nudge_line_idx_e <= edge,
             _apply_nabla2_and_nabla4_to_vn(
@@ -86,11 +90,11 @@ def _apply_diffusion_to_vn(
                 diff_multfac_vn,
                 vn,
             ),
-            vn,
+            vn, nabla2_diff, nabla4_diff
         )
     )
 
-    return vn
+    return vn, nabla2_diff, nabla4_diff
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -107,6 +111,8 @@ def apply_diffusion_to_vn(
     diff_multfac_vn: Field[[KDim], wpfloat],
     nudgecoeff_e: Field[[EdgeDim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
+    nabla2_diff: Field[[EdgeDim, KDim], wpfloat],
+    nabla4_diff: Field[[EdgeDim, KDim], wpfloat],
     edge: Field[[EdgeDim], int32],
     nudgezone_diff: vpfloat,
     fac_bdydiff_v: wpfloat,
@@ -135,7 +141,7 @@ def apply_diffusion_to_vn(
         fac_bdydiff_v,
         start_2nd_nudge_line_idx_e,
         limited_area,
-        out=vn,
+        out=(vn, nabla2_diff, nabla4_diff),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

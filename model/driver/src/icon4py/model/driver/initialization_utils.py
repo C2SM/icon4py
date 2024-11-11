@@ -16,8 +16,6 @@ import math
 from enum import Enum
 from pathlib import Path
 
-import numpy as np
-
 from gt4py.next import as_field
 from gt4py.next.common import Field
 
@@ -786,11 +784,11 @@ def read_static_fields(
         v2c_connectivity = grid_savepoint.v2c()
         c2e_connectivity = grid_savepoint.c2e()
         v2c2e_connectivity = grid_savepoint.v2c2e()
-        geofac_2order_div_array = np.zeros((icon_grid.num_vertices, 6), dtype=float)
+        geofac_2order_div_array = xp.zeros((icon_grid.num_vertices, 6), dtype=float)
         slice_number = 20
         slice_element_number = icon_grid.num_vertices / slice_number
         # for i in range(slice_number - 1):
-        #     hexagon_area = np.sum(cell_area[v2c_connectivity[i*slice_element_number:(i + 1)*slice_element_number,:]])
+        #     hexagon_area = xp.sum(cell_area[v2c_connectivity[i*slice_element_number:(i + 1)*slice_element_number,:]])
         #     #print(i, v2c2e_connectivity[i].shape[0], cell_area[v2c_connectivity[i,:]].shape)
         #     #print(cell_edge_orientation.shape, primal_edge_length.shape)
         #     for j in range(v2c2e_connectivity[i].shape[0]):
@@ -807,24 +805,24 @@ def read_static_fields(
         #             if edge_index == v2c2e_connectivity[i,j-1]:
         #                 print ("PENTAGON POINT", i, v2c2e_connectivity[i])
         #                 geofac_2order_div_array[i, j] = 0.0
-        # for i in range(icon_grid.num_vertices):
-        #     hexagon_area = np.sum(cell_area[v2c_connectivity[i,:]])
-        #     #print(i, v2c2e_connectivity[i].shape[0], cell_area[v2c_connectivity[i,:]].shape)
-        #     #print(cell_edge_orientation.shape, primal_edge_length.shape)
-        #     for j in range(v2c2e_connectivity[i].shape[0]):
-        #         edge_index = v2c2e_connectivity[i,j]
-        #         for k in range(v2c_connectivity[i].shape[0]):
-        #             if edge_index in c2e_connectivity[v2c_connectivity[i,k]]:
-        #                 cell_index = v2c_connectivity[i,k]
-        #                 edge_in_local_cell_index = xp.where(c2e_connectivity[v2c_connectivity[i,k]] == edge_index)[0]
-        #                 if edge_in_local_cell_index > 2 or edge_in_local_cell_index < 0:
-        #                     raise ValueError(f"Something wrong when obtaining edge_in_local_cell_index: {edge_in_local_cell_index}. The vertex index: {i}. The edge index: {edge_index}. The cell index: {cell_index}")
-        #                 break
-        #         geofac_2order_div_array[i,j] = cell_edge_orientation[cell_index,edge_in_local_cell_index] * primal_edge_length[edge_index] / hexagon_area
-        #         if j == 5:
-        #             if edge_index == v2c2e_connectivity[i,j-1]:
-        #                 print ("PENTAGON POINT", i, v2c2e_connectivity[i])
-        #                 geofac_2order_div_array[i, j] = 0.0
+        for i in range(icon_grid.num_vertices):
+            hexagon_area = xp.sum(cell_area[v2c_connectivity[i,:]])
+            #print(i, v2c2e_connectivity[i].shape[0], cell_area[v2c_connectivity[i,:]].shape)
+            #print(cell_edge_orientation.shape, primal_edge_length.shape)
+            for j in range(v2c2e_connectivity[i].shape[0]):
+                edge_index = v2c2e_connectivity[i,j]
+                for k in range(v2c_connectivity[i].shape[0]):
+                    if edge_index in c2e_connectivity[v2c_connectivity[i,k]]:
+                        cell_index = v2c_connectivity[i,k]
+                        edge_in_local_cell_index = xp.where(c2e_connectivity[v2c_connectivity[i,k]] == edge_index)[0]
+                        if edge_in_local_cell_index > 2 or edge_in_local_cell_index < 0:
+                            raise ValueError(f"Something wrong when obtaining edge_in_local_cell_index: {edge_in_local_cell_index}. The vertex index: {i}. The edge index: {edge_index}. The cell index: {cell_index}")
+                        break
+                geofac_2order_div_array[i,j] = cell_edge_orientation[cell_index,edge_in_local_cell_index] * primal_edge_length[edge_index] / hexagon_area
+                if j == 5:
+                    if edge_index == v2c2e_connectivity[i,j-1]:
+                        print ("PENTAGON POINT", i, v2c2e_connectivity[i])
+                        geofac_2order_div_array[i, j] = 0.0
         geofac_2order_div = as_field((VertexDim, V2C2EDim), geofac_2order_div_array)
         print("geofac_div shape: ", interpolation_savepoint.geofac_div().ndarray.shape)
         print("geofac_div 0: ", interpolation_savepoint.geofac_div().ndarray[0])

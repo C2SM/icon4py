@@ -43,6 +43,10 @@ from icon4py.model.atmosphere.dycore.velocity.helpers import (
     interpolate_vt_to_interface_edges,
     mo_math_divrot_rot_vertex_ri_dsl,
 )
+from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
+    copy_cell_kdim_field_to_vp,
+    copy_edge_kdim_field_to_vp,
+)
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
@@ -515,11 +519,51 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
         if output_intermediate_fields is not None:
-            output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e = self.output_hgrad_kinetic_e
-            output_intermediate_fields.output_velocity_predictor_tangent_wind = diagnostic_state.vt
-            output_intermediate_fields.output_velocity_predictor_total_vorticity_e = self.output_total_vorticity_e
-            output_intermediate_fields.output_velocity_predictor_vertical_wind_e = self.output_vertical_wind_e
-            output_intermediate_fields.output_velocity_predictor_vgrad_vn_e = self.output_vgrad_vn_e
+            copy_edge_kdim_field_to_vp(
+                field=self.output_hgrad_kinetic_e,
+                field_copy=output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_edge_kdim_field_to_vp(
+                field=diagnostic_state.vt,
+                field_copy=output_intermediate_fields.output_velocity_predictor_tangent_wind,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_edge_kdim_field_to_vp(
+                field=self.output_total_vorticity_e,
+                field_copy=output_intermediate_fields.output_velocity_predictor_total_vorticity_e,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_edge_kdim_field_to_vp(
+                field=self.output_vertical_wind_e,
+                field_copy=output_intermediate_fields.output_velocity_predictor_vertical_wind_e,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_edge_kdim_field_to_vp(
+                field=self.output_vgrad_vn_e,
+                field_copy=output_intermediate_fields.output_velocity_predictor_vgrad_vn_e,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
 
         """
         ddt_vn_apc_pc[ntnd] (max(3,damp_lev-2)-1:nlev-5):
@@ -851,12 +895,52 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
         if output_intermediate_fields is not None:
-            output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e = self.output_hgrad_kinetic_e
-            output_intermediate_fields.output_velocity_corrector_tangent_wind = diagnostic_state.vt
-            output_intermediate_fields.output_velocity_corrector_total_vorticity_e = self.output_total_vorticity_e
-            output_intermediate_fields.output_velocity_corrector_vertical_wind_e = self.output_vertical_wind_e
-            output_intermediate_fields.output_velocity_corrector_vgrad_vn_e = self.output_vgrad_vn_e
-
+            copy_edge_kdim_field_to_vp(
+                field=self.output_hgrad_kinetic_e,
+                field_copy=output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_edge_kdim_field_to_vp(
+                field=diagnostic_state.vt,
+                field_copy=output_intermediate_fields.output_velocity_corrector_tangent_wind,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_edge_kdim_field_to_vp(
+                field=self.output_total_vorticity_e,
+                field_copy=output_intermediate_fields.output_velocity_corrector_total_vorticity_e,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_edge_kdim_field_to_vp(
+                field=self.output_vertical_wind_e,
+                field_copy=output_intermediate_fields.output_velocity_corrector_vertical_wind_e,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_edge_kdim_field_to_vp(
+                field=self.output_vgrad_vn_e,
+                field_copy=output_intermediate_fields.output_velocity_corrector_vgrad_vn_e,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            
         """
         ddt_vn_apc_pc[ntnd] (max(3,damp_lev-2)-1:nlev-5):
             Add diffusion to the advection of normal wind at full levels (edge center) according

@@ -238,19 +238,25 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
     def _jabw_diffusion_config(n_substeps: int):
         return DiffusionConfig(
             diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=False,
-            hdiff_vn=False,
+            hdiff_w=True,
+            hdiff_vn=True,
             hdiff_temp=False,
             n_substeps=n_substeps,
             type_t_diffu=2,
             type_vn_diffu=1,
-            hdiff_efdt_ratio=10.0,
-            hdiff_w_efdt_ratio=15.0,
+            # hdiff_efdt_ratio=10.0,
+            # hdiff_w_efdt_ratio=15.0,
+            # hdiff_efdt_ratio=1000.0,
+            # hdiff_w_efdt_ratio=1000.0,
+            hdiff_efdt_ratio=1.e15,
+            hdiff_w_efdt_ratio=1.e15,
             smagorinski_scaling_factor=0.025,
+            # smagorinski_scaling_factor=0.0,
             # smagorinski_scaling_factor=0.0000025,
             zdiffu_t=False,
             velocity_boundary_diffusion_denom=200.0,
             max_nudging_coeff=0.075,
+            call_frequency=1,
         )
 
     def _jabw_nonhydro_config(n_substeps: int):
@@ -260,10 +266,12 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
             divdamp_fac=0.0025,
+            # divdamp_fac=0.0,
             do_o2_divdamp=False,
-            do_3d_divergence_damping=False,
+            do_3d_divergence_damping=True,
             do_second_order_3d_divergence_damping=False,
             do_multiple_divdamp=True,
+            number_of_divdamp_step=3,
         )
 
     def _mch_ch_r04b09_config():
@@ -703,6 +711,42 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ),
         )
         output_variable_list.add_new_variable(
+            "graddiv2_normal",
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="m s-1",
+                standard_name="horizontal gradient of double laplacian",
+                long_name="horizontal gradient of double laplacian of wind in horizontal momentum equation",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="elat elon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
+            "graddiv2_vertical",
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.HALF_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="m s-1",
+                standard_name="vertical fradient of double laplacian of wind",
+                long_name="vertical fradient of double laplacian of wind in horizontal momentum equation",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="clat clon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
             "scal_divdamp",
             VariableDimension(
                 vertical_dimension=OutputDimension.FULL_LEVEL,
@@ -719,10 +763,98 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 scope=OutputScope.diagnostic,
             ),
         )
+        output_variable_list.add_new_variable(
+            "before_flxdiv_vn",
+            VariableDimension(
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="s-1",
+                standard_name="initial wind divergence",
+                long_name="divergence of wind before divergence damping",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="clat clon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
+            "after_flxdiv_vn",
+            VariableDimension(
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="s-1",
+                standard_name="final wind divergence",
+                long_name="divergence of wind after divergence damping",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="clat clon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
+            "nabla2_diff",
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="m s-1",
+                standard_name="2nd order normal wind diffusion",
+                long_name="second order diffusion of normal wind",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="elat elon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
+            "nabla4_diff",
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="m s-1",
+                standard_name="4th order normal wind diffusion",
+                long_name="fourth order diffusion of normal wind",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="elat elon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
+            "w_nabla4_diff",
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.HALF_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="m s-1",
+                standard_name="4th order normal wind diffusion",
+                long_name="fourth order diffusion of vertical wind",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="clat clon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
 
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=600.0),
-            end_date=datetime(1, 1, 15, 0, 0, 0),
+            end_date=datetime(1, 1, 30, 0, 0, 0),
             # end_date=datetime(1, 1, 1, 0, 2, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,

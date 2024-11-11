@@ -51,6 +51,9 @@ from icon4py.model.common.dimension import (
     KDim,
     V2C2VDim,
     V2CDim,
+    # debug
+    V2C2EDim,
+    C2EDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
@@ -164,6 +167,10 @@ class NewOutputState:
         self.write_to_netcdf(start_date, data_dict)
         self._grid_to_netcdf(cell_geometry, edge_geometry)
 
+    @property
+    def current_file_number(self):
+        return self._current_file_number
+    
     def _create_variables(self):
         for i in range(self._number_of_files):
             """
@@ -482,10 +489,11 @@ class NewOutputState:
     def advance_time(
         self,
         current_date: datetime,
-    ):
+    ) -> bool:
         times = self._nf4_basegrp[self._current_file_number].variables["time"]
         time_elapsed_since_last_output = current_date - self._output_date
         time_elapsed_in_this_ncfile = current_date - self._first_date_in_this_ncfile
+        is_next_file = False
         log.info(
             f"first date in currect nc file: {self._first_date_in_this_ncfile}, previous output date: {self._output_date}"
         )
@@ -507,6 +515,7 @@ class NewOutputState:
                 self._current_write_step = 0
                 self._nf4_basegrp[self._current_file_number].close()
                 self._current_file_number += 1
+                is_next_file = True
             else:
                 self._current_write_step += 1
             for var_name in self._variable_list.variable_name_list:
@@ -517,7 +526,7 @@ class NewOutputState:
                 current_date, units=times.units, calendar=times.calendar
             )
             log.info(f"Current times are  {times[:]}")
-
+            return is_next_file
             """
             debugging variables
             """
@@ -948,6 +957,10 @@ class TimeLoop:
 
             self._next_simulation_date()
 
+            do_output = False
+            if output_state is not None:
+                do_output = output_state.advance_time(self._simulation_date)
+
             # update boundary condition
 
             self._timer1.start()
@@ -958,6 +971,9 @@ class TimeLoop:
                 prep_adv,
                 inital_divdamp_fac_o2,
                 do_prep_adv,
+                time_step,
+                do_output,
+                do_output_step=output_state.current_file_number,
             )
             self._timer1.capture()
 
@@ -970,7 +986,6 @@ class TimeLoop:
 
                 log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
 
-                output_state.advance_time(self._simulation_date)
                 output_data = {}
                 output_data["vn"] = prognostic_state_list[self._now].vn
                 output_data["rho"] = prognostic_state_list[self._now].rho
@@ -1037,8 +1052,29 @@ class TimeLoop:
                     "graddiv2_vn"
                 ] = self.solve_nonhydro.output_intermediate_fields.output_graddiv2_vn
                 output_data[
+                    "graddiv2_normal"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_graddiv2_normal
+                output_data[
+                    "graddiv2_vertical"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_graddiv2_vertical
+                output_data[
                     "scal_divdamp"
                 ] = self.solve_nonhydro.output_intermediate_fields.output_scal_divdamp
+                output_data[
+                    "before_flxdiv_vn"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_before_flxdiv_vn
+                output_data[
+                    "after_flxdiv_vn"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
+                output_data[
+                    "nabla2_diff"
+                ] = self.diffusion.output_intermediate_fields.nabla2_diff
+                output_data[
+                    "nabla4_diff"
+                ] = self.diffusion.output_intermediate_fields.nabla4_diff
+                output_data[
+                    "w_nabla4_diff"
+                ] = self.diffusion.output_intermediate_fields.w_nabla4_diff
                 output_state.write_to_netcdf(self._simulation_date, output_data)
 
         self._timer1.summary(True)
@@ -1137,6 +1173,9 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
+        time_step: int,
+        do_output: bool = False,
+        do_output_step: int = 0,
     ):
         # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
 
@@ -1147,11 +1186,13 @@ class TimeLoop:
             prep_adv,
             inital_divdamp_fac_o2,
             do_prep_adv,
+            do_output=do_output,
+            do_output_step=do_output_step,
         )
         self._timer2.capture()
 
         self._timer3.start()
-        if self.diffusion.config.apply_to_horizontal_wind:
+        if self.diffusion.config.apply_to_horizontal_wind and time_step % self.diffusion.config.call_frequency == 0:
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
@@ -1168,6 +1209,8 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
+        do_output: bool = False,
+        do_output_step: int = 0,
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
@@ -1193,6 +1236,9 @@ class TimeLoop:
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
+                do_output=do_output,
+                do_output_step=do_output_step,
+                do_output_substep=dyn_substep,
             )
 
             do_recompute = False
@@ -1361,6 +1407,15 @@ def initialize(
     )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
+    # testing divergence v2c2e
+    div_geofac_ndarray = solve_nonhydro_interpolation_state.geofac_2order_div.ndarray
+    u_ndarray = prognostic_state_now.u.ndarray
+    index_v = 0
+    v2c_connectivity = icon_grid.connectivities[V2CDim]
+    c2e_connectivity = icon_grid.connectivities[C2EDim]
+    v2c2e_connectivity = icon_grid.connectivities[V2C2EDim]
+    log.debug(f"{}")
+
     if enable_output:
         log.info("initializing netCDF4 output state")
         output_data = {}
@@ -1424,7 +1479,14 @@ def initialize(
         ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vgrad_vn_e
         output_data["graddiv_vn"] = solve_nonhydro.output_intermediate_fields.output_graddiv_vn
         output_data["graddiv2_vn"] = solve_nonhydro.output_intermediate_fields.output_graddiv2_vn
+        output_data["graddiv2_normal"] = solve_nonhydro.output_intermediate_fields.output_graddiv2_normal
+        output_data["graddiv2_vertical"] = solve_nonhydro.output_intermediate_fields.output_graddiv2_vertical
         output_data["scal_divdamp"] = solve_nonhydro.output_intermediate_fields.output_scal_divdamp
+        output_data["before_flxdiv_vn"] = solve_nonhydro.output_intermediate_fields.output_before_flxdiv_vn
+        output_data["after_flxdiv_vn"] = solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
+        output_data["nabla2_diff"] = diffusion.output_intermediate_fields.nabla2_diff
+        output_data["nabla4_diff"] = diffusion.output_intermediate_fields.nabla4_diff
+        output_data["w_nabla4_diff"] = diffusion.output_intermediate_fields.w_nabla4_diff
         output_state = NewOutputState(
             config.output_config,
             config.run_config.start_date,

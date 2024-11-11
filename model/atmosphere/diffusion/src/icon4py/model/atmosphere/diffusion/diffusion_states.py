@@ -14,8 +14,11 @@ import functools
 from dataclasses import dataclass
 
 from gt4py.next import as_field
-from gt4py.next.common import Field
+from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.fbuiltins import int32
+
+from icon4py.model.common.settings import xp
+from icon4py.model.common.grid.base import BaseGrid
 
 from icon4py.model.common.dimension import (
     C2E2CODim,
@@ -100,3 +103,34 @@ class DiffusionInterpolationState:
                 old_shape[0] * old_shape[1],
             ),
         )
+
+
+@dataclass
+class DiffusionOutputIntermediateFields:
+    """
+    For intermediate output fields
+    """
+
+    output_nabla2_diff: Field[[EdgeDim, KDim], float]
+    output_nabla4_diff: Field[[EdgeDim, KDim], float]
+    output_w_nabla4_diff: Field[[CellDim, KDim], float]
+    
+    @classmethod
+    def allocate(cls, grid: BaseGrid):
+        return DiffusionOutputIntermediateFields(
+            output_nabla2_diff=_allocate(EdgeDim, KDim, grid=grid),
+            output_nabla4_diff=_allocate(EdgeDim, KDim, grid=grid),
+            output_w_nabla4_diff=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
+        )
+
+
+def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
+    shapex = tuple(map(lambda x: grid.size[x], dims))
+    if is_halfdim:
+        assert len(shapex) == 2
+        shapex = (shapex[0], shapex[1] + 1)
+    return as_field(dims, xp.zeros(shapex, dtype=dtype))
+
+
+def _allocate(*dims: Dimension, grid, is_halfdim=False, dtype=float):
+    return zero_field(grid, *dims, is_halfdim=is_halfdim, dtype=dtype)
