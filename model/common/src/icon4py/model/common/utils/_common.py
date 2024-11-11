@@ -184,14 +184,21 @@ class Pair(Generic[T]):
         fget=second.fget, fset=lambda self, value: setattr(self, "_Pair__second", value)
     )
 
-    def __repr__(self) -> str:
-        first_name = type(self).__first_attr_name
-        second_name = type(self).__second_attr_name
-        return f"{self.__class__.__name__}({first_name}={self.__first!r}, {second_name}={self.__second!r})"
+    def __eq__(self, other: object) -> bool:
+        return type(self) is type(other) and (
+            self.__first == other.__first and self.__second == other.__second
+        )
+
+    # `__hash__` is implicitly set to None when `__eq__` is redefined, so instances are not hashable.
 
     def __iter__(self) -> Generator[T, None, None]:
         yield self.__first
         yield self.__second
+
+    def __repr__(self) -> str:
+        first_name = type(self).__first_attr_name
+        second_name = type(self).__second_attr_name
+        return f"{self.__class__.__name__}({first_name}={self.__first!r}, {second_name}={self.__second!r})"
 
     def swap(self: Pair[T]) -> Pair[T]:
         """
