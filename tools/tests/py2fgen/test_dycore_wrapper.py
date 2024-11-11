@@ -151,8 +151,8 @@ def test_dycore_wrapper_granule_inputs(
     f_e = grid_savepoint.f_e()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # metric state parameters
     bdy_halo_c = metrics_savepoint.bdy_halo_c()
@@ -832,8 +832,8 @@ def test_granule_solve_nonhydro_single_step_regional(
     f_e = grid_savepoint.f_e()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # metric state parameters
     bdy_halo_c = metrics_savepoint.bdy_halo_c()
@@ -1283,8 +1283,8 @@ def test_granule_solve_nonhydro_multi_step_regional(
     f_e = grid_savepoint.f_e()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # metric state parameters
     bdy_halo_c = metrics_savepoint.bdy_halo_c()

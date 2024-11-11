@@ -8,7 +8,7 @@
 import enum
 import logging
 import pathlib
-from typing import Optional, Protocol, Union
+from typing import Literal, Optional, Protocol, TypeAlias, Union
 
 import gt4py.next as gtx
 
@@ -16,11 +16,7 @@ from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
 )
-from icon4py.model.common.grid import (
-    base,
-    icon,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import base, icon, vertical as v_grid
 from icon4py.model.common.settings import xp
 
 
@@ -186,9 +182,10 @@ class ConnectivityName(FieldName):
 
 
 class GeometryName(FieldName):
-    CELL_AREA = "cell_area"  # steradian (DWD), m^2 (MPI-M)
-    EDGE_LENGTH = "edge_length"  # radians (DWD), m (MPI-M)
-    DUAL_EDGE_LENGTH = "dual_edge_length"  # radians (DWD), m (MPI-M)
+    CELL_AREA = "cell_area"
+    EDGE_NORMAL_ORIENTATION = "orientation_of_normal"
+    TANGENT_ORIENTATION = "edge_system_orientation"
+    EDGE_ORIENTATION_ = "edge_orientation"
 
 
 class CoordinateName(FieldName):
@@ -334,6 +331,10 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         return xp.asarray(xp.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
+CoordinateDict: TypeAlias = dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+GeometryDict: TypeAlias = dict[GeometryName, gtx.Field]
+
+
 class GridManager:
     """
     Read ICON grid file and set up grid topology, refinement information and geometry fields.
@@ -357,7 +358,9 @@ class GridManager:
         self._vertical_config = config
         self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
+        self._geometry: GeometryDict = {}
         self._reader = None
+        self._coordinates: CoordinateDict = {}
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -386,6 +389,56 @@ class GridManager:
             self.open()
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields()
+        self._coordinates = self._read_coordinates()
+        self._geometry = self._read_geometry_fields()
+
+    def _read_coordinates(self):
+        return {
+            dims.CellDim: {
+                "lat": gtx.as_field(
+                    (dims.CellDim,),
+                    self._reader.variable(CoordinateName.CELL_LATITUDE),
+                    dtype=float,
+                ),
+                "lon": gtx.as_field(
+                    (dims.CellDim,),
+                    self._reader.variable(CoordinateName.CELL_LONGITUDE),
+                    dtype=float,
+                ),
+            },
+            dims.EdgeDim: {
+                "lat": gtx.as_field(
+                    (dims.EdgeDim,), self._reader.variable(CoordinateName.EDGE_LATITUDE)
+                ),
+                "lon": gtx.as_field(
+                    (dims.EdgeDim,), self._reader.variable(CoordinateName.EDGE_LONGITUDE)
+                ),
+            },
+            dims.VertexDim: {
+                "lat": gtx.as_field(
+                    (dims.VertexDim,),
+                    self._reader.variable(CoordinateName.VERTEX_LATITUDE),
+                    dtype=float,
+                ),
+                "lon": gtx.as_field(
+                    (dims.VertexDim,),
+                    self._reader.variable(CoordinateName.VERTEX_LONGITUDE),
+                    dtype=float,
+                ),
+            },
+        }
+
+    def _read_geometry_fields(self):
+        return {
+            # TODO (@halungge) still needs to ported, values from "our" grid files contains (wrong) values:
+            #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
+            GeometryName.CELL_AREA.value: gtx.as_field(
+                (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA)
+            ),
+            GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
+                (dims.EdgeDim,), self._reader.variable(GeometryName.TANGENT_ORIENTATION)
+            ),
+        }
 
     def _read_start_end_indices(
         self,
@@ -474,6 +527,14 @@ class GridManager:
         TODO (@halungge) should those be added to the IconGrid?
         """
         return self._refinement
+
+    @property
+    def geometry(self) -> GeometryDict:
+        return self._geometry
+
+    @property
+    def coordinates(self) -> CoordinateDict:
+        return self._coordinates
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.

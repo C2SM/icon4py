@@ -5,11 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from __future__ import annotations
 
+import functools
 from pathlib import Path
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.datatest_utils import (
     GRIDS_PATH,
@@ -92,3 +95,19 @@ def valid_boundary_zones_for_dim(dim: dims.Dimension):
     ]
 
     yield from _domain(dim, zones)
+
+
+@functools.cache
+def run_grid_manager(experiment_name: str, num_levels=65, transformation=None) -> gm.GridManager:
+    if transformation is None:
+        transformation = gm.ToZeroBasedIndexTransformation()
+    file_name = resolve_file_from_gridfile_name(experiment_name)
+    with gm.GridManager(
+        transformation, file_name, v_grid.VerticalGridConfig(num_levels)
+    ) as grid_manager:
+        grid_manager(limited_area=is_regional(experiment_name))
+        return grid_manager
+
+
+def is_regional(grid_file: str):
+    return grid_file == dt_utils.REGIONAL_EXPERIMENT
