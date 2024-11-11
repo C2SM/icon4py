@@ -13,7 +13,7 @@ import gt4py.next as gtx
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants as phy_const, dimension as dims
-from icon4py.model.common.grid import geometry, horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
     edge_2_cell_vector_rbf_interpolation,
@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 def model_initialization_gauss3d(
     grid: icon_grid.IconGrid,
-    edge_param: geometry.EdgeParams,
+    edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     rank=0,
 ) -> tuple[
