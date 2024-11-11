@@ -112,7 +112,7 @@ class TimeLoop:
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: imc_utils.Swapping[prognostics.PrognosticState],
+        prognostic_state_swp: imc_utils.NextStatePair[prognostics.PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: solve_nh_states.PrepAdvection,
         initial_divdamp_fac_o2: float,
@@ -183,7 +183,7 @@ class TimeLoop:
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: imc_utils.Swapping[prognostics.PrognosticState],
+        prognostic_state_swp: imc_utils.NextStatePair[prognostics.PrognosticState],
         prep_adv: solve_nh_states.PrepAdvection,
         initial_divdamp_fac_o2: float,
         do_prep_adv: bool,
@@ -201,7 +201,7 @@ class TimeLoop:
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
                 diffusion_diagnostic_state,
-                prognostic_state_swp.other,
+                prognostic_state_swp.next,
                 self.dtime_in_seconds,
             )
 
@@ -212,7 +212,7 @@ class TimeLoop:
     def _do_dyn_substepping(
         self,
         solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: imc_utils.Swapping[prognostics.PrognosticState],
+        prognostic_state_swp: imc_utils.NextStatePair[prognostics.PrognosticState],
         prep_adv: solve_nh_states.PrepAdvection,
         initial_divdamp_fac_o2: float,
         do_prep_adv: bool,
@@ -266,7 +266,7 @@ class DriverStates(NamedTuple):
     prep_advection_prognostic: solve_nh_states.PrepAdvection
     solve_nonhydro_diagnostic: solve_nh_states.DiagnosticStateNonHydro
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
-    prognostic_swp: imc_utils.Swapping[prognostics.PrognosticState]
+    prognostic_swp: imc_utils.NextStatePair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState
 
 
@@ -405,7 +405,7 @@ def initialize(
         rank=props.rank,
         experiment_type=experiment_type,
     )
-    prognostics_swp = imc_utils.Swapping(prognostic_state_now, prognostic_state_next)
+    prognostics_swp = imc_utils.NextStatePair(prognostic_state_now, prognostic_state_next)
 
     timeloop = TimeLoop(
         run_config=config.run_config,

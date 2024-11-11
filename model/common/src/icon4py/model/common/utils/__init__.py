@@ -8,10 +8,10 @@
 
 from __future__ import annotations
 
-from ._common import Swapping, chainable
+from ._common import Pair, chainable
 
 
 __all__ = [
     "chainable",
-    "Swapping",
+    "Pair",
 ]
