@@ -14,6 +14,7 @@ import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
+from icon4py.model.common.grid import grid_manager as gm
 
 
 def compute_c_lin_e(
@@ -455,7 +456,7 @@ def compute_force_mass_conservation_to_c_bln_avg(
     cell_areas: np.ndarray,
     horizontal_start: np.int32,
     horizontal_start_p3: np.int32,
-    niter: np.ndarray = 2,
+    niter: np.ndarray = 5,
 ) -> np.ndarray:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
@@ -702,15 +703,17 @@ def compute_cells_aw_verts(
     for jv in range(horizontal_start_vertex, cells_aw_verts.shape[0]):
         cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
+            # INVALID_INDEX
+            if je > gm.GridFile.INVALID_INDEX or (je > 0 and v2e[jv, je] == v2e[jv, je - 1]):
+                continue
             ile = v2e[jv, je]
             idx_ve = 0 if e2v[ile, 0] == jv else 1
             cell_offset_idx_0 = e2c[ile, 0]
             cell_offset_idx_1 = e2c[ile, 1]
-            ibc_0 = 0
-            ibc_1 = 0
             for jc in range(v2e.shape[1]):
-                if cell_offset_idx_0 == v2c[jv, jc] and ibc_0 == 0:
-                    ibc_0 = 1
+                if je > gm.GridFile.INVALID_INDEX or (jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]):
+                    continue
+                if cell_offset_idx_0 == v2c[jv, jc]:
                     cells_aw_verts[jv, jc] = (
                         cells_aw_verts[jv, jc]
                         + 0.5
@@ -718,8 +721,7 @@ def compute_cells_aw_verts(
                         * edge_vert_length[ile, idx_ve]
                         * edge_cell_length[ile, 0]
                     )
-                elif cell_offset_idx_1 == v2c[jv, jc] and ibc_1 == 0:
-                    ibc_1 = 1
+                elif cell_offset_idx_1 == v2c[jv, jc]:
                     cells_aw_verts[jv, jc] = (
                         cells_aw_verts[jv, jc]
                         + 0.5
