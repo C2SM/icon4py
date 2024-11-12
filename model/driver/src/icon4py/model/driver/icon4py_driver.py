@@ -66,9 +66,9 @@ class TimeLoop:
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
-        self._timer_solve_nonhydro = Timer("nh_solve")
-        self._timer_diffusion = Timer("diffusion")
-        self.detailed_timers = False
+        self._timer_solve_nonhydro = Timer("nh_solve", dp=6)
+        self._timer_diffusion = Timer("diffusion", dp=6)
+        self.detailed_timers = True
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -169,8 +169,11 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-        timer = Timer(self._full_name(self._integrate_one_time_step))
+        rest_timer = Timer(self._full_name(self._integrate_one_time_step), dp=6)
+        first_timer = Timer("first_time_step", dp=6)
         for time_step in range(self._n_time_steps):
+            timer = first_timer if time_step == 0 else rest_timer
+
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
                 f" MAX VN: {prognostic_state_list[self._now].vn.ndarray.max():.15e} , MAX W: {prognostic_state_list[self._now].w.ndarray.max():.15e}"
@@ -209,7 +212,9 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
-        timer.summary(True)
+        first_timer.summary(True)
+        rest_timer.summary(True)
+
         if self.detailed_timers:
             self._timer_solve_nonhydro.summary(True)
             self._timer_diffusion.summary(True)
