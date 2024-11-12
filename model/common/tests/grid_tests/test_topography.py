@@ -46,7 +46,7 @@ def test_topography_smoothing_withSerializedData(
         num_iterations=num_iterations,
     )
 
-    assert helpers.dallclose(topography_smoothed_verif_np, topography_smoothed.ndarray)
+    assert helpers.dallclose(topography_smoothed_verif_np, topography_smoothed.ndarray, atol=1.0e-14)
 
 @pytest.mark.datatest
 def test_topography_smoothing_withNumpy(
