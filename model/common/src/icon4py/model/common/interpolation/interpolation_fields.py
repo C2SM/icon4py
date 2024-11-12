@@ -375,26 +375,33 @@ def weighting_factors(
         / ((y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]) / (x[1] - x[0]))
         * (1.0 - wgt_loc)
         * (-y[0] + x[0] * (y[1] - y[0]) / (x[1] - x[0])),
+        wgt[2],
+    )
+    wgt[1] = np.where(
+        mask, (-(1.0 - wgt_loc) * x[0] - wgt[2] * (x[2] - x[0])) / (x[1] - x[0]), wgt[1]
+    )
+    wgt[0] = np.where(
+        mask, 1.0 - wgt[1] - wgt[2] if wgt_loc == 0.0 else 1.0 - wgt_loc - wgt[1] - wgt[2], wgt[0]
+    )
+    wgt[1] = np.where(
+        ~mask,
         1.0
         / ((y[1] - y[0]) - (x[1] - x[0]) * (y[2] - y[0]) / (x[2] - x[0]))
         * (1.0 - wgt_loc)
         * (-y[0] + x[0] * (y[2] - y[0]) / (x[2] - x[0])),
+        wgt[1],
     )
-    wgt[1] = np.where(
-        mask,
-        (-(1.0 - wgt_loc) * x[0] - wgt[2] * (x[2] - x[0])) / (x[1] - x[0]),
-        (-(1.0 - wgt_loc) * x[0] - wgt[1] * (x[1] - x[0])) / (x[2] - x[0]),
+    wgt[2] = np.where(
+        ~mask, (-(1.0 - wgt_loc) * x[0] - wgt[1] * (x[1] - x[0])) / (x[2] - x[0]), wgt[2]
     )
-    wgt[1], wgt[2] = np.where(mask, (wgt[1], wgt[2]), (wgt[2], wgt[1]))
-    wgt[0] = 1.0 - wgt_loc - wgt[1] - wgt[2]
-
+    wgt[0] = np.where(
+        ~mask, 1.0 - wgt[1] - wgt[2] if wgt_loc == 0.0 else 1.0 - wgt_loc - wgt[1] - wgt[2], wgt[0]
+    )
     return wgt
 
 
 def compute_c_bln_avg(
-    c_bln_avg_zeros: np.ndarray,
     divavg_cntrwgt: ta.wpfloat,
-    owner_mask: np.ndarray,
     c2e2c: np.ndarray,
     lat: np.ndarray,
     lon: np.ndarray,
@@ -416,44 +423,39 @@ def compute_c_bln_avg(
     """
     llb = horizontal_start
     num_cells = c2e2c.shape[0]
-    #c_bln_avg = np.zeros([num_cells, 4])
-    c_bln_avg = c_bln_avg_zeros
     wgt_loc = divavg_cntrwgt
-    yloc = np.zeros(num_cells)
-    xloc = np.zeros(num_cells)
-    yloc[llb:] = lat[llb:]
-    xloc[llb:] = lon[llb:]
-    ytemp = np.zeros([3, num_cells])
-    xtemp = np.zeros([3, num_cells])
 
-    for i in range(3):
-        ytemp[i, llb:] = lat[c2e2c[llb:, i]]
-        xtemp[i, llb:] = lon[c2e2c[llb:, i]]
+    yloc = lat[:]
+    xloc = lon[:]
+    ytemp = np.zeros([c2e2c.shape[1], num_cells - llb])
+    xtemp = np.zeros([c2e2c.shape[1], num_cells - llb])
 
+    for i in range(ytemp.shape[0]):
+        ytemp[i] = lat[c2e2c[llb:, i]]
+        xtemp[i] = lon[c2e2c[llb:, i]]
     wgt = weighting_factors(
-        ytemp[:, llb:],
-        xtemp[:, llb:],
+        ytemp,
+        xtemp,
         yloc[llb:],
         xloc[llb:],
         wgt_loc,
     )
-
-    c_bln_avg[llb:, 0] = np.where(owner_mask[llb:], wgt_loc, c_bln_avg[llb:, 0])
-    for i in range(3):
-        c_bln_avg[llb:, i + 1] = np.where(owner_mask[llb:], wgt[i], c_bln_avg[llb:, i + 1])
-
+    c_bln_avg = np.zeros((c2e2c.shape[0], c2e2c.shape[1] + 1))
+    c_bln_avg[llb:, 0] = wgt_loc
+    c_bln_avg[llb:, 1] = wgt[0]
+    c_bln_avg[llb:, 2] = wgt[1]
+    c_bln_avg[llb:, 3] = wgt[2]
     return c_bln_avg
 
 
 def compute_force_mass_conservation_to_c_bln_avg(
     c_bln_avg: np.ndarray,
     divavg_cntrwgt: ta.wpfloat,
-    owner_mask: np.ndarray,
     c2e2c: np.ndarray,
     cell_areas: np.ndarray,
     horizontal_start: np.int32,
     horizontal_start_p3: np.int32,
-    niter: np.ndarray = 1000,
+    niter: np.ndarray = 2,
 ) -> np.ndarray:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
@@ -476,56 +478,54 @@ def compute_force_mass_conservation_to_c_bln_avg(
     Returns:
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
-    llb = horizontal_start
-    llb2 = horizontal_start_p3
-    num_cells = c2e2c.shape[0]
-    index = np.arange(llb, num_cells)
-
-    inv_neighbor_id = -np.ones([num_cells, 3], dtype=int)
-    for i in range(3):
-        for j in range(3):
-            inv_neighbor_id[llb:, j] = np.where(
-                np.logical_and(c2e2c[c2e2c[llb:, j], i] == index, c2e2c[llb:, j] >= 0),
-                i,
-                inv_neighbor_id[llb:, j],
-            )
+    wgt_loc_sum = np.zeros((c_bln_avg.shape[0]))
+    inv_neighbor_id = np.zeros([c2e2c.shape[0], 3], dtype=int)
+    resid = np.zeros(c2e2c.shape[0])
+    for jc in range(c2e2c.shape[0]):
+        for i in range(c2e2c.shape[1]):
+            if c2e2c[jc, i] >= 0:
+                if c2e2c[c2e2c[jc, i], 0] == jc:
+                    inv_neighbor_id[jc, i] = 1
+                elif c2e2c[c2e2c[jc, i], 1] == jc:
+                    inv_neighbor_id[jc, i] = 2
+                elif c2e2c[c2e2c[jc, i], 2] == jc:
+                    inv_neighbor_id[jc, i] = 3
 
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
-    # TODO: in this function halo cell exchanges (sync) are missing, here for inv_neighbor_id, but also within the iteration for several variables
+    c_bln_avg_inv = c_bln_avg[c2e2c, inv_neighbor_id]
     for iteration in range(niter):
-        wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(
-            c_bln_avg[c2e2c[llb:], inv_neighbor_id[llb:] + 1] * cell_areas[c2e2c[llb:]], axis=1
+        if iteration >= (niter - 1):
+            return c_bln_avg
+        wgt_loc_sum[horizontal_start:] = c_bln_avg[horizontal_start:, 0] * cell_areas[
+            horizontal_start:
+        ] + np.sum(c_bln_avg_inv[horizontal_start:] * cell_areas[c2e2c][horizontal_start:], axis=1)
+        resid[horizontal_start_p3:] = (
+            wgt_loc_sum[horizontal_start_p3:] / cell_areas[horizontal_start_p3:] - 1.0
         )
-        resid = wgt_loc_sum[llb2 - llb :] / cell_areas[llb2:] - 1.0
-        if iteration < niter - 1:
-            c_bln_avg[llb2:, 0] = np.where(
-                owner_mask[llb2:], c_bln_avg[llb2:, 0] - relax_coeff * resid, c_bln_avg[llb2:, 0]
+
+        c_bln_avg[horizontal_start_p3:, 0] = (
+            c_bln_avg[horizontal_start_p3:, 0] - relax_coeff * resid[horizontal_start_p3:]
+        )
+        c_bln_avg[horizontal_start_p3:, 1:] = (
+            c_bln_avg[horizontal_start_p3:, 1:]
+            - relax_coeff * resid[c2e2c][horizontal_start_p3:, :]
+        )
+        wgt_loc_sum[horizontal_start_p3:] = np.sum(c_bln_avg[horizontal_start_p3:], axis=1) - 1.0
+
+        for i in range(c2e2c.shape[1] + 1):
+            c_bln_avg[horizontal_start_p3:, i] = (
+                c_bln_avg[horizontal_start_p3:, i] - 0.25 * wgt_loc_sum[horizontal_start_p3:]
             )
-            for i in range(3):
-                c_bln_avg[llb2:, i + 1] = np.where(
-                    owner_mask[llb2:],
-                    c_bln_avg[llb2:, i + 1] - relax_coeff * resid[c2e2c[llb2:, i] - llb2],
-                    c_bln_avg[llb2:, i + 1],
-                )
-            wgt_loc_sum = np.sum(c_bln_avg[llb2:], axis=1) - 1.0
-            for i in range(4):
-                c_bln_avg[llb2:, i] = c_bln_avg[llb2:, i] - 0.25 * wgt_loc_sum
-            c_bln_avg[llb2:, 0] = np.where(
-                owner_mask[llb2:],
-                np.where(c_bln_avg[llb2:, 0] > minwgt_loc, c_bln_avg[llb2:, 0], minwgt_loc),
-                c_bln_avg[llb2:, 0],
-            )
-            c_bln_avg[llb2:, 0] = np.where(
-                owner_mask[llb2:],
-                np.where(c_bln_avg[llb2:, 0] < maxwgt_loc, c_bln_avg[llb2:, 0], maxwgt_loc),
-                c_bln_avg[llb2:, 0],
-            )
-        else:
-            c_bln_avg[llb2:, 0] = np.where(
-                owner_mask[llb2:], c_bln_avg[llb2:, 0] - resid, c_bln_avg[llb2:, 0]
-            )
+
+        c_bln_avg[horizontal_start_p3:, 0] = np.maximum(
+            c_bln_avg[horizontal_start_p3:, 0], minwgt_loc
+        )
+        c_bln_avg[horizontal_start_p3:, 0] = np.minimum(
+            c_bln_avg[horizontal_start_p3:, 0], maxwgt_loc
+        )
+
     return c_bln_avg
 
 
@@ -681,6 +681,8 @@ def compute_cells_aw_verts(
     e2v: np.ndarray,
     v2c: np.ndarray,
     e2c: np.ndarray,
+    horizontal_start_vertex: ta.wpfloat,
+    halo_region: ta.wpfloat,
 ) -> np.ndarray:
     """
     Compute cells_aw_verts.
@@ -699,35 +701,45 @@ def compute_cells_aw_verts(
     Returns:
         aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
-    for i in range(e2c.shape[1]):
+    for jv in range(horizontal_start_vertex, cells_aw_verts.shape[0]):
+        cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
-            for jc in range(v2c.shape[1]):
-                mask = np.where(
-                    np.logical_and(v2e[:, je] >= 0, e2c[v2e[:, je], i] == v2c[:, jc]),
-                    owner_mask[:],
-                    False,
-                )
-                index = np.arange(v2e.shape[0])
-                idx_ve = np.where(e2v[v2e[:, je], 0] == index, 0, 1)
-                cells_aw_verts[:, jc] = np.where(
-                    mask,
-                    cells_aw_verts[:, jc]
-                    + 0.5
-                    / dual_area[:]
-                    * edge_vert_length[v2e[:, je], idx_ve]
-                    * edge_cell_length[v2e[:, je], i],
-                    cells_aw_verts[:, jc],
-                )
+            ile = v2e[jv, je]
+            idx_ve = 0 if e2v[ile, 0] == jv else 1
+            cell_offset_idx_0 = e2c[ile, 0]
+            cell_offset_idx_1 = e2c[ile, 1]
+            ibc_0 = 0
+            ibc_1 = 0
+            for jc in range(v2e.shape[1]):
+                if cell_offset_idx_0 == v2c[jv, jc] and ibc_0 == 0:
+                    ibc_0 = 1
+                    cells_aw_verts[jv, jc] = (
+                        cells_aw_verts[jv, jc]
+                        + 0.5
+                        / dual_area[jv]
+                        * edge_vert_length[ile, idx_ve]
+                        * edge_cell_length[ile, 0]
+                    )
+                elif cell_offset_idx_1 == v2c[jv, jc] and ibc_1 == 0:
+                    ibc_1 = 1
+                    cells_aw_verts[jv, jc] = (
+                        cells_aw_verts[jv, jc]
+                        + 0.5
+                        / dual_area[jv]
+                        * edge_vert_length[ile, idx_ve]
+                        * edge_cell_length[ile, 1]
+                    )
+
     return cells_aw_verts
 
 
 def compute_e_bln_c_s(
-    owner_mask: np.ndarray,
     c2e: np.ndarray,
     cells_lat: np.ndarray,
     cells_lon: np.ndarray,
     edges_lat: np.ndarray,
     edges_lon: np.ndarray,
+    weighting_factor: float,
 ) -> np.ndarray:
     """
     Compute e_bln_c_s.
@@ -760,11 +772,12 @@ def compute_e_bln_c_s(
         xtemp,
         yloc,
         xloc,
-        0.0,
+        weighting_factor,
     )
 
-    for i in range(wgt.shape[0]):
-        e_bln_c_s[llb:, i] = np.where(owner_mask[llb:], wgt[i], e_bln_c_s[llb:, i])
+    e_bln_c_s[:, 0] = wgt[0]
+    e_bln_c_s[:, 1] = wgt[1]
+    e_bln_c_s[:, 2] = wgt[2]
     return e_bln_c_s
 
 

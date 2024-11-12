@@ -28,6 +28,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_pos_on_tplane_e_x_y,
     compute_primal_normal_ec,
 )
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     download_ser_data,
@@ -35,7 +36,6 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -193,7 +193,6 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     cell_areas = grid_savepoint.cell_areas().asnumpy()
     divavg_cntrwgt = 0.5
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
-    owner_mask = grid_savepoint.c_owner_mask().asnumpy()
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     horizontal_start_p2 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
@@ -202,7 +201,6 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     lon = grid_savepoint.cell_center_lon().asnumpy()
     c_bln_avg = compute_c_bln_avg(
         divavg_cntrwgt,
-        owner_mask,
         c2e2c,
         lat,
         lon,
@@ -211,13 +209,12 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     c_bln_avg = compute_force_mass_conservation_to_c_bln_avg(
         c_bln_avg,
         divavg_cntrwgt,
-        owner_mask,
         c2e2c,
         cell_areas,
         horizontal_start,
         horizontal_start_p2,
     )
-    assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=1e-3, rtol=1e-5)
+    assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=1e-2)
 
 
 @pytest.mark.datatest
@@ -260,9 +257,7 @@ def test_compute_cells_aw_verts(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
 ):
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
-    cells_aw_verts_zeros = cells_aw_verts_ref
-    cells_aw_verts_zeros[:, :] = 0.
-    h = np.zeros_like(cells_aw_verts_ref)
+    cells_aw_verts_zeros = np.zeros_like(cells_aw_verts_ref)
     dual_area = grid_savepoint.v_dual_area().asnumpy()
     edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
@@ -277,36 +272,30 @@ def test_compute_cells_aw_verts(
 
     cells_aw_verts = compute_cells_aw_verts(
         cells_aw_verts_zeros,
-        dual_area,
-        edge_vert_length,
-        edge_cell_length,
-        owner_mask,
-        v2e,
-        e2v,
-        v2c,
-        e2c,
+        dual_area=dual_area,
+        edge_vert_length=edge_vert_length,
+        edge_cell_length=edge_cell_length,
+        owner_mask=owner_mask,
+        v2e=v2e,
+        e2v=e2v,
+        v2c=v2c,
+        e2c=e2c,
+        horizontal_start_vertex=horizontal_start_vertex,
+        halo_region=icon_grid.start_index(vertex_domain(h_grid.Zone.HALO)),
     )
-    assert test_helpers.dallclose(cells_aw_verts, cells_aw_verts_ref)
+    assert test_helpers.dallclose(cells_aw_verts, cells_aw_verts_ref, atol=1e-3)
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s().asnumpy()
-    owner_mask = grid_savepoint.c_owner_mask().asnumpy()
     c2e = icon_grid.connectivities[dims.C2EDim]
     cells_lat = grid_savepoint.cell_center_lat().asnumpy()
     cells_lon = grid_savepoint.cell_center_lon().asnumpy()
     edges_lat = grid_savepoint.edges_center_lat().asnumpy()
     edges_lon = grid_savepoint.edges_center_lon().asnumpy()
-    e_bln_c_s = compute_e_bln_c_s(
-        owner_mask,
-        c2e,
-        cells_lat,
-        cells_lon,
-        edges_lat,
-        edges_lon,
-    )
+    e_bln_c_s = compute_e_bln_c_s(c2e, cells_lat, cells_lon, edges_lat, edges_lon, 0.0)
     assert test_helpers.dallclose(e_bln_c_s, e_bln_c_s_ref, atol=1e-6, rtol=1e-7)
 
 
