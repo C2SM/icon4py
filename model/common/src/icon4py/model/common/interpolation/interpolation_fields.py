@@ -479,8 +479,8 @@ def compute_force_mass_conservation_to_c_bln_avg(
     Returns:
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
-    wgt_loc_sum = np.zeros((c_bln_avg.shape[0]))
-    inv_neighbor_id = np.zeros([c2e2c.shape[0], 3], dtype=int)
+    wgt_loc_sum = np.zeros(c_bln_avg.shape[0])
+    inv_neighbor_id = np.zeros(c2e2c.shape, dtype=int)
     resid = np.zeros(c2e2c.shape[0])
     for jc in range(c2e2c.shape[0]):
         for i in range(c2e2c.shape[1]):
@@ -497,15 +497,14 @@ def compute_force_mass_conservation_to_c_bln_avg(
     minwgt_loc = divavg_cntrwgt - 0.003
     c_bln_avg_inv = c_bln_avg[c2e2c, inv_neighbor_id]
     for iteration in range(niter):
-        if iteration >= (niter - 1):
-            return c_bln_avg
         wgt_loc_sum[horizontal_start:] = c_bln_avg[horizontal_start:, 0] * cell_areas[
             horizontal_start:
         ] + np.sum(c_bln_avg_inv[horizontal_start:] * cell_areas[c2e2c][horizontal_start:], axis=1)
         resid[horizontal_start_p3:] = (
             wgt_loc_sum[horizontal_start_p3:] / cell_areas[horizontal_start_p3:] - 1.0
         )
-
+        if iteration >= (niter - 1):
+            return c_bln_avg
         c_bln_avg[horizontal_start_p3:, 0] = (
             c_bln_avg[horizontal_start_p3:, 0] - relax_coeff * resid[horizontal_start_p3:]
         )
