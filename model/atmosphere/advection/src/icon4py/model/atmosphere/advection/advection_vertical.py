@@ -9,6 +9,7 @@
 from abc import ABC, abstractmethod
 import logging
 
+import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend
 
 from icon4py.model.atmosphere.advection import advection_states
@@ -194,8 +195,8 @@ class SemiLagrangian(FiniteVolume):
         interpolation_state: advection_states.AdvectionInterpolationState,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
         metric_state: advection_states.AdvectionMetricState,
-        edge_params: geometry.EdgeParams,
-        cell_params: geometry.CellParams,
+        edge_params: grid_states.EdgeParams,
+        cell_params: grid_states.CellParams,
         backend: backend.Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):

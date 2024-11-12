@@ -1,4 +1,4 @@
-git+https://github.com/ghex-org/GHEX.git@master#subdirectory=bindings/python
+ghex@git+https://github.com/ghex-org/GHEX.git@master#subdirectory=bindings/python
 -r base-requirements-dev.txt
 # icon4py model
 -e ./model/common[all]
@@ -10,5 +10,4 @@ git+https://github.com/ghex-org/GHEX.git@master#subdirectory=bindings/python
 
 # icon4pytools
 -e ./tools
-
 

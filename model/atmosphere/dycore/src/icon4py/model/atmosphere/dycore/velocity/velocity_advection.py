@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import backend
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
-import icon4py.model.common.grid.geometry as geometry
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
@@ -43,7 +42,12 @@ from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
 )
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import (
+    horizontal as h_grid,
+    icon as icon_grid,
+    states as grid_states,
+    vertical as v_grid,
+)
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
@@ -56,7 +60,7 @@ class VelocityAdvection:
         metric_state: solve_nh_states.MetricStateNonHydro,
         interpolation_state: solve_nh_states.InterpolationState,
         vertical_params: v_grid.VerticalGrid,
-        edge_params: geometry.EdgeParams,
+        edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
         backend: backend.Backend,
     ):
