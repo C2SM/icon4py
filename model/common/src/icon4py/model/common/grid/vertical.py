@@ -541,11 +541,11 @@ def init_vert_coord(
     z3d_i[:, grid.num_levels] = topography
     ktop_thicklimit = grid.num_levels * xp.ones(grid.num_cells, dtype=ta.wpfloat)
 
-    for k in range(vertical_geometry.nflatlev):
+    for k in range(vertical_geometry.nflatlev+1):
         k1 = k + nshift
         z3d_i[:, k] = vct_a[k1]
 
-    for k in range(vertical_geometry.nflatlev, grid.num_levels):
+    for k in range(vertical_geometry.nflatlev+1, grid.num_levels):
         k1 = k + nshift
         # Scaling factors for large-scale and small-scale topography
         z_fac1 = xp.sinh(
