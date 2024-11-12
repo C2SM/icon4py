@@ -84,8 +84,8 @@ def test_diffusion_wrapper_granule_inputs(
     cell_center_lon = grid_savepoint.cell_center_lon()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # --- Extract Metric State Parameters ---
     vct_a = grid_savepoint.vct_a()
@@ -446,8 +446,8 @@ def test_diffusion_wrapper_single_step(
     cell_center_lon = grid_savepoint.cell_center_lon()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # Metric state parameters
     vct_a = grid_savepoint.vct_a()

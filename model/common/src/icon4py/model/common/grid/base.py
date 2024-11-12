@@ -23,10 +23,11 @@ from icon4py.model.common.settings import xp
 class MissingConnectivity(ValueError):
     pass
 
+
 @runtime_checkable
 class VerticalSize(Protocol):
     @property
-    def num_levels(self)-> int:
+    def num_levels(self) -> int:
         ...
 
 
@@ -95,7 +96,6 @@ class BaseGrid(ABC):
     @abstractmethod
     def num_edges(self) -> int:
         pass
-
 
     @abstractmethod
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
