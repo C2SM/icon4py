@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from gt4py.next import backend
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
-import icon4py.model.common.grid.geometry as geometry
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
@@ -43,7 +42,12 @@ from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
 )
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import (
+    horizontal as h_grid,
+    icon as icon_grid,
+    states as grid_states,
+    vertical as v_grid,
+)
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
@@ -56,11 +60,10 @@ class VelocityAdvection:
         metric_state: solve_nh_states.MetricStateNonHydro,
         interpolation_state: solve_nh_states.InterpolationState,
         vertical_params: v_grid.VerticalGrid,
-        edge_params: geometry.EdgeParams,
+        edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
         backend: backend.Backend,
     ):
-        self._initialized = False
         self.grid: icon_grid.IconGrid = grid
         self._backend = backend
         self.metric_state: solve_nh_states.MetricStateNonHydro = metric_state
@@ -73,8 +76,6 @@ class VelocityAdvection:
         self.scalfac_exdiff: float = 0.05
         self._allocate_local_fields()
         self._determine_local_domains()
-
-        self._initialized = True
 
         self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(self._backend)
@@ -115,10 +116,6 @@ class VelocityAdvection:
         self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl = (
             add_extra_diffusion_for_normal_wind_tendency_approaching_cfl.with_backend(self._backend)
         )
-
-    @property
-    def initialized(self):
-        return self._initialized
 
     def _allocate_local_fields(self):
         self.z_w_v = field_alloc.allocate_zero_field(
