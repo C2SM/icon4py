@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import math
+from icon4py.model.common.settings import xp
 
 import gt4py.next as gtx
 import numpy as np
@@ -303,6 +304,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 def test_init_vert_coord(
     grid_savepoint,
     metrics_savepoint,
+    constant_fields_savepoint,
     experiment,
     icon_grid,
 ):
@@ -317,8 +319,8 @@ def test_init_vert_coord(
         vct_a=vct_a,
         vct_b=vct_b,
     )
-    topography = metrics_savepoint.topo_c()
-    topography_smoothed = metrics_savepoint.topo_smt_c()
+    topography = constant_fields_savepoint.topo_c()
+    topography_smoothed = constant_fields_savepoint.topo_smt_c()
 
     z_ifc = v_grid.init_vert_coord(
         vct_a=vct_a,
@@ -329,4 +331,4 @@ def test_init_vert_coord(
         vertical_geometry=vertical_geometry,
     )
 
-    assert helpers.dallclose(z_ifc.asnumpy(), metrics_savepoint.z_ifc().asnumpy())
+    assert helpers.dallclose(z_ifc.ndarray, metrics_savepoint.z_ifc().ndarray, atol=1e-13)
