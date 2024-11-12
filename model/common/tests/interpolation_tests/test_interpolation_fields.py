@@ -250,7 +250,7 @@ def test_compute_cells_aw_verts(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
 ):
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
-    dual_area = grid_savepoint.v_dual_area().asnumpy()
+    dual_area = grid_savepoint.vertex_dual_area().asnumpy()
     edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
     owner_mask = grid_savepoint.v_owner_mask()

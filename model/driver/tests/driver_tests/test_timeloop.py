@@ -8,11 +8,12 @@
 
 import pytest
 
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import geometry, vertical as v_grid
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
@@ -143,8 +144,8 @@ def test_run_timeloop_single_step(
             ndyn_substeps=ndyn_substeps,
         )
 
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
 
     diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
         interpolation_savepoint

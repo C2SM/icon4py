@@ -15,6 +15,7 @@ from typing import Final
 
 import gt4py.next as gtx
 
+import icon4py.model.common.states.metadata as data
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.settings import xp
@@ -56,6 +57,14 @@ class Domain:
             assert (
                 self.offset >= 0
             ), f"{self.marker} needs to be combined with positive offest, but offset = {self.offset}"
+
+
+def domain(dim: gtx.Dimension):
+    def _domain(marker: Zone):
+        assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
+        return Domain(dim, marker)
+
+    return _domain
 
 
 @dataclasses.dataclass(frozen=True)
@@ -168,19 +177,17 @@ class VerticalGrid:
         return "\n".join(vertical_params_properties)
 
     @property
-    def metadata_interface_physical_height(self) -> dict:
-        return dict(
-            standard_name="model_interface_height",
-            long_name="height value of half levels without topography",
-            units="m",
-            positive="up",
-            icon_var_name="vct_a",
-        )
+    def metadata_interface_physical_height(self):
+        return data.attrs["model_interface_height"]
+
+    @property
+    def num_levels(self):
+        return self.config.num_levels
 
     def index(self, domain: Domain) -> gtx.int32:
         match domain.marker:
             case Zone.TOP:
-                index = gtx.int32(0)
+                index = 0
             case Zone.BOTTOM:
                 index = self._bottom_level(domain)
             case Zone.MOIST:
@@ -198,8 +205,8 @@ class VerticalGrid:
         ), f"vertical index {index} outside of grid levels for {domain.dim}"
         return gtx.int32(index)
 
-    def _bottom_level(self, domain: Domain) -> gtx.int32:
-        return gtx.int32(self.size(domain.dim))
+    def _bottom_level(self, domain: Domain) -> int:
+        return self.size(domain.dim)
 
     @property
     def interface_physical_height(self) -> fa.KField[float]:
@@ -228,6 +235,14 @@ class VerticalGrid:
     @property
     def nflat_gradp(self) -> gtx.int32:
         return self._min_index_flat_horizontal_grad_pressure
+
+    @property
+    def vct_a(self) -> fa.KField:
+        return self._vct_a
+
+    @property
+    def vct_b(self) -> fa.KField:
+        return self._vct_b
 
     def size(self, dim: gtx.Dimension) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported."

@@ -32,6 +32,7 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
+import icon4py.model.common.grid.states as grid_states
 from gt4py.next import common as gt4py_common
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import SolveNonhydro
@@ -56,7 +57,6 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid import icon
-from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import backend
@@ -230,7 +230,7 @@ def solve_nh_init(
     nonhydro_params = solve_nonhydro.NonHydrostaticParams(config)
 
     # edge geometry
-    edge_geometry = EdgeParams(
+    edge_geometry = grid_states.EdgeParams(
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inverse_dual_edge_lengths,
@@ -252,7 +252,7 @@ def solve_nh_init(
     )
 
     # datatest config CellParams
-    cell_geometry = CellParams.from_global_num_cells(
+    cell_geometry = grid_states.CellParams.from_global_num_cells(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
