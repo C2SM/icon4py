@@ -160,5 +160,5 @@ def create_prognostic_states(sp):
         rho=sp.rho_new(),
         exner=sp.exner_new(),
     )
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
-    return prognostic_state_ls
+    prognostic_state_swp = common_utils.NextStepPair(prognostic_state_nnow, prognostic_state_nnew)
+    return prognostic_state_swp

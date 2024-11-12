@@ -155,11 +155,12 @@ def test_nonhydro_predictor_step(
     )
     nlev = icon_grid.num_levels
 
-    prognostic_state_ls = utils.create_prognostic_states(sp)
+    prognostic_state_swp = utils.create_prognostic_states(sp)
+
     solve_nonhydro.set_timelevels(nnow, nnew)
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state=prognostic_state_ls,
+        prognostic_state_swp=prognostic_state_swp,
         z_fields=solve_nonhydro.intermediate_fields,
         dtime=dtime,
         l_recompute=recompute,
@@ -305,7 +306,7 @@ def test_nonhydro_predictor_step(
         sp_exit.z_hydro_corr().asnumpy()[edge_start_nudging_level_2:, nlev - 1],
         atol=1e-20,
     )
-    prognostic_state_nnew = prognostic_state_ls[1]
+    prognostic_state_nnew = prognostic_state_swp.next
     vn_new_reference = sp_exit.vn_new().asnumpy()
 
     # stencils 24
