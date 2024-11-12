@@ -1290,7 +1290,7 @@ class SolveNonhydro:
 
         self._add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_state_swp.current.vn,
-            ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
+            ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.first,
             ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
             z_theta_v_e=z_fields.z_theta_v_e,
             z_gradh_exner=z_fields.z_gradh_exner,
@@ -1428,7 +1428,7 @@ class SolveNonhydro:
         self._stencils_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_state_swp.current.w,
-            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
+            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.first,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
@@ -1737,8 +1737,8 @@ class SolveNonhydro:
             log.debug(f"corrector: start stencil 23")
             self._add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_state_swp.current.vn,
-                ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
-                ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl2],
+                ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.first,
+                ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc.second,
                 ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
                 z_theta_v_e=z_fields.z_theta_v_e,
                 z_gradh_exner=z_fields.z_gradh_exner,
@@ -1908,8 +1908,8 @@ class SolveNonhydro:
             self._stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state_swp.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
-                ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_pc[self.ntl2],
+                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.first,
+                ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_pc.second,
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,
@@ -1943,7 +1943,7 @@ class SolveNonhydro:
             self._stencils_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state_swp.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
+                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.first,
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,
