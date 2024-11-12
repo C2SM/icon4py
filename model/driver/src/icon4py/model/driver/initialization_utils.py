@@ -20,7 +20,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.grid import geometry, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -201,8 +201,8 @@ def model_initialization_serialbox(
 
 def read_initial_state(
     grid: icon_grid.IconGrid,
-    cell_param: geometry.CellParams,
-    edge_param: geometry.EdgeParams,
+    cell_param: grid_states.CellParams,
+    edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     backend: gt4py_backend.Backend,
     rank=0,
@@ -304,8 +304,8 @@ def read_geometry_fields(
     grid_root=GRID_ROOT,
     grid_level=GRID_LEVEL,
 ) -> tuple[
-    geometry.EdgeParams,
-    geometry.CellParams,
+    grid_states.EdgeParams,
+    grid_states.CellParams,
     v_grid.VerticalGrid,
     fa.CellField[bool],
 ]:
