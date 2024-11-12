@@ -176,6 +176,11 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
     """Load data from ICON metric state nonhydro savepoint."""
     return data_provider.from_metrics_nonhydro_savepoint()
 
+@pytest.fixture
+def constant_fields_savepoint(data_provider):  # F811
+    """Load data from ICON constant fields savepoint."""
+    return data_provider.from_constant_fields_savepoint()
+
 
 @pytest.fixture
 def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811

@@ -108,9 +108,6 @@ class MetricStateNonHydro:
     wgtfac_e: fa.EdgeKField[float]
     wgtfacq_e: fa.EdgeKField[float]
 
-    topo_c: fa.CellField[float]
-    topo_smt_c: fa.CellField[float]
-
     exner_exfac: fa.CellKField[float]
     exner_ref_mc: fa.CellKField[float]
     rho_ref_mc: fa.CellKField[float]
@@ -142,6 +139,13 @@ class MetricStateNonHydro:
     coeff1_dwdz: fa.CellKField[float]
     coeff2_dwdz: fa.CellKField[float]
     coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], float]
+
+@dataclasses.dataclass
+class ConstantFieldsState:
+    """Dataclass containing constant fields."""
+
+    topo_c: fa.CellField[float]
+    topo_smt_c: fa.CellField[float]
 
 
 @dataclasses.dataclass

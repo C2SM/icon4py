@@ -49,8 +49,6 @@ def construct_metric_state(
         exner_ref_mc=savepoint.exner_ref_mc(),
         wgtfac_c=savepoint.wgtfac_c(),
         wgtfacq_c=savepoint.wgtfacq_c_dsl(),
-        topo_c=savepoint.topo_c(),
-        topo_smt_c=savepoint.topo_smt_c(),
         inv_ddqz_z_full=savepoint.inv_ddqz_z_full(),
         rho_ref_mc=savepoint.rho_ref_mc(),
         theta_ref_mc=savepoint.theta_ref_mc(),
@@ -77,6 +75,14 @@ def construct_metric_state(
         coeff1_dwdz=savepoint.coeff1_dwdz(),
         coeff2_dwdz=savepoint.coeff2_dwdz(),
         coeff_gradekin=savepoint.coeff_gradekin(),
+    )
+
+def construct_constant_fields_state(
+    savepoint: sb.ConstantFieldsSavepoint, num_k_lev
+) -> solve_nh_states.ConstantFieldsState:
+    return solve_nh_states.ConstantFieldsState(
+        topo_c=savepoint.topo_c(),
+        topo_smt_c=savepoint.topo_smt_c(),
     )
 
 
