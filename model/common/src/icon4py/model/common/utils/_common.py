@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import copy
 import functools
-import inspect
 from collections.abc import Callable
 from typing import (
     Annotated,
@@ -22,6 +21,7 @@ from typing import (
     Generic,
     ParamSpec,
     TypeVar,
+    get_type_hints,
 )
 
 
@@ -124,14 +124,19 @@ class Pair(Generic[T]):
     """
     A generic class representing a pair of values.
 
-    The name of the attributes can be customized by using the
-    Pair.FIRST and Pair.SECOND constants as type hint annotations
-    of the respective attributes in the subclass.
+    The name of the attributes can be customized by using the `Pair.FIRST`
+    and `Pair.SECOND` constants as type hint annotations of the respective
+    descriptor attributes in the subclass.
+
+    Note that you the descriptor attributes from this class need to be
+    COPIED in the subclasses (`copy.copy()` should work) to avoid
+    overwriting the names of the original descriptors (`first` and
+    `second). See the examples below.
 
     Examples:
         >>> class MyPair(Pair[T]):
-        ...     a: Annotated[T, Pair.FIRST]
-        ...     b: Annotated[T, Pair.SECOND]
+        ...     a: Annotated[T, Pair.FIRST] = copy.copy(Pair.first)
+        ...     b: Annotated[T, Pair.SECOND] = copy.copy(Pair._second_read_only)
         ...
         ...
         ... pair = MyPair(1, 2)
@@ -142,6 +147,11 @@ class Pair(Generic[T]):
         ... swapped = Pair(2, 1)
         ... pair == swapped
         True
+
+        >>> pair.b = 3
+        Traceback (most recent call last)
+        ...
+        AttributeError: can't set attribute
     """
 
     FIRST: Final = "FIRST"
@@ -151,7 +161,7 @@ class Pair(Generic[T]):
     __second_attr_name: ClassVar[str] = "second"
 
     def __init_subclass__(cls) -> None:
-        for key, value in inspect.get_annotations(cls).items():
+        for key, value in get_type_hints(cls, include_extras=True).items():
             if (metadata := getattr(value, "__metadata__", None)) is not None:
                 if Pair.FIRST in metadata:
                     cls.__first_attr_name = key
@@ -184,6 +194,11 @@ class Pair(Generic[T]):
     def second(self, value: T) -> None:
         """Property setter for the secondelement of the pair."""
         self.__second = value
+
+    @namedproperty
+    def _first_read_only(self) -> T:
+        """Read-only property for the first element of the pair (to be used in subclasses)."""
+        return self.__first
 
     @namedproperty
     def _second_read_only(self) -> T:
