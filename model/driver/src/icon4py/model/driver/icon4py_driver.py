@@ -112,7 +112,7 @@ class TimeLoop:
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: common_utils.NextStatePair[prognostics.PrognosticState],
+        prognostic_state_swp: common_utils.NextStepPair[prognostics.PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: solve_nh_states.PrepAdvection,
         initial_divdamp_fac_o2: float,
@@ -183,7 +183,7 @@ class TimeLoop:
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: common_utils.NextStatePair[prognostics.PrognosticState],
+        prognostic_state_swp: common_utils.NextStepPair[prognostics.PrognosticState],
         prep_adv: solve_nh_states.PrepAdvection,
         initial_divdamp_fac_o2: float,
         do_prep_adv: bool,
@@ -212,7 +212,7 @@ class TimeLoop:
     def _do_dyn_substepping(
         self,
         solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: common_utils.NextStatePair[prognostics.PrognosticState],
+        prognostic_state_swp: common_utils.NextStepPair[prognostics.PrognosticState],
         prep_adv: solve_nh_states.PrepAdvection,
         initial_divdamp_fac_o2: float,
         do_prep_adv: bool,
@@ -266,7 +266,7 @@ class DriverStates(NamedTuple):
     prep_advection_prognostic: solve_nh_states.PrepAdvection
     solve_nonhydro_diagnostic: solve_nh_states.DiagnosticStateNonHydro
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
-    prognostic_swp: common_utils.NextStatePair[prognostics.PrognosticState]
+    prognostic_swp: common_utils.NextStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState
 
 
@@ -405,7 +405,7 @@ def initialize(
         rank=props.rank,
         experiment_type=experiment_type,
     )
-    prognostics_swp = common_utils.NextStatePair(prognostic_state_now, prognostic_state_next)
+    prognostics_swp = common_utils.NextStepPair(prognostic_state_now, prognostic_state_next)
 
     timeloop = TimeLoop(
         run_config=config.run_config,

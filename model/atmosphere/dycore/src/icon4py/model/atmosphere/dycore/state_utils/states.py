@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
 import dataclasses
 
 import gt4py.next as gtx
@@ -37,8 +40,8 @@ class DiagnosticStateNonHydro:
     mass_fl_e: fa.EdgeKField[float]
     ddt_vn_phy: fa.EdgeKField[float]
     grf_tend_vn: fa.EdgeKField[float]
-    ddt_vn_apc_pc: common_utils.Pair[fa.EdgeKField[float], fa.EdgeKField[float]]
-    ddt_w_adv_pc: common_utils.Pair[fa.CellKField[float], fa.CellKField[float]]
+    ddt_vn_apc_pc: common_utils.Pair[fa.EdgeKField[float]]
+    ddt_w_adv_pc: common_utils.Pair[fa.CellKField[float]]
 
     # Analysis increments
     rho_incr: fa.EdgeKField[float]  # moist density increment [kg/m^3]

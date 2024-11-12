@@ -25,11 +25,7 @@ from typing import (
 )
 
 
-__all__ = [
-    "chainable",
-    "namedproperty",
-    "Pair",
-]
+__all__ = ["chainable", "namedproperty", "Pair", "NextStepPair", "PreviousStepPair"]
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -70,7 +66,7 @@ T = TypeVar("T")
 C = TypeVar("C")
 
 
-class namedproperty(property[C, T]):
+class namedproperty(property, Generic[C, T]):
     """
     A simple extension of the built-in `property` descriptor storing
     the name of the attribute it is assigned to.

@@ -9,14 +9,16 @@
 from __future__ import annotations
 
 from . import gt4py_field_allocation
-from ._common import Pair, chainable
+from ._common import NextStepPair, PreviousStepPair, Pair, chainable
 
 
 __all__ = [
     # Symbols
     "chainable",
     "namedproperty",
+    "NextStepPair",
     "Pair",
+    "PreviousStepPair"
     # Modules
     "gt4py_field_allocation",
 ]

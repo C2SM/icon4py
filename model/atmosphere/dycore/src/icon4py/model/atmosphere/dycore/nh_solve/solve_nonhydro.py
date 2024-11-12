@@ -805,7 +805,7 @@ class SolveNonhydro:
     def time_step(
         self,
         diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: common_utils.NextStatePair[prognostics.PrognosticState],
+        prognostic_state_swp: common_utils.NextStepPair[prognostics.PrognosticState],
         prep_adv: solve_nh_states.PrepAdvection,
         divdamp_fac_o2: float,
         dtime: float,
@@ -912,7 +912,7 @@ class SolveNonhydro:
     def run_predictor_step(
         self,
         diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: common_utils.NextStatePair[prognostics.PrognosticState],
+        prognostic_state_swp: common_utils.NextStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         dtime: float,
         l_recompute: bool,
@@ -1637,7 +1637,7 @@ class SolveNonhydro:
     def run_corrector_step(
         self,
         diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
-        prognostic_state_swp: common_utils.NextStatePair[prognostics.PrognosticState],
+        prognostic_state_swp: common_utils.NextStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         divdamp_fac_o2: float,
         prep_adv: solve_nh_states.PrepAdvection,
