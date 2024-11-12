@@ -132,8 +132,9 @@ def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
         ddt_vn_apc_pc=common_utils.Pair(
             init_savepoint.ddt_vn_apc_pc(1), init_savepoint.ddt_vn_apc_pc(2)
         ),
-        ddt_w_adv_ntl1=init_savepoint.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=init_savepoint.ddt_w_adv_pc(2),
+        ddt_w_adv_pc=common_utils.Pair(
+            init_savepoint.ddt_w_adv_pc(1), init_savepoint.ddt_w_adv_pc(2)
+        ),
         vt=init_savepoint.vt(),
         vn_ie=init_savepoint.vn_ie(),
         w_concorr_c=init_savepoint.w_concorr_c(),

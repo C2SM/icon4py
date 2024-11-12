@@ -147,8 +147,10 @@ def model_initialization_serialbox(
             velocity_init_savepoint.ddt_vn_apc_pc(1),
             velocity_init_savepoint.ddt_vn_apc_pc(2),
         ),
-        ddt_w_adv_ntl1=velocity_init_savepoint.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=velocity_init_savepoint.ddt_w_adv_pc(2),
+        ddt_w_adv_pc=common_utils.Pair(
+            velocity_init_savepoint.ddt_w_adv_pc(1),
+            velocity_init_savepoint.ddt_w_adv_pc(2),
+        ),
         vt=velocity_init_savepoint.vt(),
         vn_ie=velocity_init_savepoint.vn_ie(),
         w_concorr_c=velocity_init_savepoint.w_concorr_c(),

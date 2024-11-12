@@ -12,7 +12,11 @@ import gt4py.next as gtx
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common import constants as phy_const, dimension as dims, utils as common_utils
+from icon4py.model.common import (
+    constants as phy_const,
+    dimension as dims,
+    utils as common_utils,
+)
 from icon4py.model.common.grid import geometry, horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
@@ -101,7 +105,9 @@ def model_initialization_gauss3d(
     mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
     mask = xp.repeat(
-        xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1
+        xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
+        num_levels,
+        axis=1,
     )
     primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
 
@@ -269,11 +275,9 @@ def model_initialization_gauss3d(
             field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
             field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         ),
-        ddt_w_adv_ntl1=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
-        ddt_w_adv_ntl2=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
+        ddt_w_adv_pc=common_utils.Pair(
+            field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
+            field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
         ),
         vt=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         vn_ie=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, is_halfdim=True),

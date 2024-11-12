@@ -331,11 +331,9 @@ def model_initialization_jabw(
             field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
             field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         ),
-        ddt_w_adv_ntl1=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
-        ddt_w_adv_ntl2=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
+        ddt_w_adv_pc=common_utils.Pair(
+            field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
+            field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
         ),
         vt=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         vn_ie=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, is_halfdim=True),

@@ -37,10 +37,6 @@ class DiagnosticStateNonHydro:
     mass_fl_e: fa.EdgeKField[float]
     ddt_vn_phy: fa.EdgeKField[float]
     grf_tend_vn: fa.EdgeKField[float]
-    # ddt_vn_apc_ntl1: fa.EdgeKField[float]
-    # ddt_vn_apc_ntl2: fa.EdgeKField[float]
-    # ddt_w_adv_ntl1: fa.CellKField[float]
-    # ddt_w_adv_ntl2: fa.CellKField[float]
     ddt_vn_apc_pc: common_utils.Pair[fa.EdgeKField[float], fa.EdgeKField[float]]
     ddt_w_adv_pc: common_utils.Pair[fa.CellKField[float], fa.CellKField[float]]
 
@@ -49,18 +45,6 @@ class DiagnosticStateNonHydro:
     vn_incr: fa.EdgeKField[float]  # normal velocity increment [m/s]
     exner_incr: fa.EdgeKField[float]  # exner increment [- ]
     exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
-
-    # @property
-    # def ddt_vn_apc_pc(
-    #     self,
-    # ) -> tuple[fa.EdgeKField[float], fa.EdgeKField[float]]:
-    #     return (self.ddt_vn_apc_ntl1, self.ddt_vn_apc_ntl2)
-
-    # @property
-    # def ddt_w_adv_pc(
-    #     self,
-    # ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
-    #     return (self.ddt_w_adv_ntl1, self.ddt_w_adv_ntl2)
 
 
 @dataclasses.dataclass
