@@ -128,10 +128,10 @@ class Pair(Generic[T]):
     and `Pair.SECOND` constants as type hint annotations of the respective
     descriptor attributes in the subclass.
 
-    Note that you the descriptor attributes from this class need to be
-    COPIED in the subclasses (`copy.copy()` should work) to avoid
-    overwriting the names of the original descriptors (`first` and
-    `second). See the examples below.
+    Note that the descriptor attributes from this class need to be COPIED
+    in the subclasses (`copy.copy()` should work) to avoid overwriting
+    the names of the original descriptors (`first` and `second).
+    See the examples below.
 
     Examples:
         >>> class MyPair(Pair[T]):
@@ -154,8 +154,8 @@ class Pair(Generic[T]):
         AttributeError: can't set attribute
     """
 
-    FIRST: Final = "FIRST"
-    SECOND: Final = "SECOND"
+    FIRST: Final = "_PAIR_FIRST_"
+    SECOND: Final = "_PAIR_SECOND_"
 
     __first_attr_name: ClassVar[str] = "first"
     __second_attr_name: ClassVar[str] = "second"
