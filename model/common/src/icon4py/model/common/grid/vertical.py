@@ -16,7 +16,12 @@ from typing import Final
 import gt4py.next as gtx
 
 import icon4py.model.common.states.metadata as data
-from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa, type_alias as ta
+from icon4py.model.common import (
+    dimension as dims,
+    exceptions,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.settings import xp
 
@@ -556,11 +561,11 @@ def init_vert_coord(
     z3d_i[:, grid.num_levels] = topography
     ktop_thicklimit = grid.num_levels * xp.ones(grid.num_cells, dtype=ta.wpfloat)
 
-    for k in range(vertical_geometry.nflatlev+1):
+    for k in range(vertical_geometry.nflatlev + 1):
         k1 = k + nshift
         z3d_i[:, k] = vct_a[k1]
 
-    for k in range(vertical_geometry.nflatlev+1, grid.num_levels):
+    for k in range(vertical_geometry.nflatlev + 1, grid.num_levels):
         k1 = k + nshift
         # Scaling factors for large-scale and small-scale topography
         z_fac1 = xp.sinh(
@@ -638,7 +643,8 @@ def init_vert_coord(
     # Check if level nflatlev is still flat
     try:
         assert xp.all(
-            z3d_i[:, vertical_geometry.nflatlev-1] == vct_a[vertical_geometry.nflatlev-1 + nshift]
+            z3d_i[:, vertical_geometry.nflatlev - 1]
+            == vct_a[vertical_geometry.nflatlev - 1 + nshift]
         )
     except AssertionError:
         log.error("Level nflatlev is not flat")

@@ -32,6 +32,7 @@ def _nabla2_scalar_2D(
 
     return nabla2_psi_c
 
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def nabla2_scalar_2D(
     psi_c: fa.CellField[ta.wpfloat],
@@ -48,6 +49,7 @@ def nabla2_scalar_2D(
             CellDim: (horizontal_start, horizontal_end),
         },
     )
+
 
 @gtx.field_operator
 def _nabla2_scalar(

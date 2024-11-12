@@ -77,6 +77,7 @@ def construct_metric_state(
         coeff_gradekin=savepoint.coeff_gradekin(),
     )
 
+
 def construct_constant_fields_state(
     savepoint: sb.ConstantFieldsSavepoint, num_k_lev
 ) -> solve_nh_states.ConstantFieldsState:

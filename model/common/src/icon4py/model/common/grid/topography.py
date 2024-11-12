@@ -45,8 +45,7 @@ def compute_smooth_topo(
         )
 
         topography_smoothed_np = (
-            topography_smoothed.asnumpy()
-            + 0.125 * nabla2_topo.asnumpy() * cell_areas.asnumpy()
+            topography_smoothed.asnumpy() + 0.125 * nabla2_topo.asnumpy() * cell_areas.asnumpy()
         )
         topography_smoothed = gtx.as_field((dims.CellDim,), topography_smoothed_np)
 

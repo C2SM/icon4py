@@ -140,6 +140,7 @@ class MetricStateNonHydro:
     coeff2_dwdz: fa.CellKField[float]
     coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], float]
 
+
 @dataclasses.dataclass
 class ConstantFieldsState:
     """Dataclass containing constant fields."""

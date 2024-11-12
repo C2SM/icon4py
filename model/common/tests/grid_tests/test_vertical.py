@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import math
-from icon4py.model.common.settings import xp
 
 import gt4py.next as gtx
 import numpy as np
@@ -296,7 +295,6 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     assert helpers.dallclose(vct_b.ndarray, grid_savepoint.vct_b().ndarray)
 
 
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT])
 def test_init_vert_coord(
@@ -306,7 +304,6 @@ def test_init_vert_coord(
     experiment,
     icon_grid,
 ):
-
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     vertical_config = v_grid.VerticalGridConfig(

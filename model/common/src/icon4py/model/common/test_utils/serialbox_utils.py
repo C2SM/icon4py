@@ -1775,13 +1775,14 @@ class IconGraupelInitSavepoint(IconSavepoint):
     def vz0r(self):
         return self.serializer.read("ser_init_graupel_zvz0r", self.savepoint)[0]
 
-class ConstantFieldsSavepoint(IconSavepoint):
 
+class ConstantFieldsSavepoint(IconSavepoint):
     def topo_c(self):
         return self._get_field("topo_c", dims.CellDim)
 
     def topo_smt_c(self):
         return self._get_field("topo_smt_c", dims.CellDim)
+
 
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0, advection=False):

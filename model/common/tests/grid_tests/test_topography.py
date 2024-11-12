@@ -11,9 +11,8 @@ import pytest
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import geometry, topography as topo
 from icon4py.model.common.settings import xp
-from icon4py.model.common.test_utils import helpers, reference_funcs
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers, reference_funcs
 
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -46,7 +45,10 @@ def test_topography_smoothing_withSerializedData(
         num_iterations=num_iterations,
     )
 
-    assert helpers.dallclose(topography_smoothed_verif_np, topography_smoothed.ndarray, atol=1.0e-14)
+    assert helpers.dallclose(
+        topography_smoothed_verif_np, topography_smoothed.ndarray, atol=1.0e-14
+    )
+
 
 @pytest.mark.datatest
 def test_topography_smoothing_withNumpy(
@@ -70,8 +72,7 @@ def test_topography_smoothing_withNumpy(
             icon_grid, topography_smoothed_np, geofac_n2s.ndarray
         )
         topography_smoothed_np[:, 0] = (
-            topography_smoothed_np[:, 0]
-            + 0.125 * nabla2_topo_np[:, 0] * cell_geometry.area.ndarray
+            topography_smoothed_np[:, 0] + 0.125 * nabla2_topo_np[:, 0] * cell_geometry.area.ndarray
         )
     topography_smoothed_verif_np = topography_smoothed_np[:, 0]
 

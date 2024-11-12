@@ -7,11 +7,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import sqrt, exp
+from gt4py.next.ffront.fbuiltins import exp, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import geometry, icon as icon_grid
 from icon4py.model.common.settings import xp
+
 
 @gtx.field_operator
 def _gaussian_hill(
@@ -26,9 +27,10 @@ def _gaussian_hill(
     Computes the elevation of a parameterized Gaussian hill.
     """
     z_distance = sqrt((cartesian_x - mount_x) ** 2 + (cartesian_y - mount_y) ** 2)
-    topography = mount_height * exp(-(z_distance / mount_width) ** 2)
-    
+    topography = mount_height * exp(-((z_distance / mount_width) ** 2))
+
     return topography
+
 
 def gaussian_hill(
     grid: icon_grid.IconGrid,
@@ -38,7 +40,6 @@ def gaussian_hill(
     mount_height: ta.wpfloat = 100,
     mount_width: ta.wpfloat = 2000,
 ) -> fa.CellField[ta.wpfloat]:
-
     torus_domain_length = 50000
     if mount_lon < 0:
         mount_lon = torus_domain_length / 2
