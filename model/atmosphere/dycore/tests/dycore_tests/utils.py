@@ -145,7 +145,7 @@ def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
     )
 
 
-def create_prognostic_states(sp):
+def create_prognostic_states(sp) -> common_utils.NextStepPair[prognostics.PrognosticState]:
     prognostic_state_nnow = prognostics.PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),

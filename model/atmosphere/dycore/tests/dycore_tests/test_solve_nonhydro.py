@@ -130,9 +130,6 @@ def test_nonhydro_predictor_step(
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
-    nnow = 0
-    nnew = 1
-
     diagnostic_state_nh = utils.construct_diagnostics(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
@@ -166,8 +163,6 @@ def test_nonhydro_predictor_step(
         l_recompute=recompute,
         l_init=linit,
         at_first_substep=(jstep_init == 0),
-        nnow=nnow,
-        nnew=nnew,
     )
     cell_domain = h_grid.domain(dims.CellDim)
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -523,9 +518,6 @@ def test_nonhydro_corrector_step(
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
-    nnow = 0
-    nnew = 1
-
     diagnostic_state_nh = utils.construct_diagnostics(sp)
 
     z_fields = solve_nh.IntermediateFields(
@@ -566,18 +558,16 @@ def test_nonhydro_corrector_step(
         backend=backend,
     )
 
-    prognostic_state_ls = utils.create_prognostic_states(sp)
-    solve_nonhydro.set_time_levels(nnow, nnew)
+    prognostic_state_swp = utils.create_prognostic_states(sp)
+    solve_nonhydro.set_time_levels(diagnostic_state_nh)
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state=prognostic_state_ls,
+        prognostic_state=prognostic_state_swp,
         z_fields=z_fields,
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
-        nnew=nnew,
-        nnow=nnow,
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
         at_last_substep=jstep_init == (ndyn_substeps - 1),
@@ -606,29 +596,29 @@ def test_nonhydro_corrector_step(
 
     # stencil 23,26, 27, 4th_order_divdamp
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].vn.asnumpy(),
+        prognostic_state_swp.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-9,  # TODO (magdalena) was 1e-10 for local experiment only
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].exner.asnumpy(),
+        prognostic_state_swp.next.exner.asnumpy(),
         savepoint_nonhydro_exit.exner_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].rho.asnumpy(),
+        prognostic_state_swp.next.rho.asnumpy(),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].w.asnumpy(),
+        prognostic_state_swp.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].theta_v.asnumpy(),
+        prognostic_state_swp.next.theta_v.asnumpy(),
         savepoint_nonhydro_exit.theta_v_new().asnumpy(),
     )
     # stencil 31
@@ -728,8 +718,6 @@ def test_run_solve_nonhydro_single_step(
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
-    nnow = 0
-    nnew = 1
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
@@ -754,25 +742,23 @@ def test_run_solve_nonhydro_single_step(
         backend=backend,
     )
 
-    prognostic_state_ls = utils.create_prognostic_states(sp)
+    prognostic_state_swp = utils.create_prognostic_states(sp)
 
     initial_divdamp_fac = sp.divdamp_fac_o2()
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state_ls=prognostic_state_ls,
+        prognostic_state_swp=prognostic_state_swp,
         prep_adv=prep_adv,
         divdamp_fac_o2=initial_divdamp_fac,
         dtime=dtime,
         l_recompute=recompute,
         l_init=linit,
-        nnew=nnew,
-        nnow=nnow,
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
         at_first_substep=jstep_init == 0,
         at_last_substep=jstep_init == (ndyn_substeps - 1),
     )
-    prognostic_state_nnew = prognostic_state_ls[1]
+    prognostic_state_nnew = prognostic_state_swp.next
     assert helpers.dallclose(
         prognostic_state_nnew.theta_v.asnumpy(),
         sp_step_exit.theta_v_new().asnumpy(),
@@ -856,13 +842,11 @@ def test_run_solve_nonhydro_multi_step(
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
-    nnow = 0
-    nnew = 1
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
-    prognostic_state_ls = utils.create_prognostic_states(sp)
+    prognostic_state_swp = utils.create_prognostic_states(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
@@ -888,14 +872,12 @@ def test_run_solve_nonhydro_multi_step(
         is_last_substep = i_substep == (ndyn_substeps - 1)
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
-            prognostic_state_ls=prognostic_state_ls,
+            prognostic_state_swp=prognostic_state_swp,
             prep_adv=prep_adv,
             divdamp_fac_o2=sp.divdamp_fac_o2(),
             dtime=dtime,
             l_recompute=recompute,
             l_init=linit,
-            nnew=nnew,
-            nnow=nnow,
             lclean_mflx=clean_mflx,
             lprep_adv=lprep_adv,
             at_first_substep=is_first_substep,
@@ -905,9 +887,7 @@ def test_run_solve_nonhydro_multi_step(
         recompute = False
         clean_mflx = False
         if not is_last_substep:
-            ntemp = nnow
-            nnow = nnew
-            nnew = ntemp
+            prognostic_state_swp.swap()
 
     cell_start_lb_plus2 = icon_grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
@@ -951,28 +931,28 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].theta_v.asnumpy(),
+        prognostic_state_swp.next.theta_v.asnumpy(),
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].rho.asnumpy(),
+        prognostic_state_swp.next.rho.asnumpy(),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].exner.asnumpy(),
+        prognostic_state_swp.next.exner.asnumpy(),
         sp_step_exit.exner_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].w.asnumpy(),
+        prognostic_state_swp.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].vn.asnumpy(),
+        prognostic_state_swp.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         atol=5e-13,
     )
