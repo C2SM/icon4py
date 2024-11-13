@@ -13,10 +13,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
 
 
 @gtx.field_operator
@@ -46,7 +42,7 @@ def nabla2_scalar_2D(
         geofac_n2s,
         out=nabla2_psi_c,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
         },
     )
 
@@ -80,7 +76,7 @@ def nabla2_scalar(
         geofac_n2s,
         out=nabla2_psi_c,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
