@@ -25,7 +25,7 @@ from icon4py.model.common.states import (
 )
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-from icon4py.model.driver.test_cases import utils as testcases_utils
+from icon4py.model.driver.testcases import utils as testcases_utils
 
 
 log = logging.getLogger(__name__)

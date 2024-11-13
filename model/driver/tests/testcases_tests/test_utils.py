@@ -8,7 +8,7 @@
 
 from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import helpers
-from icon4py.model.driver.test_cases import utils
+from icon4py.model.driver.testcases import utils
 
 
 def test_hydrostatic_adjustment_numpy():
