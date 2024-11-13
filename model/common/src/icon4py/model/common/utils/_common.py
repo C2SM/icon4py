@@ -176,33 +176,31 @@ class Pair(Generic[T]):
 
     @namedproperty
     def first(self) -> T:
-        """Property getter for the first element of the pair."""
+        """Property descriptor for the first element of the pair."""
         return self.__first
 
     @first.setter
     def first(self, value: T) -> None:
-        """Property setter for the first element of the pair."""
         self.__first = value
 
 
     @namedproperty
     def second(self) -> T:
-        """Property getter for the second element of the pair."""
+        """Property descriptor for the second element of the pair."""
         return self.__second
 
     @second.setter
     def second(self, value: T) -> None:
-        """Property setter for the second element of the pair."""
         self.__second = value
 
     @namedproperty
     def frozen_first(self) -> T:
-        """Read-only property for the first element of the pair (mostly used in subclassing)."""
+        """Read-only property descriptor for the first element of the pair (mainly for subclassing)."""
         return self.__first
 
     @namedproperty
     def frozen_second(self) -> T:
-        """Read-only property for the second element of the pair (mostly for subclassing)."""
+        """Read-only property descriptor for the second element of the pair (mainly for subclassing)."""
         return self.__second
     
     first._pair_accessor_id_ = frozen_first._pair_accessor_id_ =  _FIRST_ACCESSOR_ID
