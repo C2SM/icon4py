@@ -275,7 +275,7 @@ class DriverParams(NamedTuple):
     Parameters for the driver run.
 
     Attributes:
-        divdamp_fac_o2: Second order divdamp factor.
+        divdamp_fac_o2: Second order divergence damping factor.
     """
 
     divdamp_fac_o2: float
