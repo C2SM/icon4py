@@ -13,7 +13,6 @@ import copy
 import functools
 from collections.abc import Callable
 from typing import (
-    Annotated,
     ClassVar,
     Concatenate,
     Final,
@@ -21,7 +20,6 @@ from typing import (
     Generic,
     ParamSpec,
     TypeVar,
-    get_type_hints,
 )
 
 
@@ -120,19 +118,15 @@ class Pair(Generic[T]):
     """
     A generic class representing a pair of values.
 
-    The name of the attributes can be customized by using the `Pair.FIRST`
-    and `Pair.SECOND` constants as type hint annotations of the respective
-    descriptor attributes in the subclass.
+    The name of the pair attributes can be customized by defining new
+    descriptors in the subclasses.
 
-    Note that the descriptor attributes from this class need to be COPIED
-    in the subclasses (`copy.copy()` should work) to avoid overwriting
-    the names of the original descriptors (`first` and `second).
     See the examples below.
 
     Examples:
         >>> class MyPair(Pair[T]):
-        ...     a: Annotated[T, Pair.FIRST] = copy.copy(Pair.first)
-        ...     b: Annotated[T, Pair.SECOND] = copy.copy(Pair._second_read_only)
+        ...     a: T = Pair.first
+        ...     b: T = Pair.frozen_second
         ...
         ...
         ... pair = MyPair(1, 2)
@@ -150,19 +144,28 @@ class Pair(Generic[T]):
         AttributeError: can't set attribute
     """
 
-    FIRST: Final = "_PAIR_FIRST_"
-    SECOND: Final = "_PAIR_SECOND_"
+
+    _FIRST_ACCESSOR_ID: Final = "FIRST"
+    _SECOND_ACCESSOR_ID: Final = "SECOND"
 
     __first_attr_name: ClassVar[str] = "first"
     __second_attr_name: ClassVar[str] = "second"
 
     def __init_subclass__(cls) -> None:
-        for key, value in get_type_hints(cls, include_extras=True).items():
-            if (metadata := getattr(value, "__metadata__", None)) is not None:
-                if Pair.FIRST in metadata:
+        for key, value in {**cls.__dict__}.items():
+            if (attr_id := getattr(value, "_pair_accessor_id_", None)) is not None:
+                if key != value.name:
+                    # If the original descriptor from the parent class has been assigned to
+                    # the subclass without copying, we can fix it here.
+                    new_value = copy.copy(value)
+                    new_value.name = key
+                    cls.__dict__[key] = new_value
+                if attr_id == Pair._FIRST_ACCESSOR_ID:
                     cls.__first_attr_name = key
-                elif Pair.SECOND in metadata:
+                elif attr_id == Pair._SECOND_ACCESSOR_ID:
                     cls.__second_attr_name = key
+                else:
+                    raise TypeError(f"Invalid '{key}' pair accessor descriptor: {value}")
 
     __first: T
     __second: T
@@ -181,6 +184,7 @@ class Pair(Generic[T]):
         """Property setter for the first element of the pair."""
         self.__first = value
 
+
     @namedproperty
     def second(self) -> T:
         """Property getter for the second element of the pair."""
@@ -188,18 +192,22 @@ class Pair(Generic[T]):
 
     @second.setter
     def second(self, value: T) -> None:
-        """Property setter for the secondelement of the pair."""
+        """Property setter for the second element of the pair."""
         self.__second = value
 
     @namedproperty
-    def _first_read_only(self) -> T:
-        """Read-only property for the first element of the pair (to be used in subclasses)."""
+    def frozen_first(self) -> T:
+        """Read-only property for the first element of the pair (mostly used in subclassing)."""
         return self.__first
 
     @namedproperty
-    def _second_read_only(self) -> T:
-        """Read-only property for the second element of the pair (to be used in subclasses)."""
+    def frozen_second(self) -> T:
+        """Read-only property for the second element of the pair (mostly for subclassing)."""
         return self.__second
+    
+    first._pair_accessor_id_ = frozen_first._pair_accessor_id_ =  _FIRST_ACCESSOR_ID
+    second._pair_accessor_id_ = frozen_second._pair_accessor_id_ =  _SECOND_ACCESSOR_ID
+
 
     def __eq__(self, other: object) -> bool:
         return type(self) is type(other) and (
@@ -229,10 +237,10 @@ class Pair(Generic[T]):
 
 
 class NextStepPair(Pair[T]):
-    current: Annotated[T, Pair.FIRST] = copy.copy(Pair.first)
-    next: Annotated[T, Pair.SECOND] = copy.copy(Pair._second_read_only)
+    current: T = Pair.first
+    next: T = Pair.frozen_second
 
 
 class PreviousStepPair(Pair[T]):
-    current: Annotated[T, Pair.FIRST] = copy.copy(Pair.first)
-    previous: Annotated[T, Pair.SECOND] = copy.copy(Pair._second_read_only)
+    current: T = Pair.first
+    previous: T = Pair.frozen_second
