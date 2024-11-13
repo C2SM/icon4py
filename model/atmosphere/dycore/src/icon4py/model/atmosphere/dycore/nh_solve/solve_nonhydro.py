@@ -1672,7 +1672,6 @@ class SolveNonhydro:
             z_kin_hor_e=z_fields.z_kin_hor_e,
             z_vt_ie=z_fields.z_vt_ie,
             dtime=dtime,
-            ntnd=self.ntl2,
             cell_areas=self._cell_params.area,
         )
 
