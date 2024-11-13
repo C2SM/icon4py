@@ -796,7 +796,7 @@ class SolveNonhydro:
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
             diagnostic_state_nh.ddt_w_adv_pc.swap()
         else:
-            diagnostic_state_nh.ddt_w_adv_pc.second = diagnostic_state_nh.ddt_w_adv_pc.first
+            diagnostic_state_nh.ddt_w_adv_pc.first = diagnostic_state_nh.ddt_w_adv_pc.second
 
     def time_step(
         self,
