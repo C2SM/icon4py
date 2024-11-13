@@ -174,7 +174,7 @@ def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
         **{
-            k: v.ndarray if isinstance(v, gt_common.Field) else np.array(v)
+            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
             for k, v in input_data.items()
         },
     )
@@ -193,7 +193,7 @@ def _test_validation(self, grid, backend, input_data):
         )
 
         assert np.allclose(
-            input_data[name].ndarray[gtslice],
+            input_data[name].asnumpy()[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
         ), f"Validation failed for '{name}'"
