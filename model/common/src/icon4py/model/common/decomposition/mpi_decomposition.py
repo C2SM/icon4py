@@ -13,9 +13,13 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Union
 
+import numpy as np
 from gt4py.next import Dimension, Field
 
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
+from icon4py.model.common.settings import xp
 
 
 try:
@@ -29,6 +33,7 @@ try:
         make_field_descriptor,
         make_pattern,
     )
+    from ghex.util import Architecture
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -37,10 +42,6 @@ except ImportError:
     mpi4py = None
     ghex = None
     unstructured = None
-
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
-
 
 try:
     import dace
@@ -53,7 +54,6 @@ except ImportError:
 
 if TYPE_CHECKING:
     import mpi4py.MPI
-
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -104,8 +104,10 @@ class ParallelLogger(logging.Filter):
 
 
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
-def get_multinode_properties(s: definitions.MultiNodeRun) -> definitions.ProcessProperties:
-    return _get_processor_properties(with_mpi=True)
+def get_multinode_properties(
+    s: definitions.MultiNodeRun, comm_id: CommId = None
+) -> definitions.ProcessProperties:
+    return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
 @dataclass(frozen=True)
@@ -139,18 +141,10 @@ class GHexMultiNodeExchange:
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
-            dim: self._create_domain_descriptor(
-                dim,
-            )
-            for dim in dims.global_dimensions.values()
+            dim: self._create_domain_descriptor(dim) for dim in dims.global_dimensions.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
-        self._patterns = {
-            dim: self._create_pattern(
-                dim,
-            )
-            for dim in dims.global_dimensions.values()
-        }
+        self._patterns = {dim: self._create_pattern(dim) for dim in dims.global_dimensions.values()}
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
 
@@ -206,22 +200,54 @@ class GHexMultiNodeExchange:
         )
         return pattern
 
+    def _slice_field_based_on_dim(self, field: Field, dim: definitions.Dimension) -> xp.ndarray:
+        """
+        Slices the field based on the dimension passed in.
+        """
+        if dim == dims.VertexDim:
+            return field.ndarray[: self._decomposition_info.num_vertices, :]
+        elif dim == dims.EdgeDim:
+            return field.ndarray[: self._decomposition_info.num_edges, :]
+        elif dim == dims.CellDim:
+            return field.ndarray[: self._decomposition_info.num_cells, :]
+        else:
+            raise ValueError(f"Unknown dimension {dim}")
+
     def exchange(self, dim: definitions.Dimension, *fields: Sequence[Field]):
+        """
+        Exchange method that slices the fields based on the dimension and then performs halo exchange.
+
+            This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
+            the granule context where fields otherwise have length nproma.
+        """
         assert dim in dims.global_dimensions.values()
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
+
+        # Slice the fields based on the dimension
+        sliced_fields = [self._slice_field_based_on_dim(f, dim) for f in fields]
+
+        # Create field descriptors and perform the exchange
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f.ndarray)) for f in fields
+            pattern(
+                make_field_descriptor(
+                    domain_descriptor,
+                    f,
+                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
+                )
+            )
+            for f in sliced_fields
         ]
         handle = self._comm.exchange(applied_patterns)
-        log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
+        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
     def exchange_and_wait(self, dim: Dimension, *fields: tuple):
         res = self.exchange(dim, *fields)
         res.wait()
+        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
     def __call__(self, *args, **kwargs) -> Optional[MultiNodeResult]:
         """Perform a halo exchange operation.
@@ -350,7 +376,7 @@ class HaloExchangeWait:
 
             """
             # noqa: ERA001
-            
+
             # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
             sdfg.add_scalar(name="__return", dtype=dace.int32)
             ret = state.add_write("__return")

@@ -43,6 +43,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+        advection_uri = None
         if experiment == dt_utils.GLOBAL_EXPERIMENT:
             uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
         elif experiment == dt_utils.JABW_EXPERIMENT:
@@ -53,12 +54,20 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
         else:
             uri = dt_utils.DATA_URIS[processor_props.comm_size]
+            advection_uri = dt_utils.DATA_URIS_ADVECTION.get(processor_props.comm_size)
 
         data_file = ranked_data_path.joinpath(
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
             data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
+            if advection_uri:
+                advection_path = dt_utils.get_datapath_for_experiment(
+                    ranked_data_path, f"{experiment}/advection"
+                )
+                data.download_and_extract(
+                    advection_uri, ranked_data_path, advection_path, f"advection_{data_file}"
+                )
         if processor_props.comm:
             processor_props.comm.barrier()
     except KeyError as err:
@@ -71,6 +80,12 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 def data_provider(download_ser_data, ranked_data_path, experiment, processor_props):
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props)
+
+
+@pytest.fixture
+def data_provider_advection(download_ser_data, ranked_data_path, experiment, processor_props):
+    data_path = dt_utils.get_datapath_for_experiment_advection(ranked_data_path, experiment)
+    return dt_utils.create_icon_serial_data_provider_advection(data_path, processor_props)
 
 
 @pytest.fixture

@@ -33,3 +33,5 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
 )
+
+from .utils import diffusion_instance  # noqa: F401  # import fixtures from test_utils package

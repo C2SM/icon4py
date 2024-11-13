@@ -8,7 +8,7 @@
 import enum
 import logging
 import pathlib
-from typing import Optional, Protocol, Union
+from typing import Literal, Optional, Protocol, TypeAlias, Union
 
 import gt4py.next as gtx
 
@@ -16,11 +16,7 @@ from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
 )
-from icon4py.model.common.grid import (
-    base,
-    icon,
-    vertical as v_grid,
-)
+from icon4py.model.common.grid import base, icon, vertical as v_grid
 from icon4py.model.common.settings import xp
 
 
@@ -186,9 +182,10 @@ class ConnectivityName(FieldName):
 
 
 class GeometryName(FieldName):
-    CELL_AREA = "cell_area"  # steradian (DWD), m^2 (MPI-M)
-    EDGE_LENGTH = "edge_length"  # radians (DWD), m (MPI-M)
-    DUAL_EDGE_LENGTH = "dual_edge_length"  # radians (DWD), m (MPI-M)
+    CELL_AREA = "cell_area"
+    EDGE_NORMAL_ORIENTATION = "orientation_of_normal"
+    TANGENT_ORIENTATION = "edge_system_orientation"
+    EDGE_ORIENTATION_ = "edge_orientation"
 
 
 class CoordinateName(FieldName):
@@ -334,6 +331,10 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         return xp.asarray(xp.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
+CoordinateDict: TypeAlias = dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+GeometryDict: TypeAlias = dict[GeometryName, gtx.Field]
+
+
 class GridManager:
     """
     Read ICON grid file and set up grid topology, refinement information and geometry fields.
@@ -357,7 +358,9 @@ class GridManager:
         self._vertical_config = config
         self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
+        self._geometry: GeometryDict = {}
         self._reader = None
+        self._coordinates: CoordinateDict = {}
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -386,6 +389,56 @@ class GridManager:
             self.open()
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields()
+        self._coordinates = self._read_coordinates()
+        self._geometry = self._read_geometry_fields()
+
+    def _read_coordinates(self):
+        return {
+            dims.CellDim: {
+                "lat": gtx.as_field(
+                    (dims.CellDim,),
+                    self._reader.variable(CoordinateName.CELL_LATITUDE),
+                    dtype=float,
+                ),
+                "lon": gtx.as_field(
+                    (dims.CellDim,),
+                    self._reader.variable(CoordinateName.CELL_LONGITUDE),
+                    dtype=float,
+                ),
+            },
+            dims.EdgeDim: {
+                "lat": gtx.as_field(
+                    (dims.EdgeDim,), self._reader.variable(CoordinateName.EDGE_LATITUDE)
+                ),
+                "lon": gtx.as_field(
+                    (dims.EdgeDim,), self._reader.variable(CoordinateName.EDGE_LONGITUDE)
+                ),
+            },
+            dims.VertexDim: {
+                "lat": gtx.as_field(
+                    (dims.VertexDim,),
+                    self._reader.variable(CoordinateName.VERTEX_LATITUDE),
+                    dtype=float,
+                ),
+                "lon": gtx.as_field(
+                    (dims.VertexDim,),
+                    self._reader.variable(CoordinateName.VERTEX_LONGITUDE),
+                    dtype=float,
+                ),
+            },
+        }
+
+    def _read_geometry_fields(self):
+        return {
+            # TODO (@halungge) still needs to ported, values from "our" grid files contains (wrong) values:
+            #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
+            GeometryName.CELL_AREA.value: gtx.as_field(
+                (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA)
+            ),
+            GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
+                (dims.EdgeDim,), self._reader.variable(GeometryName.TANGENT_ORIENTATION)
+            ),
+        }
 
     def _read_start_end_indices(
         self,
@@ -474,6 +527,14 @@ class GridManager:
         TODO (@halungge) should those be added to the IconGrid?
         """
         return self._refinement
+
+    @property
+    def geometry(self) -> GeometryDict:
+        return self._geometry
+
+    @property
+    def coordinates(self) -> CoordinateDict:
+        return self._coordinates
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
@@ -566,11 +627,13 @@ def _add_derived_connectivities(grid: icon.IconGrid) -> icon.IconGrid:
             (grid.connectivities[dims.C2E2CDim]),
         )
     )
+    c2e2c2e2c = _construct_butterfly_cells(grid.connectivities[dims.C2E2CDim])
 
     grid.with_connectivities(
         {
             dims.C2E2CODim: c2e2c0,
             dims.C2E2C2EDim: c2e2c2e,
+            dims.C2E2C2E2CDim: c2e2c2e2c,
             dims.E2C2VDim: e2c2v,
             dims.E2C2EDim: e2c2e,
             dims.E2C2EODim: e2c2e0,
@@ -596,17 +659,18 @@ def _construct_diamond_vertices(e2v: xp.ndarray, c2v: xp.ndarray, e2c: xp.ndarra
 
     Starting from the e2v and c2v connectivity the connectivity table for e2c2v is built up.
 
-                 v0
-                / \
-              /    \
-             /      \
-            /        \
-           v1---e0---v3
-            \       /
-             \     /
-              \   /
-               \ /
-                v2
+             v0
+            /  \
+           /    \
+          /      \
+         /        \
+        v1---e0---v3
+         \        /
+          \      /
+           \    /
+            \  /
+             v2
+
     For example for this diamond: e0 -> (v0, v1, v2, v3)
     Ordering is the same as ICON uses.
 
@@ -634,15 +698,15 @@ def _construct_diamond_edges(e2c: xp.ndarray, c2e: xp.ndarray) -> xp.ndarray:
 
     Starting from the e2c and c2e connectivity the connectivity table for e2c2e is built up.
 
-        / \
-      /    \
-     e2    e1
-    /    c0  \
-    ----e0----
-    \   c1   /
-     e3    e4
-      \   /
-       \ /
+            /  \
+           /    \
+          e2 c0 e1
+         /        \
+         ----e0----
+         \        /
+          e3 c1 e4
+           \    /
+            \  /
 
     For example, for this diamond for e0 -> (e1, e2, e3, e4)
 
@@ -667,25 +731,26 @@ def _construct_diamond_edges(e2c: xp.ndarray, c2e: xp.ndarray) -> xp.ndarray:
     return e2c2e
 
 
-def _construct_triangle_edges(c2e2c, c2e):
+def _construct_triangle_edges(c2e2c: xp.ndarray, c2e: xp.ndarray) -> xp.ndarray:
     r"""Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
 
-       ____e3________e7____
-       \   c1  / \   c3  /
-        \     /   \     /
-        e4   e2    e1  e8
-          \ /   c0  \ /
-            ----e0----
-            \   c2  /
-             e5    e6
-              \   /
-               \ /
+         ----e3----  ----e7----
+         \        /  \        /
+          e4 c1  /    \  c3 e8
+           \    e2 c0 e1    /
+            \  /        \  /
+               ----e0----
+               \        /
+                e5 c2 e6
+                 \    /
+                  \  /
+
 
     For example, for the triangular shape above, c0 -> (e3, e4, e2, e0, e5, e6, e7, e1, e8).
 
     Args:
-        c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
-        c2e: shape (n_cell, 3), connectivity table from a cell to its neighboring edges
+        c2e2c: shape (n_cells, 3) connectivity table from a central cell to its cell neighbors
+        c2e: shape (n_cells, 3), connectivity table from a cell to its neighboring edges
     Returns:
         xp.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
             edges of its cell neighbors
@@ -693,6 +758,37 @@ def _construct_triangle_edges(c2e2c, c2e):
     dummy_c2e = _patch_with_dummy_lastline(c2e)
     table = xp.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
     return table
+
+
+def _construct_butterfly_cells(c2e2c: xp.ndarray) -> xp.ndarray:
+    r"""Compute the connectivity from a central cell to all neighboring cells of its cell neighbors.
+
+                  /  \        /  \
+                 /    \      /    \
+                /  c4  \    /  c5  \
+               /        \  /        \
+               ----e3----  ----e7----
+            /  \        /  \        /  \
+           /    e4 c1  /    \  c3 e8    \
+          /  c9  \    e2 c0 e1    /  c6  \
+         /        \  /        \  /        \
+         ----------  ----e0----  ----------
+                  /  \        /  \
+                 /    e5 c2 e6    \
+                /  c8  \    /  c7  \
+               /        \  /        \
+               ----------  ----------
+
+    For example, for the shape above, c0 -> (c1, c4, c9, c2, c7, c8, c3, c5, c6).
+
+    Args:
+        c2e2c: shape (n_cells, 3) connectivity table from a central cell to its cell neighbors
+    Returns:
+        xp.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
+    """
+    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
+    c2e2c2e2c = xp.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
+    return c2e2c2e2c
 
 
 def _patch_with_dummy_lastline(ar):

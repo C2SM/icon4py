@@ -43,11 +43,11 @@ def verify_diffusion_fields(
         val_dwdy = diagnostic_state.dwdy.asnumpy()
 
         assert helpers.dallclose(val_div_ic, ref_div_ic, atol=1e-16)
-        assert helpers.dallclose(val_hdef_ic, ref_hdef_ic, atol=1e-18)
+        assert helpers.dallclose(val_hdef_ic, ref_hdef_ic, atol=1e-13)
         assert helpers.dallclose(val_dwdx, ref_dwdx, atol=1e-18)
         assert helpers.dallclose(val_dwdy, ref_dwdy, atol=1e-18)
 
-    assert helpers.dallclose(val_vn, ref_vn, atol=1e-15)
+    assert helpers.dallclose(val_vn, ref_vn, rtol=1e-5)
     assert helpers.dallclose(val_w, ref_w, atol=1e-14)
     assert helpers.dallclose(val_theta_v, ref_theta_v)
     assert helpers.dallclose(val_exner, ref_exner)

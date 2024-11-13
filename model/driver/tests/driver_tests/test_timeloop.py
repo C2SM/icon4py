@@ -8,11 +8,12 @@
 
 import pytest
 
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import geometry, vertical as v_grid
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
@@ -143,8 +144,8 @@ def test_run_timeloop_single_step(
             ndyn_substeps=ndyn_substeps,
         )
 
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
 
     diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
         interpolation_savepoint
@@ -166,8 +167,7 @@ def test_run_timeloop_single_step(
     )
     additional_parameters = diffusion.DiffusionParams(diffusion_config)
 
-    diffusion_granule = diffusion.Diffusion(backend=backend)
-    diffusion_granule.init(
+    diffusion_granule = diffusion.Diffusion(
         grid=icon_grid,
         config=diffusion_config,
         params=additional_parameters,
@@ -176,6 +176,7 @@ def test_run_timeloop_single_step(
         interpolation_state=diffusion_interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        backend=backend,
     )
 
     sp = savepoint_nonhydro_init
@@ -238,8 +239,7 @@ def test_run_timeloop_single_step(
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro(backend)
-    solve_nonhydro_granule.init(
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=nonhydro_config,
         params=nonhydro_params,
@@ -249,6 +249,7 @@ def test_run_timeloop_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
     diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(

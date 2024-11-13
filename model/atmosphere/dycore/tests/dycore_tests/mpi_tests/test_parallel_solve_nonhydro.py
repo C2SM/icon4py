@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as nh
 from icon4py.model.atmosphere.dycore.state_utils import states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid import geometry, vertical as v_grid
+from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.test_utils import helpers, parallel_helpers
 
 from .. import utils
@@ -74,7 +74,7 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn=ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = nh.NonHydrostaticParams(config)
@@ -134,16 +134,15 @@ def test_run_solve_nonhydro_single_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     prognostic_state_ls = utils.create_prognostic_states(sp)
     prognostic_state_nnew = prognostic_state_ls[1]
 
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    solve_nonhydro = nh.SolveNonhydro(backend, exchange)
-    solve_nonhydro.init(
+    solve_nonhydro = nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -153,6 +152,8 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
+        exchange=exchange,
     )
 
     print(

@@ -14,11 +14,10 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 
-import numpy as np
-import numpy.ma as ma
 from gt4py.next import Dimension
 
-from icon4py.model.common.utils import builder
+from icon4py.model.common import utils
+from icon4py.model.common.settings import xp
 
 
 try:
@@ -76,18 +75,40 @@ class DecompositionInfo:
         OWNED = 1
         HALO = 2
 
-    @builder.builder
-    def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
-        masked_global_index = ma.array(global_index, mask=owner_mask)
-        self._global_index[dim] = masked_global_index
+    @utils.chainable
+    def with_dimension(self, dim: Dimension, global_index: xp.ndarray, owner_mask: xp.ndarray):
+        self._global_index[dim] = global_index
+        self._owner_mask[dim] = owner_mask
 
-    def __init__(self, klevels: int):
+    def __init__(
+        self,
+        klevels: int,
+        num_cells: Optional[int] = None,
+        num_edges: Optional[int] = None,
+        num_vertices: Optional[int] = None,
+    ):
         self._global_index = {}
         self._klevels = klevels
+        self._owner_mask = {}
+        self._num_vertices = num_vertices
+        self._num_cells = num_cells
+        self._num_edges = num_edges
 
     @property
     def klevels(self):
         return self._klevels
+
+    @property
+    def num_cells(self):
+        return self._num_cells
+
+    @property
+    def num_edges(self):
+        return self._num_edges
+
+    @property
+    def num_vertices(self):
+        return self._num_vertices
 
     def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
@@ -95,31 +116,29 @@ class DecompositionInfo:
                 return self._to_local_index(dim)
             case DecompositionInfo.EntryType.HALO:
                 index = self._to_local_index(dim)
-                mask = self._global_index[dim].mask
+                mask = self._owner_mask[dim]
                 return index[~mask]
             case DecompositionInfo.EntryType.OWNED:
                 index = self._to_local_index(dim)
-                mask = self._global_index[dim].mask
+                mask = self._owner_mask[dim]
                 return index[mask]
 
     def _to_local_index(self, dim):
-        data = ma.getdata(self._global_index[dim], subok=False)
+        data = self._global_index[dim]
         assert data.ndim == 1
-        return np.arange(data.shape[0])
+        return xp.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> np.ndarray:
-        return self._global_index[dim].mask
+    def owner_mask(self, dim: Dimension) -> xp.ndarray:
+        return self._owner_mask[dim]
 
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
-                return ma.getdata(self._global_index[dim], subok=False)
+                return self._global_index[dim]
             case DecompositionInfo.EntryType.OWNED:
-                global_index = self._global_index[dim]
-                return ma.getdata(global_index[global_index.mask])
+                return self._global_index[dim][self._owner_mask[dim]]
             case DecompositionInfo.EntryType.HALO:
-                global_index = self._global_index[dim]
-                return ma.getdata(global_index[~global_index.mask])
+                return self._global_index[dim][~self._owner_mask[dim]]
             case _:
                 raise NotImplementedError()
 
@@ -340,7 +359,7 @@ def get_runtype(with_mpi: bool = False) -> RunType:
 
 
 @functools.singledispatch
-def get_processor_properties(runtime) -> ProcessProperties:
+def get_processor_properties(runtime: RunType) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
 
 
