@@ -466,8 +466,6 @@ class SolveNonhydro:
 
         self.enh_divdamp_fac: Optional[fa.KField[float]] = None
         self.jk_start = 0  # used in stencil_55
-        self.ntl1 = 0
-        self.ntl2 = 0
 
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend)
         self._compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(self._backend)
@@ -793,14 +791,12 @@ class SolveNonhydro:
         )
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    def set_timelevels(self, nnow, nnew):
-        #  Set time levels of ddt_adv fields for call to velocity_tendencies
+    def set_time_levels(diagnostic_state_nh):
+        """Set time levels of ddt_adv fields for call to velocity_tendencies."""
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            self.ntl1 = nnow
-            self.ntl2 = nnew
+            diagnostic_state_nh.ddt_w_adv_pc.swap()
         else:
-            self.ntl1 = 0
-            self.ntl2 = 0
+            diagnostic_state_nh.ddt_w_adv_pc.second = diagnostic_state_nh.ddt_w_adv_pc.first
 
     def time_step(
         self,
@@ -811,8 +807,6 @@ class SolveNonhydro:
         dtime: float,
         l_recompute: bool,
         l_init: bool,
-        nnow: int,
-        nnew: int,
         lclean_mflx: bool,
         lprep_adv: bool,
         at_first_substep: bool,
@@ -838,7 +832,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        self.set_timelevels(nnow, nnew)
+        self.set_time_levels(diagnostic_state_nh)
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -848,8 +842,6 @@ class SolveNonhydro:
             l_recompute=l_recompute,
             l_init=l_init,
             at_first_substep=at_first_substep,
-            nnow=nnow,
-            nnew=nnew,
         )
 
         self.run_corrector_step(

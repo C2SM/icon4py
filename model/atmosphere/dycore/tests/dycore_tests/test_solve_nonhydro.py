@@ -157,7 +157,7 @@ def test_nonhydro_predictor_step(
 
     prognostic_state_swp = utils.create_prognostic_states(sp)
 
-    solve_nonhydro.set_timelevels(nnow, nnew)
+    solve_nonhydro.set_time_levels(nnow, nnew)
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_swp=prognostic_state_swp,
@@ -567,7 +567,7 @@ def test_nonhydro_corrector_step(
     )
 
     prognostic_state_ls = utils.create_prognostic_states(sp)
-    solve_nonhydro.set_timelevels(nnow, nnew)
+    solve_nonhydro.set_time_levels(nnow, nnew)
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
