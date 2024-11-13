@@ -13,7 +13,7 @@ import pytest
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.settings import xp
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, torus_helpers
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers, torus_helpers
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from scipy.stats import linregress
@@ -500,6 +500,295 @@ def test_horizontal_advection_convergence(
         p_linf = linreg_linf.slope
         log.debug(f"p_linf: {p_linf}")
         assert linf_acceptable_range[0] <= p_linf <= linf_acceptable_range[1]
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, initial_conditions, velocity_field, horizontal_advection_type, horizontal_advection_limiter,"
+    "vertical_advection_type, vertical_advection_limiter, cfl_number, time_end",
+    [
+        (  # test conservation with upwind
+            dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1,
+            InitialConditions.CIRCLE_2D,
+            VelocityField.INCREASING_2D,
+            advection.HorizontalAdvectionType.UPWIND_1ST_ORDER,
+            advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            advection.VerticalAdvectionType.NO_ADVECTION,
+            advection.VerticalAdvectionLimiter.NO_LIMITER,
+            1.0,
+            1e-1,
+        ),
+        (  # test conservation with linear reconstruction
+            dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1,
+            InitialConditions.CIRCLE_2D,
+            VelocityField.INCREASING_2D,
+            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            advection.VerticalAdvectionType.NO_ADVECTION,
+            advection.VerticalAdvectionLimiter.NO_LIMITER,
+            1.0,
+            1e-1,
+        ),
+        (  # test conservation with linear reconstruction & limiter
+            dt_utils.TORUS_CONVERGENCE_EXPERIMENT_1,
+            InitialConditions.CIRCLE_2D,
+            VelocityField.INCREASING_2D,
+            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            advection.VerticalAdvectionType.NO_ADVECTION,
+            advection.VerticalAdvectionLimiter.NO_LIMITER,
+            1.0,
+            1e-1,
+        ),
+    ],
+)
+def test_horizontal_advection_conservation(
+    processor_props,
+    ranked_data_path,
+    backend,
+    use_high_order_quadrature,
+    enable_plots,
+    experiment,
+    initial_conditions,
+    velocity_field,
+    horizontal_advection_type,
+    horizontal_advection_limiter,
+    vertical_advection_type,
+    vertical_advection_limiter,
+    cfl_number,
+    time_end,
+):
+    test_config = construct_test_config(
+        initial_conditions=initial_conditions, velocity_field=velocity_field
+    )
+    config = construct_config(
+        horizontal_advection_type=horizontal_advection_type,
+        horizontal_advection_limiter=horizontal_advection_limiter,
+        vertical_advection_type=vertical_advection_type,
+        vertical_advection_limiter=vertical_advection_limiter,
+    )
+
+    data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+    data_provider = dt_utils.create_icon_serial_data_provider(data_path, processor_props)
+
+    root, level = dt_utils.get_global_grid_params(experiment)
+    grid_id = dt_utils.get_grid_id_for_experiment(experiment)
+    grid_savepoint = data_provider.from_savepoint_grid(grid_id, root, level)
+    icon_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+
+    interpolation_savepoint = data_provider.from_interpolation_savepoint()
+    least_squares_savepoint = data_provider.from_least_squares_savepoint(
+        size=data_provider.grid_size
+    )
+
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    least_squares_state = construct_least_squares_state(least_squares_savepoint)
+    metric_state = construct_metric_state(icon_grid)
+    edge_geometry = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+
+    horizontal_advection, _ = advection.convert_config_to_horizontal_vertical_advection(
+        config=config,
+        grid=icon_grid,
+        interpolation_state=interpolation_state,
+        least_squares_state=least_squares_state,
+        metric_state=metric_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+        backend=backend,
+    )
+
+    node_x = grid_savepoint.verts_vertex_x().ndarray
+    node_y = grid_savepoint.verts_vertex_y().ndarray
+    edges_center_x = grid_savepoint.edges_center_x().ndarray
+    edges_center_y = grid_savepoint.edges_center_y().ndarray
+    cell_center_x = grid_savepoint.cell_center_x().ndarray
+    cell_center_y = grid_savepoint.cell_center_y().ndarray
+    length_min = edge_geometry.primal_edge_lengths.ndarray.min()
+    x_center, y_center, x_range, y_range = get_torus_dimensions(experiment)
+
+    weights, nodes = prepare_torus_quadrature(
+        icon_grid,
+        node_x,
+        node_y,
+        cell_center_x,
+        cell_center_y,
+        length_min,
+        use_high_order_quadrature,
+    )
+
+    diagnostic_state = construct_idealized_diagnostic_state(icon_grid)
+    p_tracer_now = construct_idealized_tracer(
+        test_config,
+        icon_grid,
+        x_center,
+        y_center,
+        x_range,
+        y_range,
+        weights,
+        nodes,
+    )
+    tracer_init_sum = xp.sum(p_tracer_now.ndarray)
+    p_tracer_new = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
+    log.debug(f"length_min: {length_min}")
+
+    if enable_plots:
+        name = horizontal_advection_type.name
+        k = 0
+        torus_helpers.plot_torus_plane(
+            icon_grid,
+            node_x,
+            node_y,
+            p_tracer_now.ndarray[:, k],
+            2 * length_min,
+            out_file=f"{experiment}_{name}_start.pdf",
+        )
+
+    # time loop
+    time = 0.0
+    while time != time_end:
+        # calculate time step based on desired CFL number for triangles
+        vel_max = get_idealized_velocity_max(test_config, x_range, y_range, time_end)
+        assert vel_max > 0.0
+        dtime = min(cfl_number * length_min / vel_max / (4.0 * (3.0**0.5)), time_end - time)
+        log.debug(f"dtime: {dtime}")
+
+        prep_adv = construct_idealized_prep_adv(
+            test_config,
+            icon_grid,
+            edge_geometry,
+            edges_center_x,
+            edges_center_y,
+            x_range,
+            y_range,
+            time,
+            dtime,
+            time_end,
+        )
+
+        horizontal_advection.run(
+            prep_adv=prep_adv,
+            p_tracer_now=p_tracer_now,
+            p_tracer_new=p_tracer_new,
+            rhodz_now=diagnostic_state.airmass_now,
+            rhodz_new=diagnostic_state.airmass_new,
+            p_mflx_tracer_h=diagnostic_state.hfl_tracer,
+            dtime=dtime,
+        )
+        time += dtime
+
+        p_tracer_now, p_tracer_new = p_tracer_new, p_tracer_now
+        # note: no need to swap airmass fields here because they are equal
+
+    if enable_plots:
+        tracer_end_k = p_tracer_now.ndarray[:, k]
+        torus_helpers.plot_torus_plane(
+            icon_grid,
+            node_x,
+            node_y,
+            tracer_end_k,
+            2 * length_min,
+            out_file=f"{experiment}_{name}_end.pdf",
+        )
+
+    tracer_end_sum = xp.sum(p_tracer_now.ndarray)
+    sum_diff = abs(tracer_end_sum - tracer_init_sum) / abs(tracer_init_sum)
+    log.debug(f"init sum: {tracer_init_sum}")
+    log.debug(f"end sum:  {tracer_end_sum}")
+    log.debug(f"sum diff: {sum_diff}")
+
+    # check conservation of tracer mass
+    r_tol = 1e-12
+    assert sum_diff <= r_tol
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",
+    [
+        (
+            "2021-06-20T12:00:10.000",
+            False,
+            2,
+            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            advection.VerticalAdvectionType.NO_ADVECTION,
+            advection.VerticalAdvectionLimiter.NO_LIMITER,
+        ),
+        (
+            "2021-06-20T12:00:20.000",
+            True,
+            2,
+            advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
+            advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
+            advection.VerticalAdvectionType.NO_ADVECTION,
+            advection.VerticalAdvectionLimiter.NO_LIMITER,
+        ),
+    ],
+)
+def test_advection_consistency_with_continuity(
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
+    least_squares_savepoint,
+    advection_init_savepoint,
+    advection_exit_savepoint,
+    data_provider,
+    data_provider_advection,
+    backend,
+    even_timestep,
+    ntracer,
+    horizontal_advection_type,
+    horizontal_advection_limiter,
+    vertical_advection_type,
+    vertical_advection_limiter,
+):
+    config = construct_config(
+        horizontal_advection_type=horizontal_advection_type,
+        horizontal_advection_limiter=horizontal_advection_limiter,
+        vertical_advection_type=vertical_advection_type,
+        vertical_advection_limiter=vertical_advection_limiter,
+    )
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    least_squares_state = construct_least_squares_state(least_squares_savepoint)
+    metric_state = construct_metric_state(icon_grid)
+    edge_geometry = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+
+    advection_granule = advection.convert_config_to_advection(
+        config=config,
+        grid=icon_grid,
+        interpolation_state=interpolation_state,
+        least_squares_state=least_squares_state,
+        metric_state=metric_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+        even_timestep=even_timestep,
+        backend=backend,
+    )
+
+    diagnostic_state = construct_diagnostic_init_state(icon_grid, advection_init_savepoint, ntracer)
+    prep_adv = construct_prep_adv(icon_grid, advection_init_savepoint)
+    # p_tracer_now = advection_init_savepoint.tracer(ntracer)
+    p_tracer_now = helpers.constant_field(icon_grid, 1.0, dims.CellDim, dims.KDim)
+    p_tracer_new = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
+    dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
+
+    advection_granule.run(
+        diagnostic_state=diagnostic_state,
+        prep_adv=prep_adv,
+        p_tracer_now=p_tracer_now,
+        p_tracer_new=p_tracer_new,
+        dtime=dtime,
+    )
+
+    # TODO (dastrm): this is a prototype and should be turned into a real test case like Jablonowski-Williamson
+    p_tracer_new_xp = p_tracer_new.ndarray
+    log.debug(f"min: {xp.min(p_tracer_new_xp)}")
+    log.debug(f"max: {xp.max(p_tracer_new_xp)}")
+    p_tracer_new_var = xp.var(p_tracer_new_xp)
+    log.debug(f"var: {p_tracer_new_var}")
+    assert p_tracer_new_var <= 1e-12
 
 
 @pytest.mark.datatest
