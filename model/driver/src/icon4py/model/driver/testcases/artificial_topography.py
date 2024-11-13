@@ -7,73 +7,62 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import exp, sqrt
+from gt4py.next.ffront.fbuiltins import broadcast, exp, sqrt
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.grid import geometry, icon as icon_grid
-from icon4py.model.common.settings import xp
 
 
 @gtx.field_operator
 def _gaussian_hill(
     cell_center_lon: fa.CellField[ta.wpfloat],
     cell_center_lat: fa.CellField[ta.wpfloat],
-    mount_x: ta.wpfloat,
-    mount_y: ta.wpfloat,
+    mount_lon: ta.wpfloat,
+    mount_lat: ta.wpfloat,
     mount_height: ta.wpfloat,
     mount_width: ta.wpfloat,
 ) -> fa.CellField[ta.wpfloat]:
     """
-    Computes the elevation of a parameterized Gaussian hill.
+    Generates a Gaussian hill elevation profile on the given grid.
+
+    Parameters:
+    cartesian_x: The x-coordinates of the grid cells.
+    cartesian_y: The y-coordinates of the grid cells.
+    mount_lon: The longitude of the hill.
+    mount_lat: The latitude of the hill.
+    mount_height: The height of the hill in meters.
+    mount_width: The "width" of the hill.
+
+    Returns:
+    The generated elevation field.
     """
 
-    torus_domain_length = 5000 # TODO get this from the grid when actually using it
-    if mount_lon < 0:
-        mount_lon = torus_domain_length / 2
-    if mount_lat < 0:
-        mount_lat = 0
-
-    cartesian_x = cell_center_lon * torus_domain_length / xp.pi / 2,
-    cartesian_y = cell_center_lat * torus_domain_length / xp.pi / 2,
-
-    z_distance = sqrt((cartesian_x - mount_x) ** 2 + (cartesian_y - mount_y) ** 2)
+    z_distance = sqrt((cell_center_lon - broadcast(mount_lon, (dims.CellDim,))) ** 2 + (cell_center_lat - broadcast(mount_lat, (dims.CellDim,))) ** 2)
     topography = mount_height * exp(-((z_distance / mount_width) ** 2))
 
     return topography
 
 
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def gaussian_hill(
-    grid: icon_grid.IconGrid,
-    cell_geometry: geometry.CellParams,
-    mount_lon: ta.wpfloat = -1,
-    mount_lat: ta.wpfloat = -1,
-    mount_height: ta.wpfloat = 100,
-    mount_width: ta.wpfloat = 2000,
-) -> fa.CellField[ta.wpfloat]:
-    """
-    Generates a Gaussian hill topography on the given grid.
-
-    Parameters:
-    grid: The grid on which the topography is to be generated.
-    cell_geometry: The parameters defining the cell geometry.
-    mount_lon: The longitude of the mountain peak. Defaults to -1.
-    mount_lat: The latitude of the mountain peak. Defaults to -1.
-    mount_height: The height of the mountain. Defaults to 100.
-    mount_width: The width of the mountain. Defaults to 2000.
-
-    Returns:
-    The generated elevation field.
-    """
-    topography = gtx.as_field((dims.CellDim,), xp.zeros((grid.num_cells,), dtype=ta.wpfloat))
-
+    cell_center_lon: fa.CellField[ta.wpfloat],
+    cell_center_lat: fa.CellField[ta.wpfloat],
+    topography: fa.CellField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    mount_lon: ta.wpfloat = 0.0,
+    mount_lat: ta.wpfloat = 0.0,
+    mount_height: ta.wpfloat = 100.0,
+    mount_width: ta.wpfloat = 500.0,
+):
     _gaussian_hill(
-        cell_center_lon=cell_geometry.cell_center_lon,
-        cell_center_lat=cell_geometry.cell_center_lat,
-        mount_x=mount_lon,
-        mount_y=mount_lat,
+        cell_center_lon=cell_center_lon,
+        cell_center_lat=cell_center_lat,
+        mount_lon=mount_lon,
+        mount_lat=mount_lat,
         mount_height=mount_height,
         mount_width=mount_width,
         out=topography,
-        offset_provider={},
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+        },
     )
-    return topography
