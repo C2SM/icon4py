@@ -561,6 +561,9 @@ def init_vert_coord(
     z3d_i[:, grid.num_levels] = topography
     ktop_thicklimit = grid.num_levels * xp.ones(grid.num_cells, dtype=ta.wpfloat)
 
+    # Small-scale topography (i.e. full topo - smooth topo)
+    topo_deviation = topography - topography_smoothed
+
     for k in range(vertical_geometry.nflatlev + 1):
         k1 = k + nshift
         z3d_i[:, k] = vct_a[k1]
@@ -584,9 +587,6 @@ def init_vert_coord(
             (vertical_config.model_top_height / vertical_config.decay_scale_2)
             ** vertical_config.decay_exponent
         )
-
-        # Small-scale topography (i.e. full topo - smooth topo)
-        topo_deviation = topography - topography_smoothed
 
         z3d_i[:, k] = vct_a[k1] + topography_smoothed * z_fac1 + topo_deviation * z_fac2
 
