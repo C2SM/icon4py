@@ -563,7 +563,7 @@ def test_nonhydro_corrector_step(
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state=prognostic_state_swp,
+        prognostic_state_swp=prognostic_state_swp,
         z_fields=z_fields,
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
