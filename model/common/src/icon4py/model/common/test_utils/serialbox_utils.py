@@ -402,7 +402,7 @@ class IconGridSavepoint(IconSavepoint):
                     f"only {dims.CellDim, dims.EdgeDim, dims.VertexDim} are handled"
                 )
 
-    def owner_mask(self, dim: gtx.Dimension):
+    def _owner_mask(self, dim: gtx.Dimension):
         field_name = "owner_mask"
         mask = self._read_field_for_dim(field_name, self._read_bool, dim)
         return xp.squeeze(mask)
@@ -430,7 +430,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def _get_decomp_fields(self, dim: gtx.Dimension):
         global_index = self.global_index(dim)
-        mask = self.owner_mask(dim)[0 : self.num(dim)]
+        mask = self._owner_mask(dim)[0: self.num(dim)]
         return dim, global_index, mask
 
     def construct_icon_grid(self, on_gpu: bool) -> icon.IconGrid:

@@ -15,6 +15,12 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
+from icon4py.model.common.interpolation.c_bln_avg import (
+    _residual_to_mass_conservation,
+    _weight_sum_on_local_cell,
+    force_mass_conservation,
+    inverse_neighbor_index,
+)
 
 
 def compute_c_lin_e(
@@ -453,10 +459,11 @@ def compute_force_mass_conservation_to_c_bln_avg(
     c_bln_avg: np.ndarray,
     divavg_cntrwgt: ta.wpfloat,
     c2e2c: np.ndarray,
+    c2e2c0:np.ndarray,
     cell_areas: np.ndarray,
     horizontal_start: np.int32,
     horizontal_start_p3: np.int32,
-    niter: np.ndarray = 5,
+    niter: int = 5,
 ) -> np.ndarray:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
@@ -480,6 +487,8 @@ def compute_force_mass_conservation_to_c_bln_avg(
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     wgt_loc_sum = np.zeros(c_bln_avg.shape[0])
+    owner_mask = np.ones(c_bln_avg.shape[0])
+
     inv_neighbor_id = np.zeros(c2e2c.shape, dtype=int)
     resid = np.zeros(c2e2c.shape[0])
     for jc in range(c2e2c.shape[0]):
@@ -491,7 +500,7 @@ def compute_force_mass_conservation_to_c_bln_avg(
                     inv_neighbor_id[jc, i] = 2
                 elif c2e2c[c2e2c[jc, i], 2] == jc:
                     inv_neighbor_id[jc, i] = 3
-
+    inv_nn = inverse_neighbor_index(c2e2c0)
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
@@ -500,10 +509,19 @@ def compute_force_mass_conservation_to_c_bln_avg(
         wgt_loc_sum[horizontal_start:] = c_bln_avg[horizontal_start:, 0] * cell_areas[
             horizontal_start:
         ] + np.sum(c_bln_avg_inv[horizontal_start:] * cell_areas[c2e2c][horizontal_start:], axis=1)
+
+        ww_loc = _weight_sum_on_local_cell(c_bln_avg=c_bln_avg,
+                                           inverse_neighbor_index=inv_nn,
+                                           c2e2c0=c2e2c0,
+                                           cell_area=cell_areas)
+
         resid[horizontal_start_p3:] = (
             wgt_loc_sum[horizontal_start_p3:] / cell_areas[horizontal_start_p3:] - 1.0
         )
+        res_wgt = _residual_to_mass_conservation(wgt_loc_sum, owner_mask, cell_areas)
+        res_ww = _residual_to_mass_conservation(ww_loc, owner_mask, cell_areas)
         if iteration >= (niter - 1):
+            c_bln_avg = force_mass_conservation(c_bln_avg, resid, owner_mask, horizontal_start)
             return c_bln_avg
         c_bln_avg[horizontal_start_p3:, 0] = (
             c_bln_avg[horizontal_start_p3:, 0] - relax_coeff * resid[horizontal_start_p3:]
