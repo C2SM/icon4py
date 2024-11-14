@@ -555,7 +555,9 @@ def init_vert_coord(
     Computes the 3D vertical coordinate fields.
     """
 
-    def _decay_func(vct_a, model_top_height, decay_scale, decay_exponent):
+    def _decay_func(
+        vct_a: xp.ndarray, model_top_height: float, decay_scale: float, decay_exponent: float
+    ) -> xp.ndarray:
         return xp.sinh(
             (model_top_height / decay_scale) ** decay_exponent
             - (vct_a / decay_scale) ** decay_exponent
@@ -605,7 +607,9 @@ def init_vert_coord(
         delta_vct_a = vct_a[k1] - vct_a[k1 + 1]
         if delta_vct_a < vertical_config.SLEVE_minimum_layer_thickness_1:
             # limit layer thickness to SLEVE_minimum_relative_layer_thickness_1 times its nominal value
-            minimum_layer_thickness = vertical_config.SLEVE_minimum_relative_layer_thickness_1 * delta_vct_a
+            minimum_layer_thickness = (
+                vertical_config.SLEVE_minimum_relative_layer_thickness_1 * delta_vct_a
+            )
         elif delta_vct_a < vertical_config.SLEVE_minimum_layer_thickness_2:
             # limitation factor changes from SLEVE_minimum_relative_layer_thickness_1 to SLEVE_minimum_relative_layer_thickness_2
             layer_thickness_adjustment_factor = (
@@ -616,8 +620,10 @@ def init_vert_coord(
                 )
             ) ** 2
             minimum_layer_thickness = (
-                vertical_config.SLEVE_minimum_relative_layer_thickness_1 * layer_thickness_adjustment_factor
-                + vertical_config.SLEVE_minimum_relative_layer_thickness_2 * (1.0 - layer_thickness_adjustment_factor)
+                vertical_config.SLEVE_minimum_relative_layer_thickness_1
+                * layer_thickness_adjustment_factor
+                + vertical_config.SLEVE_minimum_relative_layer_thickness_2
+                * (1.0 - layer_thickness_adjustment_factor)
             ) * delta_vct_a
         else:
             # limitation factor decreases again
@@ -627,7 +633,9 @@ def init_vert_coord(
                 * (delta_vct_a / vertical_config.SLEVE_minimum_layer_thickness_2) ** (1.0 / 3.0)
             )
 
-        minimum_layer_thickness = max(minimum_layer_thickness, min(50, vertical_config.lowest_layer_thickness))
+        minimum_layer_thickness = max(
+            minimum_layer_thickness, min(50, vertical_config.lowest_layer_thickness)
+        )
 
         # Ensure that the layer thickness is not too small, if so fix it and
         # save the layer index
