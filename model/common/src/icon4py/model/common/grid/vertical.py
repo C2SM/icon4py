@@ -554,7 +554,7 @@ def init_vert_coord(
     Computes the 3D vertical coordinate fields.
     """
 
-    def decay_func(vct_a, model_top_height, decay_scale, decay_exponent):
+    def _decay_func(vct_a, model_top_height, decay_scale, decay_exponent):
         return xp.sinh(
             (model_top_height / decay_scale) ** decay_exponent
             - (vct_a / decay_scale) ** decay_exponent
@@ -579,13 +579,13 @@ def init_vert_coord(
     k = range(vertical_geometry.nflatlev + 1, grid.num_levels)
     k1 = range(vertical_geometry.nflatlev + 1 + nshift, grid.num_levels + nshift)
     # Scaling factors for large-scale and small-scale topography
-    z_fac1 = decay_func(
+    z_fac1 = _decay_func(
         vct_a[k1],
         vertical_config.model_top_height,
         vertical_config.decay_scale_1,
         vertical_config.decay_exponent,
     )
-    z_fac2 = decay_func(
+    z_fac2 = _decay_func(
         vct_a[k1],
         vertical_config.model_top_height,
         vertical_config.decay_scale_2,
