@@ -406,7 +406,9 @@ def test_dycore_wrapper_granule_inputs(
         rho=sp.rho_new(),
         exner=sp.exner_new(),
     )
-    expected_prognostic_state_swp = common_utils.NextStepPair(prognostic_state_nnow, prognostic_state_nnew)
+    expected_prognostic_state_swp = common_utils.NextStepPair(
+        prognostic_state_nnow, prognostic_state_nnew
+    )
 
     expected_prep_adv = solve_nh_states.PrepAdvection(
         vn_traj=sp.vn_traj(),

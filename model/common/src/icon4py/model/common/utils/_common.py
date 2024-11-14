@@ -30,7 +30,8 @@ from typing import (
 @runtime_checkable
 class DoubleBuffering(Protocol):
     @abc.abstractmethod
-    def swap_buffers(self) -> None: ...
+    def swap_buffers(self) -> None:
+        ...
 
 
 class DoubleBufferingDataClassTrait(DoubleBuffering):
@@ -229,9 +230,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def chainable(
-    method_fn: Callable[Concatenate[T, P], None]
-) -> Callable[Concatenate[T, P], T]:
+def chainable(method_fn: Callable[Concatenate[T, P], None]) -> Callable[Concatenate[T, P], T]:
     """
     Make an instance method return the actual instance so it can used in a chain of calls.
 
