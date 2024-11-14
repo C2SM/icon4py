@@ -922,19 +922,11 @@ class Diffusion:
         members_to_disregard = [
             "_backend",
             "_exchange",
-            "mo_intp_rbf_rbf_vec_interpol_vertex",
-            "calculate_nabla2_and_smag_coefficients_for_vn",
-            "calculate_diagnostic_quantities_for_turbulence",
-            "apply_diffusion_to_vn",
-            "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence",
-            "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools",
-            "calculate_nabla2_for_theta",
-            "truly_horizontal_diffusion_nabla_of_theta_over_steep_points",
-            "update_theta_and_exner",
-            "copy_field",
-            "scale_k",
-            "setup_fields_for_initial_step",
-            "init_diffusion_local_fields_for_regular_timestep",
+            *[
+                name
+                for name in self.__dict__.keys()
+                if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
+            ],
         ]
         return orchestration.generate_orchestration_uid(
             self, members_to_disregard=members_to_disregard
