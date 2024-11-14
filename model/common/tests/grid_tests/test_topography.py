@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers,
         (dt_utils.GAUSS3D_EXPERIMENT),
     ],
 )
-def test_topography_smoothing_withSerializedData(
+def test_topography_smoothing_with_serialized_data(
     icon_grid,
     grid_savepoint,
     interpolation_savepoint,
@@ -51,7 +51,7 @@ def test_topography_smoothing_withSerializedData(
 
 
 @pytest.mark.datatest
-def test_topography_smoothing_withNumpy(
+def test_topography_smoothing_with_numpy(
     icon_grid,
     grid_savepoint,
     interpolation_savepoint,
