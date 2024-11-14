@@ -106,18 +106,19 @@ class VerticalGridConfig:
     # Parameters for setting up the decay function of the topographic signal for
     # SLEVE. Default values from mo_sleve_nml.
     #: Decay scale for large-scale topography component
-    decay_scale_1: Final[float] = 4000.0
+    SLEVE_decay_scale_1: Final[float] = 4000.0
     #: Decay scale for small-scale topography component
-    decay_scale_2: Final[float] = 2500.0
+    SLEVE_decay_scale_2: Final[float] = 2500.0
     #: Exponent for decay function
-    decay_exponent: Final[float] = 1.2
-    #: more constants for SLEVE coordinates
-    dvct1: Final[float] = 100.0
-    dvct2: Final[float] = 500.0
-    #: minimum relative layer thickness for nominal thicknesses <= dvct1 (in m)
-    minrat1: Final[float] = 1.0 / 3.0
-    #: minimum relative layer thickness for a nominal thickness of dvct2
-    minrat2: Final[float] = 0.5
+    SLEVE_decay_exponent: Final[float] = 1.2
+    #: minimum absolute layer thickness 1 for SLEVE coordinates
+    SLEVE_minimum_layer_thickness_1: Final[float] = 100.0
+    #: minimum absolute layer thickness 2 for SLEVE coordinates
+    SLEVE_minimum_layer_thickness_2: Final[float] = 500.0
+    #: minimum relative layer thickness for nominal thicknesses <= SLEVE_minimum_layer_thickness_1
+    SLEVE_minimum_relative_layer_thickness_1: Final[float] = 1.0 / 3.0
+    #: minimum relative layer thickness for a nominal thickness of SLEVE_minimum_layer_thickness_2
+    SLEVE_minimum_relative_layer_thickness_2: Final[float] = 0.5
 
 
 @dataclasses.dataclass(frozen=True)
@@ -562,9 +563,9 @@ def init_vert_coord(
 
     z3d_i = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
 
-    topography = topography.asnumpy()
-    topography_smoothed = topography_smoothed.asnumpy()
-    vct_a = vct_a.asnumpy()
+    topography = topography.ndarray
+    topography_smoothed = topography_smoothed.ndarray
+    vct_a = vct_a.ndarray
 
     z3d_i[:, grid.num_levels] = topography
     ktop_thicklimit = xp.asarray(grid.num_cells * [grid.num_levels], dtype=ta.wpfloat)
@@ -582,14 +583,14 @@ def init_vert_coord(
     z_fac1 = _decay_func(
         vct_a[k1],
         vertical_config.model_top_height,
-        vertical_config.decay_scale_1,
-        vertical_config.decay_exponent,
+        vertical_config.SLEVE_decay_scale_1,
+        vertical_config.SLEVE_decay_exponent,
     )
     z_fac2 = _decay_func(
         vct_a[k1],
         vertical_config.model_top_height,
-        vertical_config.decay_scale_2,
-        vertical_config.decay_exponent,
+        vertical_config.SLEVE_decay_scale_2,
+        vertical_config.SLEVE_decay_exponent,
     )
     z3d_i[:, k] = (
         vct_a[k1][xp.newaxis, :]
@@ -601,24 +602,24 @@ def init_vert_coord(
     # cause instabilities in vertical advection
     for k in reversed(range(grid.num_levels)):
         k1 = k + nshift
-        dvct = vct_a[k1] - vct_a[k1 + 1]
-        if dvct < vertical_config.dvct1:
+        delta_vct_a = vct_a[k1] - vct_a[k1 + 1]
+        if delta_vct_a < vertical_config.SLEVE_minimum_layer_thickness_1:
             # limit layer thickness to minrat1 times its nominal value
-            min_lay_spacing = vertical_config.minrat1 * dvct
-        elif dvct < vertical_config.dvct2:
+            min_lay_spacing = vertical_config.SLEVE_minimum_relative_layer_thickness_1 * delta_vct_a
+        elif delta_vct_a < vertical_config.SLEVE_minimum_layer_thickness_2:
             # limitation factor changes from minrat1 to minrat2
             wfac = (
-                (vertical_config.dvct2 - dvct) / (vertical_config.dvct2 - vertical_config.dvct1)
+                (vertical_config.SLEVE_minimum_layer_thickness_2 - delta_vct_a) / (vertical_config.SLEVE_minimum_layer_thickness_2 - vertical_config.SLEVE_minimum_layer_thickness_1)
             ) ** 2
             min_lay_spacing = (
-                vertical_config.minrat1 * wfac + vertical_config.minrat2 * (1.0 - wfac)
-            ) * dvct
+                vertical_config.SLEVE_minimum_relative_layer_thickness_1 * wfac + vertical_config.SLEVE_minimum_relative_layer_thickness_2 * (1.0 - wfac)
+            ) * delta_vct_a
         else:
             # limitation factor decreases again
             min_lay_spacing = (
-                vertical_config.minrat2
-                * vertical_config.dvct2
-                * (dvct / vertical_config.dvct2) ** (1.0 / 3.0)
+                vertical_config.SLEVE_minimum_relative_layer_thickness_2
+                * vertical_config.SLEVE_minimum_layer_thickness_2
+                * (delta_vct_a / vertical_config.SLEVE_minimum_layer_thickness_2) ** (1.0 / 3.0)
             )
 
         min_lay_spacing = max(min_lay_spacing, min(50, vertical_config.lowest_layer_thickness))
@@ -633,26 +634,26 @@ def init_vert_coord(
     # thickness limiter has been active (exclude lowest and highest layers)
     cell_ids = xp.argwhere((ktop_thicklimit <= grid.num_levels - 3) & (ktop_thicklimit >= 3))
     if cell_ids.size > 0:
-        dz1 = (
+        delta_z1 = (
             z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
             - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 2]
         )
-        dz2 = (
+        delta_z2 = (
             z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 3]
             - z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
         )
-        dzr = (dz2 / dz1) ** 0.25  # stretching factor
-        dz3 = (
+        stretching_factor = (delta_z2 / delta_z1) ** 0.25
+        delta_z3 = (
             z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
             - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
-        ) / (dzr * (1.0 + dzr * (1.0 + dzr)))
+        ) / (stretching_factor * (1.0 + stretching_factor * (1.0 + stretching_factor)))
         z3d_i[cell_ids, ktop_thicklimit[cell_ids]] = xp.maximum(
             z3d_i[cell_ids, ktop_thicklimit[cell_ids]],
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1] + dz3 * dzr,
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1] + delta_z3 * stretching_factor,
         )
         z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1] = xp.maximum(
             z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1],
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + dz3 * dzr**2,
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + delta_z3 * stretching_factor**2,
         )
 
     # Check if level nflatlev is still flat
