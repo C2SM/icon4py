@@ -25,6 +25,7 @@ def _update_topo_smooth(
     """
     return topography_smoothed + 0.125 * nabla2_topo * cell_areas
 
+
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def update_topo_smooth(
     topography_smoothed: fa.CellField[ta.wpfloat],
@@ -34,10 +35,10 @@ def update_topo_smooth(
     horizontal_end: gtx.int32,
 ):
     _update_topo_smooth(
-        topography_smoothed = topography_smoothed,
-        nabla2_topo = nabla2_topo,
-        cell_areas = cell_areas,
-        out = topography_smoothed,
+        topography_smoothed=topography_smoothed,
+        nabla2_topo=nabla2_topo,
+        cell_areas=cell_areas,
+        out=topography_smoothed,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
         },

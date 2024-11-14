@@ -19,9 +19,16 @@ def test_nabla2_on_cell(
     grid,
     backend,
 ):
-    psi_c = constant_field(grid, 1.0, dims.CellDim,)
+    psi_c = constant_field(
+        grid,
+        1.0,
+        dims.CellDim,
+    )
     geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
-    nabla2_psi_c = zero_field(grid, dims.CellDim,)
+    nabla2_psi_c = zero_field(
+        grid,
+        dims.CellDim,
+    )
 
     math_oper.compute_nabla2_on_cell.with_backend(backend)(
         psi_c=psi_c,
@@ -39,6 +46,7 @@ def test_nabla2_on_cell(
     )
 
     assert test_helpers.dallclose(nabla2_psi_c.asnumpy(), nabla2_psi_c_np)
+
 
 @pytest.mark.datatest
 def test_nabla2_on_cell_k(

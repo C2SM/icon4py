@@ -604,30 +604,35 @@ def init_vert_coord(
         k1 = k + nshift
         delta_vct_a = vct_a[k1] - vct_a[k1 + 1]
         if delta_vct_a < vertical_config.SLEVE_minimum_layer_thickness_1:
-            # limit layer thickness to minrat1 times its nominal value
-            min_lay_spacing = vertical_config.SLEVE_minimum_relative_layer_thickness_1 * delta_vct_a
+            # limit layer thickness to SLEVE_minimum_relative_layer_thickness_1 times its nominal value
+            minimum_layer_thickness = vertical_config.SLEVE_minimum_relative_layer_thickness_1 * delta_vct_a
         elif delta_vct_a < vertical_config.SLEVE_minimum_layer_thickness_2:
-            # limitation factor changes from minrat1 to minrat2
-            wfac = (
-                (vertical_config.SLEVE_minimum_layer_thickness_2 - delta_vct_a) / (vertical_config.SLEVE_minimum_layer_thickness_2 - vertical_config.SLEVE_minimum_layer_thickness_1)
+            # limitation factor changes from SLEVE_minimum_relative_layer_thickness_1 to SLEVE_minimum_relative_layer_thickness_2
+            layer_thickness_adjustment_factor = (
+                (vertical_config.SLEVE_minimum_layer_thickness_2 - delta_vct_a)
+                / (
+                    vertical_config.SLEVE_minimum_layer_thickness_2
+                    - vertical_config.SLEVE_minimum_layer_thickness_1
+                )
             ) ** 2
-            min_lay_spacing = (
-                vertical_config.SLEVE_minimum_relative_layer_thickness_1 * wfac + vertical_config.SLEVE_minimum_relative_layer_thickness_2 * (1.0 - wfac)
+            minimum_layer_thickness = (
+                vertical_config.SLEVE_minimum_relative_layer_thickness_1 * layer_thickness_adjustment_factor
+                + vertical_config.SLEVE_minimum_relative_layer_thickness_2 * (1.0 - layer_thickness_adjustment_factor)
             ) * delta_vct_a
         else:
             # limitation factor decreases again
-            min_lay_spacing = (
+            minimum_layer_thickness = (
                 vertical_config.SLEVE_minimum_relative_layer_thickness_2
                 * vertical_config.SLEVE_minimum_layer_thickness_2
                 * (delta_vct_a / vertical_config.SLEVE_minimum_layer_thickness_2) ** (1.0 / 3.0)
             )
 
-        min_lay_spacing = max(min_lay_spacing, min(50, vertical_config.lowest_layer_thickness))
+        minimum_layer_thickness = max(minimum_layer_thickness, min(50, vertical_config.lowest_layer_thickness))
 
         # Ensure that the layer thickness is not too small, if so fix it and
         # save the layer index
-        cell_ids = xp.argwhere(z3d_i[:, k + 1] + min_lay_spacing > z3d_i[:, k])
-        z3d_i[cell_ids, k] = z3d_i[cell_ids, k + 1] + min_lay_spacing
+        cell_ids = xp.argwhere(z3d_i[:, k + 1] + minimum_layer_thickness > z3d_i[:, k])
+        z3d_i[cell_ids, k] = z3d_i[cell_ids, k + 1] + minimum_layer_thickness
         ktop_thicklimit[cell_ids] = k
 
     # Smooth layer thickness ratios in the transition layer of columns where the

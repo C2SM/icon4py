@@ -6,8 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common import dimension as dims
 import numpy as np
+
+from icon4py.model.common import dimension as dims
 
 
 def enhanced_smagorinski_factor_numpy(factor_in, heigths_in, a_vec):
@@ -28,8 +29,9 @@ def enhanced_smagorinski_factor_numpy(factor_in, heigths_in, a_vec):
 
 def nabla2_on_cell_numpy(grid, psi_c: np.array, geofac_n2s: np.array):
     c2e2cO = grid.connectivities[dims.C2E2CODim]
-    nabla2_psi_c = np.sum( np.where((c2e2cO != -1), psi_c[c2e2cO] * geofac_n2s, 0), axis=1)
+    nabla2_psi_c = np.sum(np.where((c2e2cO != -1), psi_c[c2e2cO] * geofac_n2s, 0), axis=1)
     return nabla2_psi_c
+
 
 def nabla2_on_cell_k_numpy(grid, psi_c: np.array, geofac_n2s: np.array):
     c2e2cO = grid.connectivities[dims.C2E2CODim]
