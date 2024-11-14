@@ -24,8 +24,9 @@ from unittest import mock
 
 import gt4py.next as gtx
 import pytest
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
+
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
@@ -35,8 +36,6 @@ from icon4py.model.common.test_utils import (
     helpers,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-
-from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 
 from . import utils
 
@@ -301,7 +300,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_icon_grid = icon_grid
     expected_edge_geometry = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry = grid_savepoint.construct_cell_geometry()
-    expected_interpolation_state = solve_nh_states.InterpolationState(
+    expected_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),
         e_flx_avg=interpolation_savepoint.e_flx_avg(),
@@ -319,7 +318,7 @@ def test_dycore_wrapper_granule_inputs(
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    expected_metric_state = solve_nh_states.MetricStateNonHydro(
+    expected_metric_state = dycore_states.MetricStateNonHydro(
         bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
