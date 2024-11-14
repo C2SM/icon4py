@@ -14,6 +14,36 @@ from icon4py.model.common.math import operators as math_oper
 from icon4py.model.common.settings import xp
 
 
+@gtx.field_operator
+def _update_topo_smooth(
+    topography_smoothed: fa.CellField[ta.wpfloat],
+    nabla2_topo: fa.CellField[ta.wpfloat],
+    cell_areas: fa.CellField[ta.wpfloat],
+) -> fa.CellField[ta.wpfloat]:
+    """
+    Updates the smoothed topography field inside the loop.
+    """
+    return topography_smoothed + 0.125 * nabla2_topo * cell_areas
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def update_topo_smooth(
+    topography_smoothed: fa.CellField[ta.wpfloat],
+    nabla2_topo: fa.CellField[ta.wpfloat],
+    cell_areas: fa.CellField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    _update_topo_smooth(
+        topography_smoothed = topography_smoothed,
+        nabla2_topo = nabla2_topo,
+        cell_areas = cell_areas,
+        out = topography_smoothed,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+        },
+    )
+
+
 def compute_smooth_topo(
     topography: fa.CellField[ta.wpfloat],
     grid: icon_grid.IconGrid,
@@ -44,9 +74,13 @@ def compute_smooth_topo(
             },
         )
 
-        topography_smoothed_np = (
-            topography_smoothed.asnumpy() + 0.125 * nabla2_topo.asnumpy() * cell_areas.asnumpy()
+        update_topo_smooth.with_backend(backend)(
+            topography_smoothed=topography_smoothed,
+            nabla2_topo=nabla2_topo,
+            cell_areas=cell_areas,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            offset_provider={},
         )
-        topography_smoothed = gtx.as_field((dims.CellDim,), topography_smoothed_np)
 
-    return gtx.as_field((dims.CellDim,), topography_smoothed_np)
+    return topography_smoothed
