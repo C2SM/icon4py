@@ -28,10 +28,25 @@ def test_gaussian_hill(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     topography_verif = constant_fields_savepoint.topo_c()
 
+
+    cell_center_lat=cell_geometry.cell_center_lat,
+
+    domain_length = 50000.0 # TODO: get from grid file
+    domain_height = 5248.63881081478 # TODO: get from grid file
+    torus_max_lat = 7.5 * xp.pi / 180.0 # Hardcoded in the grid generation script (could get from vertex lat)
+
+    cell_center_x = cell_geometry.cell_center_lon * domain_length / (2.0 * xp.pi)
+    cell_center_y = cell_geometry.cell_center_lat * domain_height / (2.0 * torus_max_lat)
+    # p_x%x(:) = (/ p_pos%lon * geometry_info%domain_length/(2._wp*pi),                              &
+    #   &           (p_pos%lat + TORUS_MAX_LAT) * geometry_info%domain_height/(2._wp*TORUS_MAX_LAT), &
+    #   &           0._wp /)
+    # END FUNCTION gc2cc_plane_torus
+
+
     topography = gtx.as_field((dims.CellDim,), xp.zeros((icon_grid.num_cells,), dtype=ta.wpfloat))
     artificial_topography.gaussian_hill.with_backend(backend)(
-        cell_center_lon=cell_geometry.cell_center_lon,
-        cell_center_lat=cell_geometry.cell_center_lat,
+        cell_center_x=cell_center_x,
+        cell_center_y=cell_center_y,
         topography=topography,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
