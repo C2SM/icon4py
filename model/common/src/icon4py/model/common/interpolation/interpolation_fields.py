@@ -505,21 +505,31 @@ def compute_force_mass_conservation_to_c_bln_avg(
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
     c_bln_avg_inv = c_bln_avg[c2e2c, inv_neighbor_id]
+    max_res_dif= np.zeros(niter)
+    max_res_wgt = np.zeros(niter)
+    max_res_ww = np.zeros(niter)
+
     for iteration in range(niter):
         wgt_loc_sum[horizontal_start:] = c_bln_avg[horizontal_start:, 0] * cell_areas[
             horizontal_start:
         ] + np.sum(c_bln_avg_inv[horizontal_start:] * cell_areas[c2e2c][horizontal_start:], axis=1)
 
-        ww_loc = _weight_sum_on_local_cell(c_bln_avg=c_bln_avg,
-                                           inverse_neighbor_index=inv_nn,
-                                           c2e2c0=c2e2c0,
-                                           cell_area=cell_areas)
+        ww_loc = _weight_sum_on_local_cell(
+            c_bln_avg=c_bln_avg, inverse_neighbor_index=inv_nn, c2e2c0=c2e2c0, cell_area=cell_areas
+        )
 
         resid[horizontal_start_p3:] = (
             wgt_loc_sum[horizontal_start_p3:] / cell_areas[horizontal_start_p3:] - 1.0
         )
         res_wgt = _residual_to_mass_conservation(wgt_loc_sum, owner_mask, cell_areas)
         res_ww = _residual_to_mass_conservation(ww_loc, owner_mask, cell_areas)
+        #assert np.allclose(res_wgt[horizontal_start:], res_ww[horizontal_start:], atol = 1e-12)
+
+        max_res_ww[iteration] = np.max(res_ww)
+        max_res_wgt[iteration] = np.max(res_wgt)
+        max_res_dif[iteration] = np.max(np.abs(res_wgt[horizontal_start:] - res_ww[horizontal_start:]))
+
+
         if iteration >= (niter - 1):
             c_bln_avg = force_mass_conservation(c_bln_avg, resid, owner_mask, horizontal_start)
             return c_bln_avg

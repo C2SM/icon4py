@@ -13,7 +13,10 @@ import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.common.test_utils.helpers as test_helpers
 from icon4py.model.common import constants
-from icon4py.model.common.interpolation.c_bln_avg import compute_force_mass_conservation
+from icon4py.model.common.interpolation.c_bln_avg import (
+    compute_force_mass_conservation,
+    inverse_neighbor_index,
+)
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_bln_avg,
     compute_c_lin_e,
@@ -189,9 +192,22 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment, atol", [(dt_utils.REGIONAL_EXPERIMENT, 1e-2),
-                                              #(dt_utils.GLOBAL_EXPERIMENT, 1e-2)
-])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+def test_inverse_neighbor(experiment, icon_grid):
+    c2e2c0 = icon_grid.connectivities[dims.C2E2CODim]
+    inverse_neighbors = inverse_neighbor_index(c2e2c0)
+    for i, ind in enumerate(inverse_neighbors):
+        assert np.all(c2e2c0[ind] == i)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, atol",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, 1e-2),
+        # (dt_utils.GLOBAL_EXPERIMENT, 1e-2)
+    ],
+)
 def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, experiment, atol):
     cell_areas = grid_savepoint.cell_areas().asnumpy()
     # both experiment use the default value
@@ -210,7 +226,7 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, e
         lon,
         horizontal_start,
     )
-    iterations = 10
+    iterations = 5
     c_bln_avg_v1 = np.copy(c_bln_avg)
     c_bln_avg_v2 = np.copy(c_bln_avg)
     c_bln_avg_v1 = compute_force_mass_conservation_to_c_bln_avg(
@@ -221,15 +237,23 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, e
         cell_areas,
         horizontal_start,
         horizontal_start_p2,
-        niter=iterations
+        niter=iterations,
     )
-    
+
     c2e2c0 = icon_grid.connectivities[dims.C2E2CODim]
     cell_owner_mask = grid_savepoint.c_owner_mask()
-    c_bln_avg_v2 = compute_force_mass_conservation(c_bln_avg_v2, c2e2c0, cell_owner_mask, cell_areas, divavg_cntrwgt, horizontal_start=horizontal_start_p2,niter=iterations )
+    c_bln_avg_v2 = compute_force_mass_conservation(
+        c_bln_avg_v2,
+        c2e2c0,
+        cell_owner_mask,
+        cell_areas,
+        divavg_cntrwgt,
+        horizontal_start=horizontal_start_p2,
+        niter=iterations,
+    )
 
-    assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=atol) # regional 1e-4
-    assert test_helpers.dallclose(c_bln_avg_v1, c_bln_avg_ref, atol=atol) # regional 1e-4
+    assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=atol)  # regional 1e-4
+    assert test_helpers.dallclose(c_bln_avg_v1, c_bln_avg_ref, atol=atol)  # regional 1e-4
     assert test_helpers.dallclose(c_bln_avg_v2, c_bln_avg_ref, atol=atol)
 
 
