@@ -10,13 +10,13 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import maximum, where
 
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
+from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
+from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
     _compute_advective_normal_wind_tendency,
 )
-from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
+from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl import (
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
