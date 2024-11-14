@@ -1074,11 +1074,11 @@ class SolveNonhydro:
             Compute perturbed rho at full levels (cell center).
         z_rth_pr_2 (0:nlev-1):
             Compute perturbed virtual temperature at full levels (cell center).
-        
+
         $$
         \rho_{k}^{\prime^\tilde{n}} = \hat{\rho_{k}^{\tilde{n}}} - \rho_{0\ k} \\
         $$
-        
+
         z_theta_v_pr_ic (1:nlev-1):
             Compute the perturbed virtual temperature from z_rth_pr_2 at half levels.
 
@@ -1124,6 +1124,14 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
+        # scidoc:
+        # Outputs:
+        #  - z_theta_v_pr_ic :
+        #
+        #  - theta_v_ic :
+        #
+        # Inputs:
+        #
         """
         z_theta_v_pr_ic (0, nlev):
             Perturbed theta_v at half level at the model top is set to zero.
@@ -1148,18 +1156,31 @@ class SolveNonhydro:
         )
 
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            """
-            z_dexner_dz_c_2 (flat_gradp:nlev-1):
-                Compute second vertical derivative of perturbed exner function at full levels (cell centers) from flat_gradp to the bottom-most level.
-                This second vertical derivative is approximated by hydrostatic approximation (see eqs. 13 and 7 in Günther et al. 2012).
-                d2pi'/dz2 = - dtheta_v'/dz /theta_v_0 dpi_0/dz - theta_v' d/dz( 1/theta_v_0 dpi_0/dz ), dpi_0/dz = -g /cpd / theta_v_0
-                z_dexner_dz_c_2 = 1/2 d2pi'/dz2
-                1/theta_v_0 dpi_0/dz is precomputed as d2dexdz2_fac1_mc.
-                d/dz( 1/theta_v_0 dpi_0/dz ) is precomputed as d2dexdz2_fac2_mc. It makes use of eq. 15 in Günther et al. 2012 for refernce state of temperature when computing dtheta_v_0/dz
-
-            flat_gradp is the maximum height index at which the height of the center of an edge lies within two neighboring cells.
-            """
-            # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
+            # scidoc:
+            # Outputs:
+            #  - z_dexner_dz_c_2 :
+            #     $$
+            #     \frac{1}{2}\pdzz{\exnerprime{\ntilde}{\c}{\k}} = \frac{1}{2} ( \pdz{\vptotprime{\n}{\c}{\k}} \vptotref{0}{\c}{\k} \ddz{\presref{0}{\c}{\k}} - \vptotprime{\n}{\c}{\k} \ddz{\frac{1}{\vptotref{0}{\c}{\k}} \ddz{\presref{0}{\c}{\k}}} ) \quad \k \in [\nflatgradp, \nlev)
+            #     \ddz{\presref{0}{\c}{\k}} = -\frac{g \cpd}{\vptotref{0}{\c}{\k}}}
+            #     $$
+            #     Compute second vertical derivative of perturbed exner function.
+            #     This second vertical derivative is approximated by hydrostatic
+            #     approximation. See eqs. 13 and 7 in Zängl 2012 (|ICONSteepSlopePressurePaper|).
+            #     Note that, in $\ddz{\frac{1}{\vptotref{0}{\c}{\k}} \ddz{\presref{0}{\c}{\k}}}$,
+            #     it makes use of eq. 15 in Zängl 2012 for reference state
+            #     of temperature when computing $\ddz{\vptotref{0}{\c}{\k}}$.
+            #     The vertical derivative of perturbed virtual potential temperature
+            #     on RHS is computed explicitly in this stencil by taking the
+            #     difference between neighboring half levels (coefficient is included
+            #     in d2dexdz2_fac1_mc).
+            #     $\nflatgradp$ is the maximum height index at which the height of
+            #     the center of an edge lies within two neighboring cells.
+            # Inputs:
+            #  - $\vptotprime{\n}{\c}{\k-1/2}$ : z_theta_v_pr_ic
+            #  - $\frac{1}{dz \vptotref{0}{\c}{\k}} \ddz{\presref{0}{\c}{\k}}$ : d2dexdz2_fac1_mc
+            #  - $\ddz{\frac{1}{\vptotref{0}{\c}{\k}} \ddz{\presref{0}{\c}{\k}}}$ : d2dexdz2_fac2_mc
+            #  - $\vptotprime{\n}{\c}{\k}$ : z_rth_pr_2
+            #
             self._compute_approx_of_2nd_vertical_derivative_of_exner(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
@@ -1274,6 +1295,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             if self._config.iadv_rhotheta == RhoThetaAdvectionType.MIURA:
+                # scidoc:
                 """
                 This long stencil computes rho (density) and theta_v (virtual temperature) on edges.
                 Miura (2007) scheme is adopted. pos_on_tplane_e is the location of neighboring cell centers on (vn, vt) coordinates (normal points inwards and tangent points right-handed).

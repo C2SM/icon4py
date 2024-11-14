@@ -50,6 +50,7 @@
 \newcommand{\ddxt}[1]{\frac{\dif #1}{\dif t}}
 \newcommand{\pdt}[1]{\frac{\partial #1}{\partial t}}
 \newcommand{\pdz}[1]{\frac{\partial #1}{\partial z}}
+\newcommand{\pdzz}[1]{\frac{\partial^2 #1}{\partial z^2}}
 \newcommand{\pdxn}[1]{\frac{\partial #1}{\partial n}}
 \newcommand{\pdxt}[1]{\frac{\partial #1}{\partial t}}
 
@@ -64,8 +65,13 @@
 \newcommand{\advvn}[3]{     \variable{\text{adv}(v_n)}{#1}{#2}{#3}}
 \newcommand{\vortvert}[3]{  \variable{\zeta          }{#1}{#2}{#3}}
 \newcommand{\density}[3]{   \variable{\rho           }{#1}{#2}{#3}}
-\newcommand{\vtemp}[3]{     \variable{\theta_v       }{#1}{#2}{#3}}
-\newcommand{\vtempprime}[3]{\variable{\theta_v'      }{#1}{#2}{#3}}
+\newcommand{\pres}[3]{      \variable{P              }{#1}{#2}{#3}}
+\newcommand{\presref}[3]{   \variable{P_0            }{#1}{#2}{#3}}
+\newcommand{\vtemp}[3]{     \variable{T_v            }{#1}{#2}{#3}}
+\newcommand{\vtempprime}[3]{\variable{T_v'           }{#1}{#2}{#3}}
+\newcommand{\vpotemp}[3]{     \variable{\theta_v       }{#1}{#2}{#3}}
+\newcommand{\vpotempprime}[3]{\variable{\theta_v'      }{#1}{#2}{#3}}
+\newcommand{\vptotref}[3]{  \variable{\theta_{v0}    }{#1}{#2}{#3}}
 \newcommand{\exner}[3]{     \variable{\pi            }{#1}{#2}{#3}}
 \newcommand{\exnerprime}[3]{\variable{\pi'           }{#1}{#2}{#3}}
 \newcommand{\exnerref}[3]{  \variable{\pi_0          }{#1}{#2}{#3}}
@@ -80,6 +86,7 @@
 % Numerical constants
 \newcommand{\nlev}{{\texttt{num_lev}}}
 \newcommand{\nflatlev}{{\texttt{flat_lev}}}
+\newcommand{\nflatgradp}{{\texttt{flat_gradp_lev}}}
 
 % Temporal steps
 \newcommand{\n}{{\timecolor{n}}}

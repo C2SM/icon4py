@@ -55,6 +55,8 @@ rst_epilog = """
 .. _ICON_Tutorial: https://www.dwd.de/EN/ourservices/nwp_icon_tutorial/nwp_icon_tutorial_en.html
 .. |ICONdycorePaper| replace:: Zangl_etal_
 .. _Zangl_etal: https://doi.org/10.1002/qj.2378
+.. |ICONSteepSlopePressurePaper| replace:: Zangl_2012_
+.. _Zangl_2012: https://doi.org/10.1175/MWR-D-12-00049.1
 """
 
 # -- MathJax config ----------------------------------------------------------
