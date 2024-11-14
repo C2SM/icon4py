@@ -26,7 +26,12 @@ def enhanced_smagorinski_factor_numpy(factor_in, heigths_in, a_vec):
     return factor_in[0] + dzlin * alin + dzqdr * (aqdr + dzqdr * bqdr)
 
 
-def nabla2_scalar_numpy(grid, psi_c: xp.array, geofac_n2s: xp.array):
+def nabla2_on_cell_numpy(grid, psi_c: xp.array, geofac_n2s: xp.array):
+    c2e2cO = grid.connectivities[dims.C2E2CODim]
+    nabla2_psi_c = xp.sum( xp.where((c2e2cO != -1), psi_c[c2e2cO] * geofac_n2s, 0), axis=1)
+    return nabla2_psi_c
+
+def nabla2_on_cell_k_numpy(grid, psi_c: xp.array, geofac_n2s: xp.array):
     c2e2cO = grid.connectivities[dims.C2E2CODim]
     geofac_n2s = xp.expand_dims(geofac_n2s, axis=-1)
     nabla2_psi_c = xp.sum(

@@ -14,7 +14,7 @@ from icon4py.model.common.dimension import C2E2CO, C2E2CODim
 
 
 @gtx.field_operator
-def _nabla2_scalar_2D(
+def _compute_nabla2_on_cell(
     psi_c: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
 ) -> fa.CellField[ta.wpfloat]:
@@ -28,14 +28,14 @@ def _nabla2_scalar_2D(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def nabla2_scalar_2D(
+def compute_nabla2_on_cell(
     psi_c: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     nabla2_psi_c: fa.CellField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
-    _nabla2_scalar_2D(
+    _compute_nabla2_on_cell(
         psi_c,
         geofac_n2s,
         out=nabla2_psi_c,
@@ -46,7 +46,7 @@ def nabla2_scalar_2D(
 
 
 @gtx.field_operator
-def _nabla2_scalar(
+def _compute_nabla2_on_cell_k(
     psi_c: fa.CellKField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
@@ -60,7 +60,7 @@ def _nabla2_scalar(
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def nabla2_scalar(
+def compute_nabla2_on_cell_k(
     psi_c: fa.CellKField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     nabla2_psi_c: fa.CellKField[ta.wpfloat],
@@ -69,7 +69,7 @@ def nabla2_scalar(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _nabla2_scalar(
+    _compute_nabla2_on_cell_k(
         psi_c,
         geofac_n2s,
         out=nabla2_psi_c,

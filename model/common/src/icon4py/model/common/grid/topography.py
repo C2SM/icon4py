@@ -63,7 +63,7 @@ def compute_smooth_topo(
     nabla2_topo = gtx.as_field((dims.CellDim,), nabla2_topo_np)
 
     for _ in range(num_iterations):
-        math_oper.nabla2_scalar_2D.with_backend(backend)(
+        math_oper.compute_nabla2_on_cell.with_backend(backend)(
             psi_c=topography_smoothed,
             geofac_n2s=geofac_n2s,
             nabla2_psi_c=nabla2_topo,

@@ -15,7 +15,33 @@ from icon4py.model.common.test_utils.helpers import constant_field, zero_field
 
 
 @pytest.mark.datatest
-def test_nabla2_scalar(
+def test_nabla2_on_cell(
+    grid,
+    backend,
+):
+    psi_c = constant_field(grid, 1.0, dims.CellDim,)
+    geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
+    nabla2_psi_c = zero_field(grid, dims.CellDim,)
+
+    math_oper.compute_nabla2_on_cell.with_backend(backend)(
+        psi_c=psi_c,
+        geofac_n2s=geofac_n2s,
+        nabla2_psi_c=nabla2_psi_c,
+        horizontal_start=0,
+        horizontal_end=grid.num_cells,
+        offset_provider={
+            "C2E2CO": grid.get_offset_provider("C2E2CO"),
+        },
+    )
+
+    nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(
+        grid, psi_c.asnumpy(), geofac_n2s.asnumpy()
+    )
+
+    assert test_helpers.dallclose(nabla2_psi_c.asnumpy(), nabla2_psi_c_np)
+
+@pytest.mark.datatest
+def test_nabla2_on_cell_k(
     grid,
     backend,
 ):
@@ -23,7 +49,7 @@ def test_nabla2_scalar(
     geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
     nabla2_psi_c = zero_field(grid, dims.CellDim, dims.KDim)
 
-    math_oper.nabla2_scalar.with_backend(backend)(
+    math_oper.compute_nabla2_on_cell_k.with_backend(backend)(
         psi_c=psi_c,
         geofac_n2s=geofac_n2s,
         nabla2_psi_c=nabla2_psi_c,
@@ -36,7 +62,7 @@ def test_nabla2_scalar(
         },
     )
 
-    nabla2_psi_c_np = reference_funcs.nabla2_scalar_numpy(
+    nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(
         grid, psi_c.asnumpy(), geofac_n2s.asnumpy()
     )
 
