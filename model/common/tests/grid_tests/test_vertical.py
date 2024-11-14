@@ -10,9 +10,9 @@ import math
 import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common.settings import xp
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, grid_utils, helpers
 
 

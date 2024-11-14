@@ -111,6 +111,13 @@ class VerticalGridConfig:
     decay_scale_2: Final[float] = 2500.0
     #: Exponent for decay function
     decay_exponent: Final[float] = 1.2
+    #: more constants for SLEVE coordinates
+    dvct1: Final[float] = 100.0
+    dvct2: Final[float] = 500.0
+    #: minimum relative layer thickness for nominal thicknesses <= dvct1 (in m)
+    minrat1: Final[float] = 1.0 / 3.0
+    #: minimum relative layer thickness for a nominal thickness of dvct2
+    minrat2: Final[float] = 0.5
 
 
 @dataclasses.dataclass(frozen=True)
@@ -547,64 +554,72 @@ def init_vert_coord(
     Computes the 3D vertical coordinate fields.
     """
 
+    def decay_func(vct_a, model_top_height, decay_scale, decay_exponent):
+        return xp.sinh(
+            (model_top_height / decay_scale) ** decay_exponent
+            - (vct_a / decay_scale) ** decay_exponent
+        ) / xp.sinh((model_top_height / decay_scale) ** decay_exponent)
+
     z3d_i = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
 
     topography = topography.asnumpy()
     topography_smoothed = topography_smoothed.asnumpy()
     vct_a = vct_a.asnumpy()
 
-    dvct1 = 100.0
-    minrat1 = 1.0 / 3.0  # minimum relative layer thickness for nominal thicknesses <= dvct1 (in m)
-    dvct2 = 500.0
-    minrat2 = 0.5  # minimum relative layer thickness for a nominal thickness of dvct2
-
     z3d_i[:, grid.num_levels] = topography
-    ktop_thicklimit = grid.num_levels * xp.ones(grid.num_cells, dtype=ta.wpfloat)
+    ktop_thicklimit = xp.asarray(grid.num_cells * [grid.num_levels], dtype=ta.wpfloat)
 
     # Small-scale topography (i.e. full topo - smooth topo)
     topo_deviation = topography - topography_smoothed
 
-    for k in range(vertical_geometry.nflatlev + 1):
-        k1 = k + nshift
-        z3d_i[:, k] = vct_a[k1]
+    k = range(vertical_geometry.nflatlev + 1)
+    k1 = range(nshift, vertical_geometry.nflatlev + 1 + nshift)
+    z3d_i[:, k] = vct_a[k1]
 
-    for k in range(vertical_geometry.nflatlev + 1, grid.num_levels):
-        k1 = k + nshift
-        # Scaling factors for large-scale and small-scale topography
-        z_fac1 = xp.sinh(
-            (vertical_config.model_top_height / vertical_config.decay_scale_1)
-            ** vertical_config.decay_exponent
-            - (vct_a[k1] / vertical_config.decay_scale_1) ** vertical_config.decay_exponent
-        ) / xp.sinh(
-            (vertical_config.model_top_height / vertical_config.decay_scale_1)
-            ** vertical_config.decay_exponent
-        )
-        z_fac2 = xp.sinh(
-            (vertical_config.model_top_height / vertical_config.decay_scale_2)
-            ** vertical_config.decay_exponent
-            - (vct_a[k1] / vertical_config.decay_scale_2) ** vertical_config.decay_exponent
-        ) / xp.sinh(
-            (vertical_config.model_top_height / vertical_config.decay_scale_2)
-            ** vertical_config.decay_exponent
-        )
-
-        z3d_i[:, k] = vct_a[k1] + topography_smoothed * z_fac1 + topo_deviation * z_fac2
+    k = range(vertical_geometry.nflatlev + 1, grid.num_levels)
+    k1 = range(vertical_geometry.nflatlev + 1 + nshift, grid.num_levels + nshift)
+    # Scaling factors for large-scale and small-scale topography
+    z_fac1 = decay_func(
+        vct_a[k1],
+        vertical_config.model_top_height,
+        vertical_config.decay_scale_1,
+        vertical_config.decay_exponent,
+    )
+    z_fac2 = decay_func(
+        vct_a[k1],
+        vertical_config.model_top_height,
+        vertical_config.decay_scale_2,
+        vertical_config.decay_exponent,
+    )
+    z3d_i[:, k] = (
+        vct_a[k1][xp.newaxis, :]
+        + topography_smoothed[:, xp.newaxis] * z_fac1
+        + topo_deviation[:, xp.newaxis] * z_fac2
+    )
 
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
-    for k in range(grid.num_levels - 1, -1, -1):
+    for k in reversed(range(grid.num_levels)):
         k1 = k + nshift
         dvct = vct_a[k1] - vct_a[k1 + 1]
-        if dvct < dvct1:
+        if dvct < vertical_config.dvct1:
             # limit layer thickness to minrat1 times its nominal value
-            min_lay_spacing = minrat1 * dvct
-        elif dvct < dvct2:
+            min_lay_spacing = vertical_config.minrat1 * dvct
+        elif dvct < vertical_config.dvct2:
             # limitation factor changes from minrat1 to minrat2
-            wfac = ((dvct2 - dvct) / (dvct2 - dvct1)) ** 2
-            min_lay_spacing = (minrat1 * wfac + minrat2 * (1.0 - wfac)) * dvct
+            wfac = (
+                (vertical_config.dvct2 - dvct) / (vertical_config.dvct2 - vertical_config.dvct1)
+            ) ** 2
+            min_lay_spacing = (
+                vertical_config.minrat1 * wfac + vertical_config.minrat2 * (1.0 - wfac)
+            ) * dvct
         else:
             # limitation factor decreases again
-            min_lay_spacing = minrat2 * dvct2 * (dvct / dvct2) ** (1.0 / 3.0)
+            min_lay_spacing = (
+                vertical_config.minrat2
+                * vertical_config.dvct2
+                * (dvct / vertical_config.dvct2) ** (1.0 / 3.0)
+            )
 
         min_lay_spacing = max(min_lay_spacing, min(50, vertical_config.lowest_layer_thickness))
 
@@ -637,7 +652,7 @@ def init_vert_coord(
         )
         z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1] = xp.maximum(
             z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1],
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + dz3 * dzr * dzr,
+            z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + dz3 * dzr**2,
         )
 
     # Check if level nflatlev is still flat

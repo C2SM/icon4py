@@ -13,8 +13,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim
 
 
-
-
 @gtx.field_operator
 def _nabla2_scalar_2D(
     psi_c: fa.CellField[ta.wpfloat],
