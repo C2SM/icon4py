@@ -8,7 +8,6 @@
 
 
 from gt4py.next.embedded.nd_array_field import NdArrayField
-
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.common.settings import xp

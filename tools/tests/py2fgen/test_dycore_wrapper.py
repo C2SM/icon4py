@@ -24,8 +24,6 @@ from unittest import mock
 
 import gt4py.next as gtx
 import pytest
-from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
-
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -36,6 +34,8 @@ from icon4py.model.common.test_utils import (
     helpers,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
+from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 
 from . import utils
 
@@ -370,7 +370,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
-    expected_diagnostic_state_nh = solve_nh_states.DiagnosticStateNonHydro(
+    expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -409,7 +409,7 @@ def test_dycore_wrapper_granule_inputs(
     )
     expected_prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
 
-    expected_prep_adv = solve_nh_states.PrepAdvection(
+    expected_prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
