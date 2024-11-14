@@ -186,7 +186,7 @@ def test_velocity_predictor_step(
         ddt_vn_phy=None,
         grf_tend_vn=None,
         ddt_vn_apc_pc=common_utils.Pair(sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)),
-        ddt_w_adv__pc=common_utils.Pair(sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)),
+        ddt_w_adv_pc=common_utils.Pair(sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -232,7 +232,6 @@ def test_velocity_predictor_step(
         z_kin_hor_e=sp_v.z_kin_hor_e(),
         z_vt_ie=sp_v.z_vt_ie(),
         dtime=dtime,
-        ntnd=ntnd - 1,
         cell_areas=cell_geometry.area,
     )
 
@@ -400,7 +399,6 @@ def test_velocity_corrector_step(
         z_kin_hor_e=sp_v.z_kin_hor_e(),
         z_vt_ie=sp_v.z_vt_ie(),
         dtime=dtime,
-        ntnd=ntnd - 1,
         cell_areas=cell_geometry.area,
     )
 
