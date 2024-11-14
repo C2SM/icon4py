@@ -794,9 +794,10 @@ class SolveNonhydro:
     def set_time_levels(self, diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro) -> None:
         """Set time levels of ddt_adv fields for call to velocity_tendencies."""
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            diagnostic_state_nh.ddt_w_adv_pc.swap()
+            diagnostic_state_nh.swap_buffers()
         else:
             diagnostic_state_nh.ddt_w_adv_pc.first = diagnostic_state_nh.ddt_w_adv_pc.second
+            diagnostic_state_nh.ddt_vn_apc_pc.first = diagnostic_state_nh.ddt_vn_apc_pc.second
 
     def time_step(
         self,
@@ -832,7 +833,8 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        self.set_time_levels(diagnostic_state_nh)
+        if not at_first_substep:
+            self.set_time_levels(diagnostic_state_nh)
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,

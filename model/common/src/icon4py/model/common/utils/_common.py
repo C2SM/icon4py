@@ -9,7 +9,9 @@
 
 from __future__ import annotations
 
+import abc
 import copy
+import dataclasses
 import functools
 from collections.abc import Callable
 from typing import (
@@ -19,45 +21,25 @@ from typing import (
     Generator,
     Generic,
     ParamSpec,
+    Protocol,
     TypeVar,
+    runtime_checkable,
 )
 
 
-__all__ = ["chainable", "namedproperty", "Pair", "NextStepPair", "PreviousStepPair"]
+@runtime_checkable
+class DoubleBuffering(Protocol):
+    @abc.abstractmethod
+    def swap_buffers(self) -> None: ...
 
-P = ParamSpec("P")
-T = TypeVar("T")
 
-
-def chainable(method_fn: Callable[Concatenate[T, P], None]) -> Callable[Concatenate[T, P], T]:
-    """
-    Make an instance method return the actual instance so it can used in a chain of calls.
-
-    Typically used for simple fluent interfaces.
-
-    Examples:
-        >>> class A:
-        ...     @chainable
-        ...     def set_value(self, value: int) -> None:
-        ...         self.value = value
-        ...
-        ...     @chainable
-        ...     def increment(self, value: int) -> None:
-        ...         self.value += value
-        ...
-        ...
-        ... a = A()
-        ... a.set_value(1).increment(2)
-        ... a.value
-        3
-    """
-
-    @functools.wraps(method_fn)
-    def wrapper(self: T, *args: P.args, **kwargs: P.kwargs) -> T:
-        method_fn(self, *args, **kwargs)
-        return self
-
-    return wrapper
+class DoubleBufferingDataClassTrait(DoubleBuffering):
+    def swap_buffers(self) -> None:
+        for field in dataclasses.fields(self):
+            if (
+                attr_swapper := getattr(getattr(self, field.name), "swap_buffers", None)
+            ) is not None:
+                attr_swapper()
 
 
 T = TypeVar("T")
@@ -88,7 +70,7 @@ class namedproperty(property, Generic[C, T]):
         value
     """
 
-    name: str
+    name: str | None = None
 
     def __set_name__(self, owner: C, name: str) -> None:
         self.name = name
@@ -144,7 +126,6 @@ class Pair(Generic[T]):
         AttributeError: can't set attribute
     """
 
-
     _FIRST_ACCESSOR_ID: Final = "FIRST"
     _SECOND_ACCESSOR_ID: Final = "SECOND"
 
@@ -183,7 +164,6 @@ class Pair(Generic[T]):
     def first(self, value: T) -> None:
         self.__first = value
 
-
     @namedproperty
     def second(self) -> T:
         """Property descriptor for the second element of the pair."""
@@ -202,10 +182,9 @@ class Pair(Generic[T]):
     def frozen_second(self) -> T:
         """Read-only property descriptor for the second element of the pair (mainly for subclassing)."""
         return self.__second
-    
-    first._pair_accessor_id_ = frozen_first._pair_accessor_id_ =  _FIRST_ACCESSOR_ID
-    second._pair_accessor_id_ = frozen_second._pair_accessor_id_ =  _SECOND_ACCESSOR_ID
 
+    first._pair_accessor_id_ = frozen_first._pair_accessor_id_ = _FIRST_ACCESSOR_ID
+    second._pair_accessor_id_ = frozen_second._pair_accessor_id_ = _SECOND_ACCESSOR_ID
 
     def __eq__(self, other: object) -> bool:
         return type(self) is type(other) and (
@@ -233,6 +212,8 @@ class Pair(Generic[T]):
         self.__first, self.__second = self.__second, self.__first
         return self
 
+    swap_buffers = swap
+
 
 class NextStepPair(Pair[T]):
     current: T = Pair.first
@@ -242,3 +223,40 @@ class NextStepPair(Pair[T]):
 class PreviousStepPair(Pair[T]):
     current: T = Pair.first
     previous: T = Pair.frozen_second
+
+
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+def chainable(
+    method_fn: Callable[Concatenate[T, P], None]
+) -> Callable[Concatenate[T, P], T]:
+    """
+    Make an instance method return the actual instance so it can used in a chain of calls.
+
+    Typically used for simple fluent interfaces.
+
+    Examples:
+        >>> class A:
+        ...     @chainable
+        ...     def set_value(self, value: int) -> None:
+        ...         self.value = value
+        ...
+        ...     @chainable
+        ...     def increment(self, value: int) -> None:
+        ...         self.value += value
+        ...
+        ...
+        ... a = A()
+        ... a.set_value(1).increment(2)
+        ... a.value
+        3
+    """
+
+    @functools.wraps(method_fn)
+    def wrapper(self: T, *args: P.args, **kwargs: P.kwargs) -> T:
+        method_fn(self, *args, **kwargs)
+        return self
+
+    return wrapper

@@ -205,7 +205,7 @@ class TimeLoop:
                 self.dtime_in_seconds,
             )
 
-        prognostic_state_swp.swap()
+        prognostic_state_swp.swap_buffers()
 
         # TODO (Chia Rui): add tracer advection here
 
@@ -244,7 +244,7 @@ class TimeLoop:
             do_clean_mflx = False
 
             if not self._is_last_substep(dyn_substep):
-                prognostic_state_swp.swap()
+                prognostic_state_swp.swap_buffers()
 
             self._is_first_step_in_simulation = False
 

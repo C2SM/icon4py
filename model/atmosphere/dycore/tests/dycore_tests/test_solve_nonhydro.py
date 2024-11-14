@@ -153,7 +153,6 @@ def test_nonhydro_predictor_step(
     nlev = icon_grid.num_levels
 
     prognostic_state_swp = utils.create_prognostic_states(sp)
-    solve_nonhydro.set_time_levels(diagnostic_state_nh)
 
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -559,7 +558,6 @@ def test_nonhydro_corrector_step(
     )
 
     prognostic_state_swp = utils.create_prognostic_states(sp)
-    solve_nonhydro.set_time_levels(diagnostic_state_nh)
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,

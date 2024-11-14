@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import hashlib
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
@@ -146,9 +147,11 @@ def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
     return np.asarray(field).reshape(new_shape)
 
 
+def fingerprint_array(arr: np.array, *, digest_length: int = 8) -> str:
+    return hashlib.md5(np.array_str(arr).encode()).hexdigest()[-digest_length:]
+
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
-
 
 def allocate_data(backend, input_data):
     _allocate_field = constructors.as_field.partial(allocator=backend)

@@ -9,16 +9,19 @@
 from __future__ import annotations
 
 from . import gt4py_field_allocation
-from ._common import NextStepPair, PreviousStepPair, Pair, chainable
+from ._common import DoubleBuffering, DoubleBufferingDataClassTrait, NextStepPair, PreviousStepPair, Pair, chainable
 
 
 __all__ = [
-    # Symbols
-    "chainable",
-    "namedproperty",
+    # Classes
+    "DoubleBuffering",
+    "DoubleBufferingDataClassTrait",
     "NextStepPair",
     "Pair",
     "PreviousStepPair"
+    "namedproperty",
+    # Functions
+    "chainable",
     # Modules
     "gt4py_field_allocation",
 ]
