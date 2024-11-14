@@ -9,7 +9,7 @@ import functools
 from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
 
 from gt4py import next as gtx
-from gt4py.next import backend, backend as gtx_backend
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.grid.geometry_attributes as attrs
 import icon4py.model.common.math.helpers as math_helpers
@@ -28,8 +28,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.common.states.factory import FieldProvider
-from icon4py.model.common.states.model import FieldMetaData
 
 
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
@@ -445,15 +443,15 @@ class GridGeometry(factory.FieldSource):
         return f"{self.__class__.__name__} for geometry_type={self._geometry_type._name_} (grid={self._grid.id!r})"
 
     @property
-    def providers(self) -> dict[str, FieldProvider]:
+    def providers(self) -> dict[str, factory.FieldProvider]:
         return self._providers
 
     @property
-    def metadata(self) -> dict[str, FieldMetaData]:
+    def metadata(self) -> dict[str, model.FieldMetaData]:
         return self._attrs
 
     @property
-    def backend(self) -> backend.Backend:
+    def backend(self) -> gtx_backend.Backend:
         return self._backend
 
     @property
