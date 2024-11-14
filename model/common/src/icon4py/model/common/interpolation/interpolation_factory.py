@@ -4,6 +4,7 @@ from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import geometry, icon
+from icon4py.model.common.interpolation import interpolation_fields
 from icon4py.model.common.states import factory, model
 
 
@@ -26,7 +27,10 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
 
     def _register_computed_fields(self):
-        ...
+        geofac_div = factory.ProgramFieldProvider(
+            func=interpolation_fields.compute_geofac_div,
+            domain=
+        )
 
 
 
