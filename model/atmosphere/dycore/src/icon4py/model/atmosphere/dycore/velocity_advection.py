@@ -8,8 +8,8 @@
 import gt4py.next as gtx
 from gt4py.next import backend
 
-import icon4py.model.atmosphere.dycore.velocity.velocity_advection_stencils as velocity_stencils
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
@@ -57,8 +57,8 @@ class VelocityAdvection:
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        metric_state: solve_nh_states.MetricStateNonHydro,
-        interpolation_state: solve_nh_states.InterpolationState,
+        metric_state: dycore_states.MetricStateNonHydro,
+        interpolation_state: dycore_states.InterpolationState,
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
@@ -66,8 +66,8 @@ class VelocityAdvection:
     ):
         self.grid: icon_grid.IconGrid = grid
         self._backend = backend
-        self.metric_state: solve_nh_states.MetricStateNonHydro = metric_state
-        self.interpolation_state: solve_nh_states.InterpolationState = interpolation_state
+        self.metric_state: dycore_states.MetricStateNonHydro = metric_state
+        self.interpolation_state: dycore_states.InterpolationState = interpolation_state
         self.vertical_params = vertical_params
         self.edge_params = edge_params
         self.c_owner_mask = owner_mask
@@ -96,7 +96,9 @@ class VelocityAdvection:
             compute_horizontal_advection_term_for_vertical_velocity.with_backend(self._backend)
         )
         self._interpolate_to_cell_center = interpolate_to_cell_center.with_backend(self._backend)
-        self._fused_stencils_9_10 = velocity_stencils.fused_stencils_9_10.with_backend(self._backend)
+        self._fused_stencils_9_10 = velocity_stencils.fused_stencils_9_10.with_backend(
+            self._backend
+        )
         self._fused_stencils_11_to_13 = velocity_stencils.fused_stencils_11_to_13.with_backend(
             self._backend
         )
@@ -188,7 +190,7 @@ class VelocityAdvection:
     def run_predictor_step(
         self,
         vn_only: bool,
-        diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
         z_w_concorr_me: fa.EdgeKField[float],
         z_kin_hor_e: fa.EdgeKField[float],
@@ -469,7 +471,7 @@ class VelocityAdvection:
     def run_corrector_step(
         self,
         vn_only: bool,
-        diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
         z_kin_hor_e: fa.EdgeKField[float],
         z_vt_ie: fa.EdgeKField[float],

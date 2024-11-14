@@ -8,7 +8,7 @@
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.atmosphere.dycore.state_utils import utils as solve_nh_utils
+from icon4py.model.atmosphere.dycore import dycore_utils
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.settings import backend
@@ -32,7 +32,7 @@ def test_caclulate_scal_divdamp_order_24():
     enh_divdamp_fac = helpers.random_field(grid, dims.KDim)
     out = helpers.random_field(grid, dims.KDim)
 
-    solve_nh_utils._calculate_scal_divdamp.with_backend(backend)(
+    dycore_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_fac_o2=divdamp_fac_o2,
         divdamp_order=divdamp_order,
@@ -53,7 +53,7 @@ def test_calculate_scal_divdamp_any_order():
     enh_divdamp_fac = helpers.random_field(grid, dims.KDim)
     out = helpers.random_field(grid, dims.KDim)
 
-    solve_nh_utils._calculate_scal_divdamp.with_backend(backend)(
+    dycore_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_fac_o2=divdamp_fac_o2,
         divdamp_order=divdamp_order,
@@ -70,7 +70,7 @@ def test_calculate_bdy_divdamp():
     scal_divdamp = helpers.random_field(grid, dims.KDim)
     out = helpers.zero_field(grid, dims.KDim)
     coeff = 0.3
-    solve_nh_utils._calculate_bdy_divdamp.with_backend(backend)(
+    dycore_utils._calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp, coeff, constants.DBL_EPS, out=out, offset_provider={}
     )
     assert helpers.dallclose(out.asnumpy(), bdy_divdamp_numpy(coeff, scal_divdamp.asnumpy()))
@@ -92,7 +92,7 @@ def test_calculate_divdamp_fields():
 
     boundary_ref = bdy_divdamp_numpy(nudge_max_coeff, scaled_ref)
 
-    solve_nh_utils._calculate_divdamp_fields.with_backend(backend)(
+    dycore_utils._calculate_divdamp_fields.with_backend(backend)(
         divdamp_field,
         divdamp_order,
         mean_cell_area,

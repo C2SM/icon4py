@@ -12,7 +12,7 @@ from typing import Final, Optional
 
 import gt4py.next as gtx
 
-import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_stencils as nhsolve_stencils
+import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend
 from icon4py.model.common import constants
@@ -124,9 +124,9 @@ from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_bac
 from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
-from icon4py.model.atmosphere.dycore.state_utils import (
-    states as solve_nh_states,
-    utils as solve_nh_utils,
+from icon4py.model.atmosphere.dycore import (
+    dycore_states,
+    dycore_utils,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment,
@@ -138,7 +138,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
-from icon4py.model.atmosphere.dycore.velocity.velocity_advection import (
+from icon4py.model.atmosphere.dycore.velocity_advection import (
     VelocityAdvection,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
@@ -442,8 +442,8 @@ class SolveNonhydro:
         grid: icon_grid.IconGrid,
         config: NonHydrostaticConfig,
         params: NonHydrostaticParams,
-        metric_state_nonhydro: solve_nh_states.MetricStateNonHydro,
-        interpolation_state: solve_nh_states.InterpolationState,
+        metric_state_nonhydro: dycore_states.MetricStateNonHydro,
+        interpolation_state: dycore_states.InterpolationState,
         vertical_params: v_grid.VerticalGrid,
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
@@ -583,7 +583,7 @@ class SolveNonhydro:
             self._backend
         )
         self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(self._backend)
-        self._compute_z_raylfac = solve_nh_utils.compute_z_raylfac.with_backend(self._backend)
+        self._compute_z_raylfac = dycore_utils.compute_z_raylfac.with_backend(self._backend)
         self._predictor_stencils_2_3 = nhsolve_stencils.predictor_stencils_2_3.with_backend(
             self._backend
         )
@@ -597,7 +597,9 @@ class SolveNonhydro:
             nhsolve_stencils.predictor_stencils_11_lower_upper.with_backend(self._backend)
         )
         self._compute_horizontal_advection_of_rho_and_theta = (
-            nhsolve_stencils.compute_horizontal_advection_of_rho_and_theta.with_backend(self._backend)
+            nhsolve_stencils.compute_horizontal_advection_of_rho_and_theta.with_backend(
+                self._backend
+            )
         )
         self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
             self._backend
@@ -606,14 +608,18 @@ class SolveNonhydro:
             self._backend
         )
         self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend)
-        self._stencils_43_44_45_45b = nhsolve_stencils.stencils_43_44_45_45b.with_backend(self._backend)
+        self._stencils_43_44_45_45b = nhsolve_stencils.stencils_43_44_45_45b.with_backend(
+            self._backend
+        )
         self._stencils_47_48_49 = nhsolve_stencils.stencils_47_48_49.with_backend(self._backend)
         self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend)
         self._en_smag_fac_for_zero_nshift = smagorinsky.en_smag_fac_for_zero_nshift.with_backend(
             self._backend
         )
         self._init_test_fields = nhsolve_stencils.init_test_fields.with_backend(self._backend)
-        self._stencils_42_44_45_45b = nhsolve_stencils.stencils_42_44_45_45b.with_backend(self._backend)
+        self._stencils_42_44_45_45b = nhsolve_stencils.stencils_42_44_45_45b.with_backend(
+            self._backend
+        )
 
         self.velocity_advection = VelocityAdvection(
             grid,
@@ -803,9 +809,9 @@ class SolveNonhydro:
 
     def time_step(
         self,
-        diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_state_ls: list[prognostics.PrognosticState],
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: dycore_states.PrepAdvection,
         divdamp_fac_o2: float,
         dtime: float,
         l_recompute: bool,
@@ -912,7 +918,7 @@ class SolveNonhydro:
     # flake8: noqa: C901
     def run_predictor_step(
         self,
-        diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: list[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         dtime: float,
@@ -1637,11 +1643,11 @@ class SolveNonhydro:
 
     def run_corrector_step(
         self,
-        diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
+        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: list[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         divdamp_fac_o2: float,
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: dycore_states.PrepAdvection,
         dtime: float,
         nnew: int,
         nnow: int,
@@ -1664,7 +1670,7 @@ class SolveNonhydro:
         # Coefficient for reduced fourth-order divergence d
         scal_divdamp_o2 = divdamp_fac_o2 * self._cell_params.mean_cell_area
 
-        solve_nh_utils._calculate_divdamp_fields(
+        dycore_utils._calculate_divdamp_fields(
             self.enh_divdamp_fac,
             gtx.int32(self._config.divdamp_order),
             self._cell_params.mean_cell_area,
