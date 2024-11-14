@@ -8,7 +8,7 @@
 import gt4py.next as gtx
 from gt4py.next import backend
 
-import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+import icon4py.model.atmosphere.dycore.velocity.velocity_advection_stencils as velocity_stencils
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
@@ -90,21 +90,21 @@ class VelocityAdvection:
         self._interpolate_vt_to_interface_edges = interpolate_vt_to_interface_edges.with_backend(
             self._backend
         )
-        self._fused_stencils_4_5 = velocity_prog.fused_stencils_4_5.with_backend(self._backend)
-        self._extrapolate_at_top = velocity_prog.extrapolate_at_top.with_backend(self._backend)
+        self._fused_stencils_4_5 = velocity_stencils.fused_stencils_4_5.with_backend(self._backend)
+        self._extrapolate_at_top = velocity_stencils.extrapolate_at_top.with_backend(self._backend)
         self._compute_horizontal_advection_term_for_vertical_velocity = (
             compute_horizontal_advection_term_for_vertical_velocity.with_backend(self._backend)
         )
         self._interpolate_to_cell_center = interpolate_to_cell_center.with_backend(self._backend)
-        self._fused_stencils_9_10 = velocity_prog.fused_stencils_9_10.with_backend(self._backend)
-        self._fused_stencils_11_to_13 = velocity_prog.fused_stencils_11_to_13.with_backend(
+        self._fused_stencils_9_10 = velocity_stencils.fused_stencils_9_10.with_backend(self._backend)
+        self._fused_stencils_11_to_13 = velocity_stencils.fused_stencils_11_to_13.with_backend(
             self._backend
         )
-        self._fused_stencil_14 = velocity_prog.fused_stencil_14.with_backend(self._backend)
+        self._fused_stencil_14 = velocity_stencils.fused_stencil_14.with_backend(self._backend)
         self._interpolate_contravariant_vertical_velocity_to_full_levels = (
             interpolate_contravariant_vertical_velocity_to_full_levels.with_backend(self._backend)
         )
-        self._fused_stencils_16_to_17 = velocity_prog.fused_stencils_16_to_17.with_backend(
+        self._fused_stencils_16_to_17 = velocity_stencils.fused_stencils_16_to_17.with_backend(
             self._backend
         )
         self._add_extra_diffusion_for_w_con_approaching_cfl = (

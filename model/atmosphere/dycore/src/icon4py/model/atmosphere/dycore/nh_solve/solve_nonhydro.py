@@ -12,7 +12,7 @@ from typing import Final, Optional
 
 import gt4py.next as gtx
 
-import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
+import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend
 from icon4py.model.common import constants
@@ -584,36 +584,36 @@ class SolveNonhydro:
         )
         self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(self._backend)
         self._compute_z_raylfac = solve_nh_utils.compute_z_raylfac.with_backend(self._backend)
-        self._predictor_stencils_2_3 = nhsolve_prog.predictor_stencils_2_3.with_backend(
+        self._predictor_stencils_2_3 = nhsolve_stencils.predictor_stencils_2_3.with_backend(
             self._backend
         )
-        self._predictor_stencils_4_5_6 = nhsolve_prog.predictor_stencils_4_5_6.with_backend(
+        self._predictor_stencils_4_5_6 = nhsolve_stencils.predictor_stencils_4_5_6.with_backend(
             self._backend
         )
-        self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures = nhsolve_prog.compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures.with_backend(
+        self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures = nhsolve_stencils.compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures.with_backend(
             self._backend
         )
         self._predictor_stencils_11_lower_upper = (
-            nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(self._backend)
+            nhsolve_stencils.predictor_stencils_11_lower_upper.with_backend(self._backend)
         )
         self._compute_horizontal_advection_of_rho_and_theta = (
-            nhsolve_prog.compute_horizontal_advection_of_rho_and_theta.with_backend(self._backend)
+            nhsolve_stencils.compute_horizontal_advection_of_rho_and_theta.with_backend(self._backend)
         )
-        self._predictor_stencils_35_36 = nhsolve_prog.predictor_stencils_35_36.with_backend(
+        self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
             self._backend
         )
-        self._predictor_stencils_37_38 = nhsolve_prog.predictor_stencils_37_38.with_backend(
+        self._predictor_stencils_37_38 = nhsolve_stencils.predictor_stencils_37_38.with_backend(
             self._backend
         )
-        self._stencils_39_40 = nhsolve_prog.stencils_39_40.with_backend(self._backend)
-        self._stencils_43_44_45_45b = nhsolve_prog.stencils_43_44_45_45b.with_backend(self._backend)
-        self._stencils_47_48_49 = nhsolve_prog.stencils_47_48_49.with_backend(self._backend)
-        self._stencils_61_62 = nhsolve_prog.stencils_61_62.with_backend(self._backend)
+        self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend)
+        self._stencils_43_44_45_45b = nhsolve_stencils.stencils_43_44_45_45b.with_backend(self._backend)
+        self._stencils_47_48_49 = nhsolve_stencils.stencils_47_48_49.with_backend(self._backend)
+        self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend)
         self._en_smag_fac_for_zero_nshift = smagorinsky.en_smag_fac_for_zero_nshift.with_backend(
             self._backend
         )
-        self._init_test_fields = nhsolve_prog.init_test_fields.with_backend(self._backend)
-        self._stencils_42_44_45_45b = nhsolve_prog.stencils_42_44_45_45b.with_backend(self._backend)
+        self._init_test_fields = nhsolve_stencils.init_test_fields.with_backend(self._backend)
+        self._stencils_42_44_45_45b = nhsolve_stencils.stencils_42_44_45_45b.with_backend(self._backend)
 
         self.velocity_advection = VelocityAdvection(
             grid,
