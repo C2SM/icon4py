@@ -458,7 +458,7 @@ def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_are
                                                  cell_owner_mask:np.ndarray,
                                                  divavg_cntrwgt: ta.wpfloat,
                                                  horizontal_start: np.int32,
-                                                 niter: int = 5) -> np.ndarray:
+                                                 niter: int = 1000) -> np.ndarray:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
 
@@ -485,7 +485,7 @@ def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_are
 
     inverse_neighbor_idx = _inverse_neighbor_index(c2e2c)
     ## testing
-    max_residual = np.zeros(niter)
+    max_residuals = np.zeros(niter)
 
 
     for iteration in range(niter):
@@ -495,14 +495,15 @@ def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_are
                                                                              wgt_loc_sum,
                                                                              cell_areas)[horizontal_start:]
 
-        max_residual[iteration] = np.max(residual)
 
-
-        if iteration >= (niter - 1):
-
-            print(f"residual (v1) of last 10 iterations: {max_residual[-9:]}")
+        max_ = np.max(residual)
+        max_residuals[iteration] = max_
+        if iteration >= (niter - 1) or max_ < 1e-9:
+            print(f"residual (v1) of last 10 iterations: {max_residuals[-9:]}")
+            print(f"number of iterations: {iteration} - max residual={max_}")
             c_bln_avg = _enforce_mass_conservation(c_bln_avg, residual, cell_owner_mask, horizontal_start)
             return c_bln_avg
+        
         c_bln_avg = _apply_correction(
             c_bln_avg=c_bln_avg,
             residual=residual,
