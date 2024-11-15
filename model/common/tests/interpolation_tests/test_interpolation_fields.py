@@ -231,15 +231,10 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, e
     c_bln_avg_v1 = np.copy(c_bln_avg)
     c_bln_avg_v2 = np.copy(c_bln_avg)
     start = time.time()
-    c_bln_avg_v1 = compute_force_mass_conservation_to_c_bln_avg(
-        c_bln_avg_v1,
-        divavg_cntrwgt,
-        c2e2c,
-        cell_areas,
-        horizontal_start,
-        horizontal_start_p2,
-        niter=iterations,
-    )
+    c_bln_avg_v1 = compute_force_mass_conservation_to_c_bln_avg(c_bln_avg_v1, cell_areas, c2e2c, cell_owner_mask,
+                                                                divavg_cntrwgt, horizontal_start,
+                                                                horizontal_start_p2,
+                                                                niter=iterations)
     d1 = time.time()-start
     print(f" v1: time {d1}")
 

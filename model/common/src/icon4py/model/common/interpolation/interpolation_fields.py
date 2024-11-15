@@ -450,15 +450,12 @@ def compute_c_bln_avg(
     return c_bln_avg
 
 
-def compute_force_mass_conservation_to_c_bln_avg(
-    c_bln_avg: np.ndarray,
-    divavg_cntrwgt: ta.wpfloat,
-    c2e2c: np.ndarray,
-    cell_areas: np.ndarray,
-    horizontal_start: np.int32,
-    horizontal_start_p3: np.int32,
-    niter: int = 5,
-) -> np.ndarray:
+def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_areas: np.ndarray,
+                                                 c2e2c: np.ndarray,
+                                                 cell_owner_mask:np.ndarray,
+                                                 divavg_cntrwgt: ta.wpfloat,
+                                                 horizontal_start: np.int32,
+                                                 horizontal_start_p3: np.int32, niter: int = 5) -> np.ndarray:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
 
@@ -468,6 +465,7 @@ def compute_force_mass_conservation_to_c_bln_avg(
 
     force_mass_conservation_to_bilinear_cellavg_wgt
     Args:
+        cell_owner_mask:
         c_bln_avg: bilinear cellavg wgt, numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
         divavg_cntrwgt:
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
@@ -481,7 +479,7 @@ def compute_force_mass_conservation_to_c_bln_avg(
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     wgt_loc_sum = np.zeros(c_bln_avg.shape[0])
-    owner_mask = np.ones(c_bln_avg.shape[0])
+
     residual = np.zeros(c2e2c.shape[0])
 
     inverse_neighbor_idx = _inverse_neighbor_index(c2e2c)
@@ -497,7 +495,7 @@ def compute_force_mass_conservation_to_c_bln_avg(
     for iteration in range(niter):
         wgt_loc_sum[horizontal_start:] = _compute_local_weights(c_bln_avg, cell_areas, c2e2c, inverse_neighbor_idx)[horizontal_start:]
 
-        residual[horizontal_start_p3:] = _compute_residual_to_mass_conservation(owner_mask,
+        residual[horizontal_start_p3:] = _compute_residual_to_mass_conservation(cell_owner_mask,
                                                                              wgt_loc_sum,
                                                                              cell_areas)[
                                       horizontal_start_p3:]
