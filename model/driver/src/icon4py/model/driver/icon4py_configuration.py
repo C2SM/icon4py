@@ -12,8 +12,6 @@ import enum
 import logging
 from typing import Final
 
-import numpy as np
-from gt4py.next import backend as gt4py_backend
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
@@ -45,23 +43,6 @@ backend_map: Final[dict] = {
     DriverBackends.GTFN_GPU: run_gtfn_gpu,
     DriverBackends.GTFN_GPU_CACHED: run_gtfn_gpu_cached,
 }
-
-
-def host_or_device_array(backend: gt4py_backend.Backend):
-    if backend in (
-        backend_map[DriverBackends.GTFN_CPU],
-        backend_map[DriverBackends.GTFN_CPU_CACHED],
-    ):
-        return np
-    elif backend in (
-        backend_map[DriverBackends.GTFN_GPU],
-        backend_map[DriverBackends.GTFN_GPU_CACHED],
-    ):
-        import cupy as cp  # type: ignore[import-untyped]
-
-        return cp
-    else:
-        raise ValueError(f"Unknown backend {backend}.")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -189,7 +170,7 @@ def read_config(
     def _jablownoski_Williamson_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
-            end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
+            end_date=datetime.datetime(1, 1, 1, 0, 5, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend_name=icon4py_driver_backend,
