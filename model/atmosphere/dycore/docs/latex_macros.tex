@@ -66,18 +66,20 @@
 \newcommand{\vortvert}[3]{    \variable{\zeta          }{#1}{#2}{#3}}
 \newcommand{\density}[3]{     \variable{\rho           }{#1}{#2}{#3}}
 \newcommand{\pres}[3]{        \variable{P              }{#1}{#2}{#3}}
-\newcommand{\presref}[3]{     \variable{P_0            }{#1}{#2}{#3}}
 \newcommand{\vtemp}[3]{       \variable{T_v            }{#1}{#2}{#3}}
 \newcommand{\vtempprime}[3]{  \variable{T_v'           }{#1}{#2}{#3}}
 \newcommand{\vpotemp}[3]{     \variable{\theta_v       }{#1}{#2}{#3}}
 \newcommand{\vpotempprime}[3]{\variable{\theta_v'      }{#1}{#2}{#3}}
-\newcommand{\vpotempref}[3]{  \variable{\theta_{v0}    }{#1}{#2}{#3}}
 \newcommand{\exner}[3]{       \variable{\pi            }{#1}{#2}{#3}}
 \newcommand{\exnerprime}[3]{  \variable{\pi'           }{#1}{#2}{#3}}
-\newcommand{\exnerref}[3]{    \variable{\pi_0          }{#1}{#2}{#3}}
 %
-\newcommand{\variableH}[2]{{{#1}_{\horipoint{#2}}}}
-\newcommand{\coriolis}[1]{\variableH{f}{#1}}
+\newcommand{\variableX}[2]{{{#1}_{\horipoint{#2}}}}
+\newcommand{\coriolis}[1]{\variableX{f}{#1}}
+%
+\newcommand{\variableXK}[3]{{{#1}_{\horipoint{#2}\,\vertlevel{#3}}}}
+\newcommand{\presref}[2]{   \variableXK{P_0            }{#1}{#2}}
+\newcommand{\vpotempref}[2]{\variableXK{\theta_{v0}    }{#1}{#2}}
+\newcommand{\exnerref}[2]{  \variableXK{\pi_0          }{#1}{#2}}
 
 % Physical constants
 \newcommand{\cpd}{c_{pd}}

@@ -1152,15 +1152,15 @@ class SolveNonhydro:
             # Outputs:
             #  - z_dexner_dz_c_2 :
             #     $$
-            #     \frac{1}{2}\pdzz{\exnerprime{\ntilde}{\c}{\k}} = \frac{1}{2} \left( \pdz{\vpotempprime{\n}{\c}{\k}} \vpotempref{}{\c}{\k} \ddz{\presref{}{\c}{\k}} - \vpotempprime{\n}{\c}{\k} \ddz{\frac{1}{\vpotempref{}{\c}{\k}} \ddz{\presref{}{\c}{\k}}} \right), \quad \k \in [\nflatgradp, \nlev) \\
-            #     \ddz{\presref{}{\c}{\k}} = -\frac{g \cpd}{\vpotempref{}{\c}{\k}}
+            #     \frac{1}{2}\pdzz{\exnerprime{\ntilde}{\c}{\k}} = \frac{1}{2} \left( \pdz{\vpotempprime{\n}{\c}{\k}} \vpotempref{\c}{\k} \ddz{\presref{\c}{\k}} - \vpotempprime{\n}{\c}{\k} \ddz{\frac{1}{\vpotempref{\c}{\k}} \ddz{\presref{\c}{\k}}} \right), \quad \k \in [\nflatgradp, \nlev) \\
+            #     \ddz{\presref{\c}{\k}} = -\frac{g \cpd}{\vpotempref{\c}{\k}}
             #     $$
             #     Compute second vertical derivative of perturbed exner function.
             #     This second vertical derivative is approximated by hydrostatic
             #     approximation (see eqs. 13 and 7 in |ICONSteepSlopePressurePaper|).
-            #     Note that, in $\ddz{\frac{1}{\vpotempref{}{\c}{\k}} \ddz{\presref{}{\c}{\k}}}$,
+            #     Note that, in $\ddz{\frac{1}{\vpotempref{\c}{\k}} \ddz{\presref{\c}{\k}}}$,
             #     it makes use of eq. 15 in |ICONSteepSlopePressurePaper| for the reference state
-            #     of temperature when computing $\ddz{\vpotempref{}{\c}{\k}}$.
+            #     of temperature when computing $\ddz{\vpotempref{\c}{\k}}$.
             #     The vertical derivative of perturbed virtual potential temperature
             #     on RHS is computed explicitly in this stencil by taking the
             #     difference between neighboring half levels (coefficient is included
@@ -1170,8 +1170,8 @@ class SolveNonhydro:
             #
             # Inputs:
             #  - $\vpotempprime{\n}{\c}{\k-1/2}$ : z_theta_v_pr_ic
-            #  - $\frac{1}{dz \vpotempref{}{\c}{\k}} \ddz{\presref{}{\c}{\k}}$ : d2dexdz2_fac1_mc
-            #  - $\ddz{\frac{1}{\vpotempref{}{\c}{\k}} \ddz{\presref{}{\c}{\k}}}$ : d2dexdz2_fac2_mc
+            #  - $\frac{1}{dz \vpotempref{\c}{\k}} \ddz{\presref{\c}{\k}}$ : d2dexdz2_fac1_mc
+            #  - $\ddz{\frac{1}{\vpotempref{\c}{\k}} \ddz{\presref{\c}{\k}}}$ : d2dexdz2_fac2_mc
             #  - $\vpotempprime{\n}{\c}{\k}$ : z_rth_pr_2
             #
             self._compute_approx_of_2nd_vertical_derivative_of_exner(
