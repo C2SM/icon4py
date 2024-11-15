@@ -483,7 +483,7 @@ def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_are
     wgt_loc_sum = np.zeros(c_bln_avg.shape[0])
     residual = np.zeros(c2e2c.shape[0])
 
-    inverse_neighbor_idx = _inverse_neighbor_index(c2e2c)
+    inverse_neighbor_idx = _create_inverse_neighbor_idx(c2e2c)
     ## testing
     max_residuals = np.zeros(niter)
 
@@ -559,7 +559,7 @@ def _compute_residual_to_mass_conservation(owner_mask: np.ndarray, local_weight:
     
 
 
-def _inverse_neighbor_index(c2e2c):
+def _create_inverse_neighbor_idx(c2e2c):
     inv_neighbor_id = np.zeros(c2e2c.shape, dtype=gtx.int32)
 
     for jc in range(c2e2c.shape[0]):
