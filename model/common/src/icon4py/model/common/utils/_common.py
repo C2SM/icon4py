@@ -74,7 +74,15 @@ class namedproperty(property, Generic[C, T]):
     name: str | None = None
 
     def __set_name__(self, owner: C, name: str) -> None:
-        self.name = name
+        """
+        Set the name of the attribute the property is assigned to.
+
+        Note that if the same descriptor is assigned to multiple attributes
+        or if it is reused in other classes, only the first assigned name
+        is stored.
+        """
+        if self.name is None:
+            self.name = name
 
     def getter(self: namedproperty[C, T], fget: Callable[[C], T]) -> namedproperty[C, T]:
         result = super().getter(fget)
@@ -137,8 +145,10 @@ class Pair(Generic[T]):
         for key, value in {**cls.__dict__}.items():
             if (attr_id := getattr(value, "_pair_accessor_id_", None)) is not None:
                 if key != value.name:
-                    # If the original descriptor from the parent class has been assigned to
-                    # the subclass without copying, we can fix it here.
+                    # When the original descriptor from the `Pair` class has been
+                    # directly assigned to other class member with a different name
+                    # (likely in a subclass) instead of creating a proper copy, it is
+                    # copied and initialized here with the right name.
                     new_value = copy.copy(value)
                     new_value.name = key
                     cls.__dict__[key] = new_value
