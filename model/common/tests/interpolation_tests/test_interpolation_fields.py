@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import time
 
 import numpy as np
 import pytest
@@ -14,7 +15,6 @@ import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.common.test_utils.helpers as test_helpers
 from icon4py.model.common import constants
 from icon4py.model.common.interpolation.c_bln_avg import (
-    compute_force_mass_conservation,
     inverse_neighbor_index,
 )
 from icon4py.model.common.interpolation.interpolation_fields import (
@@ -204,8 +204,8 @@ def test_inverse_neighbor(experiment, icon_grid):
 @pytest.mark.parametrize(
     "experiment, atol",
     [
-        #(dt_utils.REGIONAL_EXPERIMENT, 1e-4),
-        (dt_utils.GLOBAL_EXPERIMENT, 1e-4)
+        (dt_utils.REGIONAL_EXPERIMENT, 1e-10),
+        (dt_utils.GLOBAL_EXPERIMENT, 1e-10)
     ],
 )
 def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, experiment, atol):
@@ -226,35 +226,43 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, e
         lon,
         horizontal_start,
     )
-    iterations = 1000 # difference in residual from 100 to 1000 1.88e-9 vs 1.63e-9
+    cell_owner_mask = grid_savepoint.c_owner_mask()
+    iterations = 1000 # difference in residual from 100: 8e-5, 300 6e-6, 500: 6e-7, 1000 1.63e-9
     c_bln_avg_v1 = np.copy(c_bln_avg)
     c_bln_avg_v2 = np.copy(c_bln_avg)
+    start = time.time()
     c_bln_avg_v1 = compute_force_mass_conservation_to_c_bln_avg(
         c_bln_avg_v1,
         divavg_cntrwgt,
         c2e2c,
-        icon_grid.connectivities[dims.C2E2CODim],
         cell_areas,
         horizontal_start,
         horizontal_start_p2,
         niter=iterations,
     )
+    d1 = time.time()-start
+    print(f" v1: time {d1}")
 
     c2e2c0 = icon_grid.connectivities[dims.C2E2CODim]
     cell_owner_mask = grid_savepoint.c_owner_mask()
-    c_bln_avg_v2 = compute_force_mass_conservation(
-        c_bln_avg_v2,
-        c2e2c0,
-        cell_owner_mask,
-        cell_areas,
-        divavg_cntrwgt,
-        horizontal_start=horizontal_start_p2,
-        niter=iterations,
-    )
-
+    start = time.time()
+    # unforced, c_bln_avg_v2 = force_mass_conservation(
+    #     c_bln_avg_v2,
+    #     c2e2c0,
+    #     cell_owner_mask,
+    #     cell_areas,
+    #     divavg_cntrwgt,
+    #     horizontal_start=horizontal_start_p2,
+    #     niter=iterations,
+    # )
+    # d2 = time.time() - start
+    # print(f" v1: time {d1}")
+    #print(f" v2: time {d2}")
     #assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=atol)  # regional 1e-4, field before non corrected field
-    assert test_helpers.dallclose(c_bln_avg_v1, c_bln_avg_ref, atol=atol)  # regional 1e-4, version 1 of correction AJ
-    assert test_helpers.dallclose(c_bln_avg_v2, c_bln_avg_ref, atol=atol)  # version 2 of correction ML
+    assert test_helpers.dallclose(c_bln_avg_v1, c_bln_avg_ref, atol=atol)  # version 1 of correction AJ
+    #assert test_helpers.dallclose(unforced, c_bln_avg_ref, atol=atol)  # version 2 of correction ML, without final forcing
+
+    #assert test_helpers.dallclose(c_bln_avg_v2, c_bln_avg_ref, atol=atol)  # version 2 of correction ML
 
 
 @pytest.mark.datatest

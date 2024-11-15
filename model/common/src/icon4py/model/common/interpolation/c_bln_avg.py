@@ -12,18 +12,28 @@ import numpy as np
 
 def inverse_neighbor_index(c2e2c0: np.ndarray) -> list[tuple[np.ndarray, np.ndarray]]:
     """Compute "inverse neighbor index" for cells:
-    The inverse neighbor index of a neighbor cell c is the neighbor index that the cell has from
-    the point of view of its neighbors.
+    The inverse neighbor index of a cell c is the index of its neighbors pointing back to it, ie
+    the neighbor index that the cell c has from the point of view of its neighbors.
 
-    For each cell index (c2e2c0[:, 0] is the local index) the functions returns a index tuple into c2e2c0
-    containing the index positions of this cell index in c2e2c0
+    For each cell index the functions returns a index tuple into
+    c2e2c0 containing the index positions of this cell index in c2e2c0.
+    Due to the construction the indices are ordered.
 
     Not fast but short.
+
+    >>> inv_nn = inverse_neighbor_index(c2e2c0)
+    >>> i = 788
+    >>> c2e2c0[inv_nn[i]]
+    ... (i, i, i, i)
+
+
+    TODO (@halungge) they do halo-exchange this in ICON
+        (see mo_intp_coeffs.f90:force_mass_conservation_to_cellavg_wgt( ptr_patch, ptr_int, niter )
     """
     return [np.where(c2e2c0 == i) for i in c2e2c0[:, 0]]
 
 
-def _weight_sum_on_local_cell(
+def _compute_weight_on_local_cell(
     c_bln_avg: np.ndarray,
     c2e2c0: np.ndarray,
     cell_area: np.ndarray,
@@ -52,7 +62,7 @@ def _weight_sum_on_local_cell(
     return np.stack(x)
   
 
-def _residual_to_mass_conservation(
+def _compute_residual_to_mass_conservation(
     local_weight: np.ndarray, owner_mask: np.ndarray, cell_area: np.ndarray
 ):
     """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
@@ -67,7 +77,6 @@ def _apply_correction(
     c_bln_avg: np.ndarray,
     residual: np.ndarray,
     c2e2c0: np.ndarray,
-    owner_mask: np.ndarray,
     divavg_cntrwgt: float,
     horizontal_start: gtx.int32,
 ):
@@ -89,13 +98,14 @@ def _apply_correction(
     return c_bln_avg
 
 
-def force_mass_conservation(
+def _enforce_mass_conservation(
     c_bln_avg: np.ndarray,
     residual: np.ndarray,
     owner_mask: np.ndarray,
     horizontal_start: gtx.int32,
 ) -> np.ndarray:
-    """enforce the mass conservation condition on the local cells by forcefully subtracting the residual."""
+    """Enforce the mass conservation condition on the local cells by forcefully subtracting the
+    residual from the central field contribution."""
     c_bln_avg[horizontal_start:, 0] = np.where(
         owner_mask[horizontal_start:],
         c_bln_avg[horizontal_start:, 0] - residual[horizontal_start:],
@@ -104,36 +114,65 @@ def force_mass_conservation(
     return c_bln_avg
 
 
-def compute_force_mass_conservation(
+def force_mass_conservation(
     c_bln_avg: np.ndarray,
     c2e2c0: np.ndarray,
     owner_mask: np.ndarray,
     cell_areas: np.ndarray,
     divavg_cntrwgt: float,
     horizontal_start: gtx.int32,
-    niter: int = 5,
-) -> np.ndarray:
-    inverse_neighbors = inverse_neighbor_index(c2e2c0)
+    niter: int = 1000,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Iteratively enforce mass conservation to the input field c_bln_avg.
+
+    Mass conservation is enforced by the following condition:
+    The three point divergence calculated on any given grid point is used with a total factor of 1.
+
+    Hence, the bilinear
+
+    Args:
+        c_bln_avg: input field
+        c2e2c0:
+        owner_mask: shape (num_cells, ) boolean mask marking local cells
+        cell_areas: shape (num_cells, ), area of cells
+        divavg_cntrwgt: float, configuration value
+        horizontal_start: horizontal_start index
+        niter: maximal number of iterations
+
+    Returns:
+        corrected input field that  fullfill mass conservation condition
+
+    """
+    inverse_neighbor_indices = inverse_neighbor_index(c2e2c0)
+    #
+    max_resid = np.zeros(niter)
     for i in range(niter):
-        local_weight = _weight_sum_on_local_cell(
+        local_weight = _compute_weight_on_local_cell(
             c_bln_avg=c_bln_avg,
-            inverse_neighbor_index=inverse_neighbors,
+            inverse_neighbor_index=inverse_neighbor_indices,
             c2e2c0=c2e2c0,
             cell_area=cell_areas,
         )
-        residual = _residual_to_mass_conservation(
+        residual = _compute_residual_to_mass_conservation(
             local_weight=local_weight,
             cell_area=cell_areas,
             owner_mask=owner_mask,
         )
-        if i >= (niter - 1):
-            return force_mass_conservation(c_bln_avg, residual, owner_mask, horizontal_start)
+        # TODO (@halungge) halo-echange residual
+        max_residual = np.max(residual)
+        max_resid[i] = max_residual
+        if i >= (niter - 1) or max_residual < 1e-8:
+            print(f"residuals in last 10 iterations {max_resid[-9:]}")
+            print(f"number of iterations: {i} - max residual={max_residual}")
+            unforced = np.copy(c_bln_avg)
+            return (unforced, _enforce_mass_conservation(c_bln_avg, residual, owner_mask, horizontal_start))
         else:
             c_bln_avg = _apply_correction(
                 c_bln_avg=c_bln_avg,
                 residual=residual,
                 c2e2c0=c2e2c0,
-                owner_mask=owner_mask,
                 divavg_cntrwgt=divavg_cntrwgt,
                 horizontal_start=horizontal_start,
             )
+        # TODO (@halungge) halo-echange c_bln_avg
