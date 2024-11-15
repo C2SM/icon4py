@@ -242,7 +242,7 @@ def model_initialization_gauss3d(
         exner=exner_next,
     )
 
-    diffusion_diagnostic_state = diagnostic_state.DiffusionDiagnosticState(
+    diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=field_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
         ),
