@@ -15,6 +15,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "_ext")))
 import icon4py_sphinx
 import latex_sphinx
+import offset_providers
 
 
 # Configuration file for the Sphinx documentation builder.
@@ -82,5 +83,9 @@ add_module_names = False
 
 # -- More involved stuff ------------------------------------------------------
 
+# generate figures
+offset_providers.generate_figures()
+
+# add the scidoc method documenter to sphinx
 def setup(app):
     app.add_autodocumenter(icon4py_sphinx.ScidocMethodDocumenter)

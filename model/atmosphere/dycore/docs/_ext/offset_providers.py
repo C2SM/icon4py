@@ -245,92 +245,88 @@ def generate_mesh_figure(nx, ny, label):
     return fig, ax, T
 
 #===============================================================================
-# Plot
-#
+def generate_figures():
 
-#-------------------------------------------------------------------------------
-fig, ax, T = generate_mesh_figure(2, 2, "e2v")
+    #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "e2v")
 
-Ta = T[1]
-Ta.color_edge('BC')
-draw_arrow(ax, Ta.BC, Ta.B)
-draw_arrow(ax, Ta.BC, Ta.C)
-Ta.color_vertex('B', 1)
-Ta.color_vertex('C', 1)
+    Ta = T[1]
+    Ta.color_edge('BC')
+    draw_arrow(ax, Ta.BC, Ta.B)
+    draw_arrow(ax, Ta.BC, Ta.C)
+    Ta.color_vertex('B', 1)
+    Ta.color_vertex('C', 1)
 
-fig.save()
+    fig.save()
 
-#-------------------------------------------------------------------------------
-fig, ax, T = generate_mesh_figure(2, 2, "e2c2e")
+    #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "e2c2e")
 
-Ta = T[1]; Tb = T[7]
-Ta.color_edge('BC')
-draw_arrow(ax, Ta.BC, Ta.CC)
-draw_arrow(ax, Tb.AB, Tb.CC)
-Ta.color_cell(1)
-Tb.color_cell(1)
-draw_arrow(ax, Ta.CC, Ta.AB, 1)
-draw_arrow(ax, Ta.CC, Ta.BC, 1)
-draw_arrow(ax, Ta.CC, Ta.CA, 1)
-draw_arrow(ax, Tb.CC, Tb.AB, 1)
-draw_arrow(ax, Tb.CC, Tb.BC, 1)
-draw_arrow(ax, Tb.CC, Tb.CA, 1)
-Ta.color_edges(2)
-Tb.color_edges(2)
+    Ta = T[1]; Tb = T[7]
+    Ta.color_edge('BC')
+    draw_arrow(ax, Ta.BC, Ta.CC)
+    draw_arrow(ax, Tb.AB, Tb.CC)
+    Ta.color_cell(1)
+    Tb.color_cell(1)
+    draw_arrow(ax, Ta.CC, Ta.AB, 1)
+    draw_arrow(ax, Ta.CC, Ta.BC, 1)
+    draw_arrow(ax, Ta.CC, Ta.CA, 1)
+    draw_arrow(ax, Tb.CC, Tb.AB, 1)
+    draw_arrow(ax, Tb.CC, Tb.BC, 1)
+    draw_arrow(ax, Tb.CC, Tb.CA, 1)
+    Ta.color_edges(2)
+    Tb.color_edges(2)
 
-fig.save()
+    fig.save()
 
-#-------------------------------------------------------------------------------
-fig, ax, T = generate_mesh_figure(2, 2, "c2e")
+    #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "c2e")
 
-Ta = T[1]
-Ta.color_cell()
-draw_arrow(ax, Ta.CC, Ta.AB)
-draw_arrow(ax, Ta.CC, Ta.BC)
-draw_arrow(ax, Ta.CC, Ta.CA)
-Ta.color_edges(1)
+    Ta = T[1]
+    Ta.color_cell()
+    draw_arrow(ax, Ta.CC, Ta.AB)
+    draw_arrow(ax, Ta.CC, Ta.BC)
+    draw_arrow(ax, Ta.CC, Ta.CA)
+    Ta.color_edges(1)
 
-fig.save()
+    fig.save()
 
-#-------------------------------------------------------------------------------
-fig, ax, T = generate_mesh_figure(2, 2, "c2e2c")
+    #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "c2e2c")
 
-Ta = T[1]; Tb = T[0]; Tc = T[2]; Td = T[7]
-Ta.color_cell()
-draw_arrow(ax, Ta.CC, Ta.AB)
-draw_arrow(ax, Ta.CC, Ta.BC)
-draw_arrow(ax, Ta.CC, Ta.CA)
-Ta.color_edges(1)
-draw_arrow(ax, Tb.BC, Tb.CC, 1)
-draw_arrow(ax, Tc.CA, Tc.CC, 1)
-draw_arrow(ax, Td.AB, Td.CC, 1)
-Tb.color_cell(2)
-Tc.color_cell(2)
-Td.color_cell(2)
+    Ta = T[1]; Tb = T[0]; Tc = T[2]; Td = T[7]
+    Ta.color_cell()
+    draw_arrow(ax, Ta.CC, Ta.AB)
+    draw_arrow(ax, Ta.CC, Ta.BC)
+    draw_arrow(ax, Ta.CC, Ta.CA)
+    Ta.color_edges(1)
+    draw_arrow(ax, Tb.BC, Tb.CC, 1)
+    draw_arrow(ax, Tc.CA, Tc.CC, 1)
+    draw_arrow(ax, Td.AB, Td.CC, 1)
+    Tb.color_cell(2)
+    Tc.color_cell(2)
+    Td.color_cell(2)
 
-fig.save()
+    fig.save()
 
-#-------------------------------------------------------------------------------
-fig, ax, T = generate_mesh_figure(2, 2, "c2e2co")
+    #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "c2e2co")
 
-Ta = T[1]; Tb = T[0]; Tc = T[2]; Td = T[7]
-Ta.color_cell()
-draw_arrow(ax, Ta.CC, Ta.AB)
-draw_arrow(ax, Ta.CC, Ta.BC)
-draw_arrow(ax, Ta.CC, Ta.CA)
-Ta.color_edges(1)
-draw_arrow(ax, Tb.BC, Tb.CC, 1)
-draw_arrow(ax, Tc.CA, Tc.CC, 1)
-draw_arrow(ax, Td.AB, Td.CC, 1)
-Tb.color_cell(2)
-Tc.color_cell(2)
-Td.color_cell(2)
-draw_arrow(ax, Ta.AB, Ta.CC, 1)
-draw_arrow(ax, Ta.BC, Ta.CC, 1)
-draw_arrow(ax, Ta.CA, Ta.CC, 1)
-Ta.color_cell(2)
+    Ta = T[1]; Tb = T[0]; Tc = T[2]; Td = T[7]
+    Ta.color_cell()
+    draw_arrow(ax, Ta.CC, Ta.AB)
+    draw_arrow(ax, Ta.CC, Ta.BC)
+    draw_arrow(ax, Ta.CC, Ta.CA)
+    Ta.color_edges(1)
+    draw_arrow(ax, Tb.BC, Tb.CC, 1)
+    draw_arrow(ax, Tc.CA, Tc.CC, 1)
+    draw_arrow(ax, Td.AB, Td.CC, 1)
+    Tb.color_cell(2)
+    Tc.color_cell(2)
+    Td.color_cell(2)
+    draw_arrow(ax, Ta.AB, Ta.CC, 1)
+    draw_arrow(ax, Ta.BC, Ta.CC, 1)
+    draw_arrow(ax, Ta.CA, Ta.CC, 1)
+    Ta.color_cell(2)
 
-fig.save()
-
-#===============================================================================
-plt.show(block=False)
+    fig.save()
