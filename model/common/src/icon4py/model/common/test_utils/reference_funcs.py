@@ -35,7 +35,7 @@ def nabla2_on_cell_numpy(grid, psi_c: np.array, geofac_n2s: np.array):
 
 def nabla2_on_cell_k_numpy(grid, psi_c: np.array, geofac_n2s: np.array):
     c2e2cO = grid.connectivities[dims.C2E2CODim]
-    geofac_n2s = np.enpand_dims(geofac_n2s, axis=-1)
+    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     nabla2_psi_c = np.sum(
         np.where((c2e2cO != -1)[:, :, np.newaxis], psi_c[c2e2cO] * geofac_n2s, 0), axis=1
     )
