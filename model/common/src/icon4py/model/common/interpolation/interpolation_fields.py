@@ -482,18 +482,9 @@ def compute_force_mass_conservation_to_c_bln_avg(
     """
     wgt_loc_sum = np.zeros(c_bln_avg.shape[0])
     owner_mask = np.ones(c_bln_avg.shape[0])
-
-    inv_neighbor_id = np.zeros(c2e2c.shape, dtype=int)
     resid = np.zeros(c2e2c.shape[0])
-    for jc in range(c2e2c.shape[0]):
-        for i in range(c2e2c.shape[1]):
-            if c2e2c[jc, i] >= 0:
-                if c2e2c[c2e2c[jc, i], 0] == jc:
-                    inv_neighbor_id[jc, i] = 1
-                elif c2e2c[c2e2c[jc, i], 1] == jc:
-                    inv_neighbor_id[jc, i] = 2
-                elif c2e2c[c2e2c[jc, i], 2] == jc:
-                    inv_neighbor_id[jc, i] = 3
+
+    inv_neighbor_id = _inverse_neighbor_index(c2e2c)
 
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
@@ -545,6 +536,21 @@ def compute_force_mass_conservation_to_c_bln_avg(
         )
 
     return c_bln_avg
+
+
+def _inverse_neighbor_index(c2e2c):
+    inv_neighbor_id = np.zeros(c2e2c.shape, dtype=gtx.int32)
+
+    for jc in range(c2e2c.shape[0]):
+        for i in range(c2e2c.shape[1]):
+            if c2e2c[jc, i] >= 0:
+                if c2e2c[c2e2c[jc, i], 0] == jc:
+                    inv_neighbor_id[jc, i] = 1
+                elif c2e2c[c2e2c[jc, i], 1] == jc:
+                    inv_neighbor_id[jc, i] = 2
+                elif c2e2c[c2e2c[jc, i], 2] == jc:
+                    inv_neighbor_id[jc, i] = 3
+    return inv_neighbor_id
 
 
 def _compute_local_weights(c2e2c, c_bln_avg, cell_areas, horizontal_start, inv_neighbor_id):
