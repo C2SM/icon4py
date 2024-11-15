@@ -260,6 +260,18 @@ def generate_figures():
     fig.save()
 
     #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "e2c")
+
+    Ta = T[1]; Tb = T[7]
+    Ta.color_edge('BC')
+    draw_arrow(ax, Ta.BC, Ta.CC)
+    draw_arrow(ax, Tb.AB, Tb.CC)
+    Ta.color_cell(1)
+    Tb.color_cell(1)
+
+    fig.save()
+
+    #---------------------------------------------------------------------------
     fig, ax, T = generate_mesh_figure(2, 2, "e2c2e")
 
     Ta = T[1]; Tb = T[7]
