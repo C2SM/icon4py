@@ -15,9 +15,6 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
-from icon4py.model.common.interpolation.c_bln_avg import (
-    _enforce_mass_conservation,
-)
 
 
 def compute_c_lin_e(
@@ -404,8 +401,13 @@ def weighting_factors(
     return wgt
 
 
-def compute_c_bln_avg(c2e2c: np.ndarray, lat: np.ndarray, lon: np.ndarray,
-                      divavg_cntrwgt: ta.wpfloat, horizontal_start: np.int32) -> np.ndarray:
+def compute_c_bln_avg(
+    c2e2c: np.ndarray,
+    lat: np.ndarray,
+    lon: np.ndarray,
+    divavg_cntrwgt: ta.wpfloat,
+    horizontal_start: np.int32,
+) -> np.ndarray:
     """
     Compute bilinear cell average weight.
 
@@ -443,59 +445,124 @@ def compute_c_bln_avg(c2e2c: np.ndarray, lat: np.ndarray, lon: np.ndarray,
     return c_bln_avg
 
 
-def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray,
-                                                 cell_areas: np.ndarray,
-                                                 c2e2c0:np.ndarray,
-                                                 cell_owner_mask:np.ndarray,
-                                                 divavg_cntrwgt: ta.wpfloat,
-                                                 horizontal_start: np.int32,
-                                                 niter: int = 1000) -> np.ndarray:
+def force_mass_conservation_to_c_bln_avg(
+    c2e2c0: np.ndarray,
+    c_bln_avg: np.ndarray,
+    cell_areas: np.ndarray,
+    cell_owner_mask: np.ndarray,
+    divavg_cntrwgt: ta.wpfloat,
+    horizontal_start: np.int32,
+    niter: int = 1000,
+) -> np.ndarray:
     """
-    Compute the weighting coefficients for cell averaging with variable interpolation factors.
+    Iteratively enforce mass conservation to the input field c_bln_avg.
 
-    The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
+    Mass conservation is enforced by the following condition:
+    The three point divergence calculated on any given grid point is used with a total factor of 1.
 
-    and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients are not aliased into a checkerboard pattern between upward- and downward directed cells. The third condition is sum(w(i)) = 1., and the weight of the local point is 0.5.
+    Practically, the sum of the  bilinear cell weights  applied to a cell from all neighbors times its area should be exactly one.
 
-    force_mass_conservation_to_bilinear_cellavg_wgt
+    The weights are adjusted iteratively by the condition up to a max of niter iterations
+
     Args:
+        c2e2c0: cell to cell connectivity
+        c_bln_avg: input field: bilinear cell weight average
+        cell_areas: area of cells
         cell_owner_mask:
-        c_bln_avg: bilinear cellavg wgt, numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
-        divavg_cntrwgt:
-        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
-        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, C2E2CDim], gtx.int32]
-        cell_areas: numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
+        divavg_cntrwgt: configured central weight
         horizontal_start:
-        niter: number of iterations until convergence is assumed
+        niter: max number of iterations
 
     Returns:
-        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+
     """
-    local_summed_weigths = np.zeros(c_bln_avg.shape[0])
+    def _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx) -> np.ndarray:
+        """
+        Compute the total weight which each local point contributes to the sum.
+
+        Args:
+            c_bln_avg: ndarray representing a weight field of (CellDim, C2E2C0Dim)
+            inverse_neighbor_index: Sequence of to access all weights of a local cell in a field of shape (CellDim, C2E2C0Dim)
+
+        Returns: ndarray of CellDim, containing the sum of weigh contributions for each local cell index
+
+        """
+        weights = np.sum(c_bln_avg[c2e2c0, inverse_neighbor_idx] * cell_areas[c2e2c0], axis=1)
+        return weights
+
+    def _compute_residual_to_mass_conservation(
+            owner_mask: np.ndarray, local_weight: np.ndarray, cell_area: np.ndarray
+    ) -> np.ndarray:
+        """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
+        horizontal_size = local_weight.shape[0]
+        assert horizontal_size == owner_mask.shape[0], "Fields do not have the same shape"
+        assert horizontal_size == cell_area.shape[0], "Fields do not have the same shape"
+        residual = np.where(owner_mask, local_weight / cell_area - 1.0, 0.0)
+        return residual
+
+    def _apply_correction(
+            c_bln_avg: np.ndarray,
+            residual: np.ndarray,
+            c2e2c0: np.ndarray,
+            divavg_cntrwgt: float,
+            horizontal_start: gtx.int32,
+    ) -> np.ndarray:
+        """Apply correction to local weigths based on the computed residuals."""
+        maxwgt_loc = divavg_cntrwgt + 0.003
+        minwgt_loc = divavg_cntrwgt - 0.003
+        relax_coeff = 0.46
+        c_bln_avg[horizontal_start:, :] = (
+                c_bln_avg[horizontal_start:, :] - relax_coeff * residual[c2e2c0][horizontal_start:,
+                                                                :]
+        )
+        local_weight = np.sum(c_bln_avg, axis=1) - 1.0
+
+        c_bln_avg[horizontal_start:, :] = c_bln_avg[horizontal_start:, :] - (
+                0.25 * local_weight[horizontal_start:, np.newaxis]
+        )
+
+        # avoid runaway condition:
+        c_bln_avg[horizontal_start:, 0] = np.maximum(c_bln_avg[horizontal_start:, 0], minwgt_loc)
+        c_bln_avg[horizontal_start:, 0] = np.minimum(c_bln_avg[horizontal_start:, 0], maxwgt_loc)
+        return c_bln_avg
+
+
+    def _enforce_mass_conservation(
+            c_bln_avg: np.ndarray,
+            residual: np.ndarray,
+            owner_mask: np.ndarray,
+            horizontal_start: gtx.int32,
+    ) -> np.ndarray:
+        """Enforce the mass conservation condition on the local cells by forcefully subtracting the
+        residual from the central field contribution."""
+        c_bln_avg[horizontal_start:, 0] = np.where(
+            owner_mask[horizontal_start:],
+            c_bln_avg[horizontal_start:, 0] - residual[horizontal_start:],
+            c_bln_avg[horizontal_start:, 0],
+        )
+        return c_bln_avg
+
+    local_summed_weights = np.zeros(c_bln_avg.shape[0])
     residual = np.zeros(c_bln_avg.shape[0])
-
-    ## testing
-    inverse_neighbor_idx= create_inverse_neighbor_idx0(c2e2c0)
-
-    max_residuals = np.zeros(niter)
-
+    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0)
 
     for iteration in range(niter):
-        local_summed_weigths[horizontal_start:] = _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx)[horizontal_start:]
+        local_summed_weights[horizontal_start:] = _compute_local_weights(
+            c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx
+        )[horizontal_start:]
 
-        residual[horizontal_start:] = _compute_residual_to_mass_conservation(cell_owner_mask,
-                                                                             local_summed_weigths,
-                                                                             cell_areas)[horizontal_start:]
-
+        residual[horizontal_start:] = _compute_residual_to_mass_conservation(
+            cell_owner_mask, local_summed_weights, cell_areas
+        )[horizontal_start:]
 
         max_ = np.max(residual)
-        max_residuals[iteration] = max_
         if iteration >= (niter - 1) or max_ < 1e-9:
-            print(f"residual (v1) of last 10 iterations: {max_residuals[-9:]}")
             print(f"number of iterations: {iteration} - max residual={max_}")
-            c_bln_avg = _enforce_mass_conservation(c_bln_avg, residual, cell_owner_mask, horizontal_start)
+            c_bln_avg = _enforce_mass_conservation(
+                c_bln_avg, residual, cell_owner_mask, horizontal_start
+            )
             return c_bln_avg
-        
+
         c_bln_avg = _apply_correction(
             c_bln_avg=c_bln_avg,
             residual=residual,
@@ -503,72 +570,39 @@ def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray,
             divavg_cntrwgt=divavg_cntrwgt,
             horizontal_start=horizontal_start,
         )
-       
 
     return c_bln_avg
 
-def _apply_correction(
-    c_bln_avg: np.ndarray,
-    residual: np.ndarray,
+
+def compute_mass_conserving_bilinear_cell_average_weight(
     c2e2c0: np.ndarray,
-    divavg_cntrwgt: float,
-    horizontal_start: gtx.int32,
-):
-    maxwgt_loc = divavg_cntrwgt + 0.003
-    minwgt_loc = divavg_cntrwgt - 0.003
-    relax_coeff = 0.46
-    c_bln_avg[horizontal_start:, :] = (
-        c_bln_avg[horizontal_start:, :] - relax_coeff * residual[c2e2c0][horizontal_start:, :]
-    )
-    local_weight = np.sum(c_bln_avg, axis=1) - 1.0
+    lat: np.ndarray,
+    lon: np.ndarray,
+    cell_areas: np.ndarray,
+    cell_owner_mask: np.ndarray,
+    divavg_cntrwgt: ta.wpfloat,
+    horizontal_start: np.int32, horizontal_start_level_3)-> np.ndarray:
+    c_bln_avg = compute_c_bln_avg(c2e2c0[:, 1:], lat, lon,divavg_cntrwgt, horizontal_start)
+    return force_mass_conservation_to_c_bln_avg(c2e2c0,
+                                         c_bln_avg, cell_areas, cell_owner_mask, divavg_cntrwgt, horizontal_start_level_3)
 
-    c_bln_avg[horizontal_start:, :] = c_bln_avg[horizontal_start:, :] - (
-        0.25 * local_weight[horizontal_start:, np.newaxis]
-    )
-
-    # avoid runaway condition:
-    c_bln_avg[horizontal_start:, 0] = np.maximum(c_bln_avg[horizontal_start:, 0], minwgt_loc)
-    c_bln_avg[horizontal_start:, 0] = np.minimum(c_bln_avg[horizontal_start:, 0], maxwgt_loc)
-    return c_bln_avg
-
-
-
-def _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx):
-    weights = np.sum(c_bln_avg[c2e2c0, inverse_neighbor_idx] * cell_areas[c2e2c0], axis=1)
-    return weights
-
-
-def _compute_residual_to_mass_conservation(owner_mask: np.ndarray, local_weight: np.ndarray,
-                                           cell_area: np.ndarray):
-    """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
-    horizontal_size = local_weight.shape[0]
-    assert horizontal_size == owner_mask.shape[0], "Fields do not have the same shape"
-    assert horizontal_size == cell_area.shape[0], "Fields do not have the same shape"
-    residual = np.where(owner_mask, local_weight / cell_area - 1.0, 0.0)
-    return residual
     
 
 
-def _create_inverse_neighbor_idx(c2e2c):
-    inv_neighbor_id = np.zeros(c2e2c.shape, dtype=gtx.int32)
-
-    for jc in range(c2e2c.shape[0]):
-        for i in range(c2e2c.shape[1]):
-            if c2e2c[jc, i] >= 0:
-                inv_neighbor_id[jc, i] = np.argwhere(c2e2c[c2e2c[jc, i], :] == jc)[0, 0] + 1
-    return inv_neighbor_id
 
 
 
-def create_inverse_neighbor_idx0(c2e2c0):
-    inv_neighbor_id = -1* np.ones(c2e2c0.shape, dtype=int)
+
+
+def create_inverse_neighbor_index(c2e2c0):
+    inv_neighbor_idx = -1 * np.ones(c2e2c0.shape, dtype=int)
 
     for jc in range(c2e2c0.shape[0]):
         for i in range(c2e2c0.shape[1]):
             if c2e2c0[jc, i] >= 0:
-                inv_neighbor_id[jc, i] = np.argwhere(c2e2c0[c2e2c0[jc, i], :] == jc)[0,0]
+                inv_neighbor_idx[jc, i] = np.argwhere(c2e2c0[c2e2c0[jc, i], :] == jc)[0, 0]
 
-    return inv_neighbor_id
+    return inv_neighbor_idx
 
 
 def compute_e_flx_avg(

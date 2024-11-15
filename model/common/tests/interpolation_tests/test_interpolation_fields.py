@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import time
 
 import numpy as np
 import pytest
@@ -15,20 +14,18 @@ import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.common.test_utils.helpers as test_helpers
 from icon4py.model.common import constants
 from icon4py.model.common.interpolation.interpolation_fields import (
-    compute_c_bln_avg,
     compute_c_lin_e,
     compute_cells_aw_verts,
     compute_e_bln_c_s,
     compute_e_flx_avg,
-    compute_force_mass_conservation_to_c_bln_avg,
     compute_geofac_div,
     compute_geofac_grdiv,
     compute_geofac_grg,
     compute_geofac_n2s,
     compute_geofac_rot,
+    compute_mass_conserving_bilinear_cell_average_weight,
     compute_pos_on_tplane_e_x_y,
     compute_primal_normal_ec,
-    create_inverse_neighbor_idx0,
 )
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
@@ -189,49 +186,32 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     assert test_helpers.dallclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
 
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_inverse_neighbor(experiment, icon_grid):
-    c2e2c0 = icon_grid.connectivities[dims.C2E2CODim]
-    inverse_neighbors = create_inverse_neighbor_idx0(c2e2c0)
-    #assert np.all(c2e2c0[inverse_neighbors] == x)
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, atol",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, 1e-10),
-        (dt_utils.GLOBAL_EXPERIMENT, 1e-10)
-    ],
+    [(dt_utils.REGIONAL_EXPERIMENT, 1e-10), (dt_utils.GLOBAL_EXPERIMENT, 1e-10)],
 )
 def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, experiment, atol):
     cell_areas = grid_savepoint.cell_areas().asnumpy()
     # both experiment use the default value
     divavg_cntrwgt = 0.5
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
-    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     horizontal_start_p2 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
 
     lat = grid_savepoint.cell_center_lat().asnumpy()
     lon = grid_savepoint.cell_center_lon().asnumpy()
-    c_bln_avg = compute_c_bln_avg(c2e2c, lat, lon, divavg_cntrwgt, horizontal_start)
     cell_owner_mask = grid_savepoint.c_owner_mask()
-    c_bln_avg_v1 = np.copy(c_bln_avg)
-    start = time.time()
+
+
     c2e2c0 = icon_grid.connectivities[dims.C2E2CODim]
-    c_bln_avg_v1 = compute_force_mass_conservation_to_c_bln_avg(c_bln_avg_v1,
-                                                                cell_areas,c2e2c0,
-                                                                cell_owner_mask,
-                                                                divavg_cntrwgt,
-                                                                horizontal_start_p2,
-                                                                )
-    d1 = time.time()-start
-    print(f" v1: time {d1}")
 
-
-    assert test_helpers.dallclose(c_bln_avg_v1, c_bln_avg_ref, atol=atol)  # version 1 of correction AJ
+    c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight(c2e2c0, lat, lon, cell_areas, cell_owner_mask, divavg_cntrwgt, horizontal_start, horizontal_start_p2)
+    assert test_helpers.dallclose(
+        c_bln_avg, c_bln_avg_ref, atol=atol
+    )
    
 
 @pytest.mark.datatest
