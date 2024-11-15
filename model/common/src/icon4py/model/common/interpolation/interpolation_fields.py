@@ -482,41 +482,41 @@ def compute_force_mass_conservation_to_c_bln_avg(
     """
     wgt_loc_sum = np.zeros(c_bln_avg.shape[0])
     owner_mask = np.ones(c_bln_avg.shape[0])
-    resid = np.zeros(c2e2c.shape[0])
+    residual = np.zeros(c2e2c.shape[0])
 
-    inv_neighbor_id = _inverse_neighbor_index(c2e2c)
+    inverse_neighbor_idx = _inverse_neighbor_index(c2e2c)
 
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
 
     ## testing
-    max_resid = np.zeros(niter)
+    max_residual = np.zeros(niter)
 
 
     for iteration in range(niter):
-        c_bln_avg_inv = c_bln_avg[c2e2c, inv_neighbor_id]
-        wgt_loc_sum[horizontal_start:] = c_bln_avg[horizontal_start:, 0] * cell_areas[
-            horizontal_start:
-        ] + np.sum(c_bln_avg_inv[horizontal_start:] * cell_areas[c2e2c][horizontal_start:], axis=1)
+        wgt_loc_sum[horizontal_start:] = _compute_local_weights(c_bln_avg, cell_areas, c2e2c, inverse_neighbor_idx)[horizontal_start:]
 
-        residual = _compute_residual_to_mass_conservation(owner_mask, wgt_loc_sum, cell_areas)
-        resid[horizontal_start_p3:] = residual[horizontal_start_p3:]
+        residual[horizontal_start_p3:] = _compute_residual_to_mass_conservation(owner_mask,
+                                                                             wgt_loc_sum,
+                                                                             cell_areas)[
+                                      horizontal_start_p3:]
 
-        max_resid[iteration] = np.max(resid)
+        max_residual[iteration] = np.max(residual)
 
 
         if iteration >= (niter - 1):
 
-            print(f"residual (v1) of last 10 iterations: {max_resid[-9:]}")
-            c_bln_avg = _enforce_mass_conservation(c_bln_avg, resid, owner_mask, horizontal_start)
+            print(f"residual (v1) of last 10 iterations: {max_residual[-9:]}")
+            c_bln_avg = _enforce_mass_conservation(c_bln_avg, residual, owner_mask, horizontal_start_p3)
             return c_bln_avg
+
         c_bln_avg[horizontal_start_p3:, 0] = (
-            c_bln_avg[horizontal_start_p3:, 0] - relax_coeff * resid[horizontal_start_p3:]
+            c_bln_avg[horizontal_start_p3:, 0] - relax_coeff * residual[horizontal_start_p3:]
         )
         c_bln_avg[horizontal_start_p3:, 1:] = (
             c_bln_avg[horizontal_start_p3:, 1:]
-            - relax_coeff * resid[c2e2c][horizontal_start_p3:, :]
+            - relax_coeff * residual[c2e2c][horizontal_start_p3:, :]
         )
         wgt_loc_sum[horizontal_start_p3:] = np.sum(c_bln_avg[horizontal_start_p3:], axis=1) - 1.0
 
@@ -533,6 +533,13 @@ def compute_force_mass_conservation_to_c_bln_avg(
         )
 
     return c_bln_avg
+
+
+def _compute_local_weights(c_bln_avg, cell_areas, c2e2c, inverse_neighbor_idx):
+    c_bln_avg_inv = c_bln_avg[c2e2c, inverse_neighbor_idx]
+    weights = c_bln_avg[:,  0] * cell_areas + np.sum(
+        c_bln_avg_inv * cell_areas[c2e2c], axis=1)
+    return weights
 
 
 def _compute_residual_to_mass_conservation(owner_mask: np.ndarray, local_weight: np.ndarray,
@@ -561,10 +568,7 @@ def _inverse_neighbor_index(c2e2c):
     return inv_neighbor_id
 
 
-def _compute_local_weights(c2e2c, c_bln_avg, cell_areas, horizontal_start, inv_neighbor_id):
-    c_bln_avg_inv = c_bln_avg[c2e2c, inv_neighbor_id]
-    weights = c_bln_avg[horizontal_start:, 0] * cell_areas[horizontal_start] + np.sum(c_bln_avg_inv[horizontal_start:] * cell_areas[c2e2c][horizontal_start:], axis=1)
-    return weights
+
 
 def compute_e_flx_avg(
     c_bln_avg: np.ndarray,
