@@ -1124,14 +1124,6 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        # scidoc:
-        # Outputs:
-        #  - z_theta_v_pr_ic :
-        #
-        #  - theta_v_ic :
-        #
-        # Inputs:
-        #
         """
         z_theta_v_pr_ic (0, nlev):
             Perturbed theta_v at half level at the model top is set to zero.
@@ -1160,26 +1152,27 @@ class SolveNonhydro:
             # Outputs:
             #  - z_dexner_dz_c_2 :
             #     $$
-            #     \frac{1}{2}\pdzz{\exnerprime{\ntilde}{\c}{\k}} = \frac{1}{2} ( \pdz{\vptotprime{\n}{\c}{\k}} \vptotref{0}{\c}{\k} \ddz{\presref{0}{\c}{\k}} - \vptotprime{\n}{\c}{\k} \ddz{\frac{1}{\vptotref{0}{\c}{\k}} \ddz{\presref{0}{\c}{\k}}} ) \quad \k \in [\nflatgradp, \nlev)
-            #     \ddz{\presref{0}{\c}{\k}} = -\frac{g \cpd}{\vptotref{0}{\c}{\k}}}
+            #     \frac{1}{2}\pdzz{\exnerprime{\ntilde}{\c}{\k}} = \frac{1}{2} \left( \pdz{\vpotempprime{\n}{\c}{\k}} \vpotempref{}{\c}{\k} \ddz{\presref{}{\c}{\k}} - \vpotempprime{\n}{\c}{\k} \ddz{\frac{1}{\vpotempref{}{\c}{\k}} \ddz{\presref{}{\c}{\k}}} \right), \quad \k \in [\nflatgradp, \nlev) \\
+            #     \ddz{\presref{}{\c}{\k}} = -\frac{g \cpd}{\vpotempref{}{\c}{\k}}
             #     $$
             #     Compute second vertical derivative of perturbed exner function.
             #     This second vertical derivative is approximated by hydrostatic
-            #     approximation. See eqs. 13 and 7 in Zängl 2012 (|ICONSteepSlopePressurePaper|).
-            #     Note that, in $\ddz{\frac{1}{\vptotref{0}{\c}{\k}} \ddz{\presref{0}{\c}{\k}}}$,
-            #     it makes use of eq. 15 in Zängl 2012 for reference state
-            #     of temperature when computing $\ddz{\vptotref{0}{\c}{\k}}$.
+            #     approximation (see eqs. 13 and 7 in |ICONSteepSlopePressurePaper|).
+            #     Note that, in $\ddz{\frac{1}{\vpotempref{}{\c}{\k}} \ddz{\presref{}{\c}{\k}}}$,
+            #     it makes use of eq. 15 in |ICONSteepSlopePressurePaper| for the reference state
+            #     of temperature when computing $\ddz{\vpotempref{}{\c}{\k}}$.
             #     The vertical derivative of perturbed virtual potential temperature
             #     on RHS is computed explicitly in this stencil by taking the
             #     difference between neighboring half levels (coefficient is included
             #     in d2dexdz2_fac1_mc).
             #     $\nflatgradp$ is the maximum height index at which the height of
             #     the center of an edge lies within two neighboring cells.
+            #
             # Inputs:
-            #  - $\vptotprime{\n}{\c}{\k-1/2}$ : z_theta_v_pr_ic
-            #  - $\frac{1}{dz \vptotref{0}{\c}{\k}} \ddz{\presref{0}{\c}{\k}}$ : d2dexdz2_fac1_mc
-            #  - $\ddz{\frac{1}{\vptotref{0}{\c}{\k}} \ddz{\presref{0}{\c}{\k}}}$ : d2dexdz2_fac2_mc
-            #  - $\vptotprime{\n}{\c}{\k}$ : z_rth_pr_2
+            #  - $\vpotempprime{\n}{\c}{\k-1/2}$ : z_theta_v_pr_ic
+            #  - $\frac{1}{dz \vpotempref{}{\c}{\k}} \ddz{\presref{}{\c}{\k}}$ : d2dexdz2_fac1_mc
+            #  - $\ddz{\frac{1}{\vpotempref{}{\c}{\k}} \ddz{\presref{}{\c}{\k}}}$ : d2dexdz2_fac2_mc
+            #  - $\vpotempprime{\n}{\c}{\k}$ : z_rth_pr_2
             #
             self._compute_approx_of_2nd_vertical_derivative_of_exner(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
@@ -1295,7 +1288,6 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             if self._config.iadv_rhotheta == RhoThetaAdvectionType.MIURA:
-                # scidoc:
                 """
                 This long stencil computes rho (density) and theta_v (virtual temperature) on edges.
                 Miura (2007) scheme is adopted. pos_on_tplane_e is the location of neighboring cell centers on (vn, vt) coordinates (normal points inwards and tangent points right-handed).
