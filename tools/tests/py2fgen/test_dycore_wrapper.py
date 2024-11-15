@@ -619,7 +619,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Mock and Test SolveNonhydro.run ---
     with mock.patch(
-        "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.time_step"
+        "icon4py.model.atmosphere.dycore.solve_nonhydro.SolveNonhydro.time_step"
     ) as mock_init:
         dycore_wrapper.solve_nh_run(
             rho_now=rho_now,
