@@ -27,6 +27,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     priority = autodoc.MethodDocumenter.priority - 1
 
     # Configuration options:
+    #: The width of the page
+    html_page_width: ClassVar[int] = 672 # px
     #: The keyword identifying the start of a documentation block
     docblock_keyword: ClassVar[str] = "scidoc"
     #: Add type information to variable names in the Inputs section
@@ -37,8 +39,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     print_variable_longnames: ClassVar[bool] = True
     #: Footer lines with a horizontal line at the end
     scidoc_footer_lines: ClassVar[list[str]] = ["", ".. raw:: html", "", "   <hr>"]
-    #: Code block lines for the source code of the next method call
-    scidoc_code_block_lines: ClassVar[list[str]] = [
+    #: ReST format lines for the call to the next method
+    scidoc_method_call_lines: ClassVar[list[str]] = [
         "",
         ".. collapse:: Source code",
         "",
@@ -78,8 +80,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             formatted_docblock = docblock.splitlines()
             formatted_docblock = self.format_docblock(formatted_docblock, self.docblock_keyword)
             formatted_docblock = self.make_header(next_method_info) + formatted_docblock
-            formatted_docblock = self.process_scidoc_lines(formatted_docblock, next_method_info)
-            formatted_docblock += self.scidoc_code_block_lines + [
+            formatted_docblock, offset_providers = self.process_scidoc_lines(formatted_docblock, next_method_info)
+            formatted_docblock = formatted_docblock + self.make_offset_providers(offset_providers)
+            formatted_docblock += self.scidoc_method_call_lines + [
                 " " * 6 + line for line in call_string
             ]
 
@@ -167,6 +170,34 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         title = f":meth:`{label}<{link_destination}>`"
         return [title, "=" * len(title), ""]
 
+    def make_offset_providers(self, offset_providers: set) -> list[str]:
+        """
+        Generate the offset providers section.
+
+        Args:
+            offset_providers: The set of offset providers.
+
+        Returns:
+            The formatted offset providers section.
+        """
+        if not offset_providers:
+            return []
+
+        op_section = [
+            "",
+            ".. collapse:: Offset providers",
+            "",
+        ]
+
+        for offprov in offset_providers:
+            op_section.append(f" .. image:: _imgs/offsetProvider_{offprov}.png")
+            op_section.append(f"    :width: {self.html_page_width//3*2}px")
+            op_section.append(f"    :align: center")
+            op_section.append(f"    :alt: {offprov}")
+            op_section.append(f"")
+        
+        return op_section
+
     def process_scidoc_lines(self, docblock_lines: list[str], method_info: dict) -> list[str]:
         """
         Process a list of documentation string lines and apply specific
@@ -187,9 +218,11 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             rules.
         """
 
-        section: Literal["Inputs", "Outputs", None] = None
+        section: Literal["Inputs", "Outputs", "Offset providers", None] = None
         latex = {"Math": False, "NeedsAlignChar": False, "Indent": 0}
         processed_lines = []
+
+        offset_providers = set()
 
         for line_num, line in enumerate(docblock_lines):
             # Identify and process section headers
@@ -211,6 +244,12 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 latex["Indent"] = len(line) - len(line.lstrip())
                 processed_lines.append(line)
                 continue
+            
+            # Collect offset providers
+            if "\offProv" in line:
+                match = re.search(r"\\offProv\{([^}]+)\}", line)
+                if match:
+                    offset_providers.add(match.group(1))
 
             # Process math lines
             if latex["Math"]:
@@ -262,7 +301,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             # Keep the line as is
             processed_lines.append(line)
 
-        return processed_lines
+        return processed_lines, offset_providers
 
     def process_math_line(self, line: str, options: dict) -> str:
         """
