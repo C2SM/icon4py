@@ -47,7 +47,7 @@ T = TypeVar("T")
 C = TypeVar("C")
 
 
-class namedproperty(property, Generic[C, T]):
+class named_property(property, Generic[C, T]):
     """
     A simple extension of the built-in `property` descriptor storing
     the name of the attribute it is assigned to.
@@ -56,7 +56,7 @@ class namedproperty(property, Generic[C, T]):
 
     Examples:
         >>> class A:
-        ...     @namedproperty
+        ...     @named_property
         ...     def value(self) -> int:
         ...         return self._value
         ...
@@ -84,22 +84,22 @@ class namedproperty(property, Generic[C, T]):
         if self.name is None:
             self.name = name
 
-    def getter(self: namedproperty[C, T], fget: Callable[[C], T]) -> namedproperty[C, T]:
+    def getter(self: named_property[C, T], fget: Callable[[C], T]) -> named_property[C, T]:
         result = super().getter(fget)
         result.name = getattr(self, "name", None)
         return result
 
-    def setter(self: namedproperty[C, T], fset: Callable[[C, T], None]) -> namedproperty[C, T]:
+    def setter(self: named_property[C, T], fset: Callable[[C, T], None]) -> named_property[C, T]:
         result = super().setter(fset)
         result.name = getattr(self, "name", None)
         return result
 
-    def deleter(self: namedproperty[C, T], fdel: Callable[[C], None]) -> namedproperty[C, T]:
+    def deleter(self: named_property[C, T], fdel: Callable[[C], None]) -> named_property[C, T]:
         result = super().deleter(fdel)
         result.name = getattr(self, "name", None)
         return result
 
-    def __copy__(self) -> namedproperty[C, T]:
+    def __copy__(self) -> named_property[C, T]:
         result = type(self)(self.fget, self.fset, self.fdel, self.__doc__)
         result.name = self.name
         return result
@@ -166,7 +166,7 @@ class Pair(Generic[T]):
         self.__first = first
         self.__second = second
 
-    @namedproperty
+    @named_property
     def first(self) -> T:
         """Property descriptor for the first element of the pair."""
         return self.__first
@@ -175,7 +175,7 @@ class Pair(Generic[T]):
     def first(self, value: T) -> None:
         self.__first = value
 
-    @namedproperty
+    @named_property
     def second(self) -> T:
         """Property descriptor for the second element of the pair."""
         return self.__second
@@ -184,12 +184,12 @@ class Pair(Generic[T]):
     def second(self, value: T) -> None:
         self.__second = value
 
-    @namedproperty
+    @named_property
     def frozen_first(self) -> T:
         """Read-only property descriptor for the first element of the pair (mainly for subclassing)."""
         return self.__first
 
-    @namedproperty
+    @named_property
     def frozen_second(self) -> T:
         """Read-only property descriptor for the second element of the pair (mainly for subclassing)."""
         return self.__second
