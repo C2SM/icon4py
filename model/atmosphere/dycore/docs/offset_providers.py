@@ -222,38 +222,34 @@ def add_legend(ax, label, xlims):
             draw_arrow(ax, start, end, i)
 
 #===============================================================================
+def generate_mesh_figure(nx, ny, label):
+    """
+    Generates a figure with a grid of triangles.
+    Parameters:
+        nx : Number of triangles in the x direction (start raw)
+        ny : Number of triangles in the y direction
+    """
+    fig = plt.figure(1); plt.clf(); plt.show(block=False)
+    ax = fig.add_subplot(111)
+    T, xlims, ylims = draw_mesh(ax, nx, ny)
+    ax.set_title(f"Offset provider: {label}")
+    add_legend(ax, label, xlims)
+    ax.set_xlim(xlims)
+    ax.set_ylim(ylims)
+    ax.set_aspect('equal')
+    ax.axis('off')
+
+    fname = f"_imgs/offsetProvider_{label}.png"
+    fig.save = lambda: fig.savefig(fname, dpi=300, bbox_inches='tight')
+
+    return fig, ax, T
+
+#===============================================================================
 # Plot
 #
-imgsDir = "imgs"
 
 #-------------------------------------------------------------------------------
-label = "c2e"
-fig = plt.figure(); plt.clf(); plt.show(block=False)
-ax = fig.add_subplot(111)
-nx = 2; ny = 2
-T, xlims, ylims = draw_mesh(ax, nx, ny)
-
-Ta = T[1]
-Ta.color_cell()
-draw_arrow(ax, Ta.CC, Ta.AB)
-draw_arrow(ax, Ta.CC, Ta.BC)
-draw_arrow(ax, Ta.CC, Ta.CA)
-Ta.color_edges(1)
-
-ax.set_title(f"Offset provider: {label}")
-add_legend(ax, label, xlims)
-ax.set_xlim(xlims)
-ax.set_ylim(ylims)
-ax.set_aspect('equal')
-ax.axis('off')
-plt.savefig(f"{imgsDir}/offsetProvider_{label}.png", dpi=300, bbox_inches='tight')
-
-#-------------------------------------------------------------------------------
-label = "e2v"
-fig = plt.figure(); plt.clf(); plt.show(block=False)
-ax = fig.add_subplot(111)
-nx = 2; ny = 2
-T, xlims, ylims = draw_mesh(ax, nx, ny)
+fig, ax, T = generate_mesh_figure(2, 2, "e2v")
 
 Ta = T[1]
 Ta.color_edge('BC')
@@ -262,20 +258,10 @@ draw_arrow(ax, Ta.BC, Ta.C)
 Ta.color_vertex('B', 1)
 Ta.color_vertex('C', 1)
 
-ax.set_title(f"Offset provider: {label}")
-add_legend(ax, label, xlims)
-ax.set_xlim(xlims)
-ax.set_ylim(ylims)
-ax.set_aspect('equal')
-ax.axis('off')
-plt.savefig(f"{imgsDir}/offsetProvider_{label}.png", dpi=300, bbox_inches='tight')
+fig.save()
 
 #-------------------------------------------------------------------------------
-label = "e2c2e"
-fig = plt.figure(); plt.clf(); plt.show(block=False)
-ax = fig.add_subplot(111)
-nx = 2; ny = 2
-T, xlims, ylims = draw_mesh(ax, nx, ny)
+fig, ax, T = generate_mesh_figure(2, 2, "e2c2e")
 
 Ta = T[1]; Tb = T[7]
 Ta.color_edge('BC')
@@ -292,20 +278,22 @@ draw_arrow(ax, Tb.CC, Tb.CA, 1)
 Ta.color_edges(2)
 Tb.color_edges(2)
 
-ax.set_title(f"Offset provider: {label}")
-add_legend(ax, label, xlims)
-ax.set_xlim(xlims)
-ax.set_ylim(ylims)
-ax.set_aspect('equal')
-ax.axis('off')
-plt.savefig(f"{imgsDir}/offsetProvider_{label}.png", dpi=300, bbox_inches='tight')
+fig.save()
 
 #-------------------------------------------------------------------------------
-label = "c2e2c"
-fig = plt.figure(); plt.clf(); plt.show(block=False)
-ax = fig.add_subplot(111)
-nx = 2; ny = 2
-T, xlims, ylims = draw_mesh(ax, nx, ny)
+fig, ax, T = generate_mesh_figure(2, 2, "c2e")
+
+Ta = T[1]
+Ta.color_cell()
+draw_arrow(ax, Ta.CC, Ta.AB)
+draw_arrow(ax, Ta.CC, Ta.BC)
+draw_arrow(ax, Ta.CC, Ta.CA)
+Ta.color_edges(1)
+
+fig.save()
+
+#-------------------------------------------------------------------------------
+fig, ax, T = generate_mesh_figure(2, 2, "c2e2c")
 
 Ta = T[1]; Tb = T[0]; Tc = T[2]; Td = T[7]
 Ta.color_cell()
@@ -320,20 +308,10 @@ Tb.color_cell(2)
 Tc.color_cell(2)
 Td.color_cell(2)
 
-ax.set_title(f"Offset provider: {label}")
-add_legend(ax, label, xlims)
-ax.set_xlim(xlims)
-ax.set_ylim(ylims)
-ax.set_aspect('equal')
-ax.axis('off')
-plt.savefig(f"{imgsDir}/offsetProvider_{label}.png", dpi=300, bbox_inches='tight')
+fig.save()
 
 #-------------------------------------------------------------------------------
-label = "c2e2co"
-fig = plt.figure(); plt.clf(); plt.show(block=False)
-ax = fig.add_subplot(111)
-nx = 2; ny = 2
-T, xlims, ylims = draw_mesh(ax, nx, ny)
+fig, ax, T = generate_mesh_figure(2, 2, "c2e2co")
 
 Ta = T[1]; Tb = T[0]; Tc = T[2]; Td = T[7]
 Ta.color_cell()
@@ -352,13 +330,7 @@ draw_arrow(ax, Ta.BC, Ta.CC, 1)
 draw_arrow(ax, Ta.CA, Ta.CC, 1)
 Ta.color_cell(2)
 
-ax.set_title(f"Offset provider: {label}")
-add_legend(ax, label, xlims)
-ax.set_xlim(xlims)
-ax.set_ylim(ylims)
-ax.set_aspect('equal')
-ax.axis('off')
-plt.savefig(f"{imgsDir}/offsetProvider_{label}.png", dpi=300, bbox_inches='tight')
+fig.save()
 
 #===============================================================================
-plt.show()
+plt.show(block=False)
