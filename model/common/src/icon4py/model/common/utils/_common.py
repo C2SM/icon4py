@@ -144,14 +144,15 @@ class Pair(Generic[T]):
     def __init_subclass__(cls) -> None:
         for key, value in {**cls.__dict__}.items():
             if (attr_id := getattr(value, "_pair_accessor_id_", None)) is not None:
+                assert isinstance(value, named_property)
                 if key != value.name:
                     # When the original descriptor from the `Pair` class has been
-                    # directly assigned to other class member with a different name
+                    # directly assigned to another class member with a different name
                     # (likely in a subclass) instead of creating a proper copy, it is
                     # copied and initialized here with the right name.
-                    new_value = copy.copy(value)
-                    new_value.name = key
-                    cls.__dict__[key] = new_value
+                    descriptor_copy = copy.copy(value)
+                    descriptor_copy.name = key
+                    setattr(cls, key, descriptor_copy)
                 if attr_id == Pair._FIRST_ACCESSOR_ID:
                     cls.__first_attr_name = key
                 elif attr_id == Pair._SECOND_ACCESSOR_ID:
