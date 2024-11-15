@@ -186,14 +186,12 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     assert test_helpers.dallclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
 
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, atol",
     [(dt_utils.REGIONAL_EXPERIMENT, 1e-10), (dt_utils.GLOBAL_EXPERIMENT, 1e-10)],
 )
-def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, experiment, atol):
+def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, atol):
     cell_areas = grid_savepoint.cell_areas().asnumpy()
     # both experiment use the default value
     divavg_cntrwgt = 0.5
@@ -205,14 +203,20 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, e
     lon = grid_savepoint.cell_center_lon().asnumpy()
     cell_owner_mask = grid_savepoint.c_owner_mask()
 
-
     c2e2c0 = icon_grid.connectivities[dims.C2E2CODim]
 
-    c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight(c2e2c0, lat, lon, cell_areas, cell_owner_mask, divavg_cntrwgt, horizontal_start, horizontal_start_p2)
-    assert test_helpers.dallclose(
-        c_bln_avg, c_bln_avg_ref, atol=atol
+    c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight(
+        c2e2c0,
+        lat,
+        lon,
+        cell_areas,
+        cell_owner_mask,
+        divavg_cntrwgt,
+        horizontal_start,
+        horizontal_start_p2,
     )
-   
+    assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=atol)
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])

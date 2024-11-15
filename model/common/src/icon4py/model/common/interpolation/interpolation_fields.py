@@ -401,7 +401,7 @@ def weighting_factors(
     return wgt
 
 
-def compute_c_bln_avg(
+def _compute_c_bln_avg(
     c2e2c: np.ndarray,
     lat: np.ndarray,
     lon: np.ndarray,
@@ -445,7 +445,7 @@ def compute_c_bln_avg(
     return c_bln_avg
 
 
-def force_mass_conservation_to_c_bln_avg(
+def _force_mass_conservation_to_c_bln_avg(
     c2e2c0: np.ndarray,
     c_bln_avg: np.ndarray,
     cell_areas: np.ndarray,
@@ -476,6 +476,7 @@ def force_mass_conservation_to_c_bln_avg(
     Returns:
 
     """
+
     def _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx) -> np.ndarray:
         """
         Compute the total weight which each local point contributes to the sum.
@@ -491,7 +492,7 @@ def force_mass_conservation_to_c_bln_avg(
         return weights
 
     def _compute_residual_to_mass_conservation(
-            owner_mask: np.ndarray, local_weight: np.ndarray, cell_area: np.ndarray
+        owner_mask: np.ndarray, local_weight: np.ndarray, cell_area: np.ndarray
     ) -> np.ndarray:
         """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
         horizontal_size = local_weight.shape[0]
@@ -501,24 +502,23 @@ def force_mass_conservation_to_c_bln_avg(
         return residual
 
     def _apply_correction(
-            c_bln_avg: np.ndarray,
-            residual: np.ndarray,
-            c2e2c0: np.ndarray,
-            divavg_cntrwgt: float,
-            horizontal_start: gtx.int32,
+        c_bln_avg: np.ndarray,
+        residual: np.ndarray,
+        c2e2c0: np.ndarray,
+        divavg_cntrwgt: float,
+        horizontal_start: gtx.int32,
     ) -> np.ndarray:
         """Apply correction to local weigths based on the computed residuals."""
         maxwgt_loc = divavg_cntrwgt + 0.003
         minwgt_loc = divavg_cntrwgt - 0.003
         relax_coeff = 0.46
         c_bln_avg[horizontal_start:, :] = (
-                c_bln_avg[horizontal_start:, :] - relax_coeff * residual[c2e2c0][horizontal_start:,
-                                                                :]
+            c_bln_avg[horizontal_start:, :] - relax_coeff * residual[c2e2c0][horizontal_start:, :]
         )
         local_weight = np.sum(c_bln_avg, axis=1) - 1.0
 
         c_bln_avg[horizontal_start:, :] = c_bln_avg[horizontal_start:, :] - (
-                0.25 * local_weight[horizontal_start:, np.newaxis]
+            0.25 * local_weight[horizontal_start:, np.newaxis]
         )
 
         # avoid runaway condition:
@@ -526,12 +526,11 @@ def force_mass_conservation_to_c_bln_avg(
         c_bln_avg[horizontal_start:, 0] = np.minimum(c_bln_avg[horizontal_start:, 0], maxwgt_loc)
         return c_bln_avg
 
-
     def _enforce_mass_conservation(
-            c_bln_avg: np.ndarray,
-            residual: np.ndarray,
-            owner_mask: np.ndarray,
-            horizontal_start: gtx.int32,
+        c_bln_avg: np.ndarray,
+        residual: np.ndarray,
+        owner_mask: np.ndarray,
+        horizontal_start: gtx.int32,
     ) -> np.ndarray:
         """Enforce the mass conservation condition on the local cells by forcefully subtracting the
         residual from the central field contribution."""
@@ -581,17 +580,13 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     cell_areas: np.ndarray,
     cell_owner_mask: np.ndarray,
     divavg_cntrwgt: ta.wpfloat,
-    horizontal_start: np.int32, horizontal_start_level_3)-> np.ndarray:
-    c_bln_avg = compute_c_bln_avg(c2e2c0[:, 1:], lat, lon,divavg_cntrwgt, horizontal_start)
-    return force_mass_conservation_to_c_bln_avg(c2e2c0,
-                                         c_bln_avg, cell_areas, cell_owner_mask, divavg_cntrwgt, horizontal_start_level_3)
-
-    
-
-
-
-
-
+    horizontal_start: np.int32,
+    horizontal_start_level_3,
+) -> np.ndarray:
+    c_bln_avg = _compute_c_bln_avg(c2e2c0[:, 1:], lat, lon, divavg_cntrwgt, horizontal_start)
+    return _force_mass_conservation_to_c_bln_avg(
+        c2e2c0, c_bln_avg, cell_areas, cell_owner_mask, divavg_cntrwgt, horizontal_start_level_3
+    )
 
 
 def create_inverse_neighbor_index(c2e2c0):

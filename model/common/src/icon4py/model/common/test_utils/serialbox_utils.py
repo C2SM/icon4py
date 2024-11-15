@@ -430,7 +430,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def _get_decomp_fields(self, dim: gtx.Dimension):
         global_index = self.global_index(dim)
-        mask = self._owner_mask(dim)[0: self.num(dim)]
+        mask = self._owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
     def construct_icon_grid(self, on_gpu: bool) -> icon.IconGrid:
