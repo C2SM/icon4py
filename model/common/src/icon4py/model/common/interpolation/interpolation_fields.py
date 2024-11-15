@@ -404,13 +404,8 @@ def weighting_factors(
     return wgt
 
 
-def compute_c_bln_avg(
-    divavg_cntrwgt: ta.wpfloat,
-    c2e2c: np.ndarray,
-    lat: np.ndarray,
-    lon: np.ndarray,
-    horizontal_start: np.int32,
-) -> np.ndarray:
+def compute_c_bln_avg(c2e2c: np.ndarray, lat: np.ndarray, lon: np.ndarray,
+                      divavg_cntrwgt: ta.wpfloat, horizontal_start: np.int32) -> np.ndarray:
     """
     Compute bilinear cell average weight.
 
@@ -425,35 +420,31 @@ def compute_c_bln_avg(
     Returns:
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
-    llb = horizontal_start
     num_cells = c2e2c.shape[0]
-    wgt_loc = divavg_cntrwgt
-
-    yloc = lat[:]
-    xloc = lon[:]
-    ytemp = np.zeros([c2e2c.shape[1], num_cells - llb])
-    xtemp = np.zeros([c2e2c.shape[1], num_cells - llb])
+    ytemp = np.zeros([c2e2c.shape[1], num_cells - horizontal_start])
+    xtemp = np.zeros([c2e2c.shape[1], num_cells - horizontal_start])
 
     for i in range(ytemp.shape[0]):
-        ytemp[i] = lat[c2e2c[llb:, i]]
-        xtemp[i] = lon[c2e2c[llb:, i]]
+        ytemp[i] = lat[c2e2c[horizontal_start:, i]]
+        xtemp[i] = lon[c2e2c[horizontal_start:, i]]
+
     wgt = weighting_factors(
         ytemp,
         xtemp,
-        yloc[llb:],
-        xloc[llb:],
-        wgt_loc,
+        lat[horizontal_start:],
+        lon[horizontal_start:],
+        divavg_cntrwgt,
     )
     c_bln_avg = np.zeros((c2e2c.shape[0], c2e2c.shape[1] + 1))
-    c_bln_avg[llb:, 0] = wgt_loc
-    c_bln_avg[llb:, 1] = wgt[0]
-    c_bln_avg[llb:, 2] = wgt[1]
-    c_bln_avg[llb:, 3] = wgt[2]
+    c_bln_avg[horizontal_start:, 0] = divavg_cntrwgt
+    c_bln_avg[horizontal_start:, 1] = wgt[0]
+    c_bln_avg[horizontal_start:, 2] = wgt[1]
+    c_bln_avg[horizontal_start:, 3] = wgt[2]
     return c_bln_avg
 
 
-def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_areas: np.ndarray,
-                                                 c2e2c: np.ndarray,
+def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray,
+                                                 cell_areas: np.ndarray,
                                                  c2e2c0:np.ndarray,
                                                  cell_owner_mask:np.ndarray,
                                                  divavg_cntrwgt: ta.wpfloat,
@@ -480,19 +471,20 @@ def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_are
     Returns:
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
-    wgt_loc_sum = np.zeros(c_bln_avg.shape[0])
-    residual = np.zeros(c2e2c.shape[0])
+    local_summed_weigths = np.zeros(c_bln_avg.shape[0])
+    residual = np.zeros(c_bln_avg.shape[0])
 
-    inverse_neighbor_idx = _create_inverse_neighbor_idx(c2e2c)
     ## testing
+    inverse_neighbor_idx= create_inverse_neighbor_idx0(c2e2c0)
+
     max_residuals = np.zeros(niter)
 
 
     for iteration in range(niter):
-        wgt_loc_sum[horizontal_start:] = _compute_local_weights(c_bln_avg, cell_areas, c2e2c, inverse_neighbor_idx)[horizontal_start:]
+        local_summed_weigths[horizontal_start:] = _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx)[horizontal_start:]
 
         residual[horizontal_start:] = _compute_residual_to_mass_conservation(cell_owner_mask,
-                                                                             wgt_loc_sum,
+                                                                             local_summed_weigths,
                                                                              cell_areas)[horizontal_start:]
 
 
@@ -541,10 +533,8 @@ def _apply_correction(
 
 
 
-def _compute_local_weights(c_bln_avg, cell_areas, c2e2c, inverse_neighbor_idx):
-    c_bln_avg_inv = c_bln_avg[c2e2c, inverse_neighbor_idx]
-    weights = c_bln_avg[:,  0] * cell_areas + np.sum(
-        c_bln_avg_inv * cell_areas[c2e2c], axis=1)
+def _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx):
+    weights = np.sum(c_bln_avg[c2e2c0, inverse_neighbor_idx] * cell_areas[c2e2c0], axis=1)
     return weights
 
 
@@ -565,15 +555,20 @@ def _create_inverse_neighbor_idx(c2e2c):
     for jc in range(c2e2c.shape[0]):
         for i in range(c2e2c.shape[1]):
             if c2e2c[jc, i] >= 0:
-                if c2e2c[c2e2c[jc, i], 0] == jc:
-                    inv_neighbor_id[jc, i] = 1
-                elif c2e2c[c2e2c[jc, i], 1] == jc:
-                    inv_neighbor_id[jc, i] = 2
-                elif c2e2c[c2e2c[jc, i], 2] == jc:
-                    inv_neighbor_id[jc, i] = 3
+                inv_neighbor_id[jc, i] = np.argwhere(c2e2c[c2e2c[jc, i], :] == jc)[0, 0] + 1
     return inv_neighbor_id
 
 
+
+def create_inverse_neighbor_idx0(c2e2c0):
+    inv_neighbor_id = -1* np.ones(c2e2c0.shape, dtype=int)
+
+    for jc in range(c2e2c0.shape[0]):
+        for i in range(c2e2c0.shape[1]):
+            if c2e2c0[jc, i] >= 0:
+                inv_neighbor_id[jc, i] = np.argwhere(c2e2c0[c2e2c0[jc, i], :] == jc)[0,0]
+
+    return inv_neighbor_id
 
 
 def compute_e_flx_avg(
