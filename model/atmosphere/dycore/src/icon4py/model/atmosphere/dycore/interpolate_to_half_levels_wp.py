@@ -20,7 +20,17 @@ def _interpolate_to_half_levels_wp(
     wgtfac_c: fa.CellKField[wpfloat],
     interpolant: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
-    """Formerly known mo_velocity_advection_stencil_10 and as _mo_solve_nonhydro_stencil_05."""
+    """
+    Interpolate a CellDim variable of working precision from full levels to half levels.
+    The return variable also has working precision.
+        var_half_k-1/2 = wgt_fac_c_k-1 var_half_k-1 + wgt_fac_c_k var_half_k
+
+    Args:
+        wgtfac_c: weight factor
+        interpolant: CellDim variables at full levels
+    Returns:
+        CellDim variables at half levels
+    """
     interpolation_to_half_levels_wp = wgtfac_c * interpolant + (
         wpfloat("1.0") - wgtfac_c
     ) * interpolant(Koff[-1])

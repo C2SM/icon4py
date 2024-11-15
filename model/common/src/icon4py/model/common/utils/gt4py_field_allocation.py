@@ -9,23 +9,26 @@ from typing import Optional
 
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import backend
+from gt4py.next import backend as gt4py_backend, common as gt4py_common
 
-from icon4py.model.common import type_alias as ta
+from icon4py.model.common import dimension as dims, type_alias as ta
 
 
 def allocate_zero_field(
-    *dims: gtx.Dimension,
+    *dim: gtx.Dimension,
     grid,
     is_halfdim=False,
     dtype=ta.wpfloat,
-    backend: Optional[backend.Backend] = None,
-):
-    shapex = tuple(map(lambda x: grid.size[x], dims))
-    if is_halfdim:
-        assert len(shapex) == 2
-        shapex = (shapex[0], shapex[1] + 1)
-    return gtx.as_field(dims, np.zeros(shapex, dtype=dtype), allocator=backend)
+    backend: Optional[gt4py_backend.Backend] = None,
+) -> gt4py_common.Field:
+    def size(local_dim: gtx.Dimension, is_half_dim: bool) -> int:
+        if local_dim == dims.KDim and is_half_dim:
+            return grid.size[local_dim] + 1
+        else:
+            return grid.size[local_dim]
+
+    dimensions = {d: range(size(d, is_halfdim)) for d in dim}
+    return gtx.zeros(dimensions, dtype=dtype, allocator=backend)
 
 
 def allocate_indices(
@@ -33,7 +36,7 @@ def allocate_indices(
     grid,
     is_halfdim=False,
     dtype=gtx.int32,
-    backend: Optional[backend.Backend] = None,
-):
+    backend: Optional[gt4py_backend.Backend] = None,
+) -> gt4py_common.Field:
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
     return gtx.as_field((dim,), np.arange(shapex, dtype=dtype), allocator=backend)

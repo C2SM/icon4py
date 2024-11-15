@@ -19,6 +19,7 @@ from gt4py.next import backend as gt4py_backend
 
 import icon4py.model.common.states.metadata as data
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common.utils import array_allocation as array_alloc
 
 
 log = logging.getLogger(__name__)
@@ -121,7 +122,7 @@ class VerticalGrid:
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
 
-    def __post_init__(self, vct_a: np.ndarray, vct_b: np.ndarray):
+    def __post_init__(self, vct_a: fa.KField, vct_b: fa.KField):
         object.__setattr__(
             self,
             "_vct_a",
@@ -132,7 +133,7 @@ class VerticalGrid:
             "_vct_b",
             vct_b,
         )
-        vct_a_array = self._vct_a.asnumpy()
+        vct_a_array = self._vct_a.ndarray
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
@@ -247,36 +248,41 @@ class VerticalGrid:
 
     @classmethod
     def _determine_start_level_of_moist_physics(
-        cls, vct_a: np.ndarray, top_moist_threshold: float, nshift_total: int = 0
+        cls, vct_a: fa.AnyNDArray, top_moist_threshold: float, nshift_total: int = 0
     ) -> gtx.int32:
+        xp = array_alloc.array_ns_from_obj(vct_a)
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
-        return gtx.int32(np.min(np.where(interface_height < top_moist_threshold)[0]).item())
+        return gtx.int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
-    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float) -> gtx.int32:
+    def _determine_damping_height_index(
+        cls, vct_a: fa.AnyNDArray, damping_height: float
+    ) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
+        xp = array_alloc.array_ns_from_obj(vct_a)
         return (
             0
             if damping_height > vct_a[0]
-            else gtx.int32(np.argmax(np.where(vct_a >= damping_height)[0]).item())
+            else gtx.int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
         )
 
     @classmethod
     def _determine_end_index_of_flat_layers(
-        cls, vct_a: np.ndarray, flat_height: float
+        cls, vct_a: fa.AnyNDArray, flat_height: float
     ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
+        xp = array_alloc.array_ns_from_obj(vct_a)
         return (
             0
             if flat_height > vct_a[0]
-            else gtx.int32(np.max(np.where(vct_a >= flat_height)[0]).item())
+            else gtx.int32(xp.max(xp.where(vct_a >= flat_height)[0]).item())
         )
 
 
 def _read_vct_a_and_vct_b_from_file(
     file_path: pathlib.Path, num_levels: int, backend: gt4py_backend.Backend
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
     The file format should be as follows (the same format used for icon):
@@ -321,7 +327,7 @@ def _read_vct_a_and_vct_b_from_file(
 
 def _compute_vct_a_and_vct_b(
     vertical_config: VerticalGridConfig, backend: gt4py_backend.Backend
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
 
@@ -507,7 +513,7 @@ def _compute_vct_a_and_vct_b(
 
 def get_vct_a_and_vct_b(
     vertical_config: VerticalGridConfig, backend: gt4py_backend.Backend
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.
     vct_a is an array that contains the height of grid interfaces (or half levels) from model surface to model top, before terrain-following coordinates are applied.

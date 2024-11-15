@@ -18,8 +18,10 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-from icon4py.model.driver import icon4py_configuration as driver_config
+from icon4py.model.common.utils import (
+    array_allocation as array_alloc,
+    gt4py_field_allocation as field_alloc,
+)
 
 
 def hydrostatic_adjustment_ndarray(
@@ -35,7 +37,8 @@ def hydrostatic_adjustment_ndarray(
     num_levels: int,
     backend: gt4py_backend.Backend,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    xp = driver_config.host_or_device_array(backend)
+    is_cupy = array_alloc.is_cupy_device(backend)
+    xp = array_alloc.array_ns(is_cupy)
 
     # virtual temperature
     temp_v = theta_v * exner
@@ -134,7 +137,8 @@ def zonalwind_2_normalwind_ndarray(
     """
     # TODO (Chia Rui) this function needs a test
 
-    xp = driver_config.host_or_device_array(backend)
+    is_cupy = array_alloc.is_cupy_device(backend)
+    xp = array_alloc.array_ns(is_cupy)
 
     mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
