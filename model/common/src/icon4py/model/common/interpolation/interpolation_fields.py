@@ -15,7 +15,9 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
-from icon4py.model.common.interpolation.c_bln_avg import _enforce_mass_conservation
+from icon4py.model.common.interpolation.c_bln_avg import (
+    _enforce_mass_conservation,
+)
 
 
 def compute_c_lin_e(
@@ -452,10 +454,11 @@ def compute_c_bln_avg(
 
 def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_areas: np.ndarray,
                                                  c2e2c: np.ndarray,
+                                                 c2e2c0:np.ndarray,
                                                  cell_owner_mask:np.ndarray,
                                                  divavg_cntrwgt: ta.wpfloat,
                                                  horizontal_start: np.int32,
-                                                 horizontal_start_p3: np.int32, niter: int = 5) -> np.ndarray:
+                                                 niter: int = 5) -> np.ndarray:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
 
@@ -472,22 +475,15 @@ def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_are
         c2e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, C2E2CDim], gtx.int32]
         cell_areas: numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         horizontal_start:
-        horizontal_start_p3:
         niter: number of iterations until convergence is assumed
 
     Returns:
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     wgt_loc_sum = np.zeros(c_bln_avg.shape[0])
-
     residual = np.zeros(c2e2c.shape[0])
 
     inverse_neighbor_idx = _inverse_neighbor_index(c2e2c)
-
-    relax_coeff = 0.46
-    maxwgt_loc = divavg_cntrwgt + 0.003
-    minwgt_loc = divavg_cntrwgt - 0.003
-
     ## testing
     max_residual = np.zeros(niter)
 
@@ -495,10 +491,9 @@ def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_are
     for iteration in range(niter):
         wgt_loc_sum[horizontal_start:] = _compute_local_weights(c_bln_avg, cell_areas, c2e2c, inverse_neighbor_idx)[horizontal_start:]
 
-        residual[horizontal_start_p3:] = _compute_residual_to_mass_conservation(cell_owner_mask,
+        residual[horizontal_start:] = _compute_residual_to_mass_conservation(cell_owner_mask,
                                                                              wgt_loc_sum,
-                                                                             cell_areas)[
-                                      horizontal_start_p3:]
+                                                                             cell_areas)[horizontal_start:]
 
         max_residual[iteration] = np.max(residual)
 
@@ -506,31 +501,43 @@ def compute_force_mass_conservation_to_c_bln_avg(c_bln_avg: np.ndarray, cell_are
         if iteration >= (niter - 1):
 
             print(f"residual (v1) of last 10 iterations: {max_residual[-9:]}")
-            c_bln_avg = _enforce_mass_conservation(c_bln_avg, residual, owner_mask, horizontal_start_p3)
+            c_bln_avg = _enforce_mass_conservation(c_bln_avg, residual, cell_owner_mask, horizontal_start)
             return c_bln_avg
-
-        c_bln_avg[horizontal_start_p3:, 0] = (
-            c_bln_avg[horizontal_start_p3:, 0] - relax_coeff * residual[horizontal_start_p3:]
+        c_bln_avg = _apply_correction(
+            c_bln_avg=c_bln_avg,
+            residual=residual,
+            c2e2c0=c2e2c0,
+            divavg_cntrwgt=divavg_cntrwgt,
+            horizontal_start=horizontal_start,
         )
-        c_bln_avg[horizontal_start_p3:, 1:] = (
-            c_bln_avg[horizontal_start_p3:, 1:]
-            - relax_coeff * residual[c2e2c][horizontal_start_p3:, :]
-        )
-        wgt_loc_sum[horizontal_start_p3:] = np.sum(c_bln_avg[horizontal_start_p3:], axis=1) - 1.0
-
-        for i in range(c2e2c.shape[1] + 1):
-            c_bln_avg[horizontal_start_p3:, i] = (
-                c_bln_avg[horizontal_start_p3:, i] - 0.25 * wgt_loc_sum[horizontal_start_p3:]
-            )
-
-        c_bln_avg[horizontal_start_p3:, 0] = np.maximum(
-            c_bln_avg[horizontal_start_p3:, 0], minwgt_loc
-        )
-        c_bln_avg[horizontal_start_p3:, 0] = np.minimum(
-            c_bln_avg[horizontal_start_p3:, 0], maxwgt_loc
-        )
+       
 
     return c_bln_avg
+
+def _apply_correction(
+    c_bln_avg: np.ndarray,
+    residual: np.ndarray,
+    c2e2c0: np.ndarray,
+    divavg_cntrwgt: float,
+    horizontal_start: gtx.int32,
+):
+    maxwgt_loc = divavg_cntrwgt + 0.003
+    minwgt_loc = divavg_cntrwgt - 0.003
+    relax_coeff = 0.46
+    c_bln_avg[horizontal_start:, :] = (
+        c_bln_avg[horizontal_start:, :] - relax_coeff * residual[c2e2c0][horizontal_start:, :]
+    )
+    local_weight = np.sum(c_bln_avg, axis=1) - 1.0
+
+    c_bln_avg[horizontal_start:, :] = c_bln_avg[horizontal_start:, :] - (
+        0.25 * local_weight[horizontal_start:, np.newaxis]
+    )
+
+    # avoid runaway condition:
+    c_bln_avg[horizontal_start:, 0] = np.maximum(c_bln_avg[horizontal_start:, 0], minwgt_loc)
+    c_bln_avg[horizontal_start:, 0] = np.minimum(c_bln_avg[horizontal_start:, 0], maxwgt_loc)
+    return c_bln_avg
+
 
 
 def _compute_local_weights(c_bln_avg, cell_areas, c2e2c, inverse_neighbor_idx):

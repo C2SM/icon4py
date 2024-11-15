@@ -72,29 +72,6 @@ def _compute_residual_to_mass_conservation(owner_mask: np.ndarray, local_weight:
     return residual
 
 
-def _apply_correction(
-    c_bln_avg: np.ndarray,
-    residual: np.ndarray,
-    c2e2c0: np.ndarray,
-    divavg_cntrwgt: float,
-    horizontal_start: gtx.int32,
-):
-    maxwgt_loc = divavg_cntrwgt + 0.003
-    minwgt_loc = divavg_cntrwgt - 0.003
-    relax_coeff = 0.46
-    c_bln_avg[horizontal_start:, :] = (
-        c_bln_avg[horizontal_start:, :] - relax_coeff * residual[c2e2c0][horizontal_start:, :]
-    )
-    local_weight = np.sum(c_bln_avg, axis=1) - 1.0
-
-    c_bln_avg[horizontal_start:, :] = c_bln_avg[horizontal_start:, :] - (
-        0.25 * local_weight[horizontal_start:, np.newaxis]
-    )
-
-    # avoid runaway condition:
-    c_bln_avg[horizontal_start:, 0] = np.maximum(c_bln_avg[horizontal_start:, 0], minwgt_loc)
-    c_bln_avg[horizontal_start:, 0] = np.minimum(c_bln_avg[horizontal_start:, 0], maxwgt_loc)
-    return c_bln_avg
 
 
 def _enforce_mass_conservation(
