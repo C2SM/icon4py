@@ -922,6 +922,7 @@ class Diffusion:
         members_to_disregard = [
             "_backend",
             "_exchange",
+            "_grid",
             *[
                 name
                 for name in self.__dict__.keys()
