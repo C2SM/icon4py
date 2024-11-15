@@ -204,8 +204,8 @@ def test_inverse_neighbor(experiment, icon_grid):
 @pytest.mark.parametrize(
     "experiment, atol",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, 1e-2),
-        # (dt_utils.GLOBAL_EXPERIMENT, 1e-2)
+        #(dt_utils.REGIONAL_EXPERIMENT, 1e-4),
+        (dt_utils.GLOBAL_EXPERIMENT, 1e-4)
     ],
 )
 def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, experiment, atol):
@@ -226,7 +226,7 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, e
         lon,
         horizontal_start,
     )
-    iterations = 5
+    iterations = 1000 # difference in residual from 100 to 1000 1.88e-9 vs 1.63e-9
     c_bln_avg_v1 = np.copy(c_bln_avg)
     c_bln_avg_v2 = np.copy(c_bln_avg)
     c_bln_avg_v1 = compute_force_mass_conservation_to_c_bln_avg(
@@ -252,9 +252,9 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, e
         niter=iterations,
     )
 
-    assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=atol)  # regional 1e-4
-    assert test_helpers.dallclose(c_bln_avg_v1, c_bln_avg_ref, atol=atol)  # regional 1e-4
-    assert test_helpers.dallclose(c_bln_avg_v2, c_bln_avg_ref, atol=atol)
+    #assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=atol)  # regional 1e-4, field before non corrected field
+    assert test_helpers.dallclose(c_bln_avg_v1, c_bln_avg_ref, atol=atol)  # regional 1e-4, version 1 of correction AJ
+    assert test_helpers.dallclose(c_bln_avg_v2, c_bln_avg_ref, atol=atol)  # version 2 of correction ML
 
 
 @pytest.mark.datatest
