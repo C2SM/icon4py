@@ -500,11 +500,8 @@ def compute_force_mass_conservation_to_c_bln_avg(
             horizontal_start:
         ] + np.sum(c_bln_avg_inv[horizontal_start:] * cell_areas[c2e2c][horizontal_start:], axis=1)
 
-        
-
-        resid[horizontal_start_p3:] = (
-            wgt_loc_sum[horizontal_start_p3:] / cell_areas[horizontal_start_p3:] - 1.0
-        )
+        residual = _compute_residual_to_mass_conservation(owner_mask, wgt_loc_sum, cell_areas)
+        resid[horizontal_start_p3:] = residual[horizontal_start_p3:]
 
         max_resid[iteration] = np.max(resid)
 
@@ -536,6 +533,17 @@ def compute_force_mass_conservation_to_c_bln_avg(
         )
 
     return c_bln_avg
+
+
+def _compute_residual_to_mass_conservation(owner_mask: np.ndarray, local_weight: np.ndarray,
+                                           cell_area: np.ndarray):
+    """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
+    horizontal_size = local_weight.shape[0]
+    assert horizontal_size == owner_mask.shape[0], "Fields do not have the same shape"
+    assert horizontal_size == cell_area.shape[0], "Fields do not have the same shape"
+    residual = np.where(owner_mask, local_weight / cell_area - 1.0, 0.0)
+    return residual
+    
 
 
 def _inverse_neighbor_index(c2e2c):

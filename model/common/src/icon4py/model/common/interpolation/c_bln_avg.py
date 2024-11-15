@@ -62,9 +62,8 @@ def _compute_weight_on_local_cell(
     return np.stack(x)
   
 
-def _compute_residual_to_mass_conservation(
-    local_weight: np.ndarray, owner_mask: np.ndarray, cell_area: np.ndarray
-):
+def _compute_residual_to_mass_conservation(owner_mask: np.ndarray, local_weight: np.ndarray,
+                                           cell_area: np.ndarray):
     """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
     horizontal_size = local_weight.shape[0]
     assert horizontal_size == owner_mask.shape[0], "Fields do not have the same shape"
@@ -154,11 +153,9 @@ def force_mass_conservation(
             c2e2c0=c2e2c0,
             cell_area=cell_areas,
         )
-        residual = _compute_residual_to_mass_conservation(
-            local_weight=local_weight,
-            cell_area=cell_areas,
-            owner_mask=owner_mask,
-        )
+        residual = _compute_residual_to_mass_conservation(owner_mask=owner_mask,
+                                                          local_weight=local_weight,
+                                                          cell_area=cell_areas)
         # TODO (@halungge) halo-echange residual
         max_residual = np.max(residual)
         max_resid[i] = max_residual
