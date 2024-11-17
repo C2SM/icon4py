@@ -462,7 +462,7 @@ def initialize(
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
 )
 @click.option(
-    "--icon4py_driver_backend",
+    "--icon4py_driver_backend", "-b",
     default=driver_config.DriverBackends.GTFN_CPU.value,
     show_default=True,
     help="Backend for all components executed in icon4py driver. Choose between GTFN_CPU or GTFN_GPU. Please see abs_path_to_icon4py/model/driver/src/icon4py/model/driver/icon4py_configuration/) ",
