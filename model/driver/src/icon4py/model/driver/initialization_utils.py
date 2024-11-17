@@ -32,6 +32,7 @@ from icon4py.model.common.test_utils import (
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.driver import (
+    icon4py_configuration as driver_config,
     serialbox_helpers as driver_sb,
 )
 from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
@@ -64,6 +65,7 @@ class ExperimentType(str, enum.Enum):
 
 def read_icon_grid(
     path: pathlib.Path,
+    backend: gt4py_backend.Backend,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
@@ -86,7 +88,7 @@ def read_icon_grid(
         return (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid(grid_id, grid_root, grid_level)
-            .construct_icon_grid(on_gpu=False)
+            .construct_icon_grid(on_gpu=(backend in driver_config.gpu_backends))
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
