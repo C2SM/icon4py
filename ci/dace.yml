@@ -1,13 +1,9 @@
 include:
   - local: 'ci/base.yml'
 
-variables:
-  DACE_VERSION: "0.16.1"
-
 .test_model_stencils:
   stage: test
   script:
-    - pip install dace==$DACE_VERSION
     - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
@@ -21,13 +17,17 @@ test_model_stencils_aarch64:
 .test_model_datatests:
   stage: test
   script:
-    - pip install dace==$DACE_VERSION
-    - tox -r -e run_model_tests -c model/ -- --backend=$BACKEND $DACE_ORCHESTRATION $COMPONENT  --verbose
+    - tox -r -e run_model_tests -c model/ -- --backend=$BACKEND $DACE_ORCHESTRATION $COMPONENT
   parallel:
     matrix:
-    - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests]
+    - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests]
       BACKEND: [dace_cpu_noopt]
       DACE_ORCHESTRATION: ['--dace-orchestration=True', '']
+  rules:
+    # TODO(kotsaloscv): enable dycore tests with dace orchestration
+    - if: $COMPONENT == "atmosphere/dycore/tests/dycore_tests" && $DACE_ORCHESTRATION == "--dace-orchestration=True"
+      when: never
+    - when: on_success
 test_model_datatests_x86_64:
   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
@@ -36,7 +36,6 @@ test_model_datatests_aarch64:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - pip install dace==$DACE_VERSION
     # force execution of tests where validation is expected to fail, because the reason for failure is wrong numpy reference
     - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --runxfail
   parallel:
