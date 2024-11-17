@@ -10,6 +10,7 @@ import logging
 import uuid
 
 import gt4py.next as gtx
+import numpy as np
 import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -326,12 +327,11 @@ class IconGridSavepoint(IconSavepoint):
 
     def _get_connectivity_array(self, name: str, target_dim: gtx.Dimension, reverse: bool = False):
         if reverse:
-            connectivity = xp.transpose(self._read_int32(name, offset=1))[
+            connectivity = np.transpose(self._read_int32(name, offset=1))[
                 : self.sizes[target_dim], :
             ]
         else:
             connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
-        connectivity = xp.asarray(connectivity)
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
@@ -343,7 +343,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def c2e2c2e(self):
         if self._c2e2c2e() is None:
-            return xp.zeros((self.sizes[dims.CellDim], 9), dtype=int)
+            return np.zeros((self.sizes[dims.CellDim], 9), dtype=int)
         else:
             return self._c2e2c2e()
 
@@ -454,8 +454,8 @@ class IconGridSavepoint(IconSavepoint):
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
-        c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c))
-        e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
+        c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
+        e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
         grid = (
             icon.IconGrid(self._grid_id)
             .with_config(config)

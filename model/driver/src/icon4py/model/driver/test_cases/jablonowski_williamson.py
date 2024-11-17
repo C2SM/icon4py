@@ -202,7 +202,6 @@ def model_initialization_jabw(
     log.info("Newton iteration completed!")
 
     eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_ndarray, allocator=backend)
-    log.debug(f"field device: {eta_v}")
     eta_v_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend)
     cell_2_edge_interpolation.cell_2_edge_interpolation(
         eta_v,

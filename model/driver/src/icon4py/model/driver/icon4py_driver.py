@@ -311,6 +311,7 @@ def initialize(
     log.info(f"initializing the grid from '{file_path}'")
     icon_grid = driver_init.read_icon_grid(
         file_path,
+        backend=icon4py_driver_backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -462,7 +463,8 @@ def initialize(
     help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
 )
 @click.option(
-    "--icon4py_driver_backend", "-b",
+    "--icon4py_driver_backend",
+    "-b",
     default=driver_config.DriverBackends.GTFN_CPU.value,
     show_default=True,
     help="Backend for all components executed in icon4py driver. Choose between GTFN_CPU or GTFN_GPU. Please see abs_path_to_icon4py/model/driver/src/icon4py/model/driver/icon4py_configuration/) ",

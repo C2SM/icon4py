@@ -43,6 +43,7 @@ backend_map: Final[dict] = {
     DriverBackends.GTFN_GPU: run_gtfn_gpu,
     DriverBackends.GTFN_GPU_CACHED: run_gtfn_gpu_cached,
 }
+gpu_backends = [DriverBackends.GTFN_GPU, DriverBackends.GTFN_GPU_CACHED]
 
 
 @dataclasses.dataclass(frozen=True)
