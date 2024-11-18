@@ -12,7 +12,7 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridSize
+from icon4py.model.common.grid import base
 
 # periodic
 #
@@ -377,10 +377,11 @@ class SimpleGridData:
     )
 
 
-class SimpleGrid(BaseGrid):
+class SimpleGrid(base.BaseGrid, base.VerticalSize):
     _CELLS = 18
     _EDGES = 27
     _VERTICES = 9
+    _NUM_LEVELS = 10
 
     def __init__(self):
         """Instantiate a SimpleGrid used for testing purposes."""
@@ -435,15 +436,15 @@ class SimpleGrid(BaseGrid):
 
     @property
     def num_cells(self) -> int:
-        return self.config.num_cells
+        return self._CELLS
 
     @property
     def num_vertices(self) -> int:
-        return self.config.num_vertices
+        return self._VERTICES
 
     @property
     def num_edges(self) -> int:
-        return self.config.num_edges
+        return self._EDGES
 
     @property
     def diamond_table(self) -> np.ndarray:
@@ -451,7 +452,7 @@ class SimpleGrid(BaseGrid):
 
     @property
     def num_levels(self) -> int:
-        return self.config.num_levels
+        return self._NUM_LEVELS
 
     @property
     def id(self) -> uuid.UUID:
@@ -461,11 +462,11 @@ class SimpleGrid(BaseGrid):
         return False
 
     def _configure(self):
-        horizontal_grid_size = HorizontalGridSize(
+        horizontal_grid_size = base.HorizontalGridSize(
             num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
         )
         vertical_grid_config = VerticalGridConfig(num_levels=10)
-        config = GridConfig(
+        config = base.GridConfig(
             horizontal_config=horizontal_grid_size,
             vertical_size=vertical_grid_config.num_levels,
         )

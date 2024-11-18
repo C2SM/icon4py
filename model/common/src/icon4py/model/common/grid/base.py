@@ -10,7 +10,7 @@ import functools
 import uuid
 import warnings
 from abc import ABC, abstractmethod
-from typing import Callable, Dict
+from typing import Callable, Dict, Protocol, runtime_checkable
 
 import gt4py.next as gtx
 import numpy as np
@@ -22,6 +22,13 @@ from icon4py.model.common.settings import xp
 
 class MissingConnectivity(ValueError):
     pass
+
+
+@runtime_checkable
+class VerticalSize(Protocol):
+    @property
+    def num_levels(self) -> int:
+        ...
 
 
 @dataclasses.dataclass(frozen=True)
@@ -39,7 +46,6 @@ class GridConfig:
     limited_area: bool = True
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
-    lvertnest: bool = False
     on_gpu: bool = False
 
     @property
@@ -89,11 +95,6 @@ class BaseGrid(ABC):
     @property
     @abstractmethod
     def num_edges(self) -> int:
-        pass
-
-    @property
-    @abstractmethod
-    def num_levels(self) -> int:
         pass
 
     @abstractmethod
