@@ -85,6 +85,8 @@ add_module_names = False
 
 # generate figures
 offset_providers.generate_figures()
+# generate the figures page
+offset_providers.generate_page()
 
 # add the scidoc method documenter to sphinx
 def setup(app):

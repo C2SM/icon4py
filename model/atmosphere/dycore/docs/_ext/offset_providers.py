@@ -2,11 +2,13 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 from typing import Final
+import os
 
 SIDE: Final = 1  # Length of each triangle side
 LABEL_TRIANGLES: Final = False  # Option to label each triangle center with its ID
 COLORS: Final = list(mcolors.TABLEAU_COLORS.values()) #= ['lightblue', 'lightsalmon', 'lightseagreen', 'lightcoral']
 AX_BORDER: Final = 0.05*SIDE  # Border around the axes
+IMG_DIR = "_imgs"
 
 class Triangle:
     def __init__(self, ax, x0, y0, orientation):
@@ -145,7 +147,7 @@ def draw_arrow(ax, start, end, coloridx=0):
         coloridx: Index for the color in COLORS
     """
     ax.annotate('', xy=end, xytext=start,
-                arrowprops=dict(facecolor=COLORS[coloridx], shrink=0.1, width=1, headwidth=10))
+                arrowprops=dict(facecolor=COLORS[coloridx], shrink=0.1, width=1, headwidth=10), zorder=99-coloridx)
 
 #===============================================================================
 def draw_mesh(ax, nx, ny):
@@ -219,7 +221,8 @@ def add_legend(ax, label, xlims):
         if i < N - 1:
             start = (legend_x + i * (rect_width + spacing) + rect_width, legend_y + rect_height / 2)
             end = (legend_x + (i + 1) * (rect_width + spacing), legend_y + rect_height / 2)
-            draw_arrow(ax, start, end, i)
+            #draw_arrow(ax, start, end, i)
+            draw_arrow(ax, end, start, i+1)
 
 #===============================================================================
 def generate_mesh_figure(nx, ny, label):
@@ -239,7 +242,7 @@ def generate_mesh_figure(nx, ny, label):
     ax.set_aspect('equal')
     ax.axis('off')
 
-    fname = f"_imgs/offsetProvider_{label}.png"
+    fname = f"{IMG_DIR}/offsetProvider_{label}.png"
     fig.save = lambda: fig.savefig(fname, dpi=300, bbox_inches='tight')
 
     return fig, ax, T
@@ -252,8 +255,8 @@ def generate_figures():
 
     Ta = T[1]
     Ta.color_edge('BC')
-    draw_arrow(ax, Ta.BC, Ta.B)
-    draw_arrow(ax, Ta.BC, Ta.C)
+    draw_arrow(ax, Ta.B, Ta.BC, 1)
+    draw_arrow(ax, Ta.C, Ta.BC, 1)
     Ta.color_vertex('B', 1)
     Ta.color_vertex('C', 1)
 
@@ -264,8 +267,8 @@ def generate_figures():
 
     Ta = T[1]; Tb = T[7]
     Ta.color_edge('BC')
-    draw_arrow(ax, Ta.BC, Ta.CC)
-    draw_arrow(ax, Tb.AB, Tb.CC)
+    draw_arrow(ax, Ta.CC, Ta.BC, 1)
+    draw_arrow(ax, Tb.CC, Tb.AB, 1)
     Ta.color_cell(1)
     Tb.color_cell(1)
 
@@ -276,16 +279,16 @@ def generate_figures():
 
     Ta = T[1]; Tb = T[7]
     Ta.color_edge('BC')
-    draw_arrow(ax, Ta.BC, Ta.CC)
-    draw_arrow(ax, Tb.AB, Tb.CC)
+    draw_arrow(ax, Ta.CC, Ta.BC, 1)
+    draw_arrow(ax, Tb.CC, Tb.AB, 1)
     Ta.color_cell(1)
     Tb.color_cell(1)
-    draw_arrow(ax, Ta.CC, Ta.AB, 1)
-    draw_arrow(ax, Ta.CC, Ta.BC, 1)
-    draw_arrow(ax, Ta.CC, Ta.CA, 1)
-    draw_arrow(ax, Tb.CC, Tb.AB, 1)
-    draw_arrow(ax, Tb.CC, Tb.BC, 1)
-    draw_arrow(ax, Tb.CC, Tb.CA, 1)
+    draw_arrow(ax, Ta.AB, Ta.CC, 2)
+    draw_arrow(ax, Ta.BC, Ta.CC, 2)
+    draw_arrow(ax, Ta.CA, Ta.CC, 2)
+    draw_arrow(ax, Tb.AB, Tb.CC, 2)
+    draw_arrow(ax, Tb.BC, Tb.CC, 2)
+    draw_arrow(ax, Tb.CA, Tb.CC, 2)
     Ta.color_edges(2)
     Tb.color_edges(2)
 
@@ -296,9 +299,9 @@ def generate_figures():
 
     Ta = T[1]
     Ta.color_cell()
-    draw_arrow(ax, Ta.CC, Ta.AB)
-    draw_arrow(ax, Ta.CC, Ta.BC)
-    draw_arrow(ax, Ta.CC, Ta.CA)
+    draw_arrow(ax, Ta.AB, Ta.CC, 1)
+    draw_arrow(ax, Ta.BC, Ta.CC, 1)
+    draw_arrow(ax, Ta.CA, Ta.CC, 1)
     Ta.color_edges(1)
 
     fig.save()
@@ -308,13 +311,13 @@ def generate_figures():
 
     Ta = T[1]; Tb = T[0]; Tc = T[2]; Td = T[7]
     Ta.color_cell()
-    draw_arrow(ax, Ta.CC, Ta.AB)
-    draw_arrow(ax, Ta.CC, Ta.BC)
-    draw_arrow(ax, Ta.CC, Ta.CA)
+    draw_arrow(ax, Ta.AB, Ta.CC, 1)
+    draw_arrow(ax, Ta.BC, Ta.CC, 1)
+    draw_arrow(ax, Ta.CA, Ta.CC, 1)
     Ta.color_edges(1)
-    draw_arrow(ax, Tb.BC, Tb.CC, 1)
-    draw_arrow(ax, Tc.CA, Tc.CC, 1)
-    draw_arrow(ax, Td.AB, Td.CC, 1)
+    draw_arrow(ax, Tb.CC, Tb.BC, 2)
+    draw_arrow(ax, Tc.CC, Tc.CA, 2)
+    draw_arrow(ax, Td.CC, Td.AB, 2)
     Tb.color_cell(2)
     Tc.color_cell(2)
     Td.color_cell(2)
@@ -326,19 +329,37 @@ def generate_figures():
 
     Ta = T[1]; Tb = T[0]; Tc = T[2]; Td = T[7]
     Ta.color_cell()
-    draw_arrow(ax, Ta.CC, Ta.AB)
-    draw_arrow(ax, Ta.CC, Ta.BC)
-    draw_arrow(ax, Ta.CC, Ta.CA)
-    Ta.color_edges(1)
-    draw_arrow(ax, Tb.BC, Tb.CC, 1)
-    draw_arrow(ax, Tc.CA, Tc.CC, 1)
-    draw_arrow(ax, Td.AB, Td.CC, 1)
-    Tb.color_cell(2)
-    Tc.color_cell(2)
-    Td.color_cell(2)
     draw_arrow(ax, Ta.AB, Ta.CC, 1)
     draw_arrow(ax, Ta.BC, Ta.CC, 1)
     draw_arrow(ax, Ta.CA, Ta.CC, 1)
+    Ta.color_edges(1)
+    draw_arrow(ax, Tb.CC, Tb.BC, 2)
+    draw_arrow(ax, Tc.CC, Tc.CA, 2)
+    draw_arrow(ax, Td.CC, Td.AB, 2)
+    Tb.color_cell(2)
+    Tc.color_cell(2)
+    Td.color_cell(2)
+    draw_arrow(ax, Ta.CC, Ta.AB, 2)
+    draw_arrow(ax, Ta.CC, Ta.BC, 2)
+    draw_arrow(ax, Ta.CC, Ta.CA, 2)
     Ta.color_cell(2)
 
     fig.save()
+
+#===============================================================================
+def generate_page():
+    """
+    Generates a documentation page collecting all the figures created by
+    `generate_figures`. The figures are sorted in alphabetical order.
+    """
+    figures = [f for f in os.listdir(IMG_DIR) if f.startswith("offsetProvider_") and f.endswith(".png")]
+    figures.sort()
+
+    with open(f"{IMG_DIR}/offset_providers.rst", "w") as f:
+        f.write("Offset Providers\n")
+        f.write("================\n\n")
+        for fig in figures:
+            label = fig.replace("offsetProvider_", "").replace(".png", "")
+            f.write(f".. image:: {fig}\n")
+            f.write(f"   :align: center\n")
+            f.write(f"   :alt: {label}\n")
