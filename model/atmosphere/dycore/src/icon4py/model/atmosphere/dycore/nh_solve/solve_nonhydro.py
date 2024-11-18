@@ -8,7 +8,7 @@
 
 import logging
 import dataclasses
-from typing import Final, Optional
+from typing import Final, Literal, Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend
@@ -791,13 +791,18 @@ class SolveNonhydro:
         )
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    def set_time_levels(self, diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro) -> None:
+    def update_time_levels(
+        self, diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro
+    ) -> Literal[0, 1]:
         """Set time levels of ddt_adv fields for call to velocity_tendencies."""
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            diagnostic_state_nh.swap_buffers()
-        else:
+            # Use one of the buffers of the pairs for the predictor and the other one for the corrector
             diagnostic_state_nh.ddt_w_adv_pc.first = diagnostic_state_nh.ddt_w_adv_pc.second
             diagnostic_state_nh.ddt_vn_apc_pc.first = diagnostic_state_nh.ddt_vn_apc_pc.second
+            return 1
+        else:
+            # Use only the first buffer of the pairs for both predictor and corrector
+            return 0
 
     def time_step(
         self,
@@ -833,9 +838,6 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if not at_first_substep:
-            self.set_time_levels(diagnostic_state_nh)
-
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state_swp=prognostic_state_swp,
@@ -845,6 +847,8 @@ class SolveNonhydro:
             l_init=l_init,
             at_first_substep=at_first_substep,
         )
+
+        corrector_tl = self.update_time_levels(diagnostic_state_nh)
 
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -856,6 +860,7 @@ class SolveNonhydro:
             lclean_mflx=lclean_mflx,
             lprep_adv=lprep_adv,
             at_last_substep=at_last_substep,
+            time_level=corrector_tl,
         )
 
         if self._grid.limited_area:
@@ -1638,6 +1643,7 @@ class SolveNonhydro:
         lclean_mflx: bool,
         lprep_adv: bool,
         at_last_substep: bool,
+        time_level: Literal[0, 1],
     ):
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
@@ -1674,6 +1680,7 @@ class SolveNonhydro:
             z_kin_hor_e=z_fields.z_kin_hor_e,
             z_vt_ie=z_fields.z_vt_ie,
             dtime=dtime,
+            ntnd=time_level,
             cell_areas=self._cell_params.area,
         )
 
@@ -1730,7 +1737,7 @@ class SolveNonhydro:
             self._add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_state_swp.current.vn,
                 ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.first,
-                ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc.second,
+                ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc[time_level],
                 ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
                 z_theta_v_e=z_fields.z_theta_v_e,
                 z_gradh_exner=z_fields.z_gradh_exner,
@@ -1901,7 +1908,7 @@ class SolveNonhydro:
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state_swp.current.w,
                 ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.first,
-                ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_pc.second,
+                ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_pc[time_level],
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,

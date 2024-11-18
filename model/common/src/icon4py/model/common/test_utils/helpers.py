@@ -148,8 +148,8 @@ def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
     return np.asarray(field).reshape(new_shape)
 
 
-def fingerprint_buffer(array: Buffer, *, digest_length: int = 8) -> str:
-    return hashlib.md5(array).hexdigest()[-digest_length:]
+def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
+    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
 
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):

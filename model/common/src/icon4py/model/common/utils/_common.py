@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import abc
 import copy
-import dataclasses
 import functools
 from collections.abc import Callable
 from typing import (
@@ -20,6 +19,7 @@ from typing import (
     Final,
     Generator,
     Generic,
+    Literal,
     ParamSpec,
     Protocol,
     TypeVar,
@@ -32,15 +32,6 @@ class DoubleBuffering(Protocol):
     @abc.abstractmethod
     def swap_buffers(self) -> None:
         ...
-
-
-class DoubleBufferingDataClassTrait(DoubleBuffering):
-    def swap_buffers(self) -> None:
-        for field in dataclasses.fields(self):
-            if (
-                attr_swapper := getattr(getattr(self, field.name), "swap_buffers", None)
-            ) is not None:
-                attr_swapper()
 
 
 T = TypeVar("T")
@@ -63,11 +54,9 @@ class named_property(property, Generic[C, T]):
         ...     @value.setter
         ...     def value(self, value: int) -> None:
         ...         self._value = value
-        ...
-        ...
-        ... a = A()
-        ... a.value = 1
-        ... print(a.value.name)
+        >>> a = A()
+        >>> a.value = 1
+        >>> print(A.value.name)
         value
     """
 
@@ -118,21 +107,34 @@ class Pair(Generic[T]):
         >>> class MyPair(Pair[T]):
         ...     a: T = Pair.first
         ...     b: T = Pair.frozen_second
-        ...
-        ...
-        ... pair = MyPair(1, 2)
-        ... print(pair)
+        >>> pair = MyPair(1, 2)
+        >>> print(pair)
         MyPair(a=1, b=2)
 
         >>> pair.swap()
-        ... swapped = Pair(2, 1)
-        ... pair == swapped
+        MyPair(a=2, b=1)
+
+        >>> pair == MyPair(2, 1)
         True
 
+        >>> pair.a = -1
+        >>> pair[0]
+        -1
+
+        >>> pair[0] = 100
+        >>> pair.a
+        100
+
         >>> pair.b = 3
-        Traceback (most recent call last)
+        Traceback (most recent call last):
         ...
         AttributeError: can't set attribute
+
+        >>> pair[1] = 3
+        Traceback (most recent call last):
+        ...
+        AttributeError: can't set attribute
+
     """
 
     _FIRST_ACCESSOR_ID: Final = "FIRST"
@@ -205,6 +207,26 @@ class Pair(Generic[T]):
 
     # `__hash__` is implicitly set to None when `__eq__` is redefined, so instances are not hashable.
 
+    def __getitem__(self, index: Literal[0, 1]) -> T:
+        match index:
+            case 0:
+                return self.__first
+            case 1:
+                return self.__second
+            case _:
+                raise IndexError(f"Pair index out of range: {index}")
+
+    def __setitem__(self, index: Literal[0, 1], value: T) -> None:
+        match index:
+            case 0:
+                attr_name = self.__first_attr_name
+            case 1:
+                attr_name = self.__second_attr_name
+            case _:
+                raise IndexError(f"Pair index out of range: {index}")
+
+        setattr(self, attr_name, value)
+
     def __iter__(self) -> Generator[T, None, None]:
         yield self.__first
         yield self.__second
@@ -256,11 +278,12 @@ def chainable(method_fn: Callable[Concatenate[T, P], None]) -> Callable[Concaten
         ...     @chainable
         ...     def increment(self, value: int) -> None:
         ...         self.value += value
-        ...
-        ...
-        ... a = A()
-        ... a.set_value(1).increment(2)
-        ... a.value
+
+        >>> a = A()
+        >>> a.set_value(1).increment(2)  # doctest:+ELLIPSIS
+        <__main__.A object at ...>
+
+        >>> a.value
         3
     """
 

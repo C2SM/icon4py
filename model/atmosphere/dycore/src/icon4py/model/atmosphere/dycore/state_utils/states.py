@@ -20,7 +20,7 @@ from icon4py.model.common import (
 
 
 @dataclasses.dataclass
-class DiagnosticStateNonHydro(common_utils.DoubleBufferingDataClassTrait):
+class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
     vt: fa.EdgeKField[float]
