@@ -24,7 +24,7 @@ def test_topography_smoothing_with_serialized_data(
     icon_grid,
     grid_savepoint,
     interpolation_savepoint,
-    constant_fields_savepoint,
+    external_parameters_savepoint,
     backend,
     experiment,
 ):
@@ -32,8 +32,8 @@ def test_topography_smoothing_with_serialized_data(
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     num_iterations = 25
-    topography = constant_fields_savepoint.topo_c()
-    topography_smoothed_verif_np = constant_fields_savepoint.topo_smt_c().ndarray
+    topography = external_parameters_savepoint.topo_c()
+    topography_smoothed_verif_np = external_parameters_savepoint.topo_smt_c().ndarray
 
     topography_smoothed = topo.compute_smooth_topo(
         topography=topography,

@@ -1776,7 +1776,7 @@ class IconGraupelInitSavepoint(IconSavepoint):
         return self.serializer.read("ser_init_graupel_zvz0r", self.savepoint)[0]
 
 
-class ConstantFieldsSavepoint(IconSavepoint):
+class ExternalParametersSavepoint(IconSavepoint):
     def topo_c(self):
         return self._get_field("topo_c", dims.CellDim)
 
@@ -1878,9 +1878,9 @@ class IconSerialDataProvider:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
         return MetricSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_constant_fields_savepoint(self) -> ConstantFieldsSavepoint:
-        savepoint = self.serializer.savepoint["constant_fields_savepoint"].as_savepoint()
-        return ConstantFieldsSavepoint(savepoint, self.serializer, size=self.grid_size)
+    def from_external_parameters_savepoint(self) -> ExternalParametersSavepoint:
+        savepoint = self.serializer.savepoint["external_parameters_savepoint"].as_savepoint()
+        return ExternalParametersSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_least_squares_savepoint(self, size: dict) -> LeastSquaresSavepoint:
         savepoint = self.serializer.savepoint["least_squares_state"].jg[1].as_savepoint()

@@ -300,7 +300,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 def test_init_vert_coord(
     grid_savepoint,
     metrics_savepoint,
-    constant_fields_savepoint,
+    external_parameters_savepoint,
     experiment,
     icon_grid,
 ):
@@ -314,8 +314,8 @@ def test_init_vert_coord(
         vct_a=vct_a,
         vct_b=vct_b,
     )
-    topography = constant_fields_savepoint.topo_c()
-    topography_smoothed = constant_fields_savepoint.topo_smt_c()
+    topography = external_parameters_savepoint.topo_c()
+    topography_smoothed = external_parameters_savepoint.topo_smt_c()
 
     z_ifc = v_grid.init_vert_coord(
         vct_a=vct_a,

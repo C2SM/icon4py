@@ -78,15 +78,6 @@ def construct_metric_state(
     )
 
 
-def construct_constant_fields_state(
-    savepoint: sb.ConstantFieldsSavepoint, num_k_lev
-) -> solve_nh_states.ConstantFieldsState:
-    return solve_nh_states.ConstantFieldsState(
-        topo_c=savepoint.topo_c(),
-        topo_smt_c=savepoint.topo_smt_c(),
-    )
-
-
 def construct_solve_nh_config(name: str, ndyn: int = 5):
     if name.lower() in "mch_ch_r04b09_dsl":
         return _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn)

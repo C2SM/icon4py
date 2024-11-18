@@ -142,14 +142,6 @@ class MetricStateNonHydro:
 
 
 @dataclasses.dataclass
-class ConstantFieldsState:
-    """Dataclass containing constant fields."""
-
-    topo_c: fa.CellField[float]
-    topo_smt_c: fa.CellField[float]
-
-
-@dataclasses.dataclass
 class PrepAdvection:
     """Dataclass used in SolveNonHydro that pre-calculates fields during the dynamical substepping that are later needed in tracer advection."""
 

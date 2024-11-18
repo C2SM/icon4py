@@ -12,7 +12,7 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
-    constant_fields_savepoint,
+    external_parameters_savepoint,
     damping_height,
     data_provider,
     download_ser_data,

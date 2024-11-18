@@ -178,9 +178,9 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
-def constant_fields_savepoint(data_provider):  # F811
-    """Load data from ICON constant fields savepoint."""
-    return data_provider.from_constant_fields_savepoint()
+def external_parameters_savepoint(data_provider):  # F811
+    """Load data from ICON external parameters savepoint."""
+    return data_provider.from_external_parameters_savepoint()
 
 
 @pytest.fixture
