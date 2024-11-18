@@ -9,12 +9,12 @@
 import pytest
 
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
-    external_parameters_savepoint,
     damping_height,
     data_provider,
     decomposition_info,
     download_ser_data,
     experiment,
+    external_parameters_savepoint,
     flat_height,
     grid_savepoint,
     htop_moist_proc,
