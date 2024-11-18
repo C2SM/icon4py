@@ -235,7 +235,7 @@ def generate_mesh_figure(nx, ny, label):
     fig = plt.figure(1); plt.clf(); plt.show(block=False)
     ax = fig.add_subplot(111)
     T, xlims, ylims = draw_mesh(ax, nx, ny)
-    ax.set_title(f"Offset provider: {label}")
+    ax.set_title(f"{label}")
     add_legend(ax, label, xlims)
     ax.set_xlim(xlims)
     ax.set_ylim(ylims)
