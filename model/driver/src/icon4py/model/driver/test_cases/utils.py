@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import backend as gt4py_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
@@ -25,18 +24,18 @@ from icon4py.model.common.utils import (
 
 
 def hydrostatic_adjustment_ndarray(
-    wgtfac_c: np.ndarray,
-    ddqz_z_half: np.ndarray,
-    exner_ref_mc: np.ndarray,
-    d_exner_dz_ref_ic: np.ndarray,
-    theta_ref_mc: np.ndarray,
-    theta_ref_ic: np.ndarray,
-    rho: np.ndarray,
-    exner: np.ndarray,
-    theta_v: np.ndarray,
+    wgtfac_c: fa.AnyNDArray,
+    ddqz_z_half: fa.AnyNDArray,
+    exner_ref_mc: fa.AnyNDArray,
+    d_exner_dz_ref_ic: fa.AnyNDArray,
+    theta_ref_mc: fa.AnyNDArray,
+    theta_ref_ic: fa.AnyNDArray,
+    rho: fa.AnyNDArray,
+    exner: fa.AnyNDArray,
+    theta_v: fa.AnyNDArray,
     num_levels: int,
     backend: gt4py_backend.Backend,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[fa.AnyNDArray, fa.AnyNDArray, fa.AnyNDArray]:
     is_cupy = array_alloc.is_cupy_device(backend)
     xp = array_alloc.array_ns(is_cupy)
 
@@ -69,17 +68,17 @@ def hydrostatic_adjustment_ndarray(
 
 
 def hydrostatic_adjustment_constant_thetav_ndarray(
-    wgtfac_c: np.ndarray,
-    ddqz_z_half: np.ndarray,
-    exner_ref_mc: np.ndarray,
-    d_exner_dz_ref_ic: np.ndarray,
-    theta_ref_mc: np.ndarray,
-    theta_ref_ic: np.ndarray,
-    rho: np.ndarray,
-    exner: np.ndarray,
-    theta_v: np.ndarray,
+    wgtfac_c: fa.AnyNDArray,
+    ddqz_z_half: fa.AnyNDArray,
+    exner_ref_mc: fa.AnyNDArray,
+    d_exner_dz_ref_ic: fa.AnyNDArray,
+    theta_ref_mc: fa.AnyNDArray,
+    theta_ref_ic: fa.AnyNDArray,
+    rho: fa.AnyNDArray,
+    exner: fa.AnyNDArray,
+    theta_v: fa.AnyNDArray,
     num_levels: int,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[fa.AnyNDArray, fa.AnyNDArray]:
     """
     Computes a hydrostatically balanced profile. In constrast to the above
     hydrostatic_adjustment_ndarray, the virtual temperature is kept (assumed)
@@ -114,12 +113,12 @@ def zonalwind_2_normalwind_ndarray(
     jw_up: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
-    edge_lat: np.ndarray,
-    edge_lon: np.ndarray,
-    primal_normal_x: np.ndarray,
-    eta_v_e: np.ndarray,
+    edge_lat: fa.AnyNDArray,
+    edge_lon: fa.AnyNDArray,
+    primal_normal_x: fa.AnyNDArray,
+    eta_v_e: fa.AnyNDArray,
     backend: gt4py_backend.Backend,
-) -> np.ndarray:
+) -> fa.AnyNDArray:
     """
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
 
@@ -318,14 +317,14 @@ def initialize_prep_advection(
 
 
 def create_gt4py_field_for_prognostic_and_diagnostic_variables(
-    vn_ndarray: np.ndarray,
-    w_ndarray: np.ndarray,
-    exner_ndarray: np.ndarray,
-    rho_ndarray: np.ndarray,
-    theta_v_ndarray: np.ndarray,
-    temperature_ndarray: np.ndarray,
-    pressure_ndarray: np.ndarray,
-    pressure_ifc_ndarray: np.ndarray,
+    vn_ndarray: fa.AnyNDArray,
+    w_ndarray: fa.AnyNDArray,
+    exner_ndarray: fa.AnyNDArray,
+    rho_ndarray: fa.AnyNDArray,
+    theta_v_ndarray: fa.AnyNDArray,
+    temperature_ndarray: fa.AnyNDArray,
+    pressure_ndarray: fa.AnyNDArray,
+    pressure_ifc_ndarray: fa.AnyNDArray,
     grid: icon_grid.IconGrid,
     backend: gt4py_backend.Backend,
 ) -> tuple[
