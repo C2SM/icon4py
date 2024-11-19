@@ -276,13 +276,12 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             if self.print_variable_longnames:
                                 # long name version, with small font size for the prefix
                                 var_longname = method_info["map_shortname_to_longname"][element]
-                                prefix = ".".join(var_longname.split(".")[:-1])
-                                suffix = var_longname.split(".")[-1]
+                                parent_name, short_name = self.split_variable_name(var_longname)
                                 vname = (
-                                    f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$"
-                                    if prefix
+                                    f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{parent_name}.}}}}}}$"
+                                    if parent_name
                                     else ""
-                                ) + f"{suffix}"
+                                ) + f"{short_name}"
                             else:
                                 # short name version
                                 vname = element
@@ -592,6 +591,19 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             return method_obj, module_obj.__name__
         return None, None
 
+    def split_variable_name(self, var_name: str) -> tuple[str, str]:
+        """
+        Split a variable name into its parent and short name.
+
+        Args:
+            var_name: The variable name to split.
+
+        Returns:
+            A tuple containing the parent name and short name of the variable.
+        """
+        parts = re.split(r'\.(?![^\[\]]*\])', var_name)
+        return ".".join(parts[:-1]), parts[-1]
+
     def map_variable_names(
         self, function_call_str: list[str]
     ) -> tuple[dict[str, str], dict[str, str]]:
@@ -625,7 +637,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         map_shortname_to_longname = {}
         for arg_name, arg_value in matches:
             # Extract the shortname: last part of the argument value after the last period
-            short_name = arg_value.split(".")[-1]
+            _, short_name = self.split_variable_name(arg_value)
             map_argname_to_shortname[arg_name] = short_name
             map_shortname_to_longname[short_name] = arg_value
         return map_argname_to_shortname, map_shortname_to_longname
