@@ -58,6 +58,8 @@ rst_epilog = """
 .. _Zangl_etal_2015: https://doi.org/10.1002/qj.2378
 .. |ICONSteepSlopePressurePaper| replace:: Zangl_2012_
 .. _Zangl_2012: https://doi.org/10.1175/MWR-D-12-00049.1
+.. |BonaventuraRingler2005| replace:: Bonaventura_and_Ringler_2005_
+.. _Bonaventura_and_Ringler_2005: https://doi.org/10.1175/MWR2986.1
 """
 
 # -- MathJax config ----------------------------------------------------------

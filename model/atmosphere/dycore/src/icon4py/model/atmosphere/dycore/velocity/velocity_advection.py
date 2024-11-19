@@ -592,16 +592,18 @@ class VelocityAdvection:
         #  - ddt_vn_apc_pc[ntnd] :
         #     $$
         #     \advvn{\n}{\e}{\k} &&= \pdxn{\kinehori{\n}{}{}} + \vt{\n}{}{} (\vortvert{\n}{}{} + \coriolis{}) + \pdz{\vn{\n}{}{}} \w{\n}{}{}, \qquad \k \in [0, \nlev) \\
-        #                        &&= \kinehori{\n}{\e}{\k} (\Cgrad_0 - \Cgrad_1) + \kinehori{\n}{\e2\c\ 1}{\k} \Cgrad_1 - \kinehori{\n}{\e2\c\ 0}{\k} \Cgrad_0 \\
+        #                        &&= \Gradn_{\offProv{e2c}} \Cgrad \kinehori{\n}{c}{\k} + \kinehori{\n}{\e}{\k} \Gradn_{\offProv{e2c}} \Cgrad\\
         #                        &&+ \vt{\n}{\e}{\k} (\coriolis{\e} + 0.5 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k}) \\
         #                        &&+ \frac{\vn{\n}{\e}{\k-1/2} - \vn{\n}{\e}{\k+1/2}}{\Dz{k}}
         #                            \sum_{\offProv{e2c}} \Whor \wcc{\n}{\c}{\k}
         #     $$
         #     Compute the advective tendency of the normal wind.
-        #     $\vortvert{}{}{}$ is the vorticity, its value at edge center is computed as average of the values on the neighboring vertices.
-        #     $\wcc{}{}{}$ is the vertical wind with contravariant correction, its value at edge center is computed as linear interpolation from the neighboring cells.
-        #     The vertical derivative of normal wind is computed as first order approximation from the values on half levels.
-        #     TODO: understand the coefficient coeff_gradekin and come up with better symbol and expression.
+        #     The edge-normal derivative of kinetic energy is computed by
+        #     combining the first order approximation across adiacent cell
+        #     centres (eq. 8 in |BonaventuraRingler2005|) with the edge
+        #     value of the kinetic energy.
+        #     $\vortvert{}{}{}$ is the vorticity and $\wcc{}{}{}$ is the
+        #     vertical wind with contravariant correction.
         #
         # Inputs:
         #  - $\Cgrad$ : coeff_gradekin
