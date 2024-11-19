@@ -413,7 +413,7 @@ class VelocityAdvection:
         #     center (three neighboring edges).
         #
         # Inputs:
-        #  - $\Whor$ : wgtfac_c_s
+        #  - $\Whor$ : e_bln_c_s
         #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
         #
         self._interpolate_to_cell_center(
@@ -602,6 +602,7 @@ class VelocityAdvection:
         # Inputs:
         #  - $\Cgrad$ : coeff_gradekin
         #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
+        #  - $\kinehori{\n}{\c}{\k}$ : z_ekinh
         #  - $\vt{\n}{\e}{\k}$ : vt
         #  - $\coriolis{\e}$ : f_e
         #  - $\vortvert{\n}{\v}{\k}$ : zeta
