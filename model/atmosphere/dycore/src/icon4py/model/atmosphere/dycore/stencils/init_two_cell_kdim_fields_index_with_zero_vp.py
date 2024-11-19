@@ -10,7 +10,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, where
 
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     _init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
