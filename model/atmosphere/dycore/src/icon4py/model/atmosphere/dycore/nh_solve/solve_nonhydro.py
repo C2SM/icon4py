@@ -1450,12 +1450,23 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        """
-        vn (0:nlev-1):
-            Add the advection and pressure gradient terms to update the normal velocity.
-            vn = vn + dt * (advection - cpd * theta_v * dpi/dz)
-            advection is computed in velocity_advection.
-        """
+        # scidoc:
+        # Outputs:
+        #  - vn :
+        #     $$
+        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{}{} \pdxn{\exnerprime{\n}{}{}} \right), \quad \k \in [0, \nlev)
+        #     $$
+        #     Add the advection and pressure gradient terms to update the normal velocity.
+        #     The advection term is computed in velocity_advection.
+        # 
+        # Inputs:
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #  - $\Dt$ : dtime
+        #  - $\advvn{\n}{\e}{\k}$ : ddt_vn_apc_pc[self.ntl1]
+        #  - $\vpotemp{\n}{}{}$ : z_theta_v_e
+        #  - $\pdxn{\exnerprime{\n}{}{}}$ : z_gradh_exner
+        #  - $\cpd$ : CPD
+        # 
         self._add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_state[nnow].vn,
             ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
