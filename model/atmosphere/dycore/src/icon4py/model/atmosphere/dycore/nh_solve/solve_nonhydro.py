@@ -998,7 +998,7 @@ class SolveNonhydro:
         #     (see the |ICONTutorial| page 74).
         #  - exner_pr :
         #     $$
-        #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}, \qquad \k \in [0, \nlev)
+        #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nlev)
         #     $$
         #     Store perturbed exner function from previous time step.
         #

@@ -6,7 +6,7 @@ import os
 
 SIDE: Final = 1  # Length of each triangle side
 LABEL_TRIANGLES: Final = False  # Option to label each triangle center with its ID
-COLORS: Final = list(mcolors.TABLEAU_COLORS.values()) #= ['lightblue', 'lightsalmon', 'lightseagreen', 'lightcoral']
+COLORS: Final = list(mcolors.TABLEAU_COLORS.values())
 AX_BORDER: Final = 0.05*SIDE  # Border around the axes
 IMG_DIR = "_imgs"
 
@@ -259,50 +259,6 @@ def generate_mesh_figure(nx, ny, label):
 def generate_figures():
 
     #---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(2, 2, "e2v")
-
-    Ta = T[1]
-    Ta.color_edge('BC')
-    draw_arrow(ax, Ta.B, Ta.BC, 1)
-    draw_arrow(ax, Ta.C, Ta.BC, 1)
-    Ta.color_vertex('B', 1)
-    Ta.color_vertex('C', 1)
-
-    fig.save()
-
-    #---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(2, 2, "e2c")
-
-    Ta = T[1]; Tb = T[7]
-    Ta.color_edge('BC')
-    draw_arrow(ax, Ta.CC, Ta.BC, 1)
-    draw_arrow(ax, Tb.CC, Tb.AB, 1)
-    Ta.color_cell(1)
-    Tb.color_cell(1)
-
-    fig.save()
-
-    #---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(2, 2, "e2c2e")
-
-    Ta = T[1]; Tb = T[7]
-    Ta.color_edge('BC')
-    draw_arrow(ax, Ta.CC, Ta.BC, 1)
-    draw_arrow(ax, Tb.CC, Tb.AB, 1)
-    Ta.color_cell(1)
-    Tb.color_cell(1)
-    draw_arrow(ax, Ta.AB, Ta.CC, 2)
-    draw_arrow(ax, Ta.BC, Ta.CC, 2)
-    draw_arrow(ax, Ta.CA, Ta.CC, 2)
-    draw_arrow(ax, Tb.AB, Tb.CC, 2)
-    draw_arrow(ax, Tb.BC, Tb.CC, 2)
-    draw_arrow(ax, Tb.CA, Tb.CC, 2)
-    Ta.color_edges(2)
-    Tb.color_edges(2)
-
-    fig.save()
-
-    #---------------------------------------------------------------------------
     fig, ax, T = generate_mesh_figure(2, 2, "c2e")
 
     Ta = T[1]
@@ -354,6 +310,73 @@ def generate_figures():
 
     fig.save()
 
+    #---------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "e2v")
+
+    Ta = T[1]
+    Ta.color_edge('BC')
+    draw_arrow(ax, Ta.B, Ta.BC, 1)
+    draw_arrow(ax, Ta.C, Ta.BC, 1)
+    Ta.color_vertex('B', 1)
+    Ta.color_vertex('C', 1)
+
+    fig.save()
+
+    #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "e2c")
+
+    Ta = T[1]; Tb = T[7]
+    Ta.color_edge('BC')
+    draw_arrow(ax, Ta.CC, Ta.BC, 1)
+    draw_arrow(ax, Tb.CC, Tb.AB, 1)
+    Ta.color_cell(1)
+    Tb.color_cell(1)
+
+    fig.save()
+
+    #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "e2c2e")
+
+    Ta = T[1]; Tb = T[7]
+    Ta.color_edge('BC')
+    draw_arrow(ax, Ta.CC, Ta.BC, 1)
+    draw_arrow(ax, Tb.CC, Tb.AB, 1)
+    Ta.color_cell(1)
+    Tb.color_cell(1)
+    draw_arrow(ax, Ta.AB, Ta.CC, 2)
+    draw_arrow(ax, Ta.BC, Ta.CC, 2)
+    draw_arrow(ax, Ta.CA, Ta.CC, 2)
+    draw_arrow(ax, Tb.AB, Tb.CC, 2)
+    draw_arrow(ax, Tb.BC, Tb.CC, 2)
+    draw_arrow(ax, Tb.CA, Tb.CC, 2)
+    Ta.color_edges(2)
+    Tb.color_edges(2)
+
+    fig.save()
+
+    #---------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(1, 2, "v2e")
+
+    Ta = T[0]; Tb = T[2]; Tc = T[5]; Td = T[4]; Te = T[3]; Tf = T[1]
+    Ta.color_vertex('C')
+    draw_arrow(ax, Ta.CA, Ta.C, 1)
+    draw_arrow(ax, Tb.CA, Tb.C, 1)
+    draw_arrow(ax, Tc.AB, Tc.A, 1)
+    draw_arrow(ax, Td.AB, Td.A, 1)
+    draw_arrow(ax, Te.BC, Te.B, 1)
+    draw_arrow(ax, Tf.BC, Tf.B, 1)
+    Ta.color_edge('CA', 1)
+    Tb.color_edge('CA', 1)
+    Tc.color_edge('AB', 1)
+    Td.color_edge('AB', 1)
+    Te.color_edge('BC', 1)
+    Tf.color_edge('BC', 1)
+
+    fig.save()
+
+
 #===============================================================================
 def generate_page():
     """
@@ -371,3 +394,8 @@ def generate_page():
             f.write(f".. image:: {fig}\n")
             f.write(f"   :align: center\n")
             f.write(f"   :alt: {label}\n")
+
+#===============================================================================
+if __name__ == "__main__":
+    generate_figures()
+    plt.show()

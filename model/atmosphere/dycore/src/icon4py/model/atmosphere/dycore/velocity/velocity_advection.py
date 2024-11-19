@@ -216,11 +216,18 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        """
-        zeta (0:nlev-1):
-            Compute the vorticity at cell vertices at full levels using discrete Stokes theorem.
-            zeta = integral_circulation dotproduct(V, tangent) / dual_cell_area = sum V_i dual_edge_length_i / dual_cell_area
-        """
+        # scidoc:
+        # Outputs:
+        #  - zeta :
+        #     $$
+        #     \vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}, \quad \k \in [0, \nlev)
+        #     $$
+        #     Compute the vorticity on vertices using the discrete Stokes theorem (eq. 5 in |BonaventuraRingler2005|).
+        #
+        # Inputs:
+        #  - $\Crot$ : geofac_rot
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #
         self._mo_math_divrot_rot_vertex_ri_dsl(
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
@@ -236,7 +243,7 @@ class VelocityAdvection:
         # Outputs:
         #  - vt :
         #     $$
-        #     \vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k}, \qquad \k \in [0, \nlev)
+        #     \vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k}, \quad \k \in [0, \nlev)
         #     $$
         #     Compute the tangential velocity by RBF interpolation from four neighboring
         #     edges (diamond shape) and projected to tangential direction.
@@ -260,12 +267,12 @@ class VelocityAdvection:
         # Outputs:
         #  - vn_ie :
         #     $$
-        #     \vn{\n}{\e}{\k-1/2} = \Wlev \vn{\n}{\e}{\k} + (1 - \Wlev) \vn{\n}{\e}{\k-1}, \qquad \k \in [1, \nlev)
+        #     \vn{\n}{\e}{\k-1/2} = \Wlev \vn{\n}{\e}{\k} + (1 - \Wlev) \vn{\n}{\e}{\k-1}, \quad \k \in [1, \nlev)
         #     $$
         #     Linearly interpolate the normal velocity from full levels to half levels.
         #  - z_kin_hor_e :
         #     $$
-        #     \kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right), \qquad \k \in [1, \nlev)
+        #     \kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right), \quad \k \in [1, \nlev)
         #     $$
         #     Compute the horizontal kinetic energy. Exclude the first full level.
         #
@@ -309,7 +316,7 @@ class VelocityAdvection:
         # Outputs:
         #  - z_w_concorr_me :
         #     $$
-        #     \wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \qquad \k \in [\nflatlev, \nlev)
+        #     \wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \quad \k \in [\nflatlev, \nlev)
         #     $$
         #     Compute the contravariant correction (due to terrain-following
         #     coordinates) to vertical wind. Note that here $\pdxt{}$ is the
@@ -411,10 +418,9 @@ class VelocityAdvection:
         # Outputs:
         #  - z_ekinh :
         #     $$
-        #     \kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}, \qquad \k \in [0, \nlev)
+        #     \kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}, \quad \k \in [0, \nlev)
         #     $$
-        #     Interpolate the horizonal kinetic energy from edge center to cell
-        #     center (three neighboring edges).
+        #     Interpolate the horizonal kinetic energy from edge to cell center.
         #
         # Inputs:
         #  - $\Whor$ : e_bln_c_s
@@ -591,16 +597,16 @@ class VelocityAdvection:
         # Outputs:
         #  - ddt_vn_apc_pc[ntnd] :
         #     $$
-        #     \advvn{\n}{\e}{\k} &&= \pdxn{\kinehori{\n}{}{}} + \vt{\n}{}{} (\vortvert{\n}{}{} + \coriolis{}) + \pdz{\vn{\n}{}{}} \w{\n}{}{}, \qquad \k \in [0, \nlev) \\
+        #     \advvn{\n}{\e}{\k} &&= \pdxn{\kinehori{\n}{}{}} + \vt{\n}{}{} (\vortvert{\n}{}{} + \coriolis{}) + \pdz{\vn{\n}{}{}} \w{\n}{}{}, \quad \k \in [0, \nlev) \\
         #                        &&= \Gradn_{\offProv{e2c}} \Cgrad \kinehori{\n}{c}{\k} + \kinehori{\n}{\e}{\k} \Gradn_{\offProv{e2c}} \Cgrad\\
-        #                        &&+ \vt{\n}{\e}{\k} (\coriolis{\e} + 0.5 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k}) \\
+        #                        &&+ \vt{\n}{\e}{\k} (\coriolis{\e} + 1/2 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k}) \\
         #                        &&+ \frac{\vn{\n}{\e}{\k-1/2} - \vn{\n}{\e}{\k+1/2}}{\Dz{k}}
         #                            \sum_{\offProv{e2c}} \Whor \wcc{\n}{\c}{\k}
         #     $$
         #     Compute the advective tendency of the normal wind.
         #     The edge-normal derivative of kinetic energy is computed by
         #     combining the first order approximation across adiacent cell
-        #     centres (eq. 8 in |BonaventuraRingler2005|) with the edge
+        #     centres (eq. 7 in |BonaventuraRingler2005|) with the edge
         #     value of the kinetic energy.
         #     $\vortvert{}{}{}$ is the vorticity and $\wcc{}{}{}$ is the
         #     vertical wind with contravariant correction.
