@@ -20,8 +20,7 @@ from icon4py.model.atmosphere.diffusion import (
     diffusion,
     diffusion_states,
 )
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.driver import (
@@ -125,11 +124,11 @@ class TimeLoop:
     def time_integration(
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         # TODO (Chia Rui): expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
         prognostic_state_list: list[prognostics.PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: dycore_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -197,9 +196,9 @@ class TimeLoop:
     def _integrate_one_time_step(
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state_list: list[prognostics.PrognosticState],
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: dycore_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -224,9 +223,9 @@ class TimeLoop:
 
     def _do_dyn_substepping(
         self,
-        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state_list: list[prognostics.PrognosticState],
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: dycore_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):

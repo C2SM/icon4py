@@ -10,8 +10,10 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
-from icon4py.model.atmosphere.dycore.compute_avg_vn import _compute_avg_vn
-from icon4py.model.atmosphere.dycore.compute_tangential_wind import _compute_tangential_wind
+from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import _compute_avg_vn
+from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import (
+    _compute_tangential_wind,
+)
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2EO, E2C2EODim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
