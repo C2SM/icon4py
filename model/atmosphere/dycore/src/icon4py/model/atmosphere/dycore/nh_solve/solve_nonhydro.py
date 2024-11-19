@@ -1454,17 +1454,17 @@ class SolveNonhydro:
         # Outputs:
         #  - vn :
         #     $$
-        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{}{} \pdxn{\exnerprime{\n}{}{}} \right), \quad \k \in [0, \nlev)
+        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \pdxn{\exnerprime{\n}{}{}}_{\e\,\k} \right), \quad \k \in [0, \nlev)
         #     $$
-        #     Add the advection and pressure gradient terms to update the normal velocity.
-        #     The advection term is computed in velocity_advection.
+        #     Add the advection and pressure gradient terms to update the normal
+        #     velocity.
         # 
         # Inputs:
         #  - $\vn{\n}{\e}{\k}$ : vn
         #  - $\Dt$ : dtime
         #  - $\advvn{\n}{\e}{\k}$ : ddt_vn_apc_pc[self.ntl1]
-        #  - $\vpotemp{\n}{}{}$ : z_theta_v_e
-        #  - $\pdxn{\exnerprime{\n}{}{}}$ : z_gradh_exner
+        #  - $\vpotemp{\n}{\e}{\k}$ : z_theta_v_e
+        #  - $\pdxn{\exnerprime{\n}{}{}}_{\e\,\k}$ : z_gradh_exner
         #  - $\cpd$ : CPD
         # 
         self._add_temporal_tendencies_to_vn(
