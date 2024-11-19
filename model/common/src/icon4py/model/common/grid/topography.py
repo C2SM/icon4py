@@ -10,7 +10,7 @@ import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.math import operators as math_oper
+from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
 from icon4py.model.common.settings import xp
 
 
@@ -64,7 +64,7 @@ def compute_smooth_topo(
     nabla2_topo = gtx.as_field((dims.CellDim,), nabla2_topo_np)
 
     for _ in range(num_iterations):
-        math_oper.compute_nabla2_on_cell.with_backend(backend)(
+        compute_nabla2_on_cell.with_backend(backend)(
             psi_c=topography_smoothed,
             geofac_n2s=geofac_n2s,
             nabla2_psi_c=nabla2_topo,

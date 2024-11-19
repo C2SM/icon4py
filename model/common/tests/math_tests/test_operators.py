@@ -9,7 +9,8 @@
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.math import operators as math_oper
+from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
+from icon4py.model.common.math.stencils.compute_nabla2_on_cell_k import compute_nabla2_on_cell_k
 from icon4py.model.common.test_utils import helpers as test_helpers, reference_funcs
 from icon4py.model.common.test_utils.helpers import constant_field, zero_field
 
@@ -30,7 +31,7 @@ def test_nabla2_on_cell(
         dims.CellDim,
     )
 
-    math_oper.compute_nabla2_on_cell.with_backend(backend)(
+    compute_nabla2_on_cell.with_backend(backend)(
         psi_c=psi_c,
         geofac_n2s=geofac_n2s,
         nabla2_psi_c=nabla2_psi_c,
@@ -57,7 +58,7 @@ def test_nabla2_on_cell_k(
     geofac_n2s = constant_field(grid, 2.0, dims.CellDim, dims.C2E2CODim)
     nabla2_psi_c = zero_field(grid, dims.CellDim, dims.KDim)
 
-    math_oper.compute_nabla2_on_cell_k.with_backend(backend)(
+    compute_nabla2_on_cell_k.with_backend(backend)(
         psi_c=psi_c,
         geofac_n2s=geofac_n2s,
         nabla2_psi_c=nabla2_psi_c,

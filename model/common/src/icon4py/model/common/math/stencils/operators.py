@@ -27,24 +27,6 @@ def _compute_nabla2_on_cell(
     return nabla2_psi_c
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_nabla2_on_cell(
-    psi_c: fa.CellField[ta.wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-    nabla2_psi_c: fa.CellField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-):
-    _compute_nabla2_on_cell(
-        psi_c,
-        geofac_n2s,
-        out=nabla2_psi_c,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-        },
-    )
-
-
 @gtx.field_operator
 def _compute_nabla2_on_cell_k(
     psi_c: fa.CellKField[ta.wpfloat],
@@ -59,22 +41,3 @@ def _compute_nabla2_on_cell_k(
     return nabla2_psi_c
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_nabla2_on_cell_k(
-    psi_c: fa.CellKField[ta.wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
-    nabla2_psi_c: fa.CellKField[ta.wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_nabla2_on_cell_k(
-        psi_c,
-        geofac_n2s,
-        out=nabla2_psi_c,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
