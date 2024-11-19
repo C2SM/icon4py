@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_13 import (
+from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import (
     fused_velocity_advection_stencil_8_to_13,
 )
 from icon4py.model.common import dimension as dims

@@ -8,31 +8,35 @@
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import where
 
-from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
+from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advection_of_w import (
     _add_interpolated_horizontal_advection_of_w,
 )
-from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
+from icon4py.model.atmosphere.dycore.stencils.compute_advective_vertical_wind_tendency import (
     _compute_advective_vertical_wind_tendency,
 )
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
+from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
-from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
+from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
+    _copy_cell_kdim_field_to_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     _init_cell_kdim_field_with_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
-from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
+    _interpolate_to_cell_center,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa

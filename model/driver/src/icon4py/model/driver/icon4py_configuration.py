@@ -11,7 +11,7 @@ import datetime
 import logging
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.driver import initialization_utils as driver_init
 
