@@ -151,8 +151,10 @@ def test_nonhydro_predictor_step(
         backend=backend,
     )
     nlev = icon_grid.num_levels
+    at_first_substep = (jstep_init == 0)
 
     prognostic_state_swp = utils.create_prognostic_states(sp)
+    _ = solve_nonhydro.update_time_levels(diagnostic_state_nh, at_first_substep=at_first_substep)
 
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -161,8 +163,9 @@ def test_nonhydro_predictor_step(
         dtime=dtime,
         l_recompute=recompute,
         l_init=linit,
-        at_first_substep=(jstep_init == 0),
+        at_first_substep=at_first_substep,
     )
+
     cell_domain = h_grid.domain(dims.CellDim)
     edge_domain = h_grid.domain(dims.EdgeDim)
 
@@ -871,8 +874,9 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     for i_substep in range(ndyn_substeps):
-        is_first_substep = i_substep == 0
-        is_last_substep = i_substep == (ndyn_substeps - 1)
+        at_first_substep = i_substep == 0
+        at_last_substep = i_substep == (ndyn_substeps - 1)
+
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state_swp=prognostic_state_swp,
@@ -883,13 +887,14 @@ def test_run_solve_nonhydro_multi_step(
             l_init=linit,
             lclean_mflx=clean_mflx,
             lprep_adv=lprep_adv,
-            at_first_substep=is_first_substep,
-            at_last_substep=is_last_substep,
+            at_first_substep=at_first_substep,
+            at_last_substep=at_last_substep,
         )
+
         linit = False
         recompute = False
         clean_mflx = False
-        if not is_last_substep:
+        if not at_last_substep:
             prognostic_state_swp.swap()
 
     cell_start_lb_plus2 = icon_grid.start_index(
