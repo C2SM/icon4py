@@ -78,6 +78,14 @@ class Triangle:
             self.ax.plot(self.B[0], self.B[1], 'o', color=COLORS[coloridx], markersize=vertex_size)
         elif vertex == 'C':
             self.ax.plot(self.C[0], self.C[1], 'o', color=COLORS[coloridx], markersize=vertex_size)
+    
+    def color_vertices(self, coloridx=0):
+        """
+        Colors the vertices of the triangle.
+        """
+        self.color_vertex('A', coloridx)
+        self.color_vertex('B', coloridx)
+        self.color_vertex('C', coloridx)
 
     def color_cell(self, coloridx=0):
         """
