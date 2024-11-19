@@ -39,5 +39,3 @@ def _compute_nabla2_on_cell_k(
     nabla2_psi_c = neighbor_sum(psi_c(C2E2CO) * geofac_n2s, axis=C2E2CODim)
 
     return nabla2_psi_c
-
-
