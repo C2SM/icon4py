@@ -792,13 +792,16 @@ class SolveNonhydro:
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
     def update_time_levels(
-        self, diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro
+        self, diagnostic_state_nh: solve_nh_states.DiagnosticStateNonHydro,
+        at_first_substep: bool
     ) -> Literal[0, 1]:
         """Set time levels of ddt_adv fields for call to velocity_tendencies."""
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
             # Use one of the buffers of the pairs for the predictor and the other one for the corrector
-            diagnostic_state_nh.ddt_w_adv_pc.first = diagnostic_state_nh.ddt_w_adv_pc.second
-            diagnostic_state_nh.ddt_vn_apc_pc.first = diagnostic_state_nh.ddt_vn_apc_pc.second
+            if not at_first_substep:
+                # Swap buffers from the previous substep so ``.first`` contains the corrector values
+                diagnostic_state_nh.ddt_w_adv_pc.swap()
+                diagnostic_state_nh.ddt_vn_apc_pc.swap()
             return 1
         else:
             # Use only the first buffer of the pairs for both predictor and corrector
@@ -838,6 +841,8 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        corrector_tl = self.update_time_levels(diagnostic_state_nh, at_first_substep)
+        
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state_swp=prognostic_state_swp,
@@ -847,8 +852,6 @@ class SolveNonhydro:
             l_init=l_init,
             at_first_substep=at_first_substep,
         )
-
-        corrector_tl = self.update_time_levels(diagnostic_state_nh)
 
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,

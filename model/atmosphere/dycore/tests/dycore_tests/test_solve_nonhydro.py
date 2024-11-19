@@ -556,8 +556,11 @@ def test_nonhydro_corrector_step(
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
+    at_first_substep = (jstep_init == 0)
+    at_last_substep=jstep_init == (ndyn_substeps - 1)
 
     prognostic_state_swp = utils.create_prognostic_states(sp)
+    corrector_tl = solve_nonhydro.update_time_levels(diagnostic_state_nh, at_first_substep=at_first_substep)
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -568,8 +571,10 @@ def test_nonhydro_corrector_step(
         dtime=dtime,
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
-        at_last_substep=jstep_init == (ndyn_substeps - 1),
+        at_last_substep=at_last_substep,
+        time_level=corrector_tl,
     )
+
     if icon_grid.limited_area:
         assert helpers.dallclose(solve_nonhydro._bdy_divdamp.asnumpy(), sp.bdy_divdamp().asnumpy())
 

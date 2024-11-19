@@ -245,8 +245,6 @@ class TimeLoop:
 
             if not self._is_last_substep(dyn_substep):
                 prognostic_state_swp.swap_buffers()
-                solve_nonhydro_diagnostic_state.ddt_vn_apc_pc.swap()
-                solve_nonhydro_diagnostic_state.ddt_w_adv_pc.swap()
 
             self._is_first_step_in_simulation = False
 
