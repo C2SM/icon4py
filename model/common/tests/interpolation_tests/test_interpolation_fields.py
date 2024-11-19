@@ -20,7 +20,6 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_e_bln_c_s,
     compute_e_flx_avg,
     compute_force_mass_conservation_to_c_bln_avg,
-    compute_geofac_div,
     compute_geofac_grdiv,
     compute_geofac_grg,
     compute_geofac_n2s,
@@ -67,9 +66,9 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
     primal_edge_length = grid_savepoint.primal_edge_length()
     edge_orientation = grid_savepoint.edge_orientation()
     area = grid_savepoint.cell_areas()
-    geofac_div_ref = interpolation_savepoint.geofac_div()
+    geofac_div_ref = interpolation_savepoint._compute_geofac_div()
     geofac_div = test_helpers.zero_field(mesh, dims.CellDim, dims.C2EDim)
-    compute_geofac_div.with_backend(backend)(
+    geofac_div.with_backend(backend)(
         primal_edge_length,
         edge_orientation,
         area,
@@ -109,7 +108,7 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.datatest
 def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
     dual_edge_length = grid_savepoint.dual_edge_length()
-    geofac_div = interpolation_savepoint.geofac_div()
+    geofac_div = interpolation_savepoint._compute_geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
     c2e = icon_grid.connectivities[dims.C2EDim]
     e2c = icon_grid.connectivities[dims.E2CDim]
@@ -130,7 +129,7 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
 def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
     primal_normal_cell_x = grid_savepoint.primal_normal_cell_x().asnumpy()
     primal_normal_cell_y = grid_savepoint.primal_normal_cell_y().asnumpy()
-    geofac_div = interpolation_savepoint.geofac_div()
+    geofac_div = interpolation_savepoint._compute_geofac_div()
     c_lin_e = interpolation_savepoint.c_lin_e()
     geofac_grg_ref = interpolation_savepoint.geofac_grg()
     owner_mask = grid_savepoint.c_owner_mask()
@@ -165,7 +164,7 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
 
 @pytest.mark.datatest
 def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid):
-    geofac_div = interpolation_savepoint.geofac_div()
+    geofac_div = interpolation_savepoint._compute_geofac_div()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
     owner_mask = grid_savepoint.c_owner_mask()
@@ -221,7 +220,7 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
 def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg().asnumpy()
-    geofac_div = interpolation_savepoint.geofac_div().asnumpy()
+    geofac_div = interpolation_savepoint._compute_geofac_div().asnumpy()
     owner_mask = grid_savepoint.e_owner_mask().asnumpy()
     primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().asnumpy()
     primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().asnumpy()

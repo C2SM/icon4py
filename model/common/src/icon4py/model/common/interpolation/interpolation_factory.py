@@ -1,4 +1,12 @@
 
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
@@ -27,9 +35,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
 
 
     def _register_computed_fields(self):
-        geofac_div = factory.ProgramFieldProvider(
-            func=interpolation_fields.compute_geofac_div,
-            domain=
+        # TODO (@halungge) only works on on fieldview-embedded GT4Py backend, as it writes a
+        #      sparse field
+        geofac_div = factory.FieldOperatorProvider(
+            func=interpolation_fields.compute_geofac_div.with_backend(None),
+            
         )
 
 

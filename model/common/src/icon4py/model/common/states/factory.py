@@ -212,6 +212,97 @@ class PrecomputedFieldProvider(FieldProvider):
     def func(self) -> Callable:
         return lambda: self.fields
 
+class FieldOperatorProvider(FieldProvider):
+    """ Provider that calls a GT4Py Fieldoperator.
+
+    # TODO (@halungge) for now to be use only on FieldView Embedded GT4Py backend.
+    - restrictions:
+         - (if only called on FieldView-Embedded, this is not a necessary restriction)
+            calls field operators without domain args, so it can only be used for full field computations
+    - plus:
+        - can write sparse/local fields
+    """
+
+    def __init__(
+            self,
+            func: gtx_decorator.FieldOperator,
+            domain: dict[gtx.Dimension, tuple[DomainType, DomainType]], # TODO @halungge only keep dimension?
+            fields: dict[str, str], # keyword arg to (field_operator, field_name)
+            deps: dict[str, str], # keyword arg to (field_operator, field_name) need: src
+            params: Optional[dict[str, state_utils.ScalarType]] = None, # keyword arg to (field_operator, field_name)
+    ):
+        self._func = func
+        self._compute_domain = domain
+        self._dependencies = deps
+        self._output = fields
+        self._params = params if params is not None else {}
+        self._fields: dict[str, Optional[gtx.Field | state_utils.ScalarType]] = {
+            name: None for name in fields.values()
+        }
+
+    @property
+    def dependencies(self) -> Sequence[str]:
+        return list(self._dependencies.values())
+
+    @property
+    def fields(self) -> Mapping[str, state_utils.FieldType]:
+        return self._fields
+
+    @property
+    def func(self) -> Callable:
+        return self._func
+        
+    def __call__(
+        self,
+        field_name: str,
+        field_src: Optional["FieldSource"],
+        backend: Optional[gtx_backend.Backend],
+        grid: GridProvider,
+    ) -> state_utils.FieldType:
+        if any([f is None for f in self.fields.values()]):
+            self._compute(field_src, backend, grid)
+        return self.fields[field_name]
+
+
+    def _compute(self, factory, grid_provider):
+        #allocate output buffer
+        compute_backend = self._func.backend
+        try:
+            metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
+            dtype = metadata["dtype"]
+        except (ValueError, KeyError):
+            dtype = ta.wpfloat
+        self._fields = self._allocate(compute_backend, grid_provider, dtype=dtype)
+        # call field operator
+        # construct dependencies
+
+        self._func()
+        # transfer to target backend
+
+
+    # TODO (@halunnge) copied from ProgramFieldProvider
+    def _allocate(
+        self,
+        backend: gtx_backend.Backend,
+        grid: GridProvider,
+        dtype: state_utils.ScalarType = ta.wpfloat,
+    ) -> dict[str, state_utils.FieldType]:
+        def _map_size(dim: gtx.Dimension, grid: GridProvider) -> int:
+            if dim.kind == gtx.DimensionKind.VERTICAL:
+                size = grid.vertical_grid.num_levels
+                return  size + 1 if dims == dims.KHalfDim else size
+            return grid.grid.size[dim]
+
+        def _map_dim(dim: gtx.Dimension) -> gtx.Dimension:
+            if dim == dims.KHalfDim:
+                return dims.KDim
+            return dim
+
+        allocate = gtx.constructors.zeros.partial(allocator=backend)
+        field_domain = {
+            _map_dim(dim): (0, _map_size(dim, grid)) for dim in self._compute_domain.keys()
+        }
+        return {k: allocate(field_domain, dtype=dtype) for k in self._fields.keys()}
 
 class ProgramFieldProvider(FieldProvider):
     """
@@ -227,7 +318,7 @@ class ProgramFieldProvider(FieldProvider):
             the out arguments used in the program and the value the name the field is registered
             under and declared in the metadata.
         deps: dict[str, str], input fields used for computing this stencil:
-            the key is the variable name used in the program and the value the name
+            the key is the variable name used in the `gtx.program` and the value the name
             of the field it depends on.
         params: scalar parameters used in the program
     """
@@ -255,7 +346,7 @@ class ProgramFieldProvider(FieldProvider):
     def _allocate(
         self,
         backend: gtx_backend.Backend,
-        grid: base_grid.BaseGrid,
+        grid: base_grid.BaseGrid, # TODO @halungge: change to vertical grid
         dtype: state_utils.ScalarType = ta.wpfloat,
     ) -> dict[str, state_utils.FieldType]:
         def _map_size(dim: gtx.Dimension, grid: base_grid.BaseGrid) -> int:

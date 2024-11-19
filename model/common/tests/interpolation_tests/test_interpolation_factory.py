@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import pytest
 
 import icon4py.model.common.states.factory as factory
@@ -12,6 +20,7 @@ from .. import utils
 
 C2E_SIZE = 3
 
+
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -22,15 +31,16 @@ C2E_SIZE = 3
 def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, decomposition_info):
     geometry = utils.get_grid_geometry(backend, grid_file)
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
-        grid = geometry.grid,
+        grid=geometry.grid,
         decomposition_info=decomposition_info,
         geometry=geometry,
         backend=backend,
-        metadata= attrs.attrs
+        metadata=attrs.attrs,
     )
     with pytest.raises(ValueError) as error:
         interpolation_source.get("foo", factory.RetrievalType.METADATA)
         assert "unknown field" in error.value
+
 
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -44,14 +54,15 @@ def test_get_c_lin_e(grid_file, experiment, backend, decomposition_info):
     geometry = utils.get_grid_geometry(backend, grid_file)
     grid = geometry.grid
     factory = interpolation_factory.InterpolationFieldsFactory(
-        grid = grid,
+        grid=grid,
         decomposition_info=decomposition_info,
         geometry=geometry,
         backend=backend,
-        metadata= attrs.attrs
+        metadata=attrs.attrs,
     )
     field = factory.get(attrs.C_LIN_E)
     assert field.asnumpy().shape == (grid.num_edges, 2)
+
 
 @pytest.mark.parametrize(
     "grid_file, experiment",
@@ -65,11 +76,11 @@ def test_get_geofac_div(grid_file, experiment, backend, decomposition_info):
     geometry = utils.get_grid_geometry(backend, grid_file)
     grid = geometry.grid
     factory = interpolation_factory.InterpolationFieldsFactory(
-        grid = grid,
+        grid=grid,
         decomposition_info=decomposition_info,
         geometry=geometry,
         backend=backend,
-        metadata= attrs.attrs
+        metadata=attrs.attrs,
     )
     field = factory.get(attrs.GEOFAC_DIV)
     assert field.asnumpy().shape == (grid.num_cells, C2E_SIZE)

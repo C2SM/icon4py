@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
@@ -22,13 +30,14 @@ def test_call_field_operator(backend):
     hstart = 0
     hend = grid.num_cells
     coefficient = test_utils.constant_field(grid, 0.8, dims.CellDim, dims.C2EDim, dtype=float)
-    in_field = test_utils.constant_field(grid, 1.0, dims.EdgeDim,  dtype=float)
-    out_field = test_utils.zero_field(grid, dims.CellDim,  dtype=float)
+    in_field = test_utils.constant_field(grid, 1.0, dims.EdgeDim, dtype=float)
+    out_field = test_utils.zero_field(grid, dims.CellDim, dtype=float)
     expected = test_utils.constant_field(grid, 2.4, dims.CellDim, dtype=float)
-    field_op.with_backend(backend)(in_field=in_field, coeff=coefficient, out=out_field,
-                                   offset_provider = {"C2E": grid.get_offset_provider("C2E")},
-                                   domain = {dims.CellDim:(hstart, hend)}
-                                   )
+    field_op.with_backend(backend)(
+        in_field=in_field,
+        coeff=coefficient,
+        out=out_field,
+        offset_provider={"C2E": grid.get_offset_provider("C2E")},
+        domain={dims.CellDim: (hstart, hend)},
+    )
     test_utils.dallclose(out_field.asnumpy(), expected.asnumpy())
-
-

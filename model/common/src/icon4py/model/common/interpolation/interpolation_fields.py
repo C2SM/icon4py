@@ -42,7 +42,7 @@ def compute_c_lin_e(
 
 
 @gtx.field_operator
-def compute_geofac_div(
+def _compute_geofac_div(
     primal_edge_length: fa.EdgeField[ta.wpfloat],
     edge_orientation: gtx.Field[[dims.CellDim, dims.C2EDim], ta.wpfloat],
     area: fa.CellField[ta.wpfloat],
@@ -60,6 +60,13 @@ def compute_geofac_div(
     geofac_div = primal_edge_length(C2E) * edge_orientation / area
     return geofac_div
 
+@gtx.program
+def compute_geofac_div(primal_edge_length: fa.EdgeField[ta.wpfloat],
+                       edge_orientation: gtx.Field[[dims.CellDim, dims.C2EDim], ta.wpfloat],
+                       area: fa.CellField[ta.wpfloat],
+                       geofac_div: gtx.Field[[dims.CellDim, dims.C2EDim], ta.wpfloat]
+                       ):
+    _compute_geofac_div(primal_edge_length, edge_orientation, area, out=geofac_div)
 
 @gtx.field_operator
 def compute_geofac_rot(
