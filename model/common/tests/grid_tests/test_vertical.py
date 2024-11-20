@@ -8,11 +8,11 @@
 import math
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, grid_utils, helpers
 
 
@@ -24,7 +24,7 @@ NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS
     [(60000, 34000, 612), (12000, 10000, 100), (109050, 45000, 123)],
 )
 def test_damping_layer_calculation(max_h, damping_height, delta, flat_height):
-    vct_a = xp.arange(0, max_h, delta)
+    vct_a = np.arange(0, max_h, delta)
     vct_a_field = gtx.as_field((dims.KDim,), data=vct_a[::-1])
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=1000,
@@ -131,7 +131,7 @@ def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_leve
 def test_interface_physical_height(grid_savepoint):
     vertical_grid = configure_vertical_grid(grid_savepoint)
     assert helpers.dallclose(
-        grid_savepoint.vct_a().ndarray, vertical_grid.interface_physical_height.ndarray
+        grid_savepoint.vct_a().asnumpy(), vertical_grid.interface_physical_height.asnumpy()
     )
 
 
@@ -291,8 +291,8 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     )
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
 
-    assert helpers.dallclose(vct_a.ndarray, grid_savepoint.vct_a().ndarray)
-    assert helpers.dallclose(vct_b.ndarray, grid_savepoint.vct_b().ndarray)
+    assert helpers.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
+    assert helpers.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
 
 
 @pytest.mark.datatest
