@@ -10,18 +10,22 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import maximum, where
 
-from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
+from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
-from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
+from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
+    _copy_cell_kdim_field_to_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     _init_cell_kdim_field_with_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
-from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
+    _interpolate_to_cell_center,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -29,6 +33,7 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO (magdalena) this stencils has no StencilTest,  (numpy) reference
 @field_operator
 def _fused_velocity_advection_stencil_8_to_14(
     z_kin_hor_e: fa.EdgeKField[vpfloat],

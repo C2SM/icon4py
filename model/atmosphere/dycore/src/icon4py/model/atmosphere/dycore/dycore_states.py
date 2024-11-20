@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
+from typing import Optional
 
 import gt4py.next as gtx
 
@@ -39,9 +40,9 @@ class DiagnosticStateNonHydro:
     ddt_w_adv_ntl2: fa.CellKField[float]
 
     # Analysis increments
-    rho_incr: fa.EdgeKField[float]  # moist density increment [kg/m^3]
-    vn_incr: fa.EdgeKField[float]  # normal velocity increment [m/s]
-    exner_incr: fa.EdgeKField[float]  # exner increment [- ]
+    rho_incr: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]
+    vn_incr: Optional[fa.EdgeKField[float]]  # normal velocity increment [m/s]
+    exner_incr: Optional[fa.EdgeKField[float]]  # exner increment [- ]
     exner_dyn_incr: fa.CellKField[float]  # exner pressure dynamics increment
 
     @property

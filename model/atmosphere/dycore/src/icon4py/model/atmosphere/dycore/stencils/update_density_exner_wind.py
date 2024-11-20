@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.model.atmosphere.dycore.update_wind import _update_wind
+from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
