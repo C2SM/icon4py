@@ -306,12 +306,12 @@ def test_run_timeloop_single_step(
         exner=sp.exner_new(),
     )
 
-    prognostic_state_swp = common_utils.NextStepPair(prognostic_state, prognostic_state_new)
+    prognostic_states = common_utils.NextStepPair(prognostic_state, prognostic_state_new)
 
     timeloop.time_integration(
         diffusion_diagnostic_state,
         nonhydro_diagnostic_state,
-        prognostic_state_swp,
+        prognostic_states,
         prep_adv,
         sp.divdamp_fac_o2(),
         do_prep_adv,
@@ -324,29 +324,29 @@ def test_run_timeloop_single_step(
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
     assert helpers.dallclose(
-        prognostic_state_swp.current.vn.asnumpy(),
+        prognostic_states.current.vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_swp.current.w.asnumpy(),
+        prognostic_states.current.w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_swp.current.exner.asnumpy(),
+        prognostic_states.current.exner.asnumpy(),
         exner_sp.asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_swp.current.theta_v.asnumpy(),
+        prognostic_states.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=4e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_swp.current.rho.asnumpy(),
+        prognostic_states.current.rho.asnumpy(),
         rho_sp.asnumpy(),
     )

@@ -405,7 +405,7 @@ def test_dycore_wrapper_granule_inputs(
         rho=sp.rho_new(),
         exner=sp.exner_new(),
     )
-    expected_prognostic_state_swp = common_utils.NextStepPair(
+    expected_prognostic_states = common_utils.NextStepPair(
         prognostic_state_nnow, prognostic_state_nnew
     )
 
@@ -674,7 +674,7 @@ def test_dycore_wrapper_granule_inputs(
         assert result, f"Diagnostic State comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
-            captured_kwargs["prognostic_state_swp"], expected_prognostic_state_swp
+            captured_kwargs["prognostic_states"], expected_prognostic_states
         )
         assert result, f"Prognostic State comparison failed: {error_message}"
 

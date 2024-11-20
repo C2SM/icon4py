@@ -432,7 +432,7 @@ def solve_nh_run(
         rho=rho_new,
         exner=exner_new,
     )
-    prognostic_state_swp = common_utils.NextStepPair(prognostic_state_nnow, prognostic_state_nnew)
+    prognostic_states = common_utils.NextStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
     # adjust for Fortran indexes
     nnow = nnow - 1
@@ -441,7 +441,7 @@ def solve_nh_run(
 
     dycore_wrapper_state["granule"].time_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state_swp=prognostic_state_swp,
+        prognostic_states=prognostic_states,
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
