@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_39_40 import (
+from icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40 import (
     fused_solve_nonhydro_stencil_39_40,
 )
 from icon4py.model.common import dimension as dims

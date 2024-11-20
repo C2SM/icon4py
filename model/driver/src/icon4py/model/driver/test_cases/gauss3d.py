@@ -11,8 +11,8 @@ import pathlib
 import gt4py.next as gtx
 from gt4py.next import backend as gt4py_backend
 
-from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
@@ -41,9 +41,9 @@ def model_initialization_gauss3d(
     backend: gt4py_backend.Backend,
     rank=0,
 ) -> tuple[
-    diffus_states.DiffusionDiagnosticState,
-    solve_nh_states.DiagnosticStateNonHydro,
-    solve_nh_states.PrepAdvection,
+    diffusion_states.DiffusionDiagnosticState,
+    dycore_states.DiagnosticStateNonHydro,
+    dycore_states.PrepAdvection,
     float,
     diagnostics.DiagnosticState,
     prognostics.PrognosticState,
