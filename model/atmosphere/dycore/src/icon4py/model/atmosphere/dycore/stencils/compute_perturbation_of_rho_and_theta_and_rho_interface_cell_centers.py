@@ -10,7 +10,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype
 
-from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa

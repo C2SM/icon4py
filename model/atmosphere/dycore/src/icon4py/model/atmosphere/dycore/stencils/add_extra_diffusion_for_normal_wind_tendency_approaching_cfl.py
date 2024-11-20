@@ -16,7 +16,7 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
-from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
+from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
     _init_two_edge_kdim_fields_with_zero_wp,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
