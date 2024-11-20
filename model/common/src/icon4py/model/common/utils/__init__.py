@@ -15,17 +15,17 @@ from ._common import (
     Pair,
     PreviousStepPair,
     chainable,
+    named_property,
 )
 
 
 __all__ = [
     # Classes
     "DoubleBuffering",
-    "DoubleBufferingDataClassTrait",
     "NextStepPair",
     "Pair",
     "PreviousStepPair",
-    "namedproperty",
+    "named_property",
     # Functions
     "chainable",
     # Modules

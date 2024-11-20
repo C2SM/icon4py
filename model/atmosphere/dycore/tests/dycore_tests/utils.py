@@ -6,8 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -16,9 +15,9 @@ from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
 
 def construct_interpolation_state(
     savepoint: sb.InterpolationSavepoint,
-) -> solve_nh_states.InterpolationState:
+) -> dycore_states.InterpolationState:
     grg = savepoint.geofac_grg()
-    return solve_nh_states.InterpolationState(
+    return dycore_states.InterpolationState(
         c_lin_e=savepoint.c_lin_e(),
         c_intp=savepoint.c_intp(),
         e_flx_avg=savepoint.e_flx_avg(),
@@ -40,8 +39,8 @@ def construct_interpolation_state(
 
 def construct_metric_state(
     savepoint: sb.MetricSavepoint, num_k_lev
-) -> solve_nh_states.MetricStateNonHydro:
-    return solve_nh_states.MetricStateNonHydro(
+) -> dycore_states.MetricStateNonHydro:
+    return dycore_states.MetricStateNonHydro(
         bdy_halo_c=savepoint.bdy_halo_c(),
         mask_prog_halo_c=savepoint.mask_prog_halo_c(),
         rayleigh_w=savepoint.rayleigh_w(),
@@ -118,7 +117,7 @@ def create_vertical_params(
 
 
 def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
-    return solve_nh_states.DiagnosticStateNonHydro(
+    return dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
         rho_ic=init_savepoint.rho_ic(),

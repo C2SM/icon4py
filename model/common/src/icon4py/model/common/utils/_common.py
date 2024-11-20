@@ -96,7 +96,7 @@ class named_property(property, Generic[C, T]):
 
 class Pair(Generic[T]):
     """
-    A generic class representing a pair of values.
+    Generic class representing a pair of values.
 
     The name of the pair attributes can be customized by defining new
     descriptors in the subclasses.
@@ -148,7 +148,7 @@ class Pair(Generic[T]):
             if (attr_id := getattr(value, "_pair_accessor_id_", None)) is not None:
                 assert isinstance(value, named_property)
                 if key != value.name:
-                    # When the original descriptor from the `Pair` class has been
+                    # If one of the original descriptors from the `Pair` class has been
                     # directly assigned to another class member with a different name
                     # (likely in a subclass) instead of creating a proper copy, it is
                     # copied and initialized here with the right name.
@@ -217,6 +217,7 @@ class Pair(Generic[T]):
                 raise IndexError(f"Pair index out of range: {index}")
 
     def __setitem__(self, index: Literal[0, 1], value: T) -> None:
+        # Go through the attribute descriptors to respect the read-only indication
         match index:
             case 0:
                 attr_name = self.__first_attr_name
@@ -265,7 +266,7 @@ T = TypeVar("T")
 
 def chainable(method_fn: Callable[Concatenate[T, P], None]) -> Callable[Concatenate[T, P], T]:
     """
-    Make an instance method return the actual instance so it can used in a chain of calls.
+    Make an instance method return the actual instance so it can be used in a chain of calls.
 
     Typically used for simple fluent interfaces.
 

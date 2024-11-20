@@ -9,11 +9,10 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as nh
-from icon4py.model.atmosphere.dycore.state_utils import states
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid import geometry, vertical as v_grid
+from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.test_utils import helpers, parallel_helpers
 
 from .. import utils
@@ -74,7 +73,7 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn=ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = nh.NonHydrostaticParams(config)
@@ -95,7 +94,7 @@ def test_run_solve_nonhydro_single_step(
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
-    prep_adv = states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
@@ -107,7 +106,7 @@ def test_run_solve_nonhydro_single_step(
     recompute = sp_v.get_metadata("recompute").get("recompute")
     linit = sp_v.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = states.DiagnosticStateNonHydro(
+    diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -132,8 +131,8 @@ def test_run_solve_nonhydro_single_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     prognostic_state_ls = utils.create_prognostic_states(sp)
     prognostic_state_nnew = prognostic_state_ls[1]

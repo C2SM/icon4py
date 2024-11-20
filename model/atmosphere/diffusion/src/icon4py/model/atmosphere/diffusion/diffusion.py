@@ -12,9 +12,10 @@ import functools
 import logging
 import math
 import sys
-from typing import Final, Optional
+from typing import Final
 
 import gt4py.next as gtx
+import icon4py.model.common.grid.states as grid_states
 from gt4py.next import int32
 
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -57,12 +58,11 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     vertical as v_grid,
     icon as icon_grid,
-    geometry,
 )
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.model.common.settings import xp
+
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from icon4py.model.common.orchestration import decorator as orchestration
@@ -361,8 +361,8 @@ class Diffusion:
         vertical_grid: v_grid.VerticalGrid,
         metric_state: diffusion_states.DiffusionMetricState,
         interpolation_state: diffusion_states.DiffusionInterpolationState,
-        edge_params: geometry.EdgeParams,
-        cell_params: geometry.CellParams,
+        edge_params: grid_states.EdgeParams,
+        cell_params: grid_states.CellParams,
         backend: backend.Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
@@ -922,19 +922,12 @@ class Diffusion:
         members_to_disregard = [
             "_backend",
             "_exchange",
-            "mo_intp_rbf_rbf_vec_interpol_vertex",
-            "calculate_nabla2_and_smag_coefficients_for_vn",
-            "calculate_diagnostic_quantities_for_turbulence",
-            "apply_diffusion_to_vn",
-            "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence",
-            "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools",
-            "calculate_nabla2_for_theta",
-            "truly_horizontal_diffusion_nabla_of_theta_over_steep_points",
-            "update_theta_and_exner",
-            "copy_field",
-            "scale_k",
-            "setup_fields_for_initial_step",
-            "init_diffusion_local_fields_for_regular_timestep",
+            "_grid",
+            *[
+                name
+                for name in self.__dict__.keys()
+                if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
+            ],
         ]
         return orchestration.generate_orchestration_uid(
             self, members_to_disregard=members_to_disregard

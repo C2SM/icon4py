@@ -11,10 +11,10 @@ import pathlib
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import constants as phy_const, dimension as dims, utils as common_utils
-from icon4py.model.common.grid import geometry, horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
     edge_2_cell_vector_rbf_interpolation,
@@ -34,14 +34,14 @@ log = logging.getLogger(__name__)
 
 def model_initialization_jabw(
     grid: icon_grid.IconGrid,
-    cell_param: geometry.CellParams,
-    edge_param: geometry.EdgeParams,
+    cell_param: grid_states.CellParams,
+    edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     rank=0,
 ) -> tuple[
-    diffus_states.DiffusionDiagnosticState,
-    solve_nh_states.DiagnosticStateNonHydro,
-    solve_nh_states.PrepAdvection,
+    diffusion_states.DiffusionDiagnosticState,
+    dycore_states.DiagnosticStateNonHydro,
+    dycore_states.PrepAdvection,
     float,
     diagnostics.DiagnosticState,
     prognostics.PrognosticState,
@@ -304,7 +304,7 @@ def model_initialization_jabw(
         exner=exner_next,
     )
 
-    diffusion_diagnostic_state = diffus_states.DiffusionDiagnosticState(
+    diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=field_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
         ),
@@ -312,7 +312,7 @@ def model_initialization_jabw(
         dwdx=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
         dwdy=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
     )
-    solve_nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
+    solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=field_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
         ),
@@ -346,7 +346,7 @@ def model_initialization_jabw(
         exner_dyn_incr=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
     )
 
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         mass_flx_me=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         mass_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),

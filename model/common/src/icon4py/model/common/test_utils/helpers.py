@@ -46,6 +46,10 @@ def is_embedded(backend) -> bool:
     return backend is None
 
 
+def is_gpu(backend) -> bool:
+    return "gpu" in backend.name if backend else False
+
+
 def is_roundtrip(backend) -> bool:
     return backend.name == "roundtrip" if backend else False
 
@@ -176,7 +180,7 @@ def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
         **{
-            k: v.ndarray if isinstance(v, gt_common.Field) else np.array(v)
+            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
             for k, v in input_data.items()
         },
     )
@@ -195,7 +199,7 @@ def _test_validation(self, grid, backend, input_data):
         )
 
         assert np.allclose(
-            input_data[name].ndarray[gtslice],
+            input_data[name].asnumpy()[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
         ), f"Validation failed for '{name}'"

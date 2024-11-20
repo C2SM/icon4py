@@ -9,11 +9,11 @@
 import pytest
 
 import icon4py.model.common.utils as common_utils
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import geometry, vertical as v_grid
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
@@ -144,8 +144,8 @@ def test_run_timeloop_single_step(
             ndyn_substeps=ndyn_substeps,
         )
 
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
 
     diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
         interpolation_savepoint
@@ -185,7 +185,7 @@ def test_run_timeloop_single_step(
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
 
     grg = interpolation_savepoint.geofac_grg()
-    nonhydro_interpolation_state = solve_nh_states.InterpolationState(
+    nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),
         e_flx_avg=interpolation_savepoint.e_flx_avg(),
@@ -203,7 +203,7 @@ def test_run_timeloop_single_step(
         geofac_grg_y=grg[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    nonhydro_metric_state = solve_nh_states.MetricStateNonHydro(
+    nonhydro_metric_state = dycore_states.MetricStateNonHydro(
         bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
@@ -256,14 +256,14 @@ def test_run_timeloop_single_step(
         timeloop_diffusion_savepoint_init,
     )
 
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
-    nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
+    nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),

@@ -20,6 +20,7 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -34,7 +35,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid import geometry, icon
+from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import backend, device, parallel_run
@@ -147,7 +148,7 @@ def diffusion_init(
         )
 
     # Edge geometry
-    edge_params = geometry.EdgeParams(
+    edge_params = grid_states.EdgeParams(
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
@@ -169,7 +170,7 @@ def diffusion_init(
     )
 
     # Cell geometry
-    cell_params = geometry.CellParams.from_global_num_cells(
+    cell_params = grid_states.CellParams.from_global_num_cells(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
