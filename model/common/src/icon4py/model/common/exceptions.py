@@ -10,6 +10,7 @@
 class InvalidComputationError(Exception):
     pass
 
+
 class InvalidConfigError(Exception):
     pass
 

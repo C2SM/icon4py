@@ -12,7 +12,7 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell_k import compute_nabla2_on_cell_k
-from icon4py.model.common.test_utils import helpers as test_helpers, reference_funcs
+from icon4py.model.common.test_utils import reference_funcs
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
 
 
@@ -27,9 +27,7 @@ class TestNabla2OnCell(StencilTest):
         geofac_n2s: np.array,
         **kwargs,
     ) -> dict:
-        nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(
-            grid, psi_c, geofac_n2s
-        )
+        nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(grid, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
     @pytest.fixture
@@ -45,6 +43,7 @@ class TestNabla2OnCell(StencilTest):
             horizontal_end=grid.num_cells,
         )
 
+
 class TestNabla2OnCellK(StencilTest):
     PROGRAM = compute_nabla2_on_cell_k
     OUTPUTS = ("nabla2_psi_c",)
@@ -56,9 +55,7 @@ class TestNabla2OnCellK(StencilTest):
         geofac_n2s: np.array,
         **kwargs,
     ) -> dict:
-        nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(
-            grid, psi_c, geofac_n2s
-        )
+        nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(grid, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
     @pytest.fixture
@@ -75,4 +72,3 @@ class TestNabla2OnCellK(StencilTest):
             vertical_start=0,
             vertical_end=grid.num_levels,
         )
-

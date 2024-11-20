@@ -330,7 +330,11 @@ def test_init_vert_coord(
         backend=backend,
     )
 
-    assert helpers.dallclose(vertical_coordinates_on_cell_khalf.asnumpy(), metrics_savepoint.z_ifc().asnumpy(), atol=1e-13)
+    assert helpers.dallclose(
+        vertical_coordinates_on_cell_khalf.asnumpy(),
+        metrics_savepoint.z_ifc().asnumpy(),
+        atol=1e-13,
+    )
 
 
 # def something_something_aquaplanet():

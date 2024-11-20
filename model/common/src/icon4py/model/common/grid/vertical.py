@@ -22,10 +22,9 @@ from icon4py.model.common import (
     field_type_aliases as fa,
     type_alias as ta,
 )
-from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.common.grid import icon as icon_grid, topography as topo
 from icon4py.model.common.settings import xp
 
-from icon4py.model.common.grid import topography as topo
 
 log = logging.getLogger(__name__)
 
@@ -611,6 +610,7 @@ def compute_SLEVE_coordinate_from_vcta_and_topography(
 
     return vertical_coordinate
 
+
 def check_and_correct_layer_thickness(
     vertical_coordinate: xp.ndarray,
     vct_a: xp.ndarray,
@@ -656,8 +656,12 @@ def check_and_correct_layer_thickness(
 
         # Ensure that the layer thickness is not too small, if so fix it and
         # save the layer index
-        cell_ids = xp.argwhere(vertical_coordinate[:, k + 1] + minimum_layer_thickness > vertical_coordinate[:, k])
-        vertical_coordinate[cell_ids, k] = vertical_coordinate[cell_ids, k + 1] + minimum_layer_thickness
+        cell_ids = xp.argwhere(
+            vertical_coordinate[:, k + 1] + minimum_layer_thickness > vertical_coordinate[:, k]
+        )
+        vertical_coordinate[cell_ids, k] = (
+            vertical_coordinate[cell_ids, k + 1] + minimum_layer_thickness
+        )
         ktop_thicklimit[cell_ids] = k
 
     # Smooth layer thickness ratios in the transition layer of columns where the
@@ -679,23 +683,28 @@ def check_and_correct_layer_thickness(
         ) / (stretching_factor * (1.0 + stretching_factor * (1.0 + stretching_factor)))
         vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]] = xp.maximum(
             vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]],
-            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1] + delta_z3 * stretching_factor,
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1]
+            + delta_z3 * stretching_factor,
         )
         vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 1] = xp.maximum(
             vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 1],
-            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]] + delta_z3 * stretching_factor**2,
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]]
+            + delta_z3 * stretching_factor**2,
         )
 
     # Check if ktop_thicklimit is sufficiently far away from the model top
     if not xp.all(ktop_thicklimit > 2):
         if vertical_config.num_levels > 6:
-            raise exceptions.InvalidConfigError(f"Model top is too low and num_levels, {vertical_config.num_levels}, > 6.")
+            raise exceptions.InvalidConfigError(
+                f"Model top is too low and num_levels, {vertical_config.num_levels}, > 6."
+            )
         else:
             log.warning(
                 f"Model top is too low. But num_levels, {vertical_config.num_levels}, <= 6. "
             )
 
     return vertical_coordinate
+
 
 def check_flatness_of_flat_level(
     vertical_coordinate: xp.ndarray,
@@ -708,6 +717,7 @@ def check_flatness_of_flat_level(
         == vct_a[vertical_geometry.nflatlev - 1]
     ):
         raise exceptions.InvalidComputationError("Level nflatlev is not flat")
+
 
 def compute_vertical_coordinate(
     vct_a: fa.KField[ta.wpfloat],
@@ -743,9 +753,18 @@ def compute_vertical_coordinate(
     vct_a = vct_a.ndarray
 
     vertical_coordinate = compute_SLEVE_coordinate_from_vcta_and_topography(
-        vct_a, topography, cell_areas, geofac_n2s, grid, vertical_config, vertical_geometry, backend,
+        vct_a,
+        topography,
+        cell_areas,
+        geofac_n2s,
+        grid,
+        vertical_config,
+        vertical_geometry,
+        backend,
     )
-    vertical_coordinate = check_and_correct_layer_thickness(vertical_coordinate, vct_a, vertical_config, grid)
+    vertical_coordinate = check_and_correct_layer_thickness(
+        vertical_coordinate, vct_a, vertical_config, grid
+    )
 
     check_flatness_of_flat_level(vertical_coordinate, vct_a, vertical_geometry)
 
