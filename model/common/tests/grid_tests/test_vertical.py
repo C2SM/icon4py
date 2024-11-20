@@ -11,7 +11,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, grid_utils, helpers
 
@@ -296,8 +296,8 @@ def test_vct_a_vct_b_calculation_from_icon_input(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT])
-def test_init_vert_coord(
+@pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
+def test_compute_vertical_coordinate(
     grid_savepoint,
     metrics_savepoint,
     external_parameters_savepoint,
@@ -317,7 +317,13 @@ def test_init_vert_coord(
         vct_a=vct_a,
         vct_b=vct_b,
     )
-    topography = external_parameters_savepoint.topo_c()
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        topography = external_parameters_savepoint.topo_c()
+    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
+        topography = gtx.zeros(domain={dims.CellDim: range(icon_grid.num_cells)}, dtype=ta.wpfloat)
+    else:
+        raise ValueError(f"Unsupported experiment: {experiment}")
+
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     vertical_coordinates_on_cell_khalf = v_grid.compute_vertical_coordinate(
@@ -335,8 +341,3 @@ def test_init_vert_coord(
         metrics_savepoint.z_ifc().asnumpy(),
         atol=1e-13,
     )
-
-
-# def something_something_aquaplanet():
-#     # it has z_ifc, and vct_a, not topography but that's zero
-#     break

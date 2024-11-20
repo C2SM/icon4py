@@ -1879,8 +1879,13 @@ class IconSerialDataProvider:
         return MetricSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_external_parameters_savepoint(self) -> ExternalParametersSavepoint:
-        savepoint = self.serializer.savepoint["external_parameters_savepoint"].as_savepoint()
-        return ExternalParametersSavepoint(savepoint, self.serializer, size=self.grid_size)
+        try:
+            savepoint = self.serializer.savepoint["external_parameters_savepoint"].as_savepoint()
+            return ExternalParametersSavepoint(savepoint, self.serializer, size=self.grid_size)
+        except serialbox.error.SerialboxError:
+            # some experiments do not (yet) have this savepoint (and that's
+            # fine, their tests should use zero or constant fields)
+            return None
 
     def from_least_squares_savepoint(self, size: dict) -> LeastSquaresSavepoint:
         savepoint = self.serializer.savepoint["least_squares_state"].jg[1].as_savepoint()
