@@ -10,7 +10,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype
 
-from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_wp import (

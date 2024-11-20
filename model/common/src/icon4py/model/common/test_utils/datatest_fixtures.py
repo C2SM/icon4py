@@ -9,8 +9,10 @@
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
+from icon4py.model.common.test_utils import pytest_config
 
 from . import data_handling as data, datatest_utils as dt_utils
+
 
 
 @pytest.fixture
@@ -100,13 +102,19 @@ def is_regional(experiment_name):
 
 
 @pytest.fixture
-def icon_grid(grid_savepoint):
+def icon_grid(request, grid_savepoint):
     """
     Load the icon grid from an ICON savepoint.
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    return grid_savepoint.construct_icon_grid(on_gpu=False)
+    on_gpu = False
+    if request.config.getoption("--backend"):
+        backend = request.config.getoption("--backend")
+        pytest_config.check_backend_validity(backend)
+        if backend in pytest_config.gpu_backends:
+            on_gpu = True
+    return grid_savepoint.construct_icon_grid(on_gpu=on_gpu)
 
 
 @pytest.fixture

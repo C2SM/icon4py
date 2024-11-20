@@ -8,8 +8,8 @@
 import gt4py.next as gtx
 from gt4py.next import backend as gt4py_backend
 
-from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
@@ -220,8 +220,8 @@ def compute_perturbed_exner(
 
 def initialize_diffusion_diagnostic_state(
     grid: icon_grid.IconGrid, backend: gt4py_backend.Backend
-) -> diffus_states.DiffusionDiagnosticState:
-    return diffus_states.DiffusionDiagnosticState(
+) -> diffusion_states.DiffusionDiagnosticState:
+    return diffusion_states.DiffusionDiagnosticState(
         hdef_ic=field_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
         ),
@@ -239,8 +239,8 @@ def initialize_diffusion_diagnostic_state(
 
 def initialize_solve_nonhydro_diagnostic_state(
     exner_pr: fa.CellKField[ta.wpfloat], grid: icon_grid.IconGrid, backend: gt4py_backend.Backend
-) -> solve_nh_states.DiagnosticStateNonHydro:
-    return solve_nh_states.DiagnosticStateNonHydro(
+) -> dycore_states.DiagnosticStateNonHydro:
+    return dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=field_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
         ),
@@ -299,8 +299,8 @@ def initialize_solve_nonhydro_diagnostic_state(
 
 def initialize_prep_advection(
     grid: icon_grid.IconGrid, backend: gt4py_backend.Backend
-) -> solve_nh_states.PrepAdvection:
-    return solve_nh_states.PrepAdvection(
+) -> dycore_states.PrepAdvection:
+    return dycore_states.PrepAdvection(
         vn_traj=field_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=grid, backend=backend
         ),

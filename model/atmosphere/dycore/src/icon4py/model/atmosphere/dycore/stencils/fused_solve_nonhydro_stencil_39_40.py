@@ -9,10 +9,10 @@ import gt4py.next as gtx
 from gt4py.next.ffront.decorator import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import where
 
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
 )
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w_for_lower_boundary import (
     _compute_contravariant_correction_of_w_for_lower_boundary,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
