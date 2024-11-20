@@ -15,7 +15,6 @@ from icon4py.model.common.test_utils import helpers as test_helpers, reference_f
 from icon4py.model.common.test_utils.helpers import constant_field, zero_field
 
 
-@pytest.mark.datatest
 def test_nabla2_on_cell(
     grid,
     backend,
@@ -49,7 +48,6 @@ def test_nabla2_on_cell(
     assert test_helpers.dallclose(nabla2_psi_c.asnumpy(), nabla2_psi_c_np)
 
 
-@pytest.mark.datatest
 def test_nabla2_on_cell_k(
     grid,
     backend,

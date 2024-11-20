@@ -301,11 +301,14 @@ def test_init_vert_coord(
     grid_savepoint,
     metrics_savepoint,
     external_parameters_savepoint,
-    experiment,
+    interpolation_savepoint,
     icon_grid,
+    experiment,
+    backend,
 ):
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(dims.KDim),
     )
@@ -315,15 +318,21 @@ def test_init_vert_coord(
         vct_b=vct_b,
     )
     topography = external_parameters_savepoint.topo_c()
-    topography_smoothed = external_parameters_savepoint.topo_smt_c()
+    geofac_n2s = interpolation_savepoint.geofac_n2s()
 
     z_ifc = v_grid.init_vert_coord(
         vct_a=vct_a,
         topography=topography,
-        topography_smoothed=topography_smoothed,
+        geofac_n2s=geofac_n2s,
         grid=icon_grid,
-        vertical_config=vertical_config,
         vertical_geometry=vertical_geometry,
+        cell_areas=cell_geometry.area,
+        backend=backend,
     )
 
-    assert helpers.dallclose(z_ifc.ndarray, metrics_savepoint.z_ifc().ndarray, atol=1e-13)
+    assert helpers.dallclose(z_ifc.asnumpy(), metrics_savepoint.z_ifc().asnumpy(), atol=1e-13)
+
+
+# def something_something_aquaplanet():
+#     # it has z_ifc, and vct_a, not topography but that's zero
+#     break

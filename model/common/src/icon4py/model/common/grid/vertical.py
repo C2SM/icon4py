@@ -25,6 +25,7 @@ from icon4py.model.common import (
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.settings import xp
 
+from icon4py.model.common.grid import topography as topo
 
 log = logging.getLogger(__name__)
 
@@ -545,15 +546,29 @@ def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField,
 def init_vert_coord(
     vct_a: fa.KField[ta.wpfloat],
     topography: fa.CellField[ta.wpfloat],
-    topography_smoothed: fa.CellField[ta.wpfloat],
+    cell_areas: fa.CellField[ta.wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     grid: icon_grid.IconGrid,
-    vertical_config: VerticalGridConfig,
     vertical_geometry: VerticalGrid,
-    nshift: int = 0,  # shift parameter used for vertical nesting
+    backend,
 ) -> fa.CellKField[ta.wpfloat]:
     """
     Computes the 3D vertical coordinate fields.
     """
+    # add paper reference
+
+    vertical_config = vertical_geometry.config
+
+    topography_smoothed = topo.smooth_topography(
+        topography=topography,
+        grid=grid,
+        cell_areas=cell_areas,
+        geofac_n2s=geofac_n2s,
+        backend=backend,
+    ).ndarray
+
+    topography = topography.ndarray
+    vct_a = vct_a.ndarray
 
     def _decay_func(
         vct_a: xp.ndarray, model_top_height: float, decay_scale: float, decay_exponent: float
@@ -565,10 +580,6 @@ def init_vert_coord(
 
     z3d_i = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
 
-    topography = topography.ndarray
-    topography_smoothed = topography_smoothed.ndarray
-    vct_a = vct_a.ndarray
-
     z3d_i[:, grid.num_levels] = topography
     ktop_thicklimit = xp.asarray(grid.num_cells * [grid.num_levels], dtype=ta.wpfloat)
 
@@ -576,26 +587,24 @@ def init_vert_coord(
     topo_deviation = topography - topography_smoothed
 
     k = range(vertical_geometry.nflatlev + 1)
-    k1 = range(nshift, vertical_geometry.nflatlev + 1 + nshift)
-    z3d_i[:, k] = vct_a[k1]
+    z3d_i[:, k] = vct_a[k]
 
     k = range(vertical_geometry.nflatlev + 1, grid.num_levels)
-    k1 = range(vertical_geometry.nflatlev + 1 + nshift, grid.num_levels + nshift)
     # Scaling factors for large-scale and small-scale topography
     z_fac1 = _decay_func(
-        vct_a[k1],
+        vct_a[k],
         vertical_config.model_top_height,
         vertical_config.SLEVE_decay_scale_1,
         vertical_config.SLEVE_decay_exponent,
     )
     z_fac2 = _decay_func(
-        vct_a[k1],
+        vct_a[k],
         vertical_config.model_top_height,
         vertical_config.SLEVE_decay_scale_2,
         vertical_config.SLEVE_decay_exponent,
     )
     z3d_i[:, k] = (
-        vct_a[k1][xp.newaxis, :]
+        vct_a[k][xp.newaxis, :]
         + topography_smoothed[:, xp.newaxis] * z_fac1
         + topo_deviation[:, xp.newaxis] * z_fac2
     )
@@ -603,8 +612,7 @@ def init_vert_coord(
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
     for k in reversed(range(grid.num_levels)):
-        k1 = k + nshift
-        delta_vct_a = vct_a[k1] - vct_a[k1 + 1]
+        delta_vct_a = vct_a[k] - vct_a[k + 1]
         if delta_vct_a < vertical_config.SLEVE_minimum_layer_thickness_1:
             # limit layer thickness to SLEVE_minimum_relative_layer_thickness_1 times its nominal value
             minimum_layer_thickness = (
@@ -670,21 +678,15 @@ def init_vert_coord(
         )
 
     # Check if level nflatlev is still flat
-    try:
-        assert xp.all(
-            z3d_i[:, vertical_geometry.nflatlev - 1]
-            == vct_a[vertical_geometry.nflatlev - 1 + nshift]
-        )
-    except AssertionError:
-        log.error("Level nflatlev is not flat")
-        exit(1)
+    if not xp.all(
+        z3d_i[:, vertical_geometry.nflatlev - 1]
+        == vct_a[vertical_geometry.nflatlev - 1]
+    ):
+        raise exceptions.InvalidComputationError("Level nflatlev is not flat")
     # Check if ktop_thicklimit is sufficiently far away from the model top
-    try:
-        assert xp.all(ktop_thicklimit > 2)
-    except AssertionError:
+    if not xp.all(ktop_thicklimit > 2):
         if vertical_config.num_levels > 6:
-            log.error(f"Model top is too low and num_levels, {vertical_config.num_levels}, > 6.")
-            exit(1)
+            raise exceptions.InvalidConfigError(f"Model top is too low and num_levels, {vertical_config.num_levels}, > 6.")
         else:
             log.warning(
                 f"Model top is too low. But num_levels, {vertical_config.num_levels}, <= 6. "

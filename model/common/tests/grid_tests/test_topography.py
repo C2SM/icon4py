@@ -8,9 +8,8 @@
 
 import pytest
 
-from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import geometry, topography as topo
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers, reference_funcs
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 
 
 @pytest.mark.datatest
@@ -35,7 +34,7 @@ def test_topography_smoothing_with_serialized_data(
     topography = external_parameters_savepoint.topo_c()
     topography_smoothed_verif_np = external_parameters_savepoint.topo_smt_c().ndarray
 
-    topography_smoothed = topo.compute_smooth_topo(
+    topography_smoothed = topo.smooth_topography(
         topography=topography,
         grid=icon_grid,
         cell_areas=cell_geometry.area,
@@ -47,39 +46,3 @@ def test_topography_smoothing_with_serialized_data(
     assert helpers.dallclose(
         topography_smoothed_verif_np, topography_smoothed.ndarray, atol=1.0e-14
     )
-
-
-@pytest.mark.datatest
-def test_topography_smoothing_with_numpy(
-    icon_grid,
-    grid_savepoint,
-    interpolation_savepoint,
-    backend,
-):
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    geofac_n2s = interpolation_savepoint.geofac_n2s()
-
-    num_iterations = 2
-    topography = helpers.random_field(icon_grid, dims.CellDim, dtype=ta.wpfloat)
-    topography_np = topography.ndarray
-
-    # numpy implementation
-    topography_smoothed_np = topography_np.copy()
-    for _ in range(num_iterations):
-        nabla2_topo_np = reference_funcs.nabla2_on_cell_numpy(
-            icon_grid, topography_smoothed_np, geofac_n2s.ndarray
-        )
-        topography_smoothed_np = (
-            topography_smoothed_np + 0.125 * nabla2_topo_np * cell_geometry.area.ndarray
-        )
-
-    topography_smoothed = topo.compute_smooth_topo(
-        topography=topography,
-        grid=icon_grid,
-        cell_areas=cell_geometry.area,
-        geofac_n2s=geofac_n2s,
-        backend=backend,
-        num_iterations=num_iterations,
-    )
-
-    assert helpers.dallclose(topography_smoothed_np, topography_smoothed.ndarray)

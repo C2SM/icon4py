@@ -19,12 +19,3 @@ class ExternalParameters:
 
     topo_c: fa.CellField[float]
     topo_smt_c: fa.CellField[float]
-
-
-def construct_external_parameters_state(
-    savepoint: sb.ExternalParametersSavepoint, num_k_lev
-) -> icon4py.model.common.external_parameters.ExternalParameters:
-    return icon4py.model.common.external_parameters.ExternalParameters(
-        topo_c=savepoint.topo_c(),
-        topo_smt_c=savepoint.topo_smt_c(),
-    )

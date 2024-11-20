@@ -9,7 +9,7 @@
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.math.stencils.operators import _compute_nabla2_on_cell_k
+from icon4py.model.common.math.operators import _compute_nabla2_on_cell_k
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
