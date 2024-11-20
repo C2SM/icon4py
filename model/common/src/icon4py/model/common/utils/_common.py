@@ -217,7 +217,8 @@ class Pair(Generic[T]):
                 raise IndexError(f"Pair index out of range: {index}")
 
     def __setitem__(self, index: Literal[0, 1], value: T) -> None:
-        match index:
+        # Go through the attribute descriptors to respect the read-only indication
+        `match index:
             case 0:
                 attr_name = self.__first_attr_name
             case 1:
