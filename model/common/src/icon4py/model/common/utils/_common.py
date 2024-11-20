@@ -265,7 +265,7 @@ T = TypeVar("T")
 
 def chainable(method_fn: Callable[Concatenate[T, P], None]) -> Callable[Concatenate[T, P], T]:
     """
-    Make an instance method return the actual instance so it can used in a chain of calls.
+    Make an instance method return the actual instance so it can be used in a chain of calls.
 
     Typically used for simple fluent interfaces.
 
