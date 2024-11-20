@@ -218,7 +218,7 @@ class Pair(Generic[T]):
 
     def __setitem__(self, index: Literal[0, 1], value: T) -> None:
         # Go through the attribute descriptors to respect the read-only indication
-        `match index:
+        match index:
             case 0:
                 attr_name = self.__first_attr_name
             case 1:
