@@ -148,7 +148,7 @@ class Pair(Generic[T]):
             if (attr_id := getattr(value, "_pair_accessor_id_", None)) is not None:
                 assert isinstance(value, named_property)
                 if key != value.name:
-                    # When the original descriptor from the `Pair` class has been
+                    # If one of the original descriptors from the `Pair` class has been
                     # directly assigned to another class member with a different name
                     # (likely in a subclass) instead of creating a proper copy, it is
                     # copied and initialized here with the right name.
