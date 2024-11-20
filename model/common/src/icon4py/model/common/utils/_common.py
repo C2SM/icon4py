@@ -96,7 +96,7 @@ class named_property(property, Generic[C, T]):
 
 class Pair(Generic[T]):
     """
-    A generic class representing a pair of values.
+    Generic class representing a pair of values.
 
     The name of the pair attributes can be customized by defining new
     descriptors in the subclasses.
