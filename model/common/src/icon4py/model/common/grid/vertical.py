@@ -543,48 +543,25 @@ def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField,
     )
 
 
-def init_vert_coord(
-    vct_a: fa.KField[ta.wpfloat],
-    topography: fa.CellField[ta.wpfloat],
+def compute_SLEVE_coordinate_from_vcta_and_topography(
+    vct_a: xp.ndarray,
+    topography: xp.ndarray,
     cell_areas: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     grid: icon_grid.IconGrid,
+    vertical_config: VerticalGridConfig,
     vertical_geometry: VerticalGrid,
     backend,
-) -> fa.CellKField[ta.wpfloat]:
+) -> xp.ndarray:
     """
-    Computes the 3D vertical coordinate field using the SLEVE coordinate
+    Compute the 3D vertical coordinate field using the SLEVE coordinate
     https://doi.org/10.1175/1520-0493(2002)130%3C2459:ANTFVC%3E2.0.CO;2
 
-    Args:
-        vct_a: Vertical coordinate transformation array.
-        topography: Topography field.
-        cell_areas: Cell areas field.
-        geofac_n2s: Geofactor field for nabla2 computation.
-        grid: Grid object.
-        vertical_geometry: Vertical grid info.
-        backend: Backend to use for computations.
-
-    Returns:
-        fa.CellKField[ta.wpfloat]: Computed 3D vertical coordinate fields.
-
-    Raises:
-        exceptions.InvalidComputationError: If level nflatlev is not flat.
-        exceptions.InvalidConfigError: If model top is too low and num_levels > 6.
+    This is the same as vct_a in the flat levels (above nflatlev).
+    Below it is vct_a corrected by smothed and decaying topography such that it
+    blends smothly into the surface layer at num_lev + 1 which is the
+    topography.
     """
-
-    vertical_config = vertical_geometry.config
-
-    topography_smoothed = topo.smooth_topography(
-        topography=topography,
-        grid=grid,
-        cell_areas=cell_areas,
-        geofac_n2s=geofac_n2s,
-        backend=backend,
-    ).ndarray
-
-    topography = topography.ndarray
-    vct_a = vct_a.ndarray
 
     def _decay_func(
         vct_a: xp.ndarray, model_top_height: float, decay_scale: float, decay_exponent: float
@@ -594,16 +571,23 @@ def init_vert_coord(
             - (vct_a / decay_scale) ** decay_exponent
         ) / xp.sinh((model_top_height / decay_scale) ** decay_exponent)
 
-    z3d_i = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
+    smoothed_topography = topo.smooth_topography(
+        topography=topography,
+        grid=grid,
+        cell_areas=cell_areas,
+        geofac_n2s=geofac_n2s,
+        backend=backend,
+    ).ndarray
+    topography = topography.ndarray
 
-    z3d_i[:, grid.num_levels] = topography
-    ktop_thicklimit = xp.asarray(grid.num_cells * [grid.num_levels], dtype=ta.wpfloat)
+    vertical_coordinate = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
+    vertical_coordinate[:, grid.num_levels] = topography
 
     # Small-scale topography (i.e. full topo - smooth topo)
-    topo_deviation = topography - topography_smoothed
+    small_scale_topography = topography - smoothed_topography
 
     k = range(vertical_geometry.nflatlev + 1)
-    z3d_i[:, k] = vct_a[k]
+    vertical_coordinate[:, k] = vct_a[k]
 
     k = range(vertical_geometry.nflatlev + 1, grid.num_levels)
     # Scaling factors for large-scale and small-scale topography
@@ -619,12 +603,21 @@ def init_vert_coord(
         vertical_config.SLEVE_decay_scale_2,
         vertical_config.SLEVE_decay_exponent,
     )
-    z3d_i[:, k] = (
+    vertical_coordinate[:, k] = (
         vct_a[k][xp.newaxis, :]
-        + topography_smoothed[:, xp.newaxis] * z_fac1
-        + topo_deviation[:, xp.newaxis] * z_fac2
+        + smoothed_topography[:, xp.newaxis] * z_fac1
+        + small_scale_topography[:, xp.newaxis] * z_fac2
     )
 
+    return vertical_coordinate
+
+def check_and_correct_layer_thickness(
+    vertical_coordinate: xp.ndarray,
+    vct_a: xp.ndarray,
+    vertical_config: VerticalGridConfig,
+    grid: icon_grid.IconGrid,
+) -> xp.ndarray:
+    ktop_thicklimit = xp.asarray(grid.num_cells * [grid.num_levels], dtype=ta.wpfloat)
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
     for k in reversed(range(grid.num_levels)):
@@ -663,8 +656,8 @@ def init_vert_coord(
 
         # Ensure that the layer thickness is not too small, if so fix it and
         # save the layer index
-        cell_ids = xp.argwhere(z3d_i[:, k + 1] + minimum_layer_thickness > z3d_i[:, k])
-        z3d_i[cell_ids, k] = z3d_i[cell_ids, k + 1] + minimum_layer_thickness
+        cell_ids = xp.argwhere(vertical_coordinate[:, k + 1] + minimum_layer_thickness > vertical_coordinate[:, k])
+        vertical_coordinate[cell_ids, k] = vertical_coordinate[cell_ids, k + 1] + minimum_layer_thickness
         ktop_thicklimit[cell_ids] = k
 
     # Smooth layer thickness ratios in the transition layer of columns where the
@@ -672,33 +665,27 @@ def init_vert_coord(
     cell_ids = xp.argwhere((ktop_thicklimit <= grid.num_levels - 3) & (ktop_thicklimit >= 3))
     if cell_ids.size > 0:
         delta_z1 = (
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
-            - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 2]
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1]
+            - vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 2]
         )
         delta_z2 = (
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 3]
-            - z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 3]
+            - vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 2]
         )
         stretching_factor = (delta_z2 / delta_z1) ** 0.25
         delta_z3 = (
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 2]
-            - z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1]
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 2]
+            - vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1]
         ) / (stretching_factor * (1.0 + stretching_factor * (1.0 + stretching_factor)))
-        z3d_i[cell_ids, ktop_thicklimit[cell_ids]] = xp.maximum(
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids]],
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids] + 1] + delta_z3 * stretching_factor,
+        vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]] = xp.maximum(
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]],
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] + 1] + delta_z3 * stretching_factor,
         )
-        z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1] = xp.maximum(
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids] - 1],
-            z3d_i[cell_ids, ktop_thicklimit[cell_ids]] + delta_z3 * stretching_factor**2,
+        vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 1] = xp.maximum(
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids] - 1],
+            vertical_coordinate[cell_ids, ktop_thicklimit[cell_ids]] + delta_z3 * stretching_factor**2,
         )
 
-    # Check if level nflatlev is still flat
-    if not xp.all(
-        z3d_i[:, vertical_geometry.nflatlev - 1]
-        == vct_a[vertical_geometry.nflatlev - 1]
-    ):
-        raise exceptions.InvalidComputationError("Level nflatlev is not flat")
     # Check if ktop_thicklimit is sufficiently far away from the model top
     if not xp.all(ktop_thicklimit > 2):
         if vertical_config.num_levels > 6:
@@ -708,4 +695,58 @@ def init_vert_coord(
                 f"Model top is too low. But num_levels, {vertical_config.num_levels}, <= 6. "
             )
 
-    return gtx.as_field((dims.CellDim, dims.KDim), z3d_i)
+    return vertical_coordinate
+
+def check_flatness_of_flat_level(
+    vertical_coordinate: xp.ndarray,
+    vct_a: xp.ndarray,
+    vertical_geometry: VerticalGrid,
+) -> None:
+    # Check if level nflatlev is still flat
+    if not xp.all(
+        vertical_coordinate[:, vertical_geometry.nflatlev - 1]
+        == vct_a[vertical_geometry.nflatlev - 1]
+    ):
+        raise exceptions.InvalidComputationError("Level nflatlev is not flat")
+
+def compute_vertical_coordinate(
+    vct_a: fa.KField[ta.wpfloat],
+    topography: fa.CellField[ta.wpfloat],
+    cell_areas: fa.CellField[ta.wpfloat],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
+    grid: icon_grid.IconGrid,
+    vertical_geometry: VerticalGrid,
+    backend,
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Compute the (Cell, K) vertical coordinate field starting from the
+    "flat/uniform/aquaplanet" vertical coordinate.
+
+    Args:
+        vct_a: Vertical coordinate with flat topography.
+        topography: Topography field.
+        cell_areas: Cell areas field.
+        geofac_n2s: Coefficients for nabla2 computation.
+        grid: Grid object.
+        vertical_geometry: Vertical grid object.
+        backend: Backend to use for computations.
+
+    Returns:
+        The (Cell, K) vertical coordinate field.
+
+    Raises:
+        exceptions.InvalidComputationError: If level nflatlev is not flat.
+        exceptions.InvalidConfigError: If model top is too low and num_levels > 6.
+    """
+
+    vertical_config = vertical_geometry.config
+    vct_a = vct_a.ndarray
+
+    vertical_coordinate = compute_SLEVE_coordinate_from_vcta_and_topography(
+        vct_a, topography, cell_areas, geofac_n2s, grid, vertical_config, vertical_geometry, backend,
+    )
+    vertical_coordinate = check_and_correct_layer_thickness(vertical_coordinate, vct_a, vertical_config, grid)
+
+    check_flatness_of_flat_level(vertical_coordinate, vct_a, vertical_geometry)
+
+    return gtx.as_field((dims.CellDim, dims.KDim), vertical_coordinate)

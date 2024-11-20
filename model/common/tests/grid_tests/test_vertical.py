@@ -320,7 +320,7 @@ def test_init_vert_coord(
     topography = external_parameters_savepoint.topo_c()
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
-    z_ifc = v_grid.init_vert_coord(
+    vertical_coordinates_on_cell_khalf = v_grid.compute_vertical_coordinate(
         vct_a=vct_a,
         topography=topography,
         geofac_n2s=geofac_n2s,
@@ -330,7 +330,7 @@ def test_init_vert_coord(
         backend=backend,
     )
 
-    assert helpers.dallclose(z_ifc.asnumpy(), metrics_savepoint.z_ifc().asnumpy(), atol=1e-13)
+    assert helpers.dallclose(vertical_coordinates_on_cell_khalf.asnumpy(), metrics_savepoint.z_ifc().asnumpy(), atol=1e-13)
 
 
 # def something_something_aquaplanet():
