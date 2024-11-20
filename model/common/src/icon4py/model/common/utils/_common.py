@@ -9,15 +9,255 @@
 
 from __future__ import annotations
 
+import abc
+import copy
 import functools
 from collections.abc import Callable
-from typing import Concatenate, Generic, ParamSpec, TypeVar
+from typing import (
+    ClassVar,
+    Concatenate,
+    Final,
+    Generator,
+    Generic,
+    Literal,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    runtime_checkable,
+)
 
 
-__all__ = [
-    "chainable",
-    "Swapping",
-]
+@runtime_checkable
+class DoubleBuffering(Protocol):
+    @abc.abstractmethod
+    def swap_buffers(self) -> None:
+        ...
+
+
+T = TypeVar("T")
+C = TypeVar("C")
+
+
+class named_property(property, Generic[C, T]):
+    """
+    A simple extension of the built-in `property` descriptor storing
+    the name of the attribute it is assigned to.
+
+    The name is stored in the `name` attribute of the property instance.
+
+    Examples:
+        >>> class A:
+        ...     @named_property
+        ...     def value(self) -> int:
+        ...         return self._value
+        ...
+        ...     @value.setter
+        ...     def value(self, value: int) -> None:
+        ...         self._value = value
+        >>> a = A()
+        >>> a.value = 1
+        >>> print(A.value.name)
+        value
+    """
+
+    name: str | None = None
+
+    def __set_name__(self, owner: C, name: str) -> None:
+        """
+        Set the name of the attribute the property is assigned to.
+
+        Note that if the same descriptor is assigned to multiple attributes
+        or if it is reused in other classes, only the first assigned name
+        is stored.
+        """
+        if self.name is None:
+            self.name = name
+
+    def getter(self: named_property[C, T], fget: Callable[[C], T]) -> named_property[C, T]:
+        result = super().getter(fget)
+        result.name = getattr(self, "name", None)
+        return result
+
+    def setter(self: named_property[C, T], fset: Callable[[C, T], None]) -> named_property[C, T]:
+        result = super().setter(fset)
+        result.name = getattr(self, "name", None)
+        return result
+
+    def deleter(self: named_property[C, T], fdel: Callable[[C], None]) -> named_property[C, T]:
+        result = super().deleter(fdel)
+        result.name = getattr(self, "name", None)
+        return result
+
+    def __copy__(self) -> named_property[C, T]:
+        result = type(self)(self.fget, self.fset, self.fdel, self.__doc__)
+        result.name = self.name
+        return result
+
+
+class Pair(Generic[T]):
+    """
+    A generic class representing a pair of values.
+
+    The name of the pair attributes can be customized by defining new
+    descriptors in the subclasses.
+
+    See the examples below.
+
+    Examples:
+        >>> class MyPair(Pair[T]):
+        ...     a: T = Pair.first
+        ...     b: T = Pair.frozen_second
+        >>> pair = MyPair(1, 2)
+        >>> print(pair)
+        MyPair(a=1, b=2)
+
+        >>> pair.swap()
+        MyPair(a=2, b=1)
+
+        >>> pair == MyPair(2, 1)
+        True
+
+        >>> pair.a = -1
+        >>> pair[0]
+        -1
+
+        >>> pair[0] = 100
+        >>> pair.a
+        100
+
+        >>> pair.b = 3
+        Traceback (most recent call last):
+        ...
+        AttributeError: can't set attribute
+
+        >>> pair[1] = 3
+        Traceback (most recent call last):
+        ...
+        AttributeError: can't set attribute
+
+    """
+
+    _FIRST_ACCESSOR_ID: Final = "FIRST"
+    _SECOND_ACCESSOR_ID: Final = "SECOND"
+
+    __first_attr_name: ClassVar[str] = "first"
+    __second_attr_name: ClassVar[str] = "second"
+
+    def __init_subclass__(cls) -> None:
+        for key, value in {**cls.__dict__}.items():
+            if (attr_id := getattr(value, "_pair_accessor_id_", None)) is not None:
+                assert isinstance(value, named_property)
+                if key != value.name:
+                    # When the original descriptor from the `Pair` class has been
+                    # directly assigned to another class member with a different name
+                    # (likely in a subclass) instead of creating a proper copy, it is
+                    # copied and initialized here with the right name.
+                    descriptor_copy = copy.copy(value)
+                    descriptor_copy.name = key
+                    setattr(cls, key, descriptor_copy)
+                if attr_id == Pair._FIRST_ACCESSOR_ID:
+                    cls.__first_attr_name = key
+                elif attr_id == Pair._SECOND_ACCESSOR_ID:
+                    cls.__second_attr_name = key
+                else:
+                    raise TypeError(f"Invalid '{key}' pair accessor descriptor: {value}")
+
+    __first: T
+    __second: T
+
+    def __init__(self, first: T, second: T, /) -> None:
+        self.__first = first
+        self.__second = second
+
+    @named_property
+    def first(self) -> T:
+        """Property descriptor for the first element of the pair."""
+        return self.__first
+
+    @first.setter
+    def first(self, value: T) -> None:
+        self.__first = value
+
+    @named_property
+    def second(self) -> T:
+        """Property descriptor for the second element of the pair."""
+        return self.__second
+
+    @second.setter
+    def second(self, value: T) -> None:
+        self.__second = value
+
+    @named_property
+    def frozen_first(self) -> T:
+        """Read-only property descriptor for the first element of the pair (mainly for subclassing)."""
+        return self.__first
+
+    @named_property
+    def frozen_second(self) -> T:
+        """Read-only property descriptor for the second element of the pair (mainly for subclassing)."""
+        return self.__second
+
+    first._pair_accessor_id_ = frozen_first._pair_accessor_id_ = _FIRST_ACCESSOR_ID
+    second._pair_accessor_id_ = frozen_second._pair_accessor_id_ = _SECOND_ACCESSOR_ID
+
+    def __eq__(self, other: object) -> bool:
+        return type(self) is type(other) and (
+            self.__first == other.__first and self.__second == other.__second
+        )
+
+    # `__hash__` is implicitly set to None when `__eq__` is redefined, so instances are not hashable.
+
+    def __getitem__(self, index: Literal[0, 1]) -> T:
+        match index:
+            case 0:
+                return self.__first
+            case 1:
+                return self.__second
+            case _:
+                raise IndexError(f"Pair index out of range: {index}")
+
+    def __setitem__(self, index: Literal[0, 1], value: T) -> None:
+        match index:
+            case 0:
+                attr_name = self.__first_attr_name
+            case 1:
+                attr_name = self.__second_attr_name
+            case _:
+                raise IndexError(f"Pair index out of range: {index}")
+
+        setattr(self, attr_name, value)
+
+    def __iter__(self) -> Generator[T, None, None]:
+        yield self.__first
+        yield self.__second
+
+    def __repr__(self) -> str:
+        first_name = type(self).__first_attr_name
+        second_name = type(self).__second_attr_name
+        return f"{self.__class__.__name__}({first_name}={self.__first!r}, {second_name}={self.__second!r})"
+
+    def swap(self: Pair[T]) -> Pair[T]:
+        """
+        Swap the values of the first and second attributes of the instance.
+
+        Returns:
+            The instance with swapped values (for fluent interfaces).
+        """
+        self.__first, self.__second = self.__second, self.__first
+        return self
+
+    swap_buffers = swap
+
+
+class NextStepPair(Pair[T]):
+    current: T = Pair.first
+    next: T = Pair.frozen_second
+
+
+class PreviousStepPair(Pair[T]):
+    current: T = Pair.first
+    previous: T = Pair.frozen_second
+
 
 P = ParamSpec("P")
 T = TypeVar("T")
@@ -38,11 +278,12 @@ def chainable(method_fn: Callable[Concatenate[T, P], None]) -> Callable[Concaten
         ...     @chainable
         ...     def increment(self, value: int) -> None:
         ...         self.value += value
-        ...
-        ...
-        ... a = A()
-        ... a.set_value(1).increment(2)
-        ... a.value
+
+        >>> a = A()
+        >>> a.set_value(1).increment(2)  # doctest:+ELLIPSIS
+        <__main__.A object at ...>
+
+        >>> a.value
         3
     """
 
@@ -52,67 +293,3 @@ def chainable(method_fn: Callable[Concatenate[T, P], None]) -> Callable[Concaten
         return self
 
     return wrapper
-
-
-class Swapping(Generic[T]):
-    """
-    Generic double container for swapping between two values.
-
-    This is useful for double buffering in numerical algorithms.
-
-    Examples:
-        >>> a = Swapping(current=1, other=2)
-        Swapping(1, 2)
-
-        >>> a.swap()
-        Swapping(current=2, other=1)
-
-        >>> a.current = 3
-        ... a
-        Swapping(current=3, other=1)
-
-        >>> a != ~a
-        True
-
-        >>> a == ~~a
-        True
-
-        >>> a.current == (~a).other
-        True
-
-        >>> b = ~a
-        ... a.swap()
-        ... a == b
-        True
-    """
-
-    __slots__ = ("current", "_other", "__weakref__")
-
-    current: T
-    _other: T
-
-    @property
-    def other(self) -> T:
-        return self._other
-
-    def __init__(self, current: T, other: T) -> None:
-        self.current = current
-        self._other = other
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(current={self.current!r}, other={self._other!r})"
-
-    def __eq__(self, other: object) -> bool:
-        return (
-            isinstance(other, Swapping)
-            and self.current == other.current
-            and self._other == other._other
-        )
-
-    # `__hash__` is implicitly set to None when `__eq__` is redefined, so instances are not hashable.
-
-    def swap(self) -> None:
-        self.current, self._other = self._other, self.current
-
-    def __invert__(self) -> Swapping[T]:
-        return type(self)(current=self._other, other=self.current)

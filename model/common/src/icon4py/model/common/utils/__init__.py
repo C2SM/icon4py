@@ -8,10 +8,26 @@
 
 from __future__ import annotations
 
-from ._common import Swapping, chainable
+from . import gt4py_field_allocation
+from ._common import (
+    DoubleBuffering,
+    NextStepPair,
+    Pair,
+    PreviousStepPair,
+    chainable,
+)
 
 
 __all__ = [
+    # Classes
+    "DoubleBuffering",
+    "DoubleBufferingDataClassTrait",
+    "NextStepPair",
+    "Pair",
+    "PreviousStepPair",
+    "namedproperty",
+    # Functions
     "chainable",
-    "Swapping",
+    # Modules
+    "gt4py_field_allocation",
 ]
