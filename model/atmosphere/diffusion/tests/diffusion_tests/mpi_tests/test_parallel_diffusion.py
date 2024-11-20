@@ -15,7 +15,6 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
-from ..utils import diffusion_instance  # noqa
 
 
 @pytest.mark.mpi
@@ -41,7 +40,6 @@ def test_parallel_diffusion(
     damping_height,
     caplog,
     backend,
-    diffusion_instance,  # noqa: F811
 ):
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -66,8 +64,50 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
 
-    diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    diffusion_params = diffusion_.DiffusionParams(config)
+    metric_state = diffusion_states.DiffusionMetricState(
+        mask_hdiff=metrics_savepoint.mask_hdiff(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        zd_intcoef=metrics_savepoint.zd_intcoef(),
+        zd_vertoffset=metrics_savepoint.zd_vertoffset(),
+        zd_diffcoef=metrics_savepoint.zd_diffcoef(),
+    )
+    interpolation_state = diffusion_states.DiffusionInterpolationState(
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
+        geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+    )
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion = diffusion_.Diffusion(
+        grid=icon_grid,
+        config=config,
+        params=diffusion_params,
+        vertical_grid=v_grid.VerticalGrid(
+            vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
+        ),
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+        exchange=exchange,
+        backend=backend,
+    )
 
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
@@ -127,7 +167,6 @@ def test_parallel_diffusion_multiple_steps(
     damping_height,
     caplog,
     backend,
-    diffusion_instance,  # noqa: F811
 ):
     if settings.dace_orchestration is None:
         raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
@@ -244,9 +283,8 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     settings.dace_orchestration = True
 
-    diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
-
-    diffusion.init(
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion = diffusion_.Diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -257,6 +295,8 @@ def test_parallel_diffusion_multiple_steps(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        exchange=exchange,
+        backend=backend,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
