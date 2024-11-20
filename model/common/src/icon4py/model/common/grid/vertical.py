@@ -553,9 +553,25 @@ def init_vert_coord(
     backend,
 ) -> fa.CellKField[ta.wpfloat]:
     """
-    Computes the 3D vertical coordinate fields.
+    Computes the 3D vertical coordinate field using the SLEVE coordinate
+    https://doi.org/10.1175/1520-0493(2002)130%3C2459:ANTFVC%3E2.0.CO;2
+
+    Args:
+        vct_a: Vertical coordinate transformation array.
+        topography: Topography field.
+        cell_areas: Cell areas field.
+        geofac_n2s: Geofactor field for nabla2 computation.
+        grid: Grid object.
+        vertical_geometry: Vertical grid info.
+        backend: Backend to use for computations.
+
+    Returns:
+        fa.CellKField[ta.wpfloat]: Computed 3D vertical coordinate fields.
+
+    Raises:
+        exceptions.InvalidComputationError: If level nflatlev is not flat.
+        exceptions.InvalidConfigError: If model top is too low and num_levels > 6.
     """
-    # add paper reference
 
     vertical_config = vertical_geometry.config
 
