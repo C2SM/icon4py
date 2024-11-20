@@ -8,9 +8,7 @@
 
 import dataclasses
 
-import icon4py.model.common.external_parameters
 from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.test_utils import serialbox_utils as sb
 
 
 @dataclasses.dataclass
