@@ -136,7 +136,7 @@ class TimeLoop:
             and self.run_config.apply_initial_stabilization
             and self._is_first_step_in_simulation
         ):
-            log.info("running initial step to diffuse fields before timeloop starts")
+            log.info("running initial step to diffuse fields before time loop starts")
             self.diffusion.initial_run(
                 diffusion_diagnostic_state,
                 prognostic_states.current,
@@ -407,14 +407,14 @@ def initialize(
     )
     prognosticss = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
-    timeloop = TimeLoop(
+    time_loop = TimeLoop(
         run_config=config.run_config,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
     )
 
     return (
-        timeloop,
+        time_loop,
         DriverStates(
             prep_advection_prognostic=prep_adv,
             solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
@@ -517,7 +517,7 @@ def icon4py_driver(
     log.info(f"input args: input_path={input_path}, n_time_steps={time_loop.n_time_steps}")
 
     log.info("dycore configuring: DONE")
-    log.info("timeloop: START")
+    log.info("time loop: START")
 
     time_loop.time_integration(
         ds.diffusion_diagnostic,
@@ -528,7 +528,7 @@ def icon4py_driver(
         do_prep_adv=False,
     )
 
-    log.info("timeloop:  DONE")
+    log.info("time loop:  DONE")
 
 
 if __name__ == "__main__":
