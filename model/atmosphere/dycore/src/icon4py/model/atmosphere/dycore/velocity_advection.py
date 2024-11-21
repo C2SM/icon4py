@@ -519,12 +519,18 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        """
-        z_w_con_c_full (0:nlev-1):
-            Compute the vertical wind with contravariant correction at full levels (cell center) by
-            taking average from values at neighboring half levels.
-            z_w_con_c_full[k] = 0.5 (z_w_con_c[k] + z_w_con_c[k+1])
-        """
+        # scidoc:
+        # Outputs:
+        #  - z_w_con_c_full :
+        #     $$
+        #     \wcc{\n}{\c}{\k} = \frac{1}{2} ( \wcc{\n}{\c}{\k-1/2} + \wcc{\n}{\c}{\k+1/2} ), \quad \k \in [0, \nlev)
+        #     $$
+        #     Compute the vertical wind with contravariant correction at full
+        #     levels by averaging the values at the neighboring half levels.
+        #
+        # Inputs:
+        #  - $\wcc{\n}{\c}{\k\pm1/2}$ : z_w_con_c
+        #
         self._interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,

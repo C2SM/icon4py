@@ -1034,11 +1034,11 @@ class SolveNonhydro:
             #     \exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
             #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
             #     $$
-            #     Linearly interpolate the perturbation exner computed in the
-            #     previous stencil from full to half levels. The ground level is
-            #     based on quadratic extrapolation (with hydrostatic
-            #     assumption?). $\nflatlev$ is the height (inclusive) above
-            #     which the grid is not affected by terrain following.
+            #     Interpolate the perturbation exner from full to half levels.
+            #     The ground level is based on quadratic extrapolation (with
+            #     hydrostatic assumption?). $\nflatlev$ is the height
+            #     (inclusive) above which the grid is not affected by terrain
+            #     following.
             #  - z_dexner_dz_c_1 :
             #     $$
             #     \pdz{\exnerprime{\ntilde}{\c}{\k}} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
