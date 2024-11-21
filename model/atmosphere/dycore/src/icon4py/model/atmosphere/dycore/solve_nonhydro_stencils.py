@@ -8,75 +8,75 @@
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import where
 
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
-    _compute_contravariant_correction,
-)
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
-    _compute_contravariant_correction_of_w,
-)
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
-    _compute_contravariant_correction_of_w_for_lower_boundary,
-)
-from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
-    _compute_explicit_part_for_rho_and_exner,
-)
-from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
-    _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density,
-)
-from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
-    _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
-)
-from icon4py.model.atmosphere.dycore.compute_first_vertical_derivative import (
-    _compute_first_vertical_derivative,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_theta import (
-    _compute_horizontal_advection_of_rho_and_theta,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
-    _compute_horizontal_kinetic_energy,
-)
-from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
-    _compute_perturbation_of_rho_and_theta,
-)
-from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import (
-    _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers,
-)
-from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
-    _compute_solver_coefficients_matrix,
-)
-from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
-    _compute_virtual_potential_temperatures_and_pressure_gradient,
-)
-from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
-from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
-    _extrapolate_temporally_exner_pressure,
-)
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
-    _init_cell_kdim_field_with_zero_vp,
-)
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
-    _interpolate_to_half_levels_vp,
-)
-from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
-from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
-    _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
-)
-from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
-    _set_lower_boundary_condition_for_w_and_contravariant_correction,
-)
-from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
-    _set_theta_v_prime_ic_at_lower_boundary,
-)
-from icon4py.model.atmosphere.dycore.state_utils.utils import (
+from icon4py.model.atmosphere.dycore.dycore_utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
 )
-from icon4py.model.atmosphere.dycore.update_density_exner_wind import (
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
+    _compute_contravariant_correction,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w import (
+    _compute_contravariant_correction_of_w,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w_for_lower_boundary import (
+    _compute_contravariant_correction_of_w_for_lower_boundary,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_exner import (
+    _compute_explicit_part_for_rho_and_exner,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
+    _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
+    _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative import (
+    _compute_first_vertical_derivative,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rho_and_theta import (
+    _compute_horizontal_advection_of_rho_and_theta,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
+    _compute_perturbation_of_rho_and_theta,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import (
+    _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_solver_coefficients_matrix import (
+    _compute_solver_coefficients_matrix,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_virtual_potential_temperatures_and_pressure_gradient import (
+    _compute_virtual_potential_temperatures_and_pressure_gradient,
+)
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
+    _extrapolate_temporally_exner_pressure,
+)
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
+    _init_cell_kdim_field_with_zero_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
+    _interpolate_to_half_levels_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import _interpolate_to_surface
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
+    _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
+)
+from icon4py.model.atmosphere.dycore.stencils.set_lower_boundary_condition_for_w_and_contravariant_correction import (
+    _set_lower_boundary_condition_for_w_and_contravariant_correction,
+)
+from icon4py.model.atmosphere.dycore.stencils.set_theta_v_prime_ic_at_lower_boundary import (
+    _set_theta_v_prime_ic_at_lower_boundary,
+)
+from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
     _update_density_exner_wind,
 )
-from icon4py.model.atmosphere.dycore.update_wind import _update_wind
+from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 
 

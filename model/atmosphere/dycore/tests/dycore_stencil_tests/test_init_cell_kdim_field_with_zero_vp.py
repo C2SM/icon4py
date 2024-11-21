@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.common import dimension as dims

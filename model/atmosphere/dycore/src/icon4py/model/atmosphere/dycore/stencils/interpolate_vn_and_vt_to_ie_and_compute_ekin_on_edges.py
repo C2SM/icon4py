@@ -9,10 +9,10 @@ import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges import (
     _interpolate_vt_to_interface_edges,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
