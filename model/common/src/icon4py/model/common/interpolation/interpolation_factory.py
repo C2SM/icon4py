@@ -27,11 +27,15 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._backend = backend
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
-        self._source: dict[str, factory.FieldSource] = {"geometry": geometry, "self": self}
+        self._sources: factory.FieldSource = self._sources((self, geometry))
         self._decomposition_info = decomposition_info
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
         self._register_computed_fields()
+
+    def _sources(self, inputs: tuple[factory.FieldSource, ...]) -> factory.FieldSource:
+            return factory.CompositeSource(inputs)
+
 
 
     def _register_computed_fields(self):

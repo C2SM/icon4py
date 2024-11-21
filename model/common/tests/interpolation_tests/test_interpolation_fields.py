@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -14,6 +15,7 @@ import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.common.test_utils.helpers as test_helpers
 from icon4py.model.common import constants
 from icon4py.model.common.interpolation.interpolation_fields import (
+    _compute_geofac_div,
     compute_c_bln_avg,
     compute_c_lin_e,
     compute_cells_aw_verts,
@@ -60,22 +62,22 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  #
 
 @pytest.mark.datatest
 def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
-    if backend is not None:
-        pytest.xfail("writes a sparse fields: only runs in field view embedded")
+    #if backend is not None:
+    #   pytest.xfail("writes a sparse fields: only runs in field view embedded")
     mesh = icon_grid
     primal_edge_length = grid_savepoint.primal_edge_length()
     edge_orientation = grid_savepoint.edge_orientation()
     area = grid_savepoint.cell_areas()
-    geofac_div_ref = interpolation_savepoint._compute_geofac_div()
+    geofac_div_ref = interpolation_savepoint.geofac_div()
     geofac_div = test_helpers.zero_field(mesh, dims.CellDim, dims.C2EDim)
-    geofac_div.with_backend(backend)(
+    _compute_geofac_div.with_backend(None)(
         primal_edge_length,
         edge_orientation,
         area,
         out=geofac_div,
         offset_provider={"C2E": mesh.get_offset_provider("C2E")},
     )
-
+    gtx.as_field(geofac_div.domain, geofac_div.ndarray, allocator=backend)
     assert test_helpers.dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
 
 

@@ -42,12 +42,15 @@ TODO (halungge): except for domain parameters and other fields managed by the sa
 TODO: for the numpy functions we might have to work on the func interfaces to make them a bit more uniform.
 
 """
+import collections
 import enum
 import inspect
+from functools import cached_property
 from typing import (
     Any,
     Callable,
     Mapping,
+    MutableMapping,
     Optional,
     Protocol,
     Sequence,
@@ -138,17 +141,24 @@ class FieldSource(Protocol):
     """
 
     @property
-    def metadata(self) -> dict[str, FieldMetaData]:
+    def metadata(self) -> MutableMapping[str, FieldMetaData]:
+        """Returns metadata for the fields that this field source provides."""
         ...
 
+    # TODO @halungge: should we really allow access to the registered providers?
     @property
-    def providers(self) -> dict[str, FieldProvider]:
+    def providers(self) -> MutableMapping[str, FieldProvider]:
+        """Returns the providers registered in this FieldSource"""
         ...
 
+    # TODO @halungge: this is the target Backend: not necessarily the one that the field is computed and
+    #      there are fields which need to be computed on a specific backend, which can be different from the
+    #      general run backend
     @property
     def backend(self) -> backend.Backend:
         ...
 
+    # TODO @halungge: should the factory allow access to the grid? why?
     @property
     def grid_provider(self) -> GridProvider:
         ...
@@ -156,6 +166,19 @@ class FieldSource(Protocol):
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
     ) -> Union[FieldType, xa.DataArray, model.FieldMetaData]:
+        """
+        Get a field or its metadata from the factory.
+
+        Fields are computed upon first call to `get`.
+        Args:
+            field_name:
+            type_: RetrievalType, determines whether only the field (databuffer) or Metadata or both will be returned
+
+        Returns:
+            gt4py field containing allocated using this factories backend, a fields metadata or a
+            dataarray containing both.
+
+        """
         if field_name not in self.providers:
             raise ValueError(f"Field '{field_name}' not provided by the source '{self.__class__}'")
         match type_:
@@ -186,6 +209,27 @@ class FieldSource(Protocol):
 
         for field in provider.fields:
             self.providers[field] = provider
+
+
+class CompositeSource(FieldSource):
+    def __init__(self, sources: tuple[FieldSource, ...]):
+        assert len(sources) > 0, "nees at least one input source to create 'CompositeSource' "
+        self._sources = sources
+    @cached_property
+    def metadata(self) -> dict[str, FieldMetaData]:
+        return collections.ChainMap(*(s.metadata for s in self._sources))
+
+    @cached_property
+    def providers(self) -> dict[str, FieldProvider]:
+        return collections.ChainMap(*(s.providers for s in self._sources))
+
+    @cached_property
+    def backend(self) -> backend.Backend:
+        return self._sources[0].backend
+
+    @cached_property
+    def grid_provider(self) -> GridProvider:
+        return self._sources[0].grid_provider
 
 
 class PrecomputedFieldProvider(FieldProvider):
@@ -255,7 +299,7 @@ class FieldOperatorProvider(FieldProvider):
     def __call__(
         self,
         field_name: str,
-        field_src: Optional["FieldSource"],
+        field_src: Optional[FieldSource],
         backend: Optional[gtx_backend.Backend],
         grid: GridProvider,
     ) -> state_utils.FieldType:
@@ -275,10 +319,15 @@ class FieldOperatorProvider(FieldProvider):
         self._fields = self._allocate(compute_backend, grid_provider, dtype=dtype)
         # call field operator
         # construct dependencies
+        deps = {k: factory.get(v) for k, v in self._dependencies.items()}
+      
+        out_fields = tuple(self._fields.values())
 
-        self._func()
-        # transfer to target backend
+        self._func(**deps, out=out_fields, offset_provider=grid_provider.grid.offset_providers)
+        # transfer to target backend, the fields might have been computed on a compute backend
 
+        #gtx.as_field((dims.CellDim, dims.C2EDim), geofac_div.ndarray, allocator=backend)
+        self._fields.items()
 
     # TODO (@halunnge) copied from ProgramFieldProvider
     def _allocate(
