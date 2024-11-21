@@ -804,14 +804,15 @@ class SolveNonhydro:
     ) -> Literal[0, 1]:
         """Set time levels of ddt_adv fields for call to velocity_tendencies."""
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            # Use one of the buffers of the pairs for the predictor and the other one for the corrector
+            # Use one of the pairs items for the predictor output (.first) and
+            # the other one for the corrector (.second)
             if not at_first_substep:
-                # Swap buffers from the previous substep so ``.first`` contains the corrector values
+                # Swap buffers from the previous substep so `.first` contains the corrector output
                 diagnostic_state_nh.ddt_w_adv_pc.swap()
                 diagnostic_state_nh.ddt_vn_apc_pc.swap()
             return 1
         else:
-            # Use only the first buffer of the pairs for both predictor and corrector
+            # Use only the first item of the pairs for both predictor and corrector outputs
             return 0
 
     def time_step(

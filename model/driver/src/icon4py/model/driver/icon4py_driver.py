@@ -405,7 +405,7 @@ def initialize(
         rank=props.rank,
         experiment_type=experiment_type,
     )
-    prognosticss = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+    prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
     time_loop = TimeLoop(
         run_config=config.run_config,
@@ -419,7 +419,7 @@ def initialize(
             prep_advection_prognostic=prep_adv,
             solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
             diffusion_diagnostic=diffusion_diagnostic_state,
-            prognostics=prognosticss,
+            prognostics=prognostics_states,
             diagnostic=diagnostic_state,
         ),
         DriverParams(divdamp_fac_o2=initial_divdamp_fac_o2),
