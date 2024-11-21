@@ -198,6 +198,7 @@ def dot_product_on_edges(
     """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
     return x1 * x2 + y1 * y2 + z1 * z2
 
+
 @gtx.field_operator
 def dot_product_on_cells(
     x1: fa.CellField[ta.wpfloat],
@@ -209,7 +210,6 @@ def dot_product_on_cells(
 ) -> fa.CellField[ta.wpfloat]:
     """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
     return x1 * x2 + y1 * y2 + z1 * z2
-
 
 
 @gtx.field_operator
@@ -262,6 +262,7 @@ def norm2_on_cells(
 
     """
     return sqrt(dot_product_on_cells(x, x, y, y, z, z))
+
 
 @gtx.field_operator
 def normalize_cartesian_vector_on_edges(
@@ -443,6 +444,7 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
         out=(x, y, z),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
+
 
 @gtx.field_operator
 def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
