@@ -432,7 +432,7 @@ def solve_nh_run(
         rho=rho_new,
         exner=exner_new,
     )
-    prognostic_states = common_utils.NextStepPair(prognostic_state_nnow, prognostic_state_nnew)
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
     # adjust for Fortran indexes
     nnow = nnow - 1

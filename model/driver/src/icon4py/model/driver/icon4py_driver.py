@@ -112,7 +112,7 @@ class TimeLoop:
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         # TODO (Chia Rui): expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
-        prognostic_states: common_utils.NextStepPair[prognostics.PrognosticState],
+        prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: dycore_states.PrepAdvection,
         initial_divdamp_fac_o2: float,
@@ -183,7 +183,7 @@ class TimeLoop:
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
-        prognostic_states: common_utils.NextStepPair[prognostics.PrognosticState],
+        prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         initial_divdamp_fac_o2: float,
         do_prep_adv: bool,
@@ -212,7 +212,7 @@ class TimeLoop:
     def _do_dyn_substepping(
         self,
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
-        prognostic_states: common_utils.NextStepPair[prognostics.PrognosticState],
+        prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
         initial_divdamp_fac_o2: float,
         do_prep_adv: bool,
@@ -266,7 +266,7 @@ class DriverStates(NamedTuple):
     prep_advection_prognostic: dycore_states.PrepAdvection
     solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
-    prognostics: common_utils.NextStepPair[prognostics.PrognosticState]
+    prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState
 
 
@@ -405,7 +405,7 @@ def initialize(
         rank=props.rank,
         experiment_type=experiment_type,
     )
-    prognosticss = common_utils.NextStepPair(prognostic_state_now, prognostic_state_next)
+    prognosticss = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
 
     timeloop = TimeLoop(
         run_config=config.run_config,

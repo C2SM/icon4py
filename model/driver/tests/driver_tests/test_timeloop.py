@@ -306,7 +306,7 @@ def test_run_timeloop_single_step(
         exner=sp.exner_new(),
     )
 
-    prognostic_states = common_utils.NextStepPair(prognostic_state, prognostic_state_new)
+    prognostic_states = common_utils.TimeStepPair(prognostic_state, prognostic_state_new)
 
     timeloop.time_integration(
         diffusion_diagnostic_state,

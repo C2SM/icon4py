@@ -250,14 +250,9 @@ class Pair(Generic[T]):
     swap_buffers = swap
 
 
-class NextStepPair(Pair[T]):
+class TimeStepPair(Pair[T]):
     current: T = Pair.first
     next: T = Pair.frozen_second
-
-
-class PreviousStepPair(Pair[T]):
-    current: T = Pair.first
-    previous: T = Pair.frozen_second
 
 
 P = ParamSpec("P")

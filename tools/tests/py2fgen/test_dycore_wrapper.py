@@ -405,7 +405,7 @@ def test_dycore_wrapper_granule_inputs(
         rho=sp.rho_new(),
         exner=sp.exner_new(),
     )
-    expected_prognostic_states = common_utils.NextStepPair(
+    expected_prognostic_states = common_utils.TimeStepPair(
         prognostic_state_nnow, prognostic_state_nnew
     )
 

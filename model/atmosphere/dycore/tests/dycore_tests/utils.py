@@ -144,7 +144,7 @@ def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
     )
 
 
-def create_prognostic_states(sp) -> common_utils.NextStepPair[prognostics.PrognosticState]:
+def create_prognostic_states(sp) -> common_utils.TimeStepPair[prognostics.PrognosticState]:
     prognostic_state_nnow = prognostics.PrognosticState(
         w=sp.w_now(),
         vn=sp.vn_now(),
@@ -159,5 +159,5 @@ def create_prognostic_states(sp) -> common_utils.NextStepPair[prognostics.Progno
         rho=sp.rho_new(),
         exner=sp.exner_new(),
     )
-    prognostic_states = common_utils.NextStepPair(prognostic_state_nnow, prognostic_state_nnew)
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
     return prognostic_states
