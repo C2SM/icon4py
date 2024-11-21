@@ -43,8 +43,6 @@ build_baseimage_aarch64:
     CUPY_PACKAGE: cupy-cuda12x
     CUPY_VERSION: 13.3.0
     UBUNTU_VERSION: 22.04
-  # TODO: re-enable CI job when Todi is back in operational state
-  when: manual
 
 .build_image:
   stage: image
