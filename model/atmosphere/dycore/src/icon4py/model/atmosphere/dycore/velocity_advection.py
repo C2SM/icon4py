@@ -320,10 +320,10 @@ class VelocityAdvection:
         #     $$
         #     \wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \quad \k \in [\nflatlev, \nlev)
         #     $$
-        #     Compute the contravariant correction (due to terrain-following
-        #     coordinates) to vertical wind. Note that here $\pdxt{}$ is the
-        #     horizontal derivative along the tangent direction (see eq. 17 in
-        #     |ICONdycorePaper|).
+        #     Compute the contravariant correction to the vertical wind due to
+        #     terrain-following coordinate. $\pdxn{}$ and $\pdxt{}$ are the
+        #     horizontal derivatives along the normal and tangent directions
+        #     respectively (eq. 17 in |ICONdycorePaper|).
         #  - vn_ie :
         #     $$
         #     \vn{\n}{\e}{-1/2} = \vn{\n}{\e}{0}
@@ -439,15 +439,24 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        """
-        z_w_concorr_mc (flat_lev:nlev-1):
-            Interpolate the contravariant correction (vn dz/dn + vt dz/dt, where t is tangent) at full levels from
-            edge center (three neighboring edges), which is z_w_concorr_me, to cell center based on
-            bilinear interpolation in a triangle.
-        w_concorr_c (flat_lev+1:nlev-1):
-            Interpolate contravariant correction at cell center from full levels, which is
-            z_w_concorr_mc computed above, to half levels using simple linear interpolation.
-        """
+        # scidoc:
+        # Outputs:
+        #  - z_w_concorr_mc :
+        #     $$
+        #     \wcc{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \wcc{\n}{\e}{\k}
+        #     $$
+        #     Interpolate the contravariant correction from edge to cell center.
+        #  - w_concorr_c :
+        #     $$
+        #     \wcc{\n}{\c}{\k-1/2} = \Wlev \wcc{\n}{\c}{\k} + (1 - \Wlev) \wcc{\n}{\c}{\k-1}, \quad \k \in [\nflatlev+1, \nlev)
+        #     $$
+        #     Interpolate the contravariant correction from full to half levels.
+        #
+        # Inputs:
+        #  - $\wcc{\n}{\e}{\k}$ : z_w_concorr_me
+        #  - $\Whor$ : e_bln_c_s
+        #  - $\Wlev$ : wgtfac_c
+        #
         self._fused_stencils_9_10(
             z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -475,14 +484,14 @@ class VelocityAdvection:
         #         0,                                         & \k = \nlev
         #     \end{cases}
         #     $$
-        #     Subtract the contravariant correction $\wcc{\n}{\c}{\k\pm1/2}$
-        #     from the vertical wind $\w{\n}{\c}{\k\pm1/2}$ in the
-        #     terrain-following levels. This is done for convevnience as the
-        #     result needs to be interpolated to edge centers and full levels
-        #     for later use.
+        #     Subtract the contravariant correction $\wcc{}{}{}$ from the
+        #     vertical wind $\w{}{}{}$ in the terrain-following levels. This is
+        #     done for convevnience here, instead of directly in the advection
+        #     tendency update, because the result needs to be interpolated to
+        #     edge centers and full levels for later use.
         #     The papers do not use a new symbol for this variable, and the code
         #     ambiguosly mixes the variable names used for
-        #     $\wcc{}{}{}$ and $\w{}{}{} - \wcc{}{}{}$.
+        #     $\wcc{}{}{}$ and $(\w{}{}{} - \wcc{}{}{})$.
         #     
         # Inputs:
         #  - $\w{\n}{\c}{\k\pm1/2}$ : w
@@ -542,8 +551,8 @@ class VelocityAdvection:
         #     (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k}) = \frac{1}{2} [ (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2})
         #                                                     + (\w{\n}{\c}{\k+1/2} - \wcc{\n}{\c}{\k+1/2}) ], \quad \k \in [0, \nlev)
         #     $$
-        #     Interpolate the vertical wind with contravariant correction at
-        #     full levels by averaging the values at half levels.
+        #     Interpolate the vertical wind with contravariant correction from
+        #     half to full levels.
         #
         # Inputs:
         #  - $(\w{\n}{\c}{\k\pm1/2} - \wcc{\n}{\c}{\k\pm1/2})$ : z_w_con_c
