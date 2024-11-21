@@ -33,12 +33,16 @@ build_baseimage_x86_64:
     HPC_SDK_VERSION: 22.11
     HPC_SDK_NAME: "nvhpc_2022_2211_Linux_${ARCH}_cuda_11.8"
     CUPY_PACKAGE: cupy-cuda11x
+    CUPY_VERSION: 12.3.0 # latest version that supports cuda 11
+    UBUNTU_VERSION: 20.04  # 22.04 hangs on daint in some tests for unknown reasons.
 build_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_baseimage]
   variables:
-    HPC_SDK_VERSION: 24.5
-    HPC_SDK_NAME: "nvhpc_2024_245_Linux_${ARCH}_cuda_12.4"
+    HPC_SDK_VERSION: 24.11
+    HPC_SDK_NAME: "nvhpc_2024_2411_Linux_${ARCH}_cuda_12.6"
     CUPY_PACKAGE: cupy-cuda12x
+    CUPY_VERSION: 13.3.0
+    UBUNTU_VERSION: 22.04
   # TODO: re-enable CI job when Todi is back in operational state
   when: manual
 
@@ -48,7 +52,7 @@ build_baseimage_aarch64:
       # Unique image name based on commit SHA
       PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
       DOCKERFILE: ci/docker/checkout.Dockerfile
-      DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+      DOCKER_BUILD_ARGS: '["CUPY_VERSION=$CUPY_VERSION", "UBUNTU_VERSION=$UBUNTU_VERSION", "PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
 build_image_x86_64:
   extends: [.container-builder-cscs-zen2, .build_image]
   needs: [build_baseimage_x86_64]
