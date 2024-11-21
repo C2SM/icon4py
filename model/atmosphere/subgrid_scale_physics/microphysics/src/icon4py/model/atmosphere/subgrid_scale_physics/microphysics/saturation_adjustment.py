@@ -313,10 +313,11 @@ class SaturationAdjustment:
         self.update_temperature_by_newton_iteration = (
             update_temperature_by_newton_iteration.with_backend(self._backend)
         )
-        self.compute_newton_iteration_mask = compute_newton_iteration_mask.with_backend(
-            self._backend
+        self.compute_newton_iteration_mask_and_copy_temperature_on_converged_cells = (
+            compute_newton_iteration_mask_and_copy_temperature_on_converged_cells.with_backend(
+                self._backend
+            )
         )
-        self.copy_temperature = copy_temperature.with_backend(self._backend)
         self.update_temperature_qv_qc_tendencies = update_temperature_qv_qc_tendencies.with_backend(
             self._backend
         )
@@ -391,7 +392,7 @@ class SaturationAdjustment:
         while not_converged:
             if num_iter > self.config.max_iter:
                 raise ConvergenceError(
-                    f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {xp.abs(self.new_temperature1.ndarray - self.new_temperature2.ndarray).max()} . Please raise max_iter"
+                    f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {xp.abs(self._temperature1.ndarray - self._temperature2.ndarray).max()} . Please raise max_iter"
                 )
 
             self.update_temperature_by_newton_iteration(
@@ -409,22 +410,11 @@ class SaturationAdjustment:
                 offset_provider={},
             )
 
-            self.compute_newton_iteration_mask(
+            self.compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
                 self.config.tolerance,
                 temperature_list[ncurrent],
                 temperature_list[nnext],
                 self._newton_iteration_mask,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(0),
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
-            )
-
-            self.copy_temperature(
-                self._newton_iteration_mask,
-                temperature_list[ncurrent],
-                temperature_list[nnext],
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
                 vertical_start=gtx.int32(0),
@@ -864,69 +854,47 @@ def compute_subsaturated_case_and_initialize_newton_iterations(
 
 
 @gtx.field_operator
-def _compute_newton_iteration_mask(
+def _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
     tolerance: ta.wpfloat,
     temperature_current: fa.CellKField[ta.wpfloat],
     temperature_next: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[bool]:
-    return where(abs(temperature_current - temperature_next) > tolerance, True, False)
-
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_newton_iteration_mask(
-    tolerance: ta.wpfloat,
-    temperature_current: fa.CellKField[ta.wpfloat],
-    temperature_next: fa.CellKField[ta.wpfloat],
-    newton_iteration_mask: fa.CellKField[bool],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _compute_newton_iteration_mask(
-        tolerance,
-        temperature_current,
-        temperature_next,
-        out=newton_iteration_mask,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@gtx.field_operator
-def _copy_temperature(
-    newton_iteration_mask: fa.CellKField[bool],
-    temperature_current: fa.CellKField[ta.wpfloat],
-) -> fa.CellKField[ta.wpfloat]:
+) -> tuple[fa.CellKField[bool], fa.CellKField[ta.wpfloat]]:
     """
-    Copy temperature from the current to the new temperature field where the convergence criterion is already met.
+    Compute a mask for the next Newton iteration when the difference between new and old temperature is larger
+    than the tolerance.
+    Then, copy temperature from the current to the new temperature field where the convergence criterion is already met.
     Otherwise, it is zero (the value does not matter because it will be updated in next iteration).
 
     Args:
         newton_iteration_mask: mask for the next Newton iteration to be executed
-        temperature: current temperature [K]
+        temperature_current: temperature at previous Newtion iteration [K]
+        temperature_next: temperature  at current Newtion iteration [K]
     Returns:
         new temperature [K]
     """
-    return where(newton_iteration_mask, 0.0, temperature_current)
+    newton_iteration_mask = where(
+        abs(temperature_current - temperature_next) > tolerance, True, False
+    )
+    new_temperature = where(newton_iteration_mask, 0.0, temperature_current)
+    return newton_iteration_mask, new_temperature
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def copy_temperature(
-    newton_iteration_mask: fa.CellKField[bool],
+def compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
+    tolerance: ta.wpfloat,
     temperature_current: fa.CellKField[ta.wpfloat],
     temperature_next: fa.CellKField[ta.wpfloat],
+    newton_iteration_mask: fa.CellKField[bool],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _copy_temperature(
-        newton_iteration_mask,
+    _compute_newton_iteration_mask_and_copy_temperature_on_converged_cells(
+        tolerance,
         temperature_current,
-        out=temperature_next,
+        temperature_next,
+        out=(newton_iteration_mask, temperature_next),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
