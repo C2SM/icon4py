@@ -17,6 +17,13 @@ at the numerical documentation for the dycore.
    dycore_numerics.rst
 
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Help pages:
+
+   _imgs/offset_providers.rst
+
+
 Indices and tables
 ==================
 
