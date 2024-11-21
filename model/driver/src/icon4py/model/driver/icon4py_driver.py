@@ -115,7 +115,7 @@ class TimeLoop:
         prognostic_states: common_utils.NextStepPair[prognostics.PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: dycore_states.PrepAdvection,
-        inital_divdamp_fac_o2: float,
+        initial_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
         log.info(
@@ -185,7 +185,7 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.NextStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        inital_divdamp_fac_o2: float,
+        initial_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
         # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
@@ -214,7 +214,7 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_states: common_utils.NextStepPair[prognostics.PrognosticState],
         prep_adv: dycore_states.PrepAdvection,
-        inital_divdamp_fac_o2: float,
+        initial_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
@@ -263,8 +263,8 @@ class DriverStates(NamedTuple):
         diagnostic: Initial state for global diagnostic variables.
     """
 
-    prep_advection_prognostic: solve_nh_states.PrepAdvection
-    solve_nonhydro_diagnostic: solve_nh_states.DiagnosticStateNonHydro
+    prep_advection_prognostic: dycore_states.PrepAdvection
+    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro
     diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
     prognostics: common_utils.NextStepPair[prognostics.PrognosticState]
     diagnostic: diagnostics.DiagnosticState
