@@ -807,7 +807,8 @@ class SolveNonhydro:
             # Use one of the pairs items for the predictor output (.first) and
             # the other one for the corrector (.second)
             if not at_first_substep:
-                # Swap buffers from the previous substep so `.first` contains the corrector output
+                # Swap buffers from the previous substep so `.first` contains the output
+                # of the corrector in the previous substep
                 diagnostic_state_nh.ddt_w_adv_pc.swap()
                 diagnostic_state_nh.ddt_vn_apc_pc.swap()
             return 1
@@ -936,11 +937,12 @@ class SolveNonhydro:
         log.info(
             f"running predictor step: dtime = {dtime}, init = {l_init}, recompute = {l_recompute} "
         )
+
         if l_init or l_recompute:
-            if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT and not l_init:
-                lvn_only = True  # Recompute only vn tendency
-            else:
-                lvn_only = False
+            # Recompute only vn tendency
+            lvn_only: bool = (
+                self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT and not l_init
+            )
 
             self.velocity_advection.run_predictor_step(
                 vn_only=lvn_only,
