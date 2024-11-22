@@ -21,9 +21,8 @@ from ._common import (
 __all__ = [
     # Classes
     "DoubleBuffering",
-    "TimeStepPair",
     "Pair",
-    "PreviousStepPair",
+    "TimeStepPair",
     "named_property",
     # Functions
     "chainable",

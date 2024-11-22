@@ -12,7 +12,6 @@ from typing import Final, Literal, Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend
-from gt4py.next import backend
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states

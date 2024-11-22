@@ -435,8 +435,6 @@ def solve_nh_run(
     prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
     # adjust for Fortran indexes
-    nnow = nnow - 1
-    nnew = nnew - 1
     idyn_timestep = idyn_timestep - 1
 
     dycore_wrapper_state["granule"].time_step(
@@ -447,8 +445,6 @@ def solve_nh_run(
         dtime=dtime,
         l_recompute=recompute,
         l_init=linit,
-        nnew=nnew,
-        nnow=nnow,
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
