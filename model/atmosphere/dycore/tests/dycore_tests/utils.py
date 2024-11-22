@@ -128,10 +128,10 @@ def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
         mass_fl_e=init_savepoint.mass_fl_e(),
         ddt_vn_phy=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.Pair(
+        ddt_vn_apc_pc=common_utils.TimeStepPair(
             init_savepoint.ddt_vn_apc_pc(1), init_savepoint.ddt_vn_apc_pc(2)
         ),
-        ddt_w_adv_pc=common_utils.Pair(
+        ddt_w_adv_pc=common_utils.TimeStepPair(
             init_savepoint.ddt_w_adv_pc(1), init_savepoint.ddt_w_adv_pc(2)
         ),
         vt=init_savepoint.vt(),

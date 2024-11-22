@@ -267,11 +267,11 @@ def model_initialization_gauss3d(
         mass_fl_e=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         ddt_vn_phy=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         grf_tend_vn=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        ddt_vn_apc_pc=common_utils.Pair(
+        ddt_vn_apc_pc=common_utils.TimeStepPair(
             field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
             field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         ),
-        ddt_w_adv_pc=common_utils.Pair(
+        ddt_w_adv_pc=common_utils.TimeStepPair(
             field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
             field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
         ),

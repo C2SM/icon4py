@@ -381,8 +381,10 @@ def test_dycore_wrapper_granule_inputs(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.Pair(sp.ddt_vn_apc_pc(1), sp.ddt_vn_apc_pc(2)),
-        ddt_w_adv_pc=common_utils.Pair(sp.ddt_w_adv_pc(1), ddt_w_adv_ntl2=sp.ddt_w_adv_pc(2)),
+        ddt_vn_apc_pc=common_utils.TimeStepPair(sp.ddt_vn_apc_pc(1), sp.ddt_vn_apc_pc(2)),
+        ddt_w_adv_pc=common_utils.TimeStepPair(
+            sp.ddt_w_adv_pc(1), ddt_w_adv_ntl2=sp.ddt_w_adv_pc(2)
+        ),
         vt=sp.vt(),
         vn_ie=sp.vn_ie(),
         w_concorr_c=sp.w_concorr_c(),
