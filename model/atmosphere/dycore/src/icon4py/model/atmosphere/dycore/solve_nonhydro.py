@@ -803,16 +803,17 @@ class SolveNonhydro:
     ) -> Literal[0, 1]:
         """Set time levels of ddt_adv fields for call to velocity_tendencies."""
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            # When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran)
-            # `ddt_w_adv_pc.first` is not computed at the beginning of each substep but
-            # the value computed in the previous substep is used instead for efficiency
-            # (except, of course, the very first substep of the first time step).
-            # In this case, we use one of the pairs items (.first) for the predictor output
-            # and the other one (.second) for the corrector. 
+            # When using TimeSteppingScheme.MOST_EFFICIENT (itime_scheme=4 in ICON Fortran),
+            # `ddt_w_adv_pc.first` is not computed at the beginning of each substep.
+            # Instead, the value computed during the previous substep is reused
+            # for efficiency (except, of course, in the very first substep of the
+            # initial time step). In this case, one of the pair's items (.first)
+            # is used for the predictor output, while the other item (.second) is
+            # used for the corrector.
             if not at_first_substep:
                 diagnostic_state_nh.ddt_w_adv_pc.swap()
-                # diagnostic_state_nh.ddt_vn_apc_pc does not need to be swapped
-                # because it is always recomputed in the predictor step
+                # `diagnostic_state_nh.ddt_vn_apc_pc`` does not need to be swapped
+                # because is always recomputed in the predictor step
             return 1
         else:
             # Use only the first item of the pairs for both predictor and corrector outputs
