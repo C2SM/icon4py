@@ -17,7 +17,7 @@ def _ice_deposition_nucleation(
     ni:   gtx.Field[Dims[I,J,K], float],
     dvsi: gtx.Field[Dims[I,J,K], float], 
     dt:   gtx.Field[Dims[I,J,K], float],
-):
+) -> gtx.Field[Dims[I,J,K], float]:
     return where( qi <= graupel_ct.qmin and ((t < graupel_ct.tfrz_het2 and dvsi > 0) or (t <= graupel_ct.tfrz_het1 and qc > graupel_ct.qmin)), min(graupel_ct.m0_ice * ni, max(0, dvsi)) / dt, 0 )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
