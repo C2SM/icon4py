@@ -1468,7 +1468,7 @@ class IconGraupelEntrySavepoint(IconSavepoint):
         return self._get_field("ser_in_graupel_qg", dims.CellDim, dims.KDim)
 
     def qnc(self):
-        return self._get_field("ser_in_graupel_qnc", dims.CellDim, dims.KDim)
+        return self._get_field("ser_in_graupel_qnc", dims.CellDim)
 
     def dt_microphysics(self):
         return self.serializer.read("ser_in_graupel_dt", self.savepoint)[0]
