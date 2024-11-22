@@ -996,17 +996,17 @@ class SolveNonhydro:
         # Outputs:
         #  - z_exner_ex_pr :
         #     $$
-        #     \exnerprime{\ntilde}{\c}{\k} = (1 + \WtimeExner) \exnerprime{\n}{\c}{\k} - \WtimeExner \exnerprime{\n-1}{\c}{\k}, \quad \k \in [0, \nlev) \\
+        #     \exnerprime{\ntilde}{\c}{\k} = (1 + \WtimeExner) \exnerprime{\n}{\c}{\k} - \WtimeExner \exnerprime{\n-1}{\c}{\k}, \k \in [0, \nlev) \\
         #     \exnerprime{\ntilde}{\c}{\nlev} = 0
         #     $$
         #     Compute the temporal extrapolation of perturbed exner function
-        #     using the time backward scheme for horizontal momentum equations
-        #     (see the |ICONTutorial| page 74).
+        #     using the time backward scheme (see the |ICONTutorial| page 74).
+        #     This variable has nlev+1 levels even though it is defined on full levels.
         #  - exner_pr :
         #     $$
-        #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nlev)
+        #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}
         #     $$
-        #     Store perturbed exner function from previous time step.
+        #     Store the perturbed exner function from the previous time step.
         #
         # Inputs:
         #  - $\WtimeExner$ : exner_exfac
@@ -1036,16 +1036,13 @@ class SolveNonhydro:
             #     $$
             #     Interpolate the perturbation exner from full to half levels.
             #     The ground level is based on quadratic extrapolation (with
-            #     hydrostatic assumption?). $\nflatlev$ is the height
-            #     (inclusive) above which the grid is not affected by terrain
-            #     following.
+            #     hydrostatic assumption?).
             #  - z_dexner_dz_c_1 :
             #     $$
             #     \pdz{\exnerprime{\ntilde}{\c}{\k}} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
             #     $$
-            #     And use the interpolated values to compute the vertical
-            #     derivative of perturbation exner at full levels (first order
-            #     scheme).
+            #     Use the interpolated values to compute the vertical derivative
+            #     of perturbation exner at full levels.
             #
             # Inputs:
             #  - $\Wlev$ : wgtfac_c
@@ -1460,10 +1457,10 @@ class SolveNonhydro:
         # Outputs:
         #  - vn :
         #     $$
-        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \pdxn{\exnerprime{\n}{}{}}_{\e\,\k} \right), \quad \k \in [0, \nlev)
+        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \pdxn{\exnerprime{\n}{}{}}_{\e\,\k} \right)
         #     $$
-        #     Add the advection and pressure gradient terms to update the normal
-        #     velocity.
+        #     Update the normal wind speed with the advection and pressure
+        #     gradient terms.
         # 
         # Inputs:
         #  - $\vn{\n}{\e}{\k}$ : vn

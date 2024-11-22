@@ -222,7 +222,7 @@ class VelocityAdvection:
         # Outputs:
         #  - zeta :
         #     $$
-        #     \vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}, \quad \k \in [0, \nlev)
+        #     \vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}
         #     $$
         #     Compute the vorticity on vertices using the discrete Stokes theorem (eq. 5 in |BonaventuraRingler2005|).
         #
@@ -245,10 +245,10 @@ class VelocityAdvection:
         # Outputs:
         #  - vt :
         #     $$
-        #     \vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k}, \quad \k \in [0, \nlev)
+        #     \vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k}
         #     $$
         #     Compute the tangential velocity by RBF interpolation from four neighboring
-        #     edges (diamond shape) and projected to tangential direction.
+        #     edges (diamond shape) projected along the tangential direction.
         #
         # Inputs:
         #  - $\Wrbf$ : rbf_vec_coeff_e
@@ -271,7 +271,7 @@ class VelocityAdvection:
         #     $$
         #     \vn{\n}{\e}{\k-1/2} = \Wlev \vn{\n}{\e}{\k} + (1 - \Wlev) \vn{\n}{\e}{\k-1}, \quad \k \in [1, \nlev)
         #     $$
-        #     Linearly interpolate the normal velocity from full levels to half levels.
+        #     Interpolate the normal velocity from full to half levels.
         #  - z_kin_hor_e :
         #     $$
         #     \kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right), \quad \k \in [1, \nlev)
@@ -420,7 +420,7 @@ class VelocityAdvection:
         # Outputs:
         #  - z_ekinh :
         #     $$
-        #     \kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}, \quad \k \in [0, \nlev)
+        #     \kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}
         #     $$
         #     Interpolate the horizonal kinetic energy from edge to cell center.
         #
@@ -549,7 +549,7 @@ class VelocityAdvection:
         #  - z_w_con_c_full :
         #     $$
         #     (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k}) = \frac{1}{2} [ (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2})
-        #                                                     + (\w{\n}{\c}{\k+1/2} - \wcc{\n}{\c}{\k+1/2}) ], \quad \k \in [0, \nlev)
+        #                                                       + (\w{\n}{\c}{\k+1/2} - \wcc{\n}{\c}{\k+1/2}) ]
         #     $$
         #     Interpolate the vertical wind with contravariant correction from
         #     half to full levels.
@@ -631,19 +631,18 @@ class VelocityAdvection:
         # Outputs:
         #  - ddt_vn_apc_pc[ntnd] :
         #     $$
-        #     \advvn{\n}{\e}{\k} &&= \pdxn{\kinehori{}{}{}} + \vt{}{}{} (\vortvert{}{}{} + \coriolis{}) + \pdz{\vn{}{}{}} (\w{}{}{} - \wcc{}{}{}), \quad \k \in [0, \nlev) \\
-        #                        &&= \Gradn_{\offProv{e2c}} \Cgrad \kinehori{\n}{c}{\k} + \kinehori{\n}{\e}{\k} \Gradn_{\offProv{e2c}} \Cgrad \\
-        #                        &&+ \vt{\n}{\e}{\k} (\coriolis{\e} + 1/2 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k})                         \\
+        #     \advvn{\n}{\e}{\k} &&= \pdxn{\kinehori{}{}{}} + \vt{}{}{} (\vortvert{}{}{} + \coriolis{}) + \pdz{\vn{}{}{}} (\w{}{}{} - \wcc{}{}{}) \\
+        #                        &&= \Gradn_{\offProv{e2c}} \Cgrad \kinehori{\n}{c}{\k} + \kinehori{\n}{\e}{\k} \Gradn_{\offProv{e2c}} \Cgrad     \\
+        #                        &&+ \vt{\n}{\e}{\k} (\coriolis{\e} + 1/2 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k})                             \\
         #                        &&+ \frac{\vn{\n}{\e}{\k-1/2} - \vn{\n}{\e}{\k+1/2}}{\Dz{k}}
         #                            \sum_{\offProv{e2c}} \Whor (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k})
         #     $$
         #     Compute the advective tendency of the normal wind (eq. 13 in
         #     |ICONdycorePaper|).
-        #     The edge-normal derivative of kinetic energy is computed by
+        #     The edge-normal derivative of the kinetic energy is computed by
         #     combining the first order approximation across adiacent cell
-        #     centres (eq. 7 in |BonaventuraRingler2005|) with the edge
-        #     value of the kinetic energy (TODO: this needs explaining and a
-        #     reference).
+        #     centres (eq. 7 in |BonaventuraRingler2005|) with the edge value of
+        #     the kinetic energy (TODO: this needs explaining and a reference).
         #
         # Inputs:
         #  - $\Cgrad$ : coeff_gradekin
