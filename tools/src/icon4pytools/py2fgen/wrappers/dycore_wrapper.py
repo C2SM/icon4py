@@ -384,8 +384,6 @@ def solve_nh_run(
     divdamp_fac_o2: gtx.float64,
     ndyn_substeps: gtx.float64,
     idyn_timestep: gtx.int32,
-    nnew: gtx.int32,
-    nnow: gtx.int32,
 ):
     logger.info(f"Using Device = {settings.device}")
 

@@ -1557,10 +1557,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     rho_new = sp.rho_new()
     exner_new = sp.exner_new()
 
-    # use fortran indices (also in the driving loop to compute i_substep)
-    nnow = 1
-    nnew = 2
-
+    # use fortran indices in the driving loop to compute i_substep
     for i_substep in range(1, ndyn_substeps + 1):
         is_last_substep = i_substep == (ndyn_substeps)
 
@@ -1604,16 +1601,10 @@ def test_granule_solve_nonhydro_multi_step_regional(
             divdamp_fac_o2=initial_divdamp_fac,
             ndyn_substeps=ndyn_substeps,
             idyn_timestep=i_substep,
-            nnow=nnow,
-            nnew=nnew,
         )
         linit = False
         recompute = False
         clean_mflx = False
-        if not is_last_substep:
-            ntemp = nnow
-            nnow = nnew
-            nnew = ntemp
 
     cell_start_lb_plus2 = icon_grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
