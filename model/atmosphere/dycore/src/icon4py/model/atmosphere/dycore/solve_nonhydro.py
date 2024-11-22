@@ -798,22 +798,36 @@ class SolveNonhydro:
         )
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    def update_time_levels(
+    def update_time_levels_for_velocity_tendencies(
         self, diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro, at_first_substep: bool
     ) -> Literal[0, 1]:
-        """Set time levels of ddt_adv fields for call to velocity_tendencies."""
+        """
+        Set time levels of ddt_adv fields for call to velocity_tendencies.
+
+        When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran),
+        `ddt_w_adv_pc.current` is not computed at the beginning of each substep.
+        Instead, the value computed during the previous substep is reused
+        for efficiency (except, of course, in the very first substep of the
+        initial time step). Additionally, in this scheme the predictor and
+        corrector outputs are kept in separated elements of the pair (.current for
+        the predictor and .next for the corrector) and interpoolated at the end
+        of the corrector step to get the final output.
+
+        If a different time stepping scheme is used, the first element of the pair
+        is used for both predictor and corrector outputs.
+
+        Args:
+            diagnostic_state_nh: Diagnostic fields calculated in the dynamical core (SolveNonHydro)
+            at_first_substep: Flag indicating if this is the first substep of the time step.
+
+        Returns:
+            The index of the pair element to be used for the corrector output.
+        """
+
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            # When using TimeSteppingScheme.MOST_EFFICIENT (itime_scheme=4 in ICON Fortran),
-            # `ddt_w_adv_pc.first` is not computed at the beginning of each substep.
-            # Instead, the value computed during the previous substep is reused
-            # for efficiency (except, of course, in the very first substep of the
-            # initial time step). In this case, one of the pair's items (.first)
-            # is used for the predictor output, while the other item (.second) is
-            # used for the corrector.
             if not at_first_substep:
                 diagnostic_state_nh.ddt_w_adv_pc.swap()
-                # `diagnostic_state_nh.ddt_vn_apc_pc`` does not need to be swapped
-                # because is always recomputed in the predictor step
+                diagnostic_state_nh.ddt_vn_apc_pc.swap()
             return 1
         else:
             # Use only the first item of the pairs for both predictor and corrector outputs
@@ -853,7 +867,9 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        corrector_tl = self.update_time_levels(diagnostic_state_nh, at_first_substep)
+        corrector_tl = self.update_time_levels_for_velocity_tendencies(
+            diagnostic_state_nh, at_first_substep
+        )
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -1304,7 +1320,7 @@ class SolveNonhydro:
 
         self._add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_states.current.vn,
-            ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.first,
+            ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.current,
             ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
             z_theta_v_e=z_fields.z_theta_v_e,
             z_gradh_exner=z_fields.z_gradh_exner,
@@ -1440,7 +1456,7 @@ class SolveNonhydro:
         self._stencils_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_states.current.w,
-            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.first,
+            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.current,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
@@ -1750,7 +1766,7 @@ class SolveNonhydro:
             log.debug(f"corrector: start stencil 23")
             self._add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_states.current.vn,
-                ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.first,
+                ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.current,
                 ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc[time_level],
                 ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
                 z_theta_v_e=z_fields.z_theta_v_e,
@@ -1921,7 +1937,7 @@ class SolveNonhydro:
             self._stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.first,
+                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.current,
                 ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_pc[time_level],
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
@@ -1956,7 +1972,7 @@ class SolveNonhydro:
             self._stencils_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.first,
+                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.current,
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,

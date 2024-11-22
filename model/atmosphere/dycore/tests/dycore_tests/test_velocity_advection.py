@@ -295,14 +295,14 @@ def test_velocity_predictor_step(
     )
     # stencil 16
     assert helpers.dallclose(
-        diagnostic_state.ddt_w_adv_pc.first.asnumpy()[start_cell_nudging:, :],
+        diagnostic_state.ddt_w_adv_pc.current.asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
         rtol=1.0e-10,
     )
     # stencil 19
     assert helpers.dallclose(
-        diagnostic_state.ddt_vn_apc_pc.first.asnumpy(),
+        diagnostic_state.ddt_vn_apc_pc.current.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=1.0e-15,
     )
@@ -432,13 +432,13 @@ def test_velocity_corrector_step(
     )
     # stencil 16
     assert helpers.dallclose(
-        diagnostic_state.ddt_w_adv_pc.second.asnumpy()[start_cell_nudging:, :],
+        diagnostic_state.ddt_w_adv_pc.next.asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
     )
     # stencil 19
     assert helpers.dallclose(
-        diagnostic_state.ddt_vn_apc_pc.second.asnumpy(),
+        diagnostic_state.ddt_vn_apc_pc.next.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
     )

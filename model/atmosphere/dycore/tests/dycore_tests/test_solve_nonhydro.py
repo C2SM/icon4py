@@ -154,7 +154,9 @@ def test_nonhydro_predictor_step(
     at_first_substep = jstep_init == 0
 
     prognostic_states = utils.create_prognostic_states(sp)
-    _ = solve_nonhydro.update_time_levels(diagnostic_state_nh, at_first_substep=at_first_substep)
+    _ = solve_nonhydro.update_time_levels_for_velocity_tendencies(
+        diagnostic_state_nh, at_first_substep=at_first_substep
+    )
 
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -563,7 +565,7 @@ def test_nonhydro_corrector_step(
     at_last_substep = jstep_init == (ndyn_substeps - 1)
 
     prognostic_states = utils.create_prognostic_states(sp)
-    corrector_tl = solve_nonhydro.update_time_levels(
+    corrector_tl = solve_nonhydro.update_time_levels_for_velocity_tendencies(
         diagnostic_state_nh, at_first_substep=at_first_substep
     )
 
