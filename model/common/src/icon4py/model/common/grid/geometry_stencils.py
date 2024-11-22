@@ -13,10 +13,10 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa, ty
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
 from icon4py.model.common.math.helpers import (
     arc_length,
-    cross_product,
+    cross_product_on_edges,
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertex,
-    normalize_cartesian_vector,
+    normalize_cartesian_vector_on_edges,
     zonal_and_meridional_components_on_edges,
 )
 
@@ -49,7 +49,7 @@ def cartesian_coordinates_of_edge_tangent(
     y = edge_orientation * (vertex_y(E2V[1]) - vertex_y(E2V[0]))
     z = edge_orientation * (vertex_z(E2V[1]) - vertex_z(E2V[0]))
 
-    return normalize_cartesian_vector(x, y, z)
+    return normalize_cartesian_vector_on_edges(x, y, z)
 
 
 @gtx.field_operator
@@ -83,10 +83,10 @@ def cartesian_coordinates_of_edge_normal(
     edge_center_x, edge_center_y, edge_center_z = geographical_to_cartesian_on_edges(
         edge_lat, edge_lon
     )
-    x, y, z = cross_product(
+    x, y, z = cross_product_on_edges(
         edge_center_x, edge_tangent_x, edge_center_y, edge_tangent_y, edge_center_z, edge_tangent_z
     )
-    return normalize_cartesian_vector(x, y, z)
+    return normalize_cartesian_vector_on_edges(x, y, z)
 
 
 @gtx.field_operator
