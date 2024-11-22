@@ -65,15 +65,13 @@ R = TypeVar("R")
 
 
 @overload
-def orchestrate(func: Callable[P, R], *, method: bool | None = None) -> Callable[P, R]:
-    ...
+def orchestrate(func: Callable[P, R], *, method: bool | None = None) -> Callable[P, R]: ...
 
 
 @overload
 def orchestrate(
     func: None = None, *, method: bool | None = None
-) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    ...
+) -> Callable[[Callable[P, R]], Callable[P, R]]: ...
 
 
 def orchestrate(
@@ -318,14 +316,14 @@ def wait(comm_handle: Union[int, decomposition.ExchangeResult]):
 def build_compile_time_connectivities(
     offset_providers: dict[str, gtx.common.Connectivity],
 ) -> dict[str, gtx.common.Connectivity]:
-    connectivities = {}
-    for k, v in offset_providers.items():
-        if hasattr(v, "table"):
-            connectivities[k] = gtx.otf.arguments.CompileTimeConnectivity(
-                v.max_neighbors, v.has_skip_values, v.origin_axis, v.neighbor_axis, v.table.dtype
-            )
-        else:
-            connectivities[k] = v
+    connectivities = offset_providers
+    # for k, v in offset_providers.items():
+    #     if hasattr(v, "table"):
+    #         connectivities[k] = gtx.otf.arguments.CompileTimeConnectivity(
+    #             v.max_neighbors, v.has_skip_values, v.origin_axis, v.neighbor_axis, v.table.dtype
+    #         )
+    #     else:
+    #         connectivities[k] = v
 
     return connectivities
 

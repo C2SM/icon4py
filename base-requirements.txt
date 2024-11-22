@@ -1,3 +1,2 @@
 # VCS
-gt4py @ git+https://github.com/GridTools/gt4py.git@icon4py_20241113  # use tagged release until #596 & gt4py#1738 is merged
-
+gt4py @ git+https://github.com/DropD/gt4py.git@gtir-sdfg-convertible  # use branch of GT4Py PR #1742

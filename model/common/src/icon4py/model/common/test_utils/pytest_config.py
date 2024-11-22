@@ -28,10 +28,10 @@ gpu_backends = ["gtfn_gpu"]
 
 try:
     from gt4py.next.program_processors.runners.dace import (
-        run_dace_cpu,
-        run_dace_cpu_noopt,
-        run_dace_gpu,
-        run_dace_gpu_noopt,
+        gtir_cpu as run_dace_cpu,
+        gtir_cpu as run_dace_cpu_noopt,
+        gtir_gpu as run_dace_gpu,
+        gtir_gpu as run_dace_gpu_noopt,
     )
 
     backends.update(

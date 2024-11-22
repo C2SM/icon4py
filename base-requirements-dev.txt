@@ -1,5 +1,5 @@
 # VCS
--e git+https://github.com/GridTools/gt4py.git@icon4py_20241113#egg=gt4py  # use tagged release until #596 & gt4py#1738 is merged
+-e git+https://github.com/DropD/gt4py.git@gtir-sdfg-convertible#egg=gt4py  # use branch of GT4Py PR #1742
 git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
 
 # PyPI
