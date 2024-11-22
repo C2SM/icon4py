@@ -85,3 +85,6 @@ class AdvectionMetricState:
 
     #: metrical modification factor for vertical part of divergence at full levels (KDim)
     deepatmo_divzu: fa.KField[ta.wpfloat]
+
+    #: vertical grid spacing at full levels
+    ddqz_z_full: fa.CellKField[ta.wpfloat]
