@@ -54,7 +54,10 @@ class GlobalGridParams:
 
     @cached_property
     def num_cells(self):
-        return 20.0 * self.root**2 * 4.0**self.level
+        if self.root == 0:
+            return 0
+        else:
+            return 20.0 * self.root**2 * 4.0**self.level
 
 
 class IconGrid(BaseGrid):

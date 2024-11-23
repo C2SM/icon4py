@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from icon4py.model.common.constants import CPD_O_RD, CVD_O_RD, GRAV_O_RD, P0REF, RD
+from icon4py.model.common.constants import CPD_O_RD, CVD_O_RD, GRAV_O_RD, P0REF, RD 
 from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.settings import xp
@@ -129,6 +129,46 @@ def hydrostatic_adjustment_ndarray(
         rho[:, k] = exner[:, k] ** CVD_O_RD * P0REF / (RD * theta_v[:, k])
 
     return rho, exner, theta_v
+
+
+def hydrostatic_adjustment_constant_thetav_ndarray(
+    wgtfac_c: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    exner_ref_mc: np.ndarray,
+    d_exner_dz_ref_ic: np.ndarray,
+    theta_ref_mc: np.ndarray,
+    theta_ref_ic: np.ndarray,
+    rho: np.ndarray,
+    exner: np.ndarray,
+    theta_v: np.ndarray,
+    num_levels: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Computes a hydrostatically balanced profile. In constrast to the above
+    hydrostatic_adjustment_ndarray, the virtual temperature is kept (assumed)
+    constant during the adjustment, leading to a simpler formula.
+    """
+
+    for k in range(num_levels - 2, -1, -1):
+        theta_v_pr_ic = wgtfac_c[:, k + 1] * (theta_v[:, k + 1] - theta_ref_mc[:, k + 1]) + (
+            1.0 - wgtfac_c[:, k + 1]
+        ) * (theta_v[:, k] - theta_ref_mc[:, k])
+
+        exner[:, k] = (
+            exner[:, k + 1]
+            + (exner_ref_mc[:, k] - exner_ref_mc[:, k + 1])
+            - ddqz_z_half[:, k + 1]
+            / (theta_v_pr_ic + theta_ref_ic[:, k + 1])
+            * theta_v_pr_ic
+            * d_exner_dz_ref_ic[:, k + 1]
+        )
+
+    for k in range(num_levels - 1, -1, -1):
+        rho[:, k] = (
+            exner[:, k] ** CVD_O_RD * P0REF / (RD * theta_v[:, k])
+        )
+
+    return rho, exner
 
 
 def mo_diagnose_temperature_numpy(

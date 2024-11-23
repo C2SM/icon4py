@@ -1039,13 +1039,13 @@ def stencils_42_44_45_45b(
             KDim: (vertical_start, vertical_end),
         },
     )
-    _init_cell_kdim_field_with_zero_vp(
-        out=z_alpha,
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
-        },
-    )
+    # _init_cell_kdim_field_with_zero_vp(
+    #     out=z_alpha,
+    #     domain={
+    #         CellDim: (horizontal_start, horizontal_end),
+    #         KDim: (vertical_end - 1, vertical_end),
+    #     },
+    # )
 
 
 @field_operator
@@ -1176,13 +1176,13 @@ def stencils_43_44_45_45b(
             KDim: (vertical_start, vertical_end),
         },
     )
-    _init_cell_kdim_field_with_zero_vp(
-        out=z_alpha,
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
-        },
-    )
+    # _init_cell_kdim_field_with_zero_vp(
+    #     out=z_alpha,
+    #     domain={
+    #         CellDim: (horizontal_start, horizontal_end),
+    #         KDim: (vertical_end - 1, vertical_end),
+    #     },
+    # )
 
 
 @field_operator

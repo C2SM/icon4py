@@ -55,3 +55,4 @@ class DiagnosticMetricState:
     cell_center_lat: Field[[CellDim], float]
     cell_center_lon: Field[[CellDim], float]
     vct_a: Field[[KDim], float]
+    z_ifc: Field[[CellDim, KDim], float]

@@ -73,6 +73,7 @@ class DecompositionInfo:
 
     @builder
     def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
+        log.info(f"debug decomp dimension: {dim} {global_index.shape} {owner_mask.shape}")
         masked_global_index = ma.array(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index
 

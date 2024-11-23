@@ -17,6 +17,7 @@ from enum import Enum
 from pathlib import Path
 
 from gt4py.next import as_field
+from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.common import Field
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -41,6 +42,7 @@ from icon4py.model.common.constants import (
     P0REF,
     RD,
     RD_O_CPD,
+    CPD,
 )
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
@@ -48,7 +50,7 @@ from icon4py.model.common.dimension import (
     CEDim,
     CellDim,
     EdgeDim,
-    KDim, VertexDim, V2C2EDim,
+    KDim, VertexDim, V2C2EDim, V2CDim, C2EDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
@@ -70,7 +72,7 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
-from icon4py.model.driver.testcase_functions import hydrostatic_adjustment_ndarray
+from icon4py.model.driver.testcase_functions import hydrostatic_adjustment_ndarray, hydrostatic_adjustment_constant_thetav_ndarray
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -90,6 +92,8 @@ class SerializationType(str, Enum):
 class ExperimentType(str, Enum):
     JABW = "jabw"
     """initial condition of Jablonowski-Williamson test"""
+    GAUSS3D = "gauss3d"
+    """initial condition of Gauss 3D mountain test"""
     ANY = "any"
     """any test with initial conditions read from serialized data (remember to set correct SIMULATION_START_DATE)"""
 
@@ -121,6 +125,267 @@ def read_icon_grid(
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
+
+
+def model_initialization_gauss3d(
+    icon_grid: IconGrid,
+    edge_param: EdgeParams,
+    path: Path,
+    rank=0,
+) -> tuple[
+    DiffusionDiagnosticState,
+    DiagnosticStateNonHydro,
+    PrepAdvection,
+    float,
+    DiagnosticState,
+    PrognosticState,
+    PrognosticState,
+]:
+    """
+    Initial condition for the Gauss 3D test.
+
+    Args:
+        grid: IconGrid
+        edge_param: edge properties
+        path: path where to find the input data
+        backend: GT4Py backend
+        rank: mpi rank of the current compute node
+    Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
+        PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
+        variables (now and next).
+    """
+    data_provider = sb.IconSerialDataProvider(
+        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+    )
+
+    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
+    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
+    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
+    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
+    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
+    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
+    geopot = data_provider.from_metrics_savepoint().geopot().ndarray
+
+    primal_normal_x = edge_param.primal_normal[0].ndarray
+
+    cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
+    rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
+    rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
+
+    num_cells = icon_grid.num_cells
+    num_edges = icon_grid.num_edges
+    num_levels = icon_grid.num_levels
+
+    grid_idx_edge_start_plus1 = icon_grid.get_end_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
+    )
+    grid_idx_edge_end = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
+    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    )
+    grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
+
+    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    temperature_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+
+    # mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
+    # mask_array_edge_start_plus1_to_edge_end[0:grid_idx_edge_start_plus1] = False
+    # mask = xp.repeat(
+    #     xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1
+    # )
+    mask = xp.ones((num_edges, num_levels), dtype=bool)
+    mask[0:grid_idx_edge_start_plus1, :] = False
+    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
+
+    # Define test case parameters
+    # The topography can only be read from serialized data for now, then these
+    # variables should be defined here and used to compute the idealized
+    # topography:
+    # - mount_lon
+    # - mount_lat
+    # - mount_height
+    # - mount_width
+    nh_t0 = 300.0
+    nh_u0 = xp.full((num_edges, num_levels), fill_value = 20.0, dtype=float)
+    nh_brunt_vais = 0.01
+    log.info("Topography can only be read from serialized data for now.")
+
+    # Horizontal wind field
+    u = xp.where(mask, nh_u0, 0.0)
+    vn_ndarray = xp.zeros_like(u)
+    for k in range(num_levels):
+
+        vn_ndarray[:, k] = u[:, k] * primal_normal_x[:, k]
+        # log.info(f"EEEEEEEEEEEE {vn_ndarray[0:3, k]} -- {u[0:3, k] * primal_normal_x[0:3, k]} -- {u[0:3, k]} -- {primal_normal_x[0:3, k]}")
+    log.info("Wind profile assigned.")
+
+    # Vertical temperature profile
+    for k_index in range(num_levels - 1, -1, -1):
+        z_help = (nh_brunt_vais / GRAV) ** 2 * geopot[:, k_index]
+        # profile of theta is explicitly given
+        theta_v_ndarray[:, k_index] = nh_t0 * xp.exp(z_help)
+
+    # Lower boundary condition for exner pressure
+    if nh_brunt_vais != 0.0:
+        z_help = (nh_brunt_vais / GRAV) ** 2 * geopot[:, num_levels - 1]
+        exner_ndarray[:, num_levels - 1] = (
+            GRAV / nh_brunt_vais
+        ) ** 2 / nh_t0 / CPD * (xp.exp(-z_help) - 1.0) + 1.0
+    else:
+        exner_ndarray[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / CPD / nh_t0
+    log.info("Vertical computations completed.")
+
+    # Compute hydrostatically balanced exner, by integrating the (discretized!)
+    # 3rd equation of motion under the assumption thetav=const.
+    rho_ndarray, exner_ndarray = hydrostatic_adjustment_constant_thetav_ndarray(
+        wgtfac_c,
+        ddqz_z_half,
+        exner_ref_mc,
+        d_exner_dz_ref_ic,
+        theta_ref_mc,
+        theta_ref_ic,
+        rho_ndarray,
+        exner_ndarray,
+        theta_v_ndarray,
+        num_levels,
+    )
+    log.info("Hydrostatic adjustment computation completed.")
+
+    eta_v = as_field((CellDim, KDim), eta_v_ndarray)
+    eta_v_e = _allocate(EdgeDim, KDim, grid=icon_grid)
+    cell_2_edge_interpolation(
+        eta_v,
+        cell_2_edge_coeff,
+        eta_v_e,
+        grid_idx_edge_start_plus1,
+        grid_idx_edge_end,
+        0,
+        num_levels,
+        offset_provider=icon_grid.offset_providers,
+    )
+    log.info("Cell-to-edge eta_v computation completed.")
+
+    vn = as_field((EdgeDim, KDim), vn_ndarray)
+    w = as_field((CellDim, KDim), w_ndarray)
+    exner = as_field((CellDim, KDim), exner_ndarray)
+    rho = as_field((CellDim, KDim), rho_ndarray)
+    temperature = as_field((CellDim, KDim), temperature_ndarray)
+    pressure = as_field((CellDim, KDim), pressure_ndarray)
+    theta_v = as_field((CellDim, KDim), theta_v_ndarray)
+    pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    pressure_ifc = as_field((CellDim, KDim), pressure_ifc_ndarray)
+
+    vn_next = as_field((EdgeDim, KDim), vn_ndarray)
+    w_next = as_field((CellDim, KDim), w_ndarray)
+    exner_next = as_field((CellDim, KDim), exner_ndarray)
+    rho_next = as_field((CellDim, KDim), rho_ndarray)
+    theta_v_next = as_field((CellDim, KDim), theta_v_ndarray)
+
+    u = _allocate(CellDim, KDim, grid=icon_grid)
+    v = _allocate(CellDim, KDim, grid=icon_grid)
+
+    edge_2_cell_vector_rbf_interpolation(
+        vn,
+        rbf_vec_coeff_c1,
+        rbf_vec_coeff_c2,
+        u,
+        v,
+        grid_idx_cell_start_plus1,
+        grid_idx_cell_end,
+        0,
+        num_levels,
+        offset_provider=icon_grid.offset_providers,
+    )
+    log.info("U, V computation completed.")
+
+    exner_pr = _allocate(CellDim, KDim, grid=icon_grid)
+    init_exner_pr(
+        exner,
+        data_provider.from_metrics_savepoint().exner_ref_mc(),
+        exner_pr,
+        int32(0),
+        int32(num_cells),
+        int32(0),
+        int32(num_levels),
+        offset_provider={},
+    )
+    log.info("exner_pr initialization completed.")
+
+    diagnostic_state = DiagnosticState(
+        pressure=pressure,
+        pressure_ifc=pressure_ifc,
+        temperature=temperature,
+        u=u,
+        v=v,
+    )
+
+    prognostic_state_now = PrognosticState(
+        w=w,
+        vn=vn,
+        theta_v=theta_v,
+        rho=rho,
+        exner=exner,
+    )
+    prognostic_state_next = PrognosticState(
+        w=w_next,
+        vn=vn_next,
+        theta_v=theta_v_next,
+        rho=rho_next,
+        exner=exner_next,
+    )
+
+    diffusion_diagnostic_state = DiffusionDiagnosticState(
+        hdef_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        div_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        dwdx=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        dwdy=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+    )
+    solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
+        theta_v_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        exner_pr=exner_pr,
+        rho_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        ddt_exner_phy=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_rho=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_thv=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_w=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        mass_fl_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_vn_phy=_allocate(EdgeDim, KDim, grid=icon_grid),
+        grf_tend_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_vn_apc_ntl1=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_vn_apc_ntl2=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_w_adv_ntl1=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        ddt_w_adv_ntl2=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        vt=_allocate(EdgeDim, KDim, grid=icon_grid),
+        vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
+        w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
+        vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
+        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+        exner_dyn_incr=_allocate(CellDim, KDim, grid=icon_grid),
+    )
+
+    prep_adv = PrepAdvection(
+        vn_traj=_allocate(EdgeDim, KDim, grid=icon_grid),
+        mass_flx_me=_allocate(EdgeDim, KDim, grid=icon_grid),
+        mass_flx_ic=_allocate(CellDim, KDim, grid=icon_grid),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+    )
+    log.info("Initialization completed.")
+
+    return (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prep_adv,
+        0.0,  # divdamp_fac_o2 only != 0 for data assimilation
+        diagnostic_state,
+        prognostic_state_now,
+        prognostic_state_next,
+    )
 
 
 def model_initialization_jabw(
@@ -181,9 +446,10 @@ def model_initialization_jabw(
         EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
     grid_idx_edge_end = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
-    grid_idx_cell_interior_start = icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.interior(CellDim)
-    )
+    grid_idx_cell_interior_start = int32(0)
+    # icon_grid.get_start_index(
+    #     CellDim, HorizontalMarkerIndex.interior(CellDim)
+    # )
     grid_idx_cell_start_plus1 = icon_grid.get_end_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
@@ -654,6 +920,22 @@ def read_initial_state(
             prognostic_state_now,
             prognostic_state_next,
         ) = model_initialization_jabw(icon_grid, cell_param, edge_param, path, rank)
+    elif experiment_type == ExperimentType.GAUSS3D:
+        (
+            diffusion_diagnostic_state,
+            solve_nonhydro_diagnostic_state,
+            prep_adv,
+            divdamp_fac_o2,
+            diagnostic_state,
+            prognostic_state_now,
+            prognostic_state_next,
+        ) = model_initialization_gauss3d(icon_grid, edge_param, path, rank)
+        log.info(
+            f" MAX VN1: {prognostic_state_now.vn.ndarray.max():.15e} , MAX W: {prognostic_state_now.w.ndarray.max():.15e}"
+        )
+        log.info(
+            f" MAX VN1: {prognostic_state_next.vn.ndarray.max():.15e} , MAX W: {prognostic_state_next.w.ndarray.max():.15e}"
+        )
     elif experiment_type == ExperimentType.ANY:
         (
             diffusion_diagnostic_state,
@@ -712,6 +994,7 @@ def read_geometry_fields(
             nflatlev=sp.nflatlev(),
             nflat_gradp=sp.nflat_gradp(),
         )
+        log.info(f"Checking mean cell area: {cell_geometry.mean_cell_area}, real mean is {cell_geometry.area.asnumpy().mean()}")
         return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -805,40 +1088,114 @@ def read_static_fields(
         #             if edge_index == v2c2e_connectivity[i,j-1]:
         #                 print ("PENTAGON POINT", i, v2c2e_connectivity[i])
         #                 geofac_2order_div_array[i, j] = 0.0
+
+        # 
+        # v2c = icon_grid.connectivities[V2CDim]
+        # v2c2e = icon_grid.connectivities[V2C2EDim]
+        # c2e = icon_grid.connectivities[C2EDim]
+        # hexagon_area_ref = xp.sum(xp.where((v2c_connectivity != -1), cell_area[v2c_connectivity], 0), axis=1)
+        # hexagon_area_ref_icon = xp.sum(xp.where((v2c != -1), cell_area[v2c_connectivity], 0), axis=1)
+        # testing1 = xp.where((v2c_connectivity != -1), v2c_connectivity, -100)
+        # testing2 = xp.where((v2c != -1), v2c, -100)
+
+        # find pentagon
+        pentagon = xp.zeros(icon_grid.num_vertices, dtype=bool)
         for i in range(icon_grid.num_vertices):
-            hexagon_area = xp.sum(cell_area[v2c_connectivity[i,:]])
-            #print(i, v2c2e_connectivity[i].shape[0], cell_area[v2c_connectivity[i,:]].shape)
-            #print(cell_edge_orientation.shape, primal_edge_length.shape)
-            for j in range(v2c2e_connectivity[i].shape[0]):
-                edge_index = v2c2e_connectivity[i,j]
-                for k in range(v2c_connectivity[i].shape[0]):
-                    if edge_index in c2e_connectivity[v2c_connectivity[i,k]]:
-                        cell_index = v2c_connectivity[i,k]
-                        edge_in_local_cell_index = xp.where(c2e_connectivity[v2c_connectivity[i,k]] == edge_index)[0]
-                        if edge_in_local_cell_index > 2 or edge_in_local_cell_index < 0:
-                            raise ValueError(f"Something wrong when obtaining edge_in_local_cell_index: {edge_in_local_cell_index}. The vertex index: {i}. The edge index: {edge_index}. The cell index: {cell_index}")
-                        break
-                geofac_2order_div_array[i,j] = cell_edge_orientation[cell_index,edge_in_local_cell_index] * primal_edge_length[edge_index] / hexagon_area
-                if j == 5:
-                    if edge_index == v2c2e_connectivity[i,j-1]:
-                        print ("PENTAGON POINT", i, v2c2e_connectivity[i])
-                        geofac_2order_div_array[i, j] = 0.0
-        geofac_2order_div = as_field((VertexDim, V2C2EDim), geofac_2order_div_array)
-        print("geofac_div shape: ", interpolation_savepoint.geofac_div().ndarray.shape)
-        print("geofac_div 0: ", interpolation_savepoint.geofac_div().ndarray[0])
-        print("geofac_div 1: ", interpolation_savepoint.geofac_div().ndarray[1])
-        print("geofac_div 2: ", interpolation_savepoint.geofac_div().ndarray[2])
-        print("geofac_2order_div 0: ", geofac_2order_div.ndarray[0])
-        print("geofac_2order_div 1: ", geofac_2order_div.ndarray[1])
-        print("geofac_2order_div 2: ", geofac_2order_div.ndarray[2])
-        print("geofac_2order_div array 0: ", geofac_2order_div_array[0])
-        print("geofac_2order_div array 1: ", geofac_2order_div_array[1])
-        print("geofac_2order_div array 2: ", geofac_2order_div_array[2])
-        print("sparsed geofac_div shape: ", as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim).ndarray.shape)
-        print("V2C connectivity: ", v2c_connectivity[0])
-        print("c_intp 0: ", interpolation_savepoint.c_intp().ndarray[0])
-        print("c_intp 1: ", interpolation_savepoint.c_intp().ndarray[1])
-        print("c_intp 2: ", interpolation_savepoint.c_intp().ndarray[2])
+            if v2c_connectivity[i,4] == v2c_connectivity[i,5]:
+                pentagon[i] = True
+        hexagon_area_ref = xp.where(pentagon, xp.sum(cell_area[v2c_connectivity][:,:-1], axis=1), xp.sum(cell_area[v2c_connectivity][:,:], axis=1))  # xp.sum(xp.where((v2c != -1), cell_area[v2c_connectivity], 0), axis=1)
+        geofac_2order_div_array_ref = xp.zeros((icon_grid.num_vertices, 6), dtype=float)
+        cell_edge_orientation_ref = cell_edge_orientation[v2c_connectivity]
+        v2c2eo = c2e_connectivity[v2c_connectivity]
+        v2c2eo_reshape = xp.reshape(v2c2eo, (v2c2eo.shape[0], v2c2eo.shape[1]*v2c2eo.shape[2]))
+        v2c2eo_bool = xp.zeros((v2c2eo_reshape.shape[0], v2c2eo_reshape.shape[1]), dtype=bool)
+        for i in range(icon_grid.num_vertices):
+            v2c2eo_bool[i] = xp.isin(v2c2eo_reshape[i], v2c2e_connectivity[i])
+            if i == 100:
+                log.info(f"debugging: ++ {i} {v2c2eo_bool[i]} {v2c2eo_reshape[i]} {v2c2e_connectivity[i]}")
+        v2c2eo_bool = xp.reshape(v2c2eo_bool, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2]))
+        v2c2eo_back = xp.reshape(v2c2eo_reshape, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2]))
+        assert xp.allclose(v2c2eo_back, v2c2eo, rtol=1.e-12, atol=1.e-12)
+        # cell_edge_orientation_ref = xp.reshape(cell_edge_orientation_ref, (cell_edge_orientation_ref.shape[0], cell_edge_orientation_ref.shape[1]*cell_edge_orientation_ref.shape[2]))
+        primal_edge_length_ref = primal_edge_length[v2c2eo_reshape]
+        primal_edge_length_ref = xp.reshape(primal_edge_length_ref, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2]))
+        log.info(f"debugging new way: {geofac_2order_div_array_ref.shape} {cell_edge_orientation_ref.shape} {primal_edge_length_ref.shape} {v2c2eo_bool.shape}")
+        for j in range(6):
+            geofac_2order_div_array_ref[:,j] = xp.sum( cell_edge_orientation_ref[:,j,:] * primal_edge_length_ref[:,j,:] * v2c2eo_bool[:,j,:], axis=1)
+        hexagon_area_ref_expand = xp.expand_dims(hexagon_area_ref, axis=-1)
+        geofac_2order_div_array_ref = geofac_2order_div_array_ref / hexagon_area_ref_expand
+        for i in range(icon_grid.num_vertices):
+            if pentagon[i] == True:
+                geofac_2order_div_array_ref[i,5] = 0.0
+
+        # hexagon_area = xp.zeros(v2c_connectivity.shape[0], dtype=float)
+        # log.info(f"debugging new way: {cell_edge_orientation.shape}")
+        # log.info(f"debugging new way: {v2c_connectivity.shape}")
+        # log.info(f"debugging new way: {cell_edge_orientation_ref.shape}")
+        # for i in range(6):
+        #     log.info(f"debugging both ways: {i} {cell_edge_orientation_ref[100,i,:]}")
+        #     log.info(f"debugging both ways: {i} {primal_edge_length_ref[100,i,:]}")
+        #     log.info(f"debugging both ways: {i} {v2c2eo_bool[100,i,:]}")
+        # for i in range(icon_grid.num_vertices):
+        #     hexagon_area[i] = xp.sum(cell_area[v2c_connectivity[i,:]])
+        #     #print(i, v2c2e_connectivity[i].shape[0], cell_area[v2c_connectivity[i,:]].shape)
+        #     #print(cell_edge_orientation.shape, primal_edge_length.shape)
+        #     if i == 100:
+        #         for element in range(v2c2e_connectivity[i].shape[0]):
+        #             log.info(f"debugging both ways: ++ {i} {element} {v2c2e_connectivity[i,element]}")
+        #         for element in range(v2c_connectivity[i].shape[0]):
+        #             log.info(f"debugging both ways: + {i} {element} {v2c_connectivity[i,element]}  == {cell_edge_orientation[v2c_connectivity[i,element]]}")
+        #     for j in range(v2c2e_connectivity[i].shape[0]):
+        #         edge_index = v2c2e_connectivity[i,j]
+        #         is_strike = 0
+        #         for k in range(v2c_connectivity[i].shape[0]):
+        #             if edge_index in c2e_connectivity[v2c_connectivity[i,k]]:
+        #                 cell_index = v2c_connectivity[i,k]
+        #                 edge_in_local_cell_index = xp.where(c2e_connectivity[v2c_connectivity[i,k]] == edge_index)[0]
+        #                 is_strike = 1
+        #                 if edge_in_local_cell_index > 2 or edge_in_local_cell_index < 0:
+        #                     raise ValueError(f"Something wrong when obtaining edge_in_local_cell_index: {edge_in_local_cell_index}. The vertex index: {i}. The edge index: {edge_index}. The cell index: {cell_index}")
+        #                 break
+        #         if is_strike == 0:
+        #             raise ValueError(f"Something wrong when obtaining edge_in_local_cell_index: {edge_in_local_cell_index}. The vertex index: {i}. The edge index: {edge_index}. The cell index: {cell_index}")
+        #         if i == 100:
+        #             log.info(f"debugging both ways: +++ {i} {j} {cell_index} {edge_in_local_cell_index} {edge_index}")
+        #         geofac_2order_div_array[i,j] = cell_edge_orientation[cell_index,edge_in_local_cell_index] * primal_edge_length[edge_index] / hexagon_area[i]
+        #         if j == 5:
+        #             if edge_index == v2c2e_connectivity[i,j-1]:
+        #                 log.info(f"PENTAGON POINT, {i}, {v2c2e_connectivity[i]}")
+        #                 pentagon_area = xp.sum(cell_area[v2c_connectivity[i,0:5]])
+        #                 log.info(f"PENTAGON POINT, {i}, {pentagon_area} {hexagon_area[i]}")
+        #                 log.info(f"PENTAGON POINT, {v2c_connectivity[i]}")
+        #                 geofac_2order_div_array[i, j] = 0.0
+        #                 geofac_2order_div_array[i, 0:5] = geofac_2order_div_array[i, 0:5] * hexagon_area[i] / pentagon_area
+        #                 hexagon_area[i] = pentagon_area
+        # import sys
+        # assert xp.allclose(hexagon_area, hexagon_area_ref, rtol=1.e-12, atol=1.e-12)
+        # try:
+        #     assert xp.allclose(geofac_2order_div_array, geofac_2order_div_array_ref, rtol=1.e-12, atol=1.e-12)
+        # except:
+        #     log.info("OHNO, ASSERTION FALSE")
+        #     for i in range(icon_grid.num_vertices):
+        #         if xp.allclose(geofac_2order_div_array[i,:], geofac_2order_div_array_ref[i,:], rtol=1.e-12, atol=1.e-12):
+        #             print(i, geofac_2order_div_array[i,:], '  ===  ', geofac_2order_div_array_ref[i,:])
+        # sys.exit(0)
+        geofac_2order_div = as_field((VertexDim, V2C2EDim), geofac_2order_div_array_ref)
+        log.info(f"geofac_div shape: {interpolation_savepoint.geofac_div().ndarray.shape}")
+        log.info(f"geofac_div 0: {interpolation_savepoint.geofac_div().ndarray[0]}")
+        log.info(f"geofac_div 1: {interpolation_savepoint.geofac_div().ndarray[1]}", )
+        log.info(f"geofac_div 2: {interpolation_savepoint.geofac_div().ndarray[2]}")
+        log.info(f"geofac_2order_div 0: {geofac_2order_div.ndarray[0]}")
+        log.info(f"geofac_2order_div 1: {geofac_2order_div.ndarray[1]}")
+        log.info(f"geofac_2order_div 2: {geofac_2order_div.ndarray[2]}")
+        log.info(f"geofac_2order_div array 0: {geofac_2order_div_array[0]}")
+        log.info(f"geofac_2order_div array 1: {geofac_2order_div_array[1]}")
+        log.info(f"geofac_2order_div array 2: {geofac_2order_div_array[2]}")
+        log.info(f"sparsed geofac_div shape: {as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim).ndarray.shape}")
+        log.info(f"V2C connectivity: {v2c_connectivity[0]}")
+        log.info(f"c_intp 0: {interpolation_savepoint.c_intp().ndarray[0]}")
+        log.info(f"c_intp 1: {interpolation_savepoint.c_intp().ndarray[1]}")
+        log.info(f"c_intp 2: {interpolation_savepoint.c_intp().ndarray[2]}")
         solve_nonhydro_interpolation_state = InterpolationState(
             c_lin_e=interpolation_savepoint.c_lin_e(),
             c_intp=interpolation_savepoint.c_intp(),
@@ -906,6 +1263,7 @@ def read_static_fields(
             e_lat=grid_savepoint.edge_center_lat(),
             e_lon=grid_savepoint.edge_center_lon(),
             vct_a=grid_savepoint.vct_a(),
+            z_ifc=metrics_savepoint.z_ifc(),
         )
 
         return (

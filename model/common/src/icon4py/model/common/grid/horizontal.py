@@ -377,7 +377,7 @@ class CellParams:
         global_num_cells: int,
         length_rescale_factor: float = 1.0,
     ):
-        mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
+        mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells, area)
         return cls(
             cell_center_lat=cell_center_lat,
             cell_center_lon=cell_center_lon,
@@ -395,7 +395,7 @@ class CellParams:
         return self.mean_cell_area
 
     @staticmethod
-    def _compute_mean_cell_area(radius, num_cells):
+    def _compute_mean_cell_area(radius, num_cells, area):
         """
         Compute the mean cell area.
 
@@ -407,7 +407,14 @@ class CellParams:
             num_cells: number of cells on the global grid
         Returns: mean area of one cell [m^2]
         """
-        return 4.0 * math.pi * radius**2 / num_cells
+        if num_cells == 0:
+            # Compute from the area array (should be a torus grid)
+            # TODO (Magdalena) this would not work for a distributed setup (at
+            # least not for a sphere) for the torus it would because cell area
+            # is constant.
+            return area.asnumpy().mean()
+        else:
+            return 4.0 * math.pi * radius**2 / num_cells
 
 
 class RefinCtrlLevel:

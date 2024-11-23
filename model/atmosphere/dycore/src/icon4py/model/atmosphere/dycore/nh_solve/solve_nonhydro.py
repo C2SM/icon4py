@@ -100,8 +100,13 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     compute_z_raylfac,
     calculate_divdamp_fields,
     calculate_scal_divdamp_half,
+    init_cell_kdim_field_with_zero_vp,
+    compute_contravariant_correction,
 )
-
+from icon4py.model.atmosphere.dycore.velocity.helpers import (
+    compute_tangential_wind,
+    fused_stencils_9_10,
+)
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -122,7 +127,7 @@ from icon4py.model.common.decomposition.definitions import (
     ExchangeRuntime,
     SingleNodeExchange,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim, C2EDim
 from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.grid.horizontal import (
     CellParams,
@@ -182,6 +187,11 @@ class IntermediateFields:
     z_flxdiv2order_vn_vertex: Field[[VertexDim, KDim], float]
     z_flxdiv2order_graddiv_vn_vertex: Field[[VertexDim, KDim], float]
 
+    vt: Field[[EdgeDim, KDim], float]
+    z_w_concorr_me: Field[[EdgeDim, KDim], float]
+    z_w_concorr_mc: Field[[CellDim, KDim], float]
+    w_concorr_c: Field[[CellDim, KDim], float]
+
     @classmethod
     def allocate(cls, grid: BaseGrid):
         return IntermediateFields(
@@ -208,6 +218,10 @@ class IntermediateFields:
             z_flxdiv2order_graddiv_vn_vertex=_allocate(VertexDim, KDim, grid=grid),
             z_kin_hor_e=_allocate(EdgeDim, KDim, grid=grid),
             z_vt_ie=_allocate(EdgeDim, KDim, grid=grid),
+            vt=_allocate(EdgeDim, KDim, grid=grid),
+            z_w_concorr_me=_allocate(EdgeDim, KDim, grid=grid),
+            z_w_concorr_mc=_allocate(CellDim, KDim, grid=grid),
+            w_concorr_c=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
         )
 
 
@@ -1251,7 +1265,7 @@ class SolveNonhydro:
         copy_edge_kdim_field_to_vp(
             field=z_fields.z_gradh_exner,
             field_copy=self.output_intermediate_fields.output_predictor_gradh_exner,
-            horizontal_start=start_edge_nudging_plus1,
+            horizontal_start=int32(0),
             horizontal_end=end_edge_local,
             vertical_start=int32(0),
             vertical_end=self.grid.num_levels,
@@ -1260,7 +1274,7 @@ class SolveNonhydro:
         copy_edge_kdim_field_to_vp(
             field=z_fields.z_theta_v_e,
             field_copy=self.output_intermediate_fields.output_predictor_theta_v_e,
-            horizontal_start=start_edge_nudging_plus1,
+            horizontal_start=int32(0),
             horizontal_end=end_edge_local,
             vertical_start=int32(0),
             vertical_end=self.grid.num_levels,
@@ -1269,7 +1283,7 @@ class SolveNonhydro:
         copy_edge_kdim_field_to_vp(
             field=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
             field_copy=self.output_intermediate_fields.output_predictor_ddt_vn_apc_ntl1,
-            horizontal_start=start_edge_nudging_plus1,
+            horizontal_start=int32(0),
             horizontal_end=end_edge_local,
             vertical_start=int32(0),
             vertical_end=self.grid.num_levels,
@@ -1555,6 +1569,15 @@ class SolveNonhydro:
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
             vertical_start=0,
+            #vertical_end=self.grid.num_levels + int32(1),
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
+        init_cell_kdim_field_with_zero_vp(
+            field_with_zero_vp=z_fields.z_alpha,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=self.grid.num_levels,
             vertical_end=self.grid.num_levels + 1,
             offset_provider={},
         )
@@ -1947,6 +1970,13 @@ class SolveNonhydro:
             VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
         )
 
+        start_cell_lb_plus3 = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
+        )
+        end_cell_local_minus1 = self.grid.get_end_index(
+            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
+        )
+
         lvn_only = False
         log.debug(f"corrector run velocity advection")
         self.velocity_advection.run_corrector_step(
@@ -2058,7 +2088,7 @@ class SolveNonhydro:
             copy_edge_kdim_field_to_vp(
                 field=z_fields.z_gradh_exner,
                 field_copy=self.output_intermediate_fields.output_corrector_gradh_exner,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -2067,7 +2097,7 @@ class SolveNonhydro:
             copy_edge_kdim_field_to_vp(
                 field=z_fields.z_theta_v_e,
                 field_copy=self.output_intermediate_fields.output_corrector_theta_v_e,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -2076,12 +2106,13 @@ class SolveNonhydro:
             copy_edge_kdim_field_to_vp(
                 field=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl2],
                 field_copy=self.output_intermediate_fields.output_corrector_ddt_vn_apc_ntl2,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
+            
             # main update
             add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_state[nnow].vn,
@@ -2176,6 +2207,21 @@ class SolveNonhydro:
                         vertical_end=self.grid.num_levels,
                         offset_provider=self.grid.offset_providers,
                     )
+                    end_cell_nudging_minus1 = self.grid.get_end_index(
+                        CellDim,
+                        HorizontalMarkerIndex.nudging(CellDim) - 1,
+                    )
+                    compute_dwdz_for_divergence_damping(
+                        inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                        w=prognostic_state[nnew].w,
+                        w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                        z_dwdz_dd=z_fields.z_dwdz_dd,
+                        horizontal_start=start_cell_lb,
+                        horizontal_end=end_cell_nudging_minus1,
+                        vertical_start=self.params.kstart_dd3d,
+                        vertical_end=self.grid.num_levels,
+                        offset_provider=self.grid.offset_providers,
+                    )
                     """
                     z_flxdiv_vn_and_w (0:nlev-1):
                         Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
@@ -2195,46 +2241,47 @@ class SolveNonhydro:
                         append_write = 'a' # append if already exists
                     else:
                         append_write = 'w' # make a new file if not
+                    expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                    temporary = self.cell_params.area.ndarray
+                    temporary = xp.expand_dims(temporary, axis=-1)
+                    expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                    total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
                     with open(filename, append_write) as f:
-                        f.write(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray))+'\n')
+                        #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                        f.write(
+                            str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'\n'
+                        )
                     copy_cell_kdim_field_to_vp(
-                        field=z_fields.z_flxdiv_vn,
+                        field=z_fields.z_flxdiv_vn_and_w,
                         field_copy=self.output_intermediate_fields.output_before_flxdiv_vn,
-                        horizontal_start=start_cell_nudging,
+                        horizontal_start=int32(0),
                         horizontal_end=end_cell_local,
                         vertical_start=int32(0),
                         vertical_end=self.grid.num_levels,
                         offset_provider={},
                     )
-
-                if self.config.do_o2_divdamp:
-                    log.debug("corrector start stencil 2nd order divdamp")
-                    """
-                    vn (0:nlev-1):
-                        Apply the divergence damping to vn at full levels (edge center).
-                        vn = vn + scal_divdamp_o2 * Del(normal_direction) Div(vn)
-                    """
                     copy_edge_kdim_field_to_vp(
-                        field=self.z_graddiv_vn,
-                        field_copy=self.output_intermediate_fields.output_graddiv_vn,
-                        horizontal_start=start_edge_nudging_plus1,
+                        field=prognostic_state[nnew].vn,
+                        field_copy=self.output_intermediate_fields.output_before_vn,
+                        horizontal_start=int32(0),
                         horizontal_end=end_edge_local,
                         vertical_start=int32(0),
                         vertical_end=self.grid.num_levels,
                         offset_provider={},
                     )
-                    self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
-                    apply_4th_order_divergence_damping(
-                        scal_divdamp=self.scal_divdamp_o2,
-                        z_graddiv2_vn=z_fields.z_graddiv_vn,
-                        vn=prognostic_state[nnew].vn,
-                        horizontal_start=start_edge_nudging_plus1,
-                        horizontal_end=end_edge_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
+                    copy_cell_kdim_field_to_vp(
+                        field=prognostic_state[nnew].w,
+                        field_copy=self.output_intermediate_fields.output_before_w,
+                        horizontal_start=int32(0),
+                        horizontal_end=end_cell_local,
+                        vertical_start=int32(0),
+                        vertical_end=self.grid.num_levels+int32(1),
                         offset_provider={},
                     )
-                    if do_output:
+
+                if self.config.do_o2_divdamp:
+                    if self.config.do_3d_divergence_damping:
+                        log.debug("corrector start stencil 2nd order full 3d divdamp")
                         """
                         z_flxdiv_vn (0:nlev-1):
                             Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
@@ -2263,47 +2310,164 @@ class SolveNonhydro:
                             vertical_end=self.grid.num_levels,
                             offset_provider=self.grid.offset_providers,
                         )
-                        filename = "divergence_data_"+str(do_output_step)+"_"+str(do_output_substep)+".dat" 
-                        if os.path.exists(filename):
-                            append_write = 'a' # append if already exists
-                        else:
-                            append_write = 'w' # make a new file if not
-                        with open(filename, append_write) as f:
-                            f.write(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray))+'\n')
+                        """
+                        z_graddiv_normal (0:nlev-1):
+                            Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                        """
+                        compute_full3d_graddiv_normal(
+                            inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                            z_graddiv_normal=z_fields.z_graddiv_normal,
+                            horizontal_start=start_edge_nudging_plus1,
+                            horizontal_end=end_edge_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        """
+                        z_graddiv_vertical (1:nlev-1):
+                            Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                        """
+                        compute_full3d_graddiv_vertical(
+                            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                            z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                            z_graddiv_vertical=z_fields.z_graddiv_vertical,
+                            horizontal_start=start_cell_nudging,
+                            horizontal_end=end_cell_local,
+                            vertical_start=1,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider=self.grid.offset_providers,
+                        )
+                        """
+                        vn (0:nlev-1):
+                            Apply the divergence damping to vn at full levels (edge center).
+                            vn = vn + scal_divdamp_o2 * Del(normal_direction) Div(vn)
+                        """
+                        copy_edge_kdim_field_to_vp(
+                            field=self.z_graddiv_vn,
+                            field_copy=self.output_intermediate_fields.output_graddiv_vn,
+                            horizontal_start=int32(0),
+                            horizontal_end=end_edge_local,
+                            vertical_start=int32(0),
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                        """
+                        vn (0:nlev-1):
+                            Apply the higher order divergence damping to vn at full levels (edge center).
+                            vn = vn + scal_divdamp * Del(normal_direction) Div( Del Div(V) )
+                        """
+                        copy_edge_kdim_field_to_vp(
+                            field=self.z_graddiv2_normal,
+                            field_copy=self.output_intermediate_fields.output_graddiv2_normal,
+                            horizontal_start=int32(0),
+                            horizontal_end=end_edge_local,
+                            vertical_start=int32(0),
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                        copy_cell_kdim_field_to_vp(
+                            field=self.z_graddiv2_vertical,
+                            field_copy=self.output_intermediate_fields.output_graddiv2_vertical,
+                            horizontal_start=int32(0),
+                            horizontal_end=end_cell_local,
+                            vertical_start=int32(0),
+                            vertical_end=self.grid.num_levels+int32(1),
+                            offset_provider={},
+                        )
+                        self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
+                        # log.info(f"{z_fields.z_graddiv_normal.ndarray.min():.15e} {z_fields.z_graddiv_normal.ndarray.max():.15e}")
+                        # log.info(f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
+                        # log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
+                        # log.info(f"{self.z_graddiv2_vertical.ndarray.min():.15e} {self.z_graddiv2_vertical.ndarray.max():.15e}")
+                        # log.info(f"{z_fields.z_flxdiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_vn_and_w.ndarray.max():.15e}")
+                        # log.info(f"{z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.max():.15e}")
+                        # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
+                        # for k in range(self.grid.num_levels):
+                        #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
+                        apply_4th_order_3d_divergence_damping_to_vn(
+                            scal_divdamp=self.scal_divdamp_o2,
+                            z_graddiv2_normal=self.z_graddiv_normal,
+                            vn=prognostic_state[nnew].vn,
+                            horizontal_start=start_edge_nudging_plus1,
+                            horizontal_end=end_edge_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                        """
+                        w (1:nlev-1):
+                            Apply the higher order divergence damping to w at half levels (cell center).
+                            w = w + scal_divdamp_half * Del(vertical_direction) Div( Del Div(V) )
+                        """
+                        apply_4th_order_3d_divergence_damping_to_w(
+                            scal_divdamp_half=self.scal_divdamp_o2_half,
+                            z_graddiv2_vertical=self.z_graddiv_vertical,
+                            w=prognostic_state[nnew].w,
+                            horizontal_start=start_cell_nudging,
+                            horizontal_end=end_cell_local,
+                            vertical_start=1,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
 
-                    if self.config.do_multiple_divdamp:
-                        for _ in range(self.config.number_of_divdamp_step-1):
+                        if do_output:
                             """
-                            z_vn_avg (0:nlev-1):
-                                Compute the averaged normal velocity at full levels (edge center).
-                                TODO (Chia Rui): Fill in details about how the coefficients are computed.
-                            z_graddiv_vn (0:nlev-1):
-                                Compute normal gradient of divergence at full levels (edge center).
-                                z_graddiv_vn = Del(normal_direction) divergence
-                            vt (0:nlev-1):
-                                Compute tangential velocity by rbf interpolation at full levels (edge center).
+                            z_flxdiv_vn (0:nlev-1):
+                                Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
                             """
-                            compute_avg_vn_and_graddiv_vn_and_vt(
-                                e_flx_avg=self.interpolation_state.e_flx_avg,
+                            compute_divergence_of_flux_of_normal_wind(
+                                geofac_div=self.interpolation_state.geofac_div,
                                 vn=prognostic_state[nnew].vn,
-                                geofac_grdiv=self.interpolation_state.geofac_grdiv,
+                                z_flxdiv_vn=z_fields.z_flxdiv_vn,
+                                horizontal_start=start_cell_nudging,
+                                horizontal_end=end_cell_local,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            """
+                            vt (0:nlev-1):
+                                Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                edges (diamond shape) and projected to tangential direction.
+                            """
+                            compute_tangential_wind(
+                                vn=prognostic_state[nnew].vn,
                                 rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
-                                z_vn_avg=self.redundant_z_vn_avg,
-                                z_graddiv_vn=z_fields.z_graddiv_vn,
-                                vt=self.redundant_vt,
+                                vt=z_fields.vt,
                                 horizontal_start=start_edge_lb_plus4,
                                 horizontal_end=end_edge_local_minus2,
                                 vertical_start=0,
                                 vertical_end=self.grid.num_levels,
                                 offset_provider=self.grid.offset_providers,
                             )
-
-                            """
-                            z_dwdz_dd (dd3d_lev:nlev-1):
-                                Compute vertical derivative of vertical velocity at full levels (cell center).
-                                z_dwdz_dḍ_{k} = ( w_{k-1/2} - w_{k+1/2} ) / dz_{k} - ( contravariant_correction_{k-1/2} - contravariant_correction_{k+1/2} ) / dz_{k}
-                                contravariant_correction is precomputed by w_concorr_c at half levels.
-                            """
+                            compute_contravariant_correction(
+                                vn=prognostic_state[nnew].vn,
+                                ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                vt=z_fields.vt,
+                                z_w_concorr_me=z_fields.z_w_concorr_me,
+                                horizontal_start=start_edge_lb_plus4,
+                                horizontal_end=end_edge_local_minus2,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            fused_stencils_9_10(
+                                z_w_concorr_me=z_fields.z_w_concorr_me,
+                                e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                k_field=self.k_field,
+                                nflatlev_startindex=self.vertical_params.nflatlev,
+                                nlev=self.grid.num_levels,
+                                horizontal_start=start_cell_lb_plus3,
+                                horizontal_end=end_cell_local_minus1,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
                             end_cell_nudging_minus1 = self.grid.get_end_index(
                                 CellDim,
                                 HorizontalMarkerIndex.nudging(CellDim) - 1,
@@ -2319,52 +2483,45 @@ class SolveNonhydro:
                                 vertical_end=self.grid.num_levels,
                                 offset_provider=self.grid.offset_providers,
                             )
-
                             """
-                            z_graddiv_vn (dd3d_lev:nlev-1):
-                                Add vertical wind derivative to the normal gradient of divergence at full levels (edge center).
-                                z_graddiv_vn_{k} = z_graddiv_vn_{k} + scalfac_dd3d_{k} d2w_{k}/dzdn
+                            z_flxdiv_vn_and_w (0:nlev-1):
+                                Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
                             """
-                            add_vertical_wind_derivative_to_divergence_damping(
-                                hmask_dd3d=self.metric_state_nonhydro.hmask_dd3d,
-                                scalfac_dd3d=self.metric_state_nonhydro.scalfac_dd3d,
-                                inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                            add_dwdz_to_divergence_of_flux_of_normal_wind(
                                 z_dwdz_dd=z_fields.z_dwdz_dd,
-                                z_graddiv_vn=z_fields.z_graddiv_vn,
-                                horizontal_start=start_edge_lb_plus6,
-                                horizontal_end=end_edge_local_minus2,
-                                vertical_start=self.params.kstart_dd3d,
+                                z_flxdiv_vn=z_fields.z_flxdiv_vn,
+                                z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                                horizontal_start=start_cell_nudging,
+                                horizontal_end=end_cell_local,
+                                vertical_start=0,
                                 vertical_end=self.grid.num_levels,
                                 offset_provider=self.grid.offset_providers,
                             )
+                            filename = "divergence_data_"+str(do_output_step)+"_"+str(do_output_substep)+".dat" 
+                            if os.path.exists(filename):
+                                append_write = 'a' # append if already exists
+                            else:
+                                append_write = 'w' # make a new file if not
+                            expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                            temporary = self.cell_params.area.ndarray
+                            temporary = xp.expand_dims(temporary, axis=-1)
+                            expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                            total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                            temporary1 = self.z_graddiv_normal.ndarray**2
+                            temporary2 = self.z_graddiv_vertical.ndarray**2
+                            temporary3 = xp.zeros_like(expanded_weight)
+                            c2e = self.grid.connectivities[C2EDim]
+                            for k in range(self.grid.num_levels):
+                                temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1) + temporary2[:,k+1] + temporary2[:,k]
+                                temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
+                            with open(filename, append_write) as f:
+                                #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                f.write(
+                                    str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                )
 
-                            log.debug("corrector start stencil 2nd order multi divdamp")
-                            """
-                            vn (0:nlev-1):
-                                Apply the higher order divergence damping to vn at full levels (edge center).
-                                vn = vn + scal_divdamp * Del(normal_direction) Div( Del(normal_direction) Div(vn) )
-                            """
-                            log.info(f"{z_fields.z_graddiv_vn.ndarray.min():.15e} {z_fields.z_graddiv_vn.ndarray.max():.15e}")
-                            # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
-                            # for k in range(self.grid.num_levels):
-                            #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
-                            """
-                            vn (0:nlev-1):
-                                Apply the divergence damping to vn at full levels (edge center).
-                                vn = vn + scal_divdamp_o2 * Del(normal_direction) Div(vn)
-                            """
-                            apply_4th_order_divergence_damping(
-                                scal_divdamp=self.scal_divdamp_o2,
-                                z_graddiv2_vn=z_fields.z_graddiv_vn,
-                                vn=prognostic_state[nnew].vn,
-                                horizontal_start=start_edge_nudging_plus1,
-                                horizontal_end=end_edge_local,
-                                vertical_start=0,
-                                vertical_end=self.grid.num_levels,
-                                offset_provider={},
-                            )
-
-                            if do_output:
+                        if self.config.do_multiple_divdamp:
+                            for _ in range(self.config.number_of_divdamp_step-1):
                                 """
                                 z_flxdiv_vn (0:nlev-1):
                                     Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
@@ -2376,6 +2533,69 @@ class SolveNonhydro:
                                     horizontal_start=start_cell_nudging,
                                     horizontal_end=end_cell_local,
                                     vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                """
+                                vt (0:nlev-1):
+                                    Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                    edges (diamond shape) and projected to tangential direction.
+                                """
+                                compute_tangential_wind(
+                                    vn=prognostic_state[nnew].vn,
+                                    rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                    vt=z_fields.vt,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                compute_contravariant_correction(
+                                    vn=prognostic_state[nnew].vn,
+                                    ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                    ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                    vt=z_fields.vt,
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                fused_stencils_9_10(
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                    local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                    wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                    w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                    k_field=self.k_field,
+                                    nflatlev_startindex=self.vertical_params.nflatlev,
+                                    nlev=self.grid.num_levels,
+                                    horizontal_start=start_cell_lb_plus3,
+                                    horizontal_end=end_cell_local_minus1,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                """
+                                z_dwdz_dd (dd3d_lev:nlev-1):
+                                    Compute vertical derivative of vertical velocity at full levels (cell center).
+                                    z_dwdz_dḍ_{k} = ( w_{k-1/2} - w_{k+1/2} ) / dz_{k} - ( contravariant_correction_{k-1/2} - contravariant_correction_{k+1/2} ) / dz_{k}
+                                    contravariant_correction is precomputed by w_concorr_c at half levels.
+                                """
+                                end_cell_nudging_minus1 = self.grid.get_end_index(
+                                    CellDim,
+                                    HorizontalMarkerIndex.nudging(CellDim) - 1,
+                                )
+                                compute_dwdz_for_divergence_damping(
+                                    inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                                    w=prognostic_state[nnew].w,
+                                    w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                    z_dwdz_dd=z_fields.z_dwdz_dd,
+                                    horizontal_start=start_cell_lb,
+                                    horizontal_end=end_cell_nudging_minus1,
+                                    vertical_start=self.params.kstart_dd3d,
                                     vertical_end=self.grid.num_levels,
                                     offset_provider=self.grid.offset_providers,
                                 )
@@ -2393,13 +2613,557 @@ class SolveNonhydro:
                                     vertical_end=self.grid.num_levels,
                                     offset_provider=self.grid.offset_providers,
                                 )
-                                filename = "divergence_data_"+str(do_output_step)+"_"+str(do_output_substep)+".dat" 
-                                if os.path.exists(filename):
-                                    append_write = 'a' # append if already exists
-                                else:
-                                    append_write = 'w' # make a new file if not
-                                with open(filename, append_write) as f:
-                                    f.write(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray))+'\n')
+                                """
+                                z_graddiv_normal (0:nlev-1):
+                                    Compute the horizontal gradient of the 3d divergence of normal wind at full levels (edge center).
+                                """
+                                compute_full3d_graddiv_normal(
+                                    inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                                    z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                                    z_graddiv_normal=z_fields.z_graddiv_normal,
+                                    horizontal_start=start_edge_nudging_plus1,
+                                    horizontal_end=end_edge_local,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                """
+                                z_graddiv_vertical (1:nlev-1):
+                                    Compute the vertical gradient of the 3d divergence of normal wind at half levels (cell center).
+                                """
+                                compute_full3d_graddiv_vertical(
+                                    ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+                                    z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                                    z_graddiv_vertical=z_fields.z_graddiv_vertical,
+                                    horizontal_start=start_cell_nudging,
+                                    horizontal_end=end_cell_local,
+                                    vertical_start=1,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                
+                                log.debug("corrector start stencil 2nd order multi full 3d divdamp")
+                                # log.info(f"{z_fields.z_graddiv_normal.ndarray.min():.15e} {z_fields.z_graddiv_normal.ndarray.max():.15e}")
+                                # log.info(f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
+                                # log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
+                                # log.info(f"{self.z_graddiv2_vertical.ndarray.min():.15e} {self.z_graddiv2_vertical.ndarray.max():.15e}")
+                                # log.info(f"{z_fields.z_flxdiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_vn_and_w.ndarray.max():.15e}")
+                                # log.info(f"{z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.max():.15e}")
+                                # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
+                                # for k in range(self.grid.num_levels):
+                                #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
+                                apply_4th_order_3d_divergence_damping_to_vn(
+                                    scal_divdamp=self.scal_divdamp_o2,
+                                    z_graddiv2_normal=self.z_graddiv_normal,
+                                    vn=prognostic_state[nnew].vn,
+                                    horizontal_start=start_edge_nudging_plus1,
+                                    horizontal_end=end_edge_local,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider={},
+                                )
+                                """
+                                w (1:nlev-1):
+                                    Apply the higher order divergence damping to w at half levels (cell center).
+                                    w = w + scal_divdamp_half * Del(vertical_direction) Div( Del Div(V) )
+                                """
+                                apply_4th_order_3d_divergence_damping_to_w(
+                                    scal_divdamp_half=self.scal_divdamp_o2_half,
+                                    z_graddiv2_vertical=self.z_graddiv_vertical,
+                                    w=prognostic_state[nnew].w,
+                                    horizontal_start=start_cell_nudging,
+                                    horizontal_end=end_cell_local,
+                                    vertical_start=1,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider={},
+                                )
+
+                                if do_output:
+                                    """
+                                    z_flxdiv_vn (0:nlev-1):
+                                        Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
+                                    """
+                                    compute_divergence_of_flux_of_normal_wind(
+                                        geofac_div=self.interpolation_state.geofac_div,
+                                        vn=prognostic_state[nnew].vn,
+                                        z_flxdiv_vn=z_fields.z_flxdiv_vn,
+                                        horizontal_start=start_cell_nudging,
+                                        horizontal_end=end_cell_local,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    """
+                                    vt (0:nlev-1):
+                                        Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                        edges (diamond shape) and projected to tangential direction.
+                                    """
+                                    compute_tangential_wind(
+                                        vn=prognostic_state[nnew].vn,
+                                        rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                        vt=z_fields.vt,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    compute_contravariant_correction(
+                                        vn=prognostic_state[nnew].vn,
+                                        ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                        ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                        vt=z_fields.vt,
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    fused_stencils_9_10(
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                        local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                        wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                        w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                        k_field=self.k_field,
+                                        nflatlev_startindex=self.vertical_params.nflatlev,
+                                        nlev=self.grid.num_levels,
+                                        horizontal_start=start_cell_lb_plus3,
+                                        horizontal_end=end_cell_local_minus1,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    end_cell_nudging_minus1 = self.grid.get_end_index(
+                                        CellDim,
+                                        HorizontalMarkerIndex.nudging(CellDim) - 1,
+                                    )
+                                    compute_dwdz_for_divergence_damping(
+                                        inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                                        w=prognostic_state[nnew].w,
+                                        w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                        z_dwdz_dd=z_fields.z_dwdz_dd,
+                                        horizontal_start=start_cell_lb,
+                                        horizontal_end=end_cell_nudging_minus1,
+                                        vertical_start=self.params.kstart_dd3d,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    """
+                                    z_flxdiv_vn_and_w (0:nlev-1):
+                                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                                    """
+                                    add_dwdz_to_divergence_of_flux_of_normal_wind(
+                                        z_dwdz_dd=z_fields.z_dwdz_dd,
+                                        z_flxdiv_vn=z_fields.z_flxdiv_vn,
+                                        z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                                        horizontal_start=start_cell_nudging,
+                                        horizontal_end=end_cell_local,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    filename = "divergence_data_"+str(do_output_step)+"_"+str(do_output_substep)+".dat" 
+                                    if os.path.exists(filename):
+                                        append_write = 'a' # append if already exists
+                                    else:
+                                        append_write = 'w' # make a new file if not
+                                    expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                                    temporary = self.cell_params.area.ndarray
+                                    temporary = xp.expand_dims(temporary, axis=-1)
+                                    expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                                    total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                                    temporary1 = self.z_graddiv_normal.ndarray**2
+                                    temporary2 = self.z_graddiv_vertical.ndarray**2
+                                    temporary3 = xp.zeros_like(expanded_weight)
+                                    c2e = self.grid.connectivities[C2EDim]
+                                    for k in range(self.grid.num_levels):
+                                        temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1) + temporary2[:,k+1] + temporary2[:,k]
+                                        temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
+                                    with open(filename, append_write) as f:
+                                        #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                        f.write(
+                                            str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                        )
+                    else:
+                        log.debug("corrector start stencil 2nd order divdamp")
+                        """
+                        vn (0:nlev-1):
+                            Apply the divergence damping to vn at full levels (edge center).
+                            vn = vn + scal_divdamp_o2 * Del(normal_direction) Div(vn)
+                        """
+                        copy_edge_kdim_field_to_vp(
+                            field=self.z_graddiv_vn,
+                            field_copy=self.output_intermediate_fields.output_graddiv_vn,
+                            horizontal_start=int32(0),
+                            horizontal_end=end_edge_local,
+                            vertical_start=int32(0),
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                        self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
+                        apply_4th_order_divergence_damping(
+                            scal_divdamp=self.scal_divdamp_o2,
+                            z_graddiv2_vn=z_fields.z_graddiv_vn,
+                            vn=prognostic_state[nnew].vn,
+                            horizontal_start=start_edge_nudging_plus1,
+                            horizontal_end=end_edge_local,
+                            vertical_start=0,
+                            vertical_end=self.grid.num_levels,
+                            offset_provider={},
+                        )
+                        if do_output:
+                            """
+                            z_flxdiv_vn (0:nlev-1):
+                                Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
+                            """
+                            compute_divergence_of_flux_of_normal_wind(
+                                geofac_div=self.interpolation_state.geofac_div,
+                                vn=prognostic_state[nnew].vn,
+                                z_flxdiv_vn=z_fields.z_flxdiv_vn,
+                                horizontal_start=start_cell_nudging,
+                                horizontal_end=end_cell_local,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            """
+                            vt (0:nlev-1):
+                                Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                edges (diamond shape) and projected to tangential direction.
+                            """
+                            compute_tangential_wind(
+                                vn=prognostic_state[nnew].vn,
+                                rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                vt=z_fields.vt,
+                                horizontal_start=start_edge_lb_plus4,
+                                horizontal_end=end_edge_local_minus2,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            compute_contravariant_correction(
+                                vn=prognostic_state[nnew].vn,
+                                ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                vt=z_fields.vt,
+                                z_w_concorr_me=z_fields.z_w_concorr_me,
+                                horizontal_start=start_edge_lb_plus4,
+                                horizontal_end=end_edge_local_minus2,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            fused_stencils_9_10(
+                                z_w_concorr_me=z_fields.z_w_concorr_me,
+                                e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                k_field=self.k_field,
+                                nflatlev_startindex=self.vertical_params.nflatlev,
+                                nlev=self.grid.num_levels,
+                                horizontal_start=start_cell_lb_plus3,
+                                horizontal_end=end_cell_local_minus1,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            end_cell_nudging_minus1 = self.grid.get_end_index(
+                                CellDim,
+                                HorizontalMarkerIndex.nudging(CellDim) - 1,
+                            )
+                            compute_dwdz_for_divergence_damping(
+                                inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                                w=prognostic_state[nnew].w,
+                                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                z_dwdz_dd=z_fields.z_dwdz_dd,
+                                horizontal_start=start_cell_lb,
+                                horizontal_end=end_cell_nudging_minus1,
+                                vertical_start=self.params.kstart_dd3d,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            """
+                            z_flxdiv_vn_and_w (0:nlev-1):
+                                Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                            """
+                            add_dwdz_to_divergence_of_flux_of_normal_wind(
+                                z_dwdz_dd=z_fields.z_dwdz_dd,
+                                z_flxdiv_vn=z_fields.z_flxdiv_vn,
+                                z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                                horizontal_start=start_cell_nudging,
+                                horizontal_end=end_cell_local,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            filename = "divergence_data_"+str(do_output_step)+"_"+str(do_output_substep)+".dat" 
+                            if os.path.exists(filename):
+                                append_write = 'a' # append if already exists
+                            else:
+                                append_write = 'w' # make a new file if not
+                            expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                            temporary = self.cell_params.area.ndarray
+                            temporary = xp.expand_dims(temporary, axis=-1)
+                            expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                            total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                            temporary1 = self.z_graddiv_vn.ndarray**2
+                            temporary3 = xp.zeros_like(expanded_weight)
+                            c2e = self.grid.connectivities[C2EDim]
+                            for k in range(self.grid.num_levels):
+                                temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1)
+                                temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
+                            with open(filename, append_write) as f:
+                                #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                f.write(
+                                    str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                )
+
+                        if self.config.do_multiple_divdamp:
+                            for _ in range(self.config.number_of_divdamp_step-1):
+                                """
+                                z_vn_avg (0:nlev-1):
+                                    Compute the averaged normal velocity at full levels (edge center).
+                                    TODO (Chia Rui): Fill in details about how the coefficients are computed.
+                                z_graddiv_vn (0:nlev-1):
+                                    Compute normal gradient of divergence at full levels (edge center).
+                                    z_graddiv_vn = Del(normal_direction) divergence
+                                vt (0:nlev-1):
+                                    Compute tangential velocity by rbf interpolation at full levels (edge center).
+                                """
+                                compute_avg_vn_and_graddiv_vn_and_vt(
+                                    e_flx_avg=self.interpolation_state.e_flx_avg,
+                                    vn=prognostic_state[nnew].vn,
+                                    geofac_grdiv=self.interpolation_state.geofac_grdiv,
+                                    rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                    z_vn_avg=self.redundant_z_vn_avg,
+                                    z_graddiv_vn=z_fields.z_graddiv_vn,
+                                    vt=self.redundant_vt,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+
+                                """
+                                vt (0:nlev-1):
+                                    Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                    edges (diamond shape) and projected to tangential direction.
+                                """
+                                compute_tangential_wind(
+                                    vn=prognostic_state[nnew].vn,
+                                    rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                    vt=z_fields.vt,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                compute_contravariant_correction(
+                                    vn=prognostic_state[nnew].vn,
+                                    ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                    ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                    vt=z_fields.vt,
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                fused_stencils_9_10(
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                    local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                    wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                    w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                    k_field=self.k_field,
+                                    nflatlev_startindex=self.vertical_params.nflatlev,
+                                    nlev=self.grid.num_levels,
+                                    horizontal_start=start_cell_lb_plus3,
+                                    horizontal_end=end_cell_local_minus1,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+
+                                """
+                                z_dwdz_dd (dd3d_lev:nlev-1):
+                                    Compute vertical derivative of vertical velocity at full levels (cell center).
+                                    z_dwdz_dḍ_{k} = ( w_{k-1/2} - w_{k+1/2} ) / dz_{k} - ( contravariant_correction_{k-1/2} - contravariant_correction_{k+1/2} ) / dz_{k}
+                                    contravariant_correction is precomputed by w_concorr_c at half levels.
+                                """
+                                end_cell_nudging_minus1 = self.grid.get_end_index(
+                                    CellDim,
+                                    HorizontalMarkerIndex.nudging(CellDim) - 1,
+                                )
+                                compute_dwdz_for_divergence_damping(
+                                    inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                                    w=prognostic_state[nnew].w,
+                                    w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                    z_dwdz_dd=z_fields.z_dwdz_dd,
+                                    horizontal_start=start_cell_lb,
+                                    horizontal_end=end_cell_nudging_minus1,
+                                    vertical_start=self.params.kstart_dd3d,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+
+                                """
+                                z_graddiv_vn (dd3d_lev:nlev-1):
+                                    Add vertical wind derivative to the normal gradient of divergence at full levels (edge center).
+                                    z_graddiv_vn_{k} = z_graddiv_vn_{k} + scalfac_dd3d_{k} d2w_{k}/dzdn
+                                """
+                                add_vertical_wind_derivative_to_divergence_damping(
+                                    hmask_dd3d=self.metric_state_nonhydro.hmask_dd3d,
+                                    scalfac_dd3d=self.metric_state_nonhydro.scalfac_dd3d,
+                                    inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                                    z_dwdz_dd=z_fields.z_dwdz_dd,
+                                    z_graddiv_vn=z_fields.z_graddiv_vn,
+                                    horizontal_start=start_edge_lb_plus6,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=self.params.kstart_dd3d,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+
+                                log.debug("corrector start stencil 2nd order multi divdamp")
+                                """
+                                vn (0:nlev-1):
+                                    Apply the higher order divergence damping to vn at full levels (edge center).
+                                    vn = vn + scal_divdamp * Del(normal_direction) Div( Del(normal_direction) Div(vn) )
+                                """
+                                # log.info(f"{z_fields.z_graddiv_vn.ndarray.min():.15e} {z_fields.z_graddiv_vn.ndarray.max():.15e}")
+                                # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
+                                # for k in range(self.grid.num_levels):
+                                #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
+                                """
+                                vn (0:nlev-1):
+                                    Apply the divergence damping to vn at full levels (edge center).
+                                    vn = vn + scal_divdamp_o2 * Del(normal_direction) Div(vn)
+                                """
+                                apply_4th_order_divergence_damping(
+                                    scal_divdamp=self.scal_divdamp_o2,
+                                    z_graddiv2_vn=z_fields.z_graddiv_vn,
+                                    vn=prognostic_state[nnew].vn,
+                                    horizontal_start=start_edge_nudging_plus1,
+                                    horizontal_end=end_edge_local,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider={},
+                                )
+
+                                if do_output:
+                                    """
+                                    z_flxdiv_vn (0:nlev-1):
+                                        Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
+                                    """
+                                    compute_divergence_of_flux_of_normal_wind(
+                                        geofac_div=self.interpolation_state.geofac_div,
+                                        vn=prognostic_state[nnew].vn,
+                                        z_flxdiv_vn=z_fields.z_flxdiv_vn,
+                                        horizontal_start=start_cell_nudging,
+                                        horizontal_end=end_cell_local,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    """
+                                    vt (0:nlev-1):
+                                        Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                        edges (diamond shape) and projected to tangential direction.
+                                    """
+                                    compute_tangential_wind(
+                                        vn=prognostic_state[nnew].vn,
+                                        rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                        vt=z_fields.vt,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    compute_contravariant_correction(
+                                        vn=prognostic_state[nnew].vn,
+                                        ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                        ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                        vt=z_fields.vt,
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    fused_stencils_9_10(
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                        local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                        wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                        w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                        k_field=self.k_field,
+                                        nflatlev_startindex=self.vertical_params.nflatlev,
+                                        nlev=self.grid.num_levels,
+                                        horizontal_start=start_cell_lb_plus3,
+                                        horizontal_end=end_cell_local_minus1,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    end_cell_nudging_minus1 = self.grid.get_end_index(
+                                        CellDim,
+                                        HorizontalMarkerIndex.nudging(CellDim) - 1,
+                                    )
+                                    compute_dwdz_for_divergence_damping(
+                                        inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                                        w=prognostic_state[nnew].w,
+                                        w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                        z_dwdz_dd=z_fields.z_dwdz_dd,
+                                        horizontal_start=start_cell_lb,
+                                        horizontal_end=end_cell_nudging_minus1,
+                                        vertical_start=self.params.kstart_dd3d,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    """
+                                    z_flxdiv_vn_and_w (0:nlev-1):
+                                        Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
+                                    """
+                                    add_dwdz_to_divergence_of_flux_of_normal_wind(
+                                        z_dwdz_dd=z_fields.z_dwdz_dd,
+                                        z_flxdiv_vn=z_fields.z_flxdiv_vn,
+                                        z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
+                                        horizontal_start=start_cell_nudging,
+                                        horizontal_end=end_cell_local,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    filename = "divergence_data_"+str(do_output_step)+"_"+str(do_output_substep)+".dat" 
+                                    if os.path.exists(filename):
+                                        append_write = 'a' # append if already exists
+                                    else:
+                                        append_write = 'w' # make a new file if not
+                                    expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                                    temporary = self.cell_params.area.ndarray
+                                    temporary = xp.expand_dims(temporary, axis=-1)
+                                    expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                                    total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                                    temporary1 = self.z_graddiv_vn.ndarray**2
+                                    temporary3 = xp.zeros_like(expanded_weight)
+                                    c2e = self.grid.connectivities[C2EDim]
+                                    for k in range(self.grid.num_levels):
+                                        temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1)
+                                        temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
+                                    with open(filename, append_write) as f:
+                                        #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                        f.write(
+                                            str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                        )
 
                 else:
                     if self.config.do_second_order_3d_divergence_damping:
@@ -2585,7 +3349,7 @@ class SolveNonhydro:
                         copy_edge_kdim_field_to_vp(
                             field=self.z_graddiv2_normal,
                             field_copy=self.output_intermediate_fields.output_graddiv2_normal,
-                            horizontal_start=start_edge_nudging_plus1,
+                            horizontal_start=int32(0),
                             horizontal_end=end_edge_local,
                             vertical_start=int32(0),
                             vertical_end=self.grid.num_levels,
@@ -2594,22 +3358,22 @@ class SolveNonhydro:
                         copy_cell_kdim_field_to_vp(
                             field=self.z_graddiv2_vertical,
                             field_copy=self.output_intermediate_fields.output_graddiv2_vertical,
-                            horizontal_start=start_cell_nudging,
+                            horizontal_start=int32(0),
                             horizontal_end=end_cell_local,
                             vertical_start=int32(0),
                             vertical_end=self.grid.num_levels+int32(1),
                             offset_provider={},
                         )
                         self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
-                        log.info(
-                            f"{z_fields.z_graddiv_normal.ndarray.min():.15e} {z_fields.z_graddiv_normal.ndarray.max():.15e}")
-                        log.info(
-                            f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
-                        log.info(f"{z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray.min():.15e} {z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray.max():.15e}")
-                        log.info(f"{z_fields.z_flxdiv_graddiv_vn.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn.ndarray.max():.15e}")
-                        log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
-                        log.info(
-                            f"{self.z_graddiv2_vertical.ndarray.min():.15e} {self.z_graddiv2_vertical.ndarray.max():.15e}")
+                        # log.info(
+                        #     f"{z_fields.z_graddiv_normal.ndarray.min():.15e} {z_fields.z_graddiv_normal.ndarray.max():.15e}")
+                        # log.info(
+                        #     f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
+                        # log.info(f"{z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray.min():.15e} {z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray.max():.15e}")
+                        # log.info(f"{z_fields.z_flxdiv_graddiv_vn.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn.ndarray.max():.15e}")
+                        # log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
+                        # log.info(
+                        #     f"{self.z_graddiv2_vertical.ndarray.min():.15e} {self.z_graddiv2_vertical.ndarray.max():.15e}")
                         # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
                         # for k in range(self.grid.num_levels):
                         #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
@@ -2655,6 +3419,48 @@ class SolveNonhydro:
                                 offset_provider=self.grid.offset_providers,
                             )
                             """
+                            vt (0:nlev-1):
+                                Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                edges (diamond shape) and projected to tangential direction.
+                            """
+                            compute_tangential_wind(
+                                vn=prognostic_state[nnew].vn,
+                                rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                vt=z_fields.vt,
+                                horizontal_start=start_edge_lb_plus4,
+                                horizontal_end=end_edge_local_minus2,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            compute_contravariant_correction(
+                                vn=prognostic_state[nnew].vn,
+                                ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                vt=z_fields.vt,
+                                z_w_concorr_me=z_fields.z_w_concorr_me,
+                                horizontal_start=start_edge_lb_plus4,
+                                horizontal_end=end_edge_local_minus2,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            fused_stencils_9_10(
+                                z_w_concorr_me=z_fields.z_w_concorr_me,
+                                e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                k_field=self.k_field,
+                                nflatlev_startindex=self.vertical_params.nflatlev,
+                                nlev=self.grid.num_levels,
+                                horizontal_start=start_cell_lb_plus3,
+                                horizontal_end=end_cell_local_minus1,
+                                vertical_start=0,
+                                vertical_end=self.grid.num_levels,
+                                offset_provider=self.grid.offset_providers,
+                            )
+                            """
                             z_dwdz_dd (dd3d_lev:nlev-1):
                                 Compute vertical derivative of vertical velocity at full levels (cell center).
                                 z_dwdz_dḍ_{k} = ( w_{k-1/2} - w_{k+1/2} ) / dz_{k} - ( contravariant_correction_{k-1/2} - contravariant_correction_{k+1/2} ) / dz_{k}
@@ -2694,8 +3500,23 @@ class SolveNonhydro:
                                 append_write = 'a' # append if already exists
                             else:
                                 append_write = 'w' # make a new file if not
+                            expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                            temporary = self.cell_params.area.ndarray
+                            temporary = xp.expand_dims(temporary, axis=-1)
+                            expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                            total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                            temporary1 = self.z_graddiv2_normal.ndarray**2
+                            temporary2 = self.z_graddiv2_vertical.ndarray**2
+                            temporary3 = xp.zeros_like(expanded_weight)
+                            c2e = self.grid.connectivities[C2EDim]
+                            for k in range(self.grid.num_levels):
+                                temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1) + temporary2[:,k+1] + temporary2[:,k]
+                                temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
                             with open(filename, append_write) as f:
-                                f.write(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray))+'\n')
+                                #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                f.write(
+                                    str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                )
 
                         if self.config.do_multiple_divdamp:
                             for _ in range(self.config.number_of_divdamp_step-1):
@@ -2732,6 +3553,48 @@ class SolveNonhydro:
                                     z_flxdiv_vn=z_fields.z_flxdiv_vn,
                                     horizontal_start=start_cell_nudging,
                                     horizontal_end=end_cell_local,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                """
+                                vt (0:nlev-1):
+                                    Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                    edges (diamond shape) and projected to tangential direction.
+                                """
+                                compute_tangential_wind(
+                                    vn=prognostic_state[nnew].vn,
+                                    rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                    vt=z_fields.vt,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                compute_contravariant_correction(
+                                    vn=prognostic_state[nnew].vn,
+                                    ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                    ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                    vt=z_fields.vt,
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                fused_stencils_9_10(
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                    local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                    wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                    w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                    k_field=self.k_field,
+                                    nflatlev_startindex=self.vertical_params.nflatlev,
+                                    nlev=self.grid.num_levels,
+                                    horizontal_start=start_cell_lb_plus3,
+                                    horizontal_end=end_cell_local_minus1,
                                     vertical_start=0,
                                     vertical_end=self.grid.num_levels,
                                     offset_provider=self.grid.offset_providers,
@@ -2900,15 +3763,15 @@ class SolveNonhydro:
                                     Apply the higher order divergence damping to vn at full levels (edge center).
                                     vn = vn + scal_divdamp * Del(normal_direction) Div( Del Div(V) )
                                 """
-                                log.info(
-                                    f"{z_fields.z_graddiv_normal.ndarray.min():.15e} {z_fields.z_graddiv_normal.ndarray.max():.15e}")
-                                log.info(
-                                    f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
-                                log.info(f"{z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray.min():.15e} {z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray.max():.15e}")
-                                log.info(f"{z_fields.z_flxdiv_graddiv_vn.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn.ndarray.max():.15e}")
-                                log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
-                                log.info(
-                                    f"{self.z_graddiv2_vertical.ndarray.min():.15e} {self.z_graddiv2_vertical.ndarray.max():.15e}")
+                                # log.info(
+                                #     f"{z_fields.z_graddiv_normal.ndarray.min():.15e} {z_fields.z_graddiv_normal.ndarray.max():.15e}")
+                                # log.info(
+                                #     f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
+                                # log.info(f"{z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray.min():.15e} {z_fields.z_flxdiv2order_graddiv_vn_vertex.ndarray.max():.15e}")
+                                # log.info(f"{z_fields.z_flxdiv_graddiv_vn.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn.ndarray.max():.15e}")
+                                # log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
+                                # log.info(
+                                #     f"{self.z_graddiv2_vertical.ndarray.min():.15e} {self.z_graddiv2_vertical.ndarray.max():.15e}")
                                 # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
                                 # for k in range(self.grid.num_levels):
                                 #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
@@ -2954,6 +3817,48 @@ class SolveNonhydro:
                                         offset_provider=self.grid.offset_providers,
                                     )
                                     """
+                                    vt (0:nlev-1):
+                                        Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                        edges (diamond shape) and projected to tangential direction.
+                                    """
+                                    compute_tangential_wind(
+                                        vn=prognostic_state[nnew].vn,
+                                        rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                        vt=z_fields.vt,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    compute_contravariant_correction(
+                                        vn=prognostic_state[nnew].vn,
+                                        ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                        ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                        vt=z_fields.vt,
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    fused_stencils_9_10(
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                        local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                        wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                        w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                        k_field=self.k_field,
+                                        nflatlev_startindex=self.vertical_params.nflatlev,
+                                        nlev=self.grid.num_levels,
+                                        horizontal_start=start_cell_lb_plus3,
+                                        horizontal_end=end_cell_local_minus1,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    """
                                     z_dwdz_dd (dd3d_lev:nlev-1):
                                         Compute vertical derivative of vertical velocity at full levels (cell center).
                                         z_dwdz_dḍ_{k} = ( w_{k-1/2} - w_{k+1/2} ) / dz_{k} - ( contravariant_correction_{k-1/2} - contravariant_correction_{k+1/2} ) / dz_{k}
@@ -2993,8 +3898,23 @@ class SolveNonhydro:
                                         append_write = 'a' # append if already exists
                                     else:
                                         append_write = 'w' # make a new file if not
+                                    expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                                    temporary = self.cell_params.area.ndarray
+                                    temporary = xp.expand_dims(temporary, axis=-1)
+                                    expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                                    total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                                    temporary1 = self.z_graddiv2_normal.ndarray**2
+                                    temporary2 = self.z_graddiv2_vertical.ndarray**2
+                                    temporary3 = xp.zeros_like(expanded_weight)
+                                    c2e = self.grid.connectivities[C2EDim]
+                                    for k in range(self.grid.num_levels):
+                                        temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1) + temporary2[:,k+1] + temporary2[:,k]
+                                        temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
                                     with open(filename, append_write) as f:
-                                        f.write(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray))+'\n')
+                                        #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                        f.write(
+                                            str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                        )
 
                     else:
 
@@ -3141,7 +4061,7 @@ class SolveNonhydro:
                             copy_edge_kdim_field_to_vp(
                                 field=self.z_graddiv2_normal,
                                 field_copy=self.output_intermediate_fields.output_graddiv2_normal,
-                                horizontal_start=start_edge_nudging_plus1,
+                                horizontal_start=int32(0),
                                 horizontal_end=end_edge_local,
                                 vertical_start=int32(0),
                                 vertical_end=self.grid.num_levels,
@@ -3150,7 +4070,7 @@ class SolveNonhydro:
                             copy_cell_kdim_field_to_vp(
                                 field=self.z_graddiv2_vertical,
                                 field_copy=self.output_intermediate_fields.output_graddiv2_vertical,
-                                horizontal_start=start_cell_nudging,
+                                horizontal_start=int32(0),
                                 horizontal_end=end_cell_local,
                                 vertical_start=int32(0),
                                 vertical_end=self.grid.num_levels+int32(1),
@@ -3161,8 +4081,8 @@ class SolveNonhydro:
                             # log.info(f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
                             # log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
                             # log.info(f"{self.z_graddiv2_vertical.ndarray.min():.15e} {self.z_graddiv2_vertical.ndarray.max():.15e}")
-                            log.info(f"{z_fields.z_flxdiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_vn_and_w.ndarray.max():.15e}")
-                            log.info(f"{z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.max():.15e}")
+                            # log.info(f"{z_fields.z_flxdiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_vn_and_w.ndarray.max():.15e}")
+                            # log.info(f"{z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.max():.15e}")
                             # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
                             # for k in range(self.grid.num_levels):
                             #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
@@ -3208,6 +4128,48 @@ class SolveNonhydro:
                                     offset_provider=self.grid.offset_providers,
                                 )
                                 """
+                                vt (0:nlev-1):
+                                    Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                    edges (diamond shape) and projected to tangential direction.
+                                """
+                                compute_tangential_wind(
+                                    vn=prognostic_state[nnew].vn,
+                                    rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                    vt=z_fields.vt,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                compute_contravariant_correction(
+                                    vn=prognostic_state[nnew].vn,
+                                    ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                    ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                    vt=z_fields.vt,
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                fused_stencils_9_10(
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                    local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                    wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                    w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                    k_field=self.k_field,
+                                    nflatlev_startindex=self.vertical_params.nflatlev,
+                                    nlev=self.grid.num_levels,
+                                    horizontal_start=start_cell_lb_plus3,
+                                    horizontal_end=end_cell_local_minus1,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                """
                                 z_dwdz_dd (dd3d_lev:nlev-1):
                                     Compute vertical derivative of vertical velocity at full levels (cell center).
                                     z_dwdz_dḍ_{k} = ( w_{k-1/2} - w_{k+1/2} ) / dz_{k} - ( contravariant_correction_{k-1/2} - contravariant_correction_{k+1/2} ) / dz_{k}
@@ -3247,8 +4209,23 @@ class SolveNonhydro:
                                     append_write = 'a' # append if already exists
                                 else:
                                     append_write = 'w' # make a new file if not
+                                expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                                temporary = self.cell_params.area.ndarray
+                                temporary = xp.expand_dims(temporary, axis=-1)
+                                expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                                total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                                temporary1 = self.z_graddiv2_normal.ndarray**2
+                                temporary2 = self.z_graddiv2_vertical.ndarray**2
+                                temporary3 = xp.zeros_like(expanded_weight)
+                                c2e = self.grid.connectivities[C2EDim]
+                                for k in range(self.grid.num_levels):
+                                    temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1) + temporary2[:,k+1] + temporary2[:,k]
+                                    temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
                                 with open(filename, append_write) as f:
-                                    f.write(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray))+'\n')
+                                    #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                    f.write(
+                                        str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                    )
 
                             if self.config.do_multiple_divdamp:
                                 for _ in range(self.config.number_of_divdamp_step-1):
@@ -3264,6 +4241,48 @@ class SolveNonhydro:
                                         z_flxdiv_vn=z_fields.z_flxdiv_vn,
                                         horizontal_start=start_cell_nudging,
                                         horizontal_end=end_cell_local,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    """
+                                    vt (0:nlev-1):
+                                        Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                        edges (diamond shape) and projected to tangential direction.
+                                    """
+                                    compute_tangential_wind(
+                                        vn=prognostic_state[nnew].vn,
+                                        rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                        vt=z_fields.vt,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    compute_contravariant_correction(
+                                        vn=prognostic_state[nnew].vn,
+                                        ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                        ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                        vt=z_fields.vt,
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    fused_stencils_9_10(
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                        local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                        wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                        w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                        k_field=self.k_field,
+                                        nflatlev_startindex=self.vertical_params.nflatlev,
+                                        nlev=self.grid.num_levels,
+                                        horizontal_start=start_cell_lb_plus3,
+                                        horizontal_end=end_cell_local_minus1,
                                         vertical_start=0,
                                         vertical_end=self.grid.num_levels,
                                         offset_provider=self.grid.offset_providers,
@@ -3417,8 +4436,8 @@ class SolveNonhydro:
                                     # log.info(f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
                                     # log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
                                     # log.info(f"{self.z_graddiv2_vertical.ndarray.min():.15e} {self.z_graddiv2_vertical.ndarray.max():.15e}")
-                                    log.info(f"{z_fields.z_flxdiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_vn_and_w.ndarray.max():.15e}")
-                                    log.info(f"{z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.max():.15e}")
+                                    # log.info(f"{z_fields.z_flxdiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_vn_and_w.ndarray.max():.15e}")
+                                    # log.info(f"{z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.min():.15e} {z_fields.z_flxdiv_graddiv_vn_and_w.ndarray.max():.15e}")
                                     # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
                                     # for k in range(self.grid.num_levels):
                                     #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
@@ -3464,11 +4483,47 @@ class SolveNonhydro:
                                             offset_provider=self.grid.offset_providers,
                                         )
                                         """
-                                        z_dwdz_dd (dd3d_lev:nlev-1):
-                                            Compute vertical derivative of vertical velocity at full levels (cell center).
-                                            z_dwdz_dḍ_{k} = ( w_{k-1/2} - w_{k+1/2} ) / dz_{k} - ( contravariant_correction_{k-1/2} - contravariant_correction_{k+1/2} ) / dz_{k}
-                                            contravariant_correction is precomputed by w_concorr_c at half levels.
+                                        vt (0:nlev-1):
+                                            Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                            edges (diamond shape) and projected to tangential direction.
                                         """
+                                        compute_tangential_wind(
+                                            vn=prognostic_state[nnew].vn,
+                                            rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                            vt=z_fields.vt,
+                                            horizontal_start=start_edge_lb_plus4,
+                                            horizontal_end=end_edge_local_minus2,
+                                            vertical_start=0,
+                                            vertical_end=self.grid.num_levels,
+                                            offset_provider=self.grid.offset_providers,
+                                        )
+                                        compute_contravariant_correction(
+                                            vn=prognostic_state[nnew].vn,
+                                            ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                            ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                            vt=z_fields.vt,
+                                            z_w_concorr_me=z_fields.z_w_concorr_me,
+                                            horizontal_start=start_edge_lb_plus4,
+                                            horizontal_end=end_edge_local_minus2,
+                                            vertical_start=0,
+                                            vertical_end=self.grid.num_levels,
+                                            offset_provider=self.grid.offset_providers,
+                                        )
+                                        fused_stencils_9_10(
+                                            z_w_concorr_me=z_fields.z_w_concorr_me,
+                                            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                            local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                            wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                            k_field=self.k_field,
+                                            nflatlev_startindex=self.vertical_params.nflatlev,
+                                            nlev=self.grid.num_levels,
+                                            horizontal_start=start_cell_lb_plus3,
+                                            horizontal_end=end_cell_local_minus1,
+                                            vertical_start=0,
+                                            vertical_end=self.grid.num_levels,
+                                            offset_provider=self.grid.offset_providers,
+                                        )
                                         end_cell_nudging_minus1 = self.grid.get_end_index(
                                             CellDim,
                                             HorizontalMarkerIndex.nudging(CellDim) - 1,
@@ -3503,9 +4558,23 @@ class SolveNonhydro:
                                             append_write = 'a' # append if already exists
                                         else:
                                             append_write = 'w' # make a new file if not
+                                        expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                                        temporary = self.cell_params.area.ndarray
+                                        temporary = xp.expand_dims(temporary, axis=-1)
+                                        expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                                        total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                                        temporary1 = self.z_graddiv2_normal.ndarray**2
+                                        temporary2 = self.z_graddiv2_vertical.ndarray**2
+                                        temporary3 = xp.zeros_like(expanded_weight)
+                                        c2e = self.grid.connectivities[C2EDim]
+                                        for k in range(self.grid.num_levels):
+                                            temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1) + temporary2[:,k+1] + temporary2[:,k]
+                                            temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
                                         with open(filename, append_write) as f:
-                                            f.write(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray))+'\n')
-
+                                            #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                            f.write(
+                                                str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                            )
 
                         else:
                             log.debug("corrector start stencil 4th order divdamp")
@@ -3517,25 +4586,25 @@ class SolveNonhydro:
                             copy_edge_kdim_field_to_vp(
                                 field=self.z_graddiv2_vn,
                                 field_copy=self.output_intermediate_fields.output_graddiv2_vn,
-                                horizontal_start=start_edge_nudging_plus1,
+                                horizontal_start=int32(0),
                                 horizontal_end=end_edge_local,
                                 vertical_start=int32(0),
                                 vertical_end=self.grid.num_levels,
                                 offset_provider={},
                             )
                             copy_edge_kdim_field_to_vp(
-                                field=self.z_graddiv_vn,
+                                field=z_fields.z_graddiv_vn,
                                 field_copy=self.output_intermediate_fields.output_graddiv_vn,
-                                horizontal_start=start_edge_nudging_plus1,
+                                horizontal_start=int32(0),
                                 horizontal_end=end_edge_local,
                                 vertical_start=int32(0),
                                 vertical_end=self.grid.num_levels,
                                 offset_provider={},
                             )
                             self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
-                            log.info(f"{z_fields.z_graddiv_vn.ndarray.min():.15e} {z_fields.z_graddiv_vn.ndarray.max():.15e}")
-                            log.info(f"{self.z_graddiv2_vn.ndarray.min():.15e} {self.z_graddiv2_vn.ndarray.max():.15e}")
-                            log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
+                            # log.info(f"{z_fields.z_graddiv_vn.ndarray.min():.15e} {z_fields.z_graddiv_vn.ndarray.max():.15e}")
+                            # log.info(f"{self.z_graddiv2_vn.ndarray.min():.15e} {self.z_graddiv2_vn.ndarray.max():.15e}")
+                            # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
                             # for k in range(self.grid.num_levels):
                             #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
                             apply_4th_order_divergence_damping(
@@ -3575,6 +4644,63 @@ class SolveNonhydro:
                                     offset_provider=self.grid.offset_providers,
                                 )
                                 """
+                                vt (0:nlev-1):
+                                    Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                    edges (diamond shape) and projected to tangential direction.
+                                """
+                                compute_tangential_wind(
+                                    vn=prognostic_state[nnew].vn,
+                                    rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                    vt=z_fields.vt,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                compute_contravariant_correction(
+                                    vn=prognostic_state[nnew].vn,
+                                    ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                    ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                    vt=z_fields.vt,
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    horizontal_start=start_edge_lb_plus4,
+                                    horizontal_end=end_edge_local_minus2,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                fused_stencils_9_10(
+                                    z_w_concorr_me=z_fields.z_w_concorr_me,
+                                    e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                    local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                    wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                    w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                    k_field=self.k_field,
+                                    nflatlev_startindex=self.vertical_params.nflatlev,
+                                    nlev=self.grid.num_levels,
+                                    horizontal_start=start_cell_lb_plus3,
+                                    horizontal_end=end_cell_local_minus1,
+                                    vertical_start=0,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                end_cell_nudging_minus1 = self.grid.get_end_index(
+                                    CellDim,
+                                    HorizontalMarkerIndex.nudging(CellDim) - 1,
+                                )
+                                compute_dwdz_for_divergence_damping(
+                                    inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                                    w=prognostic_state[nnew].w,
+                                    w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                    z_dwdz_dd=z_fields.z_dwdz_dd,
+                                    horizontal_start=start_cell_lb,
+                                    horizontal_end=end_cell_nudging_minus1,
+                                    vertical_start=self.params.kstart_dd3d,
+                                    vertical_end=self.grid.num_levels,
+                                    offset_provider=self.grid.offset_providers,
+                                )
+                                """
                                 z_flxdiv_vn_and_w (0:nlev-1):
                                     Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
                                 """
@@ -3593,8 +4719,31 @@ class SolveNonhydro:
                                     append_write = 'a' # append if already exists
                                 else:
                                     append_write = 'w' # make a new file if not
+                                expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                                temporary = self.cell_params.area.ndarray
+                                temporary = xp.expand_dims(temporary, axis=-1)
+                                expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                                total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                                temporary1 = self.z_graddiv2_vn.ndarray**2
+                                temporary3 = xp.zeros_like(expanded_weight)
+                                c2e = self.grid.connectivities[C2EDim]
+                                for k in range(self.grid.num_levels):
+                                    temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1)
+                                    temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
                                 with open(filename, append_write) as f:
-                                    f.write(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray))+'\n')
+                                    #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                    f.write(
+                                        str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                    )
+                                # temporary = self.edge_geometry.primal_edge_lengths.ndarray
+                                # temporary = xp.expand_dims(temporary, axis=-1)
+                                # expanded_weight_grad = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                                # total_weight_grad = xp.sum(xp.sum(expanded_weight_grad,axis=1), axis=0)
+                                # with open(filename, append_write) as f:
+                                #     #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                #     f.write(
+                                #         str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight_grad*xp.abs(self.z_graddiv2_vn.ndarray),axis=1), axis=0)/total_weight_grad)+'\n'
+                                #     )
 
                             if self.config.do_multiple_divdamp:
                                 for _ in range(self.config.number_of_divdamp_step-1):
@@ -3623,6 +4772,48 @@ class SolveNonhydro:
                                         offset_provider=self.grid.offset_providers,
                                     )
 
+                                    """
+                                    vt (0:nlev-1):
+                                        Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                        edges (diamond shape) and projected to tangential direction.
+                                    """
+                                    compute_tangential_wind(
+                                        vn=prognostic_state[nnew].vn,
+                                        rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                        vt=z_fields.vt,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    compute_contravariant_correction(
+                                        vn=prognostic_state[nnew].vn,
+                                        ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                        ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                        vt=z_fields.vt,
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        horizontal_start=start_edge_lb_plus4,
+                                        horizontal_end=end_edge_local_minus2,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
+                                    fused_stencils_9_10(
+                                        z_w_concorr_me=z_fields.z_w_concorr_me,
+                                        e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                        local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                        wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                        w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                        k_field=self.k_field,
+                                        nflatlev_startindex=self.vertical_params.nflatlev,
+                                        nlev=self.grid.num_levels,
+                                        horizontal_start=start_cell_lb_plus3,
+                                        horizontal_end=end_cell_local_minus1,
+                                        vertical_start=0,
+                                        vertical_end=self.grid.num_levels,
+                                        offset_provider=self.grid.offset_providers,
+                                    )
                                     """
                                     z_dwdz_dd (dd3d_lev:nlev-1):
                                         Compute vertical derivative of vertical velocity at full levels (cell center).
@@ -3688,8 +4879,8 @@ class SolveNonhydro:
                                     # self.output_intermediate_fields.output_graddiv2_vn = self.z_graddiv2_vn
                                     # self.output_intermediate_fields.output_graddiv_vn = z_fields.z_graddiv_vn
                                     # self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
-                                    log.info(f"{z_fields.z_graddiv_vn.ndarray.min():.15e} {z_fields.z_graddiv_vn.ndarray.max():.15e}")
-                                    log.info(f"{self.z_graddiv2_vn.ndarray.min():.15e} {self.z_graddiv2_vn.ndarray.max():.15e}")
+                                    # log.info(f"{z_fields.z_graddiv_vn.ndarray.min():.15e} {z_fields.z_graddiv_vn.ndarray.max():.15e}")
+                                    # log.info(f"{self.z_graddiv2_vn.ndarray.min():.15e} {self.z_graddiv2_vn.ndarray.max():.15e}")
                                     # log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
                                     # for k in range(self.grid.num_levels):
                                     #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
@@ -3703,6 +4894,7 @@ class SolveNonhydro:
                                         vertical_end=self.grid.num_levels,
                                         offset_provider={},
                                     )
+                                        
                                     if do_output:
                                         """
                                         z_flxdiv_vn (0:nlev-1):
@@ -3715,6 +4907,63 @@ class SolveNonhydro:
                                             horizontal_start=start_cell_nudging,
                                             horizontal_end=end_cell_local,
                                             vertical_start=0,
+                                            vertical_end=self.grid.num_levels,
+                                            offset_provider=self.grid.offset_providers,
+                                        )
+                                        """
+                                        vt (0:nlev-1):
+                                            Compute tangential velocity at full levels (edge center) by RBF interpolation from four neighboring
+                                            edges (diamond shape) and projected to tangential direction.
+                                        """
+                                        compute_tangential_wind(
+                                            vn=prognostic_state[nnew].vn,
+                                            rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
+                                            vt=z_fields.vt,
+                                            horizontal_start=start_edge_lb_plus4,
+                                            horizontal_end=end_edge_local_minus2,
+                                            vertical_start=0,
+                                            vertical_end=self.grid.num_levels,
+                                            offset_provider=self.grid.offset_providers,
+                                        )
+                                        compute_contravariant_correction(
+                                            vn=prognostic_state[nnew].vn,
+                                            ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
+                                            ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
+                                            vt=z_fields.vt,
+                                            z_w_concorr_me=z_fields.z_w_concorr_me,
+                                            horizontal_start=start_edge_lb_plus4,
+                                            horizontal_end=end_edge_local_minus2,
+                                            vertical_start=0,
+                                            vertical_end=self.grid.num_levels,
+                                            offset_provider=self.grid.offset_providers,
+                                        )
+                                        fused_stencils_9_10(
+                                            z_w_concorr_me=z_fields.z_w_concorr_me,
+                                            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                                            local_z_w_concorr_mc=z_fields.z_w_concorr_mc,
+                                            wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+                                            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                            k_field=self.k_field,
+                                            nflatlev_startindex=self.vertical_params.nflatlev,
+                                            nlev=self.grid.num_levels,
+                                            horizontal_start=start_cell_lb_plus3,
+                                            horizontal_end=end_cell_local_minus1,
+                                            vertical_start=0,
+                                            vertical_end=self.grid.num_levels,
+                                            offset_provider=self.grid.offset_providers,
+                                        )
+                                        end_cell_nudging_minus1 = self.grid.get_end_index(
+                                            CellDim,
+                                            HorizontalMarkerIndex.nudging(CellDim) - 1,
+                                        )
+                                        compute_dwdz_for_divergence_damping(
+                                            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                                            w=prognostic_state[nnew].w,
+                                            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+                                            z_dwdz_dd=z_fields.z_dwdz_dd,
+                                            horizontal_start=start_cell_lb,
+                                            horizontal_end=end_cell_nudging_minus1,
+                                            vertical_start=self.params.kstart_dd3d,
                                             vertical_end=self.grid.num_levels,
                                             offset_provider=self.grid.offset_providers,
                                         )
@@ -3737,48 +4986,31 @@ class SolveNonhydro:
                                             append_write = 'a' # append if already exists
                                         else:
                                             append_write = 'w' # make a new file if not
+                                        expanded_dz = 1.0 / self.metric_state_nonhydro.inv_ddqz_z_full.ndarray
+                                        temporary = self.cell_params.area.ndarray
+                                        temporary = xp.expand_dims(temporary, axis=-1)
+                                        expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                                        total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
+                                        temporary1 = self.z_graddiv2_vn.ndarray**2
+                                        temporary3 = xp.zeros_like(expanded_weight)
+                                        c2e = self.grid.connectivities[C2EDim]
+                                        for k in range(self.grid.num_levels):
+                                            temporary3[:,k] = xp.sum(temporary1[c2e,k], axis=1)
+                                            temporary3[:,k] = xp.sqrt(temporary3[:,k])/2.0
                                         with open(filename, append_write) as f:
-                                            f.write(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray))+'\n')
-
-
-        if do_output:
-            """
-            z_flxdiv_vn (0:nlev-1):
-                Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
-            """
-            compute_divergence_of_flux_of_normal_wind(
-                geofac_div=self.interpolation_state.geofac_div,
-                vn=prognostic_state[nnew].vn,
-                z_flxdiv_vn=z_fields.z_flxdiv_vn,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
-            """
-            z_flxdiv_vn_and_w (0:nlev-1):
-                Add vertical derivative of vertical wind to the divergence of normal wind at full levels (cell center).
-            """
-            add_dwdz_to_divergence_of_flux_of_normal_wind(
-                z_dwdz_dd=z_fields.z_dwdz_dd,
-                z_flxdiv_vn=z_fields.z_flxdiv_vn,
-                z_flxdiv_vn_and_w=z_fields.z_flxdiv_vn_and_w,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
-            copy_cell_kdim_field_to_vp(
-                field=z_fields.z_flxdiv_vn,
-                field_copy=self.output_intermediate_fields.output_after_flxdiv_vn,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
-                vertical_start=int32(0),
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
-            )
+                                            #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                            f.write(
+                                                str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(temporary3),axis=1), axis=0)/total_weight)+'\n'
+                                            )
+                                        # temporary = self.edge_geometry.primal_edge_lengths.ndarray
+                                        # temporary = xp.expand_dims(temporary, axis=-1)
+                                        # expanded_weight_grad = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
+                                        # total_weight_grad = xp.sum(xp.sum(expanded_weight_grad,axis=1), axis=0)
+                                        # with open(filename, append_write) as f:
+                                        #     #f.write(str(xp.sum(xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray*self.cell_params.area.ndarray))/xp.sum(self.cell_params.area.ndarray))+'\n')
+                                        #     f.write(
+                                        #         str(xp.sum(xp.sum(expanded_weight*expanded_dz*xp.abs(z_fields.z_flxdiv_vn_and_w.ndarray),axis=1), axis=0)/total_weight)+'   '+ str(xp.sum(xp.sum(expanded_weight_grad*xp.abs(self.z_graddiv2_vn.ndarray),axis=1), axis=0)/total_weight_grad)+'\n'
+                                        #     )
 
         # log.info(
         #     f" MAXDIV VN: {prognostic_state[nnew].vn.ndarray.max():.15e} , MAXDIV W: {prognostic_state[nnew].w.ndarray.max():.15e}"
@@ -3792,6 +5024,35 @@ class SolveNonhydro:
         # log.info(
         #     f" AVEDIV RHO: {prognostic_state[nnew].rho.ndarray.mean(axis=(0,1)):.15e} , AVEDIV THETA_V: {prognostic_state[nnew].theta_v.ndarray.mean(axis=(0,1)):.15e}"
         # )
+
+        if do_output:
+            copy_cell_kdim_field_to_vp(
+                field=z_fields.z_flxdiv_vn_and_w,
+                field_copy=self.output_intermediate_fields.output_after_flxdiv_vn,
+                horizontal_start=int32(0),
+                horizontal_end=end_cell_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_edge_kdim_field_to_vp(
+                field=prognostic_state[nnew].vn,
+                field_copy=self.output_intermediate_fields.output_after_vn,
+                horizontal_start=int32(0),
+                horizontal_end=end_edge_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            copy_cell_kdim_field_to_vp(
+                field=prognostic_state[nnew].w,
+                field_copy=self.output_intermediate_fields.output_after_w,
+                horizontal_start=int32(0),
+                horizontal_end=end_cell_local,
+                vertical_start=int32(0),
+                vertical_end=self.grid.num_levels+int32(1),
+                offset_provider={},
+            )
 
         # TODO: this does not get accessed in FORTRAN
         if self.config.is_iau_active:
@@ -3969,6 +5230,15 @@ class SolveNonhydro:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
+                #vertical_end=self.grid.num_levels + 1,
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            init_cell_kdim_field_with_zero_vp(
+                field_with_zero_vp=z_fields.z_alpha,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
+                vertical_start=self.grid.num_levels,
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={},
             )
@@ -4040,9 +5310,19 @@ class SolveNonhydro:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
+                #vertical_end=self.grid.num_levels + 1,
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            init_cell_kdim_field_with_zero_vp(
+                field_with_zero_vp=z_fields.z_alpha,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
+                vertical_start=self.grid.num_levels,
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={},
             )
+
         if not self.l_vert_nested:
             init_two_cell_kdim_fields_with_zero_wp(
                 cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,

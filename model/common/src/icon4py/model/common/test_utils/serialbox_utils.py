@@ -702,6 +702,7 @@ class InterpolationSavepoint(IconSavepoint):
         buffer = xp.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
+        buffer = self._reduce_to_dim_size(buffer, (CellDim, C2E2C2EDim))
         buffer = xp.asarray(buffer)
         return as_field((CellDim, C2E2C2EDim), buffer)
 
@@ -710,6 +711,7 @@ class InterpolationSavepoint(IconSavepoint):
         buffer = xp.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
         ).transpose()
+        buffer = self._reduce_to_dim_size(buffer, (CellDim, C2E2C2EDim))
         buffer = xp.asarray(buffer)
         return as_field((CellDim, C2E2C2EDim), buffer)
 

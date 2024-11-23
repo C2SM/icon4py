@@ -799,9 +799,11 @@ class Diffusion:
                 nrdmax=int32(
                     self.vertical_params.index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
-                interior_idx=int32(cell_start_interior),
+                #interior_idx=int32(cell_start_interior),
+                interior_idx=int32(0),
                 halo_idx=int32(cell_end_local),
-                horizontal_start=self._horizontal_start_index_w_diffusion,
+                # horizontal_start=self._horizontal_start_index_w_diffusion,
+                horizontal_start=int32(0),
                 horizontal_end=cell_end_halo,
                 vertical_start=0,
                 vertical_end=klevels,

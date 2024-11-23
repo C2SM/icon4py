@@ -522,7 +522,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=self.output_hgrad_kinetic_e,
                 field_copy=output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -531,7 +531,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=diagnostic_state.vt,
                 field_copy=output_intermediate_fields.output_velocity_predictor_tangent_wind,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -540,7 +540,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=self.output_total_vorticity_e,
                 field_copy=output_intermediate_fields.output_velocity_predictor_total_vorticity_e,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -549,7 +549,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=self.output_vertical_wind_e,
                 field_copy=output_intermediate_fields.output_velocity_predictor_vertical_wind_e,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -558,7 +558,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=self.output_vgrad_vn_e,
                 field_copy=output_intermediate_fields.output_velocity_predictor_vgrad_vn_e,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -898,7 +898,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=self.output_hgrad_kinetic_e,
                 field_copy=output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -907,7 +907,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=diagnostic_state.vt,
                 field_copy=output_intermediate_fields.output_velocity_corrector_tangent_wind,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -916,7 +916,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=self.output_total_vorticity_e,
                 field_copy=output_intermediate_fields.output_velocity_corrector_total_vorticity_e,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -925,7 +925,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=self.output_vertical_wind_e,
                 field_copy=output_intermediate_fields.output_velocity_corrector_vertical_wind_e,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
@@ -934,7 +934,7 @@ class VelocityAdvection:
             copy_edge_kdim_field_to_vp(
                 field=self.output_vgrad_vn_e,
                 field_copy=output_intermediate_fields.output_velocity_corrector_vgrad_vn_e,
-                horizontal_start=start_edge_nudging_plus1,
+                horizontal_start=int32(0),
                 horizontal_end=end_edge_local,
                 vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,

@@ -23,6 +23,7 @@ import netCDF4 as nf4
 import numpy as np
 from cftime import date2num
 from devtools import Timer
+from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next import as_field
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
@@ -52,12 +53,14 @@ from icon4py.model.common.dimension import (
     V2C2VDim,
     V2CDim,
     # debug
+    V2EDim,
     V2C2EDim,
     C2EDim,
+    VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.settings import device
+from icon4py.model.common.settings import device, xp
 from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver import cached as driver_cached
@@ -165,7 +168,7 @@ class NewOutputState:
         )
 
         self.write_to_netcdf(start_date, data_dict)
-        self._grid_to_netcdf(cell_geometry, edge_geometry)
+        self._grid_to_netcdf(cell_geometry, edge_geometry, diagnostic_metric_state)
 
     @property
     def current_file_number(self):
@@ -398,7 +401,7 @@ class NewOutputState:
             self._nf4_basegrp[i].variables["height_2"][:] = half_height
             self._nf4_basegrp[i].variables["height_bnds"][:, :] = full_height_bnds
 
-    def _grid_to_netcdf(self, cell_geometry: CellParams, edge_geometry: EdgeParams):
+    def _grid_to_netcdf(self, cell_geometry: CellParams, edge_geometry: EdgeParams, diagnostic_metric_state: DiagnosticMetricState):
         # the grid details are only write to the first netCDF file to save memory
         cell_areas: nf4.Variable = self._nf4_basegrp[0].createVariable(
             "cell_area", "f8", (OutputDimension.CELL_DIM,)
@@ -415,12 +418,21 @@ class NewOutputState:
         dual_edge_lengths: nf4.Variable = self._nf4_basegrp[0].createVariable(
             "dual_edge_length", "f8", (OutputDimension.EDGE_DIM,)
         )
+        interface_height: nf4.Variable = self._nf4_basegrp[0].createVariable(
+            "interface_height", "f8", (OutputDimension.CELL_DIM, OutputDimension.HALF_LEVEL)
+        )
+        cell_center_height: nf4.Variable = self._nf4_basegrp[0].createVariable(
+            "cell_center_height", "f8", (OutputDimension.CELL_DIM, OutputDimension.FULL_LEVEL)
+        )
+
 
         cell_areas.units = "m2"
         edge_areas.units = "m2"
         primal_edge_lengths.units = "m"
         vert_vert_edge_lengths.units = "m"
         dual_edge_lengths.units = "m"
+        interface_height.units = "m"
+        cell_center_height.units = "m"
 
         # TODO (Chia Rui or others): check the param for these variables?
         cell_areas.param = "99.0.1"
@@ -428,42 +440,61 @@ class NewOutputState:
         primal_edge_lengths.param = "99.0.3"
         vert_vert_edge_lengths.param = "99.0.4"
         dual_edge_lengths.param = "99.0.5"
+        interface_height.units = "99.0.6"
+        cell_center_height.units = "99.0.7"
 
         cell_areas.standard_name = "cell area"
         edge_areas.standard_name = "edge area"
         primal_edge_lengths.standard_name = "edge length"
         vert_vert_edge_lengths.standard_name = "vertex-vertex edge length"
         dual_edge_lengths.standard_name = "dual edge length"
+        interface_height.standard_name = "interface height"
+        cell_center_height.standard_name = "cell center height"
 
         cell_areas.long_name = "cell area"
         edge_areas.long_name = "edge area"
         primal_edge_lengths.long_name = "edge length"
         vert_vert_edge_lengths.long_name = "vertex-vertex edge length"
         dual_edge_lengths.long_name = "dual edge length"
+        interface_height.long_name = "grid interface height"
+        cell_center_height.long_name = "grid cell center height"
 
         cell_areas.CDI_grid_type = "unstructured"
         edge_areas.CDI_grid_type = "unstructured"
         primal_edge_lengths.CDI_grid_type = "unstructured"
         vert_vert_edge_lengths.CDI_grid_type = "unstructured"
         dual_edge_lengths.CDI_grid_type = "unstructured"
+        interface_height.CDI_grid_type = "unstructured"
+        cell_center_height.CDI_grid_type = "unstructured"
 
         cell_areas.number_of_grid_in_reference = 1
         edge_areas.number_of_grid_in_reference = 1
         primal_edge_lengths.number_of_grid_in_reference = 1
         vert_vert_edge_lengths.number_of_grid_in_reference = 1
         dual_edge_lengths.number_of_grid_in_reference = 1
+        interface_height.number_of_grid_in_reference = 1
+        cell_center_height.number_of_grid_in_reference = 1
 
         cell_areas.coordinates = "clat clon"
         edge_areas.coordinates = "elat elon"
         primal_edge_lengths.coordinates = "elat elon"
         vert_vert_edge_lengths.coordinates = "elat elon"
         dual_edge_lengths.coordinates = "elat elon"
+        interface_height.coordinates = "clat clon"
+        cell_center_height.coordinates = "clat clon"
 
         cell_areas[:] = retract_data(cell_geometry.area)
         edge_areas[:] = retract_data(edge_geometry.edge_areas)
         primal_edge_lengths[:] = retract_data(edge_geometry.primal_edge_lengths)
         vert_vert_edge_lengths[:] = retract_data(edge_geometry.vertex_vertex_lengths)
         dual_edge_lengths[:] = retract_data(edge_geometry.dual_edge_lengths)
+        interface_height[:,:] = retract_data(diagnostic_metric_state.z_ifc)
+
+        z_ifc = retract_data(diagnostic_metric_state.z_ifc)
+        z_full = np.zeros((z_ifc.shape[0], z_ifc.shape[1]-1), dtype=float)
+        for k in range(z_full.shape[1]):
+            z_full[:,k] = 0.5 * (z_ifc[:,k] + z_ifc[:,k+1])
+        cell_center_height[:,:] = z_full[:,:]
 
     def write_to_netcdf(
         self,
@@ -476,6 +507,9 @@ class NewOutputState:
         for var_name in output_dict.keys():
             if var_name in self._variable_list.variable_name_list:
                 if self._check_list[var_name] == 0:
+                    log.warning(
+                        f"Debugging Data {var_name}"
+                    )
                     self._nf4_basegrp[self._current_file_number].variables[var_name][
                         self._current_write_step
                     ] = retract_data(output_dict[var_name]).transpose()
@@ -813,21 +847,22 @@ class TimeLoop:
                 CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
             ),
             horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            vertical_start=0,
+            vertical_start=int32(0),
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug(
-            f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}"
+            f"max min v: {xp.max(xp.abs(diagnostic_state.v.ndarray))} {xp.min(xp.abs(diagnostic_state.v.ndarray))}"
         )
 
         driver_cached.diagnose_temperature(
             prognostic_state.theta_v,
             prognostic_state.exner,
             diagnostic_state.temperature,
-            horizontal_start=self.grid.get_start_index(
-                CellDim, HorizontalMarkerIndex.interior(CellDim)
-            ),
+            horizontal_start=int32(0),
+            # self.grid.get_start_index(
+            #     CellDim, HorizontalMarkerIndex.interior(CellDim)
+            # ),
             horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
             vertical_start=0,
             vertical_end=self.grid.num_levels,
@@ -842,9 +877,10 @@ class TimeLoop:
             CPD_O_RD,
             P0REF,
             GRAV_O_RD,
-            horizontal_start=self.grid.get_start_index(
-                CellDim, HorizontalMarkerIndex.interior(CellDim)
-            ),
+            horizontal_start=int32(0),
+            # self.grid.get_start_index(
+            #     CellDim, HorizontalMarkerIndex.interior(CellDim)
+            # ),
             horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
             vertical_start=self.grid.num_levels,
             vertical_end=self.grid.num_levels + 1,
@@ -858,9 +894,10 @@ class TimeLoop:
             diagnostic_state.pressure,
             diagnostic_state.pressure_ifc,
             GRAV_O_RD,
-            horizontal_start=self.grid.get_start_index(
-                CellDim, HorizontalMarkerIndex.interior(CellDim)
-            ),
+            horizontal_start=int32(0),
+            # self.grid.get_start_index(
+            #     CellDim, HorizontalMarkerIndex.interior(CellDim)
+            # ),
             horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
             vertical_start=0,
             vertical_end=self.grid.num_levels,
@@ -896,7 +933,7 @@ class TimeLoop:
                 prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
             )
 
-            log.info(f"Debugging U (before diffusion): {np.max(diagnostic_state.u.asnumpy())}")
+            log.info(f"Debugging U (before diffusion): {xp.max(xp.abs(diagnostic_state.u.ndarray))}")
 
         if (
             self.diffusion.config.apply_to_horizontal_wind
@@ -918,10 +955,10 @@ class TimeLoop:
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f" MAX VN: {prognostic_state_list[self._now].vn.ndarray.max():.15e} , MAX W: {prognostic_state_list[self._now].w.ndarray.max():.15e}"
+                f" MAX VN: {xp.abs(prognostic_state_list[self._now].vn.ndarray).max():.15e} , MAX W: {xp.abs(prognostic_state_list[self._now].w.ndarray).max():.15e}"
             )
             log.info(
-                f" MAX RHO: {prognostic_state_list[self._now].rho.ndarray.max():.15e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.max():.15e}"
+                f" MAX RHO: {xp.abs(prognostic_state_list[self._now].rho.ndarray).max():.15e} , MAX THETA_V: {xp.abs(prognostic_state_list[self._now].theta_v.ndarray).max():.15e}"
             )
             log.info(
                 f" AVE VN: {prognostic_state_list[self._now].vn.ndarray.mean(axis=(0,1)):.15e} , AVE W: {prognostic_state_list[self._now].w.ndarray.mean(axis=(0,1)):.15e}"
@@ -973,18 +1010,18 @@ class TimeLoop:
                 do_prep_adv,
                 time_step,
                 do_output,
-                do_output_step=output_state.current_file_number,
+                do_output_step=output_state.current_file_number if output_state is not None else 1,
             )
             self._timer1.capture()
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
-            if output_state is not None:
+            if output_state is not None and do_output:
                 self._diagnose_for_output_and_physics(
                     prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
                 )
 
-                log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
+                log.info(f"Debugging U (after diffusion): {xp.max(diagnostic_state.u.ndarray)}")
 
                 output_data = {}
                 output_data["vn"] = prognostic_state_list[self._now].vn
@@ -1067,14 +1104,29 @@ class TimeLoop:
                     "after_flxdiv_vn"
                 ] = self.solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
                 output_data[
+                    "before_vn"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_before_vn
+                output_data[
+                    "after_vn"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_after_vn
+                output_data[
+                    "before_w"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_before_w
+                output_data[
+                    "after_w"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_after_w
+                # output_data[
+                #     "corrector_flxdiv_vn"
+                # ] = self.solve_nonhydro.output_intermediate_fields.output_corrector_flxdiv_vn
+                output_data[
                     "nabla2_diff"
-                ] = self.diffusion.output_intermediate_fields.nabla2_diff
+                ] = self.diffusion.output_intermediate_fields.output_nabla2_diff
                 output_data[
                     "nabla4_diff"
-                ] = self.diffusion.output_intermediate_fields.nabla4_diff
+                ] = self.diffusion.output_intermediate_fields.output_nabla4_diff
                 output_data[
                     "w_nabla4_diff"
-                ] = self.diffusion.output_intermediate_fields.w_nabla4_diff
+                ] = self.diffusion.output_intermediate_fields.output_w_nabla4_diff
                 output_state.write_to_netcdf(self._simulation_date, output_data)
 
         self._timer1.summary(True)
@@ -1409,12 +1461,114 @@ def initialize(
 
     # testing divergence v2c2e
     div_geofac_ndarray = solve_nonhydro_interpolation_state.geofac_2order_div.ndarray
-    u_ndarray = prognostic_state_now.u.ndarray
+    geofac_ndarray = solve_nonhydro_interpolation_state.geofac_div.ndarray
+    primal_normal_x = edge_geometry.primal_normal[0].ndarray
+    primal_normal_y = edge_geometry.primal_normal[1].ndarray
+    vn_ndarray = prognostic_state_now.vn.ndarray
     index_v = 0
     v2c_connectivity = icon_grid.connectivities[V2CDim]
+    v2e_connectivity = icon_grid.connectivities[V2EDim]
     c2e_connectivity = icon_grid.connectivities[C2EDim]
+    c2v_connectivity = icon_grid.connectivities[C2VDim]
     v2c2e_connectivity = icon_grid.connectivities[V2C2EDim]
-    log.debug(f"{}")
+    # checking first v (pentagon)
+    log.debug(f"driver debugging v2c {v2c_connectivity[0]}")
+    log.debug(f"driver debugging c2e all {c2e_connectivity[v2c_connectivity[0]]}")
+    log.debug(f"driver debugging v2e all {v2e_connectivity[0]}")
+    log.debug(f"driver debugging v2c2e {v2c2e_connectivity[0]}")
+    # checking second v
+    log.debug(f"driver debugging v2c {v2c_connectivity[1]}")
+    log.debug(f"driver debugging c2e all {c2e_connectivity[v2c_connectivity[1]]}")
+    log.debug(f"driver debugging v2e all {v2e_connectivity[1]}")
+    log.debug(f"driver debugging v2c2e {v2c2e_connectivity[1]}")
+    # target cell 0
+    # print divergence at v1
+    assert c2v_connectivity[0,:].shape[0] == 3
+    v1, v2, v3 = c2v_connectivity[1595,0], c2v_connectivity[1595,1], c2v_connectivity[1595,2]
+    log.debug(f"vertex number: : {v1} {v2} {v3}")
+    log.debug(f"cell areas around v1 : {cell_geometry.area.ndarray[v2c_connectivity[v1]]}")
+    log.debug(f"cell areas around v2 : {cell_geometry.area.ndarray[v2c_connectivity[v2]]}")
+    log.debug(f"cell areas around v3 : {cell_geometry.area.ndarray[v2c_connectivity[v3]]}")
+    log.debug(f"edge lengths around v1 : {edge_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v1]]}")
+    log.debug(f"edge lengths around v2 : {edge_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v2]]}")
+    log.debug(f"edge lengths around v3 : {edge_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v3]]}")
+    # log.debug(f"edge orient around v1 : {cell_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v1]]}")
+    # log.debug(f"edge orient around v2 : {cell_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v2]]}")
+    # log.debug(f"edge orient around v3 : {cell_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v3]]}")
+    log.debug(f"vn at v1: {vn_ndarray[v2c2e_connectivity[v1],icon_grid.num_levels-1]}")
+    log.debug(f"geofacdiv at v1: {div_geofac_ndarray[v1]}")
+    log.debug(f"vn at v2: {vn_ndarray[v2c2e_connectivity[v2],icon_grid.num_levels-1]}")
+    log.debug(f"geofacdiv at v2: {div_geofac_ndarray[v2]}")
+    log.debug(f"vn at v3: {vn_ndarray[v2c2e_connectivity[v3],icon_grid.num_levels-1]}")
+    log.debug(f"geofacdiv at v3: {div_geofac_ndarray[v3]}")
+    from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_normal_wind import compute_2nd_order_divergence_of_flux_of_normal_wind
+    from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell import interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell
+    from icon4py.model.atmosphere.dycore.compute_divergence_of_flux_of_normal_wind import compute_divergence_of_flux_of_normal_wind
+    from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+    from icon4py.model.common.settings import xp
+    start_vertex_lb_plus1 = icon_grid.get_start_index(
+        VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+    )  # TODO: check
+    end_vertex_local_minus1 = icon_grid.get_end_index(
+        VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
+    )
+    log.debug(f"vertex indices: {start_vertex_lb_plus1} {end_vertex_local_minus1} {icon_grid.num_vertices}")
+    z_flxdiv2order_vn_vertex=_allocate(VertexDim, KDim, grid=icon_grid)
+    z_flxdiv_vn=_allocate(CellDim, KDim, grid=icon_grid)
+    z_flxdiv_vn_debug=_allocate(CellDim, KDim, grid=icon_grid)
+    compute_2nd_order_divergence_of_flux_of_normal_wind(
+        geofac_2order_div=solve_nonhydro_interpolation_state.geofac_2order_div,
+        vn=prognostic_state_next.vn,
+        z_flxdiv2order_vn_vertex=z_flxdiv2order_vn_vertex,
+        horizontal_start=start_vertex_lb_plus1,
+        horizontal_end=end_vertex_local_minus1,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
+        offset_provider=icon_grid.offset_providers,
+    )
+    interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell(
+        z_flxdiv2order_vn_vertex=z_flxdiv2order_vn_vertex,
+        z_flxdiv_vn=z_flxdiv_vn_debug,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
+        offset_provider=icon_grid.offset_providers,
+    )
+    compute_divergence_of_flux_of_normal_wind(
+        geofac_div=solve_nonhydro_interpolation_state.geofac_div,
+        vn=prognostic_state_next.vn,
+        z_flxdiv_vn=z_flxdiv_vn,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels,
+        offset_provider=icon_grid.offset_providers,
+    )
+    log.debug(f"geofac at c0: {geofac_ndarray[1595]}")
+    log.debug(f"geofac at c00: {geofac_ndarray[0]}")
+    log.debug(f"v1: {z_flxdiv2order_vn_vertex.ndarray[v1,icon_grid.num_levels-1]}")
+    log.debug(f"v2: {z_flxdiv2order_vn_vertex.ndarray[v2,icon_grid.num_levels-1]}")
+    log.debug(f"v3: {z_flxdiv2order_vn_vertex.ndarray[v3,icon_grid.num_levels-1]}")
+    log.debug(f"sum v1: {xp.sum(z_flxdiv_vn.ndarray[v2c_connectivity[v1,:],icon_grid.num_levels-1])}")
+    log.debug(f"sum v2: {xp.sum(z_flxdiv_vn.ndarray[v2c_connectivity[v2,:],icon_grid.num_levels-1])}")
+    log.debug(f"sum v3: {xp.sum(z_flxdiv_vn.ndarray[v2c_connectivity[v3,:],icon_grid.num_levels-1])}")
+    log.debug(f"debug cell o: {z_flxdiv_vn_debug.ndarray[1595,icon_grid.num_levels-1]}")
+    log.debug(f"cell o: {z_flxdiv_vn.ndarray[1595,icon_grid.num_levels-1]}")
+    log.debug(f"cell v1: {z_flxdiv_vn.ndarray[v2c_connectivity[v1,0],icon_grid.num_levels-1]}")
+    log.debug(f"cell v1: {z_flxdiv_vn.ndarray[v2c_connectivity[v1,1],icon_grid.num_levels-1]}")
+    log.debug(f"cell v1: {z_flxdiv_vn.ndarray[v2c_connectivity[v1,2],icon_grid.num_levels-1]}")
+    log.debug(f"cell v2: {z_flxdiv_vn.ndarray[v2c_connectivity[v2,0],icon_grid.num_levels-1]}")
+    log.debug(f"cell v2: {z_flxdiv_vn.ndarray[v2c_connectivity[v2,1],icon_grid.num_levels-1]}")
+    log.debug(f"cell v2: {z_flxdiv_vn.ndarray[v2c_connectivity[v2,2],icon_grid.num_levels-1]}")
+    log.debug(f"cell v3: {z_flxdiv_vn.ndarray[v2c_connectivity[v3,0],icon_grid.num_levels-1]}")
+    log.debug(f"cell v3: {z_flxdiv_vn.ndarray[v2c_connectivity[v3,1],icon_grid.num_levels-1]}")
+    log.debug(f"cell v3: {z_flxdiv_vn.ndarray[v2c_connectivity[v3,2],icon_grid.num_levels-1]}")
+    # for i in range(icon_grid.num_cells):
+    #     log.debug(f"debugging first level divdamp: {i} {z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-1]} {z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1]} {xp.abs(z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-1] - z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])/xp.abs(z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])*100.0}")
+    # for i in range(icon_grid.num_cells):
+    #     log.debug(f"debugging tenth level divdamp: {i} {z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-10]} {z_flxdiv_vn.ndarray[i,icon_grid.num_levels-10]} {xp.abs(z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-10] - z_flxdiv_vn.ndarray[i,icon_grid.num_levels-10])/xp.abs(z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])*100.0}")
+    #div_geofac_ndarray = 
 
     if enable_output:
         log.info("initializing netCDF4 output state")
@@ -1484,9 +1638,14 @@ def initialize(
         output_data["scal_divdamp"] = solve_nonhydro.output_intermediate_fields.output_scal_divdamp
         output_data["before_flxdiv_vn"] = solve_nonhydro.output_intermediate_fields.output_before_flxdiv_vn
         output_data["after_flxdiv_vn"] = solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
-        output_data["nabla2_diff"] = diffusion.output_intermediate_fields.nabla2_diff
-        output_data["nabla4_diff"] = diffusion.output_intermediate_fields.nabla4_diff
-        output_data["w_nabla4_diff"] = diffusion.output_intermediate_fields.w_nabla4_diff
+        output_data["before_vn"] = solve_nonhydro.output_intermediate_fields.output_before_vn
+        output_data["after_vn"] = solve_nonhydro.output_intermediate_fields.output_after_vn
+        output_data["before_w"] = solve_nonhydro.output_intermediate_fields.output_before_w
+        output_data["after_w"] = solve_nonhydro.output_intermediate_fields.output_after_w
+        # output_data["corrector_flxdiv_vn"] = solve_nonhydro.output_intermediate_fields.output_corrector_flxdiv_vn
+        output_data["nabla2_diff"] = diffusion.output_intermediate_fields.output_nabla2_diff
+        output_data["nabla4_diff"] = diffusion.output_intermediate_fields.output_nabla4_diff
+        output_data["w_nabla4_diff"] = diffusion.output_intermediate_fields.output_w_nabla4_diff
         output_state = NewOutputState(
             config.output_config,
             config.run_config.start_date,

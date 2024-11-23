@@ -339,6 +339,7 @@ def test_run_timeloop_single_step(
         e_lat=grid_savepoint.edge_center_lat(),
         e_lon=grid_savepoint.edge_center_lon(),
         vct_a=grid_savepoint.vct_a(),
+        z_ifc=None,
     )
 
     diagnostic_state = DiagnosticState(

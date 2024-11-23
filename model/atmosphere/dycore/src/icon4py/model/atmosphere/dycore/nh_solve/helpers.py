@@ -235,6 +235,13 @@ from icon4py.model.common.math.smagorinsky import (
 )
 from icon4py.model.common.settings import device
 
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+    init_cell_kdim_field_with_zero_vp as init_cell_kdim_field_with_zero_vp_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    compute_contravariant_correction as compute_contravariant_correction_orig,
+)
+
 
 def handle_numpy_integer(value):
     return int(value)
@@ -538,3 +545,7 @@ compute_z_raylfac = CachedProgram(compute_z_raylfac_orig, with_domain=False)
 calculate_scal_divdamp_half = CachedProgram(calculate_scal_divdamp_half_orig)
 
 calculate_divdamp_fields = CachedProgram(calculate_divdamp_fields_orig, with_domain=False)
+
+init_cell_kdim_field_with_zero_vp = CachedProgram(init_cell_kdim_field_with_zero_vp_orig)
+
+compute_contravariant_correction = CachedProgram(compute_contravariant_correction_orig)

@@ -235,45 +235,6 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ndyn_substeps_var=n_substeps_reduced,
         )
 
-    def _jabw_diffusion_config(n_substeps: int):
-        return DiffusionConfig(
-            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
-            hdiff_temp=False,
-            n_substeps=n_substeps,
-            type_t_diffu=2,
-            type_vn_diffu=1,
-            # hdiff_efdt_ratio=10.0,
-            # hdiff_w_efdt_ratio=15.0,
-            # hdiff_efdt_ratio=1000.0,
-            # hdiff_w_efdt_ratio=1000.0,
-            hdiff_efdt_ratio=1.e15,
-            hdiff_w_efdt_ratio=1.e15,
-            smagorinski_scaling_factor=0.025,
-            # smagorinski_scaling_factor=0.0,
-            # smagorinski_scaling_factor=0.0000025,
-            zdiffu_t=False,
-            velocity_boundary_diffusion_denom=200.0,
-            max_nudging_coeff=0.075,
-            call_frequency=1,
-        )
-
-    def _jabw_nonhydro_config(n_substeps: int):
-        return NonHydrostaticConfig(
-            # original igradp_method is 2
-            # original divdamp_order is 4
-            ndyn_substeps_var=n_substeps,
-            max_nudging_coeff=0.02,
-            divdamp_fac=0.0025,
-            # divdamp_fac=0.0,
-            do_o2_divdamp=False,
-            do_3d_divergence_damping=True,
-            do_second_order_3d_divergence_damping=False,
-            do_multiple_divdamp=True,
-            number_of_divdamp_step=3,
-        )
-
     def _mch_ch_r04b09_config():
         return (
             IconRunConfig(
@@ -289,7 +250,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             _mch_ch_r04b09_nonhydro_config(),
         )
 
-    def _jablownoski_Williamson_config():
+    def _output_config():
         output_variable_list = OutputVariableList()
         output_variable_list.add_new_variable(
             "temperature",
@@ -766,6 +727,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         output_variable_list.add_new_variable(
             "before_flxdiv_vn",
             VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
                 vertical_dimension=OutputDimension.FULL_LEVEL,
                 time_dimension=OutputDimension.TIME,
             ),
@@ -783,6 +745,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         output_variable_list.add_new_variable(
             "after_flxdiv_vn",
             VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
                 vertical_dimension=OutputDimension.FULL_LEVEL,
                 time_dimension=OutputDimension.TIME,
             ),
@@ -797,6 +760,96 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 scope=OutputScope.diagnostic,
             ),
         )
+        output_variable_list.add_new_variable(
+            "before_vn",
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="m s-1",
+                standard_name="initial normal wind",
+                long_name="normal wind before divergence damping",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="elat elon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
+            "after_vn",
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="m s-1",
+                standard_name="final normal wind",
+                long_name="normal wind after divergence damping",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="elat elon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
+            "before_w",
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.HALF_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="m s-1",
+                standard_name="initial vertical wind",
+                long_name="vertical wind before divergence damping",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="clat clon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
+            "after_w",
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.HALF_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="m s-1",
+                standard_name="final vertical wind",
+                long_name="vertical wind after divergence damping",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="clat clon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        # output_variable_list.add_new_variable(
+        #     "corrector_flxdiv_vn",
+        #     VariableDimension(
+        #         horizon_dimension=OutputDimension.CELL_DIM,
+        #         vertical_dimension=OutputDimension.FULL_LEVEL,
+        #         time_dimension=OutputDimension.TIME,
+        #     ),
+        #     VariableAttributes(
+        #         units="s-1",
+        #         standard_name="corrector wind divergence",
+        #         long_name="divergence of wind after w update in the corrector step",
+        #         CDI_grid_type="unstructured",
+        #         param="0.0.0",
+        #         number_of_grid_in_reference="1",
+        #         coordinates="clat clon",
+        #         scope=OutputScope.diagnostic,
+        #     ),
+        # )
         output_variable_list.add_new_variable(
             "nabla2_diff",
             VariableDimension(
@@ -852,21 +905,101 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ),
         )
 
-        icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=600.0),
-            end_date=datetime(1, 1, 30, 0, 0, 0),
-            # end_date=datetime(1, 1, 1, 0, 2, 0),
-            damping_height=45000.0,
-            apply_initial_stabilization=False,
-            n_substeps=5,
-        )
-        jabw_output_config = IconOutputConfig(
-            output_time_interval=timedelta(seconds=14400),
-            output_file_time_interval=timedelta(seconds=14400),
+        return IconOutputConfig(
+            # output_time_interval=timedelta(seconds=14400),
+            # output_file_time_interval=timedelta(seconds=14400),
+            output_time_interval=timedelta(seconds=600),
+            output_file_time_interval=timedelta(seconds=600),
             output_path=Path("./"),
             output_initial_condition_as_a_separate_file=True,
             output_variable_list=output_variable_list,
         )
+
+    def _jabw_diffusion_config(n_substeps: int):
+        return DiffusionConfig(
+            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=True,
+            hdiff_vn=True,
+            hdiff_temp=False,
+            n_substeps=n_substeps,
+            type_t_diffu=2,
+            type_vn_diffu=1,
+            # hdiff_efdt_ratio=10.0,
+            # hdiff_w_efdt_ratio=15.0,
+            # hdiff_efdt_ratio=1000.0,
+            # hdiff_w_efdt_ratio=1000.0,
+            hdiff_efdt_ratio=1.e15,
+            hdiff_w_efdt_ratio=1.e15,
+            smagorinski_scaling_factor=0.015,
+            # smagorinski_scaling_factor=0.0,
+            # smagorinski_scaling_factor=0.0000025,
+            zdiffu_t=False,
+            velocity_boundary_diffusion_denom=200.0,
+            max_nudging_coeff=0.075,
+            call_frequency=1,
+        )
+
+    def _jabw_nonhydro_config(n_substeps: int):
+        return NonHydrostaticConfig(
+            # original igradp_method is 2
+            # original divdamp_order is 4
+            ndyn_substeps_var=n_substeps,
+            max_nudging_coeff=0.02,
+            # divdamp_fac=0.0025,
+            divdamp_fac=0.00125,
+            # divdamp_fac=0.0,
+            do_o2_divdamp=False,
+            do_3d_divergence_damping=True,
+            do_second_order_3d_divergence_damping=False,
+            do_multiple_divdamp=True,
+            number_of_divdamp_step=100,
+        )
+    
+    def _gauss3d_diffusion_config(n_substeps: int):
+        return DiffusionConfig(
+            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=True,
+            hdiff_vn=True,
+            hdiff_temp=False,
+            n_substeps=n_substeps,
+            type_t_diffu=2,
+            type_vn_diffu=1,
+            # hdiff_efdt_ratio=36.0,
+            # hdiff_w_efdt_ratio=15.0,
+            hdiff_efdt_ratio=1.e15,
+            hdiff_w_efdt_ratio=1.e15,
+            smagorinski_scaling_factor=0.015,
+            # smagorinski_scaling_factor=0.0,
+            # smagorinski_scaling_factor=0.0000025,
+            zdiffu_t=False,
+            velocity_boundary_diffusion_denom=200.0,
+            max_nudging_coeff=0.02,
+            call_frequency=1,
+        )
+
+    def _gauss3d_nonhydro_config(n_substeps: int):
+        return NonHydrostaticConfig(
+            igradp_method=3,
+            ndyn_substeps_var=n_substeps,
+            max_nudging_coeff=0.02,
+            divdamp_fac=0.0025,
+            do_o2_divdamp=False,
+            do_3d_divergence_damping=True,
+            do_second_order_3d_divergence_damping=False,
+            do_multiple_divdamp=True,
+            number_of_divdamp_step=100,
+        )
+    
+    def _jablownoski_Williamson_config():
+        icon_run_config = IconRunConfig(
+            dtime=timedelta(seconds=600.0),
+            # end_date=datetime(1, 1, 30, 0, 0, 0),
+            end_date=datetime(1, 1, 1, 0, 30, 0),
+            damping_height=45000.0,
+            apply_initial_stabilization=False,
+            n_substeps=5,
+        )
+        jabw_output_config = _output_config()
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
         jabw_nonhydro_config = _jabw_nonhydro_config(icon_run_config.n_substeps)
         return (
@@ -874,6 +1007,25 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             jabw_output_config,
             jabw_diffusion_config,
             jabw_nonhydro_config,
+        )
+    
+    def _gauss3d_config():
+        icon_run_config = IconRunConfig(
+            dtime=timedelta(seconds=3.0),
+            # end_date=datetime(1, 1, 1, 12, 0, 0),
+            end_date=datetime(1, 1, 1, 0, 0, 6),
+            damping_height=45000.0,
+            apply_initial_stabilization=False,
+            n_substeps=5,
+        )
+        gauss3d_output_config = _output_config()
+        gauss3d_diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)
+        gauss3d_nonhydro_config = _gauss3d_nonhydro_config(icon_run_config.n_substeps)
+        return (
+            icon_run_config,
+            gauss3d_output_config,
+            gauss3d_diffusion_config,
+            gauss3d_nonhydro_config,
         )
 
     if experiment_type == ExperimentType.JABW:
@@ -883,6 +1035,13 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             diffusion_config,
             nonhydro_config,
         ) = _jablownoski_Williamson_config()
+    elif experiment_type == ExperimentType.GAUSS3D:
+        (
+            model_run_config,
+            output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _gauss3d_config()
     else:
         log.warning(
             "Experiment name is not specified, default configuration for mch_ch_r04b09_dsl is used."
