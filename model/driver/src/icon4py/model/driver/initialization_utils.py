@@ -930,12 +930,6 @@ def read_initial_state(
             prognostic_state_now,
             prognostic_state_next,
         ) = model_initialization_gauss3d(icon_grid, edge_param, path, rank)
-        log.info(
-            f" MAX VN1: {prognostic_state_now.vn.ndarray.max():.15e} , MAX W: {prognostic_state_now.w.ndarray.max():.15e}"
-        )
-        log.info(
-            f" MAX VN1: {prognostic_state_next.vn.ndarray.max():.15e} , MAX W: {prognostic_state_next.w.ndarray.max():.15e}"
-        )
     elif experiment_type == ExperimentType.ANY:
         (
             diffusion_diagnostic_state,

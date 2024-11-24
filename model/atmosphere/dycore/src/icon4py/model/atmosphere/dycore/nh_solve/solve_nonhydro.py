@@ -2642,7 +2642,7 @@ class SolveNonhydro:
                                     offset_provider=self.grid.offset_providers,
                                 )
                                 
-                                log.debug("corrector start stencil 2nd order multi full 3d divdamp")
+                                # log.debug("corrector start stencil 2nd order multi full 3d divdamp")
                                 # log.info(f"{z_fields.z_graddiv_normal.ndarray.min():.15e} {z_fields.z_graddiv_normal.ndarray.max():.15e}")
                                 # log.info(f"{z_fields.z_graddiv_vertical.ndarray.min():.15e} {z_fields.z_graddiv_vertical.ndarray.max():.15e}")
                                 # log.info(f"{self.z_graddiv2_normal.ndarray.min():.15e} {self.z_graddiv2_normal.ndarray.max():.15e}")
@@ -3031,7 +3031,7 @@ class SolveNonhydro:
                                     offset_provider=self.grid.offset_providers,
                                 )
 
-                                log.debug("corrector start stencil 2nd order multi divdamp")
+                                # log.debug("corrector start stencil 2nd order multi divdamp")
                                 """
                                 vn (0:nlev-1):
                                     Apply the higher order divergence damping to vn at full levels (edge center).
@@ -3521,7 +3521,7 @@ class SolveNonhydro:
                         if self.config.do_multiple_divdamp:
                             for _ in range(self.config.number_of_divdamp_step-1):
 
-                                log.debug("corrector: 2nd order full 3d divergence multiple damping")
+                                # log.debug("corrector: 2nd order full 3d divergence multiple damping")
                                 """
                                 z_flxdiv2order_vn_vertex (0:nlev-1):
                                     Compute the 2nd order divergence of normal wind at full levels (vertex) by Gauss theorem.
@@ -4230,7 +4230,7 @@ class SolveNonhydro:
                             if self.config.do_multiple_divdamp:
                                 for _ in range(self.config.number_of_divdamp_step-1):
 
-                                    log.debug("corrector start stencil 4th order full-3D multiple divdamp")
+                                    # log.debug("corrector start stencil 4th order full-3D multiple divdamp")
                                     """
                                     z_flxdiv_vn (0:nlev-1):
                                         Compute the divergence of normal wind at full levels (cell center) by Gauss theorem.
@@ -4870,7 +4870,7 @@ class SolveNonhydro:
                                         offset_provider=self.grid.offset_providers,
                                     )
 
-                                    log.debug("corrector start stencil 4th order multi divdamp")
+                                    # log.debug("corrector start stencil 4th order multi divdamp")
                                     """
                                     vn (0:nlev-1):
                                         Apply the higher order divergence damping to vn at full levels (edge center).

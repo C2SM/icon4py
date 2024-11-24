@@ -1307,16 +1307,16 @@ class TimeLoop:
 def print_config(config: IconConfig):
     config_vars = vars(config.run_config)
     for item in config_vars:
-        log.info(f"Icon4py run configuration detail: {item} {config_vars[item]}")
+        log.critical(f"Icon4py run configuration detail: {item} {config_vars[item]}")
     config_vars = vars(config.diffusion_config)
     for item in config_vars:
-        log.info(f"Diffusion configuration detail: {item} {config_vars[item]}")
+        log.critical(f"Diffusion configuration detail: {item} {config_vars[item]}")
     config_vars = vars(config.solve_nonhydro_config)
     for item in config_vars:
-        log.info(f"Solve_nh configuration detail: {item} {config_vars[item]}")
+        log.critical(f"Solve_nh configuration detail: {item} {config_vars[item]}")
     config_vars = vars(config.output_config)
     for item in config_vars:
-        log.info(f"Output configuration detail: {item} {config_vars[item]}")
+        log.critical(f"Output configuration detail: {item} {config_vars[item]}")
 
 
 def initialize(
@@ -1460,115 +1460,115 @@ def initialize(
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
     # testing divergence v2c2e
-    div_geofac_ndarray = solve_nonhydro_interpolation_state.geofac_2order_div.ndarray
-    geofac_ndarray = solve_nonhydro_interpolation_state.geofac_div.ndarray
-    primal_normal_x = edge_geometry.primal_normal[0].ndarray
-    primal_normal_y = edge_geometry.primal_normal[1].ndarray
-    vn_ndarray = prognostic_state_now.vn.ndarray
-    index_v = 0
-    v2c_connectivity = icon_grid.connectivities[V2CDim]
-    v2e_connectivity = icon_grid.connectivities[V2EDim]
-    c2e_connectivity = icon_grid.connectivities[C2EDim]
-    c2v_connectivity = icon_grid.connectivities[C2VDim]
-    v2c2e_connectivity = icon_grid.connectivities[V2C2EDim]
-    # checking first v (pentagon)
-    log.debug(f"driver debugging v2c {v2c_connectivity[0]}")
-    log.debug(f"driver debugging c2e all {c2e_connectivity[v2c_connectivity[0]]}")
-    log.debug(f"driver debugging v2e all {v2e_connectivity[0]}")
-    log.debug(f"driver debugging v2c2e {v2c2e_connectivity[0]}")
-    # checking second v
-    log.debug(f"driver debugging v2c {v2c_connectivity[1]}")
-    log.debug(f"driver debugging c2e all {c2e_connectivity[v2c_connectivity[1]]}")
-    log.debug(f"driver debugging v2e all {v2e_connectivity[1]}")
-    log.debug(f"driver debugging v2c2e {v2c2e_connectivity[1]}")
-    # target cell 0
-    # print divergence at v1
-    assert c2v_connectivity[0,:].shape[0] == 3
-    v1, v2, v3 = c2v_connectivity[1595,0], c2v_connectivity[1595,1], c2v_connectivity[1595,2]
-    log.debug(f"vertex number: : {v1} {v2} {v3}")
-    log.debug(f"cell areas around v1 : {cell_geometry.area.ndarray[v2c_connectivity[v1]]}")
-    log.debug(f"cell areas around v2 : {cell_geometry.area.ndarray[v2c_connectivity[v2]]}")
-    log.debug(f"cell areas around v3 : {cell_geometry.area.ndarray[v2c_connectivity[v3]]}")
-    log.debug(f"edge lengths around v1 : {edge_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v1]]}")
-    log.debug(f"edge lengths around v2 : {edge_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v2]]}")
-    log.debug(f"edge lengths around v3 : {edge_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v3]]}")
-    # log.debug(f"edge orient around v1 : {cell_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v1]]}")
-    # log.debug(f"edge orient around v2 : {cell_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v2]]}")
-    # log.debug(f"edge orient around v3 : {cell_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v3]]}")
-    log.debug(f"vn at v1: {vn_ndarray[v2c2e_connectivity[v1],icon_grid.num_levels-1]}")
-    log.debug(f"geofacdiv at v1: {div_geofac_ndarray[v1]}")
-    log.debug(f"vn at v2: {vn_ndarray[v2c2e_connectivity[v2],icon_grid.num_levels-1]}")
-    log.debug(f"geofacdiv at v2: {div_geofac_ndarray[v2]}")
-    log.debug(f"vn at v3: {vn_ndarray[v2c2e_connectivity[v3],icon_grid.num_levels-1]}")
-    log.debug(f"geofacdiv at v3: {div_geofac_ndarray[v3]}")
-    from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_normal_wind import compute_2nd_order_divergence_of_flux_of_normal_wind
-    from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell import interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell
-    from icon4py.model.atmosphere.dycore.compute_divergence_of_flux_of_normal_wind import compute_divergence_of_flux_of_normal_wind
-    from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
-    from icon4py.model.common.settings import xp
-    start_vertex_lb_plus1 = icon_grid.get_start_index(
-        VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
-    )  # TODO: check
-    end_vertex_local_minus1 = icon_grid.get_end_index(
-        VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
-    )
-    log.debug(f"vertex indices: {start_vertex_lb_plus1} {end_vertex_local_minus1} {icon_grid.num_vertices}")
-    z_flxdiv2order_vn_vertex=_allocate(VertexDim, KDim, grid=icon_grid)
-    z_flxdiv_vn=_allocate(CellDim, KDim, grid=icon_grid)
-    z_flxdiv_vn_debug=_allocate(CellDim, KDim, grid=icon_grid)
-    compute_2nd_order_divergence_of_flux_of_normal_wind(
-        geofac_2order_div=solve_nonhydro_interpolation_state.geofac_2order_div,
-        vn=prognostic_state_next.vn,
-        z_flxdiv2order_vn_vertex=z_flxdiv2order_vn_vertex,
-        horizontal_start=start_vertex_lb_plus1,
-        horizontal_end=end_vertex_local_minus1,
-        vertical_start=0,
-        vertical_end=icon_grid.num_levels,
-        offset_provider=icon_grid.offset_providers,
-    )
-    interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell(
-        z_flxdiv2order_vn_vertex=z_flxdiv2order_vn_vertex,
-        z_flxdiv_vn=z_flxdiv_vn_debug,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=icon_grid.num_levels,
-        offset_provider=icon_grid.offset_providers,
-    )
-    compute_divergence_of_flux_of_normal_wind(
-        geofac_div=solve_nonhydro_interpolation_state.geofac_div,
-        vn=prognostic_state_next.vn,
-        z_flxdiv_vn=z_flxdiv_vn,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=icon_grid.num_levels,
-        offset_provider=icon_grid.offset_providers,
-    )
-    log.debug(f"geofac at c0: {geofac_ndarray[1595]}")
-    log.debug(f"geofac at c00: {geofac_ndarray[0]}")
-    log.debug(f"v1: {z_flxdiv2order_vn_vertex.ndarray[v1,icon_grid.num_levels-1]}")
-    log.debug(f"v2: {z_flxdiv2order_vn_vertex.ndarray[v2,icon_grid.num_levels-1]}")
-    log.debug(f"v3: {z_flxdiv2order_vn_vertex.ndarray[v3,icon_grid.num_levels-1]}")
-    log.debug(f"sum v1: {xp.sum(z_flxdiv_vn.ndarray[v2c_connectivity[v1,:],icon_grid.num_levels-1])}")
-    log.debug(f"sum v2: {xp.sum(z_flxdiv_vn.ndarray[v2c_connectivity[v2,:],icon_grid.num_levels-1])}")
-    log.debug(f"sum v3: {xp.sum(z_flxdiv_vn.ndarray[v2c_connectivity[v3,:],icon_grid.num_levels-1])}")
-    log.debug(f"debug cell o: {z_flxdiv_vn_debug.ndarray[1595,icon_grid.num_levels-1]}")
-    log.debug(f"cell o: {z_flxdiv_vn.ndarray[1595,icon_grid.num_levels-1]}")
-    log.debug(f"cell v1: {z_flxdiv_vn.ndarray[v2c_connectivity[v1,0],icon_grid.num_levels-1]}")
-    log.debug(f"cell v1: {z_flxdiv_vn.ndarray[v2c_connectivity[v1,1],icon_grid.num_levels-1]}")
-    log.debug(f"cell v1: {z_flxdiv_vn.ndarray[v2c_connectivity[v1,2],icon_grid.num_levels-1]}")
-    log.debug(f"cell v2: {z_flxdiv_vn.ndarray[v2c_connectivity[v2,0],icon_grid.num_levels-1]}")
-    log.debug(f"cell v2: {z_flxdiv_vn.ndarray[v2c_connectivity[v2,1],icon_grid.num_levels-1]}")
-    log.debug(f"cell v2: {z_flxdiv_vn.ndarray[v2c_connectivity[v2,2],icon_grid.num_levels-1]}")
-    log.debug(f"cell v3: {z_flxdiv_vn.ndarray[v2c_connectivity[v3,0],icon_grid.num_levels-1]}")
-    log.debug(f"cell v3: {z_flxdiv_vn.ndarray[v2c_connectivity[v3,1],icon_grid.num_levels-1]}")
-    log.debug(f"cell v3: {z_flxdiv_vn.ndarray[v2c_connectivity[v3,2],icon_grid.num_levels-1]}")
-    # for i in range(icon_grid.num_cells):
-    #     log.debug(f"debugging first level divdamp: {i} {z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-1]} {z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1]} {xp.abs(z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-1] - z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])/xp.abs(z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])*100.0}")
-    # for i in range(icon_grid.num_cells):
-    #     log.debug(f"debugging tenth level divdamp: {i} {z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-10]} {z_flxdiv_vn.ndarray[i,icon_grid.num_levels-10]} {xp.abs(z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-10] - z_flxdiv_vn.ndarray[i,icon_grid.num_levels-10])/xp.abs(z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])*100.0}")
-    #div_geofac_ndarray = 
+    # div_geofac_ndarray = solve_nonhydro_interpolation_state.geofac_2order_div.ndarray
+    # geofac_ndarray = solve_nonhydro_interpolation_state.geofac_div.ndarray
+    # primal_normal_x = edge_geometry.primal_normal[0].ndarray
+    # primal_normal_y = edge_geometry.primal_normal[1].ndarray
+    # vn_ndarray = prognostic_state_now.vn.ndarray
+    # index_v = 0
+    # v2c_connectivity = icon_grid.connectivities[V2CDim]
+    # v2e_connectivity = icon_grid.connectivities[V2EDim]
+    # c2e_connectivity = icon_grid.connectivities[C2EDim]
+    # c2v_connectivity = icon_grid.connectivities[C2VDim]
+    # v2c2e_connectivity = icon_grid.connectivities[V2C2EDim]
+    # # checking first v (pentagon)
+    # log.debug(f"driver debugging v2c {v2c_connectivity[0]}")
+    # log.debug(f"driver debugging c2e all {c2e_connectivity[v2c_connectivity[0]]}")
+    # log.debug(f"driver debugging v2e all {v2e_connectivity[0]}")
+    # log.debug(f"driver debugging v2c2e {v2c2e_connectivity[0]}")
+    # # checking second v
+    # log.debug(f"driver debugging v2c {v2c_connectivity[1]}")
+    # log.debug(f"driver debugging c2e all {c2e_connectivity[v2c_connectivity[1]]}")
+    # log.debug(f"driver debugging v2e all {v2e_connectivity[1]}")
+    # log.debug(f"driver debugging v2c2e {v2c2e_connectivity[1]}")
+    # # target cell 0
+    # # print divergence at v1
+    # assert c2v_connectivity[0,:].shape[0] == 3
+    # v1, v2, v3 = c2v_connectivity[1595,0], c2v_connectivity[1595,1], c2v_connectivity[1595,2]
+    # log.debug(f"vertex number: : {v1} {v2} {v3}")
+    # log.debug(f"cell areas around v1 : {cell_geometry.area.ndarray[v2c_connectivity[v1]]}")
+    # log.debug(f"cell areas around v2 : {cell_geometry.area.ndarray[v2c_connectivity[v2]]}")
+    # log.debug(f"cell areas around v3 : {cell_geometry.area.ndarray[v2c_connectivity[v3]]}")
+    # log.debug(f"edge lengths around v1 : {edge_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v1]]}")
+    # log.debug(f"edge lengths around v2 : {edge_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v2]]}")
+    # log.debug(f"edge lengths around v3 : {edge_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v3]]}")
+    # # log.debug(f"edge orient around v1 : {cell_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v1]]}")
+    # # log.debug(f"edge orient around v2 : {cell_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v2]]}")
+    # # log.debug(f"edge orient around v3 : {cell_geometry.primal_edge_lengths.ndarray[v2c2e_connectivity[v3]]}")
+    # log.debug(f"vn at v1: {vn_ndarray[v2c2e_connectivity[v1],icon_grid.num_levels-1]}")
+    # log.debug(f"geofacdiv at v1: {div_geofac_ndarray[v1]}")
+    # log.debug(f"vn at v2: {vn_ndarray[v2c2e_connectivity[v2],icon_grid.num_levels-1]}")
+    # log.debug(f"geofacdiv at v2: {div_geofac_ndarray[v2]}")
+    # log.debug(f"vn at v3: {vn_ndarray[v2c2e_connectivity[v3],icon_grid.num_levels-1]}")
+    # log.debug(f"geofacdiv at v3: {div_geofac_ndarray[v3]}")
+    # from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_normal_wind import compute_2nd_order_divergence_of_flux_of_normal_wind
+    # from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell import interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell
+    # from icon4py.model.atmosphere.dycore.compute_divergence_of_flux_of_normal_wind import compute_divergence_of_flux_of_normal_wind
+    # from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+    # from icon4py.model.common.settings import xp
+    # start_vertex_lb_plus1 = icon_grid.get_start_index(
+    #     VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+    # )  # TODO: check
+    # end_vertex_local_minus1 = icon_grid.get_end_index(
+    #     VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
+    # )
+    # log.debug(f"vertex indices: {start_vertex_lb_plus1} {end_vertex_local_minus1} {icon_grid.num_vertices}")
+    # z_flxdiv2order_vn_vertex=_allocate(VertexDim, KDim, grid=icon_grid)
+    # z_flxdiv_vn=_allocate(CellDim, KDim, grid=icon_grid)
+    # z_flxdiv_vn_debug=_allocate(CellDim, KDim, grid=icon_grid)
+    # compute_2nd_order_divergence_of_flux_of_normal_wind(
+    #     geofac_2order_div=solve_nonhydro_interpolation_state.geofac_2order_div,
+    #     vn=prognostic_state_next.vn,
+    #     z_flxdiv2order_vn_vertex=z_flxdiv2order_vn_vertex,
+    #     horizontal_start=start_vertex_lb_plus1,
+    #     horizontal_end=end_vertex_local_minus1,
+    #     vertical_start=0,
+    #     vertical_end=icon_grid.num_levels,
+    #     offset_provider=icon_grid.offset_providers,
+    # )
+    # interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell(
+    #     z_flxdiv2order_vn_vertex=z_flxdiv2order_vn_vertex,
+    #     z_flxdiv_vn=z_flxdiv_vn_debug,
+    #     horizontal_start=0,
+    #     horizontal_end=icon_grid.num_cells,
+    #     vertical_start=0,
+    #     vertical_end=icon_grid.num_levels,
+    #     offset_provider=icon_grid.offset_providers,
+    # )
+    # compute_divergence_of_flux_of_normal_wind(
+    #     geofac_div=solve_nonhydro_interpolation_state.geofac_div,
+    #     vn=prognostic_state_next.vn,
+    #     z_flxdiv_vn=z_flxdiv_vn,
+    #     horizontal_start=0,
+    #     horizontal_end=icon_grid.num_cells,
+    #     vertical_start=0,
+    #     vertical_end=icon_grid.num_levels,
+    #     offset_provider=icon_grid.offset_providers,
+    # )
+    # log.debug(f"geofac at c0: {geofac_ndarray[1595]}")
+    # log.debug(f"geofac at c00: {geofac_ndarray[0]}")
+    # log.debug(f"v1: {z_flxdiv2order_vn_vertex.ndarray[v1,icon_grid.num_levels-1]}")
+    # log.debug(f"v2: {z_flxdiv2order_vn_vertex.ndarray[v2,icon_grid.num_levels-1]}")
+    # log.debug(f"v3: {z_flxdiv2order_vn_vertex.ndarray[v3,icon_grid.num_levels-1]}")
+    # log.debug(f"sum v1: {xp.sum(z_flxdiv_vn.ndarray[v2c_connectivity[v1,:],icon_grid.num_levels-1])}")
+    # log.debug(f"sum v2: {xp.sum(z_flxdiv_vn.ndarray[v2c_connectivity[v2,:],icon_grid.num_levels-1])}")
+    # log.debug(f"sum v3: {xp.sum(z_flxdiv_vn.ndarray[v2c_connectivity[v3,:],icon_grid.num_levels-1])}")
+    # log.debug(f"debug cell o: {z_flxdiv_vn_debug.ndarray[1595,icon_grid.num_levels-1]}")
+    # log.debug(f"cell o: {z_flxdiv_vn.ndarray[1595,icon_grid.num_levels-1]}")
+    # log.debug(f"cell v1: {z_flxdiv_vn.ndarray[v2c_connectivity[v1,0],icon_grid.num_levels-1]}")
+    # log.debug(f"cell v1: {z_flxdiv_vn.ndarray[v2c_connectivity[v1,1],icon_grid.num_levels-1]}")
+    # log.debug(f"cell v1: {z_flxdiv_vn.ndarray[v2c_connectivity[v1,2],icon_grid.num_levels-1]}")
+    # log.debug(f"cell v2: {z_flxdiv_vn.ndarray[v2c_connectivity[v2,0],icon_grid.num_levels-1]}")
+    # log.debug(f"cell v2: {z_flxdiv_vn.ndarray[v2c_connectivity[v2,1],icon_grid.num_levels-1]}")
+    # log.debug(f"cell v2: {z_flxdiv_vn.ndarray[v2c_connectivity[v2,2],icon_grid.num_levels-1]}")
+    # log.debug(f"cell v3: {z_flxdiv_vn.ndarray[v2c_connectivity[v3,0],icon_grid.num_levels-1]}")
+    # log.debug(f"cell v3: {z_flxdiv_vn.ndarray[v2c_connectivity[v3,1],icon_grid.num_levels-1]}")
+    # log.debug(f"cell v3: {z_flxdiv_vn.ndarray[v2c_connectivity[v3,2],icon_grid.num_levels-1]}")
+    # # for i in range(icon_grid.num_cells):
+    # #     log.debug(f"debugging first level divdamp: {i} {z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-1]} {z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1]} {xp.abs(z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-1] - z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])/xp.abs(z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])*100.0}")
+    # # for i in range(icon_grid.num_cells):
+    # #     log.debug(f"debugging tenth level divdamp: {i} {z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-10]} {z_flxdiv_vn.ndarray[i,icon_grid.num_levels-10]} {xp.abs(z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-10] - z_flxdiv_vn.ndarray[i,icon_grid.num_levels-10])/xp.abs(z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])*100.0}")
+    # #div_geofac_ndarray = 
 
     if enable_output:
         log.info("initializing netCDF4 output state")
