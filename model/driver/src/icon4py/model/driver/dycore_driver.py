@@ -953,8 +953,8 @@ class TimeLoop:
             profile_enable()
 
         for time_step in range(self._n_time_steps):
-            log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.info(
+            log.critical(f"simulation date : {self._simulation_date} run timestep : {time_step}")
+            log.critical(
                 f" MAX VN: {xp.abs(prognostic_state_list[self._now].vn.ndarray).max():.15e} , MAX W: {xp.abs(prognostic_state_list[self._now].w.ndarray).max():.15e}"
             )
             log.info(

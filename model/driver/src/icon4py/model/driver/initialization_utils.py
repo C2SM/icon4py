@@ -1292,9 +1292,12 @@ def configure_logging(
     logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
     logfile.touch(exist_ok=True)
     if disable_logging:
-        logging.disable(logging.CRITICAL)
+        #logging.disable(logging.CRITICAL)
+        logging_level = logging.CRITICAL
+    else:
+        logging_level = logging.DEBUG
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging_level,
         format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",
         filemode="w",
         filename=logfile,
@@ -1306,5 +1309,5 @@ def configure_logging(
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging_level)
     logging.getLogger("").addHandler(console_handler)

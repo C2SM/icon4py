@@ -2344,7 +2344,7 @@ class SolveNonhydro:
                             vn = vn + scal_divdamp_o2 * Del(normal_direction) Div(vn)
                         """
                         copy_edge_kdim_field_to_vp(
-                            field=self.z_graddiv_vn,
+                            field=z_fields.z_graddiv_vn,
                             field_copy=self.output_intermediate_fields.output_graddiv_vn,
                             horizontal_start=int32(0),
                             horizontal_end=end_edge_local,
@@ -2358,7 +2358,7 @@ class SolveNonhydro:
                             vn = vn + scal_divdamp * Del(normal_direction) Div( Del Div(V) )
                         """
                         copy_edge_kdim_field_to_vp(
-                            field=self.z_graddiv2_normal,
+                            field=z_fields.z_graddiv_normal,
                             field_copy=self.output_intermediate_fields.output_graddiv2_normal,
                             horizontal_start=int32(0),
                             horizontal_end=end_edge_local,
@@ -2387,7 +2387,7 @@ class SolveNonhydro:
                         #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
                         apply_4th_order_3d_divergence_damping_to_vn(
                             scal_divdamp=self.scal_divdamp_o2,
-                            z_graddiv2_normal=self.z_graddiv_normal,
+                            z_graddiv2_normal=z_fields.z_graddiv_normal,
                             vn=prognostic_state[nnew].vn,
                             horizontal_start=start_edge_nudging_plus1,
                             horizontal_end=end_edge_local,
@@ -2402,7 +2402,7 @@ class SolveNonhydro:
                         """
                         apply_4th_order_3d_divergence_damping_to_w(
                             scal_divdamp_half=self.scal_divdamp_o2_half,
-                            z_graddiv2_vertical=self.z_graddiv_vertical,
+                            z_graddiv2_vertical=z_fields.z_graddiv_vertical,
                             w=prognostic_state[nnew].w,
                             horizontal_start=start_cell_nudging,
                             horizontal_end=end_cell_local,
@@ -2507,8 +2507,8 @@ class SolveNonhydro:
                             temporary = xp.expand_dims(temporary, axis=-1)
                             expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
                             total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
-                            temporary1 = self.z_graddiv_normal.ndarray**2
-                            temporary2 = self.z_graddiv_vertical.ndarray**2
+                            temporary1 = z_fields.z_graddiv_normal.ndarray**2
+                            temporary2 = z_fields.z_graddiv_vertical.ndarray**2
                             temporary3 = xp.zeros_like(expanded_weight)
                             c2e = self.grid.connectivities[C2EDim]
                             for k in range(self.grid.num_levels):
@@ -2654,7 +2654,7 @@ class SolveNonhydro:
                                 #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
                                 apply_4th_order_3d_divergence_damping_to_vn(
                                     scal_divdamp=self.scal_divdamp_o2,
-                                    z_graddiv2_normal=self.z_graddiv_normal,
+                                    z_graddiv2_normal=z_fields.z_graddiv_normal,
                                     vn=prognostic_state[nnew].vn,
                                     horizontal_start=start_edge_nudging_plus1,
                                     horizontal_end=end_edge_local,
@@ -2669,7 +2669,7 @@ class SolveNonhydro:
                                 """
                                 apply_4th_order_3d_divergence_damping_to_w(
                                     scal_divdamp_half=self.scal_divdamp_o2_half,
-                                    z_graddiv2_vertical=self.z_graddiv_vertical,
+                                    z_graddiv2_vertical=z_fields.z_graddiv_vertical,
                                     w=prognostic_state[nnew].w,
                                     horizontal_start=start_cell_nudging,
                                     horizontal_end=end_cell_local,
@@ -2774,8 +2774,8 @@ class SolveNonhydro:
                                     temporary = xp.expand_dims(temporary, axis=-1)
                                     expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
                                     total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
-                                    temporary1 = self.z_graddiv_normal.ndarray**2
-                                    temporary2 = self.z_graddiv_vertical.ndarray**2
+                                    temporary1 = z_fields.z_graddiv_normal.ndarray**2
+                                    temporary2 = z_fields.z_graddiv_vertical.ndarray**2
                                     temporary3 = xp.zeros_like(expanded_weight)
                                     c2e = self.grid.connectivities[C2EDim]
                                     for k in range(self.grid.num_levels):
@@ -2794,7 +2794,7 @@ class SolveNonhydro:
                             vn = vn + scal_divdamp_o2 * Del(normal_direction) Div(vn)
                         """
                         copy_edge_kdim_field_to_vp(
-                            field=self.z_graddiv_vn,
+                            field=z_fields.z_graddiv_vn,
                             field_copy=self.output_intermediate_fields.output_graddiv_vn,
                             horizontal_start=int32(0),
                             horizontal_end=end_edge_local,
@@ -3153,7 +3153,7 @@ class SolveNonhydro:
                                     temporary = xp.expand_dims(temporary, axis=-1)
                                     expanded_weight = xp.repeat(temporary, expanded_dz.shape[1], axis=1)
                                     total_weight = xp.sum(xp.sum(expanded_weight*expanded_dz,axis=1), axis=0)
-                                    temporary1 = self.z_graddiv_vn.ndarray**2
+                                    temporary1 = z_fields.z_graddiv_vn.ndarray**2
                                     temporary3 = xp.zeros_like(expanded_weight)
                                     c2e = self.grid.connectivities[C2EDim]
                                     for k in range(self.grid.num_levels):
