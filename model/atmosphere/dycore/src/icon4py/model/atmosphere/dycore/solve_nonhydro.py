@@ -1339,7 +1339,7 @@ class SolveNonhydro:
         # Outputs:
         #  - z_gradh_exner :
         #     $$
-        #     \exnergradh{\ntilde}{\e}{\k} = \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nflatlev)
+        #     \exnerprimegradh{\ntilde}{\e}{\k} = \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nflatlev)
         #     $$
         #     Compute the horizontal gradient of temporal extrapolation of
         #     perturbed exner function on flat levels, unaffected by the terrain
@@ -1361,15 +1361,27 @@ class SolveNonhydro:
         )
 
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            """
-            z_gradh_exner (flat_lev:flat_gradp):
-                Compute the horizontal gradient (at constant height) of temporal extrapolation of perturbed exner function at full levels (edge center) by simple first order scheme.
-                By coordinate transformation (x, y, z) <-> (x, y, eta), dpi/dn |z = dpi/dn |s + dh/dn |s dpi/dz
-                dpi/dz is previously computed z_dexner_dz_c_1.
-                dh/dn | s is ddxn_z_full, it is the horizontal gradient across neighboring cells at constant eta at full levels.
-            """
-            # horizontal gradient of Exner pressure, including metric correction
-            # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
+            # scidoc:
+            # Outputs:
+            #  - z_gradh_exner :
+            #     $$
+            #     \exnerprimegradh{\ntilde}{\e}{\k} &&= \left.\pdxn{\exnerprime{}{}{}}\right|_{s} - \left.\pdxn{h}\right|_{s}\exnerprimedz{}{}{}\\
+            #                                       &&= \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}
+            #                                         - \pdxn{h} \sum_{\offProv{e2c}} \Whor \exnerprimedz{\ntilde}{\c}{\k},
+            #                                           \quad \k \in [\nflatlev, \nflatgradp]
+            #     $$
+            #     Compute the horizontal gradient (at constant height) of
+            #     temporal extrapolation of perturbed exner function on non-flat
+            #     levels, affected by the terrain following deformation, i.e.
+            #     those levels for which $\pdxn{h} \neq 0$ (eq. 14 in
+            #     |ICONdycorePaper|).
+            #
+            # Inputs:
+            #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+            #  - $\Cgrad$ : inverse_dual_edge_length
+            #  - $\exnerprimedz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_1
+            #  - $\Whor$ : c_lin_e
+            #
             self._compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
                 inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
@@ -1449,7 +1461,7 @@ class SolveNonhydro:
             # Outputs:
             #  - z_gradh_exner :
             #     $$
-            #     \exnergradh{\ntilde}{\e}{\k} = \exnergradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), \quad \e \in \IDXpg \\
+            #     \exnerprimegradh{\ntilde}{\e}{\k} = \exnerprimegradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), \quad \e \in \IDXpg \\
             #     $$
             #     Apply the hydrostatic correction term to the horizontal
             #     gradient (at constant height) of the temporal extrapolation of
@@ -1459,7 +1471,7 @@ class SolveNonhydro:
             #     underground, i.e. edges in the $\IDXpg$ set.
             #
             # Inputs:
-            #  - $\exnergradh{\ntilde}{\e}{\k}$ : z_gradh_exner
+            #  - $\exnerprimegradh{\ntilde}{\e}{\k}$ : z_gradh_exner
             #  - $\exnhydrocorr{\e}$ : hydro_corr_horizontal
             #  - $(h_k - h_{k^*})$ : pg_exdist
             #  - $\IDXpg$ : ipeidx_dsl
@@ -1480,7 +1492,7 @@ class SolveNonhydro:
         # Outputs:
         #  - vn :
         #     $$
-        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \exnergradh{\ntilde}{\e}{\k} \right)
+        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \exnerprimegradh{\ntilde}{\e}{\k} \right)
         #     $$
         #     Update the normal wind speed with the advection and pressure
         #     gradient terms.
