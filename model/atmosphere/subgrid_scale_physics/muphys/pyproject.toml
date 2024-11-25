@@ -88,6 +88,7 @@ extend-exclude = [
   '_local_',
   'build',
   'dist',
+  'docs',
   '_external_src',
   'tests/_disabled',
   'setup.py'
@@ -124,8 +125,7 @@ ignore-init-module-imports = true
 combine-as-imports = true
 known-first-party = ['icon4py.model']
 known-third-party = [
-  'gt4py',
-  'icon4pytools'
+  'gt4py'
 ]
 lines-after-imports = 2
 

@@ -4,6 +4,7 @@ source_roots = [
     "model/atmosphere/diffusion/src",
     "model/atmosphere/dycore/src",
     "model/atmosphere/subgrid_scale_physics/microphysics/src",
+    "model/atmosphere/subgrid_scale_physics/muphys/src",
     "model/common/src",
     "model/driver/src",
     "tools/src",

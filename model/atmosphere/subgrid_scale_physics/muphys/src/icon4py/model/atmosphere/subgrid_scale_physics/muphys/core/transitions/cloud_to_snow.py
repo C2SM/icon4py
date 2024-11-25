@@ -7,27 +7,30 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.common import graupel_ct
+from gt4py.next.ffront.fbuiltins import where
+
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common import constants as graupel_ct
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 gtx.field_operator
 def _cloud_to_snow(
-    t:       gtx.Field[Dims[I,J,K], float],             # Temperature
-    qc:      gtx.Field[Dims[I,J,K], float],             # Cloud specific mass
-    qs:      gtx.Field[Dims[I,J,K], float],             # Snow specific mass
-    ns:      gtx.Field[Dims[I,J,K], float],             # Snow number
-    lam:     gtx.Field[Dims[I,J,K], float],             # Snow slope parameter (lambda)
-) -> gtx.Field[Dims[I,J,K], float]:                     # Return: Riming snow rate
+    t:       fa.CellField[ta.wpfloat],             # Temperature
+    qc:      fa.CellField[ta.wpfloat],             # Cloud specific mass
+    qs:      fa.CellField[ta.wpfloat],             # Snow specific mass
+    ns:      fa.CellField[ta.wpfloat],             # Snow number
+    lam:     fa.CellField[ta.wpfloat],             # Snow slope parameter (lambda)
+) -> fa.CellField[ta.wpfloat]:                     # Return: Riming snow rate
     ECS = 0.9
     B_RIM = -(graupel_ct.v1s + 3.0)
     C_RIM = 2.61 * ECS * graupel_ct.v0s  # (with pi*gam(v1s+3)/4 = 2.610)
     return where( min(qc,qs) > graupel_ct.qmin and t > graupel_ct.tfrz_hom, C_RIM*ns*qc*pow(lam, B_RIM), 0 )
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def cloud_to_snow(
-    t:       gtx.Field[Dims[I,J,K], float],             # Temperature
-    qc:      gtx.Field[Dims[I,J,K], float],             # Cloud specific mass
-    qs:      gtx.Field[Dims[I,J,K], float],             # Snow specific mass
-    ns:      gtx.Field[Dims[I,J,K], float],             # Snow number
-    lam:     gtx.Field[Dims[I,J,K], float],             # Snow slope parameter
+    t:       fa.CellField[ta.wpfloat],             # Temperature
+    qc:      fa.CellField[ta.wpfloat],             # Cloud specific mass
+    qs:      fa.CellField[ta.wpfloat],             # Snow specific mass
+    ns:      fa.CellField[ta.wpfloat],             # Snow number
+    lam:     fa.CellField[ta.wpfloat],             # Snow slope parameter
 ):
-    _cloud_to_snow( t, gc, qs, ns, lambda )
+    _cloud_to_snow( t, qc, qs, ns, lam )
