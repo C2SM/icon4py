@@ -1436,11 +1436,27 @@ class SolveNonhydro:
         )
 
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            """
-            z_gradh_exner (0:nlev-1):
-                Apply the dydrostatic correction term to horizontal gradient (at constant height) of temporal extrapolation of perturbed exner function at full levels (edge center)
-                when neighboring cells are underground beyond a certain limit.
-            """
+            # scidoc:
+            # Outputs:
+            #  - z_gradh_exner (0:nlev-1):
+            #     $$
+            #     \exnergradh{\ntilde}{\e}{\k} =
+            #     \begin{cases}
+            #         \exnergradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), & \e \in \IDXpg \\
+            #         \exnergradh{\ntilde}{\e}{\k},                                     & \text{otherwise}
+            #     \end{cases}
+            #     $$
+            #     Apply the hydrostatic correction term to the horizontal
+            #     gradient (at constant height) of the temporal extrapolation of
+            #     perturbed exner function.
+            #     This is only applied to edges for which the adjacent cell
+            #     center (horizontally, not terrain-following) would be underground.
+            #
+            # Inputs:
+            #  - $\exnergradh{\ntilde}{\e}{\k}$ : z_gradh_exner
+            #  - $\exnhydrocorr{\e}$ : z_hydro_corr
+            #  - $h_k$ : z_fields.z_rho_e
+            #
             self._apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=self._metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self._metric_state_nonhydro.pg_exdist,
@@ -1457,7 +1473,7 @@ class SolveNonhydro:
         # Outputs:
         #  - vn :
         #     $$
-        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \pdxn{\exnerprime{\n}{}{}}_{\e\,\k} \right)
+        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \exnergradh{\ntilde}{\e}{\k} \right)
         #     $$
         #     Update the normal wind speed with the advection and pressure
         #     gradient terms.
@@ -1467,7 +1483,7 @@ class SolveNonhydro:
         #  - $\Dt$ : dtime
         #  - $\advvn{\n}{\e}{\k}$ : ddt_vn_apc_pc[self.ntl1]
         #  - $\vpotemp{\n}{\e}{\k}$ : z_theta_v_e
-        #  - $\pdxn{\exnerprime{\n}{}{}}_{\e\,\k}$ : z_gradh_exner
+        #  - $\pdxn{\exnerprime{\ntilde}{}{}}_{\e\,\k}$ : z_gradh_exner
         #  - $\cpd$ : CPD
         # 
         self._add_temporal_tendencies_to_vn(

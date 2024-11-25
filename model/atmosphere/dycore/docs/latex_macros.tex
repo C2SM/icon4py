@@ -73,9 +73,11 @@
 \newcommand{\vpotempprime}[3]{\variable{\theta_v'      }{#1}{#2}{#3}}
 \newcommand{\exner}[3]{       \variable{\pi            }{#1}{#2}{#3}}
 \newcommand{\exnerprime}[3]{  \variable{\pi'           }{#1}{#2}{#3}}
+\newcommand{\exnergradh}[3]{  \variable{\pdxn{\exnerprime{#1}{}{}}}{}{#2}{#3}}
 %
 \newcommand{\variableX}[2]{{{#1}_{\horipoint{#2}}}}
-\newcommand{\coriolis}[1]{\variableX{f}{#1}}
+\newcommand{\coriolis}[1]{    \variableX{f                                                                 }{#1}}
+\newcommand{\exnhydrocorr}[1]{\variableX{\frac{g}{\cpd \vpotemp{\color{black}{2}}{}{}}\pdxn{\vpotemp{}{}{}}}{#1}}
 %
 \newcommand{\variableXK}[3]{{{#1}_{\horipoint{#2}\,\vertlevel{#3}}}}
 \newcommand{\presref}[2]{   \variableXK{P_0            }{#1}{#2}}
@@ -106,7 +108,7 @@
 % Horizontal offsets
 \newcommand{\offProv}[1]{\horicolor{#1}}
 
-% Inter/extrapolation weights
+% Inter/extrapolation and derivative weights
 \newcommand{\Wrbf}{\overset{\scriptscriptstyle{\text{rbf}}}{\chi}}
 \newcommand{\Wlev}{\overset{\scriptscriptstyle{\text{lev}}}{\chi}}
 \newcommand{\Whor}{\overset{\scriptscriptstyle{\text{hor}}}{\chi}}
@@ -114,3 +116,6 @@
 \newcommand{\Crot}{\overset{\scriptscriptstyle{\text{rot}}}{\chi}}
 \newcommand{\WtimeExner}{\gamma}
 \newcommand{\WtimeVWind}{\eta}
+
+% Indexes
+\newcommand{\IDXpg}{\overset{\scriptstyle{\partial \pi / \partial n}}{\text{IDX}}}
