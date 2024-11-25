@@ -1438,24 +1438,22 @@ class SolveNonhydro:
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             # scidoc:
             # Outputs:
-            #  - z_gradh_exner (0:nlev-1):
+            #  - z_gradh_exner :
             #     $$
-            #     \exnergradh{\ntilde}{\e}{\k} =
-            #     \begin{cases}
-            #         \exnergradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), & \e \in \IDXpg \\
-            #         \exnergradh{\ntilde}{\e}{\k},                                     & \text{otherwise}
-            #     \end{cases}
+            #     \exnergradh{\ntilde}{\e}{\k} = \exnergradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), \quad \e \in \IDXpg \\
             #     $$
             #     Apply the hydrostatic correction term to the horizontal
             #     gradient (at constant height) of the temporal extrapolation of
             #     perturbed exner function.
             #     This is only applied to edges for which the adjacent cell
-            #     center (horizontally, not terrain-following) would be underground.
+            #     center (horizontally, not terrain-following) would be
+            #     underground, i.e. edges in the $\IDXpg$ set.
             #
             # Inputs:
             #  - $\exnergradh{\ntilde}{\e}{\k}$ : z_gradh_exner
-            #  - $\exnhydrocorr{\e}$ : z_hydro_corr
-            #  - $h_k$ : z_fields.z_rho_e
+            #  - $\exnhydrocorr{\e}$ : hydro_corr_horizontal
+            #  - $(h_k - h_{k^*})$ : pg_exdist
+            #  - $\IDXpg$ : ipeidx_dsl
             #
             self._apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=self._metric_state_nonhydro.ipeidx_dsl,
