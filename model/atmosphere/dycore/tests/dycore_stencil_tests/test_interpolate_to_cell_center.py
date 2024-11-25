@@ -9,7 +9,9 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
+    interpolate_to_cell_center,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,

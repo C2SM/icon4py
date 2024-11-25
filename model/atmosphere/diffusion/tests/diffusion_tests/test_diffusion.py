@@ -511,7 +511,6 @@ def test_run_diffusion_multiple_steps(
     damping_height,
     ndyn_substeps,
     backend,
-    diffusion_instance,  # F811 fixture
     icon_grid,
 ):
     if settings.dace_orchestration is None:
@@ -605,7 +604,17 @@ def test_run_diffusion_multiple_steps(
     )
     prognostic_state_dace_orch = savepoint_diffusion_init.construct_prognostics()
 
-    diffusion_granule = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
+    diffusion_granule = diffusion.Diffusion(
+        grid=icon_grid,
+        config=config,
+        params=additional_parameters,
+        vertical_grid=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+        backend=backend,
+    )
 
     for _ in range(3):
         diffusion_granule.run(

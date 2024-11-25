@@ -7,7 +7,7 @@
 ./model/atmosphere/subgrid_scale_physics/microphysics
 ./model/common[io]
 ./model/driver
-./model/physics/microphysics
+
 
 # icon4pytools
 ./tools

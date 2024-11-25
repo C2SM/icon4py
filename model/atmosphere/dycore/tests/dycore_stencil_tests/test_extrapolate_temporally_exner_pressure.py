@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     extrapolate_temporally_exner_pressure,
 )
 from icon4py.model.common import dimension as dims

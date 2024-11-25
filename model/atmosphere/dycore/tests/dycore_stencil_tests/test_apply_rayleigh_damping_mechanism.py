@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
+from icon4py.model.atmosphere.dycore.stencils.apply_rayleigh_damping_mechanism import (
     apply_rayleigh_damping_mechanism,
 )
 from icon4py.model.common import dimension as dims

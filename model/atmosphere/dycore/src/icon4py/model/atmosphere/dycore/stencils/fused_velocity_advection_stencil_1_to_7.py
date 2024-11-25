@@ -10,24 +10,26 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, where
 
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
     _compute_horizontal_advection_term_for_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.compute_tangential_wind import _compute_tangential_wind
-from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
-from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import (
+    _compute_tangential_wind,
+)
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import _extrapolate_at_top
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges import (
     _interpolate_vt_to_interface_edges,
 )
-from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
