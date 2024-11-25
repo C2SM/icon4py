@@ -10,7 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import cloud_to_snow
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
+from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -31,5 +31,6 @@ class TestUpdateWind(StencilTest):
             qs      = constant_field(grid, 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
             ns      = constant_field(grid, 3.37707e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
             lam     = constant_field(grid, 8989.78, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 
