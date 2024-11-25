@@ -171,17 +171,17 @@ def verify_advection_fields(
 
     # verify advection output fields
     assert helpers.dallclose(
-        diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
-        diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
+        diagnostic_state.hfl_tracer.ndarray[hfl_tracer_range, :],
+        diagnostic_state_ref.hfl_tracer.ndarray[hfl_tracer_range, :],
         rtol=1e-10,
     )
     assert helpers.dallclose(
-        diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
-        diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
+        diagnostic_state.vfl_tracer.ndarray[vfl_tracer_range, :],
+        diagnostic_state_ref.vfl_tracer.ndarray[vfl_tracer_range, :],
         rtol=1e-10,
     )
     assert helpers.dallclose(
-        p_tracer_new.asnumpy()[p_tracer_new_range, :],
-        p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
+        p_tracer_new.ndarray[p_tracer_new_range, :],
+        p_tracer_new_ref.ndarray[p_tracer_new_range, :],
         atol=1e-16,
     )

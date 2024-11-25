@@ -35,7 +35,7 @@ def compute_vertical_tracer_flux_upwind(
     _compute_vertical_tracer_flux_upwind(
         p_cc,
         p_mflx_contra_v,
-        out=(p_upflux),
+        out=p_upflux,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

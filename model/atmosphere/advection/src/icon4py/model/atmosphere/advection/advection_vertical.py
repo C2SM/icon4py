@@ -556,6 +556,10 @@ class FirstOrderUpwind(FiniteVolume):
         )
         self._integrate_tracer_vertically = integrate_tracer_vertically.with_backend(self._backend)
 
+        # misc
+        self._ivadv_tracer = 1
+        self._iadv_slev_jt = 0
+
         log.debug("vertical advection class init - end")
 
     def _get_horizontal_start_end(self, even_timestep: bool):
@@ -633,8 +637,8 @@ class FirstOrderUpwind(FiniteVolume):
             tracer_new=p_tracer_new,
             k=self._k_field,
             p_dtime=dtime,
-            ivadv_tracer=1,
-            iadv_slev_jt=0,
+            ivadv_tracer=self._ivadv_tracer,
+            iadv_slev_jt=self._iadv_slev_jt,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
@@ -730,6 +734,14 @@ class PiecewiseParabolicMethod(FiniteVolume):
         )
         self._integrate_tracer_vertically = integrate_tracer_vertically.with_backend(self._backend)
 
+        # misc
+        self._slev = 0
+        self._slevp1_ti = 1
+        self._elev = self._grid.num_levels - 1
+        self._nlev = self._grid.num_levels - 1
+        self._ivadv_tracer = 1
+        self._iadv_slev_jt = 0
+
         log.debug("vertical advection class init - end")
 
     def _get_horizontal_start_end(self, even_timestep: bool):
@@ -777,8 +789,8 @@ class PiecewiseParabolicMethod(FiniteVolume):
             p_cellmass_now=rhodz_now,
             z_cfl=self._z_cfl,
             k=self._k_field,
-            slevp1_ti=1,
-            nlev=self._grid.num_levels - 1,
+            slevp1_ti=self._slevp1_ti,
+            nlev=self._nlev,
             dbl_eps=constants.DBL_EPS,
             p_dtime=dtime,
             horizontal_start=horizontal_start,
@@ -798,7 +810,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             p_cellhgt_mc_now=self._metric_state.ddqz_z_full,
             k=self._k_field,
             z_slope=self._z_slope,
-            elev=self._grid.num_levels - 1,
+            elev=self._elev,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=1,
@@ -921,7 +933,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             z_a1=self._z_a1,
             p_upflux=p_mflx_tracer_v,
             k=self._k_field,
-            slev=0,
+            slev=self._slev,
             p_dtime=dtime,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
@@ -940,7 +952,7 @@ class PiecewiseParabolicMethod(FiniteVolume):
             z_cfl=self._z_cfl,
             p_upflux=p_mflx_tracer_v,
             k=self._k_field,
-            slev=0,
+            slev=self._slev,
             p_dtime=dtime,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
@@ -994,8 +1006,8 @@ class PiecewiseParabolicMethod(FiniteVolume):
             tracer_new=p_tracer_new,
             k=self._k_field,
             p_dtime=dtime,
-            ivadv_tracer=1,
-            iadv_slev_jt=0,
+            ivadv_tracer=self._ivadv_tracer,
+            iadv_slev_jt=self._iadv_slev_jt,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=0,
