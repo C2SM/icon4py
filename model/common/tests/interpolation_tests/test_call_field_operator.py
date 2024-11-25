@@ -23,8 +23,6 @@ def field_op(
     return neighbor_sum(in_field(C2E) * coeff, axis=C2EDim)
 
 
-
-
 def test_call_field_operator(backend):
     grid = simple.SimpleGrid()
     hstart = 0

@@ -442,7 +442,6 @@ class GridGeometry(factory.FieldSource):
     def __repr__(self):
         return f"{self.__class__.__name__} for geometry_type={self._geometry_type._name_} (grid={self._grid.id!r})"
 
-
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
         return self._attrs

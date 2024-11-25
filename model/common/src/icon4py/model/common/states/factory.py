@@ -139,6 +139,7 @@ class FieldSource(GridProvider, Protocol):
 
     Provides a default implementation of the get method.
     """
+
     _providers: MutableMapping[str, FieldProvider] = {}
 
     @property
@@ -146,14 +147,12 @@ class FieldSource(GridProvider, Protocol):
         """Returns metadata for the fields that this field source provides."""
         ...
 
-
     # TODO @halungge: this is the target Backend: not necessarily the one that the field is computed and
     #      there are fields which need to be computed on a specific backend, which can be different from the
     #      general run backend
     @property
     def backend(self) -> backend.Backend:
         ...
-
 
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
@@ -207,6 +206,7 @@ class CompositeSource(FieldSource):
     def __init__(self, sources: tuple[FieldSource, ...]):
         assert len(sources) > 0, "nees at least one input source to create 'CompositeSource' "
         self._sources = sources
+
     @cached_property
     def metadata(self) -> dict[str, FieldMetaData]:
         return collections.ChainMap(*(s.metadata for s in self._sources))
@@ -248,8 +248,9 @@ class PrecomputedFieldProvider(FieldProvider):
     def func(self) -> Callable:
         return lambda: self.fields
 
+
 class FieldOperatorProvider(FieldProvider):
-    """ Provider that calls a GT4Py Fieldoperator.
+    """Provider that calls a GT4Py Fieldoperator.
 
     # TODO (@halungge) for now to be use only on FieldView Embedded GT4Py backend.
     - restrictions:
@@ -260,12 +261,16 @@ class FieldOperatorProvider(FieldProvider):
     """
 
     def __init__(
-            self,
-            func: gtx_decorator.FieldOperator,
-            domain: dict[gtx.Dimension, tuple[DomainType, DomainType]], # TODO @halungge only keep dimension?
-            fields: dict[str, str], # keyword arg to (field_operator, field_name)
-            deps: dict[str, str], # keyword arg to (field_operator, field_name) need: src
-            params: Optional[dict[str, state_utils.ScalarType]] = None, # keyword arg to (field_operator, field_name)
+        self,
+        func: gtx_decorator.FieldOperator,
+        domain: dict[
+            gtx.Dimension, tuple[DomainType, DomainType]
+        ],  # TODO @halungge only keep dimension?
+        fields: dict[str, str],  # keyword arg to (field_operator, field_name)
+        deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
+        params: Optional[
+            dict[str, state_utils.ScalarType]
+        ] = None,  # keyword arg to (field_operator, field_name)
     ):
         self._func = func
         self._compute_domain = domain
@@ -287,7 +292,7 @@ class FieldOperatorProvider(FieldProvider):
     @property
     def func(self) -> Callable:
         return self._func
-        
+
     def __call__(
         self,
         field_name: str,
@@ -299,9 +304,8 @@ class FieldOperatorProvider(FieldProvider):
             self._compute(field_src, grid)
         return self.fields[field_name]
 
-
     def _compute(self, factory, grid_provider):
-        #allocate output buffer
+        # allocate output buffer
         compute_backend = self._func.backend
         try:
             metadata = {k: factory.get(k, RetrievalType.METADATA) for k, v in self._output.items()}
@@ -312,7 +316,7 @@ class FieldOperatorProvider(FieldProvider):
         # call field operator
         # construct dependencies
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
-      
+
         out_fields = tuple(self._fields.values())
 
         self._func(**deps, out=out_fields, offset_provider=grid_provider.grid.offset_providers)
@@ -330,7 +334,7 @@ class FieldOperatorProvider(FieldProvider):
         def _map_size(dim: gtx.Dimension, grid: GridProvider) -> int:
             if dim.kind == gtx.DimensionKind.VERTICAL:
                 size = grid.vertical_grid.num_levels
-                return  size + 1 if dims == dims.KHalfDim else size
+                return size + 1 if dims == dims.KHalfDim else size
             return grid.grid.size[dim]
 
         def _map_dim(dim: gtx.Dimension) -> gtx.Dimension:
@@ -343,6 +347,7 @@ class FieldOperatorProvider(FieldProvider):
             _map_dim(dim): (0, _map_size(dim, grid)) for dim in self._compute_domain.keys()
         }
         return {k: allocate(field_domain, dtype=dtype) for k in self._fields.keys()}
+
 
 class ProgramFieldProvider(FieldProvider):
     """
@@ -386,7 +391,7 @@ class ProgramFieldProvider(FieldProvider):
     def _allocate(
         self,
         backend: gtx_backend.Backend,
-        grid: base_grid.BaseGrid, # TODO @halungge: change to vertical grid
+        grid: base_grid.BaseGrid,  # TODO @halungge: change to vertical grid
         dtype: state_utils.ScalarType = ta.wpfloat,
     ) -> dict[str, state_utils.FieldType]:
         def _map_size(dim: gtx.Dimension, grid: base_grid.BaseGrid) -> int:
@@ -458,7 +463,8 @@ class ProgramFieldProvider(FieldProvider):
         backend: gtx_backend.Backend,
         grid_provider: GridProvider,
     ):
-        if any([f is None for f in self.fields.values()]):            self._compute(factory, backend, grid_provider)
+        if any([f is None for f in self.fields.values()]):
+            self._compute(factory, backend, grid_provider)
         return self.fields[field_name]
 
     def _compute(

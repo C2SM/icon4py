@@ -1,4 +1,3 @@
-
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
@@ -17,13 +16,14 @@ from icon4py.model.common.states import factory, model
 
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
-    def __init__(self,
-                 grid: icon.IconGrid,
-                 decomposition_info: definitions.DecompositionInfo,
-                 geometry: geometry.GridGeometry,
-                 backend: gtx_backend.Backend,
-                 metadata: dict[str, model.FieldMetaData]
-                 ):
+    def __init__(
+        self,
+        grid: icon.IconGrid,
+        decomposition_info: definitions.DecompositionInfo,
+        geometry: geometry.GridGeometry,
+        backend: gtx_backend.Backend,
+        metadata: dict[str, model.FieldMetaData],
+    ):
         self._backend = backend
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
@@ -34,19 +34,14 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._register_computed_fields()
 
     def _sources(self, inputs: tuple[factory.FieldSource, ...]) -> factory.FieldSource:
-            return factory.CompositeSource(inputs)
-
-
+        return factory.CompositeSource(inputs)
 
     def _register_computed_fields(self):
         # TODO (@halungge) only works on on fieldview-embedded GT4Py backend, as it writes a
         #      sparse field
         geofac_div = factory.FieldOperatorProvider(
             func=interpolation_fields.compute_geofac_div.with_backend(None),
-            
         )
-
-
 
     def __repr__(self):
         return f"{self.__class__.__name__} (grid={self._grid.id!r})"

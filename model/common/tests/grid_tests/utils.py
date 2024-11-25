@@ -98,7 +98,9 @@ def valid_boundary_zones_for_dim(dim: dims.Dimension):
 
 
 @functools.cache
-def run_grid_manager(experiment_name: str, on_gpu = False, num_levels=65, transformation=None) -> gm.GridManager:
+def run_grid_manager(
+    experiment_name: str, on_gpu=False, num_levels=65, transformation=None
+) -> gm.GridManager:
     if transformation is None:
         transformation = gm.ToZeroBasedIndexTransformation()
     file_name = resolve_file_from_gridfile_name(experiment_name)

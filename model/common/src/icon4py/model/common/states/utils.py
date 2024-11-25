@@ -22,7 +22,7 @@ ScalarType: TypeAlias = Union[FloatType, bool, IntegerType]
 
 T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
 
-GTXFieldType:TypeAlias = gtx.Field[Sequence[gtx.Dims[DimT]], T]
+GTXFieldType: TypeAlias = gtx.Field[Sequence[gtx.Dims[DimT]], T]
 FieldType: TypeAlias = Union[gtx.Field[Sequence[gtx.Dims[DimT]], T], xp.ndarray]
 
 
