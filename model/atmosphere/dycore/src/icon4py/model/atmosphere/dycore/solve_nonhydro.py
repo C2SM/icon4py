@@ -1335,11 +1335,20 @@ class SolveNonhydro:
                     offset_provider=self._grid.offset_providers,
                 )
 
-        """
-        z_gradh_exner (0:flat_lev-1):
-            Compute the horizontal gradient of temporal extrapolation of perturbed exner function at full levels (edge center) by simple first order scheme at altitudes witout terrain following effect.
-        """
-        # Remaining computations at edge points
+        # scidoc:
+        # Outputs:
+        #  - z_gradh_exner :
+        #     $$
+        #     \exnergradh{\ntilde}{\e}{\k} = \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nflatlev)
+        #     $$
+        #     Compute the horizontal gradient of temporal extrapolation of
+        #     perturbed exner function on flat levels, unaffected by the terrain
+        #     following deformation.
+        #
+        # Inputs:
+        #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+        #  - $\Cgrad$ : inv_dual_edge_length
+        #
         self._compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
             z_exner_ex_pr=self.z_exner_ex_pr,
