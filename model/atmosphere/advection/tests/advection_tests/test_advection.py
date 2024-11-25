@@ -76,18 +76,6 @@ from .utils import (
             advection.VerticalAdvectionType.PPM_3RD_ORDER,
             advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
         ),
-    ]
-    if 0
-    else [
-        (
-            "2021-06-20T12:00:10.000",
-            False,
-            5,
-            advection.HorizontalAdvectionType.NO_ADVECTION,
-            advection.HorizontalAdvectionLimiter.NO_LIMITER,
-            advection.VerticalAdvectionType.PPM_3RD_ORDER,
-            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
-        ),
     ],
 )
 def test_advection_run_single_step(
