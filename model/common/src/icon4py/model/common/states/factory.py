@@ -204,7 +204,8 @@ class FieldSource(GridProvider, Protocol):
 
 class CompositeSource(FieldSource):
     def __init__(self, sources: tuple[FieldSource, ...]):
-        assert len(sources) > 0, "nees at least one input source to create 'CompositeSource' "
+        assert len(sources) > 0, "needs at least one input source to create 'CompositeSource' "
+        # TODO : assert: all sources need to have same grid and vertical grid -- IconGrid identity??
         self._sources = sources
 
     @cached_property
@@ -212,16 +213,14 @@ class CompositeSource(FieldSource):
         return collections.ChainMap(*(s.metadata for s in self._sources))
 
     @cached_property
-    def providers(self) -> dict[str, FieldProvider]:
-        return collections.ChainMap(*(s.providers for s in self._sources))
-
-    @cached_property
     def backend(self) -> backend.Backend:
         return self._sources[0].backend
 
-    @cached_property
-    def grid_provider(self) -> GridProvider:
-        return self._sources[0].grid_provider
+    def vertical_grid(self) -> Optional[v_grid.VerticalGrid]:
+        return self._sources[0].vertical_grid
+
+    def grid(self) -> Optional[icon_grid.IconGrid]:
+        return self._sources[0].grid
 
 
 class PrecomputedFieldProvider(FieldProvider):
@@ -252,7 +251,7 @@ class PrecomputedFieldProvider(FieldProvider):
 class FieldOperatorProvider(FieldProvider):
     """Provider that calls a GT4Py Fieldoperator.
 
-    # TODO (@halungge) for now to be use only on FieldView Embedded GT4Py backend.
+    # TODO (@halungge) for now to be used only on FieldView Embedded GT4Py backend.
     - restrictions:
          - (if only called on FieldView-Embedded, this is not a necessary restriction)
             calls field operators without domain args, so it can only be used for full field computations
