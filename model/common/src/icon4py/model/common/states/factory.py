@@ -133,23 +133,19 @@ class RetrievalType(enum.Enum):
     METADATA = 2
 
 
-class FieldSource(Protocol):
+class FieldSource(GridProvider, Protocol):
     """
     Protocol for object that can be queried for fields and field metadata
 
     Provides a default implementation of the get method.
     """
+    _providers: MutableMapping[str, FieldProvider] = {}
 
     @property
     def metadata(self) -> MutableMapping[str, FieldMetaData]:
         """Returns metadata for the fields that this field source provides."""
         ...
 
-    # TODO @halungge: should we really allow access to the registered providers?
-    @property
-    def providers(self) -> MutableMapping[str, FieldProvider]:
-        """Returns the providers registered in this FieldSource"""
-        ...
 
     # TODO @halungge: this is the target Backend: not necessarily the one that the field is computed and
     #      there are fields which need to be computed on a specific backend, which can be different from the
@@ -158,10 +154,6 @@ class FieldSource(Protocol):
     def backend(self) -> backend.Backend:
         ...
 
-    # TODO @halungge: should the factory allow access to the grid? why?
-    @property
-    def grid_provider(self) -> GridProvider:
-        ...
 
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
@@ -179,19 +171,19 @@ class FieldSource(Protocol):
             dataarray containing both.
 
         """
-        if field_name not in self.providers:
+        if field_name not in self._providers:
             raise ValueError(f"Field '{field_name}' not provided by the source '{self.__class__}'")
         match type_:
             case RetrievalType.METADATA:
                 return self.metadata[field_name]
             case RetrievalType.FIELD | RetrievalType.DATA_ARRAY:
-                provider = self.providers[field_name]
+                provider = self._providers[field_name]
                 if field_name not in provider.fields:
                     raise ValueError(
                         f"Field {field_name} not provided by f{provider.func.__name__}."
                     )
 
-                buffer = provider(field_name, self, self.backend, self.grid_provider)
+                buffer = provider(field_name, self, self.backend, self)
                 return (
                     buffer
                     if type_ == RetrievalType.FIELD
@@ -202,13 +194,13 @@ class FieldSource(Protocol):
 
     def register_provider(self, provider: FieldProvider):
         for dependency in provider.dependencies:
-            if dependency not in self.providers.keys():
+            if dependency not in self._providers.keys():
                 raise ValueError(
                     f"Dependency '{dependency}' not found in registered providers of source {self.__class__}"
                 )
 
         for field in provider.fields:
-            self.providers[field] = provider
+            self._providers[field] = provider
 
 
 class CompositeSource(FieldSource):
@@ -304,7 +296,7 @@ class FieldOperatorProvider(FieldProvider):
         grid: GridProvider,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
-            self._compute(field_src, backend, grid)
+            self._compute(field_src, grid)
         return self.fields[field_name]
 
 
@@ -312,7 +304,7 @@ class FieldOperatorProvider(FieldProvider):
         #allocate output buffer
         compute_backend = self._func.backend
         try:
-            metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
+            metadata = {k: factory.get(k, RetrievalType.METADATA) for k, v in self._output.items()}
             dtype = metadata["dtype"]
         except (ValueError, KeyError):
             dtype = ta.wpfloat
@@ -325,9 +317,8 @@ class FieldOperatorProvider(FieldProvider):
 
         self._func(**deps, out=out_fields, offset_provider=grid_provider.grid.offset_providers)
         # transfer to target backend, the fields might have been computed on a compute backend
-
-        #gtx.as_field((dims.CellDim, dims.C2EDim), geofac_div.ndarray, allocator=backend)
-        self._fields.items()
+        for f in self._fields.values():
+            gtx.as_field(f.domain, f.ndarray, allocator=factory.backend)
 
     # TODO (@halunnge) copied from ProgramFieldProvider
     def _allocate(
@@ -467,8 +458,7 @@ class ProgramFieldProvider(FieldProvider):
         backend: gtx_backend.Backend,
         grid_provider: GridProvider,
     ):
-        if any([f is None for f in self.fields.values()]):
-            self._compute(factory, backend, grid_provider)
+        if any([f is None for f in self.fields.values()]):            self._compute(factory, backend, grid_provider)
         return self.fields[field_name]
 
     def _compute(

@@ -91,6 +91,7 @@ class GridGeometry(factory.FieldSource):
             metadata: a dictionary of FieldMetaData for all fields computed in GridGeometry.
 
         """
+        self._providers = {}
         self._backend = backend
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
@@ -98,7 +99,6 @@ class GridGeometry(factory.FieldSource):
         self._attrs = metadata
         self._geometry_type: icon.GeometryType = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
-        self._providers: dict[str, factory.FieldProvider] = {}
 
         (
             edge_orientation0_lat,
@@ -442,9 +442,6 @@ class GridGeometry(factory.FieldSource):
     def __repr__(self):
         return f"{self.__class__.__name__} for geometry_type={self._geometry_type._name_} (grid={self._grid.id!r})"
 
-    @property
-    def providers(self) -> dict[str, factory.FieldProvider]:
-        return self._providers
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
@@ -453,10 +450,6 @@ class GridGeometry(factory.FieldSource):
     @property
     def backend(self) -> gtx_backend.Backend:
         return self._backend
-
-    @property
-    def grid_provider(self):
-        return self
 
     @property
     def grid(self):
