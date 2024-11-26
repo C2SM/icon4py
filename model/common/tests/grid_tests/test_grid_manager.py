@@ -584,7 +584,7 @@ def test_tangent_orientation(experiment, grid_file, grid_savepoint):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
- "grid_file, experiment",
+    "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
@@ -597,3 +597,35 @@ def test_cell_normal_orientation(experiment, grid_file, grid_savepoint):
     assert helpers.dallclose(
         geometry_fields[GeometryName.CELL_NORMAL_ORIENTATION].ndarray, expected.ndarray
     )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_edge_orientation_on_vertex(experiment, grid_file, grid_savepoint):
+    expected = grid_savepoint.vertex_edge_orientation()
+    gm = utils.run_grid_manager(grid_file)
+    geometry_fields = gm.geometry
+    assert helpers.dallclose(
+        geometry_fields[GeometryName.EDGE_ORIENTATION_ON_VERTEX].ndarray, expected.ndarray
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_dual_area(experiment, grid_file, grid_savepoint):
+    expected = grid_savepoint.vertex_dual_area()
+    gm = utils.run_grid_manager(grid_file)
+    geometry_fields = gm.geometry
+    assert helpers.dallclose(geometry_fields[GeometryName.DUAL_AREA].ndarray, expected.ndarray)

@@ -130,11 +130,20 @@ class GridGeometry(factory.FieldSource):
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
                 attrs.CELL_AREA: extra_fields[gm.GeometryName.CELL_AREA],
+                attrs.DUAL_AREA: extra_fields[gm.GeometryName.DUAL_AREA],
                 attrs.TANGENT_ORIENTATION: extra_fields[gm.GeometryName.TANGENT_ORIENTATION],
                 "edge_owner_mask": gtx.as_field(
                     (dims.EdgeDim,), decomposition_info.owner_mask(dims.EdgeDim), dtype=bool
                 ),
-                attrs.CELL_NORMAL_ORIENTATION: extra_fields[gm.GeometryName.CELL_NORMAL_ORIENTATION]
+                attrs.CELL_NORMAL_ORIENTATION: extra_fields[
+                    gm.GeometryName.CELL_NORMAL_ORIENTATION
+                ],
+                attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
+                    gm.GeometryName.EDGE_ORIENTATION_ON_VERTEX
+                ],
+                "vertex_owner_mask": gtx.as_field(
+                    (dims.VertexDim,), decomposition_info.owner_mask(dims.VertexDim)
+                ),
             }
         )
         self.register_provider(input_fields_provider)

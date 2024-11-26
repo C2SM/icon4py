@@ -9,6 +9,7 @@
 import logging as log
 
 import gt4py._core.definitions as gtcore_defs
+import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 
 from icon4py.model.common import dimension as dims
@@ -56,10 +57,16 @@ def get_grid_geometry(backend: gtx_backend.Backend, grid_file: str) -> geometry.
     xp = array_ns(on_gpu)
 
     def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
-        edge_indices = alloc.allocate_indices(dims.EdgeDim, grid)
-        owner_mask = xp.ones((grid.num_edges,), dtype=bool)
+        def _add_dimension(dim: gtx.Dimension):
+            indices = alloc.allocate_indices(dim, grid)
+            owner_mask = xp.ones((grid.size[dim],), dtype=bool)
+            decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
+
         decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
-        decomposition_info.with_dimension(dims.EdgeDim, edge_indices.ndarray, owner_mask)
+        _add_dimension(dims.EdgeDim)
+        _add_dimension(dims.VertexDim)
+        _add_dimension(dims.CellDim)
+
         return decomposition_info
 
     def construct_grid_geometry(grid_file: str):

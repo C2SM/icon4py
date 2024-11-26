@@ -29,8 +29,10 @@ CELL_LON: Final[str] = "grid_longitude_of_cell_center"
 CELL_LAT: Final[str] = "grid_latitude_of_cell_center"
 CELL_AREA: Final[str] = "cell_area"
 EDGE_AREA: Final[str] = "edge_area"
+DUAL_AREA: Final[str] = "dual_area"
 TANGENT_ORIENTATION: Final[str] = "edge_orientation"
-CELL_NORMAL_ORIENTATION: Final[str]= "orientation_of_normal_to_cell_edges"
+CELL_NORMAL_ORIENTATION: Final[str] = "orientation_of_normal_to_cell_edges"
+VERTEX_EDGE_ORIENTATION: Final[str] = "orientation_of_edges_around_vertex"
 
 
 CORIOLIS_PARAMETER: Final[str] = "coriolis_parameter"
@@ -134,9 +136,25 @@ attrs: dict[str, model.FieldMetaData] = {
     EDGE_AREA: dict(
         standard_name=EDGE_AREA,
         long_name="area of quadrilateral spanned by edge and associated dual edge",
-        units="m",
+        units="m2",
         dims=(dims.EdgeDim,),
         icon_var_name="t_grid_edges%area_edge",
+        dtype=ta.wpfloat,
+    ),
+    CELL_AREA: dict(
+        standard_name=CELL_AREA,
+        long_name="area of a triangular cell",
+        units="m2",
+        dims=(dims.CellDim,),
+        icon_var_name="t_grid_cells%area",
+        dtype=ta.wpfloat,
+    ),
+    DUAL_AREA: dict(
+        standard_name=DUAL_AREA,
+        long_name="area of the dual grid cell (hexagon cell)",
+        units="m2",
+        dims=(dims.VertexDim,),
+        icon_var_name="t_grid_verts%dual_area",
         dtype=ta.wpfloat,
     ),
     CORIOLIS_PARAMETER: dict(
@@ -281,7 +299,15 @@ attrs: dict[str, model.FieldMetaData] = {
         units="1",
         dims=(dims.EdgeDim,),
         icon_var_name=f"t_grid_edges%{TANGENT_ORIENTATION}",
-        dtype=ta.wpfloat, #TODO (@halungge) netcdf: int
+        dtype=ta.wpfloat,  # TODO (@halungge) netcdf: int
+    ),
+    VERTEX_EDGE_ORIENTATION: dict(
+        standard_name=VERTEX_EDGE_ORIENTATION,
+        long_name="orientation of tangent vector",
+        units="1",
+        dims=(dims.VertexDim, dims.V2EDim),
+        icon_var_name="t_grid_vertex%edge_orientation",
+        dtype=ta.wpfloat,
     ),
 }
 

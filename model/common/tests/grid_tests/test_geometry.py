@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -31,10 +32,16 @@ grid_geometries = {}
 
 def get_grid_geometry(backend, grid_file) -> geometry.GridGeometry:
     def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
-        edge_indices = alloc.allocate_indices(dims.EdgeDim, grid)
-        owner_mask = np.ones((grid.num_edges,), dtype=bool)
+        def _add_dimension(dim: gtx.Dimension):
+            indices = alloc.allocate_indices(dim, grid)
+            owner_mask = np.ones((grid.size[dim],), dtype=bool)
+            decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
+
         decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
-        decomposition_info.with_dimension(dims.EdgeDim, edge_indices.ndarray, owner_mask)
+        _add_dimension(dims.EdgeDim)
+        _add_dimension(dims.VertexDim)
+        _add_dimension(dims.CellDim)
+
         return decomposition_info
 
     def construct_grid_geometry(grid_file: str):

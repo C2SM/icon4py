@@ -44,6 +44,10 @@ class SimpleSource(factory.FieldSource):
         return self._metadata
 
     @property
+    def _sources(self) -> factory.FieldSource:
+        return self
+
+    @property
     def grid(self):
         return self._grid
 
@@ -121,6 +125,22 @@ def test_program_provider(height_coordinate_source):
     assert dims.CellDim in x.domain.dims
 
 
+def test_field_source_raise_error_on_register(cell_coordinate_source):
+    program = metrics.compute_z_mc
+    domain = {
+        dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
+        dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
+    }
+    deps = {
+        "z_ifc": "height_coordinate",
+    }
+    fields = {"z_mc": "output_f"}
+    provider = factory.ProgramFieldProvider(program, domain, fields, deps)
+    with pytest.raises(ValueError) as err:
+        cell_coordinate_source.register_provider(provider)
+        assert "not provided by source " in err.value
+
+
 def test_composite_field_source_contains_all_metadata(
     cell_coordinate_source, height_coordinate_source
 ):
@@ -179,3 +199,24 @@ def test_composite_field_source_get_all_fields(cell_coordinate_source, height_co
     assert isinstance(x, gtx.Field)
     assert dims.KDim in x.domain.dims
     assert len(x.domain.dims) == 2
+
+
+def test_composite_field_source_raises_upon_get_unknown_field(
+    cell_coordinate_source, height_coordinate_source
+):
+    backend = cell_coordinate_source.backend
+    grid = cell_coordinate_source.grid
+    foo = test_helpers.random_field(grid, dims.CellDim, dims.KDim)
+    bar = test_helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+    data = {
+        "foo": (foo, {"standard_name": "foo", "units": ""}),
+        "bar": (bar, {"standard_name": "bar", "units": ""}),
+    }
+
+    test_source = SimpleSource(data_=data, grid=grid, backend=backend)
+    composite = factory.CompositeSource(
+        test_source, (cell_coordinate_source, height_coordinate_source)
+    )
+    with pytest.raises(ValueError) as err:
+        composite.get("alice")
+        assert "not provided by source " in err.value

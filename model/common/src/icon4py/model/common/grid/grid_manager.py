@@ -183,9 +183,10 @@ class ConnectivityName(FieldName):
 
 class GeometryName(FieldName):
     CELL_AREA = "cell_area"
+    DUAL_AREA = "dual_area"
     CELL_NORMAL_ORIENTATION = "orientation_of_normal"
     TANGENT_ORIENTATION = "edge_system_orientation"
-    EDGE_ORIENTATION_ = "edge_orientation"
+    EDGE_ORIENTATION_ON_VERTEX = "edge_orientation"
 
 
 class CoordinateName(FieldName):
@@ -435,13 +436,21 @@ class GridManager:
             GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA)
             ),
+            # TODO (@halungge) easily computed from a neighbor_sum V2C over the cell areas?
+            GeometryName.DUAL_AREA.value: gtx.as_field(
+                (dims.VertexDim,), self._reader.variable(GeometryName.DUAL_AREA)
+            ),
             GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,), self._reader.variable(GeometryName.TANGENT_ORIENTATION)
             ),
             GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
                 (dims.CellDim, dims.C2EDim),
-                self._reader.int_variable(GeometryName.CELL_NORMAL_ORIENTATION, transpose=True)
-            )
+                self._reader.int_variable(GeometryName.CELL_NORMAL_ORIENTATION, transpose=True),
+            ),
+            GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
+                (dims.VertexDim, dims.V2EDim),
+                self._reader.int_variable(GeometryName.EDGE_ORIENTATION_ON_VERTEX, transpose=True),
+            ),
         }
 
     def _read_start_end_indices(

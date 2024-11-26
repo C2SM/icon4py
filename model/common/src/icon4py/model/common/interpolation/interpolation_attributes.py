@@ -28,18 +28,18 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     GEOFAC_DIV: dict(
         standard_name=GEOFAC_DIV,
-        long_name=GEOFAC_DIV,  # TODO (@halungge) find proper description
+        long_name="geometrical factor for divergence",  # TODO (@halungge) find proper description
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.CellDim, dims.C2EDim),
-        icon_var_name="c_lin_e",
+        icon_var_name="geofac_div",
         dtype=ta.wpfloat,
     ),
     GEOFAC_ROT: dict(
         standard_name=GEOFAC_ROT,
-        long_name=GEOFAC_ROT,  # TODO (@halungge) find proper description
+        long_name="geometrical factor for curl",
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.VertexDim, dims.V2EDim),
-        icon_var_name="c_lin_e",
+        icon_var_name="geofac_rot",
         dtype=ta.wpfloat,
     ),
 }

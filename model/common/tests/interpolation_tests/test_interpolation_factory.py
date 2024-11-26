@@ -19,6 +19,7 @@ from .. import utils
 
 
 C2E_SIZE = 3
+E2C_SIZE = 2
 
 
 @pytest.mark.parametrize(
@@ -61,7 +62,7 @@ def test_get_c_lin_e(grid_file, experiment, backend, decomposition_info):
         metadata=attrs.attrs,
     )
     field = factory.get(attrs.C_LIN_E)
-    assert field.asnumpy().shape == (grid.num_edges, 2)
+    assert field.asnumpy().shape == (grid.num_edges, E2C_SIZE)
 
 
 @pytest.mark.parametrize(
@@ -84,3 +85,25 @@ def test_get_geofac_div(grid_file, experiment, backend, decomposition_info):
     )
     field = factory.get(attrs.GEOFAC_DIV)
     assert field.asnumpy().shape == (grid.num_cells, C2E_SIZE)
+
+
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+@pytest.mark.datatest
+def test_get_geofac_rot(grid_file, experiment, backend, decomposition_info):
+    geometry = utils.get_grid_geometry(backend, grid_file)
+    grid = geometry.grid
+    factory = interpolation_factory.InterpolationFieldsFactory(
+        grid=grid,
+        decomposition_info=decomposition_info,
+        geometry=geometry,
+        backend=backend,
+        metadata=attrs.attrs,
+    )
+    field = factory.get(attrs.GEOFAC_ROT)
+    assert field.asnumpy().shape == (grid.num_vertices, 6)

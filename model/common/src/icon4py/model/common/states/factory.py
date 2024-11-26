@@ -143,6 +143,10 @@ class FieldSource(GridProvider, Protocol):
     _providers: MutableMapping[str, FieldProvider] = {}  # noqa:  RUF012 instance variable
 
     @property
+    def _sources(self) -> "FieldSource":
+        return self
+
+    @property
     def metadata(self) -> MutableMapping[str, FieldMetaData]:
         """Returns metadata for the fields that this field source provides."""
         ...
@@ -182,7 +186,7 @@ class FieldSource(GridProvider, Protocol):
                         f"Field {field_name} not provided by f{provider.func.__name__}."
                     )
 
-                buffer = provider(field_name, self, self.backend, self)
+                buffer = provider(field_name, self._sources, self.backend, self)
                 return (
                     buffer
                     if type_ == RetrievalType.FIELD
@@ -191,11 +195,15 @@ class FieldSource(GridProvider, Protocol):
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
 
+    def _provided_by_source(self, name):
+        return name in self._sources._providers or name in self._sources.metadata.keys()
+
     def register_provider(self, provider: FieldProvider):
+        # dependencies must be provider by this field source or registered in sources
         for dependency in provider.dependencies:
-            if dependency not in self._providers.keys():
+            if not (dependency in self._providers.keys() or self._provided_by_source(dependency)):
                 raise ValueError(
-                    f"Dependency '{dependency}' not found in registered providers of source {self.__class__}"
+                    f"Missing dependency: '{dependency}' not found in registered of sources {self.__class__}"
                 )
 
         for field in provider.fields:
@@ -266,9 +274,7 @@ class FieldOperatorProvider(FieldProvider):
     def __init__(
         self,
         func: gtx_decorator.FieldOperator,
-        domain: dict[
-            gtx.Dimension, tuple[DomainType, DomainType]
-        ],  # TODO @halungge only keep dimension?
+        domain: tuple[gtx.Dimension, ...],
         fields: dict[str, str],  # keyword arg to (field_operator, field_name)
         deps: dict[str, str],  # keyword arg to (field_operator, field_name) need: src
         params: Optional[
@@ -276,7 +282,7 @@ class FieldOperatorProvider(FieldProvider):
         ] = None,  # keyword arg to (field_operator, field_name)
     ):
         self._func = func
-        self._compute_domain = domain
+        self._dims = domain
         self._dependencies = deps
         self._output = fields
         self._params = params if params is not None else {}
@@ -320,14 +326,42 @@ class FieldOperatorProvider(FieldProvider):
         # construct dependencies
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
 
-        out_fields = tuple(self._fields.values())
+        out_fields = self._unravel_output_fields()
 
-        self._func(**deps, out=out_fields, offset_provider=grid_provider.grid.offset_providers)
+        self._func(
+            **deps, out=out_fields, offset_provider=self._get_offset_providers(grid_provider.grid)
+        )
         # transfer to target backend, the fields might have been computed on a compute backend
         for f in self._fields.values():
             gtx.as_field(f.domain, f.ndarray, allocator=factory.backend)
 
-    # TODO (@halunnge) copied from ProgramFieldProvider
+    def _unravel_output_fields(self):
+        out_fields = tuple(self._fields.values())
+        if len(out_fields) == 1:
+            out_fields = out_fields[0]
+        return out_fields
+
+    # TODO: do we need that here?
+    def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
+        offset_providers = {}
+        for dim in self._dims:
+            if dim.kind == gtx.DimensionKind.HORIZONTAL:
+                horizontal_offsets = {
+                    k: v
+                    for k, v in grid.offset_providers.items()
+                    if isinstance(v, gtx.NeighborTableOffsetProvider)
+                    and v.origin_axis.kind == gtx.DimensionKind.HORIZONTAL
+                }
+                offset_providers.update(horizontal_offsets)
+            if dim.kind == gtx.DimensionKind.VERTICAL:
+                vertical_offsets = {
+                    k: v
+                    for k, v in grid.offset_providers.items()
+                    if isinstance(v, gtx.Dimension) and v.kind == gtx.DimensionKind.VERTICAL
+                }
+                offset_providers.update(vertical_offsets)
+        return offset_providers
+
     def _allocate(
         self,
         backend: gtx_backend.Backend,
@@ -346,9 +380,7 @@ class FieldOperatorProvider(FieldProvider):
             return dim
 
         allocate = gtx.constructors.zeros.partial(allocator=backend)
-        field_domain = {
-            _map_dim(dim): (0, _map_size(dim, grid)) for dim in self._compute_domain.keys()
-        }
+        field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
         return {k: allocate(field_domain, dtype=dtype) for k in self._fields.keys()}
 
 
@@ -381,15 +413,13 @@ class ProgramFieldProvider(FieldProvider):
     ):
         self._func = func
         self._compute_domain = domain
+        self._dims = domain.keys()
         self._dependencies = deps
         self._output = fields
         self._params = params if params is not None else {}
         self._fields: dict[str, Optional[gtx.Field | state_utils.ScalarType]] = {
             name: None for name in fields.values()
         }
-
-    def _unallocated(self) -> bool:
-        return not all(self._fields.values())
 
     def _allocate(
         self,
@@ -408,9 +438,7 @@ class ProgramFieldProvider(FieldProvider):
             return dim
 
         allocate = gtx.constructors.zeros.partial(allocator=backend)
-        field_domain = {
-            _map_dim(dim): (0, _map_size(dim, grid)) for dim in self._compute_domain.keys()
-        }
+        field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
         return {k: allocate(field_domain, dtype=dtype) for k in self._fields.keys()}
 
     # TODO (@halungge) this can be simplified when completely disentangling vertical and horizontal grid.
