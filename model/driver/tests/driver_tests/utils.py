@@ -9,7 +9,7 @@
 from datetime import datetime, timedelta
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.driver import icon4py_configuration as driver_config
 
 
@@ -77,7 +77,7 @@ def mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
         ndyn_substeps_var=ndyn_substeps,
-        divdamp_order=24,
+        divdamp_order=solve_nh.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         divdamp_fac=0.004,
         max_nudging_coeff=0.075,
@@ -89,7 +89,7 @@ def exclaim_ape_nonhydrostatic_config(ndyn_substeps):
     """Create configuration for EXCLAIM APE experiment."""
     return solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
-        divdamp_order=24,
+        divdamp_order=solve_nh.DivergenceDampingOrder.COMBINED,
         ndyn_substeps_var=ndyn_substeps,
     )
 

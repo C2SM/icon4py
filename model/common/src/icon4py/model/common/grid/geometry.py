@@ -437,7 +437,7 @@ class GridGeometry(factory.FieldSource):
         name = meta["standard_name"]
         self._attrs.update({name: meta})
         provider = factory.ProgramFieldProvider(
-            func=math_helpers.compute_inverse,
+            func=math_helpers.compute_inverse_on_edges,
             deps={"f": field_name},
             fields={"f_inverse": name},
             domain={
