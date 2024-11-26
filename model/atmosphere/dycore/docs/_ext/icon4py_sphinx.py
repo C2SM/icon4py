@@ -31,8 +31,10 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     html_page_width: ClassVar[int] = 672 # px
     #: The keyword identifying the start of a documentation block
     docblock_keyword: ClassVar[str] = "scidoc"
+    #: Collapse the Inputs section
+    collapse_inputs: ClassVar[bool] = True
     #: Add type information to variable names in the Inputs section
-    var_type_in_inputs: ClassVar[bool] = True
+    add_var_type_in_inputs: ClassVar[bool] = True
     #: The font format for variable types in the rendered documentation
     var_type_formatting: ClassVar[str] = "``"
     #: Print the long names of variables in the rendered documentation
@@ -234,8 +236,11 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             elif line.startswith("Inputs:"):
                 section = "Inputs"
                 # Drop the colon from the Inputs section and make it collapsible
-                processed_lines.append(".. collapse:: Inputs")
-                processed_lines.append("")
+                if self.collapse_inputs:
+                    processed_lines.append(".. collapse:: Inputs")
+                    processed_lines.append("")
+                else:
+                    processed_lines.append("Inputs")
                 continue
 
             # Identify LaTeX math
@@ -264,7 +269,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             # Add type information to variable names.
             # Optionally print the long names of variables.
             if line.strip().startswith("-") and (":" in line):
-                if section == "Inputs" and not self.var_type_in_inputs:
+                if section == "Inputs" and not self.add_var_type_in_inputs:
                     # Skip adding type information to variable names in the Inputs section
                     processed_lines.append(line)
                 else:
