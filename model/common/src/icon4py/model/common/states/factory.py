@@ -140,7 +140,7 @@ class FieldSource(GridProvider, Protocol):
     Provides a default implementation of the get method.
     """
 
-    _providers: MutableMapping[str, FieldProvider] = {}
+    _providers: MutableMapping[str, FieldProvider] = {}  # noqa:  RUF012 instance variable
 
     @property
     def metadata(self) -> MutableMapping[str, FieldMetaData]:
@@ -203,24 +203,28 @@ class FieldSource(GridProvider, Protocol):
 
 
 class CompositeSource(FieldSource):
-    def __init__(self, sources: tuple[FieldSource, ...]):
-        assert len(sources) > 0, "needs at least one input source to create 'CompositeSource' "
-        # TODO : assert: all sources need to have same grid and vertical grid -- IconGrid identity??
-        self._sources = sources
+    def __init__(self, me: FieldSource, others: tuple[FieldSource, ...]):
+        self._backend = me.backend
+        self._grid = me.grid
+        self._vertical_grid = me.vertical_grid
+        self._metadata = collections.ChainMap(me.metadata, *(s.metadata for s in others))
+        self._providers = collections.ChainMap(me._providers, *(s._providers for s in others))
 
     @cached_property
-    def metadata(self) -> dict[str, FieldMetaData]:
-        return collections.ChainMap(*(s.metadata for s in self._sources))
+    def metadata(self) -> MutableMapping[str, FieldMetaData]:
+        return self._metadata
 
-    @cached_property
+    @property
     def backend(self) -> backend.Backend:
-        return self._sources[0].backend
+        return self._backend
 
+    @property
     def vertical_grid(self) -> Optional[v_grid.VerticalGrid]:
-        return self._sources[0].vertical_grid
+        return self._vertical_grid
 
+    @property
     def grid(self) -> Optional[icon_grid.IconGrid]:
-        return self._sources[0].grid
+        return self._grid
 
 
 class PrecomputedFieldProvider(FieldProvider):

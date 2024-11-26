@@ -47,20 +47,12 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         return f"{self.__class__.__name__} (grid={self._grid.id!r})"
 
     @property
-    def providers(self) -> dict[str, factory.FieldProvider]:
-        return self._providers
-
-    @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
         return self._attrs
 
     @property
     def backend(self) -> gtx_backend.Backend:
         return self._backend
-
-    @property
-    def grid_provider(self):
-        return self
 
     @property
     def grid(self):

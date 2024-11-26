@@ -63,7 +63,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  #
 @pytest.mark.datatest
 def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
     if backend is not None:
-       pytest.xfail("writes a sparse fields: only runs in field view embedded")
+        pytest.xfail("writes a sparse fields: only runs in field view embedded")
     mesh = icon_grid
     primal_edge_length = grid_savepoint.primal_edge_length()
     edge_orientation = grid_savepoint.edge_orientation()
