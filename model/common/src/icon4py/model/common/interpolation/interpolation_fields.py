@@ -376,28 +376,17 @@ def weighting_factors(
         / ((y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]) / (x[1] - x[0]))
         * (1.0 - wgt_loc)
         * (-y[0] + x[0] * (y[1] - y[0]) / (x[1] - x[0])),
-        wgt[2],
+        (-(1.0 - wgt_loc) * x[0] - wgt[1] * (x[1] - x[0])) / (x[2] - x[0]),
     )
     wgt[1] = np.where(
-        mask, (-(1.0 - wgt_loc) * x[0] - wgt[2] * (x[2] - x[0])) / (x[1] - x[0]), wgt[1]
-    )
-    wgt[0] = np.where(
-        mask, 1.0 - wgt[1] - wgt[2] if wgt_loc == 0.0 else 1.0 - wgt_loc - wgt[1] - wgt[2], wgt[0]
-    )
-    wgt[1] = np.where(
-        ~mask,
+        mask,
+        (-(1.0 - wgt_loc) * x[0] - wgt[2] * (x[2] - x[0])) / (x[1] - x[0]),
         1.0
         / ((y[1] - y[0]) - (x[1] - x[0]) * (y[2] - y[0]) / (x[2] - x[0]))
         * (1.0 - wgt_loc)
         * (-y[0] + x[0] * (y[2] - y[0]) / (x[2] - x[0])),
-        wgt[1],
     )
-    wgt[2] = np.where(
-        ~mask, (-(1.0 - wgt_loc) * x[0] - wgt[1] * (x[1] - x[0])) / (x[2] - x[0]), wgt[2]
-    )
-    wgt[0] = np.where(
-        ~mask, 1.0 - wgt[1] - wgt[2] if wgt_loc == 0.0 else 1.0 - wgt_loc - wgt[1] - wgt[2], wgt[0]
-    )
+    wgt[0] = 1.0 - wgt[1] - wgt[2] if wgt_loc == 0.0 else 1.0 - wgt_loc - wgt[1] - wgt[2]
     return wgt
 
 
