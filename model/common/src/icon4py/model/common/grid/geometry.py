@@ -134,6 +134,7 @@ class GridGeometry(factory.FieldSource):
                 "edge_owner_mask": gtx.as_field(
                     (dims.EdgeDim,), decomposition_info.owner_mask(dims.EdgeDim), dtype=bool
                 ),
+                attrs.CELL_NORMAL_ORIENTATION: extra_fields[gm.GeometryName.CELL_NORMAL_ORIENTATION]
             }
         )
         self.register_provider(input_fields_provider)

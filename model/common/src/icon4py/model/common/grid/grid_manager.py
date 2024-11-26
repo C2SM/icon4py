@@ -183,7 +183,7 @@ class ConnectivityName(FieldName):
 
 class GeometryName(FieldName):
     CELL_AREA = "cell_area"
-    EDGE_NORMAL_ORIENTATION = "orientation_of_normal"
+    CELL_NORMAL_ORIENTATION = "orientation_of_normal"
     TANGENT_ORIENTATION = "edge_system_orientation"
     EDGE_ORIENTATION_ = "edge_orientation"
 
@@ -438,6 +438,10 @@ class GridManager:
             GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,), self._reader.variable(GeometryName.TANGENT_ORIENTATION)
             ),
+            GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
+                (dims.CellDim, dims.C2EDim),
+                self._reader.int_variable(GeometryName.CELL_NORMAL_ORIENTATION, transpose=True)
+            )
         }
 
     def _read_start_end_indices(

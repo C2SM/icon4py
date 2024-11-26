@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from typing import Final
 
+import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
@@ -28,6 +30,7 @@ CELL_LAT: Final[str] = "grid_latitude_of_cell_center"
 CELL_AREA: Final[str] = "cell_area"
 EDGE_AREA: Final[str] = "edge_area"
 TANGENT_ORIENTATION: Final[str] = "edge_orientation"
+CELL_NORMAL_ORIENTATION: Final[str]= "orientation_of_normal_to_cell_edges"
 
 
 CORIOLIS_PARAMETER: Final[str] = "coriolis_parameter"
@@ -104,6 +107,13 @@ attrs: dict[str, model.FieldMetaData] = {
         dims=(dims.EdgeDim,),
         icon_var_name="t_grid_edges%primal_edge_length",
         dtype=ta.wpfloat,
+    ),
+    CELL_NORMAL_ORIENTATION: dict(
+        standard_name=CELL_NORMAL_ORIENTATION,
+        units="",
+        dims=(dims.CellDim, dims.C2EDim),
+        icon_var_name="t_grid_cells%edge_orientation",
+        dtype=gtx.int32,
     ),
     DUAL_EDGE_LENGTH: dict(
         standard_name=DUAL_EDGE_LENGTH,
@@ -271,7 +281,7 @@ attrs: dict[str, model.FieldMetaData] = {
         units="1",
         dims=(dims.EdgeDim,),
         icon_var_name=f"t_grid_edges%{TANGENT_ORIENTATION}",
-        dtype=ta.wpfloat,
+        dtype=ta.wpfloat, #TODO (@halungge) netcdf: int
     ),
 }
 
