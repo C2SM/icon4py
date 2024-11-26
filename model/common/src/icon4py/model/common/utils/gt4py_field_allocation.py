@@ -11,8 +11,7 @@ import gt4py.next as gtx
 from gt4py.next import backend
 
 from icon4py.model.common import type_alias as ta
-from icon4py.model.common.settings import xp
-
+import numpy as np
 
 def allocate_zero_field(
     *dims: gtx.Dimension,
@@ -25,7 +24,7 @@ def allocate_zero_field(
     if is_halfdim:
         assert len(shapex) == 2
         shapex = (shapex[0], shapex[1] + 1)
-    return gtx.as_field(dims, xp.zeros(shapex, dtype=dtype), allocator=backend)
+    return gtx.as_field(dims, np.zeros(shapex, dtype=dtype), allocator=backend)
 
 
 def allocate_indices(
@@ -36,4 +35,4 @@ def allocate_indices(
     backend: Optional[backend.Backend] = None,
 ):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
-    return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend)
+    return gtx.as_field((dim,), np.arange(shapex, dtype=dtype), allocator=backend)
