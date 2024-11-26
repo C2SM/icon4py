@@ -172,7 +172,7 @@ def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
         **{
-            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
+            k: v.ndarray() if isinstance(v, gt_common.Field) else np.array(v)
             for k, v in input_data.items()
         },
     )
