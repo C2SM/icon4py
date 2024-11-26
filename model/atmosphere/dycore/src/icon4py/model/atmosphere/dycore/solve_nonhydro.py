@@ -1334,7 +1334,6 @@ class SolveNonhydro:
                 offset_provider=self._grid.offset_providers,
             )
 
-        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             # scidoc:
             # Outputs:
             #  - z_hydro_corr :
@@ -1382,15 +1381,15 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
-        # TODO (Nikki) check when merging fused stencil
-        lowest_level = self._grid.num_levels - 1
-        hydro_corr_horizontal = gtx.as_field(
-            (dims.EdgeDim,),
-            self.z_hydro_corr.ndarray[:, lowest_level],
-            allocator=self._backend.allocator,
-        )
 
-        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+            # TODO (Christoph) check when merging fused stencil
+            lowest_level = self._grid.num_levels - 1
+            hydro_corr_horizontal = gtx.as_field(
+                (dims.EdgeDim,),
+                self.z_hydro_corr.ndarray[:, lowest_level],
+                allocator=self._backend.allocator,
+            )
+
             # scidoc:
             # Outputs:
             #  - z_gradh_exner :
