@@ -26,7 +26,6 @@ def construct_interpolation_state(
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
-        rbf_vec_coeff_c1=savepoint.rbf_vec_coeff_c1(),
         e_bln_c_s=helpers.as_1D_sparse_field(savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
