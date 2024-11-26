@@ -1104,8 +1104,6 @@ class SolveNonhydro:
             #     Note that the reference state of temperature (eq. 15 in
             #     |ICONSteepSlopePressurePaper|) is used when computing
             #     $\ddz{\vpotempref{\c}{\k}}$ in $\ddexrefdzz{\c}{\k}$.
-            #     $\nflatgradp$ is the maximum height index at which the height of
-            #     the center of an edge lies within two neighboring cells.
             #
             # Inputs:
             #  - $\vpotempprime{\n}{\c}{\k\pm1/2}$ : z_theta_v_pr_ic
@@ -1245,7 +1243,7 @@ class SolveNonhydro:
         #
         # Inputs:
         #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
-        #  - $\Cgrad$ : inv_dual_edge_length
+        #  - $\Cgrad$ : inverse_dual_edge_lengths
         #
         self._compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
@@ -1298,7 +1296,7 @@ class SolveNonhydro:
             #  - z_gradh_exner :
             #     $$
             #     \exnerprimegradh{\ntilde}{\e}{\k} &&= \Wedge (\exnerprime{*}{\c_1}{} - \exnerprime{*}{\c_0}{}) \\
-            #                                       &&= \Wedge \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k^*} + \dzgradp \left( \exnerprimedz{\ntilde}{\c}{\k^*} + \dzgradp \exnerprimedzz{\ntilde}{\c}{\k^*} \right)
+            #                                       &&= \Wedge \Gradn_{\offProv{e2c}} \left[ \exnerprime{\ntilde}{\c}{\k^*} + \dzgradp \left( \exnerprimedz{\ntilde}{\c}{\k^*} + \dzgradp \exnerprimedzz{\ntilde}{\c}{\k^*} \right) \right],
             #                                           \quad \k \in [\nflatgradp+1, \nlev)
             #     $$
             #     Compute $\exnerprimegradh{}{}{}$ when the height of

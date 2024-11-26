@@ -1,8 +1,3 @@
-.. icon4py-atmosphere-dycore documentation master file, created by
-   sphinx-quickstart on Wed Jul 10 16:56:45 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to ICON4Py's documentation!
 ===================================
 
@@ -21,7 +16,8 @@ at the numerical documentation for the dycore.
    :maxdepth: 2
    :caption: Help pages:
 
-   _imgs/offset_providers.rst
+   symbols_description.rst
+   offset_providers.rst
 
 
 Indices and tables

@@ -386,12 +386,12 @@ def generate_page():
     figures = [f for f in os.listdir(IMG_DIR) if f.startswith("offsetProvider_") and f.endswith(".png")]
     figures.sort()
 
-    with open(f"{IMG_DIR}/offset_providers.rst", "w") as f:
+    with open(f"offset_providers.rst", "w") as f:
         f.write("Offset Providers\n")
         f.write("================\n\n")
         for fig in figures:
             label = fig.replace("offsetProvider_", "").replace(".png", "")
-            f.write(f".. image:: {fig}\n")
+            f.write(f".. image:: {IMG_DIR}/{fig}\n")
             f.write(f"   :align: center\n")
             f.write(f"   :alt: {label}\n")
 
