@@ -88,7 +88,6 @@ class InterpolationState:
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float]
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], float]
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], float]
-    rbf_vec_coeff_c1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], float]
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], float]
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], float]
     pos_on_tplane_e_1: gtx.Field[gtx.Dims[dims.ECDim], float]
@@ -129,29 +128,6 @@ class MetricStateNonHydro:
 
     vertoffset_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], float]
     zdiff_gradp: gtx.Field[gtx.Dims[dims.ECDim, dims.KDim], float]
-    z_diag_c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], float]
-    z_nx1_c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], float]
-    z_nx2_c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], float]
-    z_rbfmat_c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.C2EDim], float]
-    z_rbfval_c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], float]
-    z_rhs1_c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], float]
-    z_rhs2_c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], float]
-    i_startidx_c: int
-    i_endidx_c: int
-
-    cartesian_center_c_c_x: gtx.Field[gtx.Dims[dims.C2EDim], float]
-    cartesian_center_c_c_y: gtx.Field[gtx.Dims[dims.C2EDim], float]
-    cartesian_center_c_c_z: gtx.Field[gtx.Dims[dims.C2EDim], float]
-    cartesian_center_e_c_x: gtx.Field[gtx.Dims[dims.C2EDim], float]
-    cartesian_center_e_c_y: gtx.Field[gtx.Dims[dims.C2EDim], float]
-    cartesian_center_e_c_z: gtx.Field[gtx.Dims[dims.C2EDim], float]
-    lat_c: gtx.Field[gtx.Dims[dims.CellDim], float]
-    lon_c: gtx.Field[gtx.Dims[dims.CellDim], float]
-    primal_cart_normal_c_x: gtx.Field[gtx.Dims[dims.C2EDim], float]
-    primal_cart_normal_c_y: gtx.Field[gtx.Dims[dims.C2EDim], float]
-    primal_cart_normal_c_z: gtx.Field[gtx.Dims[dims.C2EDim], float]
-    rbf_vec_idx_c_c: gtx.Field[dims.C2E2CDim, gtx.Dims[dims.CellDim], float]
-    z_dist_c: gtx.Field[gtx.Dims[dims.CellDim], float]
 
     ipeidx_dsl: fa.EdgeKField[bool]
     pg_exdist: fa.EdgeKField[float]
