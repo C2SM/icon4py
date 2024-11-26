@@ -85,13 +85,15 @@ def _calculate_scal_divdamp(
     divdamp_order: int32,
     mean_cell_area: float,
     divdamp_fac_o2: float,
+    scal_divsign: float,
 ) -> tuple[Field[[KDim], float], Field[[KDim], float]]:
     enh_divdamp_fac = (
         maximum(0.0, enh_divdamp_fac - 0.25 * divdamp_fac_o2)
         if divdamp_order == 24
         else enh_divdamp_fac
     )
-    return -enh_divdamp_fac * mean_cell_area**2, enh_divdamp_fac * mean_cell_area
+    #return -enh_divdamp_fac * mean_cell_area**2, enh_divdamp_fac * mean_cell_area
+    return -scal_divsign * enh_divdamp_fac * mean_cell_area**2, scal_divsign * enh_divdamp_fac * mean_cell_area
 
 
 @field_operator
@@ -102,9 +104,10 @@ def _calculate_divdamp_fields(
     divdamp_fac_o2: float,
     nudge_max_coeff: float,
     dbl_eps: float,
+    scal_divsign: float,
 ) -> tuple[Field[[KDim], float], Field[[KDim], float], Field[[KDim], float]]:
     scal_divdamp, scal_divdamp_o2 = _calculate_scal_divdamp(
-        enh_divdamp_fac, divdamp_order, mean_cell_area, divdamp_fac_o2
+        enh_divdamp_fac, divdamp_order, mean_cell_area, divdamp_fac_o2, scal_divsign
     )
     bdy_divdamp = _calculate_bdy_divdamp(scal_divdamp, nudge_max_coeff, dbl_eps)
     return (scal_divdamp, scal_divdamp_o2, bdy_divdamp)
@@ -121,6 +124,7 @@ def calculate_divdamp_fields(
     divdamp_fac_o2: float,
     nudge_max_coeff: float,
     dbl_eps: float,
+    scal_divsign: float,
 ):
     _calculate_divdamp_fields(
         enh_divdamp_fac,
@@ -129,6 +133,7 @@ def calculate_divdamp_fields(
         divdamp_fac_o2,
         nudge_max_coeff,
         dbl_eps,
+        scal_divsign,
         out=(scal_divdamp, scal_divdamp_o2, bdy_divdamp),
     )
     
@@ -153,8 +158,8 @@ def _calculate_scal_divdamp_half(
     level_above_height = 0.5 * (vct_a + vct_a(Koff[-1]))
     level_below_height = 0.5 * (vct_a + vct_a(Koff[1]))
     return (
-        (scal_divdamp*(vct_a - level_below_height) + scal_divdamp(Koff[1])*(level_above_height - vct_a)) / (level_above_height - level_below_height),
-        (scal_divdamp_o2*(vct_a - level_below_height) + scal_divdamp_o2(Koff[1])*(level_above_height - vct_a)) / (level_above_height - level_below_height)
+        (scal_divdamp(Koff[-1])*(vct_a - level_below_height) + scal_divdamp*(level_above_height - vct_a)) / (level_above_height - level_below_height),
+        (scal_divdamp_o2(Koff[-1])*(vct_a - level_below_height) + scal_divdamp_o2*(level_above_height - vct_a)) / (level_above_height - level_below_height)
     )
 
 

@@ -419,10 +419,10 @@ class NewOutputState:
             "dual_edge_length", "f8", (OutputDimension.EDGE_DIM,)
         )
         interface_height: nf4.Variable = self._nf4_basegrp[0].createVariable(
-            "interface_height", "f8", (OutputDimension.CELL_DIM, OutputDimension.HALF_LEVEL)
+            "interface_height", "f8", (OutputDimension.HALF_LEVEL, OutputDimension.CELL_DIM)
         )
         cell_center_height: nf4.Variable = self._nf4_basegrp[0].createVariable(
-            "cell_center_height", "f8", (OutputDimension.CELL_DIM, OutputDimension.FULL_LEVEL)
+            "cell_center_height", "f8", (OutputDimension.FULL_LEVEL, OutputDimension.CELL_DIM)
         )
 
 
@@ -488,13 +488,13 @@ class NewOutputState:
         primal_edge_lengths[:] = retract_data(edge_geometry.primal_edge_lengths)
         vert_vert_edge_lengths[:] = retract_data(edge_geometry.vertex_vertex_lengths)
         dual_edge_lengths[:] = retract_data(edge_geometry.dual_edge_lengths)
-        interface_height[:,:] = retract_data(diagnostic_metric_state.z_ifc)
+        interface_height[:,:] = retract_data(diagnostic_metric_state.z_ifc).transpose()
 
         z_ifc = retract_data(diagnostic_metric_state.z_ifc)
         z_full = np.zeros((z_ifc.shape[0], z_ifc.shape[1]-1), dtype=float)
         for k in range(z_full.shape[1]):
             z_full[:,k] = 0.5 * (z_ifc[:,k] + z_ifc[:,k+1])
-        cell_center_height[:,:] = z_full[:,:]
+        cell_center_height[:,:] = np.transpose(z_full)
 
     def write_to_netcdf(
         self,
@@ -957,15 +957,18 @@ class TimeLoop:
             log.critical(
                 f" MAX VN: {xp.abs(prognostic_state_list[self._now].vn.ndarray).max():.15e} , MAX W: {xp.abs(prognostic_state_list[self._now].w.ndarray).max():.15e}"
             )
-            log.info(
-                f" MAX RHO: {xp.abs(prognostic_state_list[self._now].rho.ndarray).max():.15e} , MAX THETA_V: {xp.abs(prognostic_state_list[self._now].theta_v.ndarray).max():.15e}"
+            log.critical(
+                f" MAX VN ARG: {xp.unravel_index(xp.argmax(xp.abs(prognostic_state_list[self._now].vn.ndarray), axis=None), prognostic_state_list[self._now].vn.ndarray.shape)} , MAX W ARG: {xp.unravel_index(xp.argmax(xp.abs(prognostic_state_list[self._now].w.ndarray), axis=None), prognostic_state_list[self._now].w.ndarray.shape)}"
             )
-            log.info(
-                f" AVE VN: {prognostic_state_list[self._now].vn.ndarray.mean(axis=(0,1)):.15e} , AVE W: {prognostic_state_list[self._now].w.ndarray.mean(axis=(0,1)):.15e}"
-            )
-            log.info(
-                f" AVE RHO: {prognostic_state_list[self._now].rho.ndarray.mean(axis=(0,1)):.15e} , AVE THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.mean(axis=(0,1)):.15e}"
-            )
+            # log.info(
+            #     f" MAX RHO: {xp.abs(prognostic_state_list[self._now].rho.ndarray).max():.15e} , MAX THETA_V: {xp.abs(prognostic_state_list[self._now].theta_v.ndarray).max():.15e}"
+            # )
+            # log.info(
+            #     f" AVE VN: {prognostic_state_list[self._now].vn.ndarray.mean(axis=(0,1)):.15e} , AVE W: {prognostic_state_list[self._now].w.ndarray.mean(axis=(0,1)):.15e}"
+            # )
+            # log.info(
+            #     f" AVE RHO: {prognostic_state_list[self._now].rho.ndarray.mean(axis=(0,1)):.15e} , AVE THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.mean(axis=(0,1)):.15e}"
+            # )
             # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
             """

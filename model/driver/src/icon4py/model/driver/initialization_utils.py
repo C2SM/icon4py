@@ -50,7 +50,7 @@ from icon4py.model.common.dimension import (
     CEDim,
     CellDim,
     EdgeDim,
-    KDim, VertexDim, V2C2EDim, V2CDim, C2EDim,
+    KDim, VertexDim, V2C2EDim, V2CDim, C2EDim, VCEDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
@@ -1208,6 +1208,7 @@ def read_static_fields(
             geofac_grg_y=grg[1],
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
             geofac_2order_div=geofac_2order_div,
+            # geofac_2order_div=as_1D_sparse_field(geofac_2order_div, VCEDim),
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
         solve_nonhydro_metric_state = MetricStateNonHydro(

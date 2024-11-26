@@ -15,7 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import V2C2E, VertexDim, V2C2EDim, EdgeDim, KDim
+from icon4py.model.common.dimension import V2C2E, V2VCE, VertexDim, V2C2EDim, VCEDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4pytools.icon4pygen.bindings.locations import Vertex
@@ -24,15 +24,18 @@ from icon4pytools.icon4pygen.bindings.locations import Vertex
 @field_operator
 def _compute_2nd_order_divergence_of_flux_of_full3d_graddiv(
     geofac_2order_div: Field[[VertexDim, V2C2EDim], wpfloat],
+    # geofac_2order_div: Field[[VCEDim], wpfloat],
     z_graddiv_normal: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[VertexDim, KDim], vpfloat]:
     z_flxdiv2order_graddiv_vn_vertex_wp = neighbor_sum(geofac_2order_div * z_graddiv_normal(V2C2E), axis=V2C2EDim)
+    # z_flxdiv2order_graddiv_vn_vertex_wp = neighbor_sum(geofac_2order_div(V2VCE) * z_graddiv_normal(V2C2E), axis=V2C2EDim)
     return astype(z_flxdiv2order_graddiv_vn_vertex_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_2nd_order_divergence_of_flux_of_full3d_graddiv(
     geofac_2order_div: Field[[VertexDim, V2C2EDim], wpfloat],
+    # geofac_2order_div: Field[[VCEDim], wpfloat],
     z_graddiv_normal: Field[[EdgeDim, KDim], wpfloat],
     z_flxdiv2order_graddiv_vn_vertex: Field[[VertexDim, KDim], vpfloat],
     horizontal_start: int32,
