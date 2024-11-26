@@ -8,10 +8,11 @@
 from typing import Optional
 
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import backend
 
 from icon4py.model.common import type_alias as ta
-import numpy as np
+
 
 def allocate_zero_field(
     *dims: gtx.Dimension,

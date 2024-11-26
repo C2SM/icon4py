@@ -9,13 +9,12 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
+import numpy as np
 import numpy.typing as npt
 import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
-
-import numpy as np
 
 from ..grid.base import BaseGrid
 from ..type_alias import wpfloat
