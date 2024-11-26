@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -14,7 +15,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_antidiffusive_cell_flux
     compute_antidiffusive_cell_fluxes_and_min_max,
 )
 from icon4py.model.common import dimension as dims
-import numpy as np
 
 
 class TestComputeAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):

@@ -6,12 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -21,7 +21,7 @@ from .test_apply_nabla2_to_vn_in_lateral_boundary import (
     apply_nabla2_to_vn_in_lateral_boundary_numpy,
 )
 from .test_calculate_nabla4 import calculate_nabla4_numpy
-import numpy as np
+
 
 class TestApplyDiffusionToVn(StencilTest):
     PROGRAM = apply_diffusion_to_vn
