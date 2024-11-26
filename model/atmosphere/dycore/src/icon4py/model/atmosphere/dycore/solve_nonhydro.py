@@ -1436,7 +1436,7 @@ class SolveNonhydro:
         #  - $\Dt$ : dtime
         #  - $\advvn{\n}{\e}{\k}$ : ddt_vn_apc_pc[self.ntl1]
         #  - $\vpotemp{\n}{\e}{\k}$ : z_theta_v_e
-        #  - $\pdxn{\exnerprime{\ntilde}{}{}}_{\e\,\k}$ : z_gradh_exner
+        #  - $\exnerprimegradh{\ntilde}{\e}{\k}$ : z_gradh_exner
         #  - $\cpd$ : CPD
         # 
         self._add_temporal_tendencies_to_vn(
