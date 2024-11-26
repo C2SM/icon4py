@@ -9,6 +9,8 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions.cloud_to_snow import cloud_to_snow
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants.graupel_ct import v1s, v0s, tfrz_hom, qmin
+
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
@@ -19,7 +21,7 @@ class TestCloudToSnow(StencilTest):
     OUTPUTS = ("riming_snow_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, qc: np.array, qs: np.array, ns: np.array, lam: np.array, **kwargs) -> dict:
+    def reference(grid, t: np.array, qc: np.array, qs: np.array, ns: np.array, lam: np.array, v1s: wpfloat, v0s: wpfloat, tfrz_hom: wpfloat, qmin: wpfloat, **kwargs) -> dict:
         return dict(riming_snow_rate=np.full(t.shape, 256.571))
 
     @pytest.fixture
@@ -31,6 +33,10 @@ class TestCloudToSnow(StencilTest):
             qs      = constant_field(grid, 7.47365e-06, dims.CellDim, dtype=wpfloat),
             ns      = constant_field(grid, 3.37707e+07, dims.CellDim, dtype=wpfloat),
             lam     = constant_field(grid, 8989.78, dims.CellDim, dtype=wpfloat),
+            v1s     = v1s,
+            v0s     = v0s,
+            tfrz_hom=tfrz_hom,
+            qmin    = qmin,
             riming_snow_rate = constant_field(grid, 0., dims.CellDim, dtype=wpfloat)
         )
 
