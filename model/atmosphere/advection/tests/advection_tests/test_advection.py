@@ -30,7 +30,7 @@ from .utils import (
 # ntracer          |  1, 2, 3, 4, 5 |
 # ------------------------------------
 # ivadv_tracer     |  3, 0, 0, 2, 3 |
-# itype_hlimit     |  3, 3, 4, 0, 0 |
+# itype_hlimit     |  3, 4, 3, 0, 0 |
 # itype_vlimit     |  1, 0, 0, 2, 1 |
 # ihadv_tracer     | 52, 2, 2, 0, 0 |
 # ------------------------------------
@@ -43,7 +43,7 @@ from .utils import (
         (
             "2021-06-20T12:00:10.000",
             False,
-            3,
+            2,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
             advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             advection.VerticalAdvectionType.NO_ADVECTION,
@@ -52,7 +52,7 @@ from .utils import (
         (
             "2021-06-20T12:00:20.000",
             True,
-            3,
+            2,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
             advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             advection.VerticalAdvectionType.NO_ADVECTION,
