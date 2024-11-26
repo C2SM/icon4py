@@ -10,24 +10,23 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import apply_nabla2_to_w
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
+import numpy as np
 
 def apply_nabla2_to_w_numpy(
     grid,
-    area: xp.array,
-    z_nabla2_c: xp.array,
-    geofac_n2s: xp.array,
-    w: xp.array,
+    area: np.array,
+    z_nabla2_c: np.array,
+    geofac_n2s: np.array,
+    w: np.array,
     diff_multfac_w: float,
-) -> xp.array:
+) -> np.array:
     c2e2cO = grid.connectivities[dims.C2E2CODim]
-    geofac_n2s = xp.expand_dims(geofac_n2s, axis=-1)
-    area = xp.expand_dims(area, axis=-1)
-    w = w - diff_multfac_w * area * area * xp.sum(
-        xp.where((c2e2cO != -1)[:, :, xp.newaxis], z_nabla2_c[c2e2cO] * geofac_n2s, 0.0), axis=1
+    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+    area = np.expand_dims(area, axis=-1)
+    w = w - diff_multfac_w * area * area * np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], z_nabla2_c[c2e2cO] * geofac_n2s, 0.0), axis=1
     )
     return w
 
@@ -39,10 +38,10 @@ class TestMoApplyNabla2ToW(StencilTest):
     @staticmethod
     def reference(
         grid,
-        area: xp.array,
-        z_nabla2_c: xp.array,
-        geofac_n2s: xp.array,
-        w: xp.array,
+        area: np.array,
+        z_nabla2_c: np.array,
+        geofac_n2s: np.array,
+        w: np.array,
         diff_multfac_w: float,
         **kwargs,
     ) -> dict:
