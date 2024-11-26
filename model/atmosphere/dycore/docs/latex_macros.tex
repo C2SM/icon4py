@@ -59,30 +59,33 @@
 %
 % temporal, horizontal and vertical
 \newcommand{\variable}[4]{{{#1}_{\horipoint{#3}\,\vertlevel{#4}}^{\timestep{#2}}}}
-\newcommand{\vn}[3]{             \variable{v_n                       }{#1}{#2}{#3}}
-\newcommand{\vt}[3]{             \variable{v_t                       }{#1}{#2}{#3}}
-\newcommand{\vh}[3]{             \variable{\vec{v_h}                 }{#1}{#2}{#3}}
-\newcommand{\w}[3]{              \variable{w                         }{#1}{#2}{#3}}
-\newcommand{\wcc}[3]{            \variable{w_{\text{cc}}             }{#1}{#2}{#3}}
-\newcommand{\kinehori}[3]{       \variable{K_h                       }{#1}{#2}{#3}}
-\newcommand{\advvn}[3]{          \variable{\text{adv}(v_n)           }{#1}{#2}{#3}}
-\newcommand{\vortvert}[3]{       \variable{\zeta                     }{#1}{#2}{#3}}
-\newcommand{\density}[3]{        \variable{\rho                      }{#1}{#2}{#3}}
-\newcommand{\pres}[3]{           \variable{P                         }{#1}{#2}{#3}}
-\newcommand{\vtemp}[3]{          \variable{T_v                       }{#1}{#2}{#3}}
-\newcommand{\vtempprime}[3]{     \variable{T_v'                      }{#1}{#2}{#3}}
-\newcommand{\vpotemp}[3]{        \variable{\theta_v                  }{#1}{#2}{#3}}
-\newcommand{\vpotempprime}[3]{   \variable{\theta_v'                 }{#1}{#2}{#3}}
-\newcommand{\exner}[3]{          \variable{\pi                       }{#1}{#2}{#3}}
-\newcommand{\exnerprime}[3]{     \variable{\pi'                      }{#1}{#2}{#3}}
-\newcommand{\exnerprimegradh}[3]{\variable{\pdxn{\exnerprime{#1}{}{}}}{  }{#2}{#3}}
-\newcommand{\exnerprimedz}[3]{   \variable{\pdz{\exnerprime{#1}{}{}} }{  }{#2}{#3}}
+\newcommand{\vn}[3]{             \variable{v_n                                  }{#1}{#2}{#3}}
+\newcommand{\vt}[3]{             \variable{v_t                                  }{#1}{#2}{#3}}
+\newcommand{\vh}[3]{             \variable{\vec{v_h}                            }{#1}{#2}{#3}}
+\newcommand{\w}[3]{              \variable{w                                    }{#1}{#2}{#3}}
+\newcommand{\wcc}[3]{            \variable{w_{\text{cc}}                        }{#1}{#2}{#3}}
+\newcommand{\kinehori}[3]{       \variable{K_h                                  }{#1}{#2}{#3}}
+\newcommand{\advvn}[3]{          \variable{\text{adv}(v_n)                      }{#1}{#2}{#3}}
+\newcommand{\vortvert}[3]{       \variable{\zeta                                }{#1}{#2}{#3}}
+\newcommand{\density}[3]{        \variable{\rho                                 }{#1}{#2}{#3}}
+\newcommand{\pres}[3]{           \variable{P                                    }{#1}{#2}{#3}}
+\newcommand{\vtemp}[3]{          \variable{T_v                                  }{#1}{#2}{#3}}
+\newcommand{\vtempprime}[3]{     \variable{T_v'                                 }{#1}{#2}{#3}}
+\newcommand{\vpotemp}[3]{        \variable{\theta_v                             }{#1}{#2}{#3}}
+\newcommand{\vpotempprime}[3]{   \variable{\theta_v'                            }{#1}{#2}{#3}}
+\newcommand{\exner}[3]{          \variable{\pi                                  }{#1}{#2}{#3}}
+\newcommand{\exnerprime}[3]{     \variable{\pi'                                 }{#1}{#2}{#3}}
+\newcommand{\exnerprimegradh}[3]{\variable{\pdxn{\exnerprime{#1}{}{}}           }{  }{#2}{#3}}
+\newcommand{\exnerprimedz}[3]{   \variable{\pdz{\exnerprime{#1}{}{}}            }{  }{#2}{#3}}
+\newcommand{\exnerprimedzz}[3]{  \variable{\frac{1}{2}\pdzz{\exnerprime{#1}{}{}}}{  }{#2}{#3}}
 %
 % horizontal and vertical
 \newcommand{\variableXK}[3]{{{#1}_{\horipoint{#2}\,\vertlevel{#3}}}}
-\newcommand{\presref}[2]{   \variableXK{P_0            }{#1}{#2}}
-\newcommand{\vpotempref}[2]{\variableXK{\theta_{v0}    }{#1}{#2}}
-\newcommand{\exnerref}[2]{  \variableXK{\pi_0          }{#1}{#2}}
+\newcommand{\presref}[2]{   \variableXK{P_0                                                            }{#1}{#2}}
+\newcommand{\vpotempref}[2]{\variableXK{\theta_{v0}                                                    }{#1}{#2}}
+\newcommand{\exnerref}[2]{  \variableXK{\pi_0                                                          }{#1}{#2}}
+\newcommand{\dexrefdz}[2]{  \variableXK{\frac{1}{\Dz{}\vpotempref{}{}}\ddz{\exnerref{}{}}              }{#1}{#2}}
+\newcommand{\ddexrefdzz}[2]{\variableXK{\ddz{}\left(\frac{1}{\vpotempref{}{}}\ddz{\exnerref{}{}}\right)}{#1}{#2}}
 %
 % horizontal
 \newcommand{\variableX}[2]{{{#1}_{\horipoint{#2}}}}
@@ -117,8 +120,10 @@
 \newcommand{\Wrbf}{\overset{\scriptscriptstyle{\text{rbf}}}{\chi}}
 \newcommand{\Wlev}{\overset{\scriptscriptstyle{\text{lev}}}{\chi}}
 \newcommand{\Whor}{\overset{\scriptscriptstyle{\text{hor}}}{\chi}}
+\newcommand{\Wedge}{\frac{1}{d_{12}}}
 \newcommand{\Cgrad}{\overset{\scriptscriptstyle{\text{grad}}}{\chi}}
 \newcommand{\Crot}{\overset{\scriptscriptstyle{\text{rot}}}{\chi}}
+\newcommand{\dzgradp}{(h^* - h_k)}
 \newcommand{\WtimeExner}{\gamma}
 \newcommand{\WtimeVWind}{\eta}
 

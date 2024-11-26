@@ -1039,7 +1039,7 @@ class SolveNonhydro:
             #     hydrostatic assumption?).
             #  - z_dexner_dz_c_1 :
             #     $$
-            #     \pdz{\exnerprime{\ntilde}{\c}{\k}} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
+            #     \exnerprimedz{\ntilde}{\c}{\k} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
             #     $$
             #     Use the interpolated values to compute the vertical derivative
             #     of perturbation exner at full levels.
@@ -1155,27 +1155,23 @@ class SolveNonhydro:
             # Outputs:
             #  - z_dexner_dz_c_2 :
             #     $$
-            #     \frac{1}{2}\pdzz{\exnerprime{\ntilde}{\c}{\k}} = \frac{1}{2} \left( \pdz{\vpotempprime{\n}{\c}{\k}} \vpotempref{\c}{\k} \ddz{\presref{\c}{\k}} - \vpotempprime{\n}{\c}{\k} \ddz{\frac{1}{\vpotempref{\c}{\k}} \ddz{\presref{\c}{\k}}} \right), \quad \k \in [\nflatgradp, \nlev) \\
-            #     \ddz{\presref{\c}{\k}} = -\frac{g \cpd}{\vpotempref{\c}{\k}}
+            #     \exnerprimedzz{\ntilde}{\c}{\k} = - \frac{1}{2} \left( (\vpotempprime{\n}{\c}{\k-1/2} - \vpotempprime{\n}{\c}{\k+1/2}) \dexrefdz{\c}{\k} + \vpotempprime{\n}{\c}{\k} \ddexrefdzz{\c}{\k} \right), \quad \k \in [\nflatgradp, \nlev) \\
+            #     \ddz{\exnerref{}{}} = - \frac{g}{\cpd \vpotempref{}{}}
             #     $$
-            #     Compute second vertical derivative of perturbed exner function.
-            #     This second vertical derivative is approximated by hydrostatic
-            #     approximation (see eqs. 13 and 7 in |ICONSteepSlopePressurePaper|).
-            #     Note that, in $\ddz{\frac{1}{\vpotempref{\c}{\k}} \ddz{\presref{\c}{\k}}}$,
-            #     it makes use of eq. 15 in |ICONSteepSlopePressurePaper| for the reference state
-            #     of temperature when computing $\ddz{\vpotempref{\c}{\k}}$.
-            #     The vertical derivative of perturbed virtual potential temperature
-            #     on RHS is computed explicitly in this stencil by taking the
-            #     difference between neighboring half levels (coefficient is included
-            #     in d2dexdz2_fac1_mc).
+            #     Compute the second vertical derivative of the perturbed exner function.
+            #     This uses the hydrostatic approximation (see eqs. 13 and 7,8 in
+            #     |ICONSteepSlopePressurePaper|).
+            #     Note that the reference state of temperature (eq. 15 in
+            #     |ICONSteepSlopePressurePaper|) is used when computing
+            #     $\ddz{\vpotempref{\c}{\k}}$ in $\ddexrefdzz{\c}{\k}$.
             #     $\nflatgradp$ is the maximum height index at which the height of
             #     the center of an edge lies within two neighboring cells.
             #
             # Inputs:
-            #  - $\vpotempprime{\n}{\c}{\k-1/2}$ : z_theta_v_pr_ic
-            #  - $\frac{1}{dz \vpotempref{\c}{\k}} \ddz{\presref{\c}{\k}}$ : d2dexdz2_fac1_mc
-            #  - $\ddz{\frac{1}{\vpotempref{\c}{\k}} \ddz{\presref{\c}{\k}}}$ : d2dexdz2_fac2_mc
+            #  - $\vpotempprime{\n}{\c}{\k\pm1/2}$ : z_theta_v_pr_ic
             #  - $\vpotempprime{\n}{\c}{\k}$ : z_rth_pr_2
+            #  - $\dexrefdz{}{}$ : d2dexdz2_fac1_mc
+            #  - $\ddexrefdzz{}{}$ : d2dexdz2_fac2_mc
             #
             self._compute_approx_of_2nd_vertical_derivative_of_exner(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
@@ -1341,9 +1337,9 @@ class SolveNonhydro:
         #     $$
         #     \exnerprimegradh{\ntilde}{\e}{\k} = \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nflatlev)
         #     $$
-        #     Compute the horizontal gradient of temporal extrapolation of
-        #     perturbed exner function on flat levels, unaffected by the terrain
-        #     following deformation.
+        #     Compute the horizontal gradient (at constant height) of the
+        #     temporal extrapolation of perturbed exner function on flat levels,
+        #     unaffected by the terrain following deformation.
         #
         # Inputs:
         #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
@@ -1366,19 +1362,18 @@ class SolveNonhydro:
             #  - z_gradh_exner :
             #     $$
             #     \exnerprimegradh{\ntilde}{\e}{\k} &&= \left.\pdxn{\exnerprime{}{}{}}\right|_{s} - \left.\pdxn{h}\right|_{s}\exnerprimedz{}{}{}\\
-            #                                       &&= \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}
+            #                                       &&= \Wedge \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}
             #                                         - \pdxn{h} \sum_{\offProv{e2c}} \Whor \exnerprimedz{\ntilde}{\c}{\k},
             #                                           \quad \k \in [\nflatlev, \nflatgradp]
             #     $$
-            #     Compute the horizontal gradient (at constant height) of
-            #     temporal extrapolation of perturbed exner function on non-flat
-            #     levels, affected by the terrain following deformation, i.e.
-            #     those levels for which $\pdxn{h} \neq 0$ (eq. 14 in
-            #     |ICONdycorePaper|).
+            #     Compute $\exnerprimegradh{}{}{}$ on non-flat levels, affected
+            #     by the terrain following deformation, i.e. those levels for
+            #     which $\pdxn{h} \neq 0$ (eq. 14 in |ICONdycorePaper| or eq. 5
+            #     in |ICONSteepSlopePressurePaper|).
             #
             # Inputs:
             #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
-            #  - $\Cgrad$ : inverse_dual_edge_length
+            #  - $\Wedge$ : inverse_dual_edge_lengths
             #  - $\exnerprimedz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_1
             #  - $\Whor$ : c_lin_e
             #
@@ -1396,18 +1391,32 @@ class SolveNonhydro:
                 offset_provider=self._grid.offset_providers,
             )
 
-            """
-            z_gradh_exner (flat_gradp+1:nlev-1):
-                Compute the horizontal gradient (at constant height) of temporal extrapolation of perturbed exner function at full levels (edge center) when the height of neighboring cells is at another k level.
-                See eq. 8 in Günther et al. 2012.
-                dpi/dn |z = (pi_1 - pi_0 + dpi_1/dz_1 dz_1 - dpi_0/dz_0 dz_0 + d^2pi_1/dz_1^2 dz_1^2/2 - d^2pi_0/dz_0^2 dz_0^2/2) / length
-                dpi_0/dz_0 or dpi_1/dz_1 is z_dexner_dz_c_1 computed previously.
-                d^2pi_0/dz_0^2 / 2 or d^2pi_1/dz_1^2 / 2  is z_dexner_dz_c_2 computed previously.
-                dz is zdiff_gradp.
-                neighboring cell k index is vertoffset_gradp.
-                Note that the vertoffset_gradp and zdiff_gradp are recomputed for edges which have an neighboring underground cell center in mo_vertical_grid.f90.
-                It is explained more in next stencil for computation of hydrostatic correction.
-            """
+            # scidoc:
+            # Outputs:
+            #  - z_gradh_exner :
+            #     $$
+            #     \exnerprimegradh{\ntilde}{\e}{\k} &&= \Wedge (\exnerprime{*}{\c_1}{} - \exnerprime{*}{\c_0}{}) \\
+            #                                       &&= \Wedge \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k^*} + \dzgradp \left( \exnerprimedz{\ntilde}{\c}{\k^*} + \dzgradp \exnerprimedzz{\ntilde}{\c}{\k^*} \right)
+            #                                           \quad \k \in [\nflatgradp+1, \nlev)
+            #     $$
+            #     Compute $\exnerprimegradh{}{}{}$ when the height of
+            #     neighboring cells is in another level.
+            #     The usual centered difference approximation is used for the
+            #     gradient (eq. 6 in |ICONSteepSlopePressurePaper|), but instead
+            #     of cell center values, the exner function is reconstructed
+            #     using a second order Taylor-series expansion (eq. 8 in
+            #     |ICONSteepSlopePressurePaper|).
+            #     $k^*$ is the level index of the neighboring (horizontally, not
+            #     terrain-following) cell center and $h^*$ is its height.
+            #
+            # Inputs:
+            #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+            #  - $\exnerprimedz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_1
+            #  - $\exnerprimedzz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_2
+            #  - $\Wedge$ : inverse_dual_edge_lengths
+            #  - $\dzgradp$ : zdiff_gradp
+            #  - $\k^*$ : vertoffset_gradp
+            #
             self._compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
                 inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
@@ -1422,17 +1431,40 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
-        # compute hydrostatically approximated correction term that replaces downward extrapolation
+
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            """
-            z_hydro_corr (nlev-1):
-                z_hydro_corr = g/(cpd theta_v^2) dtheta_v/dn (h_k - h_k*)
-                Compute the hydrostatic correction term (see the last term in eq. 10 or 9 in Günther et al. 2012) at full levels (edge center).
-                This is only computed for the last or bottom most level because all edge centers which have a neighboring cell center inside terrain
-                beyond a certain limit (see last paragraph for discussion on page 3724) use the same correction term at k* level in eq. 10 in Günther
-                et al. 2012.
-                Note that the vertoffset_gradp and zdiff_gradp are recomputed for those special edges in mo_vertical_grid.f90.
-            """
+            # scidoc:
+            # Outputs:
+            #  - z_hydro_corr :
+            #     $$
+            #     \exnhydrocorr{\e} = \frac{g}{\cpd} \Wedge 4 \frac{ \vpotemp{}{\c_1}{\k} - \vpotemp{}{\c_0}{\k} }{ (\vpotemp{}{\c_1}{\k} + \vpotemp{}{\c_0}{\k})^2 },
+            #     $$
+            #     with
+            #     $$
+            #     \vpotemp{}{\c_i}{\k} = \vpotemp{}{\c_i}{\k^*} + \dzgradp \frac{\vpotemp{}{\c_i}{\k^*-1/2} - \vpotemp{}{\c_i}{\k^*+1/2}}{\Dz{\k^*}}
+            #     $$
+            #     Compute the hydrostatically approximated correction term that
+            #     replaces the downward extrapolation (last term in eq. 10 in
+            #     |ICONSteepSlopePressurePaper|).
+            #     This is only computed for the bottom-most level because all
+            #     edges which have a neighboring cell center inside terrain
+            #     beyond a certain limit use the same correction term at $k^*$
+            #     level in eq. 10 in |ICONSteepSlopePressurePaper| (see also the
+            #     last paragraph on page 3724 for the discussion).
+            #     $\c_i$ are the indexes of the adjacent cell centers using
+            #     $\offProv{e2c}$;
+            #     $k^*$ is the level index of the neighboring (horizontally, not
+            #     terrain-following) cell center and $h^*$ is its height.
+            #
+            # Inputs:
+            #  - $\vpotemp{}{\c}{\k}$ : theta_v
+            #  - $\vpotemp{}{\c}{\k\pm1/2}$ : theta_v_ic
+            #  - $\frac{g}{\cpd}$ : grav_o_cpd
+            #  - $\Wedge$ : inverse_dual_edge_lengths
+            #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
+            #  - $\dzgradp$ : zdiff_gradp
+            #  - $\k^*$ : vertoffset_gradp
+            #
             self._compute_hydrostatic_correction_term(
                 theta_v=prognostic_state[nnow].theta_v,
                 ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
@@ -1461,11 +1493,12 @@ class SolveNonhydro:
             # Outputs:
             #  - z_gradh_exner :
             #     $$
-            #     \exnerprimegradh{\ntilde}{\e}{\k} = \exnerprimegradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), \quad \e \in \IDXpg \\
+            #     \exnerprimegradh{\ntilde}{\e}{\k} = \exnerprimegradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), \quad \e \in \IDXpg
             #     $$
             #     Apply the hydrostatic correction term to the horizontal
             #     gradient (at constant height) of the temporal extrapolation of
-            #     perturbed exner function.
+            #     perturbed exner function (eq. 10 in
+            #     |ICONSteepSlopePressurePaper|).
             #     This is only applied to edges for which the adjacent cell
             #     center (horizontally, not terrain-following) would be
             #     underground, i.e. edges in the $\IDXpg$ set.
