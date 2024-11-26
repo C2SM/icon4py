@@ -576,6 +576,7 @@ class FirstOrderUpwind(FiniteVolume):
         self._integrate_tracer_horizontally = integrate_tracer_horizontally.with_backend(
             self._backend
         )
+
         log.debug("horizontal advection class init - end")
 
     def _compute_numerical_flux(

@@ -39,7 +39,7 @@ def compute_horizontal_tracer_flux_upwind(
         p_cc,
         p_mass_flx_e,
         p_vn,
-        out=(p_out_e),
+        out=p_out_e,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
