@@ -202,11 +202,6 @@ class VelocityAdvection:
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         if not vn_only:
-            """
-            z_w_v (0:nlev-1):
-                Compute the vertical wind at cell vertices at half levels by simple area-weighted interpolation.
-                When itime_scheme = 4, we just use its value computed at the velocity advection corrector step in the previous substep.
-            """
             self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
@@ -297,12 +292,6 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            """
-            z_vt_ie (1:nlev-1):
-                Compute tangential velocity at half levels (edge center) simply by interpolating two neighboring
-                tangential velocity at full levels.
-                When itime_scheme = 4, we just use its value computed at the solve nonhydro predictor step after the intermediate velocity is obtained in the previous substep.
-            """
             self._interpolate_vt_to_interface_edges(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
@@ -366,20 +355,6 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        """
-        vn_ie (nlev):
-            Compute normal wind at ground level (edge center) by quadratic extrapolation.
-            ---------------  z4
-                   z3'
-            ---------------  z3
-                   z2'
-            ---------------  z2
-                   z1'
-            ---------------  z1 (surface)
-            ///////////////
-            The three reference points for extrapolation are at z2, z2', and z3'. Value at z1 is
-            then obtained by quadratic interpolation polynomial based on these three points.
-        """
         self._extrapolate_at_top(
             wgtfacq_e=self.metric_state.wgtfacq_e,
             vn=prognostic_state.vn,
@@ -392,14 +367,6 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            """
-            z_v_grad_w (0:nlev-1):
-                Compute horizontal advection of vertical wind at half levels (edge center) by first order
-                discretization.
-                z_v_grad_w = vn dw/dn + vt dw/dt, t is tangent. The vertical wind at half levels at vertices is
-                z_w_v which is computed at the very beginning. It also requires vn and vt at half levels at edge center
-                (vn_ie and z_vt_ie, respectively) computed above.
-            """
             self._compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
@@ -511,21 +478,6 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        """
-        cfl_clipping (max(3,damp_lev-2)-1:nlev-4):
-            A boolean that detects whether clf condition in vertical direction is broken at half levels (cell center).
-            When w > clf_w_limit * dz, dz = cell_center_height_k+1 - cell_center_height and w is vertical
-            wind with contravariant correction (z_w_con_c), it is set to True, else False.
-        vcfl_dsl (max(3,damp_lev-2)-1:nlev-4):
-            This is w * dt / dz when cfl_clipping is True, where dt is time step,
-            dz = cell_center_height_k+1 - cell_center_height, and w is vertical wind with
-            contravariant correction (z_w_con_c). Else, it is zero.
-        z_w_con_c (max(3,damp_lev-2)-1:nlev-4):
-            Modified vertical wind with contravariant correction at half levels (cell center) according to
-            whether cfl condition is broken (cfl_clipping) and vertical wind is too large (|vcfl_dsl| > 0.85).
-            When both cfl_clipping is True and vcfl_dsl > 0.85 (vcfl_dsl < -0.85), it is modified to
-            0.85 * dz / dt (-0.85 * dz / dt).
-        """
         self._fused_stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
@@ -568,12 +520,6 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            """
-            ddt_w_adv_pc[ntnd] (1:nlev-1):
-                Compute the advection of vertical wind (vn dw/dn + vt dw/dt + w dw/dz, t is tangent) at half levels (cell center).
-                The vertical derivative is obtained by first order discretization.
-                vn dw/dn + vt dw/dt at cell center is linearly interpolated from values at neighboring edge centers (z_v_grad_w).
-            """
             self._fused_stencils_16_to_17(
                 w=prognostic_state.w,
                 local_z_v_grad_w=self.z_v_grad_w,
@@ -589,20 +535,6 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-            """
-            ddt_w_adv_pc[ntnd] (max(3,damp_lev-2)-1:nlev-4):
-                Add diffusion to the vertical advection of vertical wind (vn dw/dn + vt dw/dt + w dw/dz, t is tangent) at half levels (cell center) according
-                to whether [condition_1_2_3] 1) its cell is owned by this process, 2) levmask is True, and, 3) cfl_clipping is
-                True are all satisfied.
-
-                levmask at half levels is True when there is a cell whose cfl_clipping is True at a particular height.
-
-                diffusion_coeff = scalfac_exdiff * minimum(0.85 - cfl_w_limit * dt, z_w_con_c * dt / dz - cfl_w_limit * dt)
-                if condition_1_2_3 is True, else zero.
-
-                ddt_w_adv_pc[ntnd] = ddt_w_adv_pc[ntnd] + cell_area Laplacian(diffusion_coeff) if [condition_1_2_3] is
-                True.
-            """
             self._add_extra_diffusion_for_w_con_approaching_cfl(
                 levmask=self.levmask,
                 cfl_clipping=self.cfl_clipping,
@@ -675,27 +607,6 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        """
-        ddt_vn_apc_pc[ntnd] (max(3,damp_lev-2)-1:nlev-5):
-            Add diffusion to the advection of normal wind at full levels (edge center) according
-            to whether [condition_1_2] 1) levmask at half level up or down is True, and, 2) absolute vertical wind with
-            contravariant correction at full levels (edge center) is larger than a limit are all satisfied. The limit
-            is set to cfl_w_limit * ddqz_z_full_e, where ddqz_z_full_e is layer thickness at edge center obtained by
-            lienar interpolation from neighboring cells.
-
-            levmask at half levels is True when there is a cell whose cfl_clipping is True at a particular height.
-
-            The vertical wind with contravariant correction at full levels (edge center), dentoed by w_con_e, is obtained by linear
-            interpolation from neighboring cells (from z_w_con_c_full).
-
-            diffusion_coeff = scalfac_exdiff * minimum(0.85 - cfl_w_limit * dt, w_con_e * dt / dz - cfl_w_limit * dt)
-            if condition_1_2 is True, else zero.
-
-            ddt_vn_apc_pc[ntnd] = ddt_vn_apc_pc[ntnd] + diffusion_coeff * edge_area * dotproduct(Laplacian(v), normal_direction) if
-            [condition_1_2] is True.
-            dotproduct(Laplacian(v), normal_direction) = Del(normal_direction) div(v) + Del(tangent_direction) vorticity, see eq B.48 in Hui Wan's thesis.
-            Del(tangent_direction) vorticity is obtained by first order discretization of derivative from zeta.
-        """
         self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
@@ -744,10 +655,6 @@ class VelocityAdvection:
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         if not vn_only:
-            """
-            z_w_v (0:nlev-1):
-                Compute the vertical wind at cell vertices at half levels by simple area-weighted interpolation.
-            """
             self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
@@ -759,11 +666,6 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        """
-        zeta (0:nlev-1):
-            Compute the vorticity at cell vertices at full levels using discrete Stokes theorem.
-            zeta = integral_circulation dotproduct(V, tangent) / dual_cell_area = sum V_i dual_edge_length_i / dual_cell_area
-        """
         self._mo_math_divrot_rot_vertex_ri_dsl(
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
@@ -776,14 +678,6 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            """
-            z_v_grad_w (0:nlev-1):
-                Compute horizontal advection of vertical wind at half levels (edge center) by first order
-                discretization.
-                z_v_grad_w = vn dw/dn + vt dw/dt, t is tangent. The vertical wind at half levels at vertices is
-                z_w_v which is computed at the very beginning. It also requires vn and vt at half levels at edge center
-                (vn_ie and z_vt_ie, respectively) computed above.
-            """
             self._compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
@@ -800,11 +694,6 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        """
-        z_ekinh (0:nlev-1):
-            Interpolate the horizonal kinetic energy (vn^2 + vt^2)/2 at full levels from
-            edge center (three neighboring edges) to cell center.
-        """
         self._interpolate_to_cell_center(
             interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -816,14 +705,6 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        """
-        z_w_con_c (0:nlev):
-            This is the vertical wind with contravariant correction at half levels (cell center).
-            It is first simply set equal to vertical wind, w, from level 0 to nlev-1.
-            At level nlev, it is first set to zero.
-            From flat_lev+1 to nlev-1, it is subtracted from contravariant correction, which is w_concorr_c computed
-            previously, at half levels at cell center. TODO (Chia Rui): Check why is it subtraction.
-        """
         self._fused_stencils_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
@@ -838,21 +719,6 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        """
-        cfl_clipping (max(3,damp_lev-2)-1:nlev-4):
-            A boolean that detects whether clf condition in vertical direction is broken at half levels (cell center).
-            When w > clf_w_limit * dz, dz = cell_center_height_k+1 - cell_center_height and w is vertical
-            wind with contravariant correction (z_w_con_c), it is set to True, else False.
-        vcfl_dsl (max(3,damp_lev-2)-1:nlev-4):
-            This is w * dt / dz when cfl_clipping is True, where dt is time step,
-            dz = cell_center_height_k+1 - cell_center_height, and w is vertical wind with
-            contravariant correction (z_w_con_c). Else, it is zero.
-        z_w_con_c (max(3,damp_lev-2)-1:nlev-4):
-            Modified vertical wind with contravariant correction at half levels (cell center) according to
-            whether cfl condition is broken (cfl_clipping) and vertical wind is too large (|vcfl_dsl| > 0.85).
-            When both cfl_clipping is True and vcfl_dsl > 0.85 (vcfl_dsl < -0.85), it is modified to
-            0.85 * dz / dt (-0.85 * dz / dt).
-        """
         self._fused_stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
@@ -869,12 +735,6 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        """
-        z_w_con_c_full (0:nlev-1):
-            Compute the vertical wind with contravariant correction at full levels (cell center) by
-            taking average of from it values at neighboring half levels.
-            z_w_con_c_full[k] = 0.5 (z_w_con_c[k] + z_w_con_c[k+1])
-        """
         self._interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -885,12 +745,6 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        """
-        ddt_w_adv_pc[ntnd] (1:nlev-1):
-            Compute the advection of vertical wind (vn dw/dn + vt dw/dt + w dw/dz, t is tangent) at half levels (cell center).
-            The vertical derivative is obtained by first order discretization.
-            vn dw/dn + vt dw/dt at cell center is linearly interpolated from values at neighboring edge centers (z_v_grad_w).
-        """
         self._fused_stencils_16_to_17(
             w=prognostic_state.w,
             local_z_v_grad_w=self.z_v_grad_w,
@@ -906,20 +760,6 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        """
-        ddt_w_adv_pc[ntnd] (max(3,damp_lev-2)-1:nlev-4):
-            Add diffusion to the advection of vertical wind (vn dw/dn + vt dw/dt + w dw/dz) at half levels (cell center) according
-            to whether [condition_1_2_3] 1) its cell is owned by this process, 2) levmask is True, and, 3) cfl_clipping is
-            True are all satisfied.
-
-            levmask at half levels is True when there is a cell whose cfl_clipping is True at a particular height.
-
-            diffusion_coeff = scalfac_exdiff * minimum(0.85 - cfl_w_limit * dt, z_w_con_c * dt / dz - cfl_w_limit * dt)
-            if condition_1_2_3 is True, else zero.
-
-            ddt_w_adv_pc[ntnd] = ddt_w_adv_pc[ntnd] + cell_area Laplacian(diffusion_coeff) if [condition_1_2_3] is
-            True.
-        """
         self._add_extra_diffusion_for_w_con_approaching_cfl(
             levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
@@ -943,17 +783,6 @@ class VelocityAdvection:
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
-        """
-        ddt_vn_apc_pc[ntnd] (0:nlev-1):
-            Compute the advection of normal wind at full levels (edge center).
-            ddt_vn_apc_pc[ntnd] = dKEH/dn + vt * (vorticity + coriolis) + wdvn/dz,
-            where vn is normal wind, vt is tangential wind, KEH is horizontal kinetic energy.
-            z_kin_hor_e is KEH at full levels (edge center).
-            zeta is vorticity at full levels (vertex). Its value at edge center is simply taken as average of vorticity at neighboring vertices.
-            w, which is vertical wind with contravariant correction, at edge center is obtained by linearly interpolating z_w_con_c_full at neighboring cells.
-            dvn/dz, the vertical derivative of normal wind, is computed by first order discretization from vn_ie.
-            TODO (Chia Rui): understand the coefficient coeff_gradekin
-        """
         self._compute_advective_normal_wind_tendency(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
@@ -973,27 +802,6 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        """
-        ddt_vn_apc_pc[ntnd] (max(3,damp_lev-2)-1:nlev-5):
-            Add diffusion to the advection of normal wind at full levels (edge center) according
-            to whether [condition_1_2] 1) levmask at half level up or down is True, and, 2) absolute vertical wind with
-            contravariant correction at full levels (edge center) is larger than a limit are all satisfied. The limit
-            is set to cfl_w_limit * ddqz_z_full_e, where ddqz_z_full_e is layer thickness at edge center obtained by
-            lienar interpolation from neighboring cells.
-
-            levmask at half levels is True when there is a cell whose cfl_clipping is True at a particular height.
-
-            The vertical wind with contravariant correction at full levels (edge center), dentoed by w_con_e, is obtained by linear
-            interpolation from neighboring cells (from z_w_con_c_full).
-
-            diffusion_coeff = scalfac_exdiff * minimum(0.85 - cfl_w_limit * dt, w_con_e * dt / dz - cfl_w_limit * dt)
-            if condition_1_2 is True, else zero.
-
-            ddt_vn_apc_pc[ntnd] = ddt_vn_apc_pc[ntnd] + diffusion_coeff * edge_area * dotproduct(Laplacian(v), normal_direction) if
-            [condition_1_2] is True.
-            dotproduct(Laplacian(v), normal_direction) = Del(normal_direction) div(v) + Del(tangent_direction) vorticity, see eq B.48 in Hui Wan's thesis.
-            Del(tangent_direction) vorticity is obtained by first order discretization of derivative from zeta.
-        """
         self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
