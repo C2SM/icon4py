@@ -70,13 +70,13 @@ def random_mask(
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> gt_common.Field:
-    rng = np.random.default_rng()
+    rng = xp.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
-    arr = np.full(shape, False).flatten()
+    arr = xp.full(shape, False).flatten()
     num_true = int(arr.size * 0.5)
     arr[:num_true] = True
     rng.shuffle(arr)
-    arr = np.reshape(arr, newshape=shape)
+    arr = xp.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
     return as_field(dims, arr)
@@ -90,7 +90,7 @@ def random_field(
     extend: Optional[dict[gt_common.Dimension, int]] = None,
     dtype: Optional[npt.DTypeLike] = None,
 ) -> gt_common.Field:
-    arr = np.random.default_rng().uniform(
+    arr = xp.random.default_rng().uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
     if dtype:
@@ -112,7 +112,7 @@ def constant_field(
 ) -> gt_common.Field:
     return as_field(
         dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
+        value * xp.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
     )
 
 
@@ -122,7 +122,7 @@ def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) 
     return numpy_to_1D_sparse_field(buffer, target_dim)
 
 
-def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_common.Field:
+def numpy_to_1D_sparse_field(field: xp.ndarray, dim: gt_common.Dimension) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
     old_shape = field.shape
     assert len(old_shape) == 2
@@ -142,15 +142,15 @@ def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -
     return as_field(dims, newarray)
 
 
-def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
+def unflatten_first_two_dims(field: gt_common.Field) -> xp.array:
     """Convert a (n-1)-D flattened (Felix-style) sparse field back to a n-D sparse field."""
-    old_shape = np.asarray(field).shape
+    old_shape = xp.asarray(field).shape
     new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
-    return np.asarray(field).reshape(new_shape)
+    return xp.asarray(field).reshape(new_shape)
 
 
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
-    return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
+    return xp.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
 def allocate_data(backend, input_data):
@@ -173,7 +173,7 @@ def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
         **{
-            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
+            k: v.asnumpy() if isinstance(v, gt_common.Field) else xp.array(v)
             for k, v in input_data.items()
         },
     )
@@ -191,7 +191,7 @@ def _test_validation(self, grid, backend, input_data):
             else (out, (slice(None),), (slice(None),))
         )
 
-        assert np.allclose(
+        assert xp.allclose(
             input_data[name].asnumpy()[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
@@ -250,5 +250,5 @@ class StencilTest:
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
 
 
-def reshape(arr: np.array, shape: tuple[int, ...]):
-    return np.reshape(arr, shape)
+def reshape(arr: xp.array, shape: tuple[int, ...]):
+    return xp.reshape(arr, shape)
