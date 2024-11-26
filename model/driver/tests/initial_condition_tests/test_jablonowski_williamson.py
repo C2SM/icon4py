@@ -22,6 +22,7 @@ from icon4py.model.driver.test_cases import jablonowski_williamson as jabw
 def test_jabw_initial_condition(
     experiment,
     ranked_data_path,
+    backend,
     rank,
     data_provider,
     grid_savepoint,
@@ -43,6 +44,7 @@ def test_jabw_initial_condition(
         cell_geometry,
         edge_geometry,
         ranked_data_path.joinpath(f"{experiment}/ser_data"),
+        backend,
         rank,
     )
 

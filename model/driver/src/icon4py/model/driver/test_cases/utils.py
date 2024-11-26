@@ -6,7 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+from gt4py.next import backend as gt4py_backend
 
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import (
     constants as phy_const,
     dimension as dims,
@@ -14,26 +17,28 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.settings import backend, xp
+from icon4py.model.common.utils import (
+    array_allocation as array_alloc,
+    gt4py_field_allocation as field_alloc,
+)
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
-def hydrostatic_adjustment_numpy(
-    wgtfac_c: xp.ndarray,
-    ddqz_z_half: xp.ndarray,
-    exner_ref_mc: xp.ndarray,
-    d_exner_dz_ref_ic: xp.ndarray,
-    theta_ref_mc: xp.ndarray,
-    theta_ref_ic: xp.ndarray,
-    rho: xp.ndarray,
-    exner: xp.ndarray,
-    theta_v: xp.ndarray,
+def hydrostatic_adjustment_ndarray(
+    wgtfac_c: fa.AnyNDArray,
+    ddqz_z_half: fa.AnyNDArray,
+    exner_ref_mc: fa.AnyNDArray,
+    d_exner_dz_ref_ic: fa.AnyNDArray,
+    theta_ref_mc: fa.AnyNDArray,
+    theta_ref_ic: fa.AnyNDArray,
+    rho: fa.AnyNDArray,
+    exner: fa.AnyNDArray,
+    theta_v: fa.AnyNDArray,
     num_levels: int,
-):
+    backend: gt4py_backend.Backend,
+) -> tuple[fa.AnyNDArray, fa.AnyNDArray, fa.AnyNDArray]:
+    is_cupy = array_alloc.is_cupy_device(backend)
+    xp = array_alloc.array_ns(is_cupy)
+
     # virtual temperature
     temp_v = theta_v * exner
 
@@ -62,21 +67,21 @@ def hydrostatic_adjustment_numpy(
     return rho, exner, theta_v
 
 
-def hydrostatic_adjustment_constant_thetav_numpy(
-    wgtfac_c: xp.ndarray,
-    ddqz_z_half: xp.ndarray,
-    exner_ref_mc: xp.ndarray,
-    d_exner_dz_ref_ic: xp.ndarray,
-    theta_ref_mc: xp.ndarray,
-    theta_ref_ic: xp.ndarray,
-    rho: xp.ndarray,
-    exner: xp.ndarray,
-    theta_v: xp.ndarray,
+def hydrostatic_adjustment_constant_thetav_ndarray(
+    wgtfac_c: fa.AnyNDArray,
+    ddqz_z_half: fa.AnyNDArray,
+    exner_ref_mc: fa.AnyNDArray,
+    d_exner_dz_ref_ic: fa.AnyNDArray,
+    theta_ref_mc: fa.AnyNDArray,
+    theta_ref_ic: fa.AnyNDArray,
+    rho: fa.AnyNDArray,
+    exner: fa.AnyNDArray,
+    theta_v: fa.AnyNDArray,
     num_levels: int,
-) -> tuple[xp.ndarray, xp.ndarray]:
+) -> tuple[fa.AnyNDArray, fa.AnyNDArray]:
     """
     Computes a hydrostatically balanced profile. In constrast to the above
-    hydrostatic_adjustment_numpy, the virtual temperature is kept (assumed)
+    hydrostatic_adjustment_ndarray, the virtual temperature is kept (assumed)
     constant during the adjustment, leading to a simpler formula.
     """
 
@@ -102,17 +107,18 @@ def hydrostatic_adjustment_constant_thetav_numpy(
     return rho, exner
 
 
-def zonalwind_2_normalwind_numpy(
+def zonalwind_2_normalwind_ndarray(
     grid: icon_grid.IconGrid,
     jw_u0: float,
     jw_up: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
-    edge_lat: xp.ndarray,
-    edge_lon: xp.ndarray,
-    primal_normal_x: xp.ndarray,
-    eta_v_e: xp.ndarray,
-):
+    edge_lat: fa.AnyNDArray,
+    edge_lon: fa.AnyNDArray,
+    primal_normal_x: fa.AnyNDArray,
+    eta_v_e: fa.AnyNDArray,
+    backend: gt4py_backend.Backend,
+) -> fa.AnyNDArray:
     """
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
 
@@ -129,6 +135,9 @@ def zonalwind_2_normalwind_numpy(
     Returns: normal wind
     """
     # TODO (Chia Rui) this function needs a test
+
+    is_cupy = array_alloc.is_cupy_device(backend)
+    xp = array_alloc.array_ns(is_cupy)
 
     mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
@@ -188,7 +197,7 @@ def _compute_perturbed_exner(
     return exner_pr
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_perturbed_exner(
     exner: fa.CellKField[ta.wpfloat],
     exner_ref: fa.CellKField[ta.vpfloat],
@@ -203,7 +212,175 @@ def compute_perturbed_exner(
         exner_ref,
         out=exner_pr,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
+    )
+
+
+def initialize_diffusion_diagnostic_state(
+    grid: icon_grid.IconGrid, backend: gt4py_backend.Backend
+) -> diffusion_states.DiffusionDiagnosticState:
+    return diffusion_states.DiffusionDiagnosticState(
+        hdef_ic=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        div_ic=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        dwdx=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        dwdy=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+    )
+
+
+def initialize_solve_nonhydro_diagnostic_state(
+    exner_pr: fa.CellKField[ta.wpfloat], grid: icon_grid.IconGrid, backend: gt4py_backend.Backend
+) -> dycore_states.DiagnosticStateNonHydro:
+    return dycore_states.DiagnosticStateNonHydro(
+        theta_v_ic=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        exner_pr=exner_pr,
+        rho_ic=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        ddt_exner_phy=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ),
+        grf_tend_rho=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ),
+        grf_tend_thv=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ),
+        grf_tend_w=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        mass_fl_e=field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
+        ),
+        ddt_vn_phy=field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
+        ),
+        grf_tend_vn=field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
+        ),
+        ddt_vn_apc_ntl1=field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
+        ),
+        ddt_vn_apc_ntl2=field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
+        ),
+        ddt_w_adv_ntl1=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        ddt_w_adv_ntl2=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        vt=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend),
+        vn_ie=field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        w_concorr_c=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
+        vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
+        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+        exner_dyn_incr=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ),
+    )
+
+
+def initialize_prep_advection(
+    grid: icon_grid.IconGrid, backend: gt4py_backend.Backend
+) -> dycore_states.PrepAdvection:
+    return dycore_states.PrepAdvection(
+        vn_traj=field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
+        ),
+        mass_flx_me=field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
+        ),
+        mass_flx_ic=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ),
+        vol_flx_ic=field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ),
+    )
+
+
+def create_gt4py_field_for_prognostic_and_diagnostic_variables(
+    vn_ndarray: fa.AnyNDArray,
+    w_ndarray: fa.AnyNDArray,
+    exner_ndarray: fa.AnyNDArray,
+    rho_ndarray: fa.AnyNDArray,
+    theta_v_ndarray: fa.AnyNDArray,
+    temperature_ndarray: fa.AnyNDArray,
+    pressure_ndarray: fa.AnyNDArray,
+    pressure_ifc_ndarray: fa.AnyNDArray,
+    grid: icon_grid.IconGrid,
+    backend: gt4py_backend.Backend,
+) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
+]:
+    vn = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
+    w = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
+    exner = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
+    rho = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
+    temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend)
+    virutal_temperature = gtx.as_field(
+        (dims.CellDim, dims.KDim), temperature_ndarray, allocator=backend
+    )
+    pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_ndarray, allocator=backend)
+    theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
+    pressure_ifc = gtx.as_field((dims.CellDim, dims.KDim), pressure_ifc_ndarray, allocator=backend)
+
+    vn_next = gtx.as_field((dims.EdgeDim, dims.KDim), vn_ndarray, allocator=backend)
+    w_next = gtx.as_field((dims.CellDim, dims.KDim), w_ndarray, allocator=backend)
+    exner_next = gtx.as_field((dims.CellDim, dims.KDim), exner_ndarray, allocator=backend)
+    rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
+    theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
+
+    u = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend)
+    v = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend)
+
+    return (
+        vn,
+        w,
+        exner,
+        rho,
+        theta_v,
+        vn_next,
+        w_next,
+        exner_next,
+        rho_next,
+        theta_v_next,
+        temperature,
+        virutal_temperature,
+        pressure,
+        pressure_ifc,
+        u,
+        v,
     )

@@ -835,56 +835,35 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
 
-        log.debug(
-            "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
-        )
+        if self.config.apply_to_temperature:
+            log.debug(
+                "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
+            )
 
-        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_connectivities(
-            self.compile_time_connectivities
-        )(
-            theta_v=prognostic_state.theta_v,
-            theta_ref_mc=self._metric_state.theta_ref_mc,
-            thresh_tdiff=self.thresh_tdiff,
-            smallest_vpfloat=constants.DBL_EPS,
-            kh_smag_e=self.kh_smag_e,
-            horizontal_start=self._edge_start_nudging,
-            horizontal_end=self._edge_end_halo,
-            vertical_start=(self._grid.num_levels - 2),
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
-        )
-        log.debug(
-            "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
-        )
-
-        log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-        self.calculate_nabla2_for_theta.with_connectivities(self.compile_time_connectivities)(
-            kh_smag_e=self.kh_smag_e,
-            inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
-            theta_v=prognostic_state.theta_v,
-            geofac_div=self._interpolation_state.geofac_div,
-            z_temp=self.z_temp,
-            horizontal_start=self._cell_start_nudging,
-            horizontal_end=self._cell_end_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
-        )
-        log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
-        log.debug(
-            "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
-        )
-        if self.config.apply_zdiffusion_t:
-            self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_connectivities(
+            self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_connectivities(
                 self.compile_time_connectivities
             )(
-                mask=self._metric_state.mask_hdiff,
-                zd_vertoffset=self._metric_state.zd_vertoffset,
-                zd_diffcoef=self._metric_state.zd_diffcoef,
-                geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
-                geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
-                vcoef=self._metric_state.zd_intcoef,
                 theta_v=prognostic_state.theta_v,
+                theta_ref_mc=self._metric_state.theta_ref_mc,
+                thresh_tdiff=self.thresh_tdiff,
+                smallest_vpfloat=constants.DBL_EPS,
+                kh_smag_e=self.kh_smag_e,
+                horizontal_start=self._edge_start_nudging,
+                horizontal_end=self._edge_end_halo,
+                vertical_start=(self._grid.num_levels - 2),
+                vertical_end=self._grid.num_levels,
+                offset_provider=self._grid.offset_providers,
+            )
+            log.debug(
+                "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
+            )
+
+            log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
+            self.calculate_nabla2_for_theta.with_connectivities(self.compile_time_connectivities)(
+                kh_smag_e=self.kh_smag_e,
+                inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
+                theta_v=prognostic_state.theta_v,
+                geofac_div=self._interpolation_state.geofac_div,
                 z_temp=self.z_temp,
                 horizontal_start=self._cell_start_nudging,
                 horizontal_end=self._cell_end_local,
@@ -892,24 +871,46 @@ class Diffusion:
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
-
+            log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
             log.debug(
-                "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+                "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
             )
-        log.debug("running stencil 16 (update_theta_and_exner): start")
-        self.update_theta_and_exner.with_connectivities(self.compile_time_connectivities)(
-            z_temp=self.z_temp,
-            area=self._cell_params.area,
-            theta_v=prognostic_state.theta_v,
-            exner=prognostic_state.exner,
-            rd_o_cvd=self.rd_o_cvd,
-            horizontal_start=self._cell_start_nudging,
-            horizontal_end=self._cell_end_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider={},
-        )
-        log.debug("running stencil 16 (update_theta_and_exner): end")
+            if self.config.apply_zdiffusion_t:
+                self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_connectivities(
+                    self.compile_time_connectivities
+                )(
+                    mask=self._metric_state.mask_hdiff,
+                    zd_vertoffset=self._metric_state.zd_vertoffset,
+                    zd_diffcoef=self._metric_state.zd_diffcoef,
+                    geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
+                    geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
+                    vcoef=self._metric_state.zd_intcoef,
+                    theta_v=prognostic_state.theta_v,
+                    z_temp=self.z_temp,
+                    horizontal_start=self._cell_start_nudging,
+                    horizontal_end=self._cell_end_local,
+                    vertical_start=0,
+                    vertical_end=self._grid.num_levels,
+                    offset_provider=self._grid.offset_providers,
+                )
+
+                log.debug(
+                    "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+                )
+            log.debug("running stencil 16 (update_theta_and_exner): start")
+            self.update_theta_and_exner.with_connectivities(self.compile_time_connectivities)(
+                z_temp=self.z_temp,
+                area=self._cell_params.area,
+                theta_v=prognostic_state.theta_v,
+                exner=prognostic_state.exner,
+                rd_o_cvd=self.rd_o_cvd,
+                horizontal_start=self._cell_start_nudging,
+                horizontal_end=self._cell_end_local,
+                vertical_start=0,
+                vertical_end=self._grid.num_levels,
+                offset_provider={},
+            )
+            log.debug("running stencil 16 (update_theta_and_exner): end")
 
         self.halo_exchange_wait(
             handle_edge_comm

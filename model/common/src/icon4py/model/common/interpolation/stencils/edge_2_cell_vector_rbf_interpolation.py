@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim
-from icon4py.model.common.settings import backend
 
 
 @field_operator
@@ -41,7 +40,7 @@ def _edge_2_cell_vector_rbf_interpolation(
     return p_u_out, p_v_out
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def edge_2_cell_vector_rbf_interpolation(
     p_e_in: fa.EdgeKField[ta.wpfloat],
     ptr_coeff_1: gtx.Field[gtx.Dims[dims.CellDim, C2E2C2EDim], ta.wpfloat],

@@ -14,7 +14,6 @@ from typing import Callable
 
 import click
 from devtools import Timer
-from gt4py.next import gtfn_cpu
 
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
@@ -162,13 +161,13 @@ class TimeLoop:
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            log.info(
+            log.debug(
                 f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.15e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.15e}"
             )
-            log.info(
+            log.debug(
                 f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.15e}"
             )
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
+            # TODO (Chia Rui): check with Anurag about printing of max and min of variables. Currently, these max values are only output at debug level. There should be namelist parameters to control which variable max should be output.
 
             self._next_simulation_date()
 
@@ -274,6 +273,7 @@ def initialize(
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
+    icon4py_driver_backend: driver_config.DriverBackends,
 ):
     """
     Inititalize the driver run.
@@ -301,7 +301,7 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(experiment_type)
+    config = driver_config.read_config(icon4py_driver_backend, experiment_type)
 
     decomp_info = driver_init.read_decomp_info(
         file_path, props, serialization_type, grid_id, grid_root, grid_level
@@ -310,6 +310,7 @@ def initialize(
     log.info(f"initializing the grid from '{file_path}'")
     icon_grid = driver_init.read_icon_grid(
         file_path,
+        backend=icon4py_driver_backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -325,6 +326,7 @@ def initialize(
     ) = driver_init.read_geometry_fields(
         file_path,
         vertical_grid_config=config.vertical_grid_config,
+        backend=config.run_config.backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -357,13 +359,13 @@ def initialize(
         edge_geometry,
         cell_geometry,
         exchange=exchange,
-        backend=gtfn_cpu,
+        backend=config.run_config.backend,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        backend=gtfn_cpu,
+        grid=icon_grid,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
@@ -372,6 +374,7 @@ def initialize(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
+        backend=config.run_config.backend,
     )
 
     (
@@ -387,6 +390,7 @@ def initialize(
         cell_geometry,
         edge_geometry,
         file_path,
+        backend=config.run_config.backend,
         rank=props.rank,
         experiment_type=experiment_type,
     )
@@ -423,13 +427,13 @@ def initialize(
 )
 @click.option(
     "--serialization_type",
-    default="serialbox",
+    default=driver_init.SerializationType.SB.value,
     show_default=True,
     help="Serialization type for grid info and static fields. This is currently the only possible way to load the grid info and static fields.",
 )
 @click.option(
     "--experiment_type",
-    default="any",
+    default=driver_init.ExperimentType.ANY.value,
     show_default=True,
     help="Option for configuration and how the initial state is generated. "
     "Setting it to the default value will instruct the model to use the default configuration of MeteoSwiss regional experiment and read the initial state from serialized data. "
@@ -452,8 +456,29 @@ def initialize(
     default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
     help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
 )
+@click.option(
+    "--enable_output",
+    is_flag=True,
+    help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
+)
+@click.option(
+    "--icon4py_driver_backend",
+    "-b",
+    default=driver_config.DriverBackends.GTFN_CPU.value,
+    show_default=True,
+    help="Backend for all components executed in icon4py driver. Choose between GTFN_CPU or GTFN_GPU. Please see abs_path_to_icon4py/model/driver/src/icon4py/model/driver/icon4py_configuration/) ",
+)
 def icon4py_driver(
-    input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level
+    input_path,
+    run_path,
+    mpi,
+    serialization_type,
+    experiment_type,
+    grid_id,
+    grid_root,
+    grid_level,
+    enable_output,
+    icon4py_driver_backend,
 ):
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
@@ -477,7 +502,7 @@ def icon4py_driver(
     """
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     grid_id = uuid.UUID(grid_id)
-    driver_init.configure_logging(run_path, experiment_type, parallel_props)
+    driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
     (
         timeloop,
         diffusion_diagnostic_state,
@@ -494,6 +519,7 @@ def icon4py_driver(
         grid_id,
         grid_root,
         grid_level,
+        icon4py_driver_backend,
     )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(

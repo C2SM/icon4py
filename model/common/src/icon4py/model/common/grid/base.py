@@ -17,7 +17,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import utils as grid_utils
-from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import array_allocation as array_alloc
 
 
 class MissingConnectivity(ValueError):
@@ -136,6 +136,7 @@ class BaseGrid(ABC):
         ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
             dim, self.connectivities[dim].dtype
         )
+        xp = array_alloc.array_ns(self.config.on_gpu)
         return gtx.NeighborTableOffsetProvider(
             xp.asarray(self.connectivities[dim]),
             from_dim,
@@ -148,6 +149,7 @@ class BaseGrid(ABC):
         if dim not in self.connectivities:
             raise MissingConnectivity()
         return grid_utils.neighbortable_offset_provider_for_1d_sparse_fields(
+            self.config.on_gpu,
             self.connectivities[dim].shape,
             from_dim,
             to_dim,

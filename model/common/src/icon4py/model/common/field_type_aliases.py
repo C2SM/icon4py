@@ -8,6 +8,7 @@
 from typing import TypeAlias, TypeVar
 
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import Dims, Field
 
 from icon4py.model.common import dimension as dims
@@ -24,3 +25,6 @@ KField: TypeAlias = Field[Dims[dims.KDim], T]
 CellKField: TypeAlias = Field[Dims[dims.CellDim, dims.KDim], T]
 EdgeKField: TypeAlias = Field[Dims[dims.EdgeDim, dims.KDim], T]
 VertexKField: TypeAlias = Field[Dims[dims.VertexDim, dims.KDim], T]
+
+# TODO (anyone): add cupy if cupy is installed?
+AnyNDArray: TypeAlias = np.ndarray

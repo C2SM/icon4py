@@ -8,7 +8,16 @@
 
 import dataclasses
 import datetime
+import enum
 import logging
+from typing import Final
+
+from gt4py.next.program_processors.runners.gtfn import (
+    run_gtfn,
+    run_gtfn_cached,
+    run_gtfn_gpu,
+    run_gtfn_gpu_cached,
+)
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
@@ -19,6 +28,22 @@ from icon4py.model.driver import initialization_utils as driver_init
 log = logging.getLogger(__name__)
 
 n_substeps_reduced = 2
+
+
+class DriverBackends(str, enum.Enum):
+    GTFN_CPU = "gtfn_cpu"
+    GTFN_CPU_CACHED = "gtfn_cpu_cached"
+    GTFN_GPU = "gtfn_gpu"
+    GTFN_GPU_CACHED = "gtfn_gpu_cached"
+
+
+backend_map: Final[dict] = {
+    DriverBackends.GTFN_CPU: run_gtfn,
+    DriverBackends.GTFN_CPU_CACHED: run_gtfn_cached,
+    DriverBackends.GTFN_GPU: run_gtfn_gpu,
+    DriverBackends.GTFN_GPU_CACHED: run_gtfn_gpu_cached,
+}
+gpu_backends = [DriverBackends.GTFN_GPU, DriverBackends.GTFN_GPU_CACHED]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -40,6 +65,19 @@ class Icon4pyRunConfig:
 
     restart_mode: bool = False
 
+    backend_name: str = DriverBackends.GTFN_CPU.value
+
+    def __post_init__(self):
+        if self.backend_name not in [member.value for member in DriverBackends]:
+            raise ValueError(
+                f"Invalid driver backend: {self.backend_name}. \n"
+                f"Available backends are {', '.join([f'{k}' for k in [member.value for member in DriverBackends]])}"
+            )
+
+    @property
+    def backend(self):
+        return backend_map[self.backend_name]
+
 
 @dataclasses.dataclass
 class Icon4pyConfig:
@@ -50,6 +88,7 @@ class Icon4pyConfig:
 
 
 def read_config(
+    icon4py_driver_backend: str,
     experiment_type: driver_init.ExperimentType = driver_init.ExperimentType.ANY,
 ) -> Icon4pyConfig:
     def _mch_ch_r04b09_vertical_config():
@@ -122,6 +161,7 @@ def read_config(
                 end_date=datetime.datetime(2021, 6, 20, 12, 0, 10),
                 n_substeps=n_substeps_reduced,
                 apply_initial_stabilization=True,
+                backend_name=icon4py_driver_backend,
             ),
             _mch_ch_r04b09_vertical_config(),
             _mch_ch_r04b09_diffusion_config(),
@@ -134,6 +174,7 @@ def read_config(
             end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
+            backend_name=icon4py_driver_backend,
         )
         jabw_vertical_config = _jabw_vertical_config()
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
@@ -168,6 +209,7 @@ def read_config(
             end_date=datetime.datetime(1, 1, 1, 0, 0, 4),
             apply_initial_stabilization=False,
             n_substeps=5,
+            backend_name=icon4py_driver_backend,
         )
         vertical_config = _gauss3d_vertical_config()
         diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)
