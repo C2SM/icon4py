@@ -43,6 +43,10 @@ def is_embedded(backend) -> bool:
     return backend is None
 
 
+def is_gpu(backend) -> bool:
+    return "gpu" in backend.name if backend else False
+
+
 def is_roundtrip(backend) -> bool:
     return backend.name == "roundtrip" if backend else False
 
@@ -66,13 +70,13 @@ def random_mask(
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> gt_common.Field:
-    rng = xp.random.default_rng()
+    rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
-    arr = xp.full(shape, False).flatten()
+    arr = np.full(shape, False).flatten()
     num_true = int(arr.size * 0.5)
     arr[:num_true] = True
     rng.shuffle(arr)
-    arr = xp.reshape(arr, newshape=shape)
+    arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
     return as_field(dims, arr)
@@ -86,7 +90,7 @@ def random_field(
     extend: Optional[dict[gt_common.Dimension, int]] = None,
     dtype: Optional[npt.DTypeLike] = None,
 ) -> gt_common.Field:
-    arr = xp.random.default_rng().uniform(
+    arr = np.random.default_rng().uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
     if dtype:
@@ -108,7 +112,7 @@ def constant_field(
 ) -> gt_common.Field:
     return as_field(
         dims,
-        value * xp.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
+        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
     )
 
 
@@ -118,7 +122,7 @@ def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) 
     return numpy_to_1D_sparse_field(buffer, target_dim)
 
 
-def numpy_to_1D_sparse_field(field: xp.ndarray, dim: gt_common.Dimension) -> gt_common.Field:
+def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
     old_shape = field.shape
     assert len(old_shape) == 2
@@ -138,23 +142,21 @@ def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -
     return as_field(dims, newarray)
 
 
-def unflatten_first_two_dims(field: gt_common.Field) -> xp.array:
+def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
     """Convert a (n-1)-D flattened (Felix-style) sparse field back to a n-D sparse field."""
-    old_shape = xp.asarray(field).shape
+    old_shape = np.asarray(field).shape
     new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
-    return xp.asarray(field).reshape(new_shape)
+    return np.asarray(field).reshape(new_shape)
 
 
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
-    return xp.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
+    return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
 def allocate_data(backend, input_data):
     _allocate_field = constructors.as_field.partial(allocator=backend)
     input_data = {
-        k: _allocate_field(domain=v.domain, data=xp.asarray(v.ndarray))
-        if not is_scalar_type(v)
-        else v
+        k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
         for k, v in input_data.items()
     }
     return input_data
@@ -171,7 +173,7 @@ def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
         **{
-            k: v.ndarray if isinstance(v, gt_common.Field) else xp.array(v)
+            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
             for k, v in input_data.items()
         },
     )
@@ -189,8 +191,8 @@ def _test_validation(self, grid, backend, input_data):
             else (out, (slice(None),), (slice(None),))
         )
 
-        assert xp.allclose(
-            input_data[name].ndarray[gtslice],
+        assert np.allclose(
+            input_data[name].asnumpy()[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
         ), f"Validation failed for '{name}'"
@@ -248,5 +250,5 @@ class StencilTest:
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
 
 
-def reshape(arr: xp.array, shape: tuple[int, ...]):
-    return xp.reshape(arr, shape)
+def reshape(arr: np.array, shape: tuple[int, ...]):
+    return np.reshape(arr, shape)

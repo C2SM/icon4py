@@ -15,7 +15,6 @@ from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
-from ..utils import diffusion_instance  # noqa
 
 
 @pytest.mark.mpi
@@ -41,7 +40,6 @@ def test_parallel_diffusion(
     damping_height,
     caplog,
     backend,
-    diffusion_instance,  # noqa: F811
 ):
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -61,6 +59,20 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
+    config = utils.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
+    )
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+
+    diffusion_params = diffusion_.DiffusionParams(config)
     metric_state = diffusion_states.DiffusionMetricState(
         mask_hdiff=metrics_savepoint.mask_hdiff(),
         theta_ref_mc=metrics_savepoint.theta_ref_mc(),
@@ -69,9 +81,6 @@ def test_parallel_diffusion(
         zd_vertoffset=metrics_savepoint.zd_vertoffset(),
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
-    cell_geometry = grid_savepoint.construct_cell_geometry()
-    edge_geometry = grid_savepoint.construct_edge_geometry()
-
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
@@ -82,24 +91,10 @@ def test_parallel_diffusion(
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    config = utils.construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
-    diffusion_params = diffusion_.DiffusionParams(config)
-    dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
-    print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
-    )
-
-    diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
-
-    diffusion.Diffusion(
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+    edge_geometry = grid_savepoint.construct_edge_geometry()
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion = diffusion_.Diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -110,7 +105,10 @@ def test_parallel_diffusion(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
+        exchange=exchange,
+        backend=backend,
     )
+
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
 
     diagnostic_state = diffusion_states.DiffusionDiagnosticState(
@@ -169,7 +167,6 @@ def test_parallel_diffusion_multiple_steps(
     damping_height,
     caplog,
     backend,
-    diffusion_instance,  # noqa: F811
 ):
     # if settings.dace_orchestration is None:
     #     raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
@@ -284,9 +281,8 @@ def test_parallel_diffusion_multiple_steps(
     # DaCe Orchestrated Backend
     ######################################################################
 
-    diffusion = diffusion_instance  # the fixture makes sure that the orchestrator cache is cleared properly between pytest runs -if applicable-
-
-    diffusion_.Diffusion(
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    diffusion = diffusion_.Diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -297,8 +293,8 @@ def test_parallel_diffusion_multiple_steps(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
-        backend=backend,
         exchange=exchange,
+        backend=backend,
         orchestration=True,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")

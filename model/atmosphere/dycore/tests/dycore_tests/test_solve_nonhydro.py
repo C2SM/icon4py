@@ -11,11 +11,11 @@ import logging
 import pytest
 from icon4pytools.py2fgen.wrappers.settings import backend
 
-import icon4py.model.common.grid.geometry as geometry
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.state_utils import (
-    states as solve_nh_states,
-    utils as solve_nh_utils,
+import icon4py.model.common.grid.states as grid_states
+from icon4py.model.atmosphere.dycore import (
+    dycore_states,
+    dycore_utils,
+    solve_nonhydro as solve_nh,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -54,7 +54,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         enh_divdamp_fac,
         offset_provider={"Koff": dims.KDim},
     )
-    solve_nh_utils._calculate_scal_divdamp.with_backend(backend)(
+    dycore_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_order=config.divdamp_order,
         mean_cell_area=mean_cell_area,
@@ -62,7 +62,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         out=scal_divdamp,
         offset_provider={},
     )
-    solve_nh_utils._calculate_bdy_divdamp.with_backend(backend)(
+    dycore_utils._calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp,
         config.nudge_max_coeff,
         constants.DBL_EPS,
@@ -138,8 +138,8 @@ def test_nonhydro_predictor_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -515,7 +515,7 @@ def test_nonhydro_corrector_step(
     dtime = sp.get_metadata("dtime").get("dtime")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
@@ -549,8 +549,8 @@ def test_nonhydro_corrector_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -665,7 +665,7 @@ def test_nonhydro_corrector_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init,jstep_init, istep_exit,jstep_exit", [(1, 0, 2, 0)])
+@pytest.mark.parametrize("istep_init, jstep_init, istep_exit, jstep_exit", [(1, 0, 2, 0)])
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit",
     [
@@ -720,7 +720,7 @@ def test_run_solve_nonhydro_single_step(
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
@@ -737,8 +737,8 @@ def test_run_solve_nonhydro_single_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
@@ -848,7 +848,7 @@ def test_run_solve_nonhydro_multi_step(
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
@@ -866,8 +866,8 @@ def test_run_solve_nonhydro_multi_step(
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,

@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
+from icon4py.model.atmosphere.dycore.stencils.apply_4th_order_divergence_damping import (
     apply_4th_order_divergence_damping,
 )
 from icon4py.model.common import dimension as dims

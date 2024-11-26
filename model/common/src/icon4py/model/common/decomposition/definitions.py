@@ -14,11 +14,10 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Optional, Protocol, Sequence, runtime_checkable
 
-import numpy.ma as ma
 from gt4py.next import Dimension
 
+from icon4py.model.common import utils
 from icon4py.model.common.settings import xp
-from icon4py.model.common.utils import builder
 
 
 try:
@@ -76,7 +75,7 @@ class DecompositionInfo:
         OWNED = 1
         HALO = 2
 
-    @builder.builder
+    @utils.chainable
     def with_dimension(self, dim: Dimension, global_index: xp.ndarray, owner_mask: xp.ndarray):
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
@@ -125,7 +124,7 @@ class DecompositionInfo:
                 return index[mask]
 
     def _to_local_index(self, dim):
-        data = ma.getdata(self._global_index[dim], subok=False)
+        data = self._global_index[dim]
         assert data.ndim == 1
         return xp.arange(data.shape[0])
 
@@ -360,7 +359,7 @@ def get_runtype(with_mpi: bool = False) -> RunType:
 
 
 @functools.singledispatch
-def get_processor_properties(runtime) -> ProcessProperties:
+def get_processor_properties(runtime: RunType) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
 
 

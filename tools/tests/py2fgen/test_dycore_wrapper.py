@@ -24,8 +24,7 @@ from unittest import mock
 
 import gt4py.next as gtx
 import pytest
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
@@ -151,8 +150,8 @@ def test_dycore_wrapper_granule_inputs(
     f_e = grid_savepoint.f_e()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # metric state parameters
     bdy_halo_c = metrics_savepoint.bdy_halo_c()
@@ -301,7 +300,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_icon_grid = icon_grid
     expected_edge_geometry = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry = grid_savepoint.construct_cell_geometry()
-    expected_interpolation_state = solve_nh_states.InterpolationState(
+    expected_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),
         e_flx_avg=interpolation_savepoint.e_flx_avg(),
@@ -319,7 +318,7 @@ def test_dycore_wrapper_granule_inputs(
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    expected_metric_state = solve_nh_states.MetricStateNonHydro(
+    expected_metric_state = dycore_states.MetricStateNonHydro(
         bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
@@ -371,7 +370,7 @@ def test_dycore_wrapper_granule_inputs(
     expected_additional_parameters = solve_nh.NonHydrostaticParams(expected_config)
 
     # --- Expected objects that form inputs into run function ---
-    expected_diagnostic_state_nh = solve_nh_states.DiagnosticStateNonHydro(
+    expected_diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -410,7 +409,7 @@ def test_dycore_wrapper_granule_inputs(
     )
     expected_prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
 
-    expected_prep_adv = solve_nh_states.PrepAdvection(
+    expected_prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
@@ -455,7 +454,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Mock and Test SolveNonhydro.init ---
     with mock.patch(
-        "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.__init__",
+        "icon4py.model.atmosphere.dycore.solve_nonhydro.SolveNonhydro.__init__",
         return_value=None,
     ) as mock_init:
         dycore_wrapper.solve_nh_init(
@@ -620,7 +619,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # --- Mock and Test SolveNonhydro.run ---
     with mock.patch(
-        "icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro.SolveNonhydro.time_step"
+        "icon4py.model.atmosphere.dycore.solve_nonhydro.SolveNonhydro.time_step"
     ) as mock_init:
         dycore_wrapper.solve_nh_run(
             rho_now=rho_now,
@@ -832,8 +831,8 @@ def test_granule_solve_nonhydro_single_step_regional(
     f_e = grid_savepoint.f_e()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # metric state parameters
     bdy_halo_c = metrics_savepoint.bdy_halo_c()
@@ -1283,8 +1282,8 @@ def test_granule_solve_nonhydro_multi_step_regional(
     f_e = grid_savepoint.f_e()
     edge_center_lat = grid_savepoint.edge_center_lat()
     edge_center_lon = grid_savepoint.edge_center_lon()
-    primal_normal_x = grid_savepoint.primal_normal_x()
-    primal_normal_y = grid_savepoint.primal_normal_y()
+    primal_normal_x = grid_savepoint.primal_normal_v1()
+    primal_normal_y = grid_savepoint.primal_normal_v2()
 
     # metric state parameters
     bdy_halo_c = metrics_savepoint.bdy_halo_c()

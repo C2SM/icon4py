@@ -32,10 +32,9 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
+import icon4py.model.common.grid.states as grid_states
 from gt4py.next import common as gt4py_common
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import SolveNonhydro
-from icon4py.model.atmosphere.dycore.state_utils import states as nh_states
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import (
     C2E2CODim,
@@ -56,7 +55,6 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid import icon
-from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -230,7 +228,7 @@ def solve_nh_init(
     nonhydro_params = solve_nonhydro.NonHydrostaticParams(config)
 
     # edge geometry
-    edge_geometry = EdgeParams(
+    edge_geometry = grid_states.EdgeParams(
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inverse_dual_edge_lengths,
@@ -252,7 +250,7 @@ def solve_nh_init(
     )
 
     # datatest config CellParams
-    cell_geometry = CellParams.from_global_num_cells(
+    cell_geometry = grid_states.CellParams.from_global_num_cells(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
@@ -260,7 +258,7 @@ def solve_nh_init(
         length_rescale_factor=1.0,
     )
 
-    interpolation_state = nh_states.InterpolationState(
+    interpolation_state = dycore_states.InterpolationState(
         c_lin_e=c_lin_e,
         c_intp=c_intp,
         e_flx_avg=e_flx_avg,
@@ -279,7 +277,7 @@ def solve_nh_init(
         nudgecoeff_e=nudgecoeff_e,
     )
 
-    metric_state_nonhydro = nh_states.MetricStateNonHydro(
+    metric_state_nonhydro = dycore_states.MetricStateNonHydro(
         bdy_halo_c=bdy_halo_c,
         mask_prog_halo_c=mask_prog_halo_c,
         rayleigh_w=rayleigh_w,
@@ -332,7 +330,7 @@ def solve_nh_init(
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
-    dycore_wrapper_state["granule"] = SolveNonhydro(
+    dycore_wrapper_state["granule"] = solve_nonhydro.SolveNonhydro(
         grid=dycore_wrapper_state["grid"],
         config=config,
         params=nonhydro_params,
@@ -391,14 +389,14 @@ def solve_nh_run(
 ):
     logger.info(f"Using Device = {device}")
 
-    prep_adv = nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
         vol_flx_ic=zero_field(dycore_wrapper_state["grid"], CellDim, KDim, dtype=gtx.float64),
     )
 
-    diagnostic_state_nh = nh_states.DiagnosticStateNonHydro(
+    diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=theta_v_ic,
         exner_pr=exner_pr,
         rho_ic=rho_ic,

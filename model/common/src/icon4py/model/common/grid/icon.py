@@ -6,29 +6,57 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
+import enum
 import functools
 import logging
 import uuid
+from typing import Final
 
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims, utils
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import builder
 
 
 log = logging.getLogger(__name__)
+
+
+class GeometryType(enum.Enum):
+    """Define geometries of the horizontal domain supported by the ICON grid.
+
+    Values are the same as mo_grid_geometry_info.f90.
+    """
+
+    SPHERE = 1
+    TORUS = 2
 
 
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
     root: int
     level: int
+    geometry_type: Final[GeometryType] = GeometryType.SPHERE
+    radius = constants.EARTH_RADIUS
 
     @functools.cached_property
     def num_cells(self):
-        return 20.0 * self.root**2 * 4.0**self.level
+        match self.geometry_type:
+            case GeometryType.SPHERE:
+                return compute_icosahedron_num_cells(self.root, self.level)
+            case GeometryType.TORUS:
+                return compute_torus_num_cells(1000, 1000)
+            case _:
+                NotImplementedError(f"Unknown gemoetry type {self.geometry_type}")
+
+
+def compute_icosahedron_num_cells(root: int, level: int):
+    return 20.0 * root**2 * 4.0**level
+
+
+def compute_torus_num_cells(x: int, y: int):
+    # TODO (@halungge) add implementation
+    raise NotImplementedError("TODO : lookup torus cell number computation")
 
 
 class IconGrid(base.BaseGrid):
@@ -38,7 +66,7 @@ class IconGrid(base.BaseGrid):
         self._id = id_
         self._start_indices = {}
         self._end_indices = {}
-        self.global_properties = None
+        self.global_properties: GlobalGridParams = None
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
             "E2C": (self._get_offset_provider, dims.E2CDim, dims.EdgeDim, dims.CellDim),
@@ -86,7 +114,10 @@ class IconGrid(base.BaseGrid):
             ),
         }
 
-    @builder.builder
+    def __repr__(self):
+        return f"{self.__class__.__name__}: id={self._id}, R{self.global_properties.root}B{self.global_properties.level}"
+
+    @utils.chainable
     def with_start_end_indices(
         self, dim: gtx.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
@@ -102,7 +133,7 @@ class IconGrid(base.BaseGrid):
             else end_indices.astype(gtx.int32)
         )
 
-    @builder.builder
+    @utils.chainable
     def with_global_params(self, global_params: GlobalGridParams):
         self.global_properties = global_params
 
@@ -176,7 +207,7 @@ class IconGrid(base.BaseGrid):
     def lvert_nest(self):
         return True if self.config.lvertnest else False
 
-    def start_index(self, domain: h_grid.Domain):
+    def start_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
         Use to specify lower end of domains of a field for field_operators.
 
@@ -185,10 +216,11 @@ class IconGrid(base.BaseGrid):
         """
         if domain.local:
             # special treatment because this value is not set properly in the underlying data.
-            return 0
-        return gtx.int32(self._start_indices[domain.dim][domain()].item())
+            return gtx.int32(0)
+        # ndarray.item() does not respect the dtype of the array, returns a copy of the value _as the default python type_
+        return gtx.int32(self._start_indices[domain.dim][domain()])
 
-    def end_index(self, domain: h_grid.Domain):
+    def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
         Use to specify upper end of domains of a field for field_operators.
 
@@ -197,5 +229,6 @@ class IconGrid(base.BaseGrid):
         """
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
-            return self.size[domain.dim]
+            return gtx.int32(self.size[domain.dim])
+        # ndarray.item() does not respect the dtype of the array, returns a copy of the value _as the default python builtin type_
         return gtx.int32(self._end_indices[domain.dim][domain()].item())

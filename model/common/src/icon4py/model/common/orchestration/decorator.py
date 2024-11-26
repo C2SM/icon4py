@@ -164,7 +164,14 @@ def orchestrate(
                 )
                 updated_kwargs = {
                     **updated_kwargs,
-                    **dace_specific_kwargs(exchange_obj, grid.offset_providers),
+                    **dace_specific_kwargs(
+                        exchange_obj,
+                        {
+                            k: v
+                            for k, v in grid.offset_providers.items()
+                            if connectivity_identifier(k) in sdfg.arrays
+                        },
+                    ),
                 }
                 updated_kwargs = {
                     **updated_kwargs,

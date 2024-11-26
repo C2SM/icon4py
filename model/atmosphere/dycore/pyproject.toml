@@ -88,7 +88,6 @@ extend-exclude = [
   '_local_',
   'build',
   'dist',
-  'docs',
   '_external_src',
   'tests/_disabled',
   'setup.py'

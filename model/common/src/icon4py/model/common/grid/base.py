@@ -15,10 +15,9 @@ from typing import Callable, Dict
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.settings import xp
-from icon4py.model.common.utils import builder
 
 
 class MissingConnectivity(ValueError):
@@ -113,7 +112,7 @@ class BaseGrid(ABC):
 
         return offset_providers
 
-    @builder.builder
+    @utils.chainable
     def with_connectivities(self, connectivity: Dict[gtx.Dimension, np.ndarray]):
         self.connectivities.update(
             {
@@ -123,7 +122,7 @@ class BaseGrid(ABC):
         )
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
-    @builder.builder
+    @utils.chainable
     def with_config(self, config: GridConfig):
         self.config = config
         self._update_size()

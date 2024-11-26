@@ -20,6 +20,7 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -34,7 +35,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid import geometry, icon
+from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -45,7 +46,7 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import wpfloat
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.wrappers import common
+from icon4pytools.py2fgen.wrappers import common as wrapper_common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
 from icon4pytools.py2fgen.wrappers.settings import Icon4PyConfig, backend, device
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
@@ -62,6 +63,7 @@ logger = setup_logger(__name__)
 
 diffusion_wrapper_state = {
     "profiler": cProfile.Profile(),
+    "exchange_runtime": definitions.ExchangeRuntime,
 }
 
 
@@ -141,10 +143,12 @@ def diffusion_init(
     global_grid_params = GlobalGridParams(root=global_root, level=global_level)
 
     if not isinstance(diffusion_wrapper_state["grid"], icon.IconGrid):
-        raise Exception("Need to initialise grid using grid_init before running diffusion_init.")
+        raise Exception(
+            "Need to initialise grid using grid_init_diffusion before running diffusion_init."
+        )
 
     # Edge geometry
-    edge_params = geometry.EdgeParams(
+    edge_params = grid_states.EdgeParams(
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
@@ -166,7 +170,7 @@ def diffusion_init(
     )
 
     # Cell geometry
-    cell_params = geometry.CellParams.from_global_num_cells(
+    cell_params = grid_states.CellParams.from_global_num_cells(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
@@ -245,7 +249,7 @@ def diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
-        exchange=definitions.SingleNodeExchange(),
+        exchange=diffusion_wrapper_state["exchange_runtime"],
     )
 
 
@@ -290,7 +294,7 @@ def diffusion_run(
         )
 
 
-def grid_init(
+def grid_init_diffusion(
     cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
     cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
     vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
@@ -327,7 +331,7 @@ def grid_init(
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
-    diffusion_wrapper_state["grid"] = common.construct_icon_grid(
+    diffusion_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -355,7 +359,11 @@ def grid_init(
 
     if Icon4PyConfig.parallel_run:
         # Set MultiNodeExchange as exchange runtime
-        processor_props, decomposition_info, exchange_runtime = common.construct_decomposition(
+        (
+            processor_props,
+            decomposition_info,
+            exchange_runtime,
+        ) = wrapper_common.construct_decomposition(
             c_glb_index,
             e_glb_index,
             v_glb_index,
@@ -376,3 +384,8 @@ def grid_init(
             num_edges,
             num_vertices,
         )
+        # set exchange runtime to MultiNodeExchange
+        diffusion_wrapper_state["exchange_runtime"] = exchange_runtime
+    else:
+        # set exchange runtime to SingleNodeExchange
+        diffusion_wrapper_state["exchange_runtime"] = definitions.SingleNodeExchange()
