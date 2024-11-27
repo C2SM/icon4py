@@ -16,21 +16,21 @@ from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestCloudXIce(StencilTest):
+class TestCloudXIceDefault(StencilTest):
     PROGRAM = cloud_x_ice
     OUTPUTS = ("freezing_rate",)
 
     @staticmethod
     def reference(grid, t: np.array, qc: np.array, qi: np.array, dt: wpfloat, TFRZ_HOM: wpfloat, QMIN: wpfloat, TMELT: wpfloat, **kwargs) -> dict:
-        return dict(freezing_rate=np.full(t.shape, -1.5008166666666666e-08))
+        return dict(freezing_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
     def input_data(self, grid):
 
         return dict(
-            t             = constant_field(grid, thermodyn.tmelt+1.0, dims.CellDim, dtype=wpfloat),
+            t             = constant_field(grid, 256.835, dims.CellDim, dtype=wpfloat),
             qc            = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),
-            qi            = constant_field(grid, 4.50245e-07, dims.CellDim, dtype=wpfloat),
+            qi            = constant_field(grid, 4.50245e-7, dims.CellDim, dtype=wpfloat),
             dt            = 30.0,
             TFRZ_HOM      = graupel_ct.tfrz_hom,
             QMIN          = graupel_ct.qmin,

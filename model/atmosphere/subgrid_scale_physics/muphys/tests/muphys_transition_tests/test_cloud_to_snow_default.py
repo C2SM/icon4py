@@ -16,23 +16,23 @@ from icon4py.model.common.test_utils.helpers import StencilTest, constant_field,
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestCloudToSnow(StencilTest):
+class TestCloudToSnowDefault(StencilTest):
     PROGRAM = cloud_to_snow
     OUTPUTS = ("riming_snow_rate",)
 
     @staticmethod
     def reference(grid, t: np.array, qc: np.array, qs: np.array, ns: np.array, lam: np.array, V1S: wpfloat, V0S: wpfloat, TFRZ_HOM: wpfloat, QMIN: wpfloat, **kwargs) -> dict:
-        return dict(riming_snow_rate=np.full(t.shape, 9.5431874564438999e-10))
+        return dict(riming_snow_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
     def input_data(self, grid):
 
         return dict(
-            t                = constant_field(grid, 256.571, dims.CellDim, dtype=wpfloat),
-            qc               = constant_field(grid, 3.31476e-05, dims.CellDim, dtype=wpfloat),
-            qs               = constant_field(grid, 7.47365e-06, dims.CellDim, dtype=wpfloat),
-            ns               = constant_field(grid, 3.37707e+07, dims.CellDim, dtype=wpfloat),
-            lam              = constant_field(grid, 8989.78, dims.CellDim, dtype=wpfloat),
+            t                = constant_field(grid, 281.787, dims.CellDim, dtype=wpfloat),
+            qc               = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),
+            qs               = constant_field(grid, 3.63983e-40, dims.CellDim, dtype=wpfloat),
+            ns               = constant_field(grid, 800000.0, dims.CellDim, dtype=wpfloat),
+            lam              = constant_field(grid, 1.0e+10, dims.CellDim, dtype=wpfloat),
             V1S              = graupel_ct.v1s,
             V0S              = graupel_ct.v0s,
             TFRZ_HOM         = graupel_ct.tfrz_hom,
