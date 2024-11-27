@@ -387,8 +387,9 @@ def generate_page():
     figures.sort()
 
     with open(f"offset_providers.rst", "w") as f:
-        f.write("Offset Providers\n")
+        f.write("Offset providers\n")
         f.write("================\n\n")
+        f.write("This page contains the figures for the offset providers.\n\n")
         for fig in figures:
             label = fig.replace("offsetProvider_", "").replace(".png", "")
             f.write(f".. image:: {IMG_DIR}/{fig}\n")
