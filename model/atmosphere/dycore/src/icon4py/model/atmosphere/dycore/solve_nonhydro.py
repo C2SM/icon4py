@@ -799,39 +799,48 @@ class SolveNonhydro:
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
     def update_time_levels_for_velocity_tendencies(
-        self, diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro, at_first_substep: bool
+        self,
+        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
+        at_first_substep: bool,
+        at_initial_substep: bool,
     ) -> Literal[0, 1]:
         """
         Set time levels of ddt_adv fields for call to velocity_tendencies.
 
         When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran),
-        `ddt_w_adv_pc.current` is not computed at the beginning of each substep.
-        Instead, the value computed during the previous substep is reused
-        for efficiency (except, of course, in the very first substep of the
-        initial time step). Additionally, in this scheme the predictor and
-        corrector outputs are kept in separated elements of the pair (.current for
-        the predictor and .next for the corrector) and interpoolated at the end
-        of the corrector step to get the final output.
+        `ddt_w_adv_pc.current` (advection term in vertical momentum equation in
+        predictor step) is not computed in the predictor step of each substep.
+        Instead, the advection term computed in the corrector step during the
+        previous substep is reused for efficiency (except, of course, in the
+        very first substep of the initial time step).
+        `ddt_v_apc.current` (advection term in horizontal momentum equation in
+        predictor step) is only computed in the predictor step of the first
+        substep and the advection term in the corrector step during the previous
+        substep is reused for `ddt_v_apc.current` from the second substep onwards.
+        Additionally, in this scheme the predictor and corrector outputs are kept
+        in separated elements of the pair (.current for the predictor and .next
+        for the corrector) and interpoolated at the end of the corrector step to
+        get the final output.
 
-        If a different time stepping scheme is used, the first element of the pair
-        is used for both predictor and corrector outputs.
+        No other time stepping schemes are currently supported.
 
         Args:
             diagnostic_state_nh: Diagnostic fields calculated in the dynamical core (SolveNonHydro)
             at_first_substep: Flag indicating if this is the first substep of the time step.
+            at_initial_substep: Flag indicating if this is the first substep of the first time step.
 
         Returns:
             The index of the pair element to be used for the corrector output.
         """
 
-        if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            if not at_first_substep:
-                diagnostic_state_nh.ddt_w_adv_pc.swap()
-                diagnostic_state_nh.ddt_vn_apc_pc.swap()
-            return 1
-        else:
-            # Use only the first item of the pairs for both predictor and corrector outputs
-            return 0
+        assert (
+            self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT
+        ), f" only {TimeSteppingScheme.MOST_EFFICIENT} is supported. But {self._config.itime_scheme} is chosen."
+        if not at_initial_substep:
+            diagnostic_state_nh.ddt_w_adv_pc.swap()
+        if not at_first_substep:
+            diagnostic_state_nh.ddt_vn_apc_pc.swap()
+        return 1
 
     def time_step(
         self,
@@ -868,7 +877,7 @@ class SolveNonhydro:
             )
 
         corrector_tl = self.update_time_levels_for_velocity_tendencies(
-            diagnostic_state_nh, at_first_substep
+            diagnostic_state_nh, at_first_substep=at_first_substep, at_initial_substep=l_init
         )
 
         self.run_predictor_step(

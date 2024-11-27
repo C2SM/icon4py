@@ -155,7 +155,7 @@ def test_nonhydro_predictor_step(
 
     prognostic_states = utils.create_prognostic_states(sp)
     _ = solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh, at_first_substep=at_first_substep
+        diagnostic_state_nh, at_first_substep=at_first_substep, at_initial_substep=linit
     )
 
     solve_nonhydro.run_predictor_step(
@@ -515,6 +515,7 @@ def test_nonhydro_corrector_step(
     dtime = sp.get_metadata("dtime").get("dtime")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
+    linit = sp.get_metadata("linit").get("linit")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
@@ -566,7 +567,7 @@ def test_nonhydro_corrector_step(
 
     prognostic_states = utils.create_prognostic_states(sp)
     corrector_tl = solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh, at_first_substep=at_first_substep
+        diagnostic_state_nh, at_first_substep=at_first_substep, at_initial_substep=linit
     )
 
     solve_nonhydro.run_corrector_step(
