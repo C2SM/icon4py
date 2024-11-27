@@ -171,7 +171,7 @@ def allocate_data(backend, input_data):
         }
     else:
         input_data = {
-            k: _allocate_field(domain=v.domain, data=v.get()) if not is_scalar_type(v) else v
+            k: _allocate_field(domain=v.domain, data=v.get()) if not is_scalar_type(v) else v.get()
             for k, v in input_data.items()
         }
     return input_data
