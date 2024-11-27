@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
-from gt4py.next.program_processors.runners import gtfn
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid, vertical as v_grid
@@ -101,7 +101,7 @@ def valid_boundary_zones_for_dim(dim: dims.Dimension):
 
 def run_grid_manager(
     experiment_name: str,
-    backend: gtx_backend.Backend = gtfn.run_gtfn_cached,
+    backend: gtx_backend.Backend = gtx.run_gtfn_cached,
     num_levels=65,
     transformation=None,
 ) -> gm.GridManager:
