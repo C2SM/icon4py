@@ -108,7 +108,7 @@ def zero_field(
     extend: Optional[dict[gt_common.Dimension, int]] = None,
     backend = None
 ) -> gt_common.Field:
-    return as_field(dims, xp.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype), allocator=backend)
+    return as_field(dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype), allocator=backend)
 
 
 def constant_field(
