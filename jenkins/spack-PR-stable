@@ -53,7 +53,7 @@ pipeline {
                         steps {
                             script{
                                 sh """
-                                . ./spack-c2sm/setup-env.sh
+                                . ./spack-c2sm/setup-env.sh /mch-environment/v7
                                 cd local_copy
                                 spack env activate spack/gt4py-stable
                                 srun -t 01:00:00 -p postproc -N 1 ./jenkins/quadruple_cmd.sh spack install -v --test=root
