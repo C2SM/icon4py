@@ -160,11 +160,13 @@ def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
 
 def allocate_data(backend, input_data):
     _allocate_field = constructors.as_field.partial(allocator=backend)
-    input_data = {
-        k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
-        for k, v in input_data.items()
-    }
-    return input_data
+    # input_data = {
+    #     k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
+    #     for k, v in input_data.items()
+    # }
+    h = {k: np.asarray(v.ndarray) if not is_scalar_type(v) else v for k, v in input_data.items()}
+    j = {k: _allocate_field(domain=input_data[k].domain, data=v) if not is_scalar_type(v) else v for k, v in h.items()}
+    return j
 
 
 @dataclass(frozen=True)
