@@ -5,6 +5,22 @@ resolution-markers = [
     "python_full_version == '3.11.*' and sys_platform == 'darwin'",
     "python_full_version == '3.12.*' and sys_platform == 'darwin'",
     "python_full_version >= '3.13' and sys_platform == 'darwin'",
+    "python_full_version < '3.11' and sys_platform == 'darwin'",
+    "python_full_version == '3.11.*' and sys_platform == 'darwin'",
+    "python_full_version == '3.12.*' and sys_platform == 'darwin'",
+    "python_full_version >= '3.13' and sys_platform == 'darwin'",
+    "python_full_version < '3.11' and sys_platform == 'darwin'",
+    "python_full_version == '3.11.*' and sys_platform == 'darwin'",
+    "python_full_version == '3.12.*' and sys_platform == 'darwin'",
+    "python_full_version >= '3.13' and sys_platform == 'darwin'",
+    "python_full_version < '3.11' and sys_platform == 'linux'",
+    "python_full_version == '3.11.*' and sys_platform == 'linux'",
+    "python_full_version == '3.12.*' and sys_platform == 'linux'",
+    "python_full_version >= '3.13' and sys_platform == 'linux'",
+    "python_full_version < '3.11' and sys_platform == 'linux'",
+    "python_full_version == '3.11.*' and sys_platform == 'linux'",
+    "python_full_version == '3.12.*' and sys_platform == 'linux'",
+    "python_full_version >= '3.13' and sys_platform == 'linux'",
     "python_full_version < '3.11' and sys_platform == 'linux'",
     "python_full_version == '3.11.*' and sys_platform == 'linux'",
     "python_full_version == '3.12.*' and sys_platform == 'linux'",
@@ -14,6 +30,10 @@ supported-markers = [
     "sys_platform == 'darwin'",
     "sys_platform == 'linux'",
 ]
+conflicts = [[
+    { package = "icon4pytools", extra = "cupy11" },
+    { package = "icon4pytools", extra = "cupy12" },
+]]
 
 [manifest]
 members = [
@@ -1643,7 +1663,7 @@ dependencies = [
     { name = "icon4py-atmosphere-advection", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "icon4py-atmosphere-diffusion", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "icon4py-atmosphere-dycore", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
-    { name = "icon4py-common", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
+    { name = "icon4py-common", extra = ["netcdf"], marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
     { name = "tabulate", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
 ]
 
@@ -1665,7 +1685,7 @@ requires-dist = [
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
     { name = "icon4py-atmosphere-dycore", editable = "model/atmosphere/dycore" },
-    { name = "icon4py-common", editable = "model/common" },
+    { name = "icon4py-common", extras = ["netcdf"], editable = "model/common" },
     { name = "tabulate", specifier = ">=0.8.9" },
 ]
 
@@ -1701,7 +1721,7 @@ name = "importlib-metadata"
 version = "8.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp", marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux')" },
+    { name = "zipp", marker = "sys_platform == 'darwin' or sys_platform == 'linux'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/cd/12/33e59336dca5be0c398a7482335911a33aa0e20776128f038019f1a95f1b/importlib_metadata-8.5.0.tar.gz", hash = "sha256:71522656f0abace1d072b9e5481a48f07c138e00f079c38c8f883823f9c26bd7", size = 55304 }
 wheels = [

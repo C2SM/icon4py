@@ -3,7 +3,7 @@ build-backend = 'setuptools.build_meta'
 requires = ['setuptools>=61.0', 'wheel>=0.40.0']
 
 [project]
-authors = [{email = 'gridtools@cscs.ch'}, {name = 'ETH Zurich'}]
+authors = [{ email = 'gridtools@cscs.ch' }, { name = 'ETH Zurich' }]
 classifiers = [
   'Development Status :: 3 - Alpha',
   'Intended Audience :: Science/Research',
@@ -16,21 +16,21 @@ classifiers = [
   'Programming Language :: Python :: Implementation :: CPython',
   'Topic :: Scientific/Engineering :: Atmospheric Science',
   'Topic :: Scientific/Engineering :: Mathematics',
-  'Topic :: Scientific/Engineering :: Physics'
+  'Topic :: Scientific/Engineering :: Physics',
 ]
 dependencies = [
-  'icon4py-atmosphere-diffusion',
-  'icon4py-atmosphere-dycore',
-  'icon4py-atmosphere-advection',
-  'gt4py>=1.0.1',
-  'icon4py-common',
-  'tabulate>=0.8.9',
+  'icon4py-atmosphere-diffusion>=0.0.6',
+  'icon4py-atmosphere-dycore>=0.0.6',
+  'icon4py-atmosphere-advection>=0.0.6',
+  'icon4py-common[netcdf]>=0.0.6',
+  'gt4py>=1.0.4',
   'fprettify>=0.3.7',
-  'cffi>=1.5'
+  'tabulate>=0.8.9',
+  'cffi>=1.5',
 ]
 description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 dynamic = ['version']
-license = {file = 'LICENSE'}
+license = { file = 'LICENSE' }
 name = 'icon4pytools'
 readme = 'README.md'
 requires-python = '>=3.10'
@@ -48,8 +48,9 @@ py2fgen = 'icon4pytools.py2fgen.cli:main'
 [project.urls]
 repository = 'https://github.com/C2SM/icon4py'
 
-[tool.coverage]
 
+#-- coverage --
+[tool.coverage]
 [tool.coverage.html]
 directory = 'tests/_reports/coverage_html'
 
@@ -58,10 +59,10 @@ source = ['src/icon4pytools/']
 
 [tool.coverage.report]
 exclude_lines = [
-  'raise AssertionError',  # Don't complain if tests don't hit defensive assertion code
+  'raise AssertionError',       # Don't complain if tests don't hit defensive assertion code
   'raise NotImplementedError',  # Don't complain if tests don't hit defensive assertion code
-  'if 0:',  # Don't complain if non-runnable code isn't run
-  'if __name__ == .__main__.:'  # Don't complain if non-runnable code isn't run
+  'if 0:',                      # Don't complain if non-runnable code isn't run
+  'if __name__ == .__main__.:', # Don't complain if non-runnable code isn't run
 ]
 ignore_errors = true
 
@@ -70,6 +71,7 @@ branch = true
 parallel = true
 source_pkgs = ['icon4pytools']
 
+#-- mypy --
 [tool.mypy]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
@@ -77,7 +79,7 @@ exclude = [
   '^tests/f2ser/*.py',
   '^tests/icon4pygen/*.py',
   '^tests/liskov/*.py',
-  '^tests/py2f/*.py'
+  '^tests/py2f/*.py',
 ]
 ignore_missing_imports = false
 implicit_reexport = true
@@ -89,11 +91,13 @@ warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
 
+#-- pytest --
 [tool.pytest]
 
 [tool.pytest.ini_options]
 testpaths = 'tests'
 
+#-- ruff --
 [tool.ruff]
 extend-exclude = [
   '.eggs',
@@ -106,7 +110,7 @@ extend-exclude = [
   'docs',
   '_external_src',
   'tests/_disabled',
-  'setup.py'
+  'setup.py',
 ]
 indent-width = 4
 line-length = 100
@@ -131,26 +135,28 @@ extend-select = ['E', 'F', 'I', 'B', 'A', 'T10', 'ERA', 'NPY', 'RUF']
 # NPY: NumPy-specific rules
 # RUF: Ruff-specific rules
 ignore = [
-  'E501',  # Line too long (using Bugbear's B950 warning)
-  'RUF009',  # Do not perform function call in dataclass defaults
-  'B010'  # Do not call `setattr` with a constant attribute value.
+  'E501',   # Line too long (using Bugbear's B950 warning)
+  'RUF009', # Do not perform function call in dataclass defaults
+  'B010',   # Do not call `setattr` with a constant attribute value.
 ]
 ignore-init-module-imports = true
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
 known-first-party = ['icon4pytools']
-known-third-party = [
-  'gt4py',
-  'icon4py'
-]
+known-third-party = ['gt4py', 'icon4py']
 lines-after-imports = 2
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15
 
+#-- setuptools --
 [tool.setuptools.dynamic]
-version = {attr = 'icon4pytools.__init__.__version__'}
+version = { attr = 'icon4pytools.__init__.__version__' }
 
 [tool.setuptools.package-data]
 'icon4pytools' = ['py.typed']
+
+#-- uv --
+[tool.uv]
+conflicts = [[{ extra = "cupy11" }, { extra = "cupy12" }]]
