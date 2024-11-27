@@ -13,7 +13,7 @@ at the numerical documentation for the dycore.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Help pages:
 
    symbols_description.rst
