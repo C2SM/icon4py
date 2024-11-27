@@ -364,6 +364,7 @@ def initialize(
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
         backend=gtfn_cpu,
+        grid=icon_grid,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
