@@ -116,7 +116,11 @@ def create_vertical_params(
     )
 
 
-def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
+def construct_diagnostics(
+    init_savepoint: sb.IconNonHydroInitSavepoint, swap_ddt_w_adv_pc: bool = False
+):
+    current_index, next_index = (2, 1) if swap_ddt_w_adv_pc else (1, 2)
+    print(current_index, next_index)
     return dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
@@ -132,7 +136,7 @@ def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
             init_savepoint.ddt_vn_apc_pc(1), init_savepoint.ddt_vn_apc_pc(2)
         ),
         ddt_w_adv_pc=common_utils.TimeStepPair(
-            init_savepoint.ddt_w_adv_pc(1), init_savepoint.ddt_w_adv_pc(2)
+            init_savepoint.ddt_w_adv_pc(current_index), init_savepoint.ddt_w_adv_pc(next_index)
         ),
         vt=init_savepoint.vt(),
         vn_ie=init_savepoint.vn_ie(),
