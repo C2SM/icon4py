@@ -219,7 +219,8 @@ class VelocityAdvection:
         #     $$
         #     \vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}
         #     $$
-        #     Compute the vorticity on vertices using the discrete Stokes theorem (eq. 5 in |BonaventuraRingler2005|).
+        #     Compute the vorticity on vertices using the discrete Stokes
+        #     theorem (eq. 5 in |BonaventuraRingler2005|).
         #
         # Inputs:
         #  - $\Crot$ : geofac_rot
