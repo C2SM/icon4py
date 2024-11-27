@@ -120,7 +120,6 @@ def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint, swap_ddt_w_adv_pc: bool = False
 ):
     current_index, next_index = (2, 1) if swap_ddt_w_adv_pc else (1, 2)
-    print(current_index, next_index)
     return dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
