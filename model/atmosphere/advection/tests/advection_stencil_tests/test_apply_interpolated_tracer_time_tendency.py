@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.apply_interpolated_tracer_time_
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 class TestApplyInterpolatedTracerTimeTendency(helpers.StencilTest):

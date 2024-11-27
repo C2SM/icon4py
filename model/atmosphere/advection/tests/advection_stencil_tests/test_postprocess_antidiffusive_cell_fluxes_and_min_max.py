@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.postprocess_antidiffusive_cell_
     postprocess_antidiffusive_cell_fluxes_and_min_max,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 class TestPostprocessAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):

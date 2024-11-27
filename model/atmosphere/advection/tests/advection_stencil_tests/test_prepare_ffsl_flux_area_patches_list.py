@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.prepare_ffsl_flux_area_patches_
     prepare_ffsl_flux_area_patches_list,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 # Check whether lines inters.

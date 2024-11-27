@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_valu
     compute_ppm_quadratic_face_values,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 outslice = (slice(None), slice(1, None))

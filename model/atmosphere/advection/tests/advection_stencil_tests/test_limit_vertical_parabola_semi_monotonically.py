@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.limit_vertical_parabola_semi_mo
     limit_vertical_parabola_semi_monotonically,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 class TestLimitVerticalParabolaSemiMonotonically(helpers.StencilTest):

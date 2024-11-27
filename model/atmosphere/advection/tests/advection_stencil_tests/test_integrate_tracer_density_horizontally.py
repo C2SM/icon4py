@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_density_horizo
     integrate_tracer_density_horizontally,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):

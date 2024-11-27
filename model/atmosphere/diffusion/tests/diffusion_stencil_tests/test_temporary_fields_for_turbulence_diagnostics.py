@@ -12,7 +12,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,

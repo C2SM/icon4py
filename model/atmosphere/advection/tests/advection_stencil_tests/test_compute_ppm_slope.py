@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_slope import (
     compute_ppm_slope,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 class TestComputePpmSlope(helpers.StencilTest):

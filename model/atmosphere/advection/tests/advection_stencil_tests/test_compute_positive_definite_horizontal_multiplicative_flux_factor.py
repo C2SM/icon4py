@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horiz
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.StencilTest):

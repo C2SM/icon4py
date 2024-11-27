@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_li
     prepare_numerical_quadrature_list_for_cubic_reconstruction,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 @pytest.mark.slow_tests

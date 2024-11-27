@@ -17,7 +17,7 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
-from icon4py.model.common.settings import xp
+import numpy as xp
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     grid_utils,

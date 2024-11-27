@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.advection.stencils.reconstruct_cubic_coefficients_
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.settings import xp
+import numpy as xp
 
 
 @pytest.mark.slow_tests
