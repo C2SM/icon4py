@@ -252,7 +252,7 @@ class Pair(Generic[T]):
 
 class TimeStepPair(Pair[T]):
     current: T = Pair.first
-    next: T = Pair.frozen_second
+    next: T = Pair.second
 
 
 P = ParamSpec("P")
