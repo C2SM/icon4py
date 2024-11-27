@@ -9,7 +9,6 @@
 import logging
 
 import pytest
-from icon4pytools.py2fgen.wrappers.settings import backend
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import (
@@ -31,9 +30,7 @@ from . import utils
 
 @pytest.mark.datatest
 def test_validate_divdamp_fields_against_savepoint_values(
-    grid_savepoint,
-    savepoint_nonhydro_init,
-    icon_grid,
+    grid_savepoint, savepoint_nonhydro_init, icon_grid, backend
 ):
     config = solve_nh.NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
@@ -112,6 +109,7 @@ def test_nonhydro_predictor_step(
     experiment,
     ndyn_substeps,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -499,6 +497,7 @@ def test_nonhydro_corrector_step(
     experiment,
     ndyn_substeps,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -702,6 +701,7 @@ def test_run_solve_nonhydro_single_step(
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -832,6 +832,7 @@ def test_run_solve_nonhydro_multi_step(
     savepoint_nonhydro_step_exit,
     experiment,
     ndyn_substeps,
+    backend,
 ):
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init

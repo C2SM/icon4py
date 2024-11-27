@@ -12,6 +12,7 @@ from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusio
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.orchestration import decorator as dace_orchestration
 from icon4py.model.common.test_utils import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
@@ -168,8 +169,8 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
 ):
-    # if settings.dace_orchestration is None:
-    #     raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
+    if dace_orchestration is None:
+        raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
     # Diffusion initialization

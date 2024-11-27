@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as xp
 import pytest
 from gt4py.next import as_field
 
@@ -15,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_slope import (
     compute_ppm_slope,
 )
 from icon4py.model.common import dimension as dims
-import numpy as xp
 
 
 class TestComputePpmSlope(helpers.StencilTest):

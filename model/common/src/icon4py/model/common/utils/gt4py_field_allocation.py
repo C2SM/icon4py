@@ -14,7 +14,6 @@ import numpy as np
 from gt4py.next import backend
 
 from icon4py.model.common import dimension, type_alias as ta
-from icon4py.model.common import type_alias as ta
 
 
 """ Enum values from Enum values taken from DLPack reference implementation at:
@@ -82,6 +81,5 @@ def allocate_indices(
     dtype=gtx.int32,
     backend: Optional[backend.Backend] = None,
 ) -> gtx.Field:
-    xp = import_array_ns(backend)
     shapex = _size(grid, dim, is_halfdim)
     return gtx.as_field((dim,), np.arange(shapex, dtype=dtype), allocator=backend)

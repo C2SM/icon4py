@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import numpy as xp
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -17,7 +18,6 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
-import numpy as xp
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     grid_utils,

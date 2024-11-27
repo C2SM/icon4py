@@ -8,13 +8,13 @@
 import math
 
 import gt4py.next as gtx
+import numpy as xp
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
 from icon4py.model.common import dimension as dims
-import numpy as xp
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 

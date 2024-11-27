@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as xp
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -15,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-import numpy as xp
 
 
 class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTest):

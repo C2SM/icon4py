@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as xp
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -14,7 +15,6 @@ from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_fo
     prepare_numerical_quadrature_for_cubic_reconstruction,
 )
 from icon4py.model.common import dimension as dims
-import numpy as xp
 
 
 @pytest.mark.slow_tests

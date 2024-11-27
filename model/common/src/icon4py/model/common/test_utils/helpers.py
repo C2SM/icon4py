@@ -16,8 +16,6 @@ from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 
-from icon4py.model.common.settings import xp
-
 from ..grid.base import BaseGrid
 from ..type_alias import wpfloat
 
@@ -70,7 +68,7 @@ def random_mask(
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-    backend = None
+    backend=None,
 ) -> gt_common.Field:
     rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
@@ -91,7 +89,7 @@ def random_field(
     high: float = 1.0,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
     dtype: Optional[npt.DTypeLike] = None,
-    backend = None
+    backend=None,
 ) -> gt_common.Field:
     arr = np.random.default_rng().uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
@@ -106,18 +104,20 @@ def zero_field(
     *dims: gt_common.Dimension,
     dtype=wpfloat,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-    backend = None
+    backend=None,
 ) -> gt_common.Field:
-    return as_field(dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype), allocator=backend)
+    return as_field(
+        dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype), allocator=backend
+    )
 
 
 def constant_field(
-    grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat, backend = None
+    grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat, backend=None
 ) -> gt_common.Field:
     return as_field(
         dims,
         value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
-        allocator=backend
+        allocator=backend,
     )
 
 
@@ -127,7 +127,9 @@ def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) 
     return numpy_to_1D_sparse_field(buffer, target_dim)
 
 
-def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension, backend = None) -> gt_common.Field:
+def numpy_to_1D_sparse_field(
+    field: np.ndarray, dim: gt_common.Dimension, backend=None
+) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
     old_shape = field.shape
     assert len(old_shape) == 2
@@ -135,7 +137,9 @@ def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension, backen
     return as_field((dim,), field.reshape(new_shape), allocator=backend)
 
 
-def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field, backend = None) -> gt_common.Field:
+def flatten_first_two_dims(
+    *dims: gt_common.Dimension, field: gt_common.Field, backend=None
+) -> gt_common.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
     buffer = field.ndarray
     old_shape = buffer.shape
@@ -177,10 +181,7 @@ class Output:
 def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
-        **{
-            k: v.asnumpy() if isinstance(v, gt_common.Field) else v #if "numpy" in str(xp.dtype) else np.asarray(v.get())
-            for k, v in input_data.items()
-        },
+        **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
     )
 
     input_data = allocate_data(backend, input_data)
@@ -257,29 +258,3 @@ class StencilTest:
 
 def reshape(arr: np.array, shape: tuple[int, ...]):
     return np.reshape(arr, shape)
-
-
-# def is_cupy_device(backend: gtx_backend.Backend) -> bool:
-#     cuda_device_types = (
-#         gtcore_defs.DeviceType.CUDA,
-#         gtcore_defs.DeviceType.CUDA_MANAGED,
-#         gtcore_defs.DeviceType.ROCM,
-#     )
-#     return backend.allocator.__gt_device_type__ in cuda_device_types
-#
-#
-# def array_ns(try_cupy: bool):
-#     if try_cupy:
-#         try:
-#             import cupy as cp
-#
-#             return cp
-#         except ImportError:
-#             log.warn("No cupy installed falling back to numpy for array_ns")
-#     import numpy as np
-#
-#     return np
-#
-#
-# def import_array_ns(backend: gtx_backend.Backend):
-#     return array_ns(is_cupy_device(backend))

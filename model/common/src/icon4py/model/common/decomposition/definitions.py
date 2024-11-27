@@ -12,7 +12,7 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Optional, Protocol, Sequence, runtime_checkable
+from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
 
 from gt4py.next import Dimension
 
@@ -359,12 +359,12 @@ def get_runtype(with_mpi: bool = False) -> RunType:
 
 
 @functools.singledispatch
-def get_processor_properties(runtime: RunType) -> ProcessProperties:
+def get_processor_properties(runtime: RunType, comm_id: Union[int, None]) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
 
 
 @get_processor_properties.register(SingleNodeRun)
-def get_single_node_properties(s: SingleNodeRun) -> ProcessProperties:
+def get_single_node_properties(s: SingleNodeRun, comm_id=None) -> ProcessProperties:
     return SingleNodeProcessProperties()
 
 

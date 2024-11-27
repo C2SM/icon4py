@@ -6,13 +6,13 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+import numpy as xp
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence_diagnostics import (
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common import dimension as dims
-import numpy as xp
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
