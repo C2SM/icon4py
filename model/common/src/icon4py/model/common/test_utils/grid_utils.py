@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import functools
 
 import gt4py.next.backend as gtx_backend
 import pytest
@@ -25,7 +24,6 @@ GLOBAL_NUM_LEVELS = 60
 MCH_CH_R04B09_LEVELS = 65
 
 
-@functools.cache
 def get_icon_grid_from_gridfile(
     experiment: str, backend: gtx_backend.Backend = False
 ) -> gm.GridManager:
