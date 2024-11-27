@@ -56,7 +56,7 @@ pipeline {
                                 . ./spack-c2sm/setup-env.sh
                                 cd local_copy
                                 spack env activate spack/gt4py-main
-                                spack install -v --test=root
+                                srun -t 01:00:00 -p postproc -N 1 ./jenkins/.quadruple_cmd.sh spack install -v --test=root
                                 """
                             }
                         }
