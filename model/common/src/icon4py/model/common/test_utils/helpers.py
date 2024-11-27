@@ -164,9 +164,17 @@ def allocate_data(backend, input_data):
     #     k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
     #     for k, v in input_data.items()
     # }
-    h = {k: np.asarray(v.ndarray) if not is_scalar_type(v) else v for k, v in input_data.items()}
-    j = {k: _allocate_field(domain=input_data[k].domain, data=v) if not is_scalar_type(v) else v for k, v in h.items()}
-    return j
+    if "numpy" in str(xp.dtype):
+        input_data = {
+            k: _allocate_field(domain=v.domain, data=v.asnumpy()) if not is_scalar_type(v) else v
+            for k, v in input_data.items()
+        }
+    else:
+        input_data = {
+            k: _allocate_field(domain=v.domain, data=v.get()) if not is_scalar_type(v) else v
+            for k, v in input_data.items()
+        }
+    return input_data
 
 
 @dataclass(frozen=True)
