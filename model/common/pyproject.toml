@@ -31,7 +31,7 @@ requires-python = ">=3.10"
 [project.optional-dependencies]
 all = ["icon4py-common[ghex,io,dace]"]
 dace = ["dace>=0.16.1"]
-ghex = ["ghex", "mpi4py"]
+ghex = ["ghex", "mpi4py>=3.1.5"]
 io = [
   "icon4py-common[netcdf]",
   "xarray[complete]>=2024.3.0",

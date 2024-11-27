@@ -36,8 +36,8 @@ readme = 'README.md'
 requires-python = '>=3.10'
 
 [project.optional-dependencies]
-cupy11 = ['cupy-cuda11x']
-cupy12 = ['cupy-cuda12x']
+cupy11 = ['cupy-cuda11x>13.0']
+cupy12 = ['cupy-cuda12x>13.0']
 
 [project.scripts]
 f2ser = 'icon4pytools.f2ser.cli:main'
