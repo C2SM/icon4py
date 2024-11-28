@@ -26,6 +26,7 @@ from icon4py.model.common.test_utils import (
     serialbox_utils as sb,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as alloc
+from icon4pytools.py2fgen.wrappers import settings
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,
@@ -488,7 +489,6 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_exit)
 
 
-# @pytest.mark.dace_orchestration
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -512,6 +512,8 @@ def test_run_diffusion_multiple_steps(
     backend,
     icon_grid,
 ):
+    if settings.dace_orchestration is None:
+        raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization
     ######################################################################
