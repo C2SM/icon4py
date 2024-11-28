@@ -25,7 +25,7 @@ MCH_CH_R04B09_LEVELS = 65
 
 
 def get_icon_grid_from_gridfile(
-    experiment: str, backend: gtx_backend.Backend = False
+    experiment: str, backend: gtx_backend.Backend = None
 ) -> gm.GridManager:
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         return _download_and_load_from_gridfile(
