@@ -341,9 +341,11 @@ def fused_stencils_16_to_17(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_advective_vertical_wind_tendency(
-       local_z_w_con_c,
+    _fused_stencils_16_to_17(
         w,
+        local_z_v_grad_w,
+        e_bln_c_s,
+        local_z_w_con_c,
         coeff1_dwdz,
         coeff2_dwdz,
         out=ddt_w_adv,
@@ -353,13 +355,3 @@ def fused_stencils_16_to_17(
         },
     )
 
-    _add_interpolated_horizontal_advection_of_w(
-        e_bln_c_s,
-        local_z_v_grad_w,
-        ddt_w_adv,
-        out=ddt_w_adv,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )

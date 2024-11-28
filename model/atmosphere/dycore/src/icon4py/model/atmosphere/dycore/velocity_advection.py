@@ -13,6 +13,15 @@ from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
+from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
+    correct_contravariant_vertical_velocity,
+)
+from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
+    copy_cell_kdim_field_to_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
+    init_cell_kdim_field_with_zero_vp,
+)
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
@@ -108,6 +117,15 @@ class VelocityAdvection:
         )
         self._fused_stencils_16_to_17 = velocity_stencils.fused_stencils_16_to_17.with_backend(
             self._backend
+        )
+        self._correct_contravariant_vertical_velocity = (
+            correct_contravariant_vertical_velocity.with_backend(self._backend)
+        )
+        self._copy_cell_kdim_field_to_vp = (
+            copy_cell_kdim_field_to_vp.with_backend(self._backend)
+        )
+        self._init_cell_kdim_field_with_zero_vp = (
+            init_cell_kdim_field_with_zero_vp.with_backend(self._backend)
         )
         self._add_extra_diffusion_for_w_con_approaching_cfl = (
             add_extra_diffusion_for_w_con_approaching_cfl.with_backend(self._backend)
@@ -333,17 +351,32 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        self._fused_stencils_11_to_13(
-            w=prognostic_state.w,
-            w_concorr_c=diagnostic_state.w_concorr_c,
-            local_z_w_con_c=self.z_w_con_c,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
-            nlev=self.grid.num_levels,
+        self._copy_cell_kdim_field_to_vp(
+            field=prognostic_state.w,
+            field_copy=self.z_w_con_c,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
+
+        self._init_cell_kdim_field_with_zero_vp(
+            field_with_zero_vp=self.z_w_con_c,
+            horizontal_start=self._start_cell_lateral_boundary_level_4,
+            horizontal_end=self._end_cell_halo,
+            vertical_start=self.grid.num_levels,
+            vertical_end=gtx.int32(self.grid.num_levels + 1),
+            offset_provider={},
+        )
+
+        self._correct_contravariant_vertical_velocity(
+            z_w_con_c=self.z_w_con_c,
+            w_concorr_c=diagnostic_state.w_concorr_c,
+            horizontal_start=self._start_cell_lateral_boundary_level_4,
+            horizontal_end=self._end_cell_halo,
+            vertical_start=gtx.int32(self.vertical_params.nflatlev + 1),
+            vertical_end=self.grid.num_levels,
             offset_provider={},
         )
 
