@@ -18,6 +18,8 @@ from icon4py.model.common.test_utils.datatest_utils import (
 )
 
 
+DEFAULT_BACKEND = "roundtrip"
+
 backends = {
     "embedded": None,
     "roundtrip": itir_python,
@@ -96,7 +98,7 @@ def pytest_addoption(parser):
         parser.addoption(
             "--backend",
             action="store",
-            default="roundtrip",
+            default=DEFAULT_BACKEND,
             help="GT4Py backend to use when executing stencils. Defaults to roundtrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
@@ -140,19 +142,15 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
-    on_gpu = False
+    selected_backend = backends[DEFAULT_BACKEND]
 
     # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
         check_backend_validity(backend_option)
 
-        if backend_option in gpu_backends:
-            on_gpu = True
-
-        metafunc.parametrize(
-            "backend", [backends[backend_option]], ids=[f"backend={backend_option}"]
-        )
+        selected_backend = backends[backend_option]
+        metafunc.parametrize("backend", [selected_backend], ids=[f"backend={backend_option}"])
 
     # parametrise grid
     if "grid" in metafunc.fixturenames:
@@ -168,13 +166,17 @@ def pytest_generate_tests(metafunc):
                     get_icon_grid_from_gridfile,
                 )
 
-                grid_instance = get_icon_grid_from_gridfile(REGIONAL_EXPERIMENT, on_gpu).grid
+                grid_instance = get_icon_grid_from_gridfile(
+                    REGIONAL_EXPERIMENT, backend=selected_backend
+                ).grid
             elif selected_grid_type == "icon_grid_global":
                 from icon4py.model.common.test_utils.grid_utils import (
                     get_icon_grid_from_gridfile,
                 )
 
-                grid_instance = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu).grid
+                grid_instance = get_icon_grid_from_gridfile(
+                    GLOBAL_EXPERIMENT, backend=selected_backend
+                ).grid
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
