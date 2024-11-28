@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import numpy as np
 import pytest
-from icon4pytools.py2fgen.wrappers import settings
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
@@ -512,7 +511,8 @@ def test_run_diffusion_multiple_steps(
     backend,
     icon_grid,
 ):
-    if settings.dace_orchestration is None:
+    dace_orchestration = False
+    if not dace_orchestration:
         raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization
