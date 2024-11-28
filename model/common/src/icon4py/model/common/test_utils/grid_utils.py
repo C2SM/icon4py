@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import functools
 
+import gt4py.next.backend as gtx_backend
 import pytest
 
 import icon4py.model.common.grid.grid_manager as gm
@@ -24,23 +24,24 @@ GLOBAL_NUM_LEVELS = 60
 MCH_CH_R04B09_LEVELS = 65
 
 
-@functools.cache
-def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> gm.GridManager:
+def get_icon_grid_from_gridfile(
+    experiment: str, backend: gtx_backend.Backend = None
+) -> gm.GridManager:
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         return _download_and_load_from_gridfile(
             dt_utils.R02B04_GLOBAL,
             GLOBAL_GRIDFILE,
             num_levels=GLOBAL_NUM_LEVELS,
-            on_gpu=on_gpu,
             limited_area=False,
+            backend=backend,
         )
     elif experiment == dt_utils.REGIONAL_EXPERIMENT:
         return _download_and_load_from_gridfile(
             dt_utils.REGIONAL_EXPERIMENT,
             REGIONAL_GRIDFILE,
             num_levels=MCH_CH_R04B09_LEVELS,
-            on_gpu=on_gpu,
             limited_area=True,
+            backend=backend,
         )
     else:
         raise ValueError(f"Unknown experiment: {experiment}")
@@ -58,23 +59,23 @@ def download_grid_file(file_path: str, filename: str):
 
 
 def load_grid_from_file(
-    grid_file: str, num_levels: int, on_gpu: bool, limited_area: bool
+    grid_file: str, num_levels: int, backend: gtx_backend.Backend, limited_area: bool
 ) -> gm.GridManager:
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(),
         str(grid_file),
         v_grid.VerticalGridConfig(num_levels=num_levels),
     )
-    manager(on_gpu=on_gpu, limited_area=limited_area)
+    manager(backend=backend, limited_area=limited_area)
     return manager
 
 
 def _download_and_load_from_gridfile(
-    file_path: str, filename: str, num_levels: int, on_gpu: bool, limited_area: bool
+    file_path: str, filename: str, num_levels: int, backend: gtx_backend.Backend, limited_area: bool
 ) -> gm.GridManager:
     grid_file = download_grid_file(file_path, filename)
 
-    gm = load_grid_from_file(grid_file, num_levels, on_gpu, limited_area)
+    gm = load_grid_from_file(grid_file, num_levels, backend, limited_area)
     return gm
 
 
