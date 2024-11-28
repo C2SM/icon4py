@@ -529,14 +529,14 @@ class GridManager:
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
         """
-        np = common_utils.gt4py_field_allocation.import_array_ns(backend)
+        xp = common_utils.gt4py_field_allocation.import_array_ns(backend)
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
             dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
         }
         refinement_control_fields = {
-            dim: np.asarray(self._reader.int_variable(name, decomposition_info, transpose=False))
+            dim: xp.asarray(self._reader.int_variable(name, decomposition_info, transpose=False))
             for dim, name in refinement_control_names.items()
         }
         return refinement_control_fields
