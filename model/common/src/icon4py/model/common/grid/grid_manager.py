@@ -327,7 +327,7 @@ class NoTransformation(IndexTransformation):
     """Empty implementation of the Protocol. Just return zeros."""
 
     def __call__(self, array: NDArray):
-        return xp.zeros_like(array)
+        return np.zeros_like(array)
 
 
 class ToZeroBasedIndexTransformation(IndexTransformation):
@@ -338,7 +338,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         Fortran indices are 1-based, hence the offset is -1 for 0-based ness of python except for
         INVALID values which are marked with -1 in the grid file and are kept such.
         """
-        return xp.asarray(xp.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
+        return np.asarray(np.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
 CoordinateDict: TypeAlias = dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
@@ -529,14 +529,14 @@ class GridManager:
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
         """
-        xp = common_utils.gt4py_field_allocation.import_array_ns(backend)
+        np = common_utils.gt4py_field_allocation.import_array_ns(backend)
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
             dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
         }
         refinement_control_fields = {
-            dim: xp.asarray(self._reader.int_variable(name, decomposition_info, transpose=False))
+            dim: np.asarray(self._reader.int_variable(name, decomposition_info, transpose=False))
             for dim, name in refinement_control_names.items()
         }
         return refinement_control_fields
@@ -642,14 +642,14 @@ def _add_derived_connectivities(grid: icon.IconGrid) -> icon.IconGrid:
     e2c2e = _construct_diamond_edges(
         grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim]
     )
-    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
+    e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
 
     c2e2c2e = _construct_triangle_edges(
         grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim]
     )
-    c2e2c0 = xp.column_stack(
+    c2e2c0 = np.column_stack(
         (
-            xp.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
+            np.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
             (grid.connectivities[dims.C2E2CDim]),
         )
     )
@@ -711,11 +711,11 @@ def _construct_diamond_vertices(e2v: NDArray, c2v: NDArray, e2c: NDArray) -> NDA
     expanded = dummy_c2v[e2c, :]
     sh = expanded.shape
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
-    far_indices = xp.zeros_like(e2v)
+    far_indices = np.zeros_like(e2v)
     # TODO (magdalena) vectorize speed this up?
     for i in range(sh[0]):
-        far_indices[i, :] = flat[i, ~xp.isin(flat[i, :], e2v[i, :])][:2]
-    return xp.hstack((e2v, far_indices))
+        far_indices[i, :] = flat[i, ~np.isin(flat[i, :], e2v[i, :])][:2]
+    return np.hstack((e2v, far_indices))
 
 
 def _construct_diamond_edges(e2c: NDArray, c2e: NDArray) -> NDArray:
@@ -750,9 +750,9 @@ def _construct_diamond_edges(e2c: NDArray, c2e: NDArray) -> NDArray:
     flattened = expanded.reshape(sh[0], sh[1] * sh[2])
 
     diamond_sides = 4
-    e2c2e = GridFile.INVALID_INDEX * xp.ones((sh[0], diamond_sides), dtype=gtx.int32)
+    e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=gtx.int32)
     for i in range(sh[0]):
-        var = flattened[i, (~xp.isin(flattened[i, :], xp.asarray([i, GridFile.INVALID_INDEX])))]
+        var = flattened[i, (~np.isin(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
         e2c2e[i, : var.shape[0]] = var
     return e2c2e
 
@@ -782,7 +782,7 @@ def _construct_triangle_edges(c2e2c: NDArray, c2e: NDArray) -> NDArray:
             edges of its cell neighbors
     """
     dummy_c2e = _patch_with_dummy_lastline(c2e)
-    table = xp.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
+    table = np.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
     return table
 
 
@@ -813,7 +813,7 @@ def _construct_butterfly_cells(c2e2c: NDArray) -> NDArray:
         ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
     """
     dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
-    c2e2c2e2c = xp.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
+    c2e2c2e2c = np.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
     return c2e2c2e2c
 
 
@@ -830,9 +830,9 @@ def _patch_with_dummy_lastline(ar):
     Returns: same array with an additional line containing only GridFile.INVALID_INDEX
 
     """
-    patched_ar = xp.append(
+    patched_ar = np.append(
         ar,
-        GridFile.INVALID_INDEX * xp.ones((1, ar.shape[1]), dtype=gtx.int32),
+        GridFile.INVALID_INDEX * np.ones((1, ar.shape[1]), dtype=gtx.int32),
         axis=0,
     )
     return patched_ar
