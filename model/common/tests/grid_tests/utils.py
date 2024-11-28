@@ -101,7 +101,7 @@ def valid_boundary_zones_for_dim(dim: dims.Dimension):
 
 def run_grid_manager(
     experiment_name: str,
-    backend: gtx_backend.Backend = gtx.run_gtfn_cached,
+    backend: gtx_backend.Backend = gtx.gtfn_cpu,
     num_levels=65,
     transformation=None,
 ) -> gm.GridManager:
