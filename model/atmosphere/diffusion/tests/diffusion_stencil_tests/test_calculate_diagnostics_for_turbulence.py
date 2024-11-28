@@ -20,7 +20,6 @@ from icon4py.model.common.type_alias import vpfloat
 def calculate_diagnostics_for_turbulence_numpy(
     wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic
 ) -> tuple[np.array, np.array]:
-    div = np.asarray(div)
     kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
     div_offset_1 = np.roll(div, shift=1, axis=1)
     div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
