@@ -45,7 +45,7 @@ def get_grid_geometry(backend, grid_file) -> geometry.GridGeometry:
         return decomposition_info
 
     def construct_grid_geometry(grid_file: str):
-        gm = utils.run_grid_manager(grid_file)
+        gm = utils.run_grid_manager(grid_file, backend=backend)
         grid = gm.grid
         decomposition_info = construct_decomposition_info(grid)
         geometry_source = geometry.GridGeometry(
@@ -364,7 +364,7 @@ def test_sparse_fields_creator():
     ],
 )
 def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file):
-    gm = utils.run_grid_manager(grid_file)
+    gm = utils.run_grid_manager(grid_file, backend=backend)
     grid = gm.grid
     coordinates = gm.coordinates
 

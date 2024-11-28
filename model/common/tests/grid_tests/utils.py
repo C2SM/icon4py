@@ -7,8 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from __future__ import annotations
 
-import functools
 from pathlib import Path
+
+import gt4py.next as gtx
+import gt4py.next.backend as gtx_backend
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import grid_manager as gm, horizontal as h_grid, vertical as v_grid
@@ -97,9 +99,11 @@ def valid_boundary_zones_for_dim(dim: dims.Dimension):
     yield from _domain(dim, zones)
 
 
-@functools.cache
 def run_grid_manager(
-    experiment_name: str, on_gpu=False, num_levels=65, transformation=None
+    experiment_name: str,
+    backend: gtx_backend.Backend = gtx.gtfn_cpu,
+    num_levels=65,
+    transformation=None,
 ) -> gm.GridManager:
     if transformation is None:
         transformation = gm.ToZeroBasedIndexTransformation()
@@ -107,7 +111,7 @@ def run_grid_manager(
     with gm.GridManager(
         transformation, file_name, v_grid.VerticalGridConfig(num_levels)
     ) as grid_manager:
-        grid_manager(on_gpu=on_gpu, limited_area=is_regional(experiment_name))
+        grid_manager(backend, limited_area=is_regional(experiment_name))
         return grid_manager
 
 

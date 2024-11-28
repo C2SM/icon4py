@@ -136,7 +136,7 @@ def test_grid_file_index_fields(global_grid_file, caplog, icon_grid):
 )
 def test_grid_manager_eval_v2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    manager = run_grid_manager(grid_file, zero_base)
+    manager = run_grid_manager(grid_file, transformation=zero_base)
     grid = manager.grid
     seralized_v2e = grid_savepoint.v2e()
     # there are vertices at the boundary of a local domain or at a pentagon point that have less than
@@ -160,7 +160,7 @@ def test_grid_manager_eval_v2e(caplog, grid_savepoint, grid_file):
 )
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 def test_grid_manager_refin_ctrl(grid_savepoint, grid_file, experiment, dim):
-    manager = run_grid_manager(grid_file, zero_base)
+    manager = run_grid_manager(grid_file, transformation=zero_base)
     refin_ctrl = manager.refinement
     refin_ctrl_serialized = grid_savepoint.refin_ctrl(dim)
     assert np.all(
@@ -450,7 +450,7 @@ def test_gridmanager_given_file_not_found_then_abort():
         manager = gm.GridManager(
             gm.NoTransformation(), fname, v_grid.VerticalGridConfig(num_levels=80)
         )
-        manager()
+        manager(None)
         assert error.value == 1
 
 
@@ -506,7 +506,7 @@ def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
 def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_grid):
     caplog.set_level(logging.INFO)
     serialized_grid = icon_grid
-    manager = run_grid_manager(grid_file, zero_base)
+    manager = run_grid_manager(grid_file, transformation=zero_base)
     grid = manager.grid
 
     for domain in utils.global_grid_domains(dim):
