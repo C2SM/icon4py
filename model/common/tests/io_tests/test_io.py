@@ -32,7 +32,7 @@ from icon4py.model.common.states import data
 from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
 
 
-# fixing backend to fieldview embedded here.
+# setting backend to fieldview embedded here.
 backend = None
 UNLIMITED = None
 simple_grid = simple.SimpleGrid()
