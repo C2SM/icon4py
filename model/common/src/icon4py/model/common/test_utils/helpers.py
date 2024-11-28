@@ -42,10 +42,6 @@ def is_embedded(backend) -> bool:
     return backend is None
 
 
-def is_gpu(backend) -> bool:
-    return "gpu" in backend.name if backend else False
-
-
 def is_roundtrip(backend) -> bool:
     return backend.name == "roundtrip" if backend else False
 
