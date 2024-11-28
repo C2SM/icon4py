@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import numpy as np
 import pytest
+from icon4pytools.py2fgen.wrappers import settings
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
@@ -26,7 +27,6 @@ from icon4py.model.common.test_utils import (
     serialbox_utils as sb,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as alloc
-from icon4pytools.py2fgen.wrappers import settings
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,
