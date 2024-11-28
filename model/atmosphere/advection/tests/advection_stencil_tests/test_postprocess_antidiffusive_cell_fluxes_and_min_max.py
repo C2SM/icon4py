@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -24,27 +24,27 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        refin_ctrl: xp.ndarray,
-        p_cc: xp.ndarray,
-        z_tracer_new_low: xp.ndarray,
-        z_tracer_max: xp.ndarray,
-        z_tracer_min: xp.ndarray,
+        refin_ctrl: np.ndarray,
+        p_cc: np.ndarray,
+        z_tracer_new_low: np.ndarray,
+        z_tracer_max: np.ndarray,
+        z_tracer_min: np.ndarray,
         lo_bound: float,
         hi_bound: float,
         **kwargs,
     ) -> dict:
-        refin_ctrl = xp.expand_dims(refin_ctrl, axis=1)
-        condition = xp.logical_or(
-            xp.equal(refin_ctrl, lo_bound * xp.ones(refin_ctrl.shape, dtype=gtx.int32)),
-            xp.equal(refin_ctrl, hi_bound * xp.ones(refin_ctrl.shape, dtype=gtx.int32)),
+        refin_ctrl = np.expand_dims(refin_ctrl, axis=1)
+        condition = np.logical_or(
+            np.equal(refin_ctrl, lo_bound * np.ones(refin_ctrl.shape, dtype=gtx.int32)),
+            np.equal(refin_ctrl, hi_bound * np.ones(refin_ctrl.shape, dtype=gtx.int32)),
         )
-        z_tracer_new_out = xp.where(
+        z_tracer_new_out = np.where(
             condition,
-            xp.minimum(1.1 * p_cc, xp.maximum(0.9 * p_cc, z_tracer_new_low)),
+            np.minimum(1.1 * p_cc, np.maximum(0.9 * p_cc, z_tracer_new_low)),
             z_tracer_new_low,
         )
-        z_tracer_max_out = xp.where(condition, xp.maximum(p_cc, z_tracer_new_out), z_tracer_max)
-        z_tracer_min_out = xp.where(condition, xp.minimum(p_cc, z_tracer_new_out), z_tracer_min)
+        z_tracer_max_out = np.where(condition, np.maximum(p_cc, z_tracer_new_out), z_tracer_max)
+        z_tracer_min_out = np.where(condition, np.minimum(p_cc, z_tracer_new_out), z_tracer_min)
         return dict(
             z_tracer_new_low=z_tracer_new_out,
             z_tracer_max=z_tracer_max_out,

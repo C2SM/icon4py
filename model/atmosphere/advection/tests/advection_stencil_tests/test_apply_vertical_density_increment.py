@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -30,10 +30,10 @@ class TestApplyVerticalDensityIncrement(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        rhodz_ast: xp.array,
-        p_mflx_contra_v: xp.array,
-        deepatmo_divzl: xp.array,
-        deepatmo_divzu: xp.array,
+        rhodz_ast: np.array,
+        p_mflx_contra_v: np.array,
+        deepatmo_divzl: np.array,
+        deepatmo_divzu: np.array,
         p_dtime,
         **kwargs,
     ) -> dict:

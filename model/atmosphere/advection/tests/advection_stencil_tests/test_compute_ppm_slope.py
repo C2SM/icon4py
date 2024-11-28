@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 from gt4py.next import as_field
 
@@ -28,7 +28,7 @@ class TestComputePpmSlope(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_cc: xp.array, p_cellhgt_mc_now: xp.array, k: xp.array, elev: gtx.int32, **kwargs
+        grid, p_cc: np.array, p_cellhgt_mc_now: np.array, k: np.array, elev: gtx.int32, **kwargs
     ) -> dict:
         zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
             p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
@@ -56,7 +56,7 @@ class TestComputePpmSlope(helpers.StencilTest):
             + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 1:-1]) * zfac_m1
         )
 
-        z_slope = xp.where(k[1:-1] < elev, z_slope_a, z_slope_b)
+        z_slope = np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
         return dict(z_slope=z_slope)
 
     @pytest.fixture
@@ -68,7 +68,7 @@ class TestComputePpmSlope(helpers.StencilTest):
         )
         k = as_field(
             (dims.KDim,),
-            xp.arange(
+            np.arange(
                 0, helpers._shape(grid, dims.KDim, extend={dims.KDim: 1})[0], dtype=gtx.int32
             ),
         )

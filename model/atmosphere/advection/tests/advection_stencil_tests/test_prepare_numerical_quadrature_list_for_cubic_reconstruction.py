@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -89,18 +89,18 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             1.0 + zeta_4,
         )
 
-        famask_bool = xp.where(famask_int == 1, True, False)
+        famask_bool = np.where(famask_int == 1, True, False)
 
-        p_coords_dreg_v_1_x = xp.where(famask_bool, p_coords_dreg_v_1_x, 0.0)
-        p_coords_dreg_v_2_x = xp.where(famask_bool, p_coords_dreg_v_2_x, 0.0)
-        p_coords_dreg_v_3_x = xp.where(famask_bool, p_coords_dreg_v_3_x, 0.0)
-        p_coords_dreg_v_4_x = xp.where(famask_bool, p_coords_dreg_v_4_x, 0.0)
-        p_coords_dreg_v_1_y = xp.where(famask_bool, p_coords_dreg_v_1_y, 0.0)
-        p_coords_dreg_v_2_y = xp.where(famask_bool, p_coords_dreg_v_2_y, 0.0)
-        p_coords_dreg_v_3_y = xp.where(famask_bool, p_coords_dreg_v_3_y, 0.0)
-        p_coords_dreg_v_4_y = xp.where(famask_bool, p_coords_dreg_v_4_y, 0.0)
+        p_coords_dreg_v_1_x = np.where(famask_bool, p_coords_dreg_v_1_x, 0.0)
+        p_coords_dreg_v_2_x = np.where(famask_bool, p_coords_dreg_v_2_x, 0.0)
+        p_coords_dreg_v_3_x = np.where(famask_bool, p_coords_dreg_v_3_x, 0.0)
+        p_coords_dreg_v_4_x = np.where(famask_bool, p_coords_dreg_v_4_x, 0.0)
+        p_coords_dreg_v_1_y = np.where(famask_bool, p_coords_dreg_v_1_y, 0.0)
+        p_coords_dreg_v_2_y = np.where(famask_bool, p_coords_dreg_v_2_y, 0.0)
+        p_coords_dreg_v_3_y = np.where(famask_bool, p_coords_dreg_v_3_y, 0.0)
+        p_coords_dreg_v_4_y = np.where(famask_bool, p_coords_dreg_v_4_y, 0.0)
 
-        wgt_t_detjac_1 = xp.where(
+        wgt_t_detjac_1 = np.where(
             famask_bool,
             dbl_eps
             + z_wgt_1
@@ -125,7 +125,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             0.0,
         )
 
-        wgt_t_detjac_2 = xp.where(
+        wgt_t_detjac_2 = np.where(
             famask_bool,
             dbl_eps
             + z_wgt_2
@@ -150,7 +150,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             0.0,
         )
 
-        wgt_t_detjac_3 = xp.where(
+        wgt_t_detjac_3 = np.where(
             famask_bool,
             dbl_eps
             + z_wgt_3
@@ -174,7 +174,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             ),
             0.0,
         )
-        wgt_t_detjac_4 = xp.where(
+        wgt_t_detjac_4 = np.where(
             famask_bool,
             dbl_eps
             + z_wgt_4
@@ -374,16 +374,16 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
     def reference(
         cls,
         grid,
-        famask_int: xp.array,
-        p_coords_dreg_v_1_x: xp.array,
-        p_coords_dreg_v_2_x: xp.array,
-        p_coords_dreg_v_3_x: xp.array,
-        p_coords_dreg_v_4_x: xp.array,
-        p_coords_dreg_v_1_y: xp.array,
-        p_coords_dreg_v_2_y: xp.array,
-        p_coords_dreg_v_3_y: xp.array,
-        p_coords_dreg_v_4_y: xp.array,
-        p_dreg_area_in: xp.array,
+        famask_int: np.array,
+        p_coords_dreg_v_1_x: np.array,
+        p_coords_dreg_v_2_x: np.array,
+        p_coords_dreg_v_3_x: np.array,
+        p_coords_dreg_v_4_x: np.array,
+        p_coords_dreg_v_1_y: np.array,
+        p_coords_dreg_v_2_y: np.array,
+        p_coords_dreg_v_3_y: np.array,
+        p_coords_dreg_v_4_y: np.array,
+        p_dreg_area_in: np.array,
         shape_func_1_1: float,
         shape_func_2_1: float,
         shape_func_3_1: float,
@@ -569,7 +569,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
         wgt_zeta_2 = 0.003
         wgt_eta_1 = 0.002
         wgt_eta_2 = 0.007
-        dbl_eps = xp.float64(0.1)
+        dbl_eps = np.float64(0.1)
         eps = 0.1
         return dict(
             famask_int=famask_int,

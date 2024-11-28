@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -22,18 +22,18 @@ class TestComputeFfslBacktrajectoryLengthIndicator(helpers.StencilTest):
     OUTPUTS = ("opt_famask_dsl",)
 
     @staticmethod
-    def reference(grid, p_vn: xp.array, p_vt: xp.array, p_dt: float, **kwargs) -> dict:
+    def reference(grid, p_vn: np.array, p_vt: np.array, p_dt: float, **kwargs) -> dict:
         lvn_pos = p_vn >= 0.0
 
-        traj_length = xp.sqrt(p_vn**2 + p_vt**2) * p_dt
+        traj_length = np.sqrt(p_vn**2 + p_vt**2) * p_dt
 
-        edge_cell_length = xp.expand_dims(
-            xp.asarray(grid.connectivities[dims.E2CDim], dtype=float), axis=-1
+        edge_cell_length = np.expand_dims(
+            np.asarray(grid.connectivities[dims.E2CDim], dtype=float), axis=-1
         )
-        e2c_length = xp.where(lvn_pos, edge_cell_length[:, 0], edge_cell_length[:, 1])
+        e2c_length = np.where(lvn_pos, edge_cell_length[:, 0], edge_cell_length[:, 1])
 
-        opt_famask_dsl = xp.where(
-            traj_length > (1.25 * xp.broadcast_to(e2c_length, p_vn.shape)),
+        opt_famask_dsl = np.where(
+            traj_length > (1.25 * np.broadcast_to(e2c_length, p_vn.shape)),
             1,
             0,
         )
@@ -44,7 +44,7 @@ class TestComputeFfslBacktrajectoryLengthIndicator(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        edge_cell_length = xp.asarray(grid.connectivities[dims.E2CDim], dtype=float)
+        edge_cell_length = np.asarray(grid.connectivities[dims.E2CDim], dtype=float)
         edge_cell_length_new = helpers.numpy_to_1D_sparse_field(edge_cell_length, dims.ECDim)
         opt_famask_dsl = helpers.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_dt = 1.0

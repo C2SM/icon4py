@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -24,22 +24,22 @@ class TestIntegrateTracerHorizontally(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        p_mflx_tracer_h: xp.array,
-        deepatmo_divh: xp.array,
-        tracer_now: xp.array,
-        rhodz_now: xp.array,
-        rhodz_new: xp.array,
-        geofac_div: xp.array,
+        p_mflx_tracer_h: np.array,
+        deepatmo_divh: np.array,
+        tracer_now: np.array,
+        rhodz_now: np.array,
+        rhodz_new: np.array,
+        geofac_div: np.array,
         p_dtime,
         **kwargs,
     ) -> dict:
         geofac_div = helpers.reshape(geofac_div, grid.connectivities[dims.C2EDim].shape)
-        geofac_div = xp.expand_dims(xp.asarray(geofac_div), axis=-1)
+        geofac_div = np.expand_dims(np.asarray(geofac_div), axis=-1)
         tracer_new_hor = (
             tracer_now * rhodz_now
             - p_dtime
             * deepatmo_divh
-            * xp.sum(p_mflx_tracer_h[grid.connectivities[dims.C2EDim]] * geofac_div, axis=1)
+            * np.sum(p_mflx_tracer_h[grid.connectivities[dims.C2EDim]] * geofac_div, axis=1)
         ) / rhodz_new
         return dict(tracer_new_hor=tracer_new_hor)
 
@@ -52,7 +52,7 @@ class TestIntegrateTracerHorizontally(helpers.StencilTest):
         rhodz_new = helpers.random_field(grid, dims.CellDim, dims.KDim)
         geofac_div = helpers.random_field(grid, dims.CellDim, dims.C2EDim)
         geofac_div_new = helpers.as_1D_sparse_field(geofac_div, dims.CEDim)
-        p_dtime = xp.float64(5.0)
+        p_dtime = np.float64(5.0)
         tracer_new_hor = helpers.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,

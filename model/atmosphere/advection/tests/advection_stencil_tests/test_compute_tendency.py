@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -24,8 +24,8 @@ class TestComputeTendency(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        p_tracer_now: xp.array,
-        p_tracer_new: xp.array,
+        p_tracer_now: np.array,
+        p_tracer_new: np.array,
         p_dtime,
         **kwargs,
     ) -> dict:
@@ -38,7 +38,7 @@ class TestComputeTendency(helpers.StencilTest):
         p_tracer_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
         p_tracer_new = helpers.random_field(grid, dims.CellDim, dims.KDim)
         opt_ddt_tracer_adv = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_dtime = xp.float64(5.0)
+        p_dtime = np.float64(5.0)
         return dict(
             p_tracer_now=p_tracer_now,
             p_tracer_new=p_tracer_new,

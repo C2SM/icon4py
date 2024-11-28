@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -24,16 +24,16 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        p_vn: xp.array,
-        p_vt: xp.array,
-        cell_idx: xp.array,
-        cell_blk: xp.array,
-        pos_on_tplane_e_1: xp.array,
-        pos_on_tplane_e_2: xp.array,
-        primal_normal_cell_1: xp.array,
-        dual_normal_cell_1: xp.array,
-        primal_normal_cell_2: xp.array,
-        dual_normal_cell_2: xp.array,
+        p_vn: np.array,
+        p_vt: np.array,
+        cell_idx: np.array,
+        cell_blk: np.array,
+        pos_on_tplane_e_1: np.array,
+        pos_on_tplane_e_2: np.array,
+        primal_normal_cell_1: np.array,
+        dual_normal_cell_1: np.array,
+        primal_normal_cell_2: np.array,
+        dual_normal_cell_2: np.array,
         p_dthalf: float,
         **kwargs,
     ) -> dict:
@@ -48,27 +48,27 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
         dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
 
         lvn_pos = p_vn >= 0.0
-        cell_idx = xp.expand_dims(cell_idx, axis=-1)
-        cell_blk = xp.expand_dims(cell_blk, axis=-1)
-        pos_on_tplane_e_1 = xp.expand_dims(pos_on_tplane_e_1, axis=-1)
-        pos_on_tplane_e_2 = xp.expand_dims(pos_on_tplane_e_2, axis=-1)
-        primal_normal_cell_1 = xp.expand_dims(primal_normal_cell_1, axis=-1)
-        dual_normal_cell_1 = xp.expand_dims(dual_normal_cell_1, axis=-1)
-        primal_normal_cell_2 = xp.expand_dims(primal_normal_cell_2, axis=-1)
-        dual_normal_cell_2 = xp.expand_dims(dual_normal_cell_2, axis=-1)
+        cell_idx = np.expand_dims(cell_idx, axis=-1)
+        cell_blk = np.expand_dims(cell_blk, axis=-1)
+        pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
+        pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
+        primal_normal_cell_1 = np.expand_dims(primal_normal_cell_1, axis=-1)
+        dual_normal_cell_1 = np.expand_dims(dual_normal_cell_1, axis=-1)
+        primal_normal_cell_2 = np.expand_dims(primal_normal_cell_2, axis=-1)
+        dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
-        p_cell_idx = xp.where(lvn_pos, cell_idx[:, 0], cell_idx[:, 1])
-        p_cell_rel_idx_dsl = xp.where(lvn_pos, 0, 1)
-        p_cell_blk = xp.where(lvn_pos, cell_blk[:, 0], cell_blk[:, 1])
+        p_cell_idx = np.where(lvn_pos, cell_idx[:, 0], cell_idx[:, 1])
+        p_cell_rel_idx_dsl = np.where(lvn_pos, 0, 1)
+        p_cell_blk = np.where(lvn_pos, cell_blk[:, 0], cell_blk[:, 1])
 
         z_ntdistv_bary_1 = -(
-            p_vn * p_dthalf + xp.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
+            p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
         )
         z_ntdistv_bary_2 = -(
-            p_vt * p_dthalf + xp.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
+            p_vt * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_2[:, 0], pos_on_tplane_e_2[:, 1])
         )
 
-        p_distv_bary_1 = xp.where(
+        p_distv_bary_1 = np.where(
             lvn_pos,
             z_ntdistv_bary_1 * primal_normal_cell_1[:, 0]
             + z_ntdistv_bary_2 * dual_normal_cell_1[:, 0],
@@ -76,7 +76,7 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
             + z_ntdistv_bary_2 * dual_normal_cell_1[:, 1],
         )
 
-        p_distv_bary_2 = xp.where(
+        p_distv_bary_2 = np.where(
             lvn_pos,
             z_ntdistv_bary_1 * primal_normal_cell_2[:, 0]
             + z_ntdistv_bary_2 * dual_normal_cell_2[:, 0],

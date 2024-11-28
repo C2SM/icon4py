@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -37,35 +37,35 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        p_cc: xp.array,
-        lsq_pseudoinv_1: xp.array,
-        lsq_pseudoinv_2: xp.array,
-        lsq_pseudoinv_3: xp.array,
-        lsq_pseudoinv_4: xp.array,
-        lsq_pseudoinv_5: xp.array,
-        lsq_pseudoinv_6: xp.array,
-        lsq_pseudoinv_7: xp.array,
-        lsq_pseudoinv_8: xp.array,
-        lsq_pseudoinv_9: xp.array,
-        lsq_moments_1: xp.array,
-        lsq_moments_2: xp.array,
-        lsq_moments_3: xp.array,
-        lsq_moments_4: xp.array,
-        lsq_moments_5: xp.array,
-        lsq_moments_6: xp.array,
-        lsq_moments_7: xp.array,
-        lsq_moments_8: xp.array,
-        lsq_moments_9: xp.array,
-        p_coeff_1_dsl: xp.array,
-        p_coeff_2_dsl: xp.array,
-        p_coeff_3_dsl: xp.array,
-        p_coeff_4_dsl: xp.array,
-        p_coeff_5_dsl: xp.array,
-        p_coeff_6_dsl: xp.array,
-        p_coeff_7_dsl: xp.array,
-        p_coeff_8_dsl: xp.array,
-        p_coeff_9_dsl: xp.array,
-        p_coeff_10_dsl: xp.array,
+        p_cc: np.array,
+        lsq_pseudoinv_1: np.array,
+        lsq_pseudoinv_2: np.array,
+        lsq_pseudoinv_3: np.array,
+        lsq_pseudoinv_4: np.array,
+        lsq_pseudoinv_5: np.array,
+        lsq_pseudoinv_6: np.array,
+        lsq_pseudoinv_7: np.array,
+        lsq_pseudoinv_8: np.array,
+        lsq_pseudoinv_9: np.array,
+        lsq_moments_1: np.array,
+        lsq_moments_2: np.array,
+        lsq_moments_3: np.array,
+        lsq_moments_4: np.array,
+        lsq_moments_5: np.array,
+        lsq_moments_6: np.array,
+        lsq_moments_7: np.array,
+        lsq_moments_8: np.array,
+        lsq_moments_9: np.array,
+        p_coeff_1_dsl: np.array,
+        p_coeff_2_dsl: np.array,
+        p_coeff_3_dsl: np.array,
+        p_coeff_4_dsl: np.array,
+        p_coeff_5_dsl: np.array,
+        p_coeff_6_dsl: np.array,
+        p_coeff_7_dsl: np.array,
+        p_coeff_8_dsl: np.array,
+        p_coeff_9_dsl: np.array,
+        p_coeff_10_dsl: np.array,
         **kwargs,
     ) -> dict:
         p_coeff_1_dsl_cp = p_coeff_1_dsl.copy()
@@ -80,41 +80,41 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
         p_coeff_10_dsl_cp = p_coeff_10_dsl.copy()
 
         c2e2c2e2c = grid.connectivities[dims.C2E2C2E2CDim]
-        lsq_moments_1 = xp.expand_dims(lsq_moments_1, axis=-1)
-        lsq_moments_2 = xp.expand_dims(lsq_moments_2, axis=-1)
-        lsq_moments_3 = xp.expand_dims(lsq_moments_3, axis=-1)
-        lsq_moments_4 = xp.expand_dims(lsq_moments_4, axis=-1)
-        lsq_moments_5 = xp.expand_dims(lsq_moments_5, axis=-1)
-        lsq_moments_6 = xp.expand_dims(lsq_moments_6, axis=-1)
-        lsq_moments_7 = xp.expand_dims(lsq_moments_7, axis=-1)
-        lsq_moments_8 = xp.expand_dims(lsq_moments_8, axis=-1)
-        lsq_moments_9 = xp.expand_dims(lsq_moments_9, axis=-1)
-        lsq_moments_1 = xp.broadcast_to(lsq_moments_1, p_cc.shape)
-        lsq_moments_2 = xp.broadcast_to(lsq_moments_2, p_cc.shape)
-        lsq_moments_3 = xp.broadcast_to(lsq_moments_3, p_cc.shape)
-        lsq_moments_4 = xp.broadcast_to(lsq_moments_4, p_cc.shape)
-        lsq_moments_5 = xp.broadcast_to(lsq_moments_5, p_cc.shape)
-        lsq_moments_6 = xp.broadcast_to(lsq_moments_6, p_cc.shape)
-        lsq_moments_7 = xp.broadcast_to(lsq_moments_7, p_cc.shape)
-        lsq_moments_8 = xp.broadcast_to(lsq_moments_8, p_cc.shape)
+        lsq_moments_1 = np.expand_dims(lsq_moments_1, axis=-1)
+        lsq_moments_2 = np.expand_dims(lsq_moments_2, axis=-1)
+        lsq_moments_3 = np.expand_dims(lsq_moments_3, axis=-1)
+        lsq_moments_4 = np.expand_dims(lsq_moments_4, axis=-1)
+        lsq_moments_5 = np.expand_dims(lsq_moments_5, axis=-1)
+        lsq_moments_6 = np.expand_dims(lsq_moments_6, axis=-1)
+        lsq_moments_7 = np.expand_dims(lsq_moments_7, axis=-1)
+        lsq_moments_8 = np.expand_dims(lsq_moments_8, axis=-1)
+        lsq_moments_9 = np.expand_dims(lsq_moments_9, axis=-1)
+        lsq_moments_1 = np.broadcast_to(lsq_moments_1, p_cc.shape)
+        lsq_moments_2 = np.broadcast_to(lsq_moments_2, p_cc.shape)
+        lsq_moments_3 = np.broadcast_to(lsq_moments_3, p_cc.shape)
+        lsq_moments_4 = np.broadcast_to(lsq_moments_4, p_cc.shape)
+        lsq_moments_5 = np.broadcast_to(lsq_moments_5, p_cc.shape)
+        lsq_moments_6 = np.broadcast_to(lsq_moments_6, p_cc.shape)
+        lsq_moments_7 = np.broadcast_to(lsq_moments_7, p_cc.shape)
+        lsq_moments_8 = np.broadcast_to(lsq_moments_8, p_cc.shape)
         lsq_pseudoinv_9 = helpers.reshape(lsq_pseudoinv_9, c2e2c2e2c.shape)
-        lsq_pseudoinv_9 = xp.expand_dims(lsq_pseudoinv_9, axis=-1)
+        lsq_pseudoinv_9 = np.expand_dims(lsq_pseudoinv_9, axis=-1)
         lsq_pseudoinv_8 = helpers.reshape(lsq_pseudoinv_8, c2e2c2e2c.shape)
-        lsq_pseudoinv_8 = xp.expand_dims(lsq_pseudoinv_8, axis=-1)
+        lsq_pseudoinv_8 = np.expand_dims(lsq_pseudoinv_8, axis=-1)
         lsq_pseudoinv_7 = helpers.reshape(lsq_pseudoinv_7, c2e2c2e2c.shape)
-        lsq_pseudoinv_7 = xp.expand_dims(lsq_pseudoinv_7, axis=-1)
+        lsq_pseudoinv_7 = np.expand_dims(lsq_pseudoinv_7, axis=-1)
         lsq_pseudoinv_6 = helpers.reshape(lsq_pseudoinv_6, c2e2c2e2c.shape)
-        lsq_pseudoinv_6 = xp.expand_dims(lsq_pseudoinv_6, axis=-1)
+        lsq_pseudoinv_6 = np.expand_dims(lsq_pseudoinv_6, axis=-1)
         lsq_pseudoinv_5 = helpers.reshape(lsq_pseudoinv_5, c2e2c2e2c.shape)
-        lsq_pseudoinv_5 = xp.expand_dims(lsq_pseudoinv_5, axis=-1)
+        lsq_pseudoinv_5 = np.expand_dims(lsq_pseudoinv_5, axis=-1)
         lsq_pseudoinv_4 = helpers.reshape(lsq_pseudoinv_4, c2e2c2e2c.shape)
-        lsq_pseudoinv_4 = xp.expand_dims(lsq_pseudoinv_4, axis=-1)
+        lsq_pseudoinv_4 = np.expand_dims(lsq_pseudoinv_4, axis=-1)
         lsq_pseudoinv_3 = helpers.reshape(lsq_pseudoinv_3, c2e2c2e2c.shape)
-        lsq_pseudoinv_3 = xp.expand_dims(lsq_pseudoinv_3, axis=-1)
+        lsq_pseudoinv_3 = np.expand_dims(lsq_pseudoinv_3, axis=-1)
         lsq_pseudoinv_2 = helpers.reshape(lsq_pseudoinv_2, c2e2c2e2c.shape)
-        lsq_pseudoinv_2 = xp.expand_dims(lsq_pseudoinv_2, axis=-1)
+        lsq_pseudoinv_2 = np.expand_dims(lsq_pseudoinv_2, axis=-1)
         lsq_pseudoinv_1 = helpers.reshape(lsq_pseudoinv_1, c2e2c2e2c.shape)
-        lsq_pseudoinv_1 = xp.expand_dims(lsq_pseudoinv_1, axis=-1)
+        lsq_pseudoinv_1 = np.expand_dims(lsq_pseudoinv_1, axis=-1)
 
         p_coeff_10_dsl = (
             lsq_pseudoinv_9[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)

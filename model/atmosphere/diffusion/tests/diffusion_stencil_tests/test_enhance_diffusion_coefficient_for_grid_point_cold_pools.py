@@ -8,7 +8,7 @@
 import math
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
@@ -24,12 +24,12 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
     OUTPUTS = ("kh_smag_e",)
 
     @staticmethod
-    def reference(grid, kh_smag_e: xp.array, enh_diffu_3d: xp.array, **kwargs) -> xp.array:
+    def reference(grid, kh_smag_e: np.array, enh_diffu_3d: np.array, **kwargs) -> np.array:
         e2c = grid.connectivities[dims.E2CDim]
-        kh_smag_e = xp.maximum(
+        kh_smag_e = np.maximum(
             kh_smag_e,
-            xp.max(
-                xp.where((e2c != -1)[:, :, xp.newaxis], enh_diffu_3d[e2c], -math.inf),
+            np.max(
+                np.where((e2c != -1)[:, :, np.newaxis], enh_diffu_3d[e2c], -math.inf),
                 axis=1,
             ),
         )

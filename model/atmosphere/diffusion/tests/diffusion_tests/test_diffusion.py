@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -54,7 +54,7 @@ def get_cell_geometry_for_experiment(experiment, backend):
 def _get_or_initialize(experiment, backend, name):
     def _construct_minimal_decomposition_info(grid: icon.IconGrid):
         edge_indices = alloc.allocate_indices(dims.EdgeDim, grid)
-        owner_mask = xp.ones((grid.num_edges,), dtype=bool)
+        owner_mask = np.ones((grid.num_edges,), dtype=bool)
         decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
         decomposition_info.with_dimension(dims.EdgeDim, edge_indices.ndarray, owner_mask)
         return decomposition_info
@@ -173,7 +173,7 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     params = diffusion.DiffusionParams(construct_diffusion_config(experiment, ndyn_substeps=5))
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
-    assert xp.all(params.smagorinski_factor >= xp.zeros(len(params.smagorinski_factor)))
+    assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
 @pytest.mark.datatest

@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -24,9 +24,9 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        p_out_e_hybrid_2: xp.array,
-        p_mass_flx_e: xp.array,
-        z_dreg_area: xp.array,
+        p_out_e_hybrid_2: np.array,
+        p_mass_flx_e: np.array,
+        z_dreg_area: np.array,
         **kwargs,
     ) -> dict:
         p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area

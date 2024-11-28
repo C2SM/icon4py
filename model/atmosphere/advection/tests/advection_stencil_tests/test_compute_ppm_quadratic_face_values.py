@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -25,7 +25,7 @@ class TestComputePpmQuadraticFaceValues(helpers.StencilTest):
     OUTPUTS = (helpers.Output("p_face", refslice=outslice, gtslice=outslice),)
 
     @staticmethod
-    def reference(grid, p_cc: xp.array, p_cellhgt_mc_now: xp.array, **kwargs) -> dict:
+    def reference(grid, p_cc: np.array, p_cellhgt_mc_now: np.array, **kwargs) -> dict:
         p_face = p_cc.copy()
         p_face[:, 1:] = p_cc[:, 1:] * (
             1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])

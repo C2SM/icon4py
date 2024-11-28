@@ -48,7 +48,7 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
-from icon4pytools.py2fgen.wrappers.settings import Icon4PyConfig, backend, device
+from icon4pytools.py2fgen.wrappers.settings import backend, config as config_settings, device
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellGlobalIndexDim,
     CellIndexDim,
@@ -354,10 +354,10 @@ def grid_init_diffusion(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=True if Icon4PyConfig.device == "GPU" else False,
+        on_gpu=True if config_settings.device == "GPU" else False,
     )
 
-    if Icon4PyConfig.parallel_run:
+    if config_settings.parallel_run:
         # Set MultiNodeExchange as exchange runtime
         (
             processor_props,

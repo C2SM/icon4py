@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
@@ -16,11 +16,11 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
 
 
-def calculate_nabla2_for_w_numpy(grid, w: xp.array, geofac_n2s: xp.array):
+def calculate_nabla2_for_w_numpy(grid, w: np.array, geofac_n2s: np.array):
     c2e2cO = grid.connectivities[dims.C2E2CODim]
-    geofac_n2s = xp.expand_dims(geofac_n2s, axis=-1)
-    z_nabla2_c = xp.sum(
-        xp.where((c2e2cO != -1)[:, :, xp.newaxis], w[c2e2cO] * geofac_n2s, 0), axis=1
+    geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
+    z_nabla2_c = np.sum(
+        np.where((c2e2cO != -1)[:, :, np.newaxis], w[c2e2cO] * geofac_n2s, 0), axis=1
     )
     return z_nabla2_c
 
@@ -30,7 +30,7 @@ class TestCalculateNabla2ForW(StencilTest):
     OUTPUTS = ("z_nabla2_c",)
 
     @staticmethod
-    def reference(grid, w: xp.array, geofac_n2s: xp.array, **kwargs) -> dict:
+    def reference(grid, w: np.array, geofac_n2s: np.array, **kwargs) -> dict:
         z_nabla2_c = calculate_nabla2_for_w_numpy(grid, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)
 

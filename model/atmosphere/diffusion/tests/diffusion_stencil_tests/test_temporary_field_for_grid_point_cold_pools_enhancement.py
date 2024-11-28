@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_cold_pools_enhancement import (
@@ -23,19 +23,19 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
 
     @staticmethod
     def reference(
-        grid, theta_v: xp.array, theta_ref_mc: xp.array, thresh_tdiff, smallest_vpfloat, **kwargs
+        grid, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff, smallest_vpfloat, **kwargs
     ) -> dict:
         c2e2c = grid.connectivities[dims.C2E2CDim]
         tdiff = (
             theta_v
-            - xp.sum(xp.where((c2e2c != -1)[:, :, xp.newaxis], theta_v[c2e2c], 0), axis=1) / 3
+            - np.sum(np.where((c2e2c != -1)[:, :, np.newaxis], theta_v[c2e2c], 0), axis=1) / 3
         )
         trefdiff = (
             theta_ref_mc
-            - xp.sum(xp.where((c2e2c != -1)[:, :, xp.newaxis], theta_ref_mc[c2e2c], 0), axis=1) / 3
+            - np.sum(np.where((c2e2c != -1)[:, :, np.newaxis], theta_ref_mc[c2e2c], 0), axis=1) / 3
         )
 
-        enh_diffu_3d = xp.where(
+        enh_diffu_3d = np.where(
             ((tdiff - trefdiff) < thresh_tdiff) & (trefdiff < 0)
             | (tdiff - trefdiff < 1.5 * thresh_tdiff),
             (thresh_tdiff - tdiff + trefdiff) * 5e-4,
@@ -50,7 +50,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
         theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         enh_diffu_3d = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         thresh_tdiff = wpfloat("5.0")
-        smallest_vpfloat = -xp.finfo(vpfloat).max
+        smallest_vpfloat = -np.finfo(vpfloat).max
 
         return dict(
             theta_v=theta_v,

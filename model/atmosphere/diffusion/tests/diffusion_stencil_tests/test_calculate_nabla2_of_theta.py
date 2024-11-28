@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-import numpy as xp
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta import (
@@ -22,11 +22,11 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def calculate_nabla2_of_theta_numpy(grid, z_nabla2_e: xp.array, geofac_div: xp.array) -> xp.array:
+def calculate_nabla2_of_theta_numpy(grid, z_nabla2_e: np.array, geofac_div: np.array) -> np.array:
     c2e = grid.connectivities[dims.C2EDim]
     geofac_div = geofac_div.reshape(c2e.shape)
-    geofac_div = xp.expand_dims(geofac_div, axis=-1)
-    z_temp = xp.sum(z_nabla2_e[c2e] * geofac_div, axis=1)  # sum along edge dimension
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=1)  # sum along edge dimension
     return z_temp
 
 
@@ -35,7 +35,7 @@ class TestCalculateNabla2OfTheta(StencilTest):
     OUTPUTS = ("z_temp",)
 
     @staticmethod
-    def reference(grid, z_nabla2_e: xp.array, geofac_div: xp.array, **kwargs) -> dict:
+    def reference(grid, z_nabla2_e: np.array, geofac_div: np.array, **kwargs) -> dict:
         z_temp = calculate_nabla2_of_theta_numpy(grid, z_nabla2_e, geofac_div)
         return dict(z_temp=z_temp)
 
