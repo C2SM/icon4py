@@ -171,6 +171,8 @@ class TimeLoop:
             )
             timer.capture()
 
+            self._is_first_step_in_simulation = False
+
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
             # TODO (Chia Rui): compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
@@ -219,8 +221,6 @@ class TimeLoop:
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
-        do_recompute = True
-        do_clean_mflx = True
         for dyn_substep in range(self._n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
@@ -232,21 +232,14 @@ class TimeLoop:
                 prep_adv=prep_adv,
                 divdamp_fac_o2=initial_divdamp_fac_o2,
                 dtime=self._substep_timestep,
-                l_recompute=do_recompute,
-                l_init=self._is_first_step_in_simulation,
-                lclean_mflx=do_clean_mflx,
+                at_initial_timestep=self._is_first_step_in_simulation,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
             )
 
-            do_recompute = False
-            do_clean_mflx = False
-
             if not self._is_last_substep(dyn_substep):
                 prognostic_states.swap()
-
-            self._is_first_step_in_simulation = False
 
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
@@ -378,6 +371,7 @@ def initialize(
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
+        grid=icon_grid,
         backend=gtfn_cpu,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,

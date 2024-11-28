@@ -274,8 +274,12 @@ def test_run_timeloop_single_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.TimeStepPair(sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)),
-        ddt_w_adv_pc=common_utils.TimeStepPair(sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+        ),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+        ),
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),

@@ -250,6 +250,11 @@ class Pair(Generic[T]):
     swap_buffers = swap
 
 
+class PredictorCorrectorPair(Pair[T]):
+    predictor: T = Pair.first
+    corrector: T = Pair.second
+
+
 class TimeStepPair(Pair[T]):
     current: T = Pair.first
     next: T = Pair.second

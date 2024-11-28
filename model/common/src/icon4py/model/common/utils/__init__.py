@@ -12,6 +12,7 @@ from . import gt4py_field_allocation
 from ._common import (
     DoubleBuffering,
     Pair,
+    PredictorCorrectorPair,
     TimeStepPair,
     chainable,
     named_property,
@@ -23,6 +24,7 @@ __all__ = [
     "DoubleBuffering",
     "Pair",
     "TimeStepPair",
+    "PredictorCorrectorPair",
     "named_property",
     # Functions
     "chainable",

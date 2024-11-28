@@ -41,8 +41,8 @@ class DiagnosticStateNonHydro:
     mass_fl_e: fa.EdgeKField[float]
     ddt_vn_phy: fa.EdgeKField[float]
     grf_tend_vn: fa.EdgeKField[float]
-    ddt_vn_apc_pc: common_utils.TimeStepPair[fa.EdgeKField[float]]
-    ddt_w_adv_pc: common_utils.TimeStepPair[fa.CellKField[float]]
+    ddt_vn_apc_pc: common_utils.PredictorCorrectorPair[fa.EdgeKField[float]]
+    ddt_w_adv_pc: common_utils.PredictorCorrectorPair[fa.CellKField[float]]
 
     # Analysis increments
     rho_incr: Optional[fa.EdgeKField[float]]  # moist density increment [kg/m^3]

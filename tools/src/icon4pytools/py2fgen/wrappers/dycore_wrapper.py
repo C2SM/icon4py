@@ -378,13 +378,11 @@ def solve_nh_run(
     vn_traj: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
     dtime: gtx.float64,
     lprep_adv: bool,
-    clean_mflx: bool,
-    recompute: bool,
-    linit: bool,
+    at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
     ndyn_substeps: gtx.float64,
     idyn_timestep: gtx.int32,
-) -> tuple[bool, bool]:
+):
     logger.info(f"Using Device = {settings.device}")
 
     prep_adv = dycore_states.PrepAdvection(
@@ -394,8 +392,6 @@ def solve_nh_run(
         vol_flx_ic=zero_field(dycore_wrapper_state["grid"], CellDim, KDim, dtype=gtx.float64),
     )
 
-    ddt_vn_apc = common_utils.TimeStepPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2)
-    ddt_w_adv = common_utils.TimeStepPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2)
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=theta_v_ic,
         exner_pr=exner_pr,
@@ -407,8 +403,8 @@ def solve_nh_run(
         mass_fl_e=mass_fl_e,
         ddt_vn_phy=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
-        ddt_vn_apc_pc=ddt_vn_apc,
-        ddt_w_adv_pc=ddt_w_adv,
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2),
         vt=vt,
         vn_ie=vn_ie,
         w_concorr_c=w_concorr_c,
@@ -443,18 +439,11 @@ def solve_nh_run(
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        lclean_mflx=clean_mflx,
+        at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps - 1),
     )
-
-    is_ddt_vn_apc_swapped = False if ddt_vn_apc_ntl1 == ddt_vn_apc.current else True
-    is_ddt_w_adv_swapped = False if ddt_w_adv_ntl1 == ddt_w_adv.current else True
-
-    return is_ddt_vn_apc_swapped, is_ddt_w_adv_swapped
 
 
 def grid_init(

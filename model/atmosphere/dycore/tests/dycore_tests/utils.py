@@ -131,10 +131,10 @@ def construct_diagnostics(
         mass_fl_e=init_savepoint.mass_fl_e(),
         ddt_vn_phy=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.TimeStepPair(
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(1), init_savepoint.ddt_vn_apc_pc(2)
         ),
-        ddt_w_adv_pc=common_utils.TimeStepPair(
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(current_index), init_savepoint.ddt_w_adv_pc(next_index)
         ),
         vt=init_savepoint.vt(),

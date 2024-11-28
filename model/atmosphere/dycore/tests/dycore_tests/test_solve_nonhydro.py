@@ -77,9 +77,46 @@ def test_validate_divdamp_fields_against_savepoint_values(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only, at_initial_timestep",
+    [
+        (1, 0, "2021-06-20T12:00:10.000", 1, 0, "2021-06-20T12:00:10.000", False, True),
+        (2, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000", False, True),
+        (1, 1, "2021-06-20T12:00:10.000", 1, 1, "2021-06-20T12:00:10.000", True, True),
+        (2, 1, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False, True),
+        (1, 0, "2021-06-20T12:00:20.000", 1, 0, "2021-06-20T12:00:20.000", True, False),
+        (2, 0, "2021-06-20T12:00:20.000", 2, 0, "2021-06-20T12:00:20.000", False, False),
+        (1, 1, "2021-06-20T12:00:20.000", 1, 1, "2021-06-20T12:00:20.000", True, False),
+        (2, 1, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", False, False),
+    ],
+)
+def test_time_step_flags(
+    experiment,
+    istep_init,
+    jstep_init,
+    step_date_init,
+    istep_exit,
+    jstep_exit,
+    step_date_exit,
+    vn_only,
+    at_initial_timestep,
+    savepoint_nonhydro_init,
+):
+    sp = savepoint_nonhydro_init
+    recompute = sp.get_metadata("recompute").get("recompute")
+    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
+    linit = sp.get_metadata("linit").get("linit")
+
+    assert recompute == (jstep_init == 0)
+    assert clean_mflx == (jstep_init == 0)
+    assert linit == (at_initial_timestep and (jstep_init == 0))
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 1, True)])
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
     [
         (
             dt_utils.REGIONAL_EXPERIMENT,
@@ -111,6 +148,7 @@ def test_nonhydro_predictor_step(
     savepoint_nonhydro_exit,
     experiment,
     ndyn_substeps,
+    at_initial_timestep,
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
@@ -127,8 +165,6 @@ def test_nonhydro_predictor_step(
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    recompute = sp.get_metadata("recompute").get("recompute")
-    linit = sp.get_metadata("linit").get("linit")
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
 
@@ -154,8 +190,10 @@ def test_nonhydro_predictor_step(
     at_first_substep = jstep_init == 0
 
     prognostic_states = utils.create_prognostic_states(sp)
-    _ = solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh, at_first_substep=at_first_substep, at_initial_substep=linit
+    solve_nonhydro.update_time_levels_for_velocity_tendencies(
+        diagnostic_state_nh,
+        at_first_substep=at_first_substep,
+        at_initial_timestep=at_initial_timestep,
     )
 
     solve_nonhydro.run_predictor_step(
@@ -163,8 +201,7 @@ def test_nonhydro_predictor_step(
         prognostic_states=prognostic_states,
         z_fields=solve_nonhydro.intermediate_fields,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
+        at_initial_timestep=at_initial_timestep,
         at_first_substep=at_first_substep,
     )
 
@@ -464,7 +501,7 @@ def test_nonhydro_predictor_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(2, 2, True)])
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit",
     [
@@ -498,6 +535,7 @@ def test_nonhydro_corrector_step(
     savepoint_nonhydro_exit,
     experiment,
     ndyn_substeps,
+    at_initial_timestep,
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
@@ -513,9 +551,7 @@ def test_nonhydro_corrector_step(
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    linit = sp.get_metadata("linit").get("linit")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
@@ -566,8 +602,10 @@ def test_nonhydro_corrector_step(
     at_last_substep = jstep_init == (ndyn_substeps - 1)
 
     prognostic_states = utils.create_prognostic_states(sp)
-    corrector_tl = solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh, at_first_substep=at_first_substep, at_initial_substep=linit
+    solve_nonhydro.update_time_levels_for_velocity_tendencies(
+        diagnostic_state_nh,
+        at_first_substep=at_first_substep,
+        at_initial_timestep=at_initial_timestep,
     )
 
     solve_nonhydro.run_corrector_step(
@@ -577,10 +615,9 @@ def test_nonhydro_corrector_step(
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
-        lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
+        at_first_substep=at_first_substep,
         at_last_substep=at_last_substep,
-        time_level=corrector_tl,
     )
 
     if icon_grid.limited_area:
@@ -667,9 +704,11 @@ def test_nonhydro_corrector_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, jstep_init, istep_exit, jstep_exit", [(1, 0, 2, 0)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit",
+    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+)
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
     [
         (
             dt_utils.REGIONAL_EXPERIMENT,
@@ -703,6 +742,7 @@ def test_run_solve_nonhydro_single_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
+    at_initial_timestep,
     caplog,
 ):
     caplog.set_level(logging.DEBUG)
@@ -721,16 +761,12 @@ def test_run_solve_nonhydro_single_step(
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
-
-    recompute = sp.get_metadata("recompute").get("recompute")
-    linit = sp.get_metadata("linit").get("linit")
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
 
@@ -762,9 +798,7 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         divdamp_fac_o2=initial_divdamp_fac,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        lclean_mflx=clean_mflx,
+        at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=jstep_init == 0,
         at_last_substep=jstep_init == (ndyn_substeps - 1),
@@ -807,10 +841,10 @@ def test_run_solve_nonhydro_single_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only, at_initial_timestep",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
-        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False, True),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True, False),
     ],
 )
 def test_run_solve_nonhydro_multi_step(
@@ -830,6 +864,7 @@ def test_run_solve_nonhydro_multi_step(
     savepoint_nonhydro_step_exit,
     experiment,
     ndyn_substeps,
+    at_initial_timestep,
 ):
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
@@ -845,7 +880,6 @@ def test_run_solve_nonhydro_multi_step(
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
@@ -853,7 +887,6 @@ def test_run_solve_nonhydro_multi_step(
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
-    recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
     diagnostic_state_nh = utils.construct_diagnostics(sp, swap_ddt_w_adv_pc=not linit)
@@ -888,17 +921,12 @@ def test_run_solve_nonhydro_multi_step(
             prep_adv=prep_adv,
             divdamp_fac_o2=sp.divdamp_fac_o2(),
             dtime=dtime,
-            l_recompute=recompute,
-            l_init=linit,
-            lclean_mflx=clean_mflx,
+            at_initial_timestep=at_initial_timestep,
             lprep_adv=lprep_adv,
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
 
-        linit = False
-        recompute = False
-        clean_mflx = False
         if not at_last_substep:
             prognostic_states.swap()
 

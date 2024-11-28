@@ -802,32 +802,32 @@ class SolveNonhydro:
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
         at_first_substep: bool,
-        at_initial_substep: bool,
-    ) -> Literal[0, 1]:
+        at_initial_timestep: bool,
+    ):
         """
         Set time levels of ddt_adv fields for call to velocity_tendencies.
 
         When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran),
-        `ddt_w_adv_pc.current` (advection term in vertical momentum equation in
+        `ddt_w_adv_pc.predictor` (advection term in vertical momentum equation in
         predictor step) is not computed in the predictor step of each substep.
         Instead, the advection term computed in the corrector step during the
         previous substep is reused for efficiency (except, of course, in the
         very first substep of the initial time step).
-        `ddt_v_apc.current` (advection term in horizontal momentum equation in
+        `ddt_vn_apc.predictor` (advection term in horizontal momentum equation in
         predictor step) is only computed in the predictor step of the first
         substep and the advection term in the corrector step during the previous
-        substep is reused for `ddt_v_apc.current` from the second substep onwards.
+        substep is reused for `ddt_vn_apc.predictor` from the second substep onwards.
         Additionally, in this scheme the predictor and corrector outputs are kept
-        in separated elements of the pair (.current for the predictor and .next
-        for the corrector) and interpoolated at the end of the corrector step to
-        get the final output.
+        in separate elements of the pair (.predictor for the predictor step and
+        .corrector for the corrector step) and interpoolated at the end of the
+        corrector step to get the final output.
 
         No other time stepping schemes are currently supported.
 
         Args:
             diagnostic_state_nh: Diagnostic fields calculated in the dynamical core (SolveNonHydro)
             at_first_substep: Flag indicating if this is the first substep of the time step.
-            at_initial_substep: Flag indicating if this is the first substep of the first time step.
+            at_initial_timestep: Flag indicating if this is the first time step.
 
         Returns:
             The index of the pair element to be used for the corrector output.
@@ -836,11 +836,10 @@ class SolveNonhydro:
         assert (
             self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT
         ), f" only {TimeSteppingScheme.MOST_EFFICIENT} is supported. But {self._config.itime_scheme} is chosen."
-        if not at_initial_substep:
+        if not (at_initial_timestep and at_first_substep):
             diagnostic_state_nh.ddt_w_adv_pc.swap()
         if not at_first_substep:
             diagnostic_state_nh.ddt_vn_apc_pc.swap()
-        return 1
 
     def time_step(
         self,
@@ -849,15 +848,26 @@ class SolveNonhydro:
         prep_adv: dycore_states.PrepAdvection,
         divdamp_fac_o2: float,
         dtime: float,
-        l_recompute: bool,
-        l_init: bool,
-        lclean_mflx: bool,
+        at_initial_timestep: bool,
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
     ):
+        """
+        Update prognostic variables (prognostic_states.next) after the dynamical process over one substep.
+        Args:
+            diagnostic_state_nh: diagnostic variables used for solving the governing equations. It includes local variables and the physics tendency term that comes from physics
+            prognostic_states: prognostic variables
+            prep_adv: variables for tracer advection
+            divdamp_fac_o2: second order (nabla2) divergence damping coefficient
+            dtime: time step
+            at_initial_timestep: initial time step of the model run
+            lprep_adv: Preparation for tracer advection TODO (Chia Rui): add more detailed information here
+            at_first_substep: first substep
+            at_last_substep: last substep
+        """
         log.info(
-            f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
+            f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {lprep_adv}"
         )
 
         # # TODO: abishekg7 move this to tests
@@ -876,8 +886,10 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        corrector_tl = self.update_time_levels_for_velocity_tendencies(
-            diagnostic_state_nh, at_first_substep=at_first_substep, at_initial_substep=l_init
+        self.update_time_levels_for_velocity_tendencies(
+            diagnostic_state_nh,
+            at_first_substep=at_first_substep,
+            at_initial_timestep=at_initial_timestep,
         )
 
         self.run_predictor_step(
@@ -885,8 +897,7 @@ class SolveNonhydro:
             prognostic_states=prognostic_states,
             z_fields=self.intermediate_fields,
             dtime=dtime,
-            l_recompute=l_recompute,
-            l_init=l_init,
+            at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
         )
 
@@ -897,10 +908,9 @@ class SolveNonhydro:
             prep_adv=prep_adv,
             divdamp_fac_o2=divdamp_fac_o2,
             dtime=dtime,
-            lclean_mflx=lclean_mflx,
             lprep_adv=lprep_adv,
+            at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
-            time_level=corrector_tl,
         )
 
         if self._grid.limited_area:
@@ -954,8 +964,7 @@ class SolveNonhydro:
         prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
         z_fields: IntermediateFields,
         dtime: float,
-        l_recompute: bool,
-        l_init: bool,
+        at_initial_timestep: bool,
         at_first_substep: bool,
     ):
         """
@@ -963,13 +972,14 @@ class SolveNonhydro:
         """
 
         log.info(
-            f"running predictor step: dtime = {dtime}, init = {l_init}, recompute = {l_recompute} "
+            f"running predictor step: dtime = {dtime}, initial_timestep = {at_initial_timestep} at_first_substep = {at_first_substep}"
         )
 
-        if l_init or l_recompute:
+        if (at_initial_timestep and at_first_substep) or at_first_substep:
             # Recompute only vn tendency
             lvn_only: bool = (
-                self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT and not l_init
+                self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT
+                and not (at_initial_timestep and at_first_substep)
             )
 
             self.velocity_advection.run_predictor_step(
@@ -1329,7 +1339,7 @@ class SolveNonhydro:
 
         self._add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_states.current.vn,
-            ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.current,
+            ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.predictor,
             ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
             z_theta_v_e=z_fields.z_theta_v_e,
             z_gradh_exner=z_fields.z_gradh_exner,
@@ -1465,7 +1475,7 @@ class SolveNonhydro:
         self._stencils_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_states.current.w,
-            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.current,
+            ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.predictor,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
@@ -1679,14 +1689,13 @@ class SolveNonhydro:
         divdamp_fac_o2: float,
         prep_adv: dycore_states.PrepAdvection,
         dtime: float,
-        lclean_mflx: bool,
         lprep_adv: bool,
+        at_first_substep: bool,
         at_last_substep: bool,
-        time_level: Literal[0, 1],
     ):
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  "
-            f"divdamp_fac_o2 = {divdamp_fac_o2} clean_mfxl= {lclean_mflx}  "
+            f"divdamp_fac_o2 = {divdamp_fac_o2}, at_first_substep = {at_first_substep}, at_last_substep = {at_last_substep}  "
         )
 
         # TODO (magdalena) is it correct to to use a config parameter here? the actual number of substeps can vary dynmically...
@@ -1710,16 +1719,13 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        lvn_only = False
         log.debug(f"corrector run velocity advection")
         self.velocity_advection.run_corrector_step(
-            vn_only=lvn_only,
             diagnostic_state=diagnostic_state_nh,
             prognostic_state=prognostic_states.next,
             z_kin_hor_e=z_fields.z_kin_hor_e,
             z_vt_ie=z_fields.z_vt_ie,
             dtime=dtime,
-            ntnd=time_level,
             cell_areas=self._cell_params.area,
         )
 
@@ -1775,8 +1781,8 @@ class SolveNonhydro:
             log.debug(f"corrector: start stencil 23")
             self._add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_states.current.vn,
-                ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.current,
-                ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc[time_level],
+                ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.predictor,
+                ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc.corrector,
                 ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
                 z_theta_v_e=z_fields.z_theta_v_e,
                 z_gradh_exner=z_fields.z_gradh_exner,
@@ -1901,7 +1907,7 @@ class SolveNonhydro:
 
         if lprep_adv:  # Preparations for tracer advection
             log.debug("corrector: doing prep advection")
-            if lclean_mflx:
+            if at_first_substep:
                 log.debug("corrector: start stencil 33")
                 self._init_two_edge_kdim_fields_with_zero_wp(
                     edge_kdim_field_with_zero_wp_1=prep_adv.vn_traj,
@@ -1946,8 +1952,8 @@ class SolveNonhydro:
             self._stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.current,
-                ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_pc[time_level],
+                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.predictor,
+                ddt_w_adv_ntl2=diagnostic_state_nh.ddt_w_adv_pc.corrector,
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,
@@ -1981,7 +1987,7 @@ class SolveNonhydro:
             self._stencils_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.current,
+                ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc.predictor,
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,
@@ -2128,7 +2134,7 @@ class SolveNonhydro:
         )
 
         if lprep_adv:
-            if lclean_mflx:
+            if at_first_substep:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
                 self._init_two_cell_kdim_fields_with_zero_wp(
                     prep_adv.mass_flx_ic,
@@ -2169,7 +2175,7 @@ class SolveNonhydro:
             )
 
         if lprep_adv:
-            if lclean_mflx:
+            if at_first_substep:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.mass_flx_ic,

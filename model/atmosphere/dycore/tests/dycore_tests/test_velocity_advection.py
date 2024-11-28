@@ -187,8 +187,12 @@ def test_velocity_predictor_step(
         mass_fl_e=None,
         ddt_vn_phy=None,
         grf_tend_vn=None,
-        ddt_vn_apc_pc=common_utils.TimeStepPair(sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)),
-        ddt_w_adv_pc=common_utils.TimeStepPair(sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+        ),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+        ),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -295,14 +299,14 @@ def test_velocity_predictor_step(
     )
     # stencil 16
     assert helpers.dallclose(
-        diagnostic_state.ddt_w_adv_pc.current.asnumpy()[start_cell_nudging:, :],
+        diagnostic_state.ddt_w_adv_pc.predictor.asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
         rtol=1.0e-10,
     )
     # stencil 19
     assert helpers.dallclose(
-        diagnostic_state.ddt_vn_apc_pc.current.asnumpy(),
+        diagnostic_state.ddt_vn_apc_pc.predictor.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=1.0e-15,
     )
@@ -339,6 +343,8 @@ def test_velocity_corrector_step(
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
 
+    assert not vn_only
+
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
@@ -353,8 +359,12 @@ def test_velocity_corrector_step(
         mass_fl_e=None,
         ddt_vn_phy=None,
         grf_tend_vn=None,
-        ddt_vn_apc_pc=common_utils.TimeStepPair(sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)),
-        ddt_w_adv_pc=common_utils.TimeStepPair(sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+        ),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+        ),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -395,13 +405,11 @@ def test_velocity_corrector_step(
     )
 
     velocity_advection.run_corrector_step(
-        vn_only=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         z_kin_hor_e=sp_v.z_kin_hor_e(),
         z_vt_ie=sp_v.z_vt_ie(),
         dtime=dtime,
-        ntnd=ntnd - 1,
         cell_areas=cell_geometry.area,
     )
 
@@ -432,13 +440,13 @@ def test_velocity_corrector_step(
     )
     # stencil 16
     assert helpers.dallclose(
-        diagnostic_state.ddt_w_adv_pc.next.asnumpy()[start_cell_nudging:, :],
+        diagnostic_state.ddt_w_adv_pc.corrector.asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
     )
     # stencil 19
     assert helpers.dallclose(
-        diagnostic_state.ddt_vn_apc_pc.next.asnumpy(),
+        diagnostic_state.ddt_vn_apc_pc.corrector.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
     )
