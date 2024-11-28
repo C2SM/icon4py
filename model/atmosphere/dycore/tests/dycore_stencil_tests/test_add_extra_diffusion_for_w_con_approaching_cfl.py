@@ -54,8 +54,8 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
         * area
         * xp.sum(
             xp.where(
-                (xp.asarray(grid.connectivities[dims.C2E2CODim]) != -1)[:, :, xp.newaxis],
-                w[xp.asarray(grid.connectivities[dims.C2E2CODim])] * geofac_n2s,
+                (grid.connectivities[dims.C2E2CODim] != -1)[:, :, xp.newaxis],
+                w[grid.connectivities[dims.C2E2CODim]] * geofac_n2s,
                 0,
             ),
             axis=1,

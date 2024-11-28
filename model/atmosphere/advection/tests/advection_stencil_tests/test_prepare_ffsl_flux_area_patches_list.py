@@ -890,10 +890,10 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
     ) -> dict:
         e2c = grid.connectivities[dims.E2CDim]
         ptr_v3_lon = helpers.reshape(ptr_v3_lon, e2c.shape)
-        ptr_v3_lon_e = xp.expand_dims(xp.asarray(ptr_v3_lon), axis=-1)
+        ptr_v3_lon_e = xp.expand_dims(ptr_v3_lon, axis=-1)
         ptr_v3_lat = helpers.reshape(ptr_v3_lat, e2c.shape)
-        ptr_v3_lat_e = xp.expand_dims(xp.asarray(ptr_v3_lat), axis=-1)
-        tangent_orientation_dsl = xp.expand_dims(xp.asarray(tangent_orientation_dsl), axis=-1)
+        ptr_v3_lat_e = xp.expand_dims(ptr_v3_lat, axis=-1)
+        tangent_orientation_dsl = xp.expand_dims(tangent_orientation_dsl, axis=-1)
 
         result_tuple = cls._generate_flux_area_geometry(
             dreg_patch0_1_lon_dsl,

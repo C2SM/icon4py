@@ -44,12 +44,12 @@ class TestComputeBarycentricBacktrajectoryAlt(helpers.StencilTest):
         dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
 
         lvn_pos = p_vn >= 0.0
-        pos_on_tplane_e_1 = xp.expand_dims(xp.asarray(pos_on_tplane_e_1), axis=-1)
-        pos_on_tplane_e_2 = xp.expand_dims(xp.asarray(pos_on_tplane_e_2), axis=-1)
-        primal_normal_cell_1 = xp.expand_dims(xp.asarray(primal_normal_cell_1), axis=-1)
-        dual_normal_cell_1 = xp.expand_dims(xp.asarray(dual_normal_cell_1), axis=-1)
-        primal_normal_cell_2 = xp.expand_dims(xp.asarray(primal_normal_cell_2), axis=-1)
-        dual_normal_cell_2 = xp.expand_dims(xp.asarray(dual_normal_cell_2), axis=-1)
+        pos_on_tplane_e_1 = xp.expand_dims(pos_on_tplane_e_1, axis=-1)
+        pos_on_tplane_e_2 = xp.expand_dims(pos_on_tplane_e_2, axis=-1)
+        primal_normal_cell_1 = xp.expand_dims(primal_normal_cell_1, axis=-1)
+        dual_normal_cell_1 = xp.expand_dims(dual_normal_cell_1, axis=-1)
+        primal_normal_cell_2 = xp.expand_dims(primal_normal_cell_2, axis=-1)
+        dual_normal_cell_2 = xp.expand_dims(dual_normal_cell_2, axis=-1)
 
         z_ntdistv_bary_1 = -(
             p_vn * p_dthalf + xp.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])

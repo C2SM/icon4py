@@ -26,13 +26,13 @@ def calculate_nabla2_for_z_numpy(
     z_nabla2_e: xp.array,
     **kwargs,
 ) -> xp.array:
-    z_nabla2_e_cp = xp.asarray(z_nabla2_e.copy())
-    inv_dual_edge_length = xp.expand_dims(xp.asarray(inv_dual_edge_length), axis=-1)
+    z_nabla2_e_cp = z_nabla2_e.copy()
+    inv_dual_edge_length = xp.expand_dims(inv_dual_edge_length, axis=-1)
 
-    theta_v_e2c = xp.asarray(theta_v)[xp.asarray(grid.connectivities[dims.E2CDim])]
+    theta_v_e2c = theta_v[grid.connectivities[dims.E2CDim]]
     theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
-    z_nabla2_e = xp.asarray(kh_smag_e) * inv_dual_edge_length * theta_v_weighted
+    z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
 
     # restriction of execution domain
     z_nabla2_e[0 : kwargs["horizontal_start"], :] = z_nabla2_e_cp[0 : kwargs["horizontal_start"], :]

@@ -18,8 +18,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def mo_math_divrot_rot_vertex_ri_dsl_numpy(grid, vec_e: xp.array, geofac_rot: xp.array) -> xp.array:
-    v2e = xp.asarray(grid.connectivities[dims.V2EDim])
-    geofac_rot = xp.expand_dims(xp.asarray(geofac_rot), axis=-1)
+    v2e = grid.connectivities[dims.V2EDim]
+    geofac_rot = xp.expand_dims(geofac_rot, axis=-1)
     rot_vec = xp.sum(xp.where((v2e != -1)[:, :, xp.newaxis], vec_e[v2e] * geofac_rot, 0), axis=1)
     return rot_vec
 

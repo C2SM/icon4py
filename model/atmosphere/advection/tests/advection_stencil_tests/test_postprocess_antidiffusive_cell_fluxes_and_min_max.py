@@ -33,7 +33,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
         hi_bound: float,
         **kwargs,
     ) -> dict:
-        refin_ctrl = xp.expand_dims(xp.asarray(refin_ctrl), axis=1)
+        refin_ctrl = xp.expand_dims(refin_ctrl, axis=1)
         condition = xp.logical_or(
             xp.equal(refin_ctrl, lo_bound * xp.ones(refin_ctrl.shape, dtype=gtx.int32)),
             xp.equal(refin_ctrl, hi_bound * xp.ones(refin_ctrl.shape, dtype=gtx.int32)),

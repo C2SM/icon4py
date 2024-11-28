@@ -25,11 +25,11 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
 
     @staticmethod
     def reference(grid, kh_smag_e: xp.array, enh_diffu_3d: xp.array, **kwargs) -> xp.array:
-        e2c = xp.asarray(grid.connectivities[dims.E2CDim])
+        e2c = grid.connectivities[dims.E2CDim]
         kh_smag_e = xp.maximum(
-            xp.asarray(kh_smag_e),
+            kh_smag_e,
             xp.max(
-                xp.where((e2c != -1)[:, :, xp.newaxis], xp.asarray(enh_diffu_3d)[e2c], -math.inf),
+                xp.where((e2c != -1)[:, :, xp.newaxis], enh_diffu_3d[e2c], -math.inf),
                 axis=1,
             ),
         )

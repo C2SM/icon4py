@@ -21,9 +21,7 @@ def _compute_airmass(
     return rho_in * ddqz_z_full_in * deepatmo_t1mc_in
 
 
-@program(
-    grid_type=gtx.GridType.UNSTRUCTURED,
-)
+@program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_airmass(
     rho_in: fa.CellKField[wpfloat],
     ddqz_z_full_in: fa.CellKField[wpfloat],

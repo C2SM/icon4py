@@ -36,7 +36,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTe
         **kwargs,
     ) -> dict:
         p_out_e_cp = p_out_e.copy()
-        e2c = xp.asarray(grid.connectivities[dims.E2CDim])
+        e2c = grid.connectivities[dims.E2CDim]
         z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
         z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
         z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]

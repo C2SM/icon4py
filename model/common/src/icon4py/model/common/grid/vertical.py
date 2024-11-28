@@ -135,23 +135,17 @@ class VerticalGrid:
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
-            self._determine_damping_height_index(
-                xp.asarray(vct_a_array), self.config.rayleigh_damping_height
-            ),
+            self._determine_damping_height_index(vct_a_array, self.config.rayleigh_damping_height),
         )
         object.__setattr__(
             self,
             "_start_index_for_moist_physics",
-            self._determine_start_level_of_moist_physics(
-                xp.asarray(vct_a_array), self.config.htop_moist_proc
-            ),
+            self._determine_start_level_of_moist_physics(vct_a_array, self.config.htop_moist_proc),
         )
         object.__setattr__(
             self,
             "_end_index_of_flat_layer",
-            self._determine_end_index_of_flat_layers(
-                xp.asarray(vct_a_array), self.config.flat_height
-            ),
+            self._determine_end_index_of_flat_layers(vct_a_array, self.config.flat_height),
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")

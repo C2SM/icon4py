@@ -48,14 +48,14 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
         dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
 
         lvn_pos = p_vn >= 0.0
-        cell_idx = xp.expand_dims(xp.asarray(cell_idx), axis=-1)
-        cell_blk = xp.expand_dims(xp.asarray(cell_blk), axis=-1)
-        pos_on_tplane_e_1 = xp.expand_dims(xp.asarray(pos_on_tplane_e_1), axis=-1)
-        pos_on_tplane_e_2 = xp.expand_dims(xp.asarray(pos_on_tplane_e_2), axis=-1)
-        primal_normal_cell_1 = xp.expand_dims(xp.asarray(primal_normal_cell_1), axis=-1)
-        dual_normal_cell_1 = xp.expand_dims(xp.asarray(dual_normal_cell_1), axis=-1)
-        primal_normal_cell_2 = xp.expand_dims(xp.asarray(primal_normal_cell_2), axis=-1)
-        dual_normal_cell_2 = xp.expand_dims(xp.asarray(dual_normal_cell_2), axis=-1)
+        cell_idx = xp.expand_dims(cell_idx, axis=-1)
+        cell_blk = xp.expand_dims(cell_blk, axis=-1)
+        pos_on_tplane_e_1 = xp.expand_dims(pos_on_tplane_e_1, axis=-1)
+        pos_on_tplane_e_2 = xp.expand_dims(pos_on_tplane_e_2, axis=-1)
+        primal_normal_cell_1 = xp.expand_dims(primal_normal_cell_1, axis=-1)
+        dual_normal_cell_1 = xp.expand_dims(dual_normal_cell_1, axis=-1)
+        primal_normal_cell_2 = xp.expand_dims(primal_normal_cell_2, axis=-1)
+        dual_normal_cell_2 = xp.expand_dims(dual_normal_cell_2, axis=-1)
 
         p_cell_idx = xp.where(lvn_pos, cell_idx[:, 0], cell_idx[:, 1])
         p_cell_rel_idx_dsl = xp.where(lvn_pos, 0, 1)
@@ -96,7 +96,7 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_idx = xp.asarray(grid.connectivities[dims.E2CDim], dtype=gtx.int32)
+        cell_idx = grid.connectivities[dims.E2CDim]
         cell_idx_new = helpers.numpy_to_1D_sparse_field(cell_idx, dims.ECDim)
         cell_blk = helpers.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
         cell_blk_new = helpers.as_1D_sparse_field(cell_blk, dims.ECDim)

@@ -21,8 +21,7 @@ def calculate_diagnostics_for_turbulence_numpy(
     wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic
 ) -> tuple[np.array, np.array]:
     div = np.asarray(div)
-    wgtfac_c = np.asarray(wgtfac_c)
-    kc_offset_1 = np.roll(np.asarray(kh_c), shift=1, axis=1)
+    kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
     div_offset_1 = np.roll(div, shift=1, axis=1)
     div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
     hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[:, 1:]
