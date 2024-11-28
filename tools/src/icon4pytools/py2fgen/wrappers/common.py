@@ -61,9 +61,9 @@ def construct_icon_grid(
     vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
     edge_start_index = adjust_fortran_indices(edge_starts, offset)
 
-    cells_end_index = cell_ends
-    vertex_end_index = vertex_ends
-    edge_end_index = edge_ends
+    cells_end_index = cell_ends.ndarray
+    vertex_end_index = vertex_ends.ndarray
+    edge_end_index = edge_ends.ndarray
 
     c2e = adjust_fortran_indices(c2e, offset)
     c2v = adjust_fortran_indices(c2v, offset)
@@ -78,8 +78,8 @@ def construct_icon_grid(
     e2c2e = adjust_fortran_indices(e2c2e, offset)
 
     # stacked arrays
-    c2e2c0 = xp.column_stack(xp.asarray(range(c2e2c.shape[0]), c2e2c))
-    e2c2e0 = xp.column_stack(xp.asarray(range(e2c2e.shape[0]), e2c2e))
+    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c))
+    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
 
     config = base.GridConfig(
         horizontal_config=horizontal.HorizontalGridSize(
