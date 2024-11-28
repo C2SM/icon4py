@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
-    return xp.subtract(inp.ndarray, offset)
+    return xp.subtract(inp, offset)
 
 
 def construct_icon_grid(
