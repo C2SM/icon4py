@@ -153,9 +153,9 @@ def construct_decomposition(
     e_glb_index = adjust_fortran_indices(e_glb_index, offset)
     v_glb_index = adjust_fortran_indices(v_glb_index, offset)
 
-    c_owner_mask = c_owner_mask[:num_cells] if c_owner_mask is not None else c_owner_mask
-    e_owner_mask = e_owner_mask[:num_edges] if e_owner_mask is not None else e_owner_mask
-    v_owner_mask = v_owner_mask[:num_vertices] if v_owner_mask is not None else v_owner_mask
+    c_owner_mask = c_owner_mask[:num_cells]
+    e_owner_mask = e_owner_mask[:num_edges]
+    v_owner_mask = v_owner_mask[:num_vertices]
 
     decomposition_info = (
         definitions.DecompositionInfo(
