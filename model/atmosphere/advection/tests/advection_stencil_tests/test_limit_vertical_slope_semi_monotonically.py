@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 from gt4py.next import as_field
 
@@ -15,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.limit_vertical_slope_semi_monot
     limit_vertical_slope_semi_monotonically,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
 
 
 class TestLimitVerticalSlopeSemiMonotonically(helpers.StencilTest):
@@ -24,12 +24,12 @@ class TestLimitVerticalSlopeSemiMonotonically(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_cc: xp.array, z_slope: xp.array, k: xp.array, elev: gtx.int32, **kwargs
+        grid, p_cc: np.array, z_slope: np.array, k: np.array, elev: gtx.int32, **kwargs
     ) -> dict:
-        p_cc_min_last = xp.minimum(p_cc[:, :-2], p_cc[:, 1:-1])
-        p_cc_min = xp.where(k[1:-1] == elev, p_cc_min_last, xp.minimum(p_cc_min_last, p_cc[:, 2:]))
-        slope_l = xp.minimum(xp.abs(z_slope[:, 1:-1]), 2.0 * (p_cc[:, 1:-1] - p_cc_min))
-        slope = xp.where(z_slope[:, 1:-1] >= 0.0, slope_l, -slope_l)
+        p_cc_min_last = np.minimum(p_cc[:, :-2], p_cc[:, 1:-1])
+        p_cc_min = np.where(k[1:-1] == elev, p_cc_min_last, np.minimum(p_cc_min_last, p_cc[:, 2:]))
+        slope_l = np.minimum(np.abs(z_slope[:, 1:-1]), 2.0 * (p_cc[:, 1:-1] - p_cc_min))
+        slope = np.where(z_slope[:, 1:-1] >= 0.0, slope_l, -slope_l)
         return dict(z_slope=slope)
 
     @pytest.fixture
@@ -37,7 +37,7 @@ class TestLimitVerticalSlopeSemiMonotonically(helpers.StencilTest):
         p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
         z_slope = helpers.random_field(grid, dims.CellDim, dims.KDim)
         k = as_field(
-            (dims.KDim,), xp.arange(0, helpers._shape(grid, dims.KDim)[0], dtype=gtx.int32)
+            (dims.KDim,), np.arange(0, helpers._shape(grid, dims.KDim)[0], dtype=gtx.int32)
         )
         elev = k[-2].as_scalar()
         return dict(

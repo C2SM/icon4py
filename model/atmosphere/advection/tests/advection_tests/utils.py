@@ -9,11 +9,11 @@
 import logging
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -60,12 +60,12 @@ def construct_metric_state(
     icon_grid, savepoint: sb.MetricSavepoint
 ) -> advection_states.AdvectionMetricState:
     constant_f = helpers.constant_field(icon_grid, 1.0, dims.KDim)
-    ddqz_z_full_xp = xp.reciprocal(savepoint.inv_ddqz_z_full().ndarray)
+    ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
     return advection_states.AdvectionMetricState(
         deepatmo_divh=constant_f,
         deepatmo_divzl=constant_f,
         deepatmo_divzu=constant_f,
-        ddqz_z_full=gtx.as_field((dims.CellDim, dims.KDim), ddqz_z_full_xp),
+        ddqz_z_full=gtx.as_field((dims.CellDim, dims.KDim), ddqz_z_full_np),
     )
 
 
@@ -153,13 +153,13 @@ def verify_advection_fields(
     )
     end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
 
-    hfl_tracer_range = xp.arange(start_edge_lateral_boundary_level_5, end_edge_halo)
+    hfl_tracer_range = np.arange(start_edge_lateral_boundary_level_5, end_edge_halo)
     vfl_tracer_range = (
-        xp.arange(start_cell_lateral_boundary_level_2, end_cell_end)
+        np.arange(start_cell_lateral_boundary_level_2, end_cell_end)
         if even_timestep
-        else xp.arange(start_cell_nudging, end_cell_local)
+        else np.arange(start_cell_nudging, end_cell_local)
     )
-    p_tracer_new_range = xp.arange(start_cell_lateral_boundary, end_cell_local)
+    p_tracer_new_range = np.arange(start_cell_lateral_boundary, end_cell_local)
 
     # log advection output fields
     log_dbg(diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :], "hfl_tracer")
@@ -171,17 +171,17 @@ def verify_advection_fields(
 
     # verify advection output fields
     assert helpers.dallclose(
-        diagnostic_state.hfl_tracer.ndarray[hfl_tracer_range, :],
-        diagnostic_state_ref.hfl_tracer.ndarray[hfl_tracer_range, :],
+        diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
+        diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         rtol=1e-10,
     )
     assert helpers.dallclose(
-        diagnostic_state.vfl_tracer.ndarray[vfl_tracer_range, :],
-        diagnostic_state_ref.vfl_tracer.ndarray[vfl_tracer_range, :],
+        diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
+        diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
         rtol=1e-10,
     )
     assert helpers.dallclose(
-        p_tracer_new.ndarray[p_tracer_new_range, :],
-        p_tracer_new_ref.ndarray[p_tracer_new_range, :],
+        p_tracer_new.asnumpy()[p_tracer_new_range, :],
+        p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
         atol=1e-16,
     )

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -14,7 +15,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_vertical_tracer_flux_up
     compute_vertical_tracer_flux_upwind,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
 
 
 outslice = (slice(None), slice(1, None))
@@ -27,13 +27,13 @@ class TestComputeVerticalTracerFluxUpwind(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        p_cc: xp.array,
-        p_mflx_contra_v: xp.array,
+        p_cc: np.array,
+        p_mflx_contra_v: np.array,
         **kwargs,
     ) -> dict:
         p_upflux = p_cc.copy()
         p_upflux[:, 1:] = (
-            xp.where(p_mflx_contra_v[:, 1:] >= 0.0, p_cc[:, 1:], p_cc[:, :-1])
+            np.where(p_mflx_contra_v[:, 1:] >= 0.0, p_cc[:, 1:], p_cc[:, :-1])
             * p_mflx_contra_v[:, 1:]
         )
         return dict(p_upflux=p_upflux)
