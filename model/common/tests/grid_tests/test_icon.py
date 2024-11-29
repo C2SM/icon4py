@@ -27,7 +27,7 @@ def grid_from_file() -> icon.IconGrid:
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(1)
     )
-    manager()
+    manager(backend=None)
     return manager.grid
 
 
