@@ -33,7 +33,7 @@ dependencies = [
 ]
 description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 dynamic = ['version']
-license = { file = '../LICENSE' }
+license = {text = "BSD-3 License"}
 name = 'icon4pytools'
 readme = 'README.md'
 requires-python = '>=3.10'

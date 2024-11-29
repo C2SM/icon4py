@@ -10,12 +10,12 @@ dependencies = [
     "icon4py-atmosphere-advection>=0.0.6",
     "icon4py-atmosphere-diffusion>=0.0.6",
     "icon4py-atmosphere-dycore>=0.0.6",
-    "icon4py-atmosphere-subgrid_scale_physics-microphysics>=0.0.6",
+    "icon4py-atmosphere-subgrid_scale_physics-microphysics>=0.0.6"
 ]
 
 [project.optional-dependencies]
 all = ["icon4py[dace,distributed,integration,io]"]
-dace = ["icon4py-common[dace]>=0.0.6"]
+dace = ["icon4py-common[dace]>=0.0.6", "dace<1.0"]  # Dace should be removed after updatding gt4py
 distributed = ["icon4py-common[distributed]>=0.0.6"]
 integration = ["icon4pytools>=0.0.6"]
 io = ["icon4py-common[io]>=0.0.6"]
