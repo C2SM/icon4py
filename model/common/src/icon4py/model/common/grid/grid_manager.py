@@ -394,7 +394,7 @@ class GridManager:
         if exc_type is FileNotFoundError:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
-    def __call__(self, backend: gtx_backend.Backend, limited_area=True):
+    def __call__(self, backend: Optional[gtx_backend.Backend], limited_area=True):
         if not self._reader:
             self.open()
         on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
@@ -403,7 +403,7 @@ class GridManager:
         self._coordinates = self._read_coordinates(backend)
         self._geometry = self._read_geometry_fields(backend)
 
-    def _read_coordinates(self, backend: gtx_backend.Backend) -> CoordinateDict:
+    def _read_coordinates(self, backend: Optional[gtx_backend.Backend]) -> CoordinateDict:
         return {
             dims.CellDim: {
                 "lat": gtx.as_field(
@@ -449,7 +449,7 @@ class GridManager:
             },
         }
 
-    def _read_geometry_fields(self, backend: gtx_backend.Backend):
+    def _read_geometry_fields(self, backend: Optional[gtx_backend.Backend]):
         return {
             # TODO (@halungge) still needs to ported, values from "our" grid files contains (wrong) values:
             #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
