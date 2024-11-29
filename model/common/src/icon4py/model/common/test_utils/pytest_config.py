@@ -163,18 +163,18 @@ def pytest_generate_tests(metafunc):
                 grid_instance = SimpleGrid()
             elif selected_grid_type == "icon_grid":
                 from icon4py.model.common.test_utils.grid_utils import (
-                    get_icon_grid_from_gridfile,
+                    get_grid_manager_for_experiment,
                 )
 
-                grid_instance = get_icon_grid_from_gridfile(
+                grid_instance = get_grid_manager_for_experiment(
                     REGIONAL_EXPERIMENT, backend=selected_backend
                 ).grid
             elif selected_grid_type == "icon_grid_global":
                 from icon4py.model.common.test_utils.grid_utils import (
-                    get_icon_grid_from_gridfile,
+                    get_grid_manager_for_experiment,
                 )
 
-                grid_instance = get_icon_grid_from_gridfile(
+                grid_instance = get_grid_manager_for_experiment(
                     GLOBAL_EXPERIMENT, backend=selected_backend
                 ).grid
             else:
