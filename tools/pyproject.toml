@@ -3,7 +3,7 @@ build-backend = 'setuptools.build_meta'
 requires = ['setuptools>=61.0', 'wheel>=0.40.0']
 
 [project]
-authors = [{ email = 'gridtools@cscs.ch' }, { name = 'ETH Zurich' }]
+authors = [{email = 'gridtools@cscs.ch'}, {name = 'ETH Zurich'}]
 classifiers = [
   'Development Status :: 3 - Alpha',
   'Intended Audience :: Science/Research',
@@ -17,7 +17,7 @@ classifiers = [
   'Programming Language :: Python :: Implementation :: CPython',
   'Topic :: Scientific/Engineering :: Atmospheric Science',
   'Topic :: Scientific/Engineering :: Mathematics',
-  'Topic :: Scientific/Engineering :: Physics',
+  'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
   # workspace members
@@ -29,7 +29,7 @@ dependencies = [
   'cffi>=1.5',
   'fprettify>=0.3.7',
   'gt4py>=1.0.4',
-  'tabulate>=0.8.9',
+  'tabulate>=0.8.9'
 ]
 description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 dynamic = ['version']
@@ -51,7 +51,6 @@ py2fgen = 'icon4pytools.py2fgen.cli:main'
 [project.urls]
 repository = 'https://github.com/C2SM/icon4py'
 
-
 # -- bump-my-version --
 [tool.bumpversion]
 allow_dirty = false
@@ -66,8 +65,9 @@ tag = false
 [[tool.bumpversion.files]]
 filename = "src/icon4pytools/__init__.py"
 
-#-- coverage --
+# -- coverage --
 [tool.coverage]
+
 [tool.coverage.html]
 directory = 'tests/_reports/coverage_html'
 
@@ -76,10 +76,10 @@ source = ['src/icon4pytools/']
 
 [tool.coverage.report]
 exclude_lines = [
-  'raise AssertionError',       # Don't complain if tests don't hit defensive assertion code
+  'raise AssertionError',  # Don't complain if tests don't hit defensive assertion code
   'raise NotImplementedError',  # Don't complain if tests don't hit defensive assertion code
-  'if 0:',                      # Don't complain if non-runnable code isn't run
-  'if __name__ == .__main__.:', # Don't complain if non-runnable code isn't run
+  'if 0:',  # Don't complain if non-runnable code isn't run
+  'if __name__ == .__main__.:'  # Don't complain if non-runnable code isn't run
 ]
 ignore_errors = true
 
@@ -88,10 +88,10 @@ branch = true
 parallel = true
 source_pkgs = ['icon4pytools']
 
-#-- pytest --
+# -- pytest --
 [tool.pytest]
 
-#--ruff --
+# --ruff --
 [tool.ruff]
 extend = "../pyproject.toml"
 
@@ -99,18 +99,20 @@ extend = "../pyproject.toml"
 known-first-party = ['icon4pytools']
 known-third-party = ['gt4py', 'icon4py']
 
-#-- setuptools --
+# -- setuptools --
+[tool.setuptools]
+
 [tool.setuptools.dynamic]
-version = { attr = 'icon4pytools.__init__.__version__' }
+version = {attr = 'icon4pytools.__init__.__version__'}
 
 [tool.setuptools.package-data]
 'icon4pytools' = ['py.typed']
 
-#-- uv --
+# -- uv --
 [tool.uv]
 conflicts = [
-    [
-      { extra = "cupy11" },
-      { extra = "cupy12" },
-    ],
+  [
+    {extra = "cupy11"},
+    {extra = "cupy12"}
+  ]
 ]

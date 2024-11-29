@@ -2,7 +2,7 @@
 # as regular git hooks do. Therefore, paths passed as arguments to the plugins
 # should always be relative to the root folder.
 
-default_stages: [commit, push]
+default_stages: [pre-commit, pre-push]
 default_language_version:
   python: python3.10
 minimum_pre_commit_version: 3.8.0
@@ -67,7 +67,7 @@ repos:
     types_or: [python, pyi]
     pass_filenames: false
     require_serial: true
-    stages: [commit]
+    stages: [pre-commit]
 
 - repo: https://github.com/gauge-sh/tach-pre-commit
   rev: v0.10.7
