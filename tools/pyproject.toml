@@ -13,6 +13,7 @@ classifiers = [
   'Programming Language :: Python :: 3',
   'Programming Language :: Python :: 3 :: Only',
   'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: 3.11',
   'Programming Language :: Python :: Implementation :: CPython',
   'Topic :: Scientific/Engineering :: Atmospheric Science',
   'Topic :: Scientific/Engineering :: Mathematics',
@@ -32,7 +33,7 @@ dependencies = [
 ]
 description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 dynamic = ['version']
-license = { file = 'LICENSE' }
+license = { file = '../LICENSE' }
 name = 'icon4pytools'
 readme = 'README.md'
 requires-python = '>=3.10'
@@ -89,9 +90,6 @@ source_pkgs = ['icon4pytools']
 
 #-- pytest --
 [tool.pytest]
-
-# [tool.pytest.ini_options]
-# testpaths = 'tests'
 
 #--ruff --
 [tool.ruff]
