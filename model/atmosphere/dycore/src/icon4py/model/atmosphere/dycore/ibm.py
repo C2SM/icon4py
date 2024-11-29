@@ -43,8 +43,8 @@ class ImmersedBoundaryMethod:
         cell_mask = xp.zeros((num_cells, num_levels), dtype=bool)
         edge_mask = xp.zeros((num_edges, num_levels), dtype=bool)
 
-        cell_mask[313, 17] = True
-        edge_mask[313, 17] = True
+        cell_mask[313, -2] = True
+        edge_mask[313, -2] = True
 
         self.cell_mask = gtx.as_field((CellDim, KDim), cell_mask)
         self.edge_mask = gtx.as_field((EdgeDim, KDim), edge_mask)
@@ -57,7 +57,6 @@ class ImmersedBoundaryMethod:
 
     def set_boundary_conditions(
         self,
-        diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostic_state.PrognosticState,
     ):
         """

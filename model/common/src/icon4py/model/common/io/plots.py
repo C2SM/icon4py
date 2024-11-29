@@ -1,9 +1,16 @@
+import logging
 import pickle
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import xarray as xr
 
 from icon4py.model.common.settings import xp
+
+# prevent matplotlib logging spam
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+
+# flake8: noqa
+log = logging.getLogger(__name__)
 
 def create_triangulation(gridfname: str) -> mpl.tri.Triangulation:
     """
@@ -98,11 +105,14 @@ def create_torus_triangulation(grid_fname: str) -> mpl.tri.Triangulation:
     tri.edge_x, tri.edge_y = create_edge_centers(tri)
     return tri
 
-def plot_data(tri: mpl.tri.Triangulation, data: xp.ndarray, nlev: int) -> None:
+def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = False) -> None:
     """
     Plot data on a triangulation.
     """
     nax_per_col = 10
+    if type(data) is not xp.ndarray:
+        data = data.ndarray
+
     cmin = data.min()
     cmax = data.max()
 
@@ -111,9 +121,10 @@ def plot_data(tri: mpl.tri.Triangulation, data: xp.ndarray, nlev: int) -> None:
     if data.shape[0] == ntriangles:
         plot_lev = lambda data, i: axs[i].tripcolor(tri, data[:, -1-i], edgecolor='none', shading='flat', cmap='viridis') #, vmin=cmin, vmax=cmax)
     elif data.shape[0] == nedges:
-        plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=5**2, cmap='viridis') #, vmin=cmin, vmax=cmax)
+        plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=4**2, cmap='viridis') #, vmin=cmin, vmax=cmax)
 
-    fig = plt.figure(1); plt.clf(); plt.show(block=False)
+    plt.close('all')
+    fig = plt.figure(1, figsize=(17,min(13,4*nlev))); plt.clf()
     axs = fig.subplots(nrows=min(nax_per_col, nlev), ncols=max(1,int(xp.ceil(nlev/nax_per_col))), sharex=True, sharey=True)
     if nlev > 1:
         axs = axs.flatten()    
@@ -124,8 +135,16 @@ def plot_data(tri: mpl.tri.Triangulation, data: xp.ndarray, nlev: int) -> None:
         axs[i].set_aspect('equal')
         #axs[i].set_xlabel(f"Level {-i}")
         axs[i].triplot(tri, color='k', linewidth=0.25)
+
+    fig.subplots_adjust(wspace=0, hspace=0)
     plt.draw()
 
+    if save_to_file:
+        fig.savefig('plot.png', dpi=600, bbox_inches='tight')
+        log.debug(f"Saved plot.png")
+    else:
+        plt.show()
+        plt.pause(1)
 
 
 if __name__ == '__main__':
