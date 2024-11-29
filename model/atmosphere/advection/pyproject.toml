@@ -22,7 +22,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-  "gt4py>=1.0.1",
+  "gt4py>=1.0.4",
   "icon4py-common>=0.0.5"
 ]
 description = "ICON advection."

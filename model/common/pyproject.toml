@@ -19,7 +19,8 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-  "gt4py>=1.0.1"
+  "gt4py>=1.0.4",
+  "serialbox>=0.0.1",
 ]
 description = "Shared code for the icon4py model."
 dynamic = ['version']
@@ -29,22 +30,21 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
-all = ["icon4py-common[ghex,io,dace]"]
-dace = ["dace>=0.16.1"]
-ghex = ["ghex", "mpi4py>=3.1.5"]
+all = ["icon4py-common[distributed,io,dace]"]
+dace = ["gt4py[dace]>=1.0.4"]
+distributed = ["ghex>=0.3.0", "mpi4py>=3.1.5"]
 io = [
-  "icon4py-common[netcdf]",
-  "xarray[complete]>=2024.3.0",
+  "cartopy>=0.22.0",
+  "datashader>=0.16.0",
+  "holoviews>=1.8.0",
+  "netcdf4>=1.6.0",
+  "scikit-learn>=1.4.0",
   # TODO [magdalena] there are failing tests starting from uxarray==2024.4.0: when a data file does not have
   # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
   # mapping. It is not yet clear whether this is a uxarray bug or on our side.
   "uxarray==2024.3.0",
-  "scikit-learn>=1.4.0",
-  "holoviews>=1.8.0",
-  "cartopy>=0.22.0",
-  "datashader>=0.16.0"
+  "xarray[complete]>=2024.3.0",
 ]
-netcdf = ["netcdf4>=1.6.0"]
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
