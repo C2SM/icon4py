@@ -256,7 +256,7 @@ class PredictorCorrectorPair(Pair[T]):
 
 
 class TimeStepPair(Pair[T]):
-    current: T = Pair.first
+    current: T = Pair.frozen_first
     next: T = Pair.second
 
 
