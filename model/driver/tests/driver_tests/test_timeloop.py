@@ -184,6 +184,8 @@ def test_run_timeloop_single_step(
     sp_v = savepoint_velocity_init
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
 
+    linit = sp.get_metadata("linit").get("linit")
+
     grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
@@ -263,6 +265,7 @@ def test_run_timeloop_single_step(
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
+    current_index, next_index = (2, 1) if not linit else (1, 2)
     nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
@@ -278,7 +281,7 @@ def test_run_timeloop_single_step(
             sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+            sp_v.ddt_w_adv_pc(current_index), sp_v.ddt_w_adv_pc(next_index)
         ),
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
