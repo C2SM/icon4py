@@ -511,8 +511,7 @@ def test_run_diffusion_multiple_steps(
     backend,
     icon_grid,
 ):
-    dace_orchestration = False
-    if not dace_orchestration:
+    if "dace" not in backend.name.lower():
         raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization
