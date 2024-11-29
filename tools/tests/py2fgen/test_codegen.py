@@ -249,7 +249,7 @@ import numpy as np
 import cupy as cp
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
-from icon4py.model.common.settings import xp
+import numpy as np
 from icon4py.model.common import dimension as dims
 
 # logger setup

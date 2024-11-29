@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import numpy as np
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -18,7 +19,6 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.settings import xp
 
 from icon4pytools.common.logger import setup_logger
 
@@ -102,7 +102,7 @@ def print_grid_decomp_info(
         icon_grid.connectivities[E2CDim],
     )
 
-    xp.set_printoptions(edgeitems=20)
+    np.set_printoptions(edgeitems=20)
 
     log.info(
         "c_glb_index for rank %s is.... %s",

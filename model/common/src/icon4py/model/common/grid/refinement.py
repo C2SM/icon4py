@@ -9,11 +9,11 @@ import dataclasses
 import logging
 from typing import Final
 
+import numpy as np
 from gt4py import next as gtx
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
 
 
 """
@@ -79,21 +79,21 @@ class RefinementValue:
         return self.value not in _UNORDERED[self.dim]
 
 
-def is_unordered_field(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
-    assert field.dtype in (xp.int32, xp.int64), f"not an integer type {field.dtype}"
-    return xp.where(
-        field == _UNORDERED[dim][0], True, xp.where(field == _UNORDERED[dim][1], True, False)
+def is_unordered_field(field: np.ndarray, dim: dims.Dimension) -> np.ndarray:
+    assert field.dtype in (np.int32, np.int64), f"not an integer type {field.dtype}"
+    return np.where(
+        field == _UNORDERED[dim][0], True, np.where(field == _UNORDERED[dim][1], True, False)
     )
 
 
-def convert_to_unnested_refinement_values(field: xp.ndarray, dim: dims.Dimension) -> xp.ndarray:
+def convert_to_unnested_refinement_values(field: np.ndarray, dim: dims.Dimension) -> np.ndarray:
     """Convenience function that converts the grid refinement value from a coarser
     parent grid to the canonical values used in an unnested setup.
 
     The nested values are used for example in the radiation grids.
     """
-    assert field.dtype in (xp.int32, xp.int64), f"not an integer type {field.dtype}"
-    return xp.where(field == _UNORDERED[dim][1], 0, xp.where(field < 0, -field, field))
+    assert field.dtype in (np.int32, np.int64), f"not an integer type {field.dtype}"
+    return np.where(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
 
 
 def refine_control_value(dim: gtx.Dimension, zone: h_grid.Zone) -> RefinementValue:

@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.common import (
     constants as phy_const,
@@ -14,24 +15,18 @@ from icon4py.model.common import (
     type_alias as ta,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.settings import xp
-
-
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
 
 
 def hydrostatic_adjustment_numpy(
-    wgtfac_c: xp.ndarray,
-    ddqz_z_half: xp.ndarray,
-    exner_ref_mc: xp.ndarray,
-    d_exner_dz_ref_ic: xp.ndarray,
-    theta_ref_mc: xp.ndarray,
-    theta_ref_ic: xp.ndarray,
-    rho: xp.ndarray,
-    exner: xp.ndarray,
-    theta_v: xp.ndarray,
+    wgtfac_c: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    exner_ref_mc: np.ndarray,
+    d_exner_dz_ref_ic: np.ndarray,
+    theta_ref_mc: np.ndarray,
+    theta_ref_ic: np.ndarray,
+    rho: np.ndarray,
+    exner: np.ndarray,
+    theta_v: np.ndarray,
     num_levels: int,
 ):
     # virtual temperature
@@ -51,7 +46,7 @@ def hydrostatic_adjustment_numpy(
         )
         quadratic_c = -(fac2 * fac3 / ddqz_z_half[:, k + 1] + fac2 * d_exner_dz_ref_ic[:, k + 1])
 
-        exner[:, k] = (quadratic_b + xp.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
+        exner[:, k] = (quadratic_b + np.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
             2.0 * quadratic_a
         )
         theta_v[:, k] = temp_v[:, k] / exner[:, k]
@@ -63,17 +58,17 @@ def hydrostatic_adjustment_numpy(
 
 
 def hydrostatic_adjustment_constant_thetav_numpy(
-    wgtfac_c: xp.ndarray,
-    ddqz_z_half: xp.ndarray,
-    exner_ref_mc: xp.ndarray,
-    d_exner_dz_ref_ic: xp.ndarray,
-    theta_ref_mc: xp.ndarray,
-    theta_ref_ic: xp.ndarray,
-    rho: xp.ndarray,
-    exner: xp.ndarray,
-    theta_v: xp.ndarray,
+    wgtfac_c: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    exner_ref_mc: np.ndarray,
+    d_exner_dz_ref_ic: np.ndarray,
+    theta_ref_mc: np.ndarray,
+    theta_ref_ic: np.ndarray,
+    rho: np.ndarray,
+    exner: np.ndarray,
+    theta_v: np.ndarray,
     num_levels: int,
-) -> tuple[xp.ndarray, xp.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Computes a hydrostatically balanced profile. In constrast to the above
     hydrostatic_adjustment_numpy, the virtual temperature is kept (assumed)
@@ -108,10 +103,10 @@ def zonalwind_2_normalwind_numpy(
     jw_up: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
-    edge_lat: xp.ndarray,
-    edge_lon: xp.ndarray,
-    primal_normal_x: xp.ndarray,
-    eta_v_e: xp.ndarray,
+    edge_lat: np.ndarray,
+    edge_lon: np.ndarray,
+    primal_normal_x: np.ndarray,
+    eta_v_e: np.ndarray,
 ):
     """
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
@@ -130,29 +125,29 @@ def zonalwind_2_normalwind_numpy(
     """
     # TODO (Chia Rui) this function needs a test
 
-    mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
+    mask = np.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
         0 : grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         :,
     ] = False
-    edge_lat = xp.repeat(xp.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
-    edge_lon = xp.repeat(xp.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
-    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
-    u = xp.where(mask, jw_u0 * (xp.cos(eta_v_e) ** 1.5) * (xp.sin(2.0 * edge_lat) ** 2), 0.0)
+    edge_lat = np.repeat(np.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
+    edge_lon = np.repeat(np.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
+    primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
+    u = np.where(mask, jw_u0 * (np.cos(eta_v_e) ** 1.5) * (np.sin(2.0 * edge_lat) ** 2), 0.0)
     if jw_up > 1.0e-20:
-        u = xp.where(
+        u = np.where(
             mask,
             u
             + jw_up
-            * xp.exp(
+            * np.exp(
                 -(
                     (
                         10.0
-                        * xp.arccos(
-                            xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
-                            + xp.cos(lat_perturbation_center)
-                            * xp.cos(edge_lat)
-                            * xp.cos(edge_lon - lon_perturbation_center)
+                        * np.arccos(
+                            np.sin(lat_perturbation_center) * np.sin(edge_lat)
+                            + np.cos(lat_perturbation_center)
+                            * np.cos(edge_lat)
+                            * np.cos(edge_lon - lon_perturbation_center)
                         )
                     )
                     ** 2
@@ -203,7 +198,7 @@ def compute_perturbed_exner(
         exner_ref,
         out=exner_pr,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

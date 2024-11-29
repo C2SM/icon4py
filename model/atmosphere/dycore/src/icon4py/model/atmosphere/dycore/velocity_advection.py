@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import backend
 
 import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
@@ -48,7 +49,6 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -460,7 +460,7 @@ class VelocityAdvection:
 
     def _update_levmask_from_cfl_clipping(self):
         self.levmask = gtx.as_field(
-            domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
+            domain=(dims.KDim,), data=(np.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):

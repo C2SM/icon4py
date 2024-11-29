@@ -14,10 +14,10 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
 
+import numpy as np
 from gt4py.next import Dimension
 
 from icon4py.model.common import utils
-from icon4py.model.common.settings import xp
 
 
 try:
@@ -76,7 +76,7 @@ class DecompositionInfo:
         HALO = 2
 
     @utils.chainable
-    def with_dimension(self, dim: Dimension, global_index: xp.ndarray, owner_mask: xp.ndarray):
+    def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
 
@@ -126,9 +126,9 @@ class DecompositionInfo:
     def _to_local_index(self, dim):
         data = self._global_index[dim]
         assert data.ndim == 1
-        return xp.arange(data.shape[0])
+        return np.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> xp.ndarray:
+    def owner_mask(self, dim: Dimension) -> np.ndarray:
         return self._owner_mask[dim]
 
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):

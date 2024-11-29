@@ -8,6 +8,7 @@
 import functools
 from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
 
+import numpy as np
 from gt4py import next as gtx
 from gt4py.next import backend, backend as gtx_backend
 
@@ -26,7 +27,6 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.states.factory import FieldProvider
 from icon4py.model.common.states.model import FieldMetaData
@@ -527,7 +527,7 @@ def as_sparse_field(
     fields = []
     for t in data:
         buffers = list(b.ndarray for b in t)
-        field = gtx.as_field(target_dims, data=(xp.vstack(buffers).T), dtype=buffers[0].dtype)
+        field = gtx.as_field(target_dims, data=(np.vstack(buffers).T), dtype=buffers[0].dtype)
         fields.append(field)
     return fields
 
@@ -568,7 +568,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
     for i in (0, 1):
-        boundary_edges = xp.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
+        boundary_edges = np.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
         lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]
         lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
 

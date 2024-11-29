@@ -7,10 +7,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
+import numpy as np
 from gt4py.next.embedded.nd_array_field import NdArrayField
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
-from icon4py.model.common.settings import xp
 
 
 # TODO: the configuration code is replicated across the codebase currently. In future, the configuration should be read from an external file.
@@ -20,7 +20,7 @@ def compare_values_shallow(value1, value2, obj_name="value"):
     # Handle comparison of NdArrayField objects
     if isinstance(value1, NdArrayField) and isinstance(value2, NdArrayField):
         try:
-            xp.testing.assert_equal(value1.ndarray, value2.ndarray)  # Compare arrays for equality
+            np.testing.assert_equal(value1.ndarray, value2.ndarray)  # Compare arrays for equality
             return True, None
         except AssertionError:
             return False, f"Array mismatch for {obj_name}"
@@ -53,15 +53,15 @@ def compare_values_shallow(value1, value2, obj_name="value"):
         return True, None
 
     # Check if both values are instances of numpy scalar types
-    if isinstance(value1, xp.ScalarType) and isinstance(value2, xp.ScalarType):
+    if isinstance(value1, np.ScalarType) and isinstance(value2, np.ScalarType):
         if value1 != value2:
             return False, f"Value mismatch for {obj_name}: {value1} != {value2}"
         return True, None
 
     # Handle comparison of numpy/cupy array objects
-    if isinstance(value1, xp.ndarray) and isinstance(value2, xp.ndarray):
+    if isinstance(value1, np.ndarray) and isinstance(value2, np.ndarray):
         try:
-            xp.testing.assert_equal(value1, value2)  # Compare arrays for equality
+            np.testing.assert_equal(value1, value2)  # Compare arrays for equality
             return True, None
         except AssertionError:
             return False, f"Array mismatch for {obj_name}"
@@ -75,7 +75,7 @@ def compare_values_shallow(value1, value2, obj_name="value"):
 
 def compare_objects(obj1, obj2, obj_name="object"):
     # Check if both objects are instances of numpy scalar types
-    if isinstance(obj1, xp.ScalarType) and isinstance(obj2, xp.ScalarType):
+    if isinstance(obj1, np.ScalarType) and isinstance(obj2, np.ScalarType):
         if obj1 != obj2:
             return False, f"Value mismatch for {obj_name}: {obj1} != {obj2}"
         return True, None

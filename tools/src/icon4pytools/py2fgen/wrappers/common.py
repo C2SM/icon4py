@@ -9,36 +9,36 @@
 
 import logging
 
+import numpy as np
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import base, horizontal, icon
-from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
 
 
-def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
+def adjust_fortran_indices(inp: np.ndarray, offset: int) -> np.ndarray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
-    return xp.subtract(inp, offset)
+    return np.subtract(inp, offset)
 
 
 def construct_icon_grid(
-    cell_starts: xp.ndarray,
-    cell_ends: xp.ndarray,
-    vertex_starts: xp.ndarray,
-    vertex_ends: xp.ndarray,
-    edge_starts: xp.ndarray,
-    edge_ends: xp.ndarray,
-    c2e: xp.ndarray,
-    e2c: xp.ndarray,
-    c2e2c: xp.ndarray,
-    e2c2e: xp.ndarray,
-    e2v: xp.ndarray,
-    v2e: xp.ndarray,
-    v2c: xp.ndarray,
-    e2c2v: xp.ndarray,
-    c2v: xp.ndarray,
+    cell_starts: np.ndarray,
+    cell_ends: np.ndarray,
+    vertex_starts: np.ndarray,
+    vertex_ends: np.ndarray,
+    edge_starts: np.ndarray,
+    edge_ends: np.ndarray,
+    c2e: np.ndarray,
+    e2c: np.ndarray,
+    c2e2c: np.ndarray,
+    e2c2e: np.ndarray,
+    e2v: np.ndarray,
+    v2e: np.ndarray,
+    v2c: np.ndarray,
+    e2c2v: np.ndarray,
+    c2v: np.ndarray,
     grid_id: str,
     global_grid_params: icon.GlobalGridParams,
     num_vertices: int,
@@ -78,8 +78,8 @@ def construct_icon_grid(
     e2c2e = adjust_fortran_indices(e2c2e, offset)
 
     # stacked arrays
-    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c.ndarray))
-    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e.ndarray))
+    c2e2c0 = np.column_stack((np.asarray(range(c2e2c.shape[0])), c2e2c.ndarray))
+    e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e.ndarray))
 
     config = base.GridConfig(
         horizontal_config=horizontal.HorizontalGridSize(
@@ -132,12 +132,12 @@ def construct_icon_grid(
 
 
 def construct_decomposition(
-    c_glb_index: xp.ndarray,
-    e_glb_index: xp.ndarray,
-    v_glb_index: xp.ndarray,
-    c_owner_mask: xp.ndarray,
-    e_owner_mask: xp.ndarray,
-    v_owner_mask: xp.ndarray,
+    c_glb_index: np.ndarray,
+    e_glb_index: np.ndarray,
+    v_glb_index: np.ndarray,
+    c_owner_mask: np.ndarray,
+    e_owner_mask: np.ndarray,
+    v_owner_mask: np.ndarray,
     num_cells: int,
     num_edges: int,
     num_vertices: int,
