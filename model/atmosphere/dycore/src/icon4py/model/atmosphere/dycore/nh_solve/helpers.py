@@ -79,6 +79,9 @@ from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_the
 from icon4py.model.atmosphere.dycore.compute_divergence_of_flux_of_normal_wind import (
     compute_divergence_of_flux_of_normal_wind as compute_divergence_of_flux_of_normal_wind_orig,
 )
+from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex import (
+    interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex as interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex_orig,
+)
 from icon4py.model.atmosphere.dycore.add_dwdz_to_divergence_of_flux_of_normal_wind import (
     add_dwdz_to_divergence_of_flux_of_normal_wind as add_dwdz_to_divergence_of_flux_of_normal_wind_orig,
 )
@@ -375,6 +378,9 @@ compute_divergence_of_fluxes_of_rho_and_theta = CachedProgram(
 # New divergence stencils
 compute_divergence_of_flux_of_normal_wind = CachedProgram(
     compute_divergence_of_flux_of_normal_wind_orig
+)
+interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex = CachedProgram(
+    interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex_orig
 )
 
 add_dwdz_to_divergence_of_flux_of_normal_wind = CachedProgram(

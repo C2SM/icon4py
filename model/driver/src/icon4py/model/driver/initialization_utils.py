@@ -1117,7 +1117,7 @@ def read_static_fields(
         for j in range(6):
             geofac_2order_div_array_ref[:,j] = xp.sum( cell_edge_orientation_ref[:,j,:] * primal_edge_length_ref[:,j,:] * v2c2eo_bool[:,j,:], axis=1)
         hexagon_area_ref_expand = xp.expand_dims(hexagon_area_ref, axis=-1)
-        geofac_2order_div_array_ref = geofac_2order_div_array_ref / hexagon_area_ref_expand
+        geofac_2order_div_array_ref = -geofac_2order_div_array_ref / hexagon_area_ref_expand
         for i in range(icon_grid.num_vertices):
             if pentagon[i] == True:
                 geofac_2order_div_array_ref[i,5] = 0.0
