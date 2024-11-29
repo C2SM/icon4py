@@ -55,13 +55,13 @@ def compute_zdiff_gradp_dsl(
             >>> _compute_param.with_backend(backend)(
             >>>     z_me_jk=z_me[je, jk],
             >>>     z_ifc_off=z_ifc_off_e,
-            >>>     z_ifc_off_koff=as_field((KDim,), z_ifc_off_koff.asnumpy()[je, :]),
+            >>>     z_ifc_off_koff=as_field((KDim,), z_ifc_off_koff.ndarray[je, :]),
             >>>     lower=int(flat_idx[je]),
             >>>     nlev=nlev - 1,
             >>>     out=(param_3, param_2),
             >>>     offset_provider={}
             >>> )
-            >>> zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], np.where(param_2.asnumpy())[0][0]]
+            >>> zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], np.where(param_2.ndarray)[0][0]]
             """
 
             param = [False] * nlev

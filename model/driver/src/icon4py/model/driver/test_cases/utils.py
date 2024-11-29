@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import gt4py.next as gtx
 
 from icon4py.model.common import (
@@ -146,14 +145,18 @@ def zonalwind_2_normalwind_numpy(
             u
             + jw_up
             * xp.exp(
-                -10.0
-                * xp.arccos(
-                    xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
-                    + xp.cos(lat_perturbation_center)
-                    * xp.cos(edge_lat)
-                    * xp.cos(edge_lon - lon_perturbation_center)
+                -(
+                    (
+                        10.0
+                        * xp.arccos(
+                            xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
+                            + xp.cos(lat_perturbation_center)
+                            * xp.cos(edge_lat)
+                            * xp.cos(edge_lon - lon_perturbation_center)
+                        )
+                    )
+                    ** 2
                 )
-                ** 2
             ),
             u,
         )

@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import dataclasses
 import functools
 import uuid
@@ -16,10 +15,9 @@ from typing import Callable, Dict
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.settings import xp
-from icon4py.model.common.utils import builder
 
 
 class MissingConnectivity(ValueError):
@@ -114,12 +112,12 @@ class BaseGrid(ABC):
 
         return offset_providers
 
-    @builder.builder
+    @utils.chainable
     def with_connectivities(self, connectivity: Dict[gtx.Dimension, np.ndarray]):
         self.connectivities.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
-    @builder.builder
+    @utils.chainable
     def with_config(self, config: GridConfig):
         self.config = config
         self._update_size()
@@ -135,7 +133,7 @@ class BaseGrid(ABC):
             raise MissingConnectivity()
         assert (
             self.connectivities[dim].dtype == gtx.int32
-        ), 'Neighbor table\'s "{}" data type must be int32. Instead it\'s "{}"'.format(
+        ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
             dim, self.connectivities[dim].dtype
         )
         return gtx.NeighborTableOffsetProvider(

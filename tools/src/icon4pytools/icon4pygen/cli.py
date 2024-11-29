@@ -18,7 +18,7 @@ import click
 
 
 class ModuleType(click.ParamType):
-    dycore_import_path = "icon4py.model.atmosphere.dycore"
+    dycore_import_path = "icon4py.model.atmosphere.dycore.stencils"
     names: ClassVar[list[str]] = [
         f"{dycore_import_path}.mo_nh_diffusion_stencil_",
         f"{dycore_import_path}.mo_solve_nonhydro_stencil_",

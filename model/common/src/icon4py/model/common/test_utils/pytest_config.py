@@ -11,10 +11,54 @@ import os
 import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
+import icon4py.model.common.settings as settings
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
+
+
+DEFAULT_BACKEND = "roundtrip"
+
+backends = {
+    "embedded": None,
+    "roundtrip": itir_python,
+    "gtfn_cpu": gtfn_cpu,
+    "gtfn_gpu": gtfn_gpu,
+}
+gpu_backends = ["gtfn_gpu"]
+
+try:
+    from gt4py.next.program_processors.runners.dace import (
+        run_dace_cpu,
+        run_dace_cpu_noopt,
+        run_dace_gpu,
+        run_dace_gpu_noopt,
+    )
+
+    backends.update(
+        {
+            "dace_cpu": run_dace_cpu,
+            "dace_gpu": run_dace_gpu,
+            "dace_cpu_noopt": run_dace_cpu_noopt,
+            "dace_gpu_noopt": run_dace_gpu_noopt,
+        }
+    )
+    gpu_backends.extend(["dace_gpu", "dace_gpu_noopt"])
+
+except ImportError:
+    # dace module not installed, ignore dace backends
+    pass
+
+
+def check_backend_validity(backend_name: str) -> None:
+    if backend_name not in backends:
+        available_backends = ", ".join([f"'{k}'" for k in backends.keys()])
+        raise Exception(
+            "Need to select a backend. Select from: ["
+            + available_backends
+            + "] and pass it as an argument to --backend when invoking pytest."
+        )
 
 
 def pytest_configure(config):
@@ -27,6 +71,14 @@ def pytest_configure(config):
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
         os.environ["FLOAT_PRECISION"] = "mixed"
+
+    if config.getoption("--backend"):
+        backend = config.getoption("--backend")
+        check_backend_validity(backend)
+        settings.backend = backends[backend]
+
+    if config.getoption("--dace-orchestration"):
+        settings.dace_orchestration = True
 
 
 def pytest_addoption(parser):
@@ -46,7 +98,7 @@ def pytest_addoption(parser):
         parser.addoption(
             "--backend",
             action="store",
-            default="roundtrip",
+            default=DEFAULT_BACKEND,
             help="GT4Py backend to use when executing stencils. Defaults to roundtrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
@@ -72,6 +124,16 @@ def pytest_addoption(parser):
     except ValueError:
         pass
 
+    try:
+        parser.addoption(
+            "--dace-orchestration",
+            action="store",
+            default=None,
+            help="Performs DaCe orchestration. Any value will enable it.",
+        )
+    except ValueError:
+        pass
+
 
 def pytest_runtest_setup(item):
     for _ in item.iter_markers(name="datatest"):
@@ -80,51 +142,15 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
-    on_gpu = False
+    selected_backend = backends[DEFAULT_BACKEND]
 
     # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
+        check_backend_validity(backend_option)
 
-        backends = {
-            "embedded": None,
-            "roundtrip": itir_python,
-            "gtfn_cpu": gtfn_cpu,
-            "gtfn_gpu": gtfn_gpu,
-        }
-        gpu_backends = ["gtfn_gpu"]
-
-        try:
-            from gt4py.next.program_processors.runners.dace import (
-                run_dace_cpu,
-                run_dace_gpu,
-            )
-
-            backends.update(
-                {
-                    "dace_cpu": run_dace_cpu,
-                    "dace_gpu": run_dace_gpu,
-                }
-            )
-            gpu_backends.append("dace_gpu")
-
-        except ImportError:
-            # dace module not installed, ignore dace backends
-            pass
-
-        if backend_option not in backends:
-            available_backends = ", ".join([f"'{k}'" for k in backends.keys()])
-            raise Exception(
-                "Need to select a backend. Select from: ["
-                + available_backends
-                + "] and pass it as an argument to --backend when invoking pytest."
-            )
-        elif backend_option in gpu_backends:
-            on_gpu = True
-
-        metafunc.parametrize(
-            "backend", [backends[backend_option]], ids=[f"backend={backend_option}"]
-        )
+        selected_backend = backends[backend_option]
+        metafunc.parametrize("backend", [selected_backend], ids=[f"backend={backend_option}"])
 
     # parametrise grid
     if "grid" in metafunc.fixturenames:
@@ -137,16 +163,20 @@ def pytest_generate_tests(metafunc):
                 grid_instance = SimpleGrid()
             elif selected_grid_type == "icon_grid":
                 from icon4py.model.common.test_utils.grid_utils import (
-                    get_icon_grid_from_gridfile,
+                    get_grid_manager_for_experiment,
                 )
 
-                grid_instance = get_icon_grid_from_gridfile(REGIONAL_EXPERIMENT, on_gpu)
+                grid_instance = get_grid_manager_for_experiment(
+                    REGIONAL_EXPERIMENT, backend=selected_backend
+                ).grid
             elif selected_grid_type == "icon_grid_global":
                 from icon4py.model.common.test_utils.grid_utils import (
-                    get_icon_grid_from_gridfile,
+                    get_grid_manager_for_experiment,
                 )
 
-                grid_instance = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu)
+                grid_instance = get_grid_manager_for_experiment(
+                    GLOBAL_EXPERIMENT, backend=selected_backend
+                ).grid
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])

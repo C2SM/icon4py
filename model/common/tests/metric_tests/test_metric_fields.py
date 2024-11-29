@@ -5,16 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import math
 
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    HorizontalPressureDiscretizationType,
-)
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
@@ -280,7 +276,7 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
         del_t_bg=del_t_bg,
         h_scal_bg=h_scal_bg,
         igradp_method=3,
-        igradp_constant=HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
+        igradp_constant=3,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,

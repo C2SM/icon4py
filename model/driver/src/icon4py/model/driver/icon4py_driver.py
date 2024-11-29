@@ -14,13 +14,13 @@ from typing import Callable
 
 import click
 from devtools import Timer
+from gt4py.next import gtfn_cpu
 
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
     diffusion_states,
 )
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.driver import (
@@ -74,10 +74,6 @@ class TimeLoop:
     def _validate_config(self):
         if self._n_time_steps < 0:
             raise ValueError("end_date should be larger than start_date. Please check.")
-        if not self.diffusion.initialized:
-            raise Exception("diffusion is not initialized before time loop")
-        if not self.solve_nonhydro.initialized:
-            raise Exception("nonhydro solver is not initialized before time loop")
 
     @property
     def first_step_in_simulation(self):
@@ -128,11 +124,11 @@ class TimeLoop:
     def time_integration(
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         # TODO (Chia Rui): expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
         prognostic_state_list: list[prognostics.PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: dycore_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -200,9 +196,9 @@ class TimeLoop:
     def _integrate_one_time_step(
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state_list: list[prognostics.PrognosticState],
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: dycore_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -227,9 +223,9 @@ class TimeLoop:
 
     def _do_dyn_substepping(
         self,
-        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state_list: list[prognostics.PrognosticState],
-        prep_adv: solve_nh_states.PrepAdvection,
+        prep_adv: dycore_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -351,8 +347,7 @@ def initialize(
     log.info("initializing diffusion")
     diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
     exchange = decomposition.create_exchange(props, decomp_info)
-    diffusion_granule = diffusion.Diffusion(exchange)
-    diffusion_granule.init(
+    diffusion_granule = diffusion.Diffusion(
         icon_grid,
         config.diffusion_config,
         diffusion_params,
@@ -361,13 +356,14 @@ def initialize(
         diffusion_interpolation_state,
         edge_geometry,
         cell_geometry,
+        exchange=exchange,
+        backend=gtfn_cpu,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
-    solve_nonhydro_granule = solve_nh.SolveNonhydro()
-    solve_nonhydro_granule.init(
-        grid=icon_grid,
+    solve_nonhydro_granule = solve_nh.SolveNonhydro(
+        backend=gtfn_cpu,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,

@@ -42,8 +42,7 @@ TODO (halungge): except for domain parameters and other fields managed by the sa
 TODO: for the numpy functions we might have to work on the func interfaces to make them a bit more uniform.
 
 """
-
-import functools
+import enum
 import inspect
 from typing import (
     Any,
@@ -61,8 +60,9 @@ import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import gt4py.next.ffront.decorator as gtx_decorator
 import xarray as xa
+from gt4py.next import backend
 
-from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import (
     base as base_grid,
     horizontal as h_grid,
@@ -71,7 +71,8 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import model, utils as state_utils
-from icon4py.model.common.utils import builder
+from icon4py.model.common.states.model import FieldMetaData
+from icon4py.model.common.states.utils import FieldType, to_data_array
 
 
 DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
@@ -104,7 +105,7 @@ class FieldProvider(Protocol):
     def __call__(
         self,
         field_name: str,
-        field_src: Optional[state_utils.FieldSource],
+        field_src: Optional["FieldSource"],
         backend: Optional[gtx_backend.Backend],
         grid: Optional[GridProvider],
     ) -> state_utils.FieldType:
@@ -121,6 +122,70 @@ class FieldProvider(Protocol):
     @property
     def func(self) -> Callable:
         ...
+
+
+class RetrievalType(enum.Enum):
+    FIELD = 0
+    DATA_ARRAY = 1
+    METADATA = 2
+
+
+class FieldSource(Protocol):
+    """
+    Protocol for object that can be queried for fields and field metadata
+
+    Provides a default implementation of the get method.
+    """
+
+    @property
+    def metadata(self) -> dict[str, FieldMetaData]:
+        ...
+
+    @property
+    def providers(self) -> dict[str, FieldProvider]:
+        ...
+
+    @property
+    def backend(self) -> backend.Backend:
+        ...
+
+    @property
+    def grid_provider(self) -> GridProvider:
+        ...
+
+    def get(
+        self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
+    ) -> Union[FieldType, xa.DataArray, model.FieldMetaData]:
+        if field_name not in self.providers:
+            raise ValueError(f"Field '{field_name}' not provided by the source '{self.__class__}'")
+        match type_:
+            case RetrievalType.METADATA:
+                return self.metadata[field_name]
+            case RetrievalType.FIELD | RetrievalType.DATA_ARRAY:
+                provider = self.providers[field_name]
+                if field_name not in provider.fields:
+                    raise ValueError(
+                        f"Field {field_name} not provided by f{provider.func.__name__}."
+                    )
+
+                buffer = provider(field_name, self, self.backend, self.grid_provider)
+                return (
+                    buffer
+                    if type_ == RetrievalType.FIELD
+                    else to_data_array(buffer, self.metadata[field_name])
+                )
+            case _:
+                raise ValueError(f"Invalid retrieval type {type_}")
+
+    def register_provider(self, provider: FieldProvider):
+        for dependency in provider.dependencies:
+            if dependency not in self.providers.keys():
+                raise ValueError(
+                    f"Dependency '{dependency}' not found in registered providers of source {self.__class__}"
+                )
+
+        for field in provider.fields:
+            self.providers[field] = provider
 
 
 class PrecomputedFieldProvider(FieldProvider):
@@ -173,14 +238,14 @@ class ProgramFieldProvider(FieldProvider):
         domain: dict[gtx.Dimension, tuple[DomainType, DomainType]],
         fields: dict[str, str],
         deps: dict[str, str],
-        params: Optional[dict[str, state_utils.Scalar]] = None,
+        params: Optional[dict[str, state_utils.ScalarType]] = None,
     ):
         self._func = func
         self._compute_domain = domain
         self._dependencies = deps
         self._output = fields
         self._params = params if params is not None else {}
-        self._fields: dict[str, Optional[gtx.Field | state_utils.Scalar]] = {
+        self._fields: dict[str, Optional[gtx.Field | state_utils.ScalarType]] = {
             name: None for name in fields.values()
         }
 
@@ -191,7 +256,7 @@ class ProgramFieldProvider(FieldProvider):
         self,
         backend: gtx_backend.Backend,
         grid: base_grid.BaseGrid,
-        metadata: dict[str, model.FieldMetaData],
+        dtype: state_utils.ScalarType = ta.wpfloat,
     ) -> dict[str, state_utils.FieldType]:
         def _map_size(dim: gtx.Dimension, grid: base_grid.BaseGrid) -> int:
             if dim == dims.KHalfDim:
@@ -207,7 +272,7 @@ class ProgramFieldProvider(FieldProvider):
         field_domain = {
             _map_dim(dim): (0, _map_size(dim, grid)) for dim in self._compute_domain.keys()
         }
-        return {k: allocate(field_domain, dtype=metadata[k]["dtype"]) for k in self._fields.keys()}
+        return {k: allocate(field_domain, dtype=dtype) for k in self._fields.keys()}
 
     # TODO (@halungge) this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
@@ -258,7 +323,7 @@ class ProgramFieldProvider(FieldProvider):
     def __call__(
         self,
         field_name: str,
-        factory: state_utils.FieldSource,
+        factory: FieldSource,
         backend: gtx_backend.Backend,
         grid_provider: GridProvider,
     ):
@@ -268,14 +333,17 @@ class ProgramFieldProvider(FieldProvider):
 
     def _compute(
         self,
-        factory: state_utils.FieldSource,
+        factory: FieldSource,
         backend: gtx_backend.Backend,
         grid_provider: GridProvider,
     ) -> None:
-        metadata = {
-            v: factory.get(v, state_utils.RetrievalType.METADATA) for k, v in self._output.items()
-        }
-        self._fields = self._allocate(backend, grid_provider.grid, metadata)
+        try:
+            metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
+            dtype = metadata["dtype"]
+        except (ValueError, KeyError):
+            dtype = ta.wpfloat
+
+        self._fields = self._allocate(backend, grid_provider.grid, dtype=dtype)
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
@@ -301,7 +369,9 @@ class NumpyFieldsProvider(FieldProvider):
     """
     Computes a field defined by a numpy function.
 
-    TODO (halungge): need to specify a parameter source to be able to postpone evaluation
+    TODO (halungge): - need to specify a parameter source to be able to postpone evaluation:  paramters are mostly
+                    configuration values
+                    - need to able to access fields from several sources.
 
 
     Args:
@@ -309,7 +379,9 @@ class NumpyFieldsProvider(FieldProvider):
         domain: the compute domain used for the stencil computation
         fields: Seq[str] names under which the results fo the function will be registered
         deps: dict[str, str] input fields used for computing this stencil: the key is the variable name
-            used in the program and the value the name of the field it depends on.
+            used in the function and the value the name of the field it depends on.
+        connectivities: dict[str, Dimension] dict where the key is the variable named used in the
+            function and the value the sparse Dimension of the connectivity field
         params: scalar arguments for the function
     """
 
@@ -319,22 +391,21 @@ class NumpyFieldsProvider(FieldProvider):
         domain: dict[gtx.Dimension : tuple[DomainType, DomainType]],
         fields: Sequence[str],
         deps: dict[str, str],
-        offsets: Optional[dict[str, gtx.Dimension]] = None,
-        params: Optional[dict[str, state_utils.Scalar]] = None,
+        connectivities: Optional[dict[str, gtx.Dimension]] = None,
+        params: Optional[dict[str, state_utils.ScalarType]] = None,
     ):
         self._func = func
         self._compute_domain = domain
-        self._offsets = offsets
         self._dims = domain.keys()
         self._fields: dict[str, Optional[state_utils.FieldType]] = {name: None for name in fields}
         self._dependencies = deps
-        self._offsets = offsets if offsets is not None else {}
+        self.connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
 
     def __call__(
         self,
         field_name: str,
-        factory: state_utils.FieldSource,
+        factory: FieldSource,
         backend: gtx_backend.Backend,
         grid: GridProvider,
     ) -> state_utils.FieldType:
@@ -344,13 +415,13 @@ class NumpyFieldsProvider(FieldProvider):
 
     def _compute(
         self,
-        factory: state_utils.FieldSource,
+        factory: FieldSource,
         backend: gtx_backend.Backend,
         grid_provider: GridProvider,
     ) -> None:
         self._validate_dependencies()
         args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
-        offsets = {k: grid_provider.grid.connectivities[v] for k, v in self._offsets.items()}
+        offsets = {k: grid_provider.grid.connectivities[v] for k, v in self._connectivities.items()}
         args.update(offsets)
         args.update(self._params)
         results = self._func(**args)
@@ -368,7 +439,7 @@ class NumpyFieldsProvider(FieldProvider):
             parameter_definition = parameters.get(dep_key)
             assert parameter_definition.annotation == xp.ndarray, (
                 f"Dependency {dep_key} in function {self._func.__name__}:  does not exist or has "
-                f"or has wrong type ('expected np.ndarray') in {func_signature}."
+                f"wrong type ('expected xp.ndarray') in {func_signature}."
             )
 
         for param_key, param_value in self._params.items():
@@ -396,7 +467,7 @@ class NumpyFieldsProvider(FieldProvider):
 
 def _check(
     parameter_definition: inspect.Parameter,
-    value: Union[state_utils.Scalar, gtx.Field],
+    value: Union[state_utils.ScalarType, gtx.Field],
     union: Union,
 ) -> bool:
     members = get_args(union)
@@ -405,112 +476,3 @@ def _check(
         and parameter_definition.annotation in members
         and type(value) in members
     )
-
-
-class PartialConfigurable(Protocol):
-    """
-    Protocol to mark classes that are not yet fully configured upon instaniation.
-
-    Additionally provides a decorator that makes use of the Protocol an can be used in
-    concrete examples to trigger a check whether the setup is complete.
-    """
-
-    def is_fully_configured(self) -> bool:
-        return False
-
-    @staticmethod
-    def check_setup(func):
-        @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            if not self.is_fully_configured():
-                raise exceptions.IncompleteSetupError("Factory not fully instantiated")
-            return func(self, *args, **kwargs)
-
-        return wrapper
-
-
-class FieldsFactory(state_utils.FieldSource, PartialConfigurable, GridProvider):
-    def __init__(
-        self,
-        metadata: dict[str, model.FieldMetaData],
-        grid: Optional[icon_grid.IconGrid] = None,
-        vertical_grid: Optional[v_grid.VerticalGrid] = None,
-        backend: Optional[gtx_backend.Backend] = None,
-    ):
-        self._metadata = metadata
-        self._grid = grid
-        self._vertical = vertical_grid
-        self._providers: dict[str, "FieldProvider"] = {}
-        self._backend = backend
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
-
-    """
-    Factory for fields.
-
-    It can be queried at runtime for fields. Fields will be computed upon first request.
-    Uses FieldProvider to delegate the computation of the fields
-    """
-
-    def is_fully_configured(self):
-        has_grid = self._grid is not None
-        has_vertical = self._vertical is not None
-        return has_grid and has_vertical
-
-    @builder.builder
-    def with_grid(self, grid: icon_grid.IconGrid, vertical_grid: v_grid.VerticalGrid):
-        self._grid = grid
-        self._vertical = vertical_grid
-
-    @builder.builder
-    def with_backend(self, backend):
-        self._backend = backend
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
-
-    @property
-    def backend(self):
-        return self._backend
-
-    @property
-    def grid(self):
-        return self._grid
-
-    @property
-    def vertical_grid(self):
-        return self._vertical
-
-    @property
-    def allocator(self):
-        return self._allocator
-
-    def register_provider(self, provider: FieldProvider):
-        for dependency in provider.dependencies:
-            if dependency not in self._providers.keys():
-                raise ValueError(f"Dependency '{dependency}' not found in registered providers")
-
-        for field in provider.fields:
-            self._providers[field] = provider
-
-    @PartialConfigurable.check_setup
-    def get(
-        self, field_name: str, type_: state_utils.RetrievalType = state_utils.RetrievalType.FIELD
-    ) -> Union[state_utils.FieldType, xa.DataArray, model.FieldMetaData]:
-        if field_name not in self._providers:
-            raise ValueError(f"Field {field_name} not provided by the factory")
-        match type_:
-            case state_utils.RetrievalType.METADATA:
-                return self._metadata[field_name]
-            case state_utils.RetrievalType.FIELD | state_utils.RetrievalType.DATA_ARRAY:
-                provider = self._providers[field_name]
-                if field_name not in provider.fields:
-                    raise ValueError(
-                        f"Field {field_name} not provided by f{provider.func.__name__}."
-                    )
-
-                buffer = provider(field_name, self, self.backend, self)
-                return (
-                    buffer
-                    if type_ == state_utils.RetrievalType.FIELD
-                    else state_utils.to_data_array(buffer, self._metadata[field_name])
-                )
-            case _:
-                raise ValueError(f"Invalid retrieval type {type_}")

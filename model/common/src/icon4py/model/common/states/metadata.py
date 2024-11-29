@@ -14,6 +14,7 @@ from icon4py.model.common.states import model
 
 
 INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
+
 INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
 
 attrs: Final[dict[str, model.FieldMetaData]] = {

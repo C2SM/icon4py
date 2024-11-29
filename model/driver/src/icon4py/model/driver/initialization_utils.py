@@ -11,14 +11,14 @@ import functools
 import logging
 import pathlib
 
-from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.diffusion import diffusion_states
+from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.grid import geometry, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import icon as icon_grid, states as grid_states, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -93,9 +93,9 @@ def read_icon_grid(
 def model_initialization_serialbox(
     grid: icon_grid.IconGrid, path: pathlib.Path, rank=0
 ) -> tuple[
-    diffus_states.DiffusionDiagnosticState,
-    solve_nh_states.DiagnosticStateNonHydro,
-    solve_nh_states.PrepAdvection,
+    diffusion_states.DiffusionDiagnosticState,
+    dycore_states.DiagnosticStateNonHydro,
+    dycore_states.PrepAdvection,
     float,
     diagnostics.DiagnosticState,
     prognostics.PrognosticState,
@@ -128,7 +128,7 @@ def model_initialization_serialbox(
     diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
         diffusion_init_savepoint,
     )
-    solve_nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
+    solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
         exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
         rho_ic=solve_nonhydro_init_savepoint.rho_ic(),
@@ -171,7 +171,7 @@ def model_initialization_serialbox(
         exner=solve_nonhydro_init_savepoint.exner_new(),
     )
 
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
         mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
@@ -191,15 +191,15 @@ def model_initialization_serialbox(
 
 def read_initial_state(
     grid: icon_grid.IconGrid,
-    cell_param: geometry.CellParams,
-    edge_param: geometry.EdgeParams,
+    cell_param: grid_states.CellParams,
+    edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
-    diffus_states.DiffusionDiagnosticState,
-    solve_nh_states.DiagnosticStateNonHydro,
-    solve_nh_states.PrepAdvection,
+    diffusion_states.DiffusionDiagnosticState,
+    dycore_states.DiagnosticStateNonHydro,
+    dycore_states.PrepAdvection,
     float,
     diagnostics.DiagnosticState,
     prognostics.PrognosticState,
@@ -275,8 +275,8 @@ def read_geometry_fields(
     grid_root=GRID_ROOT,
     grid_level=GRID_LEVEL,
 ) -> tuple[
-    geometry.EdgeParams,
-    geometry.CellParams,
+    grid_states.EdgeParams,
+    grid_states.CellParams,
     v_grid.VerticalGrid,
     fa.CellField[bool],
 ]:
@@ -344,10 +344,10 @@ def read_static_fields(
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
-    diffus_states.DiffusionMetricState,
-    diffus_states.DiffusionInterpolationState,
-    solve_nh_states.MetricStateNonHydro,
-    solve_nh_states.InterpolationState,
+    diffusion_states.DiffusionMetricState,
+    diffusion_states.DiffusionInterpolationState,
+    dycore_states.MetricStateNonHydro,
+    dycore_states.InterpolationState,
     diagnostics.DiagnosticMetricState,
 ]:
     """
@@ -375,7 +375,7 @@ def read_static_fields(
         )
         interpolation_savepoint = data_provider.from_interpolation_savepoint()
         grg = interpolation_savepoint.geofac_grg()
-        solve_nonhydro_interpolation_state = solve_nh_states.InterpolationState(
+        solve_nonhydro_interpolation_state = dycore_states.InterpolationState(
             c_lin_e=interpolation_savepoint.c_lin_e(),
             c_intp=interpolation_savepoint.c_intp(),
             e_flx_avg=interpolation_savepoint.e_flx_avg(),
@@ -394,7 +394,7 @@ def read_static_fields(
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
-        solve_nonhydro_metric_state = solve_nh_states.MetricStateNonHydro(
+        solve_nonhydro_metric_state = dycore_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
             rayleigh_w=metrics_savepoint.rayleigh_w(),

@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next import where
@@ -15,6 +14,7 @@ import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
+from icon4py.model.common.grid import grid_manager as gm
 
 
 def compute_c_lin_e(
@@ -27,12 +27,12 @@ def compute_c_lin_e(
     Compute E2C average inverse distance.
 
     Args:
-        edge_cell_length: numpy array, representing a Field[[EdgeDim, E2CDim], ta.wpfloat]
-        inv_dual_edge_length: inverse dual edge length, numpy array representing a Field[[EdgeDim], ta.wpfloat]
-        owner_mask: numpy array, representing a Field[[EdgeDim], bool]boolean field, True for all edges owned by this compute node
+        edge_cell_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        inv_dual_edge_length: inverse dual edge length, numpy array representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
 
-    Returns: c_lin_e: numpy array, representing Field[[EdgeDim, E2CDim], ta.wpfloat]
+    Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
@@ -96,11 +96,11 @@ def compute_geofac_n2s(
     Compute geometric factor for nabla2-scalar.
 
     Args:
-        dual_edge_length: numpy array, representing a Field[[EdgeDim], ta.wpfloat]
-        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        c2e2c: numpy array, representing a Field[[CellDim, C2E2CDim], int32]
+        dual_edge_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
         horizontal_start:
 
     Returns:
@@ -148,15 +148,15 @@ def compute_primal_normal_ec(
     Compute primal_normal_ec.
 
     Args:
-        primal_normal_cell_x: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        primal_normal_cell_y: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        primal_normal_cell_x: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        primal_normal_cell_y: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        primal_normal_ec: numpy array, representing a Field[[CellDim, C2EDim, 2], ta.wpfloat]
+        primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
     """
     llb = horizontal_start
     primal_normal_ec = np.zeros([c2e.shape[0], c2e.shape[1], 2])
@@ -193,16 +193,16 @@ def compute_geofac_grg(
     Compute geometrical factor for Green-Gauss gradient.
 
     Args:
-        primal_normal_ec: numpy array, representing a Field[[CellDim, C2EDim, 2], ta.wpfloat]
-        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        c_lin_e: numpy array, representing a Field[[EdgeDim, E2CDim], ta.wpfloat]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        c2e2c: numpy array, representing a Field[[CellDim, C2E2CDim], int32]
+        primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
+        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        c_lin_e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        geofac_grg: numpy array, representing a Field[[CellDim, C2EDim + 1, 2], ta.wpfloat]
+        geofac_grg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim + 1, 2], ta.wpfloat]
     """
     llb = horizontal_start
     num_cells = c2e.shape[0]
@@ -250,16 +250,16 @@ def compute_geofac_grdiv(
     Compute geometrical factor for gradient of divergence (triangles only).
 
     Args:
-        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        inv_dual_edge_length: numpy array, representing a Field[[EdgeDim], ta.wpfloat]
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        e2c2e: numpy array, representing a Field[[EdgeDim, E2C2EDim], int32]
+        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        inv_dual_edge_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        e2c2e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        geofac_grdiv: numpy array, representing a Field[[EdgeDim, E2C2EODim], ta.wpfloat]
+        geofac_grdiv: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
     llb = horizontal_start
     num_edges = e2c.shape[0]
@@ -370,34 +370,34 @@ def weighting_factors(
         x[i] = np.where(x[i] < -3.5, x[i] + np.pi * 2, x[i])
 
     mask = np.logical_and(abs(x[1] - x[0]) > 1.0e-11, abs(y[2] - y[0]) > 1.0e-11)
+    wgt_1_no_mask = (
+        1.0
+        / ((y[1] - y[0]) - (x[1] - x[0]) * (y[2] - y[0]) / (x[2] - x[0]))
+        * (1.0 - wgt_loc)
+        * (-y[0] + x[0] * (y[2] - y[0]) / (x[2] - x[0]))
+    )
     wgt[2] = np.where(
         mask,
         1.0
         / ((y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]) / (x[1] - x[0]))
         * (1.0 - wgt_loc)
         * (-y[0] + x[0] * (y[1] - y[0]) / (x[1] - x[0])),
-        1.0
-        / ((y[1] - y[0]) - (x[1] - x[0]) * (y[2] - y[0]) / (x[2] - x[0]))
-        * (1.0 - wgt_loc)
-        * (-y[0] + x[0] * (y[2] - y[0]) / (x[2] - x[0])),
+        (-(1.0 - wgt_loc) * x[0] - wgt_1_no_mask * (x[1] - x[0])) / (x[2] - x[0]),
     )
     wgt[1] = np.where(
         mask,
         (-(1.0 - wgt_loc) * x[0] - wgt[2] * (x[2] - x[0])) / (x[1] - x[0]),
-        (-(1.0 - wgt_loc) * x[0] - wgt[1] * (x[1] - x[0])) / (x[2] - x[0]),
+        wgt_1_no_mask,
     )
-    wgt[1], wgt[2] = np.where(mask, (wgt[1], wgt[2]), (wgt[2], wgt[1]))
-    wgt[0] = 1.0 - wgt_loc - wgt[1] - wgt[2]
-
+    wgt[0] = 1.0 - wgt[1] - wgt[2] if wgt_loc == 0.0 else 1.0 - wgt_loc - wgt[1] - wgt[2]
     return wgt
 
 
-def compute_c_bln_avg(
-    divavg_cntrwgt: ta.wpfloat,
-    owner_mask: np.ndarray,
+def _compute_c_bln_avg(
     c2e2c: np.ndarray,
     lat: np.ndarray,
     lon: np.ndarray,
+    divavg_cntrwgt: ta.wpfloat,
     horizontal_start: np.int32,
 ) -> np.ndarray:
     """
@@ -405,127 +405,191 @@ def compute_c_bln_avg(
 
     Args:
         divavg_cntrwgt:
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e2c: numpy array, representing a Field[[EdgeDim, C2E2CDim], int32]
-        lat: \\ numpy array, representing a Field[[CellDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, C2E2CDim], gtx.int32]
+        lat: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         lon: //
         horizontal_start:
 
     Returns:
-        c_bln_avg: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
+        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
-    llb = horizontal_start
     num_cells = c2e2c.shape[0]
-    c_bln_avg = np.zeros([num_cells, 4])
-    wgt_loc = divavg_cntrwgt
-    yloc = np.zeros(num_cells)
-    xloc = np.zeros(num_cells)
-    yloc[llb:] = lat[llb:]
-    xloc[llb:] = lon[llb:]
-    ytemp = np.zeros([3, num_cells])
-    xtemp = np.zeros([3, num_cells])
+    ytemp = np.zeros([c2e2c.shape[1], num_cells - horizontal_start])
+    xtemp = np.zeros([c2e2c.shape[1], num_cells - horizontal_start])
 
-    for i in range(3):
-        ytemp[i, llb:] = lat[c2e2c[llb:, i]]
-        xtemp[i, llb:] = lon[c2e2c[llb:, i]]
+    for i in range(ytemp.shape[0]):
+        ytemp[i] = lat[c2e2c[horizontal_start:, i]]
+        xtemp[i] = lon[c2e2c[horizontal_start:, i]]
 
     wgt = weighting_factors(
-        ytemp[:, llb:],
-        xtemp[:, llb:],
-        yloc[llb:],
-        xloc[llb:],
-        wgt_loc,
+        ytemp,
+        xtemp,
+        lat[horizontal_start:],
+        lon[horizontal_start:],
+        divavg_cntrwgt,
     )
-
-    c_bln_avg[llb:, 0] = np.where(owner_mask[llb:], wgt_loc, c_bln_avg[llb:, 0])
-    for i in range(3):
-        c_bln_avg[llb:, i + 1] = np.where(owner_mask[llb:], wgt[i], c_bln_avg[llb:, i + 1])
-
+    c_bln_avg = np.zeros((c2e2c.shape[0], c2e2c.shape[1] + 1))
+    c_bln_avg[horizontal_start:, 0] = divavg_cntrwgt
+    c_bln_avg[horizontal_start:, 1] = wgt[0]
+    c_bln_avg[horizontal_start:, 2] = wgt[1]
+    c_bln_avg[horizontal_start:, 3] = wgt[2]
     return c_bln_avg
 
 
-def compute_force_mass_conservation_to_c_bln_avg(
+def _force_mass_conservation_to_c_bln_avg(
+    c2e2c0: np.ndarray,
     c_bln_avg: np.ndarray,
-    divavg_cntrwgt: ta.wpfloat,
-    owner_mask: np.ndarray,
-    c2e2c: np.ndarray,
     cell_areas: np.ndarray,
+    cell_owner_mask: np.ndarray,
+    divavg_cntrwgt: ta.wpfloat,
     horizontal_start: np.int32,
-    horizontal_start_p3: np.int32,
-    niter: np.ndarray = 1000,
+    niter: int = 1000,
 ) -> np.ndarray:
     """
-    Compute the weighting coefficients for cell averaging with variable interpolation factors.
+    Iteratively enforce mass conservation to the input field c_bln_avg.
 
-    The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
+    Mass conservation is enforced by the following condition:
+    The three point divergence calculated on any given grid point is used with a total factor of 1.
 
-    and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients are not aliased into a checkerboard pattern between upward- and downward directed cells. The third condition is sum(w(i)) = 1., and the weight of the local point is 0.5.
+    Practically, the sum of the  bilinear cell weights  applied to a cell from all neighbors times its area should be exactly one.
 
-    force_mass_conservation_to_bilinear_cellavg_wgt
+    The weights are adjusted iteratively by the condition up to a max of niter iterations
+
     Args:
-        c_bln_avg: bilinear cellavg wgt, numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        divavg_cntrwgt:
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e2c: numpy array, representing a Field[[EdgeDim, C2E2CDim], int32]
-        cell_areas: numpy array, representing a Field[[CellDim], ta.wpfloat]
+        c2e2c0: cell to cell connectivity
+        c_bln_avg: input field: bilinear cell weight average
+        cell_areas: area of cells
+        cell_owner_mask:
+        divavg_cntrwgt: configured central weight
         horizontal_start:
-        horizontal_start_p3:
-        niter: number of iterations until convergence is assumed
+        niter: max number of iterations
 
     Returns:
-        c_bln_avg: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
+
     """
-    llb = horizontal_start
-    llb2 = horizontal_start_p3
-    num_cells = c2e2c.shape[0]
-    index = np.arange(llb, num_cells)
 
-    inv_neighbor_id = -np.ones([num_cells, 3], dtype=int)
-    for i in range(3):
-        for j in range(3):
-            inv_neighbor_id[llb:, j] = np.where(
-                np.logical_and(c2e2c[c2e2c[llb:, j], i] == index, c2e2c[llb:, j] >= 0),
-                i,
-                inv_neighbor_id[llb:, j],
-            )
+    def _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx) -> np.ndarray:
+        """
+        Compute the total weight which each local point contributes to the sum.
 
-    relax_coeff = 0.46
-    maxwgt_loc = divavg_cntrwgt + 0.003
-    minwgt_loc = divavg_cntrwgt - 0.003
-    # TODO: in this function halo cell exchanges (sync) are missing, here for inv_neighbor_id, but also within the iteration for several variables
-    for iteration in range(niter):
-        wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(
-            c_bln_avg[c2e2c[llb:], inv_neighbor_id[llb:] + 1] * cell_areas[c2e2c[llb:]], axis=1
+        Args:
+            c_bln_avg: ndarray representing a weight field of (CellDim, C2E2C0Dim)
+            inverse_neighbor_index: Sequence of to access all weights of a local cell in a field of shape (CellDim, C2E2C0Dim)
+
+        Returns: ndarray of CellDim, containing the sum of weigh contributions for each local cell index
+
+        """
+        weights = np.sum(c_bln_avg[c2e2c0, inverse_neighbor_idx] * cell_areas[c2e2c0], axis=1)
+        return weights
+
+    def _compute_residual_to_mass_conservation(
+        owner_mask: np.ndarray, local_weight: np.ndarray, cell_area: np.ndarray
+    ) -> np.ndarray:
+        """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
+        horizontal_size = local_weight.shape[0]
+        assert horizontal_size == owner_mask.shape[0], "Fields do not have the same shape"
+        assert horizontal_size == cell_area.shape[0], "Fields do not have the same shape"
+        residual = np.where(owner_mask, local_weight / cell_area - 1.0, 0.0)
+        return residual
+
+    def _apply_correction(
+        c_bln_avg: np.ndarray,
+        residual: np.ndarray,
+        c2e2c0: np.ndarray,
+        divavg_cntrwgt: float,
+        horizontal_start: gtx.int32,
+    ) -> np.ndarray:
+        """Apply correction to local weigths based on the computed residuals."""
+        maxwgt_loc = divavg_cntrwgt + 0.003
+        minwgt_loc = divavg_cntrwgt - 0.003
+        relax_coeff = 0.46
+        c_bln_avg[horizontal_start:, :] = (
+            c_bln_avg[horizontal_start:, :] - relax_coeff * residual[c2e2c0][horizontal_start:, :]
         )
-        resid = wgt_loc_sum[llb2 - llb :] / cell_areas[llb2:] - 1.0
-        if iteration < niter - 1:
-            c_bln_avg[llb2:, 0] = np.where(
-                owner_mask[llb2:], c_bln_avg[llb2:, 0] - relax_coeff * resid, c_bln_avg[llb2:, 0]
+        local_weight = np.sum(c_bln_avg, axis=1) - 1.0
+
+        c_bln_avg[horizontal_start:, :] = c_bln_avg[horizontal_start:, :] - (
+            0.25 * local_weight[horizontal_start:, np.newaxis]
+        )
+
+        # avoid runaway condition:
+        c_bln_avg[horizontal_start:, 0] = np.maximum(c_bln_avg[horizontal_start:, 0], minwgt_loc)
+        c_bln_avg[horizontal_start:, 0] = np.minimum(c_bln_avg[horizontal_start:, 0], maxwgt_loc)
+        return c_bln_avg
+
+    def _enforce_mass_conservation(
+        c_bln_avg: np.ndarray,
+        residual: np.ndarray,
+        owner_mask: np.ndarray,
+        horizontal_start: gtx.int32,
+    ) -> np.ndarray:
+        """Enforce the mass conservation condition on the local cells by forcefully subtracting the
+        residual from the central field contribution."""
+        c_bln_avg[horizontal_start:, 0] = np.where(
+            owner_mask[horizontal_start:],
+            c_bln_avg[horizontal_start:, 0] - residual[horizontal_start:],
+            c_bln_avg[horizontal_start:, 0],
+        )
+        return c_bln_avg
+
+    local_summed_weights = np.zeros(c_bln_avg.shape[0])
+    residual = np.zeros(c_bln_avg.shape[0])
+    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0)
+
+    for iteration in range(niter):
+        local_summed_weights[horizontal_start:] = _compute_local_weights(
+            c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx
+        )[horizontal_start:]
+
+        residual[horizontal_start:] = _compute_residual_to_mass_conservation(
+            cell_owner_mask, local_summed_weights, cell_areas
+        )[horizontal_start:]
+
+        max_ = np.max(residual)
+        if iteration >= (niter - 1) or max_ < 1e-9:
+            print(f"number of iterations: {iteration} - max residual={max_}")
+            c_bln_avg = _enforce_mass_conservation(
+                c_bln_avg, residual, cell_owner_mask, horizontal_start
             )
-            for i in range(3):
-                c_bln_avg[llb2:, i + 1] = np.where(
-                    owner_mask[llb2:],
-                    c_bln_avg[llb2:, i + 1] - relax_coeff * resid[c2e2c[llb2:, i] - llb2],
-                    c_bln_avg[llb2:, i + 1],
-                )
-            wgt_loc_sum = np.sum(c_bln_avg[llb2:], axis=1) - 1.0
-            for i in range(4):
-                c_bln_avg[llb2:, i] = c_bln_avg[llb2:, i] - 0.25 * wgt_loc_sum
-            c_bln_avg[llb2:, 0] = np.where(
-                owner_mask[llb2:],
-                np.where(c_bln_avg[llb2:, 0] > minwgt_loc, c_bln_avg[llb2:, 0], minwgt_loc),
-                c_bln_avg[llb2:, 0],
-            )
-            c_bln_avg[llb2:, 0] = np.where(
-                owner_mask[llb2:],
-                np.where(c_bln_avg[llb2:, 0] < maxwgt_loc, c_bln_avg[llb2:, 0], maxwgt_loc),
-                c_bln_avg[llb2:, 0],
-            )
-        else:
-            c_bln_avg[llb2:, 0] = np.where(
-                owner_mask[llb2:], c_bln_avg[llb2:, 0] - resid, c_bln_avg[llb2:, 0]
-            )
+            return c_bln_avg
+
+        c_bln_avg = _apply_correction(
+            c_bln_avg=c_bln_avg,
+            residual=residual,
+            c2e2c0=c2e2c0,
+            divavg_cntrwgt=divavg_cntrwgt,
+            horizontal_start=horizontal_start,
+        )
+
     return c_bln_avg
+
+
+def compute_mass_conserving_bilinear_cell_average_weight(
+    c2e2c0: np.ndarray,
+    lat: np.ndarray,
+    lon: np.ndarray,
+    cell_areas: np.ndarray,
+    cell_owner_mask: np.ndarray,
+    divavg_cntrwgt: ta.wpfloat,
+    horizontal_start: np.int32,
+    horizontal_start_level_3,
+) -> np.ndarray:
+    c_bln_avg = _compute_c_bln_avg(c2e2c0[:, 1:], lat, lon, divavg_cntrwgt, horizontal_start)
+    return _force_mass_conservation_to_c_bln_avg(
+        c2e2c0, c_bln_avg, cell_areas, cell_owner_mask, divavg_cntrwgt, horizontal_start_level_3
+    )
+
+
+def create_inverse_neighbor_index(c2e2c0):
+    inv_neighbor_idx = -1 * np.ones(c2e2c0.shape, dtype=int)
+
+    for jc in range(c2e2c0.shape[0]):
+        for i in range(c2e2c0.shape[1]):
+            if c2e2c0[jc, i] >= 0:
+                inv_neighbor_idx[jc, i] = np.argwhere(c2e2c0[c2e2c0[jc, i], :] == jc)[0, 0]
+
+    return inv_neighbor_idx
 
 
 def compute_e_flx_avg(
@@ -544,19 +608,19 @@ def compute_e_flx_avg(
     Compute edge flux average
 
     Args:
-        c_bln_avg: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
-        owner_mask: numpy array, representing a Field[[EdgeDim], bool]
-        primal_cart_normal: numpy array, representing a Field[[EdgeDim], ta.wpfloat]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        c2e2c: numpy array, representing a Field[[CellDim, C2E2CDim], int32]
-        e2c2e: numpy array, representing a Field[[EdgeDim, E2C2EDim], int32]
+        c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
+        primal_cart_normal: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
+        e2c2e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start_p3:
         horizontal_start_p4:
 
     Returns:
-        e_flx_avg: numpy array, representing a Field[[EdgeDim, E2C2EODim], ta.wpfloat]
+        e_flx_avg: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
     llb = 0
     e_flx_avg = np.zeros([e2c.shape[0], 5])
@@ -674,75 +738,84 @@ def compute_cells_aw_verts(
     dual_area: np.ndarray,
     edge_vert_length: np.ndarray,
     edge_cell_length: np.ndarray,
-    owner_mask: np.ndarray,
     v2e: np.ndarray,
     e2v: np.ndarray,
     v2c: np.ndarray,
     e2c: np.ndarray,
-    horizontal_start: np.int32,
+    horizontal_start_vertex: ta.wpfloat,
 ) -> np.ndarray:
     """
     Compute cells_aw_verts.
 
     Args:
-        dual_area: numpy array, representing a Field[[VertexDim], ta.wpfloat]
-        edge_vert_length: \\ numpy array, representing a Field[[EdgeDim, E2CDim], ta.wpfloat]
+        dual_area: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
+        edge_vert_length: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         edge_cell_length: //
-        owner_mask: numpy array, representing a Field[[VertexDim], bool]
-        v2e: numpy array, representing a Field[[VertexDim, V2EDim], int32]
-        e2v: numpy array, representing a Field[[EdgeDim, E2VDim], int32]
-        v2c: numpy array, representing a Field[[VertexDim, V2CDim], int32]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], bool]
+        v2e: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2EDim], gtx.int32]
+        e2v: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.int32]
+        v2c: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2CDim], gtx.int32]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        aw_verts: numpy array, representing a Field[[VertexDim, 6], ta.wpfloat]
+        aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
-    llb = horizontal_start
-    cells_aw_verts = np.zeros([v2e.shape[0], 6])
-    for i in range(e2c.shape[1]):
+    cells_aw_verts = np.zeros(v2e.shape)
+    for jv in range(horizontal_start_vertex, cells_aw_verts.shape[0]):
+        cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
-            for jc in range(v2c.shape[1]):
-                mask = np.where(
-                    np.logical_and(v2e[llb:, je] >= 0, e2c[v2e[llb:, je], i] == v2c[llb:, jc]),
-                    owner_mask[llb:],
-                    False,
-                )
-                index = np.arange(llb, v2e.shape[0])
-                idx_ve = np.where(e2v[v2e[llb:, je], 0] == index, 0, 1)
-                cells_aw_verts[llb:, jc] = np.where(
-                    mask,
-                    cells_aw_verts[llb:, jc]
-                    + 0.5
-                    / dual_area[llb:]
-                    * edge_vert_length[v2e[llb:, je], idx_ve]
-                    * edge_cell_length[v2e[llb:, je], i],
-                    cells_aw_verts[llb:, jc],
-                )
+            # INVALID_INDEX
+            if je > gm.GridFile.INVALID_INDEX and (je > 0 and v2e[jv, je] == v2e[jv, je - 1]):
+                continue
+            ile = v2e[jv, je]
+            idx_ve = 0 if e2v[ile, 0] == jv else 1
+            cell_offset_idx_0 = e2c[ile, 0]
+            cell_offset_idx_1 = e2c[ile, 1]
+            for jc in range(v2e.shape[1]):
+                if jc > gm.GridFile.INVALID_INDEX and (jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]):
+                    continue
+                if cell_offset_idx_0 == v2c[jv, jc]:
+                    cells_aw_verts[jv, jc] = (
+                        cells_aw_verts[jv, jc]
+                        + 0.5
+                        / dual_area[jv]
+                        * edge_vert_length[ile, idx_ve]
+                        * edge_cell_length[ile, 0]
+                    )
+                elif cell_offset_idx_1 == v2c[jv, jc]:
+                    cells_aw_verts[jv, jc] = (
+                        cells_aw_verts[jv, jc]
+                        + 0.5
+                        / dual_area[jv]
+                        * edge_vert_length[ile, idx_ve]
+                        * edge_cell_length[ile, 1]
+                    )
+
     return cells_aw_verts
 
 
 def compute_e_bln_c_s(
-    owner_mask: np.ndarray,
     c2e: np.ndarray,
     cells_lat: np.ndarray,
     cells_lon: np.ndarray,
     edges_lat: np.ndarray,
     edges_lon: np.ndarray,
+    weighting_factor: float,
 ) -> np.ndarray:
     """
     Compute e_bln_c_s.
 
     Args:
-        owner_mask: numpy array, representing a Field[[CellDim], bool]
-        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
-        cells_lat: \\ numpy array, representing a Field[[CellDim], ta.wpfloat]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        cells_lat: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         cells_lon: //
-        edges_lat: \\ numpy array, representing a Field[[EdgeDim], ta.wpfloat]
+        edges_lat: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edges_lon: //
 
     Returns:
-        e_bln_c_s: numpy array, representing a Field[[CellDim, C2EDim], ta.wpfloat]
+        e_bln_c_s: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     llb = 0
     num_cells = c2e.shape[0]
@@ -761,11 +834,12 @@ def compute_e_bln_c_s(
         xtemp,
         yloc,
         xloc,
-        0.0,
+        weighting_factor,
     )
 
-    for i in range(wgt.shape[0]):
-        e_bln_c_s[llb:, i] = np.where(owner_mask[llb:], wgt[i], e_bln_c_s[llb:, i])
+    e_bln_c_s[:, 0] = wgt[0]
+    e_bln_c_s[:, 1] = wgt[1]
+    e_bln_c_s[:, 2] = wgt[2]
     return e_bln_c_s
 
 
@@ -799,23 +873,23 @@ def compute_pos_on_tplane_e_x_y(
     Args:
         grid_sphere_radius:
         primal_normal_v1: \\
-        primal_normal_v2:  \\ numpy array, representing a Field[[EdgeDim], ta.wpfloat]
+        primal_normal_v2:  \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         dual_normal_v1:    //
         dual_normal_v2:   //
-        cells_lon: \\ numpy array, representing a Field[[CellDim], ta.wpfloat]
+        cells_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[CellDim], ta.wpfloat]
         cells_lat: //
-        edges_lon: \\ numpy array, representing a Field[[EdgeDim], ta.wpfloat]
+        edges_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
         edges_lat: //
-        vertex_lon: \\ numpy array, representing a Field[[VertexDim], ta.wpfloat]
+        vertex_lon: \\ numpy array, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
         vertex_lat: //
-        owner_mask: numpy array, representing a Field[[EdgeDim], bool]
-        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
-        e2v: numpy array, representing a Field[[EdgeDim, E2VDim], int32]
-        e2c2e: numpy array, representing a Field[[EdgeDim, E2C2EDim], int32]
+        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
+        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        e2v: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], gtx.int32]
+        e2c2e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start:
 
     Returns:
-        pos_on_tplane_e_x: \\ numpy array, representing a Field[[EdgeDim, E2CDim], ta.wpfloat]
+        pos_on_tplane_e_x: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         pos_on_tplane_e_y: //
     """
     llb = horizontal_start

@@ -17,10 +17,10 @@ import netCDF4 as nc
 import numpy as np
 import xarray as xr
 
+import icon4py.model.common.states.metadata
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.io import cf_utils
-from icon4py.model.common.states import metadata
 
 
 EDGE: Final[str] = "edge"
@@ -117,7 +117,9 @@ class NETCDFWriter:
         interface_levels.units = "1"
         interface_levels.positive = "down"
         interface_levels.long_name = "model interface level index"
-        interface_levels.standard_name = metadata.INTERFACE_LEVEL_STANDARD_NAME
+        interface_levels.standard_name = (
+            icon4py.model.common.states.metadata.INTERFACE_LEVEL_STANDARD_NAME
+        )
         interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
 
         heights = self.dataset.createVariable("height", np.float64, (MODEL_INTERFACE_LEVEL,))
@@ -125,7 +127,9 @@ class NETCDFWriter:
         heights.positive = "up"
         heights.axis = cf_utils.COARDS_VERTICAL_COORDINATE_NAME
         heights.long_name = "height value of half levels without topography"
-        heights.standard_name = metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
+        heights.standard_name = (
+            icon4py.model.common.states.metadata.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
+        )
         heights[:] = self._vertical_params.interface_physical_height.ndarray
 
     def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:

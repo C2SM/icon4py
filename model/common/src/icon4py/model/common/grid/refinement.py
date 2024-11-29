@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import dataclasses
 import logging
 from typing import Final
@@ -20,7 +19,7 @@ from icon4py.model.common.settings import xp
 """
 Refinement control for ICON grid.
 
-Grid refinement is used in the context of 
+Grid refinement is used in the context of
 - local area grids to determine the type of a grid point,
 - nested horizontal grids to determine the nested overlap regions for feedback
 - domain decomposition to order grid points

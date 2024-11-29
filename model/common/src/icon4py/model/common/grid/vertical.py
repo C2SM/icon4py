@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import dataclasses
 import enum
 import functools
@@ -211,7 +210,7 @@ class VerticalGrid:
     @functools.cached_property
     def nflatlev(self) -> gtx.int32:
         """Vertical index for bottom most level at which coordinate surfaces are flat."""
-        return self.index(Domain(dims.KDim, Zone.FLAT))
+        return gtx.int32(self.index(Domain(dims.KDim, Zone.FLAT)))
 
     @functools.cached_property
     def nrdmax(self) -> gtx.int32:
@@ -226,6 +225,14 @@ class VerticalGrid:
     @property
     def nflat_gradp(self) -> gtx.int32:
         return self._min_index_flat_horizontal_grad_pressure
+
+    @property
+    def vct_a(self) -> fa.KField:
+        return self._vct_a
+
+    @property
+    def vct_b(self) -> fa.KField:
+        return self._vct_b
 
     def size(self, dim: gtx.Dimension) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported."
