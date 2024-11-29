@@ -49,6 +49,20 @@ py2fgen = 'icon4pytools.py2fgen.cli:main'
 repository = 'https://github.com/C2SM/icon4py'
 
 
+# -- bump-my-version --
+[tool.bumpversion]
+allow_dirty = false
+commit = false
+current_version = "0.0.7"
+ignore_missing_version = false
+message = 'Bump icon4pytools version: {current_version} → {new_version}'
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
+serialize = ["{major}.{minor}.{patch}"]
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "src/icon4pytools/__init__.py"
+
 #-- coverage --
 [tool.coverage]
 [tool.coverage.html]

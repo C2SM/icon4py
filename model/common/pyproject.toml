@@ -34,10 +34,12 @@ all = ["icon4py-common[distributed,io,dace]"]
 dace = ["gt4py[dace]>=1.0.4"]
 distributed = ["ghex>=0.3.0", "mpi4py>=3.1.5"]
 io = [
+  # self dependency
+  "icon4py-common[netcdf]",
+  # packages
   "cartopy>=0.22.0",
-  "datashader>=0.16.0",
-  "holoviews>=1.8.0",
-  "netcdf4>=1.6.0",
+  "datashader>=0.16.1",
+  "holoviews>=1.16.0",
   "scikit-learn>=1.4.0",
   # TODO [magdalena] there are failing tests starting from uxarray==2024.4.0: when a data file does not have
   # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
@@ -45,6 +47,7 @@ io = [
   "uxarray==2024.3.0",
   "xarray[complete]>=2024.3.0",
 ]
+netcdf=["netcdf4>=1.6.1"]
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
