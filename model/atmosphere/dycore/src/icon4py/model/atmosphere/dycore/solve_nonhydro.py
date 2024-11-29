@@ -12,6 +12,9 @@ from typing import Final, Optional
 
 import gt4py.next as gtx
 
+from icon4py.model.common.io import plots
+from icon4py.model.atmosphere.dycore import ibm
+
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend
@@ -453,6 +456,10 @@ class SolveNonhydro:
     ):
         self._exchange = exchange
         self._backend = backend
+
+        grid_fname = 'testdata/grids/Torus_Triangles_50000m_x_5000m_res500m.nc'
+        self._tri = plots.create_torus_triangulation(grid_fname)
+        self._ibm = ibm.ImmersedBoundaryMethod(grid)
 
         self._grid = grid
         self._config = config
@@ -941,6 +948,8 @@ class SolveNonhydro:
             else:
                 lvn_only = False
 
+            #plots.plot_data(self._tri, prognostic_state[nnow].vn, 2)
+            #self._ibm.set_boundary_conditions(prognostic_state[nnow])
             self.velocity_advection.run_predictor_step(
                 vn_only=lvn_only,
                 diagnostic_state=diagnostic_state_nh,
