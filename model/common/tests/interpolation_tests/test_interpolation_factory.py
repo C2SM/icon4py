@@ -9,13 +9,11 @@
 import pytest
 
 import icon4py.model.common.states.factory as factory
-import icon4py.model.common.test_utils.datatest_utils as dt_utils
 from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
 )
-
-from .. import utils
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, grid_utils as gridtest_utils
 
 
 C2E_SIZE = 3
@@ -30,7 +28,7 @@ E2C_SIZE = 2
 )
 @pytest.mark.datatest
 def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, decomposition_info):
-    geometry = utils.get_grid_geometry(backend, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
@@ -52,7 +50,7 @@ def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, d
 )
 @pytest.mark.datatest
 def test_get_c_lin_e(grid_file, experiment, backend, decomposition_info):
-    geometry = utils.get_grid_geometry(backend, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
     factory = interpolation_factory.InterpolationFieldsFactory(
         grid=grid,
@@ -74,7 +72,7 @@ def test_get_c_lin_e(grid_file, experiment, backend, decomposition_info):
 )
 @pytest.mark.datatest
 def test_get_geofac_div(grid_file, experiment, backend, decomposition_info):
-    geometry = utils.get_grid_geometry(backend, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
     factory = interpolation_factory.InterpolationFieldsFactory(
         grid=grid,
@@ -96,7 +94,7 @@ def test_get_geofac_div(grid_file, experiment, backend, decomposition_info):
 )
 @pytest.mark.datatest
 def test_get_geofac_rot(grid_file, experiment, backend, decomposition_info):
-    geometry = utils.get_grid_geometry(backend, grid_file)
+    geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
     grid = geometry.grid
     factory = interpolation_factory.InterpolationFieldsFactory(
         grid=grid,

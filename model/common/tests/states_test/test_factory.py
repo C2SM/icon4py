@@ -11,7 +11,7 @@ from typing import Optional
 import gt4py.next as gtx
 import pytest
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, icon, vertical as v_grid
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.metrics import metric_fields as metrics
@@ -62,7 +62,7 @@ class SimpleSource(factory.FieldSource):
 
 @pytest.fixture
 def cell_coordinate_source(grid_savepoint, backend):
-    on_gpu = test_helpers.is_gpu(backend)
+    on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
     grid = grid_savepoint.construct_icon_grid(on_gpu)
     lat = grid_savepoint.lat(dims.CellDim)
     lon = grid_savepoint.lon(dims.CellDim)
@@ -77,7 +77,7 @@ def cell_coordinate_source(grid_savepoint, backend):
 
 @pytest.fixture
 def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
-    on_gpu = test_helpers.is_gpu(backend)
+    on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
     grid = grid_savepoint.construct_icon_grid(on_gpu)
     z_ifc = metrics_savepoint.z_ifc()
     vct_a = grid_savepoint.vct_a()

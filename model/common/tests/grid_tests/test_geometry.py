@@ -7,59 +7,24 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
-import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry as geometry,
     geometry_attributes as attrs,
     horizontal as h_grid,
-    icon,
     simple as simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-from icon4py.model.common.utils import gt4py_field_allocation as alloc
-
-from . import utils
-
-
-grid_geometries = {}
-
-
-def get_grid_geometry(backend, grid_file) -> geometry.GridGeometry:
-    def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
-        def _add_dimension(dim: gtx.Dimension):
-            indices = alloc.allocate_indices(dim, grid)
-            owner_mask = np.ones((grid.size[dim],), dtype=bool)
-            decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
-
-        decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
-        _add_dimension(dims.EdgeDim)
-        _add_dimension(dims.VertexDim)
-        _add_dimension(dims.CellDim)
-
-        return decomposition_info
-
-    def construct_grid_geometry(grid_file: str):
-        gm = utils.run_grid_manager(grid_file, backend=backend)
-        grid = gm.grid
-        decomposition_info = construct_decomposition_info(grid)
-        geometry_source = geometry.GridGeometry(
-            grid, decomposition_info, backend, gm.coordinates, gm.geometry, attrs.attrs
-        )
-        return geometry_source
-
-    if not grid_geometries.get(grid_file):
-        grid_geometries[grid_file] = construct_grid_geometry(grid_file)
-    return grid_geometries[grid_file]
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, grid_utils, helpers
 
 
 def test_geometry_raises_for_unknown_field(backend):
-    geometry = get_grid_geometry(backend, dt_utils.R02B04_GLOBAL)
+    geometry = grid_utils.get_grid_geometry(
+        backend, dt_utils.GLOBAL_EXPERIMENT, dt_utils.R02B04_GLOBAL
+    )
     with pytest.raises(ValueError) as e:
         geometry.get("foo")
         assert "'foo'" in e.value
@@ -74,9 +39,9 @@ def test_geometry_raises_for_unknown_field(backend):
     ],
 )
 @pytest.mark.datatest
-def test_edge_control_area(backend, grid_savepoint, grid_file, rtol):
+def test_edge_control_area(backend, grid_savepoint, grid_file, experiment, rtol):
     expected = grid_savepoint.edge_areas()
-    geometry_source = get_grid_geometry(backend, grid_file)
+    geometry_source = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     result = geometry_source.get(attrs.EDGE_AREA)
     assert helpers.dallclose(expected.ndarray, result.ndarray, rtol)
 
@@ -89,8 +54,8 @@ def test_edge_control_area(backend, grid_savepoint, grid_file, rtol):
     ],
 )
 @pytest.mark.datatest
-def test_coriolis_parameter(backend, grid_savepoint, grid_file):
-    geometry_source = get_grid_geometry(backend, grid_file)
+def test_coriolis_parameter(backend, grid_savepoint, grid_file, experiment):
+    geometry_source = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     expected = grid_savepoint.f_e()
 
     result = geometry_source.get(attrs.CORIOLIS_PARAMETER)
@@ -105,8 +70,8 @@ def test_coriolis_parameter(backend, grid_savepoint, grid_file):
     ],
 )
 @pytest.mark.datatest
-def test_compute_edge_length(backend, grid_savepoint, grid_file, rtol):
-    geometry_source = get_grid_geometry(backend, grid_file)
+def test_compute_edge_length(backend, grid_savepoint, grid_file, experiment, rtol):
+    geometry_source = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     expected = grid_savepoint.primal_edge_length()
     result = geometry_source.get(attrs.EDGE_LENGTH)
     assert helpers.dallclose(result.ndarray, expected.ndarray, rtol=rtol)
@@ -120,9 +85,9 @@ def test_compute_edge_length(backend, grid_savepoint, grid_file, rtol):
     ],
 )
 @pytest.mark.datatest
-def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, rtol):
+def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experiment, rtol):
     expected = grid_savepoint.inverse_primal_edge_lengths()
-    geometry_source = get_grid_geometry(backend, grid_file)
+    geometry_source = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     computed = geometry_source.get(f"inverse_of_{attrs.EDGE_LENGTH}")
 
     assert helpers.dallclose(computed.ndarray, expected.ndarray, rtol=rtol)
@@ -136,8 +101,8 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, rtol):
     ],
 )
 @pytest.mark.datatest
-def test_compute_dual_edge_length(backend, grid_savepoint, grid_file, rtol):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_compute_dual_edge_length(backend, grid_savepoint, grid_file, experiment, rtol):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
 
     expected = grid_savepoint.dual_edge_length()
     result = grid_geometry.get(attrs.DUAL_EDGE_LENGTH)
@@ -152,8 +117,8 @@ def test_compute_dual_edge_length(backend, grid_savepoint, grid_file, rtol):
     ],
 )
 @pytest.mark.datatest
-def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, rtol):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, experiment, rtol):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     expected = grid_savepoint.inv_dual_edge_length()
     result = grid_geometry.get(f"inverse_of_{attrs.DUAL_EDGE_LENGTH}")
 
@@ -173,8 +138,8 @@ def test_compute_inverse_dual_edge_length(backend, grid_savepoint, grid_file, rt
     ],
 )
 @pytest.mark.datatest
-def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file, rtol):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file, experiment, rtol):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
 
     expected = grid_savepoint.inv_vert_vert_length()
     result = grid_geometry.get(attrs.INVERSE_VERTEX_VERTEX_LENGTH)
@@ -189,8 +154,10 @@ def test_compute_inverse_vertex_vertex_length(backend, grid_savepoint, grid_file
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_compute_coordinates_of_edge_tangent_and_normal(backend, grid_savepoint, grid_file):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_compute_coordinates_of_edge_tangent_and_normal(
+    backend, grid_savepoint, grid_file, experiment
+):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     x_normal = grid_geometry.get(attrs.EDGE_NORMAL_X)
     y_normal = grid_geometry.get(attrs.EDGE_NORMAL_Y)
     z_normal = grid_geometry.get(attrs.EDGE_NORMAL_Z)
@@ -220,8 +187,8 @@ def test_compute_coordinates_of_edge_tangent_and_normal(backend, grid_savepoint,
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_compute_primal_normals(backend, grid_savepoint, grid_file):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     primal_normal_u = grid_geometry.get(attrs.EDGE_NORMAL_U)
     primal_normal_v = grid_geometry.get(attrs.EDGE_NORMAL_V)
 
@@ -240,8 +207,8 @@ def test_compute_primal_normals(backend, grid_savepoint, grid_file):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_tangent_orientation(backend, grid_savepoint, grid_file):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_tangent_orientation(backend, grid_savepoint, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     result = grid_geometry.get(attrs.TANGENT_ORIENTATION)
     expected = grid_savepoint.tangent_orientation()
 
@@ -256,8 +223,8 @@ def test_tangent_orientation(backend, grid_savepoint, grid_file):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_cell_area(backend, grid_savepoint, grid_file):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_cell_area(backend, grid_savepoint, experiment, grid_file):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     result = grid_geometry.get(attrs.CELL_AREA)
     expected = grid_savepoint.cell_areas()
 
@@ -272,8 +239,8 @@ def test_cell_area(backend, grid_savepoint, grid_file):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_primal_normal_cell(backend, grid_savepoint, grid_file):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     primal_normal_cell_u_ref = grid_savepoint.primal_normal_cell_x().ndarray
     primal_normal_cell_v_ref = grid_savepoint.primal_normal_cell_y().ndarray
     primal_normal_cell_u = grid_geometry.get(attrs.EDGE_NORMAL_CELL_U)
@@ -291,8 +258,8 @@ def test_primal_normal_cell(backend, grid_savepoint, grid_file):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_dual_normal_cell(backend, grid_savepoint, grid_file):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     dual_normal_cell_u_ref = grid_savepoint.dual_normal_cell_x().ndarray
     dual_normal_cell_v_ref = grid_savepoint.dual_normal_cell_y().ndarray
     dual_normal_cell_u = grid_geometry.get(attrs.EDGE_TANGENT_CELL_U)
@@ -310,8 +277,8 @@ def test_dual_normal_cell(backend, grid_savepoint, grid_file):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_primal_normal_vert(backend, grid_savepoint, grid_file):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     primal_normal_vert_u_ref = grid_savepoint.primal_normal_vert_x().ndarray
     primal_normal_vert_v_ref = grid_savepoint.primal_normal_vert_y().ndarray
     primal_normal_vert_u = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_U)
@@ -329,8 +296,8 @@ def test_primal_normal_vert(backend, grid_savepoint, grid_file):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_dual_normal_vert(backend, grid_savepoint, grid_file):
-    grid_geometry = get_grid_geometry(backend, grid_file)
+def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
+    grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
     dual_normal_vert_u_ref = grid_savepoint.dual_normal_vert_x().ndarray
     dual_normal_vert_v_ref = grid_savepoint.dual_normal_vert_y().ndarray
     dual_normal_vert_u = grid_geometry.get(attrs.EDGE_TANGENT_VERTEX_U)
@@ -364,7 +331,7 @@ def test_sparse_fields_creator():
     ],
 )
 def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_file):
-    gm = utils.run_grid_manager(grid_file, backend=backend)
+    gm = grid_utils.get_grid_manager(grid_file, backend=backend, num_levels=1)
     grid = gm.grid
     coordinates = gm.coordinates
 
@@ -373,7 +340,7 @@ def test_create_auxiliary_orientation_coordinates(backend, grid_savepoint, grid_
     edge_lat = coordinates[dims.EdgeDim]["lat"]
     edge_lon = coordinates[dims.EdgeDim]["lon"]
     lat_0, lon_0, lat_1, lon_1 = geometry.create_auxiliary_coordinate_arrays_for_orientation(
-        gm.grid, cell_lat, cell_lon, edge_lat, edge_lon
+        grid, cell_lat, cell_lon, edge_lat, edge_lon
     )
     connectivity = grid.connectivities[dims.E2CDim]
     has_boundary_edges = np.count_nonzero(connectivity == -1)

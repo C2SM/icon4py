@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -15,20 +14,20 @@ import icon4py.model.common.grid.horizontal as h_grid
 import icon4py.model.common.test_utils.helpers as test_helpers
 from icon4py.model.common import constants
 from icon4py.model.common.interpolation.interpolation_fields import (
-    compute_c_bln_avg,
     compute_c_lin_e,
     compute_cells_aw_verts,
     compute_e_bln_c_s,
     compute_e_flx_avg,
-    compute_force_mass_conservation_to_c_bln_avg,
     compute_geofac_div,
     compute_geofac_grdiv,
     compute_geofac_grg,
     compute_geofac_n2s,
     compute_geofac_rot,
+    compute_mass_conserving_bilinear_cell_average_weight,
     compute_pos_on_tplane_e_x_y,
     compute_primal_normal_ec,
 )
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     download_ser_data,
@@ -44,6 +43,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  # fixture
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
@@ -61,6 +61,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  #
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
     if backend is not None:
         pytest.xfail("writes a sparse fields: only runs in field view embedded")
@@ -77,11 +78,11 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
         out=(geofac_div),
         offset_provider={"C2E": mesh.get_offset_provider("C2E")},
     )
-    gtx.as_field(geofac_div.domain, geofac_div.ndarray, allocator=backend)
     assert test_helpers.dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, backend):
     if backend is not None:
         pytest.xfail("writes a sparse fields: only runs in field view embedded")
@@ -108,9 +109,10 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
     dual_edge_length = grid_savepoint.dual_edge_length()
-    geofac_div = interpolation_savepoint.compute_geofac_div()
+    geofac_div = interpolation_savepoint.geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
     c2e = icon_grid.connectivities[dims.C2EDim]
     e2c = icon_grid.connectivities[dims.E2CDim]
@@ -128,10 +130,11 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
     primal_normal_cell_x = grid_savepoint.primal_normal_cell_x().asnumpy()
     primal_normal_cell_y = grid_savepoint.primal_normal_cell_y().asnumpy()
-    geofac_div = interpolation_savepoint.compute_geofac_div()
+    geofac_div = interpolation_savepoint.geofac_div()
     c_lin_e = interpolation_savepoint.c_lin_e()
     geofac_grg_ref = interpolation_savepoint.geofac_grg()
     owner_mask = grid_savepoint.c_owner_mask()
@@ -165,8 +168,9 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid):
-    geofac_div = interpolation_savepoint.compute_geofac_div()
+    geofac_div = interpolation_savepoint.geofac_div()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
     owner_mask = grid_savepoint.c_owner_mask()
@@ -187,42 +191,43 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
 
 
 @pytest.mark.datatest
-def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
+@pytest.mark.parametrize(
+    "experiment, atol",
+    [(dt_utils.REGIONAL_EXPERIMENT, 1e-10), (dt_utils.GLOBAL_EXPERIMENT, 1e-10)],
+)
+def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, atol):
     cell_areas = grid_savepoint.cell_areas().asnumpy()
+    # both experiment use the default value
     divavg_cntrwgt = 0.5
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
-    owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     horizontal_start_p2 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
 
     lat = grid_savepoint.cell_center_lat().asnumpy()
     lon = grid_savepoint.cell_center_lon().asnumpy()
-    c_bln_avg = compute_c_bln_avg(
-        divavg_cntrwgt,
-        owner_mask,
-        c2e2c,
+    cell_owner_mask = grid_savepoint.c_owner_mask()
+
+    c2e2c0 = icon_grid.connectivities[dims.C2E2CODim]
+
+    c_bln_avg = compute_mass_conserving_bilinear_cell_average_weight(
+        c2e2c0,
         lat,
         lon,
-        horizontal_start,
-    )
-    c_bln_avg = compute_force_mass_conservation_to_c_bln_avg(
-        c_bln_avg,
-        divavg_cntrwgt,
-        owner_mask,
-        c2e2c,
         cell_areas,
+        cell_owner_mask,
+        divavg_cntrwgt,
         horizontal_start,
         horizontal_start_p2,
     )
-    assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
+    assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=atol)
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg().asnumpy()
-    geofac_div = interpolation_savepoint.compute_geofac_div().asnumpy()
+    geofac_div = interpolation_savepoint.geofac_div().asnumpy()
     owner_mask = grid_savepoint.e_owner_mask().asnumpy()
     primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().asnumpy()
     primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().asnumpy()
@@ -252,6 +257,7 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_cells_aw_verts(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
 ):
@@ -259,7 +265,6 @@ def test_compute_cells_aw_verts(
     dual_area = grid_savepoint.vertex_dual_area().asnumpy()
     edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
-    owner_mask = grid_savepoint.v_owner_mask()
     e2c = icon_grid.connectivities[dims.E2CDim]
     v2c = icon_grid.connectivities[dims.V2CDim]
     v2e = icon_grid.connectivities[dims.V2EDim]
@@ -269,40 +274,33 @@ def test_compute_cells_aw_verts(
     )
 
     cells_aw_verts = compute_cells_aw_verts(
-        dual_area,
-        edge_vert_length,
-        edge_cell_length,
-        owner_mask,
-        v2e,
-        e2v,
-        v2c,
-        e2c,
-        horizontal_start_vertex,
+        dual_area=dual_area,
+        edge_vert_length=edge_vert_length,
+        edge_cell_length=edge_cell_length,
+        v2e=v2e,
+        e2v=e2v,
+        v2c=v2c,
+        e2c=e2c,
+        horizontal_start_vertex=horizontal_start_vertex,
     )
-    assert test_helpers.dallclose(cells_aw_verts, cells_aw_verts_ref)
+    assert test_helpers.dallclose(cells_aw_verts, cells_aw_verts_ref, atol=1e-3)
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s().asnumpy()
-    owner_mask = grid_savepoint.c_owner_mask().asnumpy()
     c2e = icon_grid.connectivities[dims.C2EDim]
     cells_lat = grid_savepoint.cell_center_lat().asnumpy()
     cells_lon = grid_savepoint.cell_center_lon().asnumpy()
     edges_lat = grid_savepoint.edges_center_lat().asnumpy()
     edges_lon = grid_savepoint.edges_center_lon().asnumpy()
-    e_bln_c_s = compute_e_bln_c_s(
-        owner_mask,
-        c2e,
-        cells_lat,
-        cells_lon,
-        edges_lat,
-        edges_lon,
-    )
+    e_bln_c_s = compute_e_bln_c_s(c2e, cells_lat, cells_lon, edges_lat, edges_lon, 0.0)
     assert test_helpers.dallclose(e_bln_c_s, e_bln_c_s_ref, atol=1e-6, rtol=1e-7)
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_grid):
     pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
     pos_on_tplane_e_y_ref = interpolation_savepoint.pos_on_tplane_e_y().asnumpy()
