@@ -575,7 +575,7 @@ def _compute_ddxt_z_half_e(
 
 @program
 def compute_ddxt_z_half_e(
-    cell_in: fa.CellKField,
+    cell_in: fa.CellKField[wpfloat],
     c_int: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
