@@ -19,6 +19,12 @@ from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_vel
 from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
     copy_cell_kdim_field_to_vp,
 )
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
+    compute_contravariant_correction,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
+    compute_horizontal_kinetic_energy,
+)
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     init_cell_kdim_field_with_zero_vp,
 )
@@ -123,6 +129,12 @@ class VelocityAdvection:
         )
         self._copy_cell_kdim_field_to_vp = (
             copy_cell_kdim_field_to_vp.with_backend(self._backend)
+        )
+        self._compute_contravariant_correction = (
+            compute_contravariant_correction.with_backend(self._backend)
+        )
+        self._compute_horizontal_kinetic_energy = (
+            compute_horizontal_kinetic_energy.with_backend(self._backend)
         )
         self._init_cell_kdim_field_with_zero_vp = (
             init_cell_kdim_field_with_zero_vp.with_backend(self._backend)
@@ -278,24 +290,32 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        self._fused_stencils_4_5(
+        self._compute_contravariant_correction(
+            vn=prognostic_state.vn,
+            ddxn_z_full=self.metric_state.ddxn_z_full,
+            ddxt_z_full=self.metric_state.ddxt_z_full,
+            vt=diagnostic_state.vt,
+            z_w_concorr_me=z_w_concorr_me,
+            horizontal_start=self._start_edge_lateral_boundary_level_5,
+            horizontal_end=self._end_edge_halo_level_2,
+            vertical_start=self.vertical_params.nflatlev,
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
+
+        self._compute_horizontal_kinetic_energy(
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
             z_vt_ie=z_vt_ie,
             z_kin_hor_e=z_kin_hor_e,
-            ddxn_z_full=self.metric_state.ddxn_z_full,
-            ddxt_z_full=self.metric_state.ddxt_z_full,
-            z_w_concorr_me=z_w_concorr_me,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
-            nlev=self.grid.num_levels,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,
+            vertical_end=1,
             offset_provider={},
         )
+
         self._extrapolate_at_top(
             wgtfacq_e=self.metric_state.wgtfacq_e,
             vn=prognostic_state.vn,
@@ -335,18 +355,24 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        self._fused_stencils_9_10(
+        self._interpolate_to_cell_center(
             z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            local_z_w_concorr_mc=self.z_w_concorr_mc,
-            wgtfac_c=self.metric_state.wgtfac_c,
-            w_concorr_c=diagnostic_state.w_concorr_c,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
-            nlev=self.grid.num_levels,
+            z_w_concorr_mc=self.z_w_concorr_mc,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
-            vertical_start=0,
+            vertical_start=self.vertical_params.nflatlev,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
+
+        self.interpolate_to_half_levels_vp(
+            interpolant=self.z_w_concorr_mc,
+            wgtfac_c=self.metric_state.wgtfac_c,
+            interpolation_to_half_levels_vp=diagnostic_state.w_concorr_c,
+            horizontal_start=self._start_cell_lateral_boundary_level_4,
+            horizontal_end=self._end_cell_halo,
+            vertical_start=self.vertical_params.nflatlev + 1,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
