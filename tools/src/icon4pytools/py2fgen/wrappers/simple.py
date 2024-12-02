@@ -40,7 +40,7 @@ def _square(
     return inp**2
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def square(
     inp: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
     result: gtx.Field[[dims.CEDim, dims.KDim], gtx.float64],
