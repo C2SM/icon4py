@@ -8,6 +8,7 @@
 import functools
 from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
 
+# TODO (@halungge ) test on GPU (NEP 18 ?) 
 import numpy as np
 from gt4py import next as gtx
 from gt4py.next import backend, backend as gtx_backend
