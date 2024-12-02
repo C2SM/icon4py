@@ -79,7 +79,7 @@ class RefinementValue:
         return self.value not in _UNORDERED[self.dim]
 
 
-def is_unordered_field(field: np.ndarray, dim: dims.Dimension) -> np.ndarray:
+def is_unordered_field(field: NDArray, dim: dims.Dimension) -> NDArray:
     assert field.dtype in (np.int32, np.int64), f"not an integer type {field.dtype}"
     return np.where(
         field == _UNORDERED[dim][0], True, np.where(field == _UNORDERED[dim][1], True, False)
