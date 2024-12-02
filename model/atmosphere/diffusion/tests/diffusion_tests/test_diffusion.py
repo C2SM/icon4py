@@ -53,7 +53,7 @@ def get_cell_geometry_for_experiment(experiment, backend):
 
 def _get_or_initialize(experiment, backend, name):
     def _construct_minimal_decomposition_info(grid: icon.IconGrid):
-        edge_indices = alloc.allocate_indices(dims.EdgeDim, grid)
+        edge_indices = alloc.allocate_indices(dims.EdgeDim, grid, backend)
         owner_mask = np.ones((grid.num_edges,), dtype=bool)
         decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
         decomposition_info.with_dimension(dims.EdgeDim, edge_indices.ndarray, owner_mask)
