@@ -439,7 +439,7 @@ class NumpyFieldsProvider(FieldProvider):
             parameter_definition = parameters.get(dep_key)
             assert parameter_definition.annotation == np.ndarray, (
                 f"Dependency {dep_key} in function {self._func.__name__}:  does not exist or has "
-                f"wrong type ('expected np.ndarray') in {func_signature}."
+                f"wrong type ('expected xp.ndarray') in {func_signature}."
             )
 
         for param_key, param_value in self._params.items():
