@@ -102,7 +102,7 @@ def print_grid_decomp_info(
         icon_grid.connectivities[E2CDim],
     )
 
-    np.set_printoptions(edgeitems=20)
+    xp.set_printoptions(edgeitems=20)
 
     log.info(
         "c_glb_index for rank %s is.... %s",
