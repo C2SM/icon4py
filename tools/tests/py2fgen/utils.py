@@ -59,7 +59,7 @@ def compare_values_shallow(value1, value2, obj_name="value"):
         return True, None
 
     # Handle comparison of numpy/cupy array objects
-    if isinstance(value1, np.ndarray) and isinstance(value2, np.ndarray):
+    if isinstance(value1, xp.ndarray) and isinstance(value2, xp.ndarray):
         try:
             xp.testing.assert_equal(value1, value2)  # Compare arrays for equality
             return True, None
