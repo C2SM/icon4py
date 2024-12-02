@@ -134,6 +134,14 @@ class IconGridSavepoint(IconSavepoint):
         """vertex longitude"""
         return self._get_field("verts_vertex_lon", dims.VertexDim)
 
+    def v_lon(self):
+        """vertex longitude"""
+        return self._get_field("v_lon", dims.VertexDim)
+
+    def v_lat(self):
+        """vertex latitude"""
+        return self._get_field("v_lat", dims.VertexDim)
+
     def primal_normal_v1(self):
         return self._get_field("primal_normal_v1", dims.EdgeDim)
 

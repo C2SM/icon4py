@@ -1,5 +1,9 @@
 import logging
 import pickle
+from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common import dimension as dims
+import icon4py.model.common.grid.states as grid_states
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import xarray as xr
@@ -12,7 +16,7 @@ logging.getLogger("matplotlib").setLevel(logging.WARNING)
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-def create_triangulation(gridfname: str) -> mpl.tri.Triangulation:
+def create_triangulation_from_gridfile(gridfname: str) -> mpl.tri.Triangulation:
     """
     Create a triangulation from a grid file.
 
@@ -31,11 +35,13 @@ def create_triangulation(gridfname: str) -> mpl.tri.Triangulation:
         triangles=grid.vertex_of_cell.values.T-1,
         )
 
-def remove_elongated_triangles(
+def remove_boundary_triangles(
         tri: mpl.tri.Triangulation,
+        criterion: str = 'wrapping',
+        mask_edges: bool = True,
 ) -> mpl.tri.Triangulation:
     """
-    Remove elongated triangles from a triangulation.
+    Remove boundary triangles from a triangulation.
 
     This function examines each triangle in the provided triangulation and 
     determines if it is elongated based on the ratio of its longest edge to 
@@ -49,32 +55,43 @@ def remove_elongated_triangles(
     Returns:
         The modified triangulation with elongated triangles masked out.
     """
-    ratio = 4
 
     tri.all_edges = tri.edges.copy()
 
     tri.n_all_triangles = tri.triangles.shape[0]
     tri.n_all_edges = tri.edges.shape[0]
 
-    # Remove elongated triangles
-    elongated_mask = []
-    for triangle in tri.triangles:
-        node_x_diff = tri.x[triangle] - xp.roll(tri.x[triangle], 1)
-        node_y_diff = tri.y[triangle] - xp.roll(tri.y[triangle], 1)
-        edges = xp.sqrt(node_x_diff**2 + node_y_diff**2)
-        if xp.max(edges) > ratio*xp.min(edges):
-            elongated_mask.append(True)
-        else:
-            elongated_mask.append(False)
-    tri.set_mask(elongated_mask)
+    boundary_triangles_mask = []
+    if criterion == 'wrapping':
+        # Remove wrapping triangles
+        for triangle in tri.triangles:
+            if (tri.x[triangle].max() > 2 and tri.x[triangle].min() < -2) or (tri.y[triangle].max() > 0 and tri.y[triangle].min() < 0):
+                boundary_triangles_mask.append(True)
+            else:
+                boundary_triangles_mask.append(False)
+    elif criterion == 'elongated':
+        # Remove elongated triangles
+        ratio = 4
+        for triangle in tri.triangles:
+            node_x_diff = tri.x[triangle] - xp.roll(tri.x[triangle], 1)
+            node_y_diff = tri.y[triangle] - xp.roll(tri.y[triangle], 1)
+            edges = xp.sqrt(node_x_diff**2 + node_y_diff**2)
+            if xp.max(edges) > ratio*xp.min(edges):
+                boundary_triangles_mask.append(True)
+            else:
+                boundary_triangles_mask.append(False)
 
-    # Mask out edges that are part of elongated triangles
-    edges_mask = xp.ones(tri.all_edges.shape[0], dtype=bool)
-    for i, edge in enumerate(tri.all_edges):
-        if any(xp.array_equal(edge, filtered_edge) for filtered_edge in tri.edges):
-            edges_mask[i] = False
+    tri.set_mask(boundary_triangles_mask)
 
-    tri.edges_mask = edges_mask
+    if mask_edges:
+        # Mask out edges that are part of boundary triangles
+        edges_mask = xp.ones(tri.all_edges.shape[0], dtype=bool)
+        for i, edge in enumerate(tri.all_edges):
+            if any(xp.array_equal(edge, filtered_edge) for filtered_edge in tri.edges):
+                edges_mask[i] = False
+        tri.edges_mask = edges_mask
+    else:
+        tri.edges_mask = None
 
     return tri
 
@@ -88,7 +105,7 @@ def create_edge_centers(tri):
         edge_centers_y.append((y1 + y2) / 2)
     return xp.array(edge_centers_x), xp.array(edge_centers_y)
 
-def create_torus_triangulation(grid_fname: str) -> mpl.tri.Triangulation:
+def create_torus_triangulation_from_gridfile(grid_fname: str) -> mpl.tri.Triangulation:
     """
     Create a triangulation for a torus from a grid file.
     Remove elongated triangles from the triangulation.
@@ -100,9 +117,37 @@ def create_torus_triangulation(grid_fname: str) -> mpl.tri.Triangulation:
     Returns:
         A triangulation object created from the grid file.
     """
-    tri = create_triangulation(grid_fname)
-    tri = remove_elongated_triangles(tri)
+    tri = create_triangulation_from_gridfile(grid_fname)
+    tri = remove_boundary_triangles(tri, 'elongated')
     tri.edge_x, tri.edge_y = create_edge_centers(tri)
+    return tri
+
+def create_torus_triangulation_from_icon4py(
+    grid: icon_grid.IconGrid,
+    edge_geometry: grid_states.EdgeParams,
+    savepoint_path: str,
+) -> mpl.tri.Triangulation:
+    """
+    Create a triangulation for a torus from a savepoint.
+    Remove elongated triangles from the triangulation.
+    Take care of elongated edges.
+
+    Args:
+        
+
+    Returns:
+        A triangulation object created from the grid file.
+    """
+    grid_savepoint = sb.IconSerialDataProvider("icon_pydycore", savepoint_path).from_savepoint_grid('aa', 0, 2)
+
+    tri = mpl.tri.Triangulation(
+        grid_savepoint.v_lon().ndarray,
+        grid_savepoint.v_lat().ndarray,
+        triangles=grid.connectivities[dims.C2VDim],
+        )
+    tri = remove_boundary_triangles(tri)
+    tri.edge_x = edge_geometry.edge_center[1].ndarray
+    tri.edge_y = edge_geometry.edge_center[0].ndarray
     return tri
 
 def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = False) -> None:
@@ -132,7 +177,7 @@ def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = 
         axs = [axs]
     for i in range(nlev):
         plot_lev(data, i)
-        axs[i].set_aspect('equal')
+        #axs[i].set_aspect('equal')
         #axs[i].set_xlabel(f"Level {-i}")
         axs[i].triplot(tri, color='k', linewidth=0.25)
 
@@ -153,7 +198,7 @@ if __name__ == '__main__':
     grid_fname = 'testdata/grids/Torus_Triangles_50000m_x_5000m_res500m.nc'
     state_fname = 'testdata/prognostic_state.pkl'
     
-    tri = create_torus_triangulation(grid_fname)
+    tri = create_torus_triangulation_from_gridfile(grid_fname)
     with open(state_fname, 'rb') as f:
         state = pickle.load(f)
     

@@ -9,6 +9,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.settings import xp
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.states import prognostic_state
 
 """
@@ -33,27 +34,31 @@ class ImmersedBoundaryMethod:
         """
         self.test_value = 13
 
-        # Grid related totals
-        num_cells = grid.num_cells
-        num_edges = grid.num_edges
-        num_levels = grid.num_levels
-
         self._validate_config()
 
-        cell_mask = xp.zeros((num_cells, num_levels), dtype=bool)
-        edge_mask = xp.zeros((num_edges, num_levels), dtype=bool)
-
-        cell_mask[313, -2] = True
-        edge_mask[313, -2] = True
-
-        self.cell_mask = gtx.as_field((CellDim, KDim), cell_mask)
-        self.edge_mask = gtx.as_field((EdgeDim, KDim), edge_mask)
+        self.cell_mask = self._make_cell_mask(grid)
+        self.edge_mask = self._make_edge_mask(grid)
 
         log.info("IBM initialized")
 
     def _validate_config(self):
         log.info("IBM config validated")
         pass
+
+    def _make_cell_mask(self, grid: icon_grid.IconGrid) -> fa.CellKField[bool]:
+        cell_mask = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
+        cell_mask[313, -2] = True
+        return gtx.as_field((CellDim, KDim), cell_mask)
+    
+    def _make_edge_mask(self, grid: icon_grid.IconGrid) -> fa.EdgeKField[bool]:
+        if not hasattr(self, "cell_mask"):
+            raise ValueError("Cell mask must be set before edge mask.")
+        cell_mask = self.cell_mask.ndarray
+        c2e = grid.connectivities[dims.C2EDim]
+        edge_mask = xp.zeros((grid.num_edges, grid.num_levels), dtype=bool)
+        for k in range(grid.num_levels):
+            edge_mask[c2e[xp.where(cell_mask[:,k])], k] = True
+        return gtx.as_field((EdgeDim, KDim), edge_mask)
 
     def set_boundary_conditions(
         self,

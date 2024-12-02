@@ -457,8 +457,12 @@ class SolveNonhydro:
         self._exchange = exchange
         self._backend = backend
 
-        grid_fname = 'testdata/grids/Torus_Triangles_50000m_x_5000m_res500m.nc'
-        self._tri = plots.create_torus_triangulation(grid_fname)
+        savepoint_path='testdata/ser_icondata/mpitask1/torus_exclaim.flat_and_zeros/ser_data'
+        self._tri = plots.create_torus_triangulation_from_icon4py(
+            grid=grid,
+            edge_geometry=edge_geometry,
+            savepoint_path=savepoint_path,
+            )
         self._ibm = ibm.ImmersedBoundaryMethod(grid)
 
         self._grid = grid
