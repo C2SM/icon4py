@@ -566,7 +566,7 @@ class NumpyFieldsProvider(FieldProvider):
         self._dims = domain.keys()
         self._fields: dict[str, Optional[state_utils.FieldType]] = {name: None for name in fields}
         self._dependencies = deps
-        self.connectivities = connectivities if connectivities is not None else {}
+        self._connectivities = connectivities if connectivities is not None else {}
         self._params = params if params is not None else {}
 
     def __call__(

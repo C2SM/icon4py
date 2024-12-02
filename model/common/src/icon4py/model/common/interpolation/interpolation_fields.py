@@ -5,6 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from types import ModuleType
+from typing import TypeAlias, Union
+
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next import where
@@ -17,29 +20,38 @@ from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
 
 
+try:
+    import cupy as xp
+except ImportError:
+    import numpy as xp
+
+NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
+
+
 def compute_c_lin_e(
-    edge_cell_length: np.ndarray,
-    inv_dual_edge_length: np.ndarray,
-    owner_mask: np.ndarray,
-    horizontal_start: np.int32,
-) -> np.ndarray:
+    edge_cell_length: NDArray,
+    inv_dual_edge_length: NDArray,
+    edge_owner_mask: NDArray,
+    horizontal_start: gtx.int32,
+    array_ns: ModuleType = np,
+) -> NDArray:
     """
     Compute E2C average inverse distance.
 
     Args:
         edge_cell_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         inv_dual_edge_length: inverse dual edge length, numpy array representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
-        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
+        edge_owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
-
+        xp: ModuleType numpy or cupy
     Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
-    c_lin_e = np.transpose(np.vstack((c_lin_e_, (1.0 - c_lin_e_))))
+    c_lin_e = array_ns.transpose(array_ns.vstack((c_lin_e_, (1.0 - c_lin_e_))))
     c_lin_e[0:horizontal_start, :] = 0.0
-    mask = np.transpose(np.tile(owner_mask, (2, 1)))
-    return np.where(mask, c_lin_e, 0.0)
+    mask = array_ns.transpose(array_ns.tile(edge_owner_mask, (2, 1)))
+    return array_ns.where(mask, c_lin_e, 0.0)
 
 
 @gtx.field_operator
@@ -742,7 +754,7 @@ def compute_cells_aw_verts(
     e2v: np.ndarray,
     v2c: np.ndarray,
     e2c: np.ndarray,
-    horizontal_start_vertex: ta.wpfloat,
+    horizontal_start: gtx.int32,
 ) -> np.ndarray:
     """
     Compute cells_aw_verts.
@@ -762,7 +774,7 @@ def compute_cells_aw_verts(
         aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
     cells_aw_verts = np.zeros(v2e.shape)
-    for jv in range(horizontal_start_vertex, cells_aw_verts.shape[0]):
+    for jv in range(horizontal_start, cells_aw_verts.shape[0]):
         cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
             # INVALID_INDEX

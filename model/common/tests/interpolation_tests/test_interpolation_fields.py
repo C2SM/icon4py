@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 
 import numpy as np
 import pytest
@@ -35,6 +36,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     processor_props,
     ranked_data_path,
 )
+from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -44,20 +46,32 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  # fixture
+def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):  # fixture
+    xp = alloc.import_array_ns(backend)
+    func = functools.partial(compute_c_lin_e, array_ns=xp)
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
-    owner_mask = grid_savepoint.e_owner_mask()
+    edge_owner_mask = grid_savepoint.e_owner_mask()
     c_lin_e_ref = interpolation_savepoint.c_lin_e()
+
     horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+
     c_lin_e = compute_c_lin_e(
-        edge_cell_length.asnumpy(),
-        inv_dual_edge_length.asnumpy(),
-        owner_mask.asnumpy(),
+        edge_cell_length.ndarray,
+        inv_dual_edge_length.ndarray,
+        edge_owner_mask.ndarray,
+        horizontal_start,
+        xp,
+    )
+    assert test_helpers.dallclose(alloc.as_numpy(c_lin_e), c_lin_e_ref.asnumpy())
+
+    c_lin_e_partial = func(
+        edge_cell_length.ndarray,
+        inv_dual_edge_length.ndarray,
+        edge_owner_mask.ndarray,
         horizontal_start,
     )
-
-    assert test_helpers.dallclose(c_lin_e, c_lin_e_ref.asnumpy())
+    assert test_helpers.dallclose(alloc.as_numpy(c_lin_e_partial), c_lin_e_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -224,7 +238,7 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, a
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
+def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, backend):
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg().asnumpy()
     geofac_div = interpolation_savepoint.geofac_div().asnumpy()
@@ -281,7 +295,7 @@ def test_compute_cells_aw_verts(
         e2v=e2v,
         v2c=v2c,
         e2c=e2c,
-        horizontal_start_vertex=horizontal_start_vertex,
+        horizontal_start=horizontal_start_vertex,
     )
     assert test_helpers.dallclose(cells_aw_verts, cells_aw_verts_ref, atol=1e-3)
 

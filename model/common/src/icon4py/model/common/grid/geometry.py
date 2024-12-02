@@ -129,6 +129,8 @@ class GridGeometry(factory.FieldSource):
 
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
+                # TODO (@magdalena) rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
+                attrs.EDGE_CELL_DISTANCE: extra_fields[gm.GeometryName.EDGE_CELL_DISTANCE],
                 attrs.CELL_AREA: extra_fields[gm.GeometryName.CELL_AREA],
                 attrs.DUAL_AREA: extra_fields[gm.GeometryName.DUAL_AREA],
                 attrs.TANGENT_ORIENTATION: extra_fields[gm.GeometryName.TANGENT_ORIENTATION],
