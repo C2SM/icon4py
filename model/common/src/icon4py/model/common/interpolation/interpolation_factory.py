@@ -35,7 +35,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self,
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
-        geometry: geometry.GridGeometry,
+        geometry_source: geometry.GridGeometry,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
     ):
@@ -45,16 +45,17 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._composite_source = factory.CompositeSource(self, (geometry,))
         self._providers: dict[str, factory.FieldProvider] = {}
-        self._register_computed_fields()
 
+        self._geometry = geometry_source
+        self._register_computed_fields()
+        
     def __repr__(self):
         return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"
 
     @property
     def _sources(self) -> factory.FieldSource:
-        return self._composite_source
+        return factory.CompositeSource(self, (self._geometry,))
 
     def _register_computed_fields(self):
         geofac_div = factory.FieldOperatorProvider(
@@ -82,6 +83,23 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(geofac_rot)
+
+        geofac_n2s = factory.NumpyFieldsProvider(
+            func = functools.partial(interpolation_fields.compute_geofac_n2s, array_ns=self._xp),
+            fields = (attrs.GEOFAC_N2S, ),
+            domain = {dims.CellDim : (0,1), dims.C2E2CODim : (0,4)},
+            deps={
+                "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
+                "geofac_div": attrs.GEOFAC_DIV
+                  },
+            connectivities={"c2e": dims.C2EDim, "e2c":dims.E2CDim, "c2e2c": dims.C2E2CDim },
+            params={
+                "horizontal_start": self._grid.start_index(
+                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                )
+            }
+        )
+        self.register_provider(geofac_n2s)
 
         c_lin_e = factory.NumpyFieldsProvider(
             func=functools.partial(interpolation_fields.compute_c_lin_e, array_ns=self._xp),

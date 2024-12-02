@@ -124,7 +124,8 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
+def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+    xp = alloc.import_array_ns(backend)
     dual_edge_length = grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
@@ -132,15 +133,16 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
     e2c = icon_grid.connectivities[dims.E2CDim]
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    geofac_n2s = compute_geofac_n2s(
-        dual_edge_length.asnumpy(),
-        geofac_div.asnumpy(),
+    geofac_n2s = functools.partial(compute_geofac_n2s, array_ns=xp)(
+        dual_edge_length.ndarray,
+        geofac_div.ndarray,
         c2e,
         e2c,
         c2e2c,
         horizontal_start,
+
     )
-    assert test_helpers.dallclose(geofac_n2s, geofac_n2s_ref.asnumpy())
+    assert test_helpers.dallclose(alloc.as_numpy(geofac_n2s), geofac_n2s_ref.asnumpy())
 
 
 @pytest.mark.datatest

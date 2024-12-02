@@ -15,6 +15,7 @@ from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
 )
+from icon4py.model.common.interpolation.interpolation_factory import cell_domain
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -45,7 +46,7 @@ def test_factory_raises_error_on_unknown_field(grid_file, experiment, backend, d
     interpolation_source = interpolation_factory.InterpolationFieldsFactory(
         grid=geometry.grid,
         decomposition_info=decomposition_info,
-        geometry=geometry,
+        geometry_source=geometry,
         backend=backend,
         metadata=attrs.attrs,
     )
@@ -82,7 +83,7 @@ def get_interpolation_factory(
         factory = interpolation_factory.InterpolationFieldsFactory(
             grid=geometry.grid,
             decomposition_info=geometry._decomposition_info,
-            geometry=geometry,
+            geometry_source=geometry,
             backend=backend,
             metadata=attrs.attrs,
         )
@@ -122,6 +123,25 @@ def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend,
     field = factory.get(attrs.GEOFAC_ROT)
     horizontal_start = grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     assert field.shape == (grid.num_vertices, V2E_SIZE)
+    assert test_helpers.dallclose(
+        field_ref.asnumpy()[horizontal_start:, :], field.asnumpy()[horizontal_start:, :], rtol=rtol
+    )
+
+@pytest.mark.parametrize(
+    "grid_file, experiment, rtol",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
+    ],
+)
+@pytest.mark.datatest
+def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend, rtol):
+    field_ref = interpolation_savepoint.geofac_n2s()
+    factory = get_interpolation_factory(backend, experiment, grid_file)
+    grid = factory.grid
+    field = factory.get(attrs.GEOFAC_N2S)
+    horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    assert field.shape == (grid.num_cells, 4)
     assert test_helpers.dallclose(
         field_ref.asnumpy()[horizontal_start:, :], field.asnumpy()[horizontal_start:, :], rtol=rtol
     )

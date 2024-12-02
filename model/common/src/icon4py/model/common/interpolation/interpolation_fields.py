@@ -97,13 +97,14 @@ def compute_geofac_rot(
 
 
 def compute_geofac_n2s(
-    dual_edge_length: np.ndarray,
-    geofac_div: np.ndarray,
-    c2e: np.ndarray,
-    e2c: np.ndarray,
-    c2e2c: np.ndarray,
-    horizontal_start: np.int32,
-) -> np.ndarray:
+    dual_edge_length: NDArray,
+    geofac_div: NDArray,
+    c2e: NDArray,
+    e2c: NDArray,
+    c2e2c: NDArray,
+    horizontal_start: gtx.int32,
+    array_ns:ModuleType = np
+) -> NDArray:
     """
     Compute geometric factor for nabla2-scalar.
 
@@ -114,36 +115,43 @@ def compute_geofac_n2s(
         e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
         horizontal_start:
+        xp: python module, numpy or cpu
 
     Returns:
         geometric factor for nabla2-scalar, Field[CellDim, C2E2CODim]
     """
-    llb = horizontal_start
-    geofac_n2s = np.zeros([c2e.shape[0], 4])
-    index = np.transpose(
-        np.vstack(
+    num_cells = c2e.shape[0]
+    geofac_n2s = array_ns.zeros([num_cells, 4])
+    index = array_ns.transpose(
+        array_ns.vstack(
             (
-                np.arange(c2e.shape[0]),
-                np.arange(c2e.shape[0]),
-                np.arange(c2e.shape[0]),
+                array_ns.arange(num_cells),
+                array_ns.arange(num_cells),
+                array_ns.arange(num_cells),
             )
         )
     )
     mask = e2c[c2e, 0] == index
-    geofac_n2s[llb:, 0] = geofac_n2s[llb:, 0] - np.sum(
-        mask[llb:] * (geofac_div / dual_edge_length[c2e])[llb:], axis=1
+    geofac_n2s[horizontal_start:, 0] = geofac_n2s[horizontal_start:, 0] - array_ns.sum(
+        mask[horizontal_start:] * (geofac_div / dual_edge_length[c2e])[horizontal_start:], axis=1
     )
     mask = e2c[c2e, 1] == index
-    geofac_n2s[llb:, 0] = geofac_n2s[llb:, 0] + np.sum(
-        mask[llb:] * (geofac_div / dual_edge_length[c2e])[llb:], axis=1
+    geofac_n2s[horizontal_start:, 0] = geofac_n2s[horizontal_start:, 0] + array_ns.sum(
+        mask[horizontal_start:] * (geofac_div / dual_edge_length[c2e])[horizontal_start:], axis=1
     )
     mask = e2c[c2e, 0] == c2e2c
-    geofac_n2s[llb:, 1:] = (
-        geofac_n2s[llb:, 1:] - mask[llb:, :] * (geofac_div / dual_edge_length[c2e])[llb:, :]
+    geofac_n2s[horizontal_start:, 1:] = (
+            geofac_n2s[horizontal_start:, 1:] - mask[horizontal_start:, :] * (geofac_div /
+                                                                              dual_edge_length[
+                                                                                  c2e])[
+                                                                             horizontal_start:, :]
     )
     mask = e2c[c2e, 1] == c2e2c
-    geofac_n2s[llb:, 1:] = (
-        geofac_n2s[llb:, 1:] + mask[llb:, :] * (geofac_div / dual_edge_length[c2e])[llb:, :]
+    geofac_n2s[horizontal_start:, 1:] = (
+            geofac_n2s[horizontal_start:, 1:] + mask[horizontal_start:, :] * (geofac_div /
+                                                                              dual_edge_length[
+                                                                                  c2e])[
+                                                                             horizontal_start:, :]
     )
     return geofac_n2s
 

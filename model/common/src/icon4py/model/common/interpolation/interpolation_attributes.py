@@ -12,15 +12,18 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
 
-C_LIN_E: Final[str] = "c_lin_e"  # TODO (@halungge) find proper name
+C_LIN_E: Final[str] = "interpolation_coefficient_from_cell_to_edge"
 GEOFAC_DIV: Final[str] = "geometrical_factor_for_divergence"
 GEOFAC_ROT: Final[str] = "geometrical_factor_for_curl"
-
+GEOFAC_N2S: Final[str] = "geometrical_factor_for_nabla_2_scalar"
+GEOFAC_GRDIV:Final[str] = "geometrical_factor_for_gradient_of_divergence"
+# TODO (@halungge) this is a tuple
+GEOFAC_GRG: Final[str] = "geometrical_factor_for_green_gauss_gradient"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
         standard_name=C_LIN_E,
-        long_name=C_LIN_E,  # TODO (@halungge) find proper description
+        long_name="interpolation coefficient from cell to edges",
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="c_lin_e",
@@ -42,4 +45,30 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_rot",
         dtype=ta.wpfloat,
     ),
+    GEOFAC_N2S: dict(
+        standard_name=GEOFAC_N2S,
+        long_name="geometrical factor nabla-2 scalar",
+        units="",  # TODO (@halungge) check or confirm
+        dims=(dims.CellDim, dims.C2E2CODim),
+        icon_var_name="geofac_n2s",
+        dtype=ta.wpfloat,
+    ),
+    GEOFAC_GRDIV: dict(
+        standard_name=GEOFAC_GRDIV,
+        long_name="geometrical factor for gradient of divergence",
+        units="",  # TODO (@halungge) check or confirm
+        dims=(dims.EdgeDim, dims.E2C2EODim),
+        icon_var_name="geofac_grdiv",
+        dtype=ta.wpfloat,
+    ),
+    
+    GEOFAC_GRG: dict(
+        standard_name=GEOFAC_GRG,
+        long_name="geometrical factor for Green Gauss gradient",
+        units="",  # TODO (@halungge) check or confirm
+        dims=(dims.CellDim, dims.C2E2CODim),
+        icon_var_name="geofac_grg",
+        dtype=ta.wpfloat,
+    ),
+
 }
