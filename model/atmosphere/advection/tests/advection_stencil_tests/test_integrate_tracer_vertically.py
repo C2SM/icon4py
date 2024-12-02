@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 from gt4py.next import as_field
 
@@ -15,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_vertically imp
     integrate_tracer_vertically,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
 
 
 class TestIntegrateTracerVertically(helpers.StencilTest):
@@ -25,20 +25,20 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        tracer_now: xp.array,
-        rhodz_now: xp.array,
-        p_mflx_tracer_v: xp.array,
-        deepatmo_divzl: xp.array,
-        deepatmo_divzu: xp.array,
-        rhodz_new: xp.array,
-        k: xp.array,
+        tracer_now: np.array,
+        rhodz_now: np.array,
+        p_mflx_tracer_v: np.array,
+        deepatmo_divzl: np.array,
+        deepatmo_divzu: np.array,
+        rhodz_new: np.array,
+        k: np.array,
         ivadv_tracer: gtx.int32,
         iadv_slev_jt: gtx.int32,
         p_dtime: float,
         **kwargs,
     ) -> dict:
         if ivadv_tracer != 0:
-            tracer_new = xp.where(
+            tracer_new = np.where(
                 (iadv_slev_jt <= k),
                 (
                     tracer_now * rhodz_now
@@ -65,8 +65,8 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
         deepatmo_divzu = helpers.random_field(grid, dims.KDim)
         rhodz_new = helpers.random_field(grid, dims.CellDim, dims.KDim)
         tracer_new = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        k = as_field((dims.KDim,), xp.arange(grid.num_levels, dtype=gtx.int32))
-        p_dtime = xp.float64(5.0)
+        k = as_field((dims.KDim,), np.arange(grid.num_levels, dtype=gtx.int32))
+        p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4
         return dict(
