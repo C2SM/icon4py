@@ -75,6 +75,10 @@ class VerticalAdvectionType(Enum):
 
     #: no vertical advection
     NO_ADVECTION = auto()
+    #: 1st order upwind
+    UPWIND_1ST_ORDER = auto()
+    #: 3rd order PPM
+    PPM_3RD_ORDER = auto()
 
 
 class VerticalAdvectionLimiter(Enum):
@@ -84,6 +88,8 @@ class VerticalAdvectionLimiter(Enum):
 
     #: no vertical limiter
     NO_LIMITER = auto()
+    #: semi-monotonic vertical limiter
+    SEMI_MONOTONIC = auto()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -393,7 +399,7 @@ def convert_config_to_horizontal_vertical_advection(
 
     match config.horizontal_advection_type:
         case HorizontalAdvectionType.NO_ADVECTION:
-            horizontal_advection = advection_horizontal.NoAdvection(grid=grid)
+            horizontal_advection = advection_horizontal.NoAdvection(grid=grid, backend=backend)
         case HorizontalAdvectionType.LINEAR_2ND_ORDER:
             tracer_flux = advection_horizontal.SecondOrderMiura(
                 grid=grid,
@@ -417,13 +423,32 @@ def convert_config_to_horizontal_vertical_advection(
 
     match config.vertical_advection_limiter:
         case VerticalAdvectionLimiter.NO_LIMITER:
-            ...
+            vertical_limiter = advection_vertical.NoLimiter(grid=grid, backend=backend)
+        case VerticalAdvectionLimiter.SEMI_MONOTONIC:
+            vertical_limiter = advection_vertical.SemiMonotonicLimiter(grid=grid, backend=backend)
         case _:
             raise NotImplementedError(f"Unknown vertical advection limiter.")
 
     match config.vertical_advection_type:
         case VerticalAdvectionType.NO_ADVECTION:
             vertical_advection = advection_vertical.NoAdvection(grid=grid, backend=backend)
+        case VerticalAdvectionType.UPWIND_1ST_ORDER:
+            boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
+            vertical_advection = advection_vertical.FirstOrderUpwind(
+                boundary_conditions=boundary_conditions,
+                grid=grid,
+                metric_state=metric_state,
+                backend=backend,
+            )
+        case VerticalAdvectionType.PPM_3RD_ORDER:
+            boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
+            vertical_advection = advection_vertical.PiecewiseParabolicMethod(
+                boundary_conditions=boundary_conditions,
+                vertical_limiter=vertical_limiter,
+                grid=grid,
+                metric_state=metric_state,
+                backend=backend,
+            )
         case _:
             raise NotImplementedError(f"Unknown vertical advection type.")
 
