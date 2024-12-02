@@ -17,13 +17,14 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
+from icon4py.model.common.test_utils import grid_utils as gridtest_utils
 
 from . import utils
 
 
 @functools.cache
 def grid_from_file() -> icon.IconGrid:
-    file_name = utils.resolve_file_from_gridfile_name("mch_ch_r04b09_dsl")
+    file_name = gridtest_utils.resolve_full_grid_file_name("mch_ch_r04b09_dsl")
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(1)
     )

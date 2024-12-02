@@ -6,23 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging as log
-import typing
-from typing import Optional
+from typing import Optional, TypeAlias, Union
 
 import gt4py._core.definitions as gt_core_defs
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import backend
 
 from icon4py.model.common import dimension, type_alias as ta
 
-
-try:
-    import cupy as xp
-except ImportError:
-    import numpy as xp
-
-# @typing.runtime_checkable
-NDArray: typing.TypeAlias = typing.Union[xp.ndarray]
 
 """ Enum values from Enum values taken from DLPack reference implementation at:
     https://github.com/dmlc/dlpack/blob/main/include/dlpack/dlpack.h
@@ -33,6 +25,22 @@ CUDA_DEVICE_TYPES = (
     gt_core_defs.DeviceType.CUDA_MANAGED,
     gt_core_defs.DeviceType.ROCM,
 )
+
+
+try:
+    import cupy as xp
+except ImportError:
+    import numpy as xp
+
+# @typing.runtime_checkable
+NDArray: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
+
+
+def as_numpy(array: NDArray):
+    if isinstance(array, np.ndarray):
+        return array
+    else:
+        return array.asnumpy()
 
 
 def is_cupy_device(backend: backend.Backend) -> bool:
@@ -50,8 +58,9 @@ def array_ns(try_cupy: bool):
             return cp
         except ImportError:
             log.warn("No cupy installed, falling back to numpy for array_ns")
+    import numpy as np
 
-    return xp
+    return np
 
 
 def import_array_ns(backend: backend.Backend):
@@ -88,6 +97,6 @@ def allocate_indices(
     dtype=gtx.int32,
     backend: Optional[backend.Backend] = None,
 ) -> gtx.Field:
-    shapex = _size(grid, dim, is_halfdim)
     xp = import_array_ns(backend)
+    shapex = _size(grid, dim, is_halfdim)
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend)

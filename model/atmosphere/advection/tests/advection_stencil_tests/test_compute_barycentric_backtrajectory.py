@@ -96,7 +96,7 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_idx = grid.connectivities[dims.E2CDim]
+        cell_idx = np.asarray(grid.connectivities[dims.E2CDim], dtype=gtx.int32)
         cell_idx_new = helpers.numpy_to_1D_sparse_field(cell_idx, dims.ECDim)
         cell_blk = helpers.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
         cell_blk_new = helpers.as_1D_sparse_field(cell_blk, dims.ECDim)
