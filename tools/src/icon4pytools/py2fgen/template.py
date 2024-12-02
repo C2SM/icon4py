@@ -20,9 +20,9 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_NUMPY_TYPE,
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
+from icon4pytools.py2fgen.settings import GT4PyBackend
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 from icon4pytools.py2fgen.wrappers import wrapper_dimension
-from icon4pytools.py2fgen.wrappers.settings import GT4PyBackend
 
 
 # these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used

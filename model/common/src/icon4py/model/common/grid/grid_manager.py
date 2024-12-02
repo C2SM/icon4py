@@ -20,12 +20,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition,
 )
 from icon4py.model.common.grid import base, icon, vertical as v_grid
-
-
-try:
-    import cupy as xp
-except ImportError:
-    import numpy as xp
+from icon4py.model.common.utils.gt4py_field_allocation import NDArray
 
 
 try:
@@ -38,8 +33,6 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             raise ModuleNotFoundError("NetCDF4 is not installed.")
 
-
-NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 
 _log = logging.getLogger(__name__)
 

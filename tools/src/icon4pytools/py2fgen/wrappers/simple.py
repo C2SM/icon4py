@@ -16,6 +16,8 @@ from gt4py.next.ffront.decorator import field_operator, program
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.simple import SimpleGrid
 
+from icon4pytools.py2fgen.settings import backend
+
 
 # global profiler object
 profiler = cProfile.Profile()

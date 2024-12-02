@@ -18,6 +18,7 @@ import numpy as np
 
 import icon4py.model.common.states.metadata as data
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common.utils.gt4py_field_allocation import NDArray
 
 
 log = logging.getLogger(__name__)
@@ -262,9 +263,7 @@ class VerticalGrid:
         )
 
     @classmethod
-    def _determine_end_index_of_flat_layers(
-        cls, vct_a: NDArray, flat_height: float
-    ) -> gtx.int32:
+    def _determine_end_index_of_flat_layers(cls, vct_a: NDArray, flat_height: float) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
             0

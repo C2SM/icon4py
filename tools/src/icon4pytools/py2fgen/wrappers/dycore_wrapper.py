@@ -65,8 +65,8 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.settings import backend, device
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
-from icon4pytools.py2fgen.wrappers.settings import backend, device
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellIndexDim,
     EdgeIndexDim,

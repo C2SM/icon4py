@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -21,7 +20,10 @@ from icon4py.model.common.dimension import (
 from icon4py.model.common.grid.icon import IconGrid
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.settings import config
 
+
+xp = config.array_ns()
 
 log = setup_logger(__name__)
 

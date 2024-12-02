@@ -46,9 +46,9 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import wpfloat
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.settings import backend, config as config_settings, device
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
-from icon4pytools.py2fgen.wrappers.settings import backend, config as config_settings, device
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellGlobalIndexDim,
     CellIndexDim,
