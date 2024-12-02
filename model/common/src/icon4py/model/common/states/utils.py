@@ -26,5 +26,6 @@ FieldType: TypeAlias = Union[gtx.Field[Sequence[gtx.Dims[DimT]], T], alloc.NDArr
 
 
 def to_data_array(field: FieldType, attrs: dict):
-    data = field if isinstance(field, np.ndarray) else field.ndarray
+
+    data = field_alloc.as_numpy(data)
     return xa.DataArray(data, attrs=attrs)
