@@ -1557,8 +1557,12 @@ def test_granule_solve_nonhydro_multi_step_regional(
             w_concorr_c=w_concorr_c,
             ddt_vn_apc_ntl1=ddt_vn_apc.predictor,
             ddt_vn_apc_ntl2=ddt_vn_apc.corrector,
+            #ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+            #ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
             ddt_w_adv_ntl1=ddt_w_adv.predictor,
             ddt_w_adv_ntl2=ddt_w_adv.corrector,
+            #ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+            #ddt_w_adv_ntl2=ddt_w_adv_ntl2,
             theta_v_ic=theta_v_ic,
             rho_ic=rho_ic,
             exner_pr=exner_pr,
@@ -1587,10 +1591,8 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
         if not (at_initial_timestep and (i_substep - 1 == 0)):
             ddt_w_adv.swap()
-            print(i_substep, "swap w")
         if not (i_substep - 1 == 0):
             ddt_vn_apc.swap()
-            print(i_substep, "swap vn")
 
     cell_start_lb_plus2 = icon_grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
