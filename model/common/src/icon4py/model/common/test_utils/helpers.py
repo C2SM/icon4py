@@ -102,7 +102,8 @@ def zero_field(
     extend: Optional[dict[gt_common.Dimension, int]] = None,
     backend=None,
 ) -> gt_common.Field:
-    return as_field(
+    domain = {d: _shape(grid, dims, extend) for d in dims}
+    return gtx.zeros(domain, dtype=dtype, allocator=backend)
         dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype), allocator=backend
     )
 
