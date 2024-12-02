@@ -82,4 +82,5 @@ def allocate_indices(
     backend: Optional[backend.Backend] = None,
 ) -> gtx.Field:
     shapex = _size(grid, dim, is_halfdim)
-    return gtx.as_field((dim,), np.arange(shapex, dtype=dtype), allocator=backend)
+    xp =  import_array_ns(backend)
+    return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend)
