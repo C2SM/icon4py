@@ -75,7 +75,7 @@ def compare_values_shallow(value1, value2, obj_name="value"):
 
 def compare_objects(obj1, obj2, obj_name="object"):
     # Check if both objects are instances of numpy scalar types
-    if isinstance(obj1, np.ScalarType) and isinstance(obj2, np.ScalarType):
+    if isinstance(obj1, xp.ScalarType) and isinstance(obj2, xp.ScalarType):
         if obj1 != obj2:
             return False, f"Value mismatch for {obj_name}: {obj1} != {obj2}"
         return True, None
