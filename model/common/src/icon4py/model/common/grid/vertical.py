@@ -253,7 +253,7 @@ class VerticalGrid:
         return gtx.int32(np.min(np.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
-    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float) -> gtx.int32:
+    def _determine_damping_height_index(cls, vct_a: NDArray, damping_height: float) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
         return (
             0
