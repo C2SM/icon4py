@@ -246,7 +246,7 @@ class VerticalGrid:
 
     @classmethod
     def _determine_start_level_of_moist_physics(
-        cls, vct_a: np.ndarray, top_moist_threshold: float, nshift_total: int = 0
+        cls, vct_a: NDArray, top_moist_threshold: float, nshift_total: int = 0
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
