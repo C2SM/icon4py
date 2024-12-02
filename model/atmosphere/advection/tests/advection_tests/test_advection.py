@@ -25,17 +25,13 @@ from .utils import (
 )
 
 
-# note about ntracer: The first tracer is always dry air which is not advected. Thus, originally
-# ntracer=2 is the first tracer in transport_nml, ntracer=3 the second, and so on.
-# Here though, ntracer=1 corresponds to the first tracer in transport_nml.
-
 # ntracer legend for the serialization data used here in test_advection:
 # ------------------------------------
 # ntracer          |  1, 2, 3, 4, 5 |
 # ------------------------------------
 # ivadv_tracer     |  3, 0, 0, 2, 3 |
-# itype_hlimit     |  3, 3, 4, 0, 0 |
-# itype_vlimit     |  1, 0, 0, 1, 2 |
+# itype_hlimit     |  3, 4, 3, 0, 0 |
+# itype_vlimit     |  1, 0, 0, 2, 1 |
 # ihadv_tracer     | 52, 2, 2, 0, 0 |
 # ------------------------------------
 
@@ -62,6 +58,24 @@ from .utils import (
             advection.VerticalAdvectionType.NO_ADVECTION,
             advection.VerticalAdvectionLimiter.NO_LIMITER,
         ),
+        (
+            "2021-06-20T12:00:10.000",
+            False,
+            5,
+            advection.HorizontalAdvectionType.NO_ADVECTION,
+            advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+        ),
+        (
+            "2021-06-20T12:00:20.000",
+            True,
+            5,
+            advection.HorizontalAdvectionType.NO_ADVECTION,
+            advection.HorizontalAdvectionLimiter.NO_LIMITER,
+            advection.VerticalAdvectionType.PPM_3RD_ORDER,
+            advection.VerticalAdvectionLimiter.SEMI_MONOTONIC,
+        ),
     ],
 )
 def test_advection_run_single_step(
@@ -69,6 +83,7 @@ def test_advection_run_single_step(
     icon_grid,
     interpolation_savepoint,
     least_squares_savepoint,
+    metrics_savepoint,
     advection_init_savepoint,
     advection_exit_savepoint,
     data_provider,
@@ -89,7 +104,7 @@ def test_advection_run_single_step(
     )
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     least_squares_state = construct_least_squares_state(least_squares_savepoint)
-    metric_state = construct_metric_state(icon_grid)
+    metric_state = construct_metric_state(icon_grid, metrics_savepoint)
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
 
@@ -132,4 +147,5 @@ def test_advection_run_single_step(
         diagnostic_state_ref=diagnostic_state_ref,
         p_tracer_new=p_tracer_new,
         p_tracer_new_ref=p_tracer_new_ref,
+        even_timestep=even_timestep,
     )

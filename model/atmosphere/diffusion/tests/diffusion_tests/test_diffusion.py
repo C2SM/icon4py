@@ -61,7 +61,7 @@ def _get_or_initialize(experiment, backend, name):
         return decomposition_info
 
     if not grid_functionality[experiment].get(name):
-        gm = grid_utils.get_icon_grid_from_gridfile(experiment, backend)
+        gm = grid_utils.get_grid_manager_for_experiment(experiment, backend)
         grid = gm.grid
         decomposition_info = _construct_minimal_decomposition_info(grid)
         geometry_ = geometry.GridGeometry(

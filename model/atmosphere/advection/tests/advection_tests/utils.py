@@ -8,6 +8,8 @@
 
 import logging
 
+import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
@@ -54,12 +56,16 @@ def construct_least_squares_state(
     )
 
 
-def construct_metric_state(icon_grid) -> advection_states.AdvectionMetricState:
+def construct_metric_state(
+    icon_grid, savepoint: sb.MetricSavepoint
+) -> advection_states.AdvectionMetricState:
     constant_f = helpers.constant_field(icon_grid, 1.0, dims.KDim)
+    ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
     return advection_states.AdvectionMetricState(
         deepatmo_divh=constant_f,
         deepatmo_divzl=constant_f,
         deepatmo_divzu=constant_f,
+        ddqz_z_full=gtx.as_field((dims.CellDim, dims.KDim), ddqz_z_full_np),
     )
 
 
@@ -128,11 +134,17 @@ def verify_advection_fields(
     diagnostic_state_ref: advection_states.AdvectionDiagnosticState,
     p_tracer_new: fa.CellKField[ta.wpfloat],
     p_tracer_new_ref: fa.CellKField[ta.wpfloat],
+    even_timestep: bool,
 ):
     # cell indices
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_lateral_boundary = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
+    start_cell_lateral_boundary_level_2 = grid.start_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    start_cell_nudging = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
     end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+    end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
     # edge indices
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -141,46 +153,35 @@ def verify_advection_fields(
     )
     end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
 
+    hfl_tracer_range = np.arange(start_edge_lateral_boundary_level_5, end_edge_halo)
+    vfl_tracer_range = (
+        np.arange(start_cell_lateral_boundary_level_2, end_cell_end)
+        if even_timestep
+        else np.arange(start_cell_nudging, end_cell_local)
+    )
+    p_tracer_new_range = np.arange(start_cell_lateral_boundary, end_cell_local)
+
     # log advection output fields
-    log_dbg(
-        diagnostic_state.hfl_tracer.asnumpy()[start_edge_lateral_boundary_level_5:end_edge_halo, :],
-        "hfl_tracer",
-    )
-    log_dbg(
-        diagnostic_state_ref.hfl_tracer.asnumpy()[
-            start_edge_lateral_boundary_level_5:end_edge_halo, :
-        ],
-        "hfl_tracer_ref",
-    )
-    log_dbg(
-        diagnostic_state.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
-        "vfl_tracer",
-    )
-    log_dbg(
-        diagnostic_state_ref.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
-        "vfl_tracer_ref",
-    )
-    log_dbg(p_tracer_new.asnumpy()[start_cell_lateral_boundary:end_cell_local, :], "p_tracer_new")
-    log_dbg(
-        p_tracer_new_ref.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
-        "p_tracer_new_ref",
-    )
+    log_dbg(diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :], "hfl_tracer")
+    log_dbg(diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :], "hfl_tracer_ref")
+    log_dbg(diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :], "vfl_tracer")
+    log_dbg(diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :], "vfl_tracer_ref")
+    log_dbg(p_tracer_new.asnumpy()[p_tracer_new_range, :], "p_tracer_new")
+    log_dbg(p_tracer_new_ref.asnumpy()[p_tracer_new_range, :], "p_tracer_new_ref")
 
     # verify advection output fields
     assert helpers.dallclose(
-        diagnostic_state.hfl_tracer.asnumpy()[start_edge_lateral_boundary_level_5:end_edge_halo, :],
-        diagnostic_state_ref.hfl_tracer.asnumpy()[
-            start_edge_lateral_boundary_level_5:end_edge_halo, :
-        ],
-        rtol=1e-10,
-    )
-    assert helpers.dallclose(  # TODO (dastrm): adjust indices once there is vertical transport
-        diagnostic_state.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
-        diagnostic_state_ref.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
+        diagnostic_state.hfl_tracer.asnumpy()[hfl_tracer_range, :],
+        diagnostic_state_ref.hfl_tracer.asnumpy()[hfl_tracer_range, :],
         rtol=1e-10,
     )
     assert helpers.dallclose(
-        p_tracer_new.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
-        p_tracer_new_ref.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
+        diagnostic_state.vfl_tracer.asnumpy()[vfl_tracer_range, :],
+        diagnostic_state_ref.vfl_tracer.asnumpy()[vfl_tracer_range, :],
+        rtol=1e-10,
+    )
+    assert helpers.dallclose(
+        p_tracer_new.asnumpy()[p_tracer_new_range, :],
+        p_tracer_new_ref.asnumpy()[p_tracer_new_range, :],
         atol=1e-16,
     )
