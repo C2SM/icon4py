@@ -18,7 +18,7 @@ from icon4py.model.common.grid import base, horizontal, icon
 log = logging.getLogger(__name__)
 
 
-def adjust_fortran_indices(inp: np.ndarray, offset: int) -> np.ndarray:
+def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
     return np.subtract(inp, offset)
 
