@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4pytools.py2fgen.settings import config
 
 
-xp = config.array_ns()
+xp = config.array_ns
 # TODO: the configuration code is replicated across the codebase currently. In future, the configuration should be read from an external file.
 
 

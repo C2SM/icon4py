@@ -13,11 +13,6 @@ from pathlib import Path
 from gt4py.next.common import Dimension
 from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType, TypeSpec
 
-from icon4pytools.py2fgen.settings import config
-
-
-xp = config.array_ns()
-
 
 def parse_type_spec(type_spec: TypeSpec) -> tuple[list[Dimension], ScalarKind]:
     if isinstance(type_spec, ScalarType):

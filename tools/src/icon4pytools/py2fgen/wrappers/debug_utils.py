@@ -23,7 +23,7 @@ from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.settings import config
 
 
-xp = config.array_ns()
+xp = config.array_ns
 
 log = setup_logger(__name__)
 
