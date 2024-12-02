@@ -263,7 +263,7 @@ class VerticalGrid:
 
     @classmethod
     def _determine_end_index_of_flat_layers(
-        cls, vct_a: np.ndarray, flat_height: float
+        cls, vct_a: NDArray, flat_height: float
     ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
