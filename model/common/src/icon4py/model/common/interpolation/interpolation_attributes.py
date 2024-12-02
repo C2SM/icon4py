@@ -13,10 +13,11 @@ from icon4py.model.common.states import model
 
 
 C_LIN_E: Final[str] = "interpolation_coefficient_from_cell_to_edge"
+C_BLN_AVG: Final[str] = "bilinear_cell_average_weight"
 GEOFAC_DIV: Final[str] = "geometrical_factor_for_divergence"
 GEOFAC_ROT: Final[str] = "geometrical_factor_for_curl"
 GEOFAC_N2S: Final[str] = "geometrical_factor_for_nabla_2_scalar"
-GEOFAC_GRDIV:Final[str] = "geometrical_factor_for_gradient_of_divergence"
+GEOFAC_GRDIV: Final[str] = "geometrical_factor_for_gradient_of_divergence"
 # TODO (@halungge) this is a tuple
 GEOFAC_GRG: Final[str] = "geometrical_factor_for_green_gauss_gradient"
 
@@ -24,6 +25,14 @@ attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
         standard_name=C_LIN_E,
         long_name="interpolation coefficient from cell to edges",
+        units="",  # TODO (@halungge) check or confirm
+        dims=(dims.EdgeDim, dims.E2CDim),
+        icon_var_name="c_lin_e",
+        dtype=ta.wpfloat,
+    ),
+    C_BLN_AVG: dict(
+        standard_name=C_BLN_AVG,
+        long_name="mass conserving bilinear cell average weight",
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="c_lin_e",
@@ -61,7 +70,6 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_grdiv",
         dtype=ta.wpfloat,
     ),
-    
     GEOFAC_GRG: dict(
         standard_name=GEOFAC_GRG,
         long_name="geometrical factor for Green Gauss gradient",
@@ -70,5 +78,4 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_grg",
         dtype=ta.wpfloat,
     ),
-
 }

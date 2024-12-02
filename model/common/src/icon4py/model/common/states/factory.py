@@ -555,15 +555,14 @@ class NumpyFieldsProvider(FieldProvider):
     def __init__(
         self,
         func: Callable,
-        domain: dict[gtx.Dimension : tuple[DomainType, DomainType]],
+        domain: Sequence[gtx.Dimension],
         fields: Sequence[str],
         deps: dict[str, str],
         connectivities: Optional[dict[str, gtx.Dimension]] = None,
         params: Optional[dict[str, state_utils.ScalarType]] = None,
     ):
         self._func = func
-        self._compute_domain = domain
-        self._dims = domain.keys()
+        self._dims = domain
         self._fields: dict[str, Optional[state_utils.FieldType]] = {name: None for name in fields}
         self._dependencies = deps
         self._connectivities = connectivities if connectivities is not None else {}

@@ -46,10 +46,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._decomposition_info = decomposition_info
         self._attrs = metadata
         self._providers: dict[str, factory.FieldProvider] = {}
-
         self._geometry = geometry_source
+        # TODO @halungge: Dummy config dict -  to be replaced by real configuration
+        self._config = {"divavg_cntrwgt": 0.5}
         self._register_computed_fields()
-        
+
     def __repr__(self):
         return f"{self.__class__.__name__} on (grid={self._grid!r}) providing fields f{self.metadata.keys()}"
 
@@ -85,32 +86,52 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(geofac_rot)
 
         geofac_n2s = factory.NumpyFieldsProvider(
-            func = functools.partial(interpolation_fields.compute_geofac_n2s, array_ns=self._xp),
-            fields = (attrs.GEOFAC_N2S, ),
-            domain = {dims.CellDim : (0,1), dims.C2E2CODim : (0,4)},
+            func=functools.partial(interpolation_fields.compute_geofac_n2s, array_ns=self._xp),
+            fields=(attrs.GEOFAC_N2S,),
+            domain=(dims.CellDim, dims.C2E2CODim),
             deps={
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
-                "geofac_div": attrs.GEOFAC_DIV
-                  },
-            connectivities={"c2e": dims.C2EDim, "e2c":dims.E2CDim, "c2e2c": dims.C2E2CDim },
+                "geofac_div": attrs.GEOFAC_DIV,
+            },
+            connectivities={"c2e": dims.C2EDim, "e2c": dims.E2CDim, "c2e2c": dims.C2E2CDim},
             params={
                 "horizontal_start": self._grid.start_index(
                     cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
                 )
-            }
+            },
         )
         self.register_provider(geofac_n2s)
+
+        cell_average_weight = factory.NumpyFieldsProvider(
+            func=functools.partial(
+                interpolation_fields.compute_mass_conserving_bilinear_cell_average_weight,
+                array_ns=self._xp,
+            ),
+            fields=(attrs.C_BLN_AVG,),
+            domain=(dims.CellDim, dims.C2E2CODim),
+            deps={
+                "lat": geometry_attrs.CELL_LAT,
+                "lon": geometry_attrs.CELL_LON,
+                "cell_areas": geometry_attrs.CELL_AREA,
+                "cell_owner_mask": "cell_owner_mask",
+            },
+            connectivities={"c2e2c0": dims.C2E2CODim},
+            params={
+                "horizontal_start": self.grid.start_index(
+                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                ),
+                "horizontal_start_level_3": self.grid.start_index(
+                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+                ),
+                "divavg_cntrwgt": self._config["divavg_cntrwgt"],
+            },
+        )
+        self.register_provider(cell_average_weight)
 
         c_lin_e = factory.NumpyFieldsProvider(
             func=functools.partial(interpolation_fields.compute_c_lin_e, array_ns=self._xp),
             fields=(attrs.C_LIN_E,),
-            domain={
-                dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
-                    edge_domain(h_grid.Zone.END),
-                ),
-                dims.E2CDim: (0, 2),
-            },
+            domain=(dims.EdgeDim, dims.E2CDim),
             deps={
                 "edge_cell_length": geometry_attrs.EDGE_CELL_DISTANCE,
                 "inv_dual_edge_length": f"inverse_of_{geometry_attrs.DUAL_EDGE_LENGTH}",

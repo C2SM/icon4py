@@ -5,8 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
+import math
 from types import ModuleType
-from typing import TypeAlias, Union
 
 import gt4py.next as gtx
 import numpy as np
@@ -18,23 +19,16 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
-
-
-try:
-    import cupy as xp
-except ImportError:
-    import numpy as xp
-
-NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
+from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 
 def compute_c_lin_e(
-    edge_cell_length: NDArray,
-    inv_dual_edge_length: NDArray,
-    edge_owner_mask: NDArray,
+    edge_cell_length: alloc.NDArray,
+    inv_dual_edge_length: alloc.NDArray,
+    edge_owner_mask: alloc.NDArray,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
-) -> NDArray:
+) -> alloc.NDArray:
     """
     Compute E2C average inverse distance.
 
@@ -97,14 +91,14 @@ def compute_geofac_rot(
 
 
 def compute_geofac_n2s(
-    dual_edge_length: NDArray,
-    geofac_div: NDArray,
-    c2e: NDArray,
-    e2c: NDArray,
-    c2e2c: NDArray,
+    dual_edge_length: alloc.NDArray,
+    geofac_div: alloc.NDArray,
+    c2e: alloc.NDArray,
+    e2c: alloc.NDArray,
+    c2e2c: alloc.NDArray,
     horizontal_start: gtx.int32,
-    array_ns:ModuleType = np
-) -> NDArray:
+    array_ns: ModuleType = np,
+) -> alloc.NDArray:
     """
     Compute geometric factor for nabla2-scalar.
 
@@ -115,7 +109,7 @@ def compute_geofac_n2s(
         e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
         horizontal_start:
-        xp: python module, numpy or cpu
+        array_ns: python module, numpy or cpu
 
     Returns:
         geometric factor for nabla2-scalar, Field[CellDim, C2E2CODim]
@@ -141,17 +135,13 @@ def compute_geofac_n2s(
     )
     mask = e2c[c2e, 0] == c2e2c
     geofac_n2s[horizontal_start:, 1:] = (
-            geofac_n2s[horizontal_start:, 1:] - mask[horizontal_start:, :] * (geofac_div /
-                                                                              dual_edge_length[
-                                                                                  c2e])[
-                                                                             horizontal_start:, :]
+        geofac_n2s[horizontal_start:, 1:]
+        - mask[horizontal_start:, :] * (geofac_div / dual_edge_length[c2e])[horizontal_start:, :]
     )
     mask = e2c[c2e, 1] == c2e2c
     geofac_n2s[horizontal_start:, 1:] = (
-            geofac_n2s[horizontal_start:, 1:] + mask[horizontal_start:, :] * (geofac_div /
-                                                                              dual_edge_length[
-                                                                                  c2e])[
-                                                                             horizontal_start:, :]
+        geofac_n2s[horizontal_start:, 1:]
+        + mask[horizontal_start:, :] * (geofac_div / dual_edge_length[c2e])[horizontal_start:, :]
     )
     return geofac_n2s
 
@@ -313,11 +303,12 @@ def compute_geofac_grdiv(
 
 
 def rotate_latlon(
-    lat: np.ndarray,
-    lon: np.ndarray,
-    pollat: np.ndarray,
-    pollon: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
+    lat: alloc.NDArray,
+    lon: alloc.NDArray,
+    pollat: alloc.NDArray,
+    pollon: alloc.NDArray,
+    array_ns: ModuleType = np,
+) -> tuple[alloc.NDArray, alloc.NDArray]:
     """
     (Compute rotation of lattitude and longitude.)
 
@@ -329,29 +320,35 @@ def rotate_latlon(
         lon: scalar or numpy array
         pollat: scalar or numpy array
         pollon: scalar or numpy array
+        array_ns array namespace to be used, defaults to numpy
 
     Returns:
         rotlat:
         rotlon:
     """
-    rotlat = np.arcsin(
-        np.sin(lat) * np.sin(pollat) + np.cos(lat) * np.cos(pollat) * np.cos(lon - pollon)
+    rotlat = array_ns.arcsin(
+        array_ns.sin(lat) * array_ns.sin(pollat)
+        + array_ns.cos(lat) * array_ns.cos(pollat) * array_ns.cos(lon - pollon)
     )
-    rotlon = np.arctan2(
-        np.cos(lat) * np.sin(lon - pollon),
-        (np.cos(lat) * np.sin(pollat) * np.cos(lon - pollon) - np.sin(lat) * np.cos(pollat)),
+    rotlon = array_ns.arctan2(
+        array_ns.cos(lat) * array_ns.sin(lon - pollon),
+        (
+            array_ns.cos(lat) * array_ns.sin(pollat) * array_ns.cos(lon - pollon)
+            - array_ns.sin(lat) * array_ns.cos(pollat)
+        ),
     )
 
     return (rotlat, rotlon)
 
 
 def weighting_factors(
-    ytemp: np.ndarray,
-    xtemp: np.ndarray,
-    yloc: np.ndarray,
-    xloc: np.ndarray,
+    ytemp: alloc.NDArray,
+    xtemp: alloc.NDArray,
+    yloc: alloc.NDArray,
+    xloc: alloc.NDArray,
     wgt_loc: ta.wpfloat,
-) -> np.ndarray:
+    array_ns: ModuleType = np,
+) -> alloc.NDArray:
     """
         Compute weighting factors.
         The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
@@ -370,33 +367,36 @@ def weighting_factors(
             yloc:   \\   numpy array of size [[flexible], ta.wpfloat]
             xloc:   //
             wgt_loc:
+            array_ns: array namespace to be used defaults to numpy
 
         Returns:
             wgt: numpy array of size [[3, flexible], ta.wpfloat]
     """
-    pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
+    rotate = functools.partial(rotate_latlon, array_ns=array_ns)
+
+    pollat = array_ns.where(yloc >= 0.0, yloc - math.pi * 0.5, yloc + math.pi * 0.5)
     pollon = xloc
-    (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
-    x = np.zeros([ytemp.shape[0], ytemp.shape[1]])
-    y = np.zeros([ytemp.shape[0], ytemp.shape[1]])
-    wgt = np.zeros([ytemp.shape[0], ytemp.shape[1]])
+    (yloc, xloc) = rotate(yloc, xloc, pollat, pollon)
+    x = array_ns.zeros([ytemp.shape[0], ytemp.shape[1]])
+    y = array_ns.zeros([ytemp.shape[0], ytemp.shape[1]])
+    wgt = array_ns.zeros([ytemp.shape[0], ytemp.shape[1]])
 
     for i in range(ytemp.shape[0]):
-        (ytemp[i], xtemp[i]) = rotate_latlon(ytemp[i], xtemp[i], pollat, pollon)
+        (ytemp[i], xtemp[i]) = rotate(ytemp[i], xtemp[i], pollat, pollon)
         y[i] = ytemp[i] - yloc
         x[i] = xtemp[i] - xloc
         # This is needed when the date line is crossed
-        x[i] = np.where(x[i] > 3.5, x[i] - np.pi * 2, x[i])
-        x[i] = np.where(x[i] < -3.5, x[i] + np.pi * 2, x[i])
+        x[i] = array_ns.where(x[i] > 3.5, x[i] - math.pi * 2, x[i])
+        x[i] = array_ns.where(x[i] < -3.5, x[i] + math.pi * 2, x[i])
 
-    mask = np.logical_and(abs(x[1] - x[0]) > 1.0e-11, abs(y[2] - y[0]) > 1.0e-11)
+    mask = array_ns.logical_and(abs(x[1] - x[0]) > 1.0e-11, abs(y[2] - y[0]) > 1.0e-11)
     wgt_1_no_mask = (
         1.0
         / ((y[1] - y[0]) - (x[1] - x[0]) * (y[2] - y[0]) / (x[2] - x[0]))
         * (1.0 - wgt_loc)
         * (-y[0] + x[0] * (y[2] - y[0]) / (x[2] - x[0]))
     )
-    wgt[2] = np.where(
+    wgt[2] = array_ns.where(
         mask,
         1.0
         / ((y[2] - y[0]) - (x[2] - x[0]) * (y[1] - y[0]) / (x[1] - x[0]))
@@ -404,7 +404,7 @@ def weighting_factors(
         * (-y[0] + x[0] * (y[1] - y[0]) / (x[1] - x[0])),
         (-(1.0 - wgt_loc) * x[0] - wgt_1_no_mask * (x[1] - x[0])) / (x[2] - x[0]),
     )
-    wgt[1] = np.where(
+    wgt[1] = array_ns.where(
         mask,
         (-(1.0 - wgt_loc) * x[0] - wgt[2] * (x[2] - x[0])) / (x[1] - x[0]),
         wgt_1_no_mask,
@@ -414,12 +414,13 @@ def weighting_factors(
 
 
 def _compute_c_bln_avg(
-    c2e2c: np.ndarray,
-    lat: np.ndarray,
-    lon: np.ndarray,
+    c2e2c: alloc.NDArray,
+    lat: alloc.NDArray,
+    lon: alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
-    horizontal_start: np.int32,
-) -> np.ndarray:
+    horizontal_start: gtx.int32,
+    array_ns: ModuleType = np,
+) -> alloc.NDArray:
     """
     Compute bilinear cell average weight.
 
@@ -435,8 +436,8 @@ def _compute_c_bln_avg(
         c_bln_avg: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
     """
     num_cells = c2e2c.shape[0]
-    ytemp = np.zeros([c2e2c.shape[1], num_cells - horizontal_start])
-    xtemp = np.zeros([c2e2c.shape[1], num_cells - horizontal_start])
+    ytemp = array_ns.zeros([c2e2c.shape[1], num_cells - horizontal_start])
+    xtemp = array_ns.zeros([c2e2c.shape[1], num_cells - horizontal_start])
 
     for i in range(ytemp.shape[0]):
         ytemp[i] = lat[c2e2c[horizontal_start:, i]]
@@ -448,8 +449,9 @@ def _compute_c_bln_avg(
         lat[horizontal_start:],
         lon[horizontal_start:],
         divavg_cntrwgt,
+        array_ns=array_ns,
     )
-    c_bln_avg = np.zeros((c2e2c.shape[0], c2e2c.shape[1] + 1))
+    c_bln_avg = array_ns.zeros((c2e2c.shape[0], c2e2c.shape[1] + 1))
     c_bln_avg[horizontal_start:, 0] = divavg_cntrwgt
     c_bln_avg[horizontal_start:, 1] = wgt[0]
     c_bln_avg[horizontal_start:, 2] = wgt[1]
@@ -458,14 +460,15 @@ def _compute_c_bln_avg(
 
 
 def _force_mass_conservation_to_c_bln_avg(
-    c2e2c0: np.ndarray,
-    c_bln_avg: np.ndarray,
-    cell_areas: np.ndarray,
-    cell_owner_mask: np.ndarray,
+    c2e2c0: alloc.NDArray,
+    c_bln_avg: alloc.NDArray,
+    cell_areas: alloc.NDArray,
+    cell_owner_mask: alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
+    array_ns: ModuleType = np,
     niter: int = 1000,
-) -> np.ndarray:
+) -> alloc.NDArray:
     """
     Iteratively enforce mass conservation to the input field c_bln_avg.
 
@@ -489,7 +492,9 @@ def _force_mass_conservation_to_c_bln_avg(
 
     """
 
-    def _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx) -> np.ndarray:
+    def _compute_local_weights(
+        c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx
+    ) -> alloc.NDArray:
         """
         Compute the total weight which each local point contributes to the sum.
 
@@ -500,26 +505,26 @@ def _force_mass_conservation_to_c_bln_avg(
         Returns: ndarray of CellDim, containing the sum of weigh contributions for each local cell index
 
         """
-        weights = np.sum(c_bln_avg[c2e2c0, inverse_neighbor_idx] * cell_areas[c2e2c0], axis=1)
+        weights = array_ns.sum(c_bln_avg[c2e2c0, inverse_neighbor_idx] * cell_areas[c2e2c0], axis=1)
         return weights
 
     def _compute_residual_to_mass_conservation(
-        owner_mask: np.ndarray, local_weight: np.ndarray, cell_area: np.ndarray
-    ) -> np.ndarray:
+        owner_mask: alloc.NDArray, local_weight: alloc.NDArray, cell_area: alloc.NDArray
+    ) -> alloc.NDArray:
         """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
         horizontal_size = local_weight.shape[0]
         assert horizontal_size == owner_mask.shape[0], "Fields do not have the same shape"
         assert horizontal_size == cell_area.shape[0], "Fields do not have the same shape"
-        residual = np.where(owner_mask, local_weight / cell_area - 1.0, 0.0)
+        residual = array_ns.where(owner_mask, local_weight / cell_area - 1.0, 0.0)
         return residual
 
     def _apply_correction(
-        c_bln_avg: np.ndarray,
-        residual: np.ndarray,
-        c2e2c0: np.ndarray,
+        c_bln_avg: alloc.NDArray,
+        residual: alloc.NDArray,
+        c2e2c0: alloc.NDArray,
         divavg_cntrwgt: float,
-        horizontal_start: gtx.int32,
-    ) -> np.ndarray:
+        horizontal_start: alloc.NDArray,
+    ) -> alloc.NDArray:
         """Apply correction to local weigths based on the computed residuals."""
         maxwgt_loc = divavg_cntrwgt + 0.003
         minwgt_loc = divavg_cntrwgt - 0.003
@@ -527,35 +532,39 @@ def _force_mass_conservation_to_c_bln_avg(
         c_bln_avg[horizontal_start:, :] = (
             c_bln_avg[horizontal_start:, :] - relax_coeff * residual[c2e2c0][horizontal_start:, :]
         )
-        local_weight = np.sum(c_bln_avg, axis=1) - 1.0
+        local_weight = array_ns.sum(c_bln_avg, axis=1) - 1.0
 
         c_bln_avg[horizontal_start:, :] = c_bln_avg[horizontal_start:, :] - (
             0.25 * local_weight[horizontal_start:, np.newaxis]
         )
 
         # avoid runaway condition:
-        c_bln_avg[horizontal_start:, 0] = np.maximum(c_bln_avg[horizontal_start:, 0], minwgt_loc)
-        c_bln_avg[horizontal_start:, 0] = np.minimum(c_bln_avg[horizontal_start:, 0], maxwgt_loc)
+        c_bln_avg[horizontal_start:, 0] = array_ns.maximum(
+            c_bln_avg[horizontal_start:, 0], minwgt_loc
+        )
+        c_bln_avg[horizontal_start:, 0] = array_ns.minimum(
+            c_bln_avg[horizontal_start:, 0], maxwgt_loc
+        )
         return c_bln_avg
 
     def _enforce_mass_conservation(
-        c_bln_avg: np.ndarray,
-        residual: np.ndarray,
-        owner_mask: np.ndarray,
+        c_bln_avg: alloc.NDArray,
+        residual: alloc.NDArray,
+        owner_mask: alloc.NDArray,
         horizontal_start: gtx.int32,
-    ) -> np.ndarray:
+    ) -> alloc.NDArray:
         """Enforce the mass conservation condition on the local cells by forcefully subtracting the
         residual from the central field contribution."""
-        c_bln_avg[horizontal_start:, 0] = np.where(
+        c_bln_avg[horizontal_start:, 0] = array_ns.where(
             owner_mask[horizontal_start:],
             c_bln_avg[horizontal_start:, 0] - residual[horizontal_start:],
             c_bln_avg[horizontal_start:, 0],
         )
         return c_bln_avg
 
-    local_summed_weights = np.zeros(c_bln_avg.shape[0])
-    residual = np.zeros(c_bln_avg.shape[0])
-    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0)
+    local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
+    residual = array_ns.zeros(c_bln_avg.shape[0])
+    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0, array_ns=array_ns)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -566,7 +575,7 @@ def _force_mass_conservation_to_c_bln_avg(
             cell_owner_mask, local_summed_weights, cell_areas
         )[horizontal_start:]
 
-        max_ = np.max(residual)
+        max_ = array_ns.max(residual)
         if iteration >= (niter - 1) or max_ < 1e-9:
             print(f"number of iterations: {iteration} - max residual={max_}")
             c_bln_avg = _enforce_mass_conservation(
@@ -586,28 +595,37 @@ def _force_mass_conservation_to_c_bln_avg(
 
 
 def compute_mass_conserving_bilinear_cell_average_weight(
-    c2e2c0: np.ndarray,
-    lat: np.ndarray,
-    lon: np.ndarray,
-    cell_areas: np.ndarray,
-    cell_owner_mask: np.ndarray,
+    c2e2c0: alloc.NDArray,
+    lat: alloc.NDArray,
+    lon: alloc.NDArray,
+    cell_areas: alloc.NDArray,
+    cell_owner_mask: alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
-    horizontal_start: np.int32,
-    horizontal_start_level_3,
-) -> np.ndarray:
-    c_bln_avg = _compute_c_bln_avg(c2e2c0[:, 1:], lat, lon, divavg_cntrwgt, horizontal_start)
+    horizontal_start: gtx.int32,
+    horizontal_start_level_3: gtx.int32,
+    array_ns: ModuleType = np,
+) -> alloc.NDArray:
+    c_bln_avg = _compute_c_bln_avg(
+        c2e2c0[:, 1:], lat, lon, divavg_cntrwgt, horizontal_start, array_ns
+    )
     return _force_mass_conservation_to_c_bln_avg(
-        c2e2c0, c_bln_avg, cell_areas, cell_owner_mask, divavg_cntrwgt, horizontal_start_level_3
+        c2e2c0,
+        c_bln_avg,
+        cell_areas,
+        cell_owner_mask,
+        divavg_cntrwgt,
+        horizontal_start_level_3,
+        array_ns,
     )
 
 
-def create_inverse_neighbor_index(c2e2c0):
-    inv_neighbor_idx = -1 * np.ones(c2e2c0.shape, dtype=int)
+def create_inverse_neighbor_index(c2e2c0, array_ns: ModuleType = np):
+    inv_neighbor_idx = -1 * array_ns.ones(c2e2c0.shape, dtype=int)
 
     for jc in range(c2e2c0.shape[0]):
         for i in range(c2e2c0.shape[1]):
             if c2e2c0[jc, i] >= 0:
-                inv_neighbor_idx[jc, i] = np.argwhere(c2e2c0[c2e2c0[jc, i], :] == jc)[0, 0]
+                inv_neighbor_idx[jc, i] = array_ns.argwhere(c2e2c0[c2e2c0[jc, i], :] == jc)[0, 0]
 
     return inv_neighbor_idx
 

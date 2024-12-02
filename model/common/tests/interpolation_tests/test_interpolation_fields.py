@@ -140,7 +140,6 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, 
         e2c,
         c2e2c,
         horizontal_start,
-
     )
     assert test_helpers.dallclose(alloc.as_numpy(geofac_n2s), geofac_n2s_ref.asnumpy())
 

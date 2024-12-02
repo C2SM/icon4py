@@ -146,6 +146,9 @@ class GridGeometry(factory.FieldSource):
                 "vertex_owner_mask": gtx.as_field(
                     (dims.VertexDim,), decomposition_info.owner_mask(dims.VertexDim)
                 ),
+                "cell_owner_mask": gtx.as_field(
+                    (dims.VertexDim,), decomposition_info.owner_mask(dims.CellDim)
+                ),
             }
         )
         self.register_provider(input_fields_provider)
