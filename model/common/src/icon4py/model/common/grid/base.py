@@ -112,7 +112,7 @@ class BaseGrid(ABC):
         return offset_providers
 
     @utils.chainable
-    def with_connectivities(self, connectivity: Dict[gtx.Dimension, np.ndarray]):
+    def with_connectivities(self, connectivity: Dict[gtx.Dimension, alloc.NDArray]):
         self.connectivities.update(
             {
                 d: k.ndarray.astype(gtx.int32) if hasattr(k, "ndarray") else k.astype(gtx.int32)
