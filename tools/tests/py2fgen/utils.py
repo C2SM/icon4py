@@ -20,7 +20,7 @@ def compare_values_shallow(value1, value2, obj_name="value"):
     # Handle comparison of NdArrayField objects
     if isinstance(value1, NdArrayField) and isinstance(value2, NdArrayField):
         try:
-            np.testing.assert_equal(value1.ndarray, value2.ndarray)  # Compare arrays for equality
+            xp.testing.assert_equal(value1.ndarray, value2.ndarray)  # Compare arrays for equality
             return True, None
         except AssertionError:
             return False, f"Array mismatch for {obj_name}"
