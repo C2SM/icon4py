@@ -9,7 +9,6 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
-import gt4py.next as gtx
 import numpy as np
 import numpy.typing as npt
 import pytest
@@ -103,8 +102,10 @@ def zero_field(
     extend: Optional[dict[gt_common.Dimension, int]] = None,
     backend=None,
 ) -> gt_common.Field:
-    domain = {d: _shape(grid, dims, extend) for d in dims}
-    return gtx.zeros(domain, dtype=dtype, allocator=backend)
+    arr = np.zeros(shape=_shape(grid, *dims, extend=extend))
+    if dtype:
+        arr = arr.astype(dtype)
+    return as_field(dims, arr, allocator=backend)
 
 
 def constant_field(
