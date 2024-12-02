@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -14,7 +15,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horiz
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
 
 
 class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.StencilTest):
@@ -24,31 +24,31 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
     @staticmethod
     def reference(
         grid,
-        geofac_div: xp.ndarray,
-        p_cc: xp.ndarray,
-        p_rhodz_now: xp.ndarray,
-        p_mflx_tracer_h: xp.ndarray,
+        geofac_div: np.ndarray,
+        p_cc: np.ndarray,
+        p_rhodz_now: np.ndarray,
+        p_mflx_tracer_h: np.ndarray,
         p_dtime,
         dbl_eps,
         **kwargs,
     ) -> dict:
         geofac_div = helpers.reshape(geofac_div, grid.connectivities[dims.C2EDim].shape)
-        geofac_div = xp.expand_dims(geofac_div, axis=-1)
-        p_m_0 = xp.maximum(
+        geofac_div = np.expand_dims(geofac_div, axis=-1)
+        p_m_0 = np.maximum(
             0.0,
             p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 0]] * geofac_div[:, 0] * p_dtime,
         )
-        p_m_1 = xp.maximum(
+        p_m_1 = np.maximum(
             0.0,
             p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 1]] * geofac_div[:, 1] * p_dtime,
         )
-        p_m_2 = xp.maximum(
+        p_m_2 = np.maximum(
             0.0,
             p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 2]] * geofac_div[:, 2] * p_dtime,
         )
 
         p_m = p_m_0 + p_m_1 + p_m_2
-        r_m = xp.minimum(1.0, p_cc * p_rhodz_now / (p_m + dbl_eps))
+        r_m = np.minimum(1.0, p_cc * p_rhodz_now / (p_m + dbl_eps))
 
         return dict(r_m=r_m)
 
@@ -60,8 +60,8 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
         p_rhodz_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_tracer_h = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
         r_m = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_dtime = xp.float64(5)
-        dbl_eps = xp.float64(1e-9)
+        p_dtime = np.float64(5)
+        dbl_eps = np.float64(1e-9)
         return dict(
             geofac_div=geofac_div_new,
             p_cc=p_cc,

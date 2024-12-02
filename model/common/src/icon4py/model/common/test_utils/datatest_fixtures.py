@@ -167,7 +167,7 @@ def interpolation_savepoint(data_provider):  # F811
 
 @pytest.fixture
 def metrics_savepoint(data_provider):  # F811
-    """Load data from ICON mestric state savepoint."""
+    """Load data from ICON metric state savepoint."""
     return data_provider.from_metrics_savepoint()
 
 
