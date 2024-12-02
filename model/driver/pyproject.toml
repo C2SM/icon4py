@@ -124,7 +124,6 @@ ignore = [
   'E501',  # Line too long (using Bugbear's B950 warning)
   'RUF009'  # Do not perform function call in dataclass defaults
 ]
-ignore-init-module-imports = true
 
 [tool.ruff.lint.isort]
 combine-as-imports = true

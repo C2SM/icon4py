@@ -39,8 +39,7 @@ docs = [
 lint = ["pre-commit>=4.0.1", "ruff>=0.8.0", "tach>=0.16.0"]
 test = [
     "coverage[toml]>=7.5.0",
-    #"nox>=2024.10.9",
-    "nox @ git+https://github.com/wntrblm/nox.git",
+    "nox @ git+https://github.com/wntrblm/nox.git",  # TODO: remove once next version is released
     "pytest-benchmark>=5.0.0",
     "pytest>=8.0.1",
     "pytest-cache>=1.0",
@@ -169,7 +168,6 @@ ignore = [
     'RUF009', # Do not perform function call in dataclass defaults
     'B010',   # Do not call `setattr` with a constant attribute value.
 ]
-ignore-init-module-imports = true
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
