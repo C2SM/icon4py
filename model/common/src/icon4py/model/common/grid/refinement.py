@@ -92,7 +92,7 @@ def convert_to_unnested_refinement_values(field: NDArray, dim: dims.Dimension) -
 
     The nested values are used for example in the radiation grids.
     """
-    assert field.dtype in (np.int32, np.int64), f"not an integer type {field.dtype}"
+    assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
     return np.where(field == _UNORDERED[dim][1], 0, np.where(field < 0, -field, field))
 
 
