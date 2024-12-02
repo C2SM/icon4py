@@ -25,7 +25,7 @@ def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
 
 def construct_icon_grid(
     cell_starts: np.ndarray,
-    cell_ends: np.ndarray,
+    cell_ends: xp.ndarray,
     vertex_starts: np.ndarray,
     vertex_ends: np.ndarray,
     edge_starts: np.ndarray,
