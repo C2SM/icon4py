@@ -1776,6 +1776,14 @@ class IconGraupelInitSavepoint(IconSavepoint):
         return self.serializer.read("ser_init_graupel_zvz0r", self.savepoint)[0]
 
 
+class ExternalParametersSavepoint(IconSavepoint):
+    def topo_c(self):
+        return self._get_field("topo_c", dims.CellDim)
+
+    def topo_smt_c(self):
+        return self._get_field("topo_smt_c", dims.CellDim)
+
+
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0, advection=False):
         self.rank = mpi_rank
@@ -1869,6 +1877,15 @@ class IconSerialDataProvider:
     def from_metrics_savepoint(self) -> MetricSavepoint:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
         return MetricSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_external_parameters_savepoint(self) -> ExternalParametersSavepoint:
+        try:
+            savepoint = self.serializer.savepoint["external_parameters_savepoint"].as_savepoint()
+            return ExternalParametersSavepoint(savepoint, self.serializer, size=self.grid_size)
+        except serialbox.error.SerialboxError:
+            # some experiments do not (yet) have this savepoint (and that's
+            # fine, their tests should use zero or constant fields)
+            return None
 
     def from_least_squares_savepoint(self, size: dict) -> LeastSquaresSavepoint:
         savepoint = self.serializer.savepoint["least_squares_state"].jg[1].as_savepoint()

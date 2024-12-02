@@ -32,7 +32,7 @@ from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.driver import (
     serialbox_helpers as driver_sb,
 )
-from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
+from icon4py.model.driver.testcases import gauss3d, jablonowski_williamson
 
 
 GRID_LEVEL = 4

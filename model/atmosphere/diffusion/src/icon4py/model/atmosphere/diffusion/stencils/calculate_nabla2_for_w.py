@@ -34,6 +34,7 @@ def calculate_nabla2_for_w(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    # TODO: replace this by common/math/stencils/compute_nabla2_on_cell_k
     _calculate_nabla2_for_w(
         w,
         geofac_n2s,
