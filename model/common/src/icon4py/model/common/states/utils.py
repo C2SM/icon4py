@@ -22,7 +22,7 @@ ScalarType: TypeAlias = Union[FloatType, bool, IntegerType]
 
 T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
 
-FieldType: TypeAlias = Union[gtx.Field[Sequence[gtx.Dims[DimT]], T], np.ndarray]
+FieldType: TypeAlias = Union[gtx.Field[Sequence[gtx.Dims[DimT]], T], alloc.NDArray]
 
 
 def to_data_array(field: FieldType, attrs: dict):
