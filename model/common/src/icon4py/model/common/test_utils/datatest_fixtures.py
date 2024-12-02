@@ -14,7 +14,6 @@ from icon4py.model.common.test_utils import pytest_config
 from . import data_handling as data, datatest_utils as dt_utils
 
 
-
 @pytest.fixture
 def experiment():
     return dt_utils.REGIONAL_EXPERIMENT

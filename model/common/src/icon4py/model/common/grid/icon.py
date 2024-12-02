@@ -210,7 +210,7 @@ class IconGrid(base.BaseGrid):
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
         # ndarray.item() does not respect the dtype of the array, returns a copy of the value _as the default python type_
-        return gtx.int32(self._start_indices[domain.dim][domain()])
+        return gtx.int32(self._start_indices[domain.dim][domain()].item())
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
