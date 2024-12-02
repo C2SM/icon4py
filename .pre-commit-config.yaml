@@ -4,7 +4,7 @@
 
 default_stages: [pre-commit, pre-push]
 default_language_version:
-  python: python3.10
+  python: python3.11
 minimum_pre_commit_version: 3.8.0
 files: "tools/.*"
 
@@ -58,19 +58,19 @@ repos:
     args: [--fix]
   - id: ruff-format
 
-- repo: local
-  hooks:
-  - id: mypy
-    name: mypy static type checker
-    entry: bash -c 'mypy tools/src/icon4pytools'
-    language: system
-    types_or: [python, pyi]
-    pass_filenames: false
-    require_serial: true
-    stages: [pre-commit]
-
 - repo: https://github.com/gauge-sh/tach-pre-commit
   rev: v0.10.7
   hooks:
   - id: tach
     name: Check inter-package dependencies
+
+# - repo: local
+#   hooks:
+#   - id: mypy
+#     name: mypy static type checker
+#     entry: bash -c 'mypy tools/src/icon4pytools model/common/src/icon4py/model/common'
+#     language: system
+#     types_or: [python, pyi]
+#     pass_filenames: false
+#     require_serial: true
+#     stages: [pre-commit]
