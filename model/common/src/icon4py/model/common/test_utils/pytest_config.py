@@ -124,7 +124,6 @@ def pytest_addoption(parser):
 
     try:
         parser.addoption(
-            "--dace-orchestration",
             action="store_true",
             default=False,
             help="Performs DaCe orchestration. Any value will enable it.",

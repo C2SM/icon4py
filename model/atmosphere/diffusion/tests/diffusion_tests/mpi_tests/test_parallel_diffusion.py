@@ -168,9 +168,6 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
 ):
-    if "dace" not in backend.name.lower():
-        raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
-
     ######################################################################
     # Diffusion initialization
     ######################################################################
