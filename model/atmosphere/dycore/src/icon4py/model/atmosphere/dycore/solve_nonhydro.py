@@ -975,7 +975,7 @@ class SolveNonhydro:
             f"running predictor step: dtime = {dtime}, initial_timestep = {at_initial_timestep} at_first_substep = {at_first_substep}"
         )
 
-        if (at_initial_timestep and at_first_substep) or at_first_substep:
+        if at_first_substep:
             # Recompute only vn tendency
             lvn_only: bool = (
                 self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT

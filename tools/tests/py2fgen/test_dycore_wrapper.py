@@ -1585,17 +1585,12 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
         prognostic_states.swap()
 
-        if itime_scheme == solve_nh.TimeSteppingScheme.MOST_EFFICIENT:
-            if not (at_initial_timestep and (i_substep - 1 == 0)):
-                ddt_w_adv.swap()
-                print(i_substep, "swap w")
-            if not (i_substep - 1 == 0):
-                ddt_vn_apc.swap()
-                print(i_substep, "swap vn")
-        else:
-            raise NotImplementedError(
-                "itime_scheme can only be 4 for this test. Please add new condition for swapping velocity tendency buffers."
-            )
+        if not (at_initial_timestep and (i_substep - 1 == 0)):
+            ddt_w_adv.swap()
+            print(i_substep, "swap w")
+        if not (i_substep - 1 == 0):
+            ddt_vn_apc.swap()
+            print(i_substep, "swap vn")
 
     cell_start_lb_plus2 = icon_grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)

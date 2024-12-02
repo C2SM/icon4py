@@ -121,7 +121,7 @@ def test_run_solve_nonhydro_single_step(
             sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv__pc(1), sp_v.ddt_w_adv_pc(2)
+            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
         ),
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
