@@ -86,7 +86,7 @@ def is_unordered_field(field: np.ndarray, dim: dims.Dimension) -> np.ndarray:
     )
 
 
-def convert_to_unnested_refinement_values(field: np.ndarray, dim: dims.Dimension) -> np.ndarray:
+def convert_to_unnested_refinement_values(field: NDArray, dim: dims.Dimension) -> NDArray:
     """Convenience function that converts the grid refinement value from a coarser
     parent grid to the canonical values used in an unnested setup.
 
