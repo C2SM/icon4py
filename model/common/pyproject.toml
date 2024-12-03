@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
   "gt4py>=1.0.4",
-  "serialbox>=0.0.1",
+  "serialbox>=0.0.1"
 ]
 description = "Shared code for the icon4py model."
 dynamic = ['version']
@@ -46,9 +46,9 @@ io = [
   # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
   # mapping. It is not yet clear whether this is a uxarray bug or on our side.
   "uxarray==2024.3.0",
-  "xarray[complete]>=2024.3.0",
+  "xarray[complete]>=2024.3.0"
 ]
-netcdf=["netcdf4>=1.6.1"]
+netcdf = ["netcdf4>=1.6.1"]
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
@@ -102,15 +102,16 @@ markers = [
 testpaths = 'tests'
 
 # --ruff --
-# --ruff --
 [tool.ruff]
-extend = "../pyproject.toml"
+extend = "../../pyproject.toml"
 
 [tool.ruff.lint.isort]
 known-first-party = ['icon4py.model']
 known-third-party = ['gt4py', 'icon4py']
 
 # -- setuptools --
+[tool.setuptools]
+
 [tool.setuptools.dynamic]
 version = {attr = 'icon4py.model.common.__init__.__version__'}
 
