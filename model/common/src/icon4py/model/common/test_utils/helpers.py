@@ -33,6 +33,11 @@ def backend(request):
     return request.param
 
 
+@pytest.fixture
+def grid(request):
+    return request.param
+
+
 def is_python(backend) -> bool:
     # want to exclude python backends:
     #   - cannot run on embedded: because of slicing
