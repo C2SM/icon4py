@@ -41,7 +41,7 @@ def _sum_neighbor_contributions_all(
     prod_m1 = where(mask2 & js_gt1, p_cc(Koff[-2]) * p_cellmass_now(Koff[-2]), 0.0)
     prod_m2 = where(mask2 & js_gt2, p_cc(Koff[-3]) * p_cellmass_now(Koff[-3]), 0.0)
     prod_m3 = where(mask2 & js_gt3, p_cc(Koff[-4]) * p_cellmass_now(Koff[-4]), 0.0)
-    prod_m4 = where(mask2 & js_gt3, p_cc(Koff[-5]) * p_cellmass_now(Koff[-5]), 0.0)
+    prod_m4 = where(mask2 & js_gt4, p_cc(Koff[-5]) * p_cellmass_now(Koff[-5]), 0.0)
 
     prod_jks = (
         prod_p0
