@@ -8,19 +8,21 @@
 
 import numpy as np
 
+from icon4py.model.common.utils.gt4py_field_allocation import NDArray
+
 
 def compute_zdiff_gradp_dsl(
     e2c,
-    z_me: np.ndarray,
-    z_mc: np.ndarray,
-    z_ifc: np.ndarray,
-    flat_idx: np.ndarray,
-    z_aux2: np.ndarray,
+    z_me: NDArray,
+    z_mc: NDArray,
+    z_ifc: NDArray,
+    flat_idx: NDArray,
+    z_aux2: NDArray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
     nedges: int,
-) -> np.ndarray:
+) -> NDArray:
     zdiff_gradp = np.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
         np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]

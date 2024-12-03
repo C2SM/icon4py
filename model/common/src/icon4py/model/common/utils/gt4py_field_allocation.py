@@ -32,11 +32,11 @@ try:
 except ImportError:
     import numpy as xp
 
-# @typing.runtime_checkable
-NDArray: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
+NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
+NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
 
 
-def as_numpy(array: NDArray):
+def as_numpy(array: NDArrayInterface):
     if isinstance(array, np.ndarray):
         return array
     else:

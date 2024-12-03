@@ -254,8 +254,8 @@ class GridFile:
         return self._dataset.getncattr(name)
 
     def int_variable(
-        self, name: FieldName, indices: np.ndarray = None, transpose: bool = True
-    ) -> np.ndarray:
+        self, name: FieldName, indices: NDArray = None, transpose: bool = True
+    ) -> NDArray:
         """Read a integer field from the grid file.
 
         Reads as gtx.int32.
@@ -264,7 +264,7 @@ class GridFile:
             name: name of the field to read
             transpose: flag to indicate whether the file should be transposed (for 2d fields)
         Returns:
-            np.ndarray: field data
+            NDArray: field data
 
         """
         _log.debug(f"reading {name}: transposing = {transpose}")
@@ -272,8 +272,8 @@ class GridFile:
         return np.transpose(data) if transpose else data
 
     def variable(
-        self, name: FieldName, indices: np.ndarray = None, dtype: np.dtype = gtx.float64
-    ) -> np.ndarray:
+        self, name: FieldName, indices: NDArray = None, dtype: np.dtype = gtx.float64
+    ) -> NDArray:
         """Read a  field from the grid file.
 
         If a index array is given it only reads the values at those positions.
@@ -459,8 +459,8 @@ class GridManager:
     def _read_start_end_indices(
         self,
     ) -> tuple[
-        dict[dims.Dimension : np.ndarray],
-        dict[dims.Dimension : np.ndarray],
+        dict[dims.Dimension : NDArray],
+        dict[dims.Dimension : NDArray],
         dict[dims.Dimension : gtx.int32],
     ]:
         """ "

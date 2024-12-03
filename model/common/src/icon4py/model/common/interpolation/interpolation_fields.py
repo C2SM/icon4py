@@ -15,14 +15,15 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
+from icon4py.model.common.utils.gt4py_field_allocation import NDArray
 
 
 def compute_c_lin_e(
-    edge_cell_length: np.ndarray,
-    inv_dual_edge_length: np.ndarray,
-    owner_mask: np.ndarray,
+    edge_cell_length: NDArray,
+    inv_dual_edge_length: NDArray,
+    owner_mask: NDArray,
     horizontal_start: np.int32,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute E2C average inverse distance.
 
@@ -85,13 +86,13 @@ def compute_geofac_rot(
 
 
 def compute_geofac_n2s(
-    dual_edge_length: np.ndarray,
-    geofac_div: np.ndarray,
-    c2e: np.ndarray,
-    e2c: np.ndarray,
-    c2e2c: np.ndarray,
+    dual_edge_length: NDArray,
+    geofac_div: NDArray,
+    c2e: NDArray,
+    e2c: NDArray,
+    c2e2c: NDArray,
     horizontal_start: np.int32,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute geometric factor for nabla2-scalar.
 
@@ -137,13 +138,13 @@ def compute_geofac_n2s(
 
 
 def compute_primal_normal_ec(
-    primal_normal_cell_x: np.ndarray,
-    primal_normal_cell_y: np.ndarray,
-    owner_mask: np.ndarray,
-    c2e: np.ndarray,
-    e2c: np.ndarray,
+    primal_normal_cell_x: NDArray,
+    primal_normal_cell_y: NDArray,
+    owner_mask: NDArray,
+    c2e: NDArray,
+    e2c: NDArray,
     horizontal_start: np.int32,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute primal_normal_ec.
 
@@ -181,14 +182,14 @@ def compute_primal_normal_ec(
 
 
 def compute_geofac_grg(
-    primal_normal_ec: np.ndarray,
-    geofac_div: np.ndarray,
-    c_lin_e: np.ndarray,
-    c2e: np.ndarray,
-    e2c: np.ndarray,
-    c2e2c: np.ndarray,
+    primal_normal_ec: NDArray,
+    geofac_div: NDArray,
+    c_lin_e: NDArray,
+    c2e: NDArray,
+    e2c: NDArray,
+    c2e2c: NDArray,
     horizontal_start: np.int32,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute geometrical factor for Green-Gauss gradient.
 
@@ -238,14 +239,14 @@ def compute_geofac_grg(
 
 
 def compute_geofac_grdiv(
-    geofac_div: np.ndarray,
-    inv_dual_edge_length: np.ndarray,
-    owner_mask: np.ndarray,
-    c2e: np.ndarray,
-    e2c: np.ndarray,
-    e2c2e: np.ndarray,
+    geofac_div: NDArray,
+    inv_dual_edge_length: NDArray,
+    owner_mask: NDArray,
+    c2e: NDArray,
+    e2c: NDArray,
+    e2c2e: NDArray,
     horizontal_start: np.int32,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute geometrical factor for gradient of divergence (triangles only).
 
@@ -293,11 +294,11 @@ def compute_geofac_grdiv(
 
 
 def rotate_latlon(
-    lat: np.ndarray,
-    lon: np.ndarray,
-    pollat: np.ndarray,
-    pollon: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
+    lat: NDArray,
+    lon: NDArray,
+    pollat: NDArray,
+    pollon: NDArray,
+) -> tuple[NDArray, NDArray]:
     """
     (Compute rotation of lattitude and longitude.)
 
@@ -326,12 +327,12 @@ def rotate_latlon(
 
 
 def weighting_factors(
-    ytemp: np.ndarray,
-    xtemp: np.ndarray,
-    yloc: np.ndarray,
-    xloc: np.ndarray,
+    ytemp: NDArray,
+    xtemp: NDArray,
+    yloc: NDArray,
+    xloc: NDArray,
     wgt_loc: ta.wpfloat,
-) -> np.ndarray:
+) -> NDArray:
     """
         Compute weighting factors.
         The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
@@ -394,12 +395,12 @@ def weighting_factors(
 
 
 def _compute_c_bln_avg(
-    c2e2c: np.ndarray,
-    lat: np.ndarray,
-    lon: np.ndarray,
+    c2e2c: NDArray,
+    lat: NDArray,
+    lon: NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: np.int32,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute bilinear cell average weight.
 
@@ -438,14 +439,14 @@ def _compute_c_bln_avg(
 
 
 def _force_mass_conservation_to_c_bln_avg(
-    c2e2c0: np.ndarray,
-    c_bln_avg: np.ndarray,
-    cell_areas: np.ndarray,
-    cell_owner_mask: np.ndarray,
+    c2e2c0: NDArray,
+    c_bln_avg: NDArray,
+    cell_areas: NDArray,
+    cell_owner_mask: NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: np.int32,
     niter: int = 1000,
-) -> np.ndarray:
+) -> NDArray:
     """
     Iteratively enforce mass conservation to the input field c_bln_avg.
 
@@ -469,7 +470,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
     """
 
-    def _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx) -> np.ndarray:
+    def _compute_local_weights(c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx) -> NDArray:
         """
         Compute the total weight which each local point contributes to the sum.
 
@@ -484,8 +485,8 @@ def _force_mass_conservation_to_c_bln_avg(
         return weights
 
     def _compute_residual_to_mass_conservation(
-        owner_mask: np.ndarray, local_weight: np.ndarray, cell_area: np.ndarray
-    ) -> np.ndarray:
+        owner_mask: NDArray, local_weight: NDArray, cell_area: NDArray
+    ) -> NDArray:
         """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
         horizontal_size = local_weight.shape[0]
         assert horizontal_size == owner_mask.shape[0], "Fields do not have the same shape"
@@ -494,12 +495,12 @@ def _force_mass_conservation_to_c_bln_avg(
         return residual
 
     def _apply_correction(
-        c_bln_avg: np.ndarray,
-        residual: np.ndarray,
-        c2e2c0: np.ndarray,
+        c_bln_avg: NDArray,
+        residual: NDArray,
+        c2e2c0: NDArray,
         divavg_cntrwgt: float,
         horizontal_start: gtx.int32,
-    ) -> np.ndarray:
+    ) -> NDArray:
         """Apply correction to local weigths based on the computed residuals."""
         maxwgt_loc = divavg_cntrwgt + 0.003
         minwgt_loc = divavg_cntrwgt - 0.003
@@ -519,11 +520,11 @@ def _force_mass_conservation_to_c_bln_avg(
         return c_bln_avg
 
     def _enforce_mass_conservation(
-        c_bln_avg: np.ndarray,
-        residual: np.ndarray,
-        owner_mask: np.ndarray,
+        c_bln_avg: NDArray,
+        residual: NDArray,
+        owner_mask: NDArray,
         horizontal_start: gtx.int32,
-    ) -> np.ndarray:
+    ) -> NDArray:
         """Enforce the mass conservation condition on the local cells by forcefully subtracting the
         residual from the central field contribution."""
         c_bln_avg[horizontal_start:, 0] = np.where(
@@ -566,15 +567,15 @@ def _force_mass_conservation_to_c_bln_avg(
 
 
 def compute_mass_conserving_bilinear_cell_average_weight(
-    c2e2c0: np.ndarray,
-    lat: np.ndarray,
-    lon: np.ndarray,
-    cell_areas: np.ndarray,
-    cell_owner_mask: np.ndarray,
+    c2e2c0: NDArray,
+    lat: NDArray,
+    lon: NDArray,
+    cell_areas: NDArray,
+    cell_owner_mask: NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: np.int32,
     horizontal_start_level_3,
-) -> np.ndarray:
+) -> NDArray:
     c_bln_avg = _compute_c_bln_avg(c2e2c0[:, 1:], lat, lon, divavg_cntrwgt, horizontal_start)
     return _force_mass_conservation_to_c_bln_avg(
         c2e2c0, c_bln_avg, cell_areas, cell_owner_mask, divavg_cntrwgt, horizontal_start_level_3
@@ -593,17 +594,17 @@ def create_inverse_neighbor_index(c2e2c0):
 
 
 def compute_e_flx_avg(
-    c_bln_avg: np.ndarray,
-    geofac_div: np.ndarray,
-    owner_mask: np.ndarray,
-    primal_cart_normal: np.ndarray,
-    e2c: np.ndarray,
-    c2e: np.ndarray,
-    c2e2c: np.ndarray,
-    e2c2e: np.ndarray,
+    c_bln_avg: NDArray,
+    geofac_div: NDArray,
+    owner_mask: NDArray,
+    primal_cart_normal: NDArray,
+    e2c: NDArray,
+    c2e: NDArray,
+    c2e2c: NDArray,
+    e2c2e: NDArray,
     horizontal_start_p3: np.int32,
     horizontal_start_p4: np.int32,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute edge flux average
 
@@ -735,15 +736,15 @@ def compute_e_flx_avg(
 
 
 def compute_cells_aw_verts(
-    dual_area: np.ndarray,
-    edge_vert_length: np.ndarray,
-    edge_cell_length: np.ndarray,
-    v2e: np.ndarray,
-    e2v: np.ndarray,
-    v2c: np.ndarray,
-    e2c: np.ndarray,
+    dual_area: NDArray,
+    edge_vert_length: NDArray,
+    edge_cell_length: NDArray,
+    v2e: NDArray,
+    e2v: NDArray,
+    v2c: NDArray,
+    e2c: NDArray,
     horizontal_start_vertex: ta.wpfloat,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute cells_aw_verts.
 
@@ -796,13 +797,13 @@ def compute_cells_aw_verts(
 
 
 def compute_e_bln_c_s(
-    c2e: np.ndarray,
-    cells_lat: np.ndarray,
-    cells_lon: np.ndarray,
-    edges_lat: np.ndarray,
-    edges_lon: np.ndarray,
+    c2e: NDArray,
+    cells_lat: NDArray,
+    cells_lon: NDArray,
+    edges_lat: NDArray,
+    edges_lon: NDArray,
     weighting_factor: float,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute e_bln_c_s.
 
@@ -845,22 +846,22 @@ def compute_e_bln_c_s(
 
 def compute_pos_on_tplane_e_x_y(
     grid_sphere_radius: ta.wpfloat,
-    primal_normal_v1: np.ndarray,
-    primal_normal_v2: np.ndarray,
-    dual_normal_v1: np.ndarray,
-    dual_normal_v2: np.ndarray,
-    cells_lon: np.ndarray,
-    cells_lat: np.ndarray,
-    edges_lon: np.ndarray,
-    edges_lat: np.ndarray,
-    vertex_lon: np.ndarray,
-    vertex_lat: np.ndarray,
-    owner_mask: np.ndarray,
-    e2c: np.ndarray,
-    e2v: np.ndarray,
-    e2c2e: np.ndarray,
+    primal_normal_v1: NDArray,
+    primal_normal_v2: NDArray,
+    dual_normal_v1: NDArray,
+    dual_normal_v2: NDArray,
+    cells_lon: NDArray,
+    cells_lat: NDArray,
+    edges_lon: NDArray,
+    edges_lat: NDArray,
+    vertex_lon: NDArray,
+    vertex_lat: NDArray,
+    owner_mask: NDArray,
+    e2c: NDArray,
+    e2v: NDArray,
+    e2c2e: NDArray,
     horizontal_start: np.int32,
-) -> np.ndarray:
+) -> NDArray:
     """
     Compute pos_on_tplane_e_x_y.
     get geographical coordinates of edge midpoint
