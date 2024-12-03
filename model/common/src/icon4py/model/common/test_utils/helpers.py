@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import hashlib
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
@@ -15,6 +16,7 @@ import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
+from typing_extensions import Buffer
 
 from icon4py.model.common.settings import xp
 
@@ -149,6 +151,10 @@ def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
     old_shape = np.asarray(field).shape
     new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
     return np.asarray(field).reshape(new_shape)
+
+
+def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
+    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
 
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
