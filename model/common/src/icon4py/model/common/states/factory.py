@@ -7,39 +7,35 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 """
-Provide a FieldFactory that can serve as a simple in memory database for Fields.
+Provides Protocols and default implementations for Fields factories, which can be used to compute static
+fields and manage their dependencies
 
-Once setup, the factory can be queried for fields using a string name for the field. Three query modes are available:
+- `FieldSource`: allows to query for a field, by a `.get(field_name, retrieval_type)` method:
+
+Three `RetrievalMode` s are available:
 _ `FIELD`: return the buffer containing the computed values as a GT4Py `Field`
-- `METADATA`:  return metadata such as units, CF standard_name or similar, dimensions...
+- `METADATA`:  return metadata (`FieldMetaData`) such as units, CF standard_name or similar, dimensions...
 - `DATA_ARRAY`: combination of the two above in the form of `xarray.dataarray`
 
 The factory can be used to "store" already computed fields or register functions and call arguments
-and only compute the fields lazily upon request. In order to do so the user registers the fields computation with factory.
+and only compute the fields lazily upon request. In order to do so the user registers the fields
+computation with factory by setting up a `FieldProvider`
 
 It should be possible to setup the factory and computations and the factory independent of concrete runtime parameters that define
 the computation, passing those only once they are defined at runtime, for example
 ---
-factory = Factory(metadata)
-foo_provider = FieldProvider("foo", func = f1, dependencies = [])
+factory = Factory(metadata, ...)
+foo_provider = FieldProvider("foo", func = f1, dependencies, fields)
 bar_provider = FieldProvider("bar", func = f2, dependencies = ["foo"])
 
 factory.register_provider(foo_provider)
 factory.register_provider(bar_provider)
 (...)
 
----
-def main(backend, grid)
-factory.with_backend(backend).with_grid(grid)
-
 val = factory.get("foo", RetrievalType.DATA_ARRAY)
 
-TODO (halungge): except for domain parameters and other fields managed by the same factory we currently lack the ability to specify
-    other input sources in the factory for lazy evaluation.
-    factory.with_sources({"geometry": x}, where x:FieldSourceN
 
-
-TODO: for the numpy functions we might have to work on the func interfaces to make them a bit more uniform.
+TODO: @halungge: allow to read configuration data
 
 """
 import collections

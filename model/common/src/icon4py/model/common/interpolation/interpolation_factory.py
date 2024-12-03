@@ -101,7 +101,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(geofac_n2s)
-        
+
         geofac_grdiv = factory.NumpyFieldsProvider(
             func=functools.partial(interpolation_fields.compute_geofac_grdiv, array_ns=self._xp),
             fields=(attrs.GEOFAC_GRDIV,),

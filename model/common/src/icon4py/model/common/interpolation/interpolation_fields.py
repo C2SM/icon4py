@@ -255,7 +255,7 @@ def compute_geofac_grdiv(
     e2c: alloc.NDArray,
     e2c2e: alloc.NDArray,
     horizontal_start: gtx.int32,
-    array_ns: ModuleType = np
+    array_ns: ModuleType = np,
 ) -> alloc.NDArray:
     """
     Compute geometrical factor for gradient of divergence (triangles only).
@@ -277,20 +277,20 @@ def compute_geofac_grdiv(
     geofac_grdiv = array_ns.zeros([num_edges, 1 + 2 * e2c.shape[1]])
     index = array_ns.arange(horizontal_start, num_edges)
     for j in range(c2e.shape[1]):
-        mask = array_ns.where(c2e[e2c[horizontal_start:, 1], j] == index, owner_mask[horizontal_start:],
-                        False)
-        geofac_grdiv[horizontal_start:, 0] = array_ns.where(mask,
-                                                      geofac_div[e2c[horizontal_start:, 1], j],
-                                                      geofac_grdiv[
-                                                      horizontal_start:, 0])
+        mask = array_ns.where(
+            c2e[e2c[horizontal_start:, 1], j] == index, owner_mask[horizontal_start:], False
+        )
+        geofac_grdiv[horizontal_start:, 0] = array_ns.where(
+            mask, geofac_div[e2c[horizontal_start:, 1], j], geofac_grdiv[horizontal_start:, 0]
+        )
     for j in range(c2e.shape[1]):
-        mask = array_ns.where(c2e[e2c[horizontal_start:, 0], j] == index, owner_mask[horizontal_start:],
-                        False)
+        mask = array_ns.where(
+            c2e[e2c[horizontal_start:, 0], j] == index, owner_mask[horizontal_start:], False
+        )
         geofac_grdiv[horizontal_start:, 0] = array_ns.where(
             mask,
-            (geofac_grdiv[horizontal_start:, 0] - geofac_div[
-                e2c[horizontal_start:, 0], j]) * inv_dual_edge_length[
-                                                 horizontal_start:],
+            (geofac_grdiv[horizontal_start:, 0] - geofac_div[e2c[horizontal_start:, 0], j])
+            * inv_dual_edge_length[horizontal_start:],
             geofac_grdiv[horizontal_start:, 0],
         )
     for j in range(e2c.shape[1]):
