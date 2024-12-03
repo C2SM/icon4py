@@ -5,21 +5,22 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# ruff: noqa: ERA001, B008
 
-import logging
 import dataclasses
+import enum
+import logging
 from typing import Final, Optional
 
 import gt4py.next as gtx
+from gt4py.next import backend
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
-from gt4py.next import backend
-from icon4py.model.common import constants
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
-    init_cell_kdim_field_with_zero_wp,
+from icon4py.model.atmosphere.dycore import (
+    dycore_states,
+    dycore_utils,
 )
-
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
@@ -75,11 +76,11 @@ from icon4py.model.atmosphere.dycore.stencils.compute_graddiv2_of_vn import (
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
-    compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
@@ -103,11 +104,8 @@ from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary imp
 from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
     copy_cell_kdim_field_to_vp,
 )
-from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
-    mo_math_gradients_grad_green_gauss_cell_dsl,
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
+    init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     init_two_cell_kdim_fields_with_zero_vp,
@@ -118,44 +116,44 @@ from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zer
 from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
     init_two_edge_kdim_fields_with_zero_wp,
 )
+from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+)
+from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
+    mo_math_gradients_grad_green_gauss_cell_dsl,
+)
 from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution,
 )
 from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
-from icon4py.model.atmosphere.dycore import (
-    dycore_states,
-    dycore_utils,
-)
 from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment,
 )
-from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
-    update_mass_volume_flux,
-)
 from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
+)
+from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
+    update_mass_volume_flux,
 )
 from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
 from icon4py.model.atmosphere.dycore.velocity_advection import (
     VelocityAdvection,
 )
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     base as grid_def,
     horizontal as h_grid,
-    vertical as v_grid,
     icon as icon_grid,
+    vertical as v_grid,
 )
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-from icon4py.model.common import field_type_aliases as fa
-import enum
 
-# flake8: noqa
+
 log = logging.getLogger(__name__)
 
 
@@ -1428,7 +1426,7 @@ class SolveNonhydro:
         #     $$
         #     Update the normal wind speed with the advection and pressure
         #     gradient terms.
-        # 
+        #
         # Inputs:
         #  - $\vn{\n}{\e}{\k}$ : vn
         #  - $\Dt$ : dtime
@@ -1436,7 +1434,7 @@ class SolveNonhydro:
         #  - $\vpotemp{\n}{\e}{\k}$ : z_theta_v_e
         #  - $\exnerprimegradh{\ntilde}{\e}{\k}$ : z_gradh_exner
         #  - $\cpd$ : CPD
-        # 
+        #
         self._add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_state[nnow].vn,
             ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
@@ -1822,7 +1820,7 @@ class SolveNonhydro:
         )
 
         lvn_only = False
-        log.debug(f"corrector run velocity advection")
+        log.debug("corrector run velocity advection")
         self.velocity_advection.run_corrector_step(
             vn_only=lvn_only,
             diagnostic_state=diagnostic_state_nh,
@@ -1842,7 +1840,7 @@ class SolveNonhydro:
             self.z_raylfac,
             offset_provider={},
         )
-        log.debug(f"corrector: start stencil 10")
+        log.debug("corrector: start stencil 10")
         self._compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=prognostic_state[nnew].w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1870,7 +1868,7 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        log.debug(f"corrector: start stencil 17")
+        log.debug("corrector: start stencil 17")
         self._add_vertical_wind_derivative_to_divergence_damping(
             hmask_dd3d=self._metric_state_nonhydro.hmask_dd3d,
             scalfac_dd3d=self._metric_state_nonhydro.scalfac_dd3d,
@@ -1885,7 +1883,7 @@ class SolveNonhydro:
         )
 
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            log.debug(f"corrector: start stencil 23")
+            log.debug("corrector: start stencil 23")
             self._add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_state[nnow].vn,
                 ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
@@ -1910,7 +1908,7 @@ class SolveNonhydro:
             or self._config.divdamp_order == DivergenceDampingOrder.FOURTH_ORDER
         ):
             # verified for e-10
-            log.debug(f"corrector start stencil 25")
+            log.debug("corrector start stencil 25")
             self._compute_graddiv2_of_vn(
                 geofac_grdiv=self._interpolation_state.geofac_grdiv,
                 z_graddiv_vn=z_fields.z_graddiv_vn,
@@ -1926,7 +1924,7 @@ class SolveNonhydro:
             self._config.divdamp_order == DivergenceDampingOrder.COMBINED
             and scal_divdamp_o2 > 1.0e-6
         ):
-            log.debug(f"corrector: start stencil 26")
+            log.debug("corrector: start stencil 26")
             self._apply_2nd_order_divergence_damping(
                 z_graddiv_vn=z_fields.z_graddiv_vn,
                 vn=prognostic_state[nnew].vn,
@@ -2025,7 +2023,7 @@ class SolveNonhydro:
                     vertical_end=self._grid.num_levels,
                     offset_provider={},
                 )
-            log.debug(f"corrector: start stencil 34")
+            log.debug("corrector: start stencil 34")
             self._accumulate_prep_adv_fields(
                 z_vn_avg=self.z_vn_avg,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
@@ -2040,7 +2038,7 @@ class SolveNonhydro:
             )
 
         # verified for e-9
-        log.debug(f"corrector: start stencil 41")
+        log.debug("corrector: start stencil 41")
         self._compute_divergence_of_fluxes_of_rho_and_theta(
             geofac_div=self._interpolation_state.geofac_div,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
@@ -2055,7 +2053,7 @@ class SolveNonhydro:
         )
 
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            log.debug(f"corrector start stencil 42 44 45 45b")
+            log.debug("corrector start stencil 42 44 45 45b")
             self._stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
@@ -2090,7 +2088,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         else:
-            log.debug(f"corrector start stencil 43 44 45 45b")
+            log.debug("corrector start stencil 43 44 45 45b")
             self._stencils_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
@@ -2132,7 +2130,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        log.debug(f"corrector start stencil 47 48 49")
+        log.debug("corrector start stencil 47 48 49")
         self._stencils_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
@@ -2157,7 +2155,7 @@ class SolveNonhydro:
 
         # TODO: this is not tested in green line so far
         if self._config.is_iau_active:
-            log.debug(f"corrector start stencil 50")
+            log.debug("corrector start stencil 50")
             self._add_analysis_increments_from_data_assimilation(
                 z_rho_expl=z_fields.z_rho_expl,
                 z_exner_expl=z_fields.z_exner_expl,
@@ -2170,7 +2168,7 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
-        log.debug(f"corrector start stencil 52")
+        log.debug("corrector start stencil 52")
         self._solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
@@ -2189,7 +2187,7 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
-        log.debug(f"corrector start stencil 53")
+        log.debug("corrector start stencil 53")
         self._solve_tridiagonal_matrix_for_w_back_substitution(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
@@ -2201,7 +2199,7 @@ class SolveNonhydro:
         )
 
         if self._config.rayleigh_type == constants.RayleighType.KLEMP:
-            log.debug(f"corrector start stencil 54")
+            log.debug("corrector start stencil 54")
             self._apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -2214,7 +2212,7 @@ class SolveNonhydro:
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
             )
-        log.debug(f"corrector start stencil 55")
+        log.debug("corrector start stencil 55")
         self._compute_results_for_thermodynamic_variables(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
@@ -2242,7 +2240,7 @@ class SolveNonhydro:
 
         if lprep_adv:
             if lclean_mflx:
-                log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
+                log.debug("corrector set prep_adv.mass_flx_ic to zero")
                 self._init_two_cell_kdim_fields_with_zero_wp(
                     prep_adv.mass_flx_ic,
                     prep_adv.vol_flx_ic,
@@ -2252,7 +2250,7 @@ class SolveNonhydro:
                     vertical_end=self._grid.num_levels,
                     offset_provider={},
                 )
-        log.debug(f"corrector start stencil 58")
+        log.debug("corrector start stencil 58")
         self._update_mass_volume_flux(
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
@@ -2283,7 +2281,7 @@ class SolveNonhydro:
 
         if lprep_adv:
             if lclean_mflx:
-                log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
+                log.debug("corrector set prep_adv.mass_flx_ic to zero")
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.mass_flx_ic,
                     horizontal_start=self._start_cell_lateral_boundary,
@@ -2292,7 +2290,7 @@ class SolveNonhydro:
                     vertical_end=self._grid.num_levels + 1,
                     offset_provider={},
                 )
-            log.debug(f" corrector: start stencil 65")
+            log.debug(" corrector: start stencil 65")
             self._update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_ic,
                 vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,

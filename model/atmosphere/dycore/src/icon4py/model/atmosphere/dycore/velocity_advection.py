@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# ruff: noqa: ERA001
+
 import gt4py.next as gtx
 from gt4py.next import backend
 
@@ -445,7 +447,7 @@ class VelocityAdvection:
         # Outputs:
         #  - z_w_con_c :
         #     $$
-        #     (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}) = 
+        #     (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}) =
         #     \begin{cases}
         #         \w{\n}{\c}{\k-1/2},                        & \k \in [0, \nflatlev+1)     \\
         #         \w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}, & \k \in [\nflatlev+1, \nlev) \\
@@ -460,7 +462,7 @@ class VelocityAdvection:
         #     The papers do not use a new symbol for this variable, and the code
         #     ambiguosly mixes the variable names used for
         #     $\wcc{}{}{}$ and $(\w{}{}{} - \wcc{}{}{})$.
-        #     
+        #
         # Inputs:
         #  - $\w{\n}{\c}{\k\pm1/2}$ : w
         #  - $\wcc{\n}{\c}{\k\pm1/2}$ : w_concorr_c

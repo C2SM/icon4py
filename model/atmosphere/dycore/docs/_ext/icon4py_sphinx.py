@@ -27,8 +27,6 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     priority = autodoc.MethodDocumenter.priority - 1
 
     # Configuration options:
-    #: The width of the page
-    html_page_width: ClassVar[int] = 672 # px
     #: The keyword identifying the start of a documentation block
     docblock_keyword: ClassVar[str] = "scidoc"
     #: Collapse the Inputs section
@@ -82,7 +80,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             formatted_docblock = docblock.splitlines()
             formatted_docblock = self.format_docblock(formatted_docblock, self.docblock_keyword)
             formatted_docblock = self.make_header(next_method_info) + formatted_docblock
-            formatted_docblock, offset_providers = self.process_scidoc_lines(formatted_docblock, next_method_info)
+            formatted_docblock, offset_providers = self.process_scidoc_lines(
+                formatted_docblock, next_method_info
+            )
             formatted_docblock = formatted_docblock + self.make_offset_providers(offset_providers)
             formatted_docblock += self.scidoc_method_call_lines + [
                 " " * 6 + line for line in call_string
@@ -193,11 +193,10 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
 
         for offprov in offset_providers:
             op_section.append(f" .. image:: _imgs/offsetProvider_{offprov}.png")
-            op_section.append(f"    :width: {self.html_page_width//3*2}px")
-            op_section.append(f"    :align: center")
             op_section.append(f"    :alt: {offprov}")
-            op_section.append(f"")
-        
+            op_section.append("    :class: offset-provider-img")
+            op_section.append("")
+
         return op_section
 
     def process_scidoc_lines(self, docblock_lines: list[str], method_info: dict) -> list[str]:
@@ -249,7 +248,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                 latex["Indent"] = len(line) - len(line.lstrip())
                 processed_lines.append(line)
                 continue
-            
+
             # Collect offset providers
             if "\offProv" in line:
                 match = re.search(r"\\offProv\{([^}]+)\}", line)
@@ -258,7 +257,9 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
 
             # Process math lines
             if latex["Math"]:
-                if line.rstrip().endswith(r"\\") or docblock_lines[line_num - 1].rstrip().endswith(r"\\"):
+                if line.rstrip().endswith(r"\\") or docblock_lines[line_num - 1].rstrip().endswith(
+                    r"\\"
+                ):
                     latex["NeedsAlignChar"] = True
                 else:
                     latex["NeedsAlignChar"] = False
@@ -327,8 +328,8 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             line = f"{line[:start_idx]}& {line[start_idx:]}"
         else:
             # Remove white space except for the outer indent
-            line = ' '*options["Indent"] + line.lstrip()
-        
+            line = " " * options["Indent"] + line.lstrip()
+
         if line.rstrip().endswith(r"\\"):
             # add a more vertical space than the default
             line = f"{line}[3pt]"
@@ -606,7 +607,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         Returns:
             A tuple containing the parent name and short name of the variable.
         """
-        parts = re.split(r'\.(?![^\[\]]*\])', var_name)
+        parts = re.split(r"\.(?![^\[\]]*\])", var_name)
         return ".".join(parts[:-1]), parts[-1]
 
     def map_variable_names(

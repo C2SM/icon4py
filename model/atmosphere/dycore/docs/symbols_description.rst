@@ -14,9 +14,8 @@ In this example the source points are the six (orange) edges adjacent to the
 destination (blue) vertex.
 
 .. image:: _imgs/offsetProvider_v2e.png
-   :height: 300px
-   :align: center
    :alt: v2e
+   :class: offset-provider-img
 
 The corresponding code, computing the vorticity as rotor of velocity in this
 example, is:
@@ -37,9 +36,8 @@ In this example source points are the two (orange) cells
 adjacent to the destination (blue) edge.
 
 .. image:: _imgs/offsetProvider_e2c.png
-   :height: 300px
-   :align: center
    :alt: e2c
+   :class: offset-provider-img
 
 The corresponding code, computing the horizontal gradient in the normal
 direction of the exner function in this example, is:
