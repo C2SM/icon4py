@@ -20,7 +20,7 @@ from .. import utils
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
-@pytest.mark.parametrize("linit", [True, False])
+@pytest.mark.parametrize("linit, orchestration", [([True, False], [True, False])])
 def test_parallel_diffusion(
     experiment,
     step_date_init,
@@ -40,7 +40,10 @@ def test_parallel_diffusion(
     damping_height,
     caplog,
     backend,
+    orchestration,
 ):
+    if orchestration and ("dace" not in backend.name.lower()):
+        raise pytest.skip("This test is only executed for `dace backends.")
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
@@ -107,6 +110,7 @@ def test_parallel_diffusion(
         cell_params=cell_geometry,
         exchange=exchange,
         backend=backend,
+        orchestration=orchestration,
     )
 
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
@@ -168,6 +172,8 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
 ):
+    if "dace" not in backend.name.lower():
+        raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -243,6 +249,7 @@ def test_parallel_diffusion_multiple_steps(
         cell_params=cell_geometry,
         backend=backend,
         exchange=exchange,
+        orchestration=False,
     )
 
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")

@@ -402,7 +402,7 @@ def test_verify_diffusion_init_against_savepoint(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
+@pytest.mark.parametrize("ndyn_substeps, orchestration", [(2, [True, False])])
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -415,7 +415,10 @@ def test_run_diffusion_single_step(
     damping_height,
     ndyn_substeps,
     backend,
+    orchestration,
 ):
+    if orchestration and ("dace" not in backend.name.lower()):
+        raise pytest.skip("This test is only executed for `dace backends.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -476,6 +479,7 @@ def test_run_diffusion_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
+        orchestration=orchestration,
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -578,7 +582,7 @@ def test_run_diffusion_multiple_steps(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
-        orchestration=True,
+        orchestration=False,
         backend=backend,
     )
 
@@ -634,7 +638,7 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
-@pytest.mark.parametrize("linit", [True])
+@pytest.mark.parametrize("linit, orchestration", [(True, [True, False])])
 def test_run_diffusion_initial_step(
     experiment,
     linit,
@@ -647,7 +651,10 @@ def test_run_diffusion_initial_step(
     interpolation_savepoint,
     metrics_savepoint,
     backend,
+    orchestration,
 ):
+    if orchestration and ("dace" not in backend.name.lower()):
+        raise pytest.skip("This test is only executed for `dace backends.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -704,6 +711,7 @@ def test_run_diffusion_initial_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
+        orchestration=orchestration,
     )
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
