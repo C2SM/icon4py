@@ -1,0 +1,36 @@
+name: Deploy Sphinx Docs to GitHub Pages
+
+on:
+  workflow_run:
+    workflows:
+      - ICON4Py Quality Assurance
+    types:
+      - completed
+
+jobs:
+  build:
+    name: Deploy Sphinx Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Restore Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Build documentation
+        run: |
+          cd model/atmosphere/dycore/docs
+          make html
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: model/atmosphere/dycore/docs/_build/html
