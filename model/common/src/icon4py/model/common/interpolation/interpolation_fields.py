@@ -349,7 +349,7 @@ def rotate_latlon(
     return (rotlat, rotlon)
 
 
-def weighting_factors(
+def _weighting_factors(
     ytemp: alloc.NDArray,
     xtemp: alloc.NDArray,
     yloc: alloc.NDArray,
@@ -451,7 +451,7 @@ def _compute_c_bln_avg(
         ytemp[i] = lat[c2e2c[horizontal_start:, i]]
         xtemp[i] = lon[c2e2c[horizontal_start:, i]]
 
-    wgt = weighting_factors(
+    wgt = _weighting_factors(
         ytemp,
         xtemp,
         lat[horizontal_start:],
@@ -875,7 +875,7 @@ def compute_e_bln_c_s(
         ytemp[i] = edges_lat[c2e[llb:, i]]
         xtemp[i] = edges_lon[c2e[llb:, i]]
 
-    wgt = weighting_factors(
+    wgt = _weighting_factors(
         ytemp,
         xtemp,
         yloc,

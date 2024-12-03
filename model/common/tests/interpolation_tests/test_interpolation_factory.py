@@ -74,8 +74,8 @@ def test_get_c_lin_e(interpolation_savepoint, grid_file, experiment, backend, rt
 def get_interpolation_factory(
     backend, experiment, grid_file
 ) -> interpolation_factory.InterpolationFieldsFactory:
-    name = experiment.join(backend.name)
-    factory = interpolation_factories.get(name)
+    registry_key = experiment.join(backend.name)
+    factory = interpolation_factories.get(registry_key)
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
 
@@ -86,7 +86,7 @@ def get_interpolation_factory(
             backend=backend,
             metadata=attrs.attrs,
         )
-        interpolation_factories[name] = factory
+        interpolation_factories[registry_key] = factory
     return factory
 
 
@@ -107,7 +107,7 @@ def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend,
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
 
 
-## FIXME: does not validate"
+## FIXME: does not validate -> fix connectivity"
 @pytest.mark.xfail
 @pytest.mark.parametrize(
     "grid_file, experiment, rtol",
