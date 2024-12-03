@@ -18,7 +18,7 @@ SIDE: Final = 1  # Length of each triangle side
 LABEL_TRIANGLES: Final = False  # Option to label each triangle center with its ID
 COLORS: Final = list(mcolors.TABLEAU_COLORS.values())
 AX_BORDER: Final = 0.05 * SIDE  # Border around the axes
-IMG_DIR = "_imgs"
+IMG_DIR = "img"
 
 
 class Triangle:
@@ -338,7 +338,7 @@ def add_legend(ax, label, xlims):
 
 
 # ===============================================================================
-def generate_mesh_figure(nx, ny, label):
+def generate_mesh_figure(nx, ny, label, static_dir):
     """
     Generates a figure with a grid of triangles.
     Parameters:
@@ -357,16 +357,18 @@ def generate_mesh_figure(nx, ny, label):
     ax.set_aspect("equal")
     ax.axis("off")
 
-    fname = f"{IMG_DIR}/offsetProvider_{label}.png"
+    figure_dir = os.path.join(static_dir, IMG_DIR)
+
+    fname = os.path.join(figure_dir, f"offsetProvider_{label}.png")
     fig.save = lambda: fig.savefig(fname, dpi=300, bbox_inches="tight")
 
     return fig, ax, T
 
 
 # ===============================================================================
-def generate_figures():
+def generate_figures(static_dir: str):
     # ---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(2, 2, "c2e")
+    fig, ax, T = generate_mesh_figure(2, 2, "c2e", static_dir)
 
     Ta = T[1]
     Ta.color_cell()
@@ -378,7 +380,7 @@ def generate_figures():
     fig.save()
 
     # ---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(2, 2, "c2e2c")
+    fig, ax, T = generate_mesh_figure(2, 2, "c2e2c", static_dir)
 
     Ta = T[1]
     Tb = T[0]
@@ -399,7 +401,7 @@ def generate_figures():
     fig.save()
 
     # ---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(2, 2, "c2e2co")
+    fig, ax, T = generate_mesh_figure(2, 2, "c2e2co", static_dir)
 
     Ta = T[1]
     Tb = T[0]
@@ -425,7 +427,7 @@ def generate_figures():
 
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(2, 2, "e2v")
+    fig, ax, T = generate_mesh_figure(2, 2, "e2v", static_dir)
 
     Ta = T[1]
     Ta.color_edge("BC")
@@ -437,7 +439,7 @@ def generate_figures():
     fig.save()
 
     # ---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(2, 2, "e2c")
+    fig, ax, T = generate_mesh_figure(2, 2, "e2c", static_dir)
 
     Ta = T[1]
     Tb = T[7]
@@ -450,7 +452,7 @@ def generate_figures():
     fig.save()
 
     # ---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(2, 2, "e2c2e")
+    fig, ax, T = generate_mesh_figure(2, 2, "e2c2e", static_dir)
 
     Ta = T[1]
     Tb = T[7]
@@ -472,7 +474,7 @@ def generate_figures():
 
     # ---------------------------------------------------------------------------
     # ---------------------------------------------------------------------------
-    fig, ax, T = generate_mesh_figure(1, 2, "v2e")
+    fig, ax, T = generate_mesh_figure(1, 2, "v2e", static_dir)
 
     Ta = T[0]
     Tb = T[2]
@@ -498,23 +500,32 @@ def generate_figures():
 
 
 # ===============================================================================
-def generate_page():
+def generate_page(static_dir: str):
     """
     Generates a documentation page collecting all the figures created by
     `generate_figures`. The figures are sorted in alphabetical order.
     """
-    figures = [
-        f for f in os.listdir(IMG_DIR) if f.startswith("offsetProvider_") and f.endswith(".png")
-    ]
-    figures.sort()
+    figure_dir = os.path.join(static_dir, IMG_DIR)
 
-    with open(f"{IMG_DIR}/offset_providers.rst", "w") as f:
+    figure_paths = [
+        os.path.join(figure_dir, f)
+        for f in os.listdir(figure_dir)
+        if "offsetProvider_" in f and f.endswith(".png")
+    ]
+    figure_paths.sort()
+
+    # todo: use constant for _source location
+    page_rst_path = os.path.join("_source", "offset_providers.rst")
+
+    with open(page_rst_path, "w") as f:
         f.write("Offset providers\n")
         f.write("================\n\n")
         f.write("This page contains the figures for the offset providers.\n\n")
-        for fig in figures:
-            label = fig.replace("offsetProvider_", "").replace(".png", "")
-            f.write(f".. image:: {fig}\n")
+        for fig_path in figure_paths:
+            relative_path = os.path.relpath(fig_path, os.path.dirname(page_rst_path))
+
+            label = fig_path.replace("offsetProvider_", "").replace(".png", "")
+            f.write(f".. image:: {relative_path}\n")
             f.write("   :align: center\n")
             f.write(f"   :alt: {label}\n")
             f.write("   :class: offset-provider-img\n")

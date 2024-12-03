@@ -17,7 +17,7 @@ at the numerical documentation for the dycore.
    :caption: Help pages:
 
    symbols_description.rst
-   _imgs/offset_providers.rst
+   _source/offset_providers.rst
 
 
 Indices and tables

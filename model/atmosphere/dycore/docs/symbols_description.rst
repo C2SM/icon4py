@@ -13,7 +13,7 @@ figure).
 In this example the source points are the six (orange) edges adjacent to the
 destination (blue) vertex.
 
-.. image:: _imgs/offsetProvider_v2e.png
+.. image:: static/img/offsetProvider_v2e.png
    :alt: v2e
    :class: offset-provider-img
 
@@ -35,7 +35,7 @@ figure).
 In this example source points are the two (orange) cells
 adjacent to the destination (blue) edge.
 
-.. image:: _imgs/offsetProvider_e2c.png
+.. image:: static/img/offsetProvider_e2c.png
    :alt: e2c
    :class: offset-provider-img
 
