@@ -18,8 +18,8 @@ GEOFAC_DIV: Final[str] = "geometrical_factor_for_divergence"
 GEOFAC_ROT: Final[str] = "geometrical_factor_for_curl"
 GEOFAC_N2S: Final[str] = "geometrical_factor_for_nabla_2_scalar"
 GEOFAC_GRDIV: Final[str] = "geometrical_factor_for_gradient_of_divergence"
-# TODO (@halungge) this is a tuple
-GEOFAC_GRG: Final[str] = "geometrical_factor_for_green_gauss_gradient"
+GEOFAC_GRG_X: Final[str] = "geometrical_factor_for_green_gauss_gradient_x"
+GEOFAC_GRG_Y: Final[str] = "geometrical_factor_for_green_gauss_gradient_y"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -70,9 +70,17 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="geofac_grdiv",
         dtype=ta.wpfloat,
     ),
-    GEOFAC_GRG: dict(
-        standard_name=GEOFAC_GRG,
-        long_name="geometrical factor for Green Gauss gradient",
+    GEOFAC_GRG_X: dict(
+        standard_name=GEOFAC_GRG_X,
+        long_name="geometrical factor for Green Gauss gradient (first component)",
+        units="",  # TODO (@halungge) check or confirm
+        dims=(dims.CellDim, dims.C2E2CODim),
+        icon_var_name="geofac_grg",
+        dtype=ta.wpfloat,
+    ),
+    GEOFAC_GRG_Y: dict(
+        standard_name=GEOFAC_GRG_Y,
+        long_name="geometrical factor for Green Gauss gradient (second component)",
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.CellDim, dims.C2E2CODim),
         icon_var_name="geofac_grg",

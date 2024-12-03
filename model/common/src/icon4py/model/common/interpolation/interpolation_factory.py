@@ -163,6 +163,26 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(c_lin_e)
+        geofac_grg = factory.NumpyFieldsProvider(
+            func=functools.partial(interpolation_fields.compute_geofac_grg, array_ns=self._xp),
+            fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
+            domain=(dims.CellDim, dims.C2E2CODim),
+            deps={
+                "primal_normal_cell_x": geometry_attrs.EDGE_NORMAL_CELL_U,
+                "primal_normal_cell_y": geometry_attrs.EDGE_NORMAL_CELL_V,
+                "owner_mask": "cell_owner_mask",
+                "geofac_div": attrs.GEOFAC_DIV,
+                "c_lin_e": attrs.C_LIN_E,
+            },
+            connectivities={"c2e": dims.C2EDim, "e2c": dims.E2CDim, "c2e2c": dims.C2E2CDim},
+            params={
+                "horizontal_start": self.grid.start_index(
+                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                )
+            },
+        )
+
+        self.register_provider(geofac_grg)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:
