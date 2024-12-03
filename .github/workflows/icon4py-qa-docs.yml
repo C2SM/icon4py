@@ -1,4 +1,4 @@
-name: ICON4Py Quality Assurance
+name: ICON4Py Quality Assurance and Docs
 
 on:
   workflow_dispatch:
@@ -36,14 +36,20 @@ jobs:
           python -m pip install -r ./requirements-dev.txt
           python -m pip list
 
-      # Step 5: Save Python dependencies to cache
-      - name: Cache Python dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
-
-      # Step 6: Run pre-commit checks
+      # Step 5: Run pre-commit checks
       - name: Run checks
         run: |
           pre-commit run
+
+      # Step 6: Build Sphinx documentation
+      - name: Build documentation
+        run: |
+          cd model/atmosphere/dycore/docs
+          make html
+
+      # Step 7: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: model/atmosphere/dycore/docs/_build/html
