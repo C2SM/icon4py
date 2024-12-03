@@ -63,6 +63,7 @@ from icon4py.model.common.test_utils.helpers import (
     flatten_first_two_dims,
     zero_field,
 )
+from icon4py.model.common.utils import PredictorCorrectorPair, TimeStepPair
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.settings import backend, device
@@ -403,8 +404,8 @@ def solve_nh_run(
         mass_fl_e=mass_fl_e,
         ddt_vn_phy=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2),
+        ddt_vn_apc_pc=PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
+        ddt_w_adv_pc=PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2),
         vt=vt,
         vn_ie=vn_ie,
         w_concorr_c=w_concorr_c,
@@ -428,7 +429,7 @@ def solve_nh_run(
         rho=rho_new,
         exner=exner_new,
     )
-    prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
+    prognostic_states = TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
     # adjust for Fortran indexes
     idyn_timestep = idyn_timestep - 1
