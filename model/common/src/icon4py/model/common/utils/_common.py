@@ -19,7 +19,6 @@ from typing import (
     Final,
     Generator,
     Generic,
-    Literal,
     ParamSpec,
     Protocol,
     TypeVar,
@@ -118,19 +117,10 @@ class Pair(Generic[T]):
         True
 
         >>> pair.a = -1
-        >>> pair[0]
+        >>> pair.a
         -1
 
-        >>> pair[0] = 100
-        >>> pair.a
-        100
-
         >>> pair.b = 3
-        Traceback (most recent call last):
-        ...
-        AttributeError: can't set attribute
-
-        >>> pair[1] = 3
         Traceback (most recent call last):
         ...
         AttributeError: can't set attribute
@@ -206,27 +196,6 @@ class Pair(Generic[T]):
         )
 
     # `__hash__` is implicitly set to None when `__eq__` is redefined, so instances are not hashable.
-
-    def __getitem__(self, index: Literal[0, 1]) -> T:
-        match index:
-            case 0:
-                return self.__first
-            case 1:
-                return self.__second
-            case _:
-                raise IndexError(f"Pair index out of range: {index}")
-
-    def __setitem__(self, index: Literal[0, 1], value: T) -> None:
-        # Go through the attribute descriptors to respect the read-only indication
-        match index:
-            case 0:
-                attr_name = self.__first_attr_name
-            case 1:
-                attr_name = self.__second_attr_name
-            case _:
-                raise IndexError(f"Pair index out of range: {index}")
-
-        setattr(self, attr_name, value)
 
     def __iter__(self) -> Generator[T, None, None]:
         yield self.__first
