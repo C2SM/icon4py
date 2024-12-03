@@ -71,7 +71,7 @@ def _compute_ppm4gpu_integer_flux(
     js = floor(abs(z_cfl)) - 1.0
 
     z_cfl_pos = z_cfl > 0.0
-    z_cfl_neg = not z_cfl_pos
+    z_cfl_neg = z_cfl < 0.0
     wsign = where(z_cfl_pos, 1.0, -1.0)
 
     in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)

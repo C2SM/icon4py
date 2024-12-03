@@ -70,17 +70,21 @@ def _compute_ppm4gpu_fractional_flux(
 ) -> fa.CellKField[ta.wpfloat]:
     js = floor(abs(z_cfl))
     z_cflfrac = abs(z_cfl) - js
+    z_cflfrac_nonzero = z_cflfrac != 0.0
 
     z_cfl_pos = z_cfl > 0.0
-    z_cfl_neg = not z_cfl_pos
+    z_cfl_neg = z_cfl < 0.0
     wsign = where(z_cfl_pos, 1.0, -1.0)
+
+    mask1 = z_cfl_pos & z_cflfrac_nonzero
+    mask2 = z_cfl_neg & z_cflfrac_nonzero
 
     in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)
 
-    p_cc_jks = _sum_neighbor_contributions(z_cfl_pos, z_cfl_neg, js, p_cc)
-    p_cellmass_now_jks = _sum_neighbor_contributions(z_cfl_pos, z_cfl_neg, js, p_cellmass_now)
-    z_delta_q_jks = _sum_neighbor_contributions(z_cfl_pos, z_cfl_neg, js, z_delta_q)
-    z_a1_jks = _sum_neighbor_contributions(z_cfl_pos, z_cfl_neg, js, z_a1)
+    p_cc_jks = _sum_neighbor_contributions(mask1, mask2, js, p_cc)
+    p_cellmass_now_jks = _sum_neighbor_contributions(mask1, mask2, js, p_cellmass_now)
+    z_delta_q_jks = _sum_neighbor_contributions(mask1, mask2, js, z_delta_q)
+    z_a1_jks = _sum_neighbor_contributions(mask1, mask2, js, z_a1)
 
     z_q_int = (
         p_cc_jks
