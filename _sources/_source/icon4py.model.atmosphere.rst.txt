@@ -1,0 +1,12 @@
+icon4py.model.atmosphere namespace
+==================================
+
+.. py:module:: icon4py.model.atmosphere
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   icon4py.model.atmosphere.dycore

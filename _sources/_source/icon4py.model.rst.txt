@@ -1,0 +1,4 @@
+icon4py.model namespace
+=======================
+
+.. py:module:: icon4py.model

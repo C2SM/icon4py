@@ -1,0 +1,69 @@
+icon4py.model.atmosphere.dycore package
+=======================================
+
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   icon4py.model.atmosphere.dycore.stencils
+
+Submodules
+----------
+
+icon4py.model.atmosphere.dycore.dycore\_states module
+-----------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.dycore_states
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.dycore\_utils module
+----------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.dycore_utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.solve\_nonhydro module
+------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.solve_nonhydro
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.solve\_nonhydro\_stencils module
+----------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.solve_nonhydro_stencils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.velocity\_advection module
+----------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.velocity_advection
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+icon4py.model.atmosphere.dycore.velocity\_advection\_stencils module
+--------------------------------------------------------------------
+
+.. automodule:: icon4py.model.atmosphere.dycore.velocity_advection_stencils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: icon4py.model.atmosphere.dycore
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -1,6 +1,0 @@
-{
-    "python.formatting.provider": "black",
-    "python.testing.pytestEnabled": true,
-    "python.defaultInterpreterPath": "/workspace/icon4py/.venv/bin/python",
-    "python.terminal.activateEnvironment": true
-}

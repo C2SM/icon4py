@@ -1,0 +1,7 @@
+icon4py
+=======
+
+.. toctree::
+   :maxdepth: 4
+
+   icon4py
