@@ -22,7 +22,7 @@ test_model_stencils_aarch64:
   stage: test
   script:
     - pip install dace==$DACE_VERSION
-    - tox -r -e run_model_tests -c model/ -- --backend=$BACKEND $DACE_ORCHESTRATION $COMPONENT  --verbose
+    - tox -r -e run_model_tests -c model/ -- --backend=$BACKEND $COMPONENT  --verbose
   parallel:
     matrix:
     - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests]
