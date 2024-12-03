@@ -378,14 +378,10 @@ def solve_nh_run(
     vn_traj: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
     dtime: gtx.float64,
     lprep_adv: bool,
-    clean_mflx: bool,
-    recompute: bool,
-    linit: bool,
+    at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
     ndyn_substeps: gtx.float64,
     idyn_timestep: gtx.int32,
-    nnew: gtx.int32,
-    nnow: gtx.int32,
 ):
     logger.info(f"Using Device = {device}")
 
@@ -407,10 +403,8 @@ def solve_nh_run(
         mass_fl_e=mass_fl_e,
         ddt_vn_phy=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
-        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
-        ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-        ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2),
         vt=vt,
         vn_ie=vn_ie,
         w_concorr_c=w_concorr_c,
@@ -434,24 +428,18 @@ def solve_nh_run(
         rho=rho_new,
         exner=exner_new,
     )
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
     # adjust for Fortran indexes
-    nnow = nnow - 1
-    nnew = nnew - 1
     idyn_timestep = idyn_timestep - 1
 
     dycore_wrapper_state["granule"].time_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state_ls=prognostic_state_ls,
+        prognostic_states=prognostic_states,
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        nnew=nnew,
-        nnow=nnow,
-        lclean_mflx=clean_mflx,
+        at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps - 1),

@@ -13,7 +13,7 @@ import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import constants as phy_const, dimension as dims
+from icon4py.model.common import constants as phy_const, dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
@@ -267,13 +267,13 @@ def model_initialization_gauss3d(
         mass_fl_e=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         ddt_vn_phy=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         grf_tend_vn=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        ddt_vn_apc_ntl1=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        ddt_vn_apc_ntl2=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        ddt_w_adv_ntl1=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+            field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+            field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         ),
-        ddt_w_adv_ntl2=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+            field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
+            field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
         ),
         vt=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         vn_ie=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, is_halfdim=True),
