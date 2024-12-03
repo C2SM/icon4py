@@ -33,11 +33,11 @@ def compute_c_lin_e(
     Compute E2C average inverse distance.
 
     Args:
-        edge_cell_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
-        inv_dual_edge_length: inverse dual edge length, numpy array representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
-        edge_owner_mask: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
-        horizontal_start: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
-        xp: ModuleType numpy or cupy
+        edge_cell_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        inv_dual_edge_length: ndarray, inverse dual edge length, numpy array representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        edge_owner_mask: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], bool]boolean field, True for all edges owned by this compute node
+        horizontal_start: start index from the field is computed: c_lin_e is not calculated for the first boundary layer
+        array_ns: ModuleType to use for the computation, numpy or cupy, defaults to cupy
     Returns: c_lin_e: numpy array, representing gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
 
     """
@@ -103,13 +103,13 @@ def compute_geofac_n2s(
     Compute geometric factor for nabla2-scalar.
 
     Args:
-        dual_edge_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
-        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
-        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
-        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        c2e2c: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
-        horizontal_start:
-        array_ns: python module, numpy or cpu
+        dual_edge_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        geofac_div: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        c2e: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        c2e2c: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2E2CDim], gtx.int32]
+        horizontal_start: start index from where the field is computed
+        array_ns: python module, numpy or cpu defaults to numpy
 
     Returns:
         geometric factor for nabla2-scalar, Field[CellDim, C2E2CODim]
@@ -248,56 +248,64 @@ def compute_geofac_grg(
 
 
 def compute_geofac_grdiv(
-    geofac_div: np.ndarray,
-    inv_dual_edge_length: np.ndarray,
-    owner_mask: np.ndarray,
-    c2e: np.ndarray,
-    e2c: np.ndarray,
-    e2c2e: np.ndarray,
-    horizontal_start: np.int32,
-) -> np.ndarray:
+    geofac_div: alloc.NDArray,
+    inv_dual_edge_length: alloc.NDArray,
+    owner_mask: alloc.NDArray,
+    c2e: alloc.NDArray,
+    e2c: alloc.NDArray,
+    e2c2e: alloc.NDArray,
+    horizontal_start: gtx.int32,
+    array_ns: ModuleType = np
+) -> alloc.NDArray:
     """
     Compute geometrical factor for gradient of divergence (triangles only).
 
     Args:
-        geofac_div: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
-        inv_dual_edge_length: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
-        owner_mask: numpy array, representing a gtx.Field[gtx.Dims[CellDim], bool]
-        c2e: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
-        e2c: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        e2c2e: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
+        geofac_div:  ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
+        inv_dual_edge_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
+        owner_mask:  ndarray, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        c2e:  ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
+        e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
+        e2c2e: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
         horizontal_start:
+        array_ns: module either used or array computations defaults to numpy
 
     Returns:
-        geofac_grdiv: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
+        geofac_grdiv:  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
-    llb = horizontal_start
     num_edges = e2c.shape[0]
-    geofac_grdiv = np.zeros([num_edges, 1 + 2 * e2c.shape[1]])
-    index = np.arange(llb, num_edges)
+    geofac_grdiv = array_ns.zeros([num_edges, 1 + 2 * e2c.shape[1]])
+    index = array_ns.arange(horizontal_start, num_edges)
     for j in range(c2e.shape[1]):
-        mask = np.where(c2e[e2c[llb:, 1], j] == index, owner_mask[llb:], False)
-        geofac_grdiv[llb:, 0] = np.where(mask, geofac_div[e2c[llb:, 1], j], geofac_grdiv[llb:, 0])
+        mask = array_ns.where(c2e[e2c[horizontal_start:, 1], j] == index, owner_mask[horizontal_start:],
+                        False)
+        geofac_grdiv[horizontal_start:, 0] = array_ns.where(mask,
+                                                      geofac_div[e2c[horizontal_start:, 1], j],
+                                                      geofac_grdiv[
+                                                      horizontal_start:, 0])
     for j in range(c2e.shape[1]):
-        mask = np.where(c2e[e2c[llb:, 0], j] == index, owner_mask[llb:], False)
-        geofac_grdiv[llb:, 0] = np.where(
+        mask = array_ns.where(c2e[e2c[horizontal_start:, 0], j] == index, owner_mask[horizontal_start:],
+                        False)
+        geofac_grdiv[horizontal_start:, 0] = array_ns.where(
             mask,
-            (geofac_grdiv[llb:, 0] - geofac_div[e2c[llb:, 0], j]) * inv_dual_edge_length[llb:],
-            geofac_grdiv[llb:, 0],
+            (geofac_grdiv[horizontal_start:, 0] - geofac_div[
+                e2c[horizontal_start:, 0], j]) * inv_dual_edge_length[
+                                                 horizontal_start:],
+            geofac_grdiv[horizontal_start:, 0],
         )
     for j in range(e2c.shape[1]):
         for k in range(c2e.shape[1]):
-            mask = c2e[e2c[llb:, 0], k] == e2c2e[llb:, j]
-            geofac_grdiv[llb:, e2c.shape[1] - 1 + j] = np.where(
+            mask = c2e[e2c[horizontal_start:, 0], k] == e2c2e[horizontal_start:, j]
+            geofac_grdiv[horizontal_start:, e2c.shape[1] - 1 + j] = array_ns.where(
                 mask,
-                -geofac_div[e2c[llb:, 0], k] * inv_dual_edge_length[llb:],
-                geofac_grdiv[llb:, e2c.shape[1] - 1 + j],
+                -geofac_div[e2c[horizontal_start:, 0], k] * inv_dual_edge_length[horizontal_start:],
+                geofac_grdiv[horizontal_start:, e2c.shape[1] - 1 + j],
             )
-            mask = c2e[e2c[llb:, 1], k] == e2c2e[llb:, e2c.shape[1] + j]
-            geofac_grdiv[llb:, 2 * e2c.shape[1] - 1 + j] = np.where(
+            mask = c2e[e2c[horizontal_start:, 1], k] == e2c2e[horizontal_start:, e2c.shape[1] + j]
+            geofac_grdiv[horizontal_start:, 2 * e2c.shape[1] - 1 + j] = array_ns.where(
                 mask,
-                geofac_div[e2c[llb:, 1], k] * inv_dual_edge_length[llb:],
-                geofac_grdiv[llb:, 2 * e2c.shape[1] - 1 + j],
+                geofac_div[e2c[horizontal_start:, 1], k] * inv_dual_edge_length[horizontal_start:],
+                geofac_grdiv[horizontal_start:, 2 * e2c.shape[1] - 1 + j],
             )
     return geofac_grdiv
 

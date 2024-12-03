@@ -10,7 +10,6 @@ import functools
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
-from common.tests.interpolation_tests.test_interpolation_fields import edge_domain
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
@@ -28,6 +27,7 @@ from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)
+edge_domain = h_grid.domain(dims.EdgeDim)
 
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
@@ -101,6 +101,25 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(geofac_n2s)
+        
+        geofac_grdiv = factory.NumpyFieldsProvider(
+            func=functools.partial(interpolation_fields.compute_geofac_grdiv, array_ns=self._xp),
+            fields=(attrs.GEOFAC_GRDIV,),
+            domain=(dims.EdgeDim, dims.E2C2EODim),
+            deps={
+                "geofac_div": attrs.GEOFAC_DIV,
+                "inv_dual_edge_length": f"inverse_of_{geometry_attrs.DUAL_EDGE_LENGTH}",
+                "owner_mask": "edge_owner_mask",
+            },
+            connectivities={"c2e": dims.C2EDim, "e2c": dims.E2CDim, "e2c2e": dims.E2C2EDim},
+            params={
+                "horizontal_start": self._grid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                )
+            },
+        )
+
+        self.register_provider(geofac_grdiv)
 
         cell_average_weight = factory.NumpyFieldsProvider(
             func=functools.partial(
