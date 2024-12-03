@@ -6,340 +6,217 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from typing import Optional
+
 import gt4py.next as gtx
 import pytest
 
-import icon4py.model.common.states.utils as state_utils
-import icon4py.model.common.test_utils.helpers as helpers
-from icon4py.model.common import dimension as dims, exceptions
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
-from icon4py.model.common.metrics import compute_nudgecoeffs, metric_fields as mf
-from icon4py.model.common.metrics.compute_wgtfacq import (
-    compute_wgtfacq_c_dsl,
-    compute_wgtfacq_e_dsl,
-)
-from icon4py.model.common.settings import xp
-from icon4py.model.common.states import factory, metadata
+from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common.grid import horizontal as h_grid, icon, vertical as v_grid
+from icon4py.model.common.math import helpers as math_helpers
+from icon4py.model.common.metrics import metric_fields as metrics
+from icon4py.model.common.states import factory, model, utils as state_utils
+from icon4py.model.common.test_utils import helpers as test_helpers
 
 
 cell_domain = h_grid.domain(dims.CellDim)
-edge_domain = h_grid.domain(dims.EdgeDim)
-full_level = v_grid.domain(dims.KDim)
-interface_level = v_grid.domain(dims.KHalfDim)
+k_domain = v_grid.domain(dims.KDim)
 
 
-@pytest.mark.datatest
-def test_factory_check_dependencies_on_register(grid_savepoint, backend):
-    grid = grid_savepoint.construct_icon_grid(False)
-    vertical = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=10),
-        grid_savepoint.vct_a(),
-        grid_savepoint.vct_b(),
-    )
+class SimpleSource(factory.FieldSource):
+    def __init__(
+        self,
+        data_: dict[str, tuple[state_utils.FieldType, model.FieldMetaData]],
+        backend,
+        grid: icon.IconGrid,
+        vertical_grid: v_grid.VerticalGrid = None,
+    ):
+        self._backend = backend
+        self._grid = grid
+        self._vertical_grid = vertical_grid
+        self._metadata = {}
+        for key, value in data_.items():
+            self.register_provider(factory.PrecomputedFieldProvider({key: value[0]}))
+            self._metadata[key] = value[1]
 
-    fields_factory = (
-        factory.FieldsFactory(metadata.attrs).with_grid(grid, vertical).with_backend(backend)
-    )
-    provider = factory.ProgramFieldProvider(
-        func=mf.compute_z_mc,
-        domain={
-            dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
-            dims.KDim: (full_level(v_grid.Zone.TOP), full_level(v_grid.Zone.BOTTOM)),
-        },
-        fields={"z_mc": "height"},
-        deps={"z_ifc": "height_on_interface_levels"},
-    )
+    @property
+    def metadata(self):
+        return self._metadata
 
-    with pytest.raises(ValueError) as e:
-        fields_factory.register_provider(provider)
-        assert e.value.match("'height_on_interface_levels' not found")
+    @property
+    def _sources(self) -> factory.FieldSource:
+        return self
 
+    @property
+    def grid(self):
+        return self._grid
 
-@pytest.mark.datatest
-def test_factory_raise_error_if_no_grid_is_set(metrics_savepoint, backend):
-    z_ifc = metrics_savepoint.z_ifc()
-    k_index = gtx.as_field((dims.KDim,), xp.arange(1, dtype=gtx.int32))
-    pre_computed_fields = factory.PrecomputedFieldProvider(
-        {"height_on_interface_levels": z_ifc, metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index}
-    )
-    fields_factory = factory.FieldsFactory(metadata=metadata.attrs).with_backend(backend)
-    fields_factory.register_provider(pre_computed_fields)
-    with pytest.raises(exceptions.IncompleteSetupError) or pytest.raises(AssertionError) as e:
-        fields_factory.get("height_on_interface_levels")
-        assert e.value.match("grid")
+    @property
+    def vertical_grid(self) -> Optional[v_grid.VerticalGrid]:
+        return self._vertical_grid
+
+    @property
+    def backend(self):
+        return self._backend
 
 
-@pytest.mark.datatest
-def test_factory_returns_field(grid_savepoint, metrics_savepoint, backend):
-    z_ifc = metrics_savepoint.z_ifc()
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
-    num_levels = grid_savepoint.num(dims.KDim)
-    vertical = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=num_levels),
-        grid_savepoint.vct_a(),
-        grid_savepoint.vct_b(),
-    )
-    k_index = gtx.as_field((dims.KDim,), xp.arange(num_levels + 1, dtype=gtx.int32))
-    pre_computed_fields = factory.PrecomputedFieldProvider(
-        {"height_on_interface_levels": z_ifc, metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index}
-    )
-    fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
-    fields_factory.register_provider(pre_computed_fields)
-    fields_factory.with_grid(grid, vertical).with_backend(backend)
-    field = fields_factory.get("height_on_interface_levels", state_utils.RetrievalType.FIELD)
-    assert field.ndarray.shape == (grid.num_cells, num_levels + 1)
-    meta = fields_factory.get("height_on_interface_levels", state_utils.RetrievalType.METADATA)
-    assert meta["standard_name"] == "height_on_interface_levels"
-    assert meta["dims"] == (
-        dims.CellDim,
-        dims.KHalfDim,
-    )
-    assert meta["units"] == "m"
-    data_array = fields_factory.get(
-        "height_on_interface_levels", state_utils.RetrievalType.DATA_ARRAY
-    )
-    assert data_array.data.shape == (grid.num_cells, num_levels + 1)
-    assert data_array.data.dtype == xp.float64
-    for key in ("dims", "standard_name", "units", "icon_var_name"):
-        assert key in data_array.attrs.keys()
-
-
-@pytest.mark.datatest
-def test_field_provider_for_program(grid_savepoint, metrics_savepoint, backend):
-    horizontal_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
-    num_levels = grid_savepoint.num(dims.KDim)
-    vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=num_levels),
-        grid_savepoint.vct_a(),
-        grid_savepoint.vct_b(),
-    )
-
-    fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
-    k_index = gtx.as_field((dims.KDim,), xp.arange(num_levels + 1, dtype=gtx.int32))
-    z_ifc = metrics_savepoint.z_ifc()
-
-    local_cell_domain = cell_domain(h_grid.Zone.LOCAL)
-    end_cell_domain = cell_domain(h_grid.Zone.END)
-
-    pre_computed_fields = factory.PrecomputedFieldProvider(
-        {"height_on_interface_levels": z_ifc, metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index}
-    )
-
-    fields_factory.register_provider(pre_computed_fields)
-
-    height_provider = factory.ProgramFieldProvider(
-        func=mf.compute_z_mc,
-        domain={
-            dims.CellDim: (
-                local_cell_domain,
-                end_cell_domain,
-            ),
-            dims.KDim: (full_level(v_grid.Zone.TOP), full_level(v_grid.Zone.BOTTOM)),
-        },
-        fields={"z_mc": "height"},
-        deps={"z_ifc": "height_on_interface_levels"},
-    )
-    fields_factory.register_provider(height_provider)
-    functional_determinant_provider = factory.ProgramFieldProvider(
-        func=mf.compute_ddqz_z_half,
-        domain={
-            dims.CellDim: (
-                local_cell_domain,
-                end_cell_domain,
-            ),
-            dims.KHalfDim: (interface_level(v_grid.Zone.TOP), interface_level(v_grid.Zone.BOTTOM)),
-        },
-        fields={"ddqz_z_half": "functional_determinant_of_metrics_on_interface_levels"},
-        deps={
-            "z_ifc": "height_on_interface_levels",
-            "z_mc": "height",
-            "k": metadata.INTERFACE_LEVEL_STANDARD_NAME,
-        },
-        params={"nlev": vertical_grid.num_levels},
-    )
-    fields_factory.register_provider(functional_determinant_provider)
-    fields_factory.with_grid(horizontal_grid, vertical_grid).with_backend(backend)
-    data = fields_factory.get(
-        "functional_determinant_of_metrics_on_interface_levels",
-        type_=state_utils.RetrievalType.FIELD,
-    )
-    ref = metrics_savepoint.ddqz_z_half().ndarray
-    assert helpers.dallclose(data.ndarray, ref)
-
-
-def test_field_provider_for_numpy_function(
-    grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
-):
-    grid = grid_savepoint.construct_icon_grid(False)
-    vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=grid.num_levels),
-        grid_savepoint.vct_a(),
-        grid_savepoint.vct_b(),
-    )
-
-    fields_factory = (
-        factory.FieldsFactory(metadata=metadata.attrs)
-        .with_grid(grid=grid, vertical_grid=vertical_grid)
-        .with_backend(backend)
-    )
-    k_index = gtx.as_field((dims.KDim,), xp.arange(grid.num_levels + 1, dtype=gtx.int32))
-    z_ifc = metrics_savepoint.z_ifc()
-    wgtfacq_c_ref = metrics_savepoint.wgtfacq_c_dsl()
-
-    pre_computed_fields = factory.PrecomputedFieldProvider(
-        {"height_on_interface_levels": z_ifc, metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index}
-    )
-    fields_factory.register_provider(pre_computed_fields)
-    func = compute_wgtfacq_c_dsl
-    deps = {"z_ifc": "height_on_interface_levels"}
-    params = {"nlev": grid.num_levels}
-    compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(
-        func=func,
-        domain={
-            dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
-            dims.KDim: (interface_level(v_grid.Zone.TOP), interface_level(v_grid.Zone.BOTTOM)),
-        },
-        fields=["weighting_factor_for_quadratic_interpolation_to_cell_surface"],
-        deps=deps,
-        params=params,
-    )
-    fields_factory.register_provider(compute_wgtfacq_c_provider)
-
-    wgtfacq_c = fields_factory.get(
-        "weighting_factor_for_quadratic_interpolation_to_cell_surface",
-        state_utils.RetrievalType.FIELD,
-    )
-
-    assert helpers.dallclose(wgtfacq_c.asnumpy(), wgtfacq_c_ref.asnumpy())
-
-
-def test_field_provider_for_numpy_function_with_offsets(
-    grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
-):
-    grid = grid_savepoint.construct_icon_grid(False)  # TODO fix this should be come obsolete
-    vertical = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=grid.num_levels),
-        grid_savepoint.vct_a(),
-        grid_savepoint.vct_b(),
-    )
-    fields_factory = (
-        factory.FieldsFactory(metadata=metadata.attrs)
-        .with_grid(grid=grid, vertical_grid=vertical)
-        .with_backend(backend=backend)
-    )
-    k_index = gtx.as_field((dims.KDim,), xp.arange(grid.num_levels + 1, dtype=gtx.int32))
-    z_ifc = metrics_savepoint.z_ifc()
-    c_lin_e = interpolation_savepoint.c_lin_e()
-    wgtfacq_e_ref = metrics_savepoint.wgtfacq_e_dsl(grid.num_levels + 1)
-
-    pre_computed_fields = factory.PrecomputedFieldProvider(
-        {
-            "height_on_interface_levels": z_ifc,
-            metadata.INTERFACE_LEVEL_STANDARD_NAME: k_index,
-            "cell_to_edge_interpolation_coefficient": c_lin_e,
-        }
-    )
-    fields_factory.register_provider(pre_computed_fields)
-    func = compute_wgtfacq_c_dsl
-    # TODO (magdalena): need to fix this for parameters
-    # TODO: replica in metrics_fields_factory
-    params = {"nlev": grid.num_levels}
-    compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(
-        func=func,
-        domain={dims.CellDim: (0, grid.num_cells), dims.KDim: (0, grid.num_levels)},
-        fields=["weighting_factor_for_quadratic_interpolation_to_cell_surface"],
-        deps={"z_ifc": "height_on_interface_levels"},
-        params=params,
-    )
-    deps = {
-        "z_ifc": "height_on_interface_levels",
-        "wgtfacq_c_dsl": "weighting_factor_for_quadratic_interpolation_to_cell_surface",
-        "c_lin_e": "cell_to_edge_interpolation_coefficient",
+@pytest.fixture
+def cell_coordinate_source(grid_savepoint, backend):
+    on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
+    grid = grid_savepoint.construct_icon_grid(on_gpu)
+    lat = grid_savepoint.lat(dims.CellDim)
+    lon = grid_savepoint.lon(dims.CellDim)
+    data = {
+        "lat": (lat, {"standard_name": "lat", "units": ""}),
+        "lon": (lon, {"standard_name": "lon", "units": ""}),
     }
-    fields_factory.register_provider(compute_wgtfacq_c_provider)
-    wgtfacq_e_provider = factory.NumpyFieldsProvider(
-        func=compute_wgtfacq_e_dsl,
-        deps=deps,
-        offsets={"e2c": dims.E2CDim},
-        domain={dims.EdgeDim: (0, grid.num_edges), dims.KDim: (0, grid.num_levels)},
-        fields=["weighting_factor_for_quadratic_interpolation_to_edge_center"],
-        params={"n_edges": grid.num_edges, "nlev": grid.num_levels},
-    )
 
-    fields_factory.register_provider(wgtfacq_e_provider)
-    wgtfacq_e = fields_factory.get(
-        "weighting_factor_for_quadratic_interpolation_to_edge_center",
-        state_utils.RetrievalType.FIELD,
-    )
-
-    assert helpers.dallclose(wgtfacq_e.asnumpy(), wgtfacq_e_ref.asnumpy())
+    coordinate_source = SimpleSource(data_=data, backend=backend, grid=grid)
+    return coordinate_source
 
 
-def test_factory_for_k_only_field(icon_grid, metrics_savepoint, grid_savepoint, backend):
-    fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
+@pytest.fixture
+def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
+    on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
+    grid = grid_savepoint.construct_icon_grid(on_gpu)
+    z_ifc = metrics_savepoint.z_ifc()
     vct_a = grid_savepoint.vct_a()
-    divdamp_trans_start = 12500.0
-    divdamp_trans_end = 17500.0
-    divdamp_type = 3
-    pre_computed_fields = factory.PrecomputedFieldProvider({"model_interface_height": vct_a})
-    fields_factory.register_provider(pre_computed_fields)
-    vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(grid_savepoint.num(dims.KDim)),
-        grid_savepoint.vct_a(),
-        grid_savepoint.vct_b(),
-    )
-    provider = factory.ProgramFieldProvider(
-        func=mf.compute_scalfac_dd3d,
-        domain={
-            dims.KDim: (full_level(v_grid.Zone.TOP), full_level(v_grid.Zone.BOTTOM)),
-        },
-        deps={"vct_a": "model_interface_height"},
-        fields={"scalfac_dd3d": "scaling_factor_for_3d_divergence_damping"},
-        params={
-            "divdamp_trans_start": divdamp_trans_start,
-            "divdamp_trans_end": divdamp_trans_end,
-            "divdamp_type": divdamp_type,
-        },
-    )
-    fields_factory.register_provider(provider)
-    fields_factory.with_grid(icon_grid, vertical_grid).with_backend(backend)
-    helpers.dallclose(
-        fields_factory.get("scaling_factor_for_3d_divergence_damping").asnumpy(),
-        metrics_savepoint.scalfac_dd3d().asnumpy(),
-    )
+    vct_b = grid_savepoint.vct_b()
+    data = {"height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})}
+    vertical_grid = v_grid.VerticalGrid(v_grid.VerticalGridConfig(num_levels=10), vct_a, vct_b)
+    field_source = SimpleSource(data_=data, backend=backend, grid=grid, vertical_grid=vertical_grid)
+    return field_source
 
 
-def test_horizontal_only_field(icon_grid, interpolation_savepoint, grid_savepoint, backend):
-    fields_factory = factory.FieldsFactory(metadata=metadata.attrs)
-    refin_ctl = grid_savepoint.refin_ctrl(dims.EdgeDim)
-    pre_computed_fields = factory.PrecomputedFieldProvider({"refin_e_ctrl": refin_ctl})
-    fields_factory.register_provider(pre_computed_fields)
-    vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(grid_savepoint.num(dims.KDim)),
-        grid_savepoint.vct_a(),
-        grid_savepoint.vct_b(),
+@pytest.mark.datatest
+def test_field_operator_provider(cell_coordinate_source):
+    field_op = math_helpers.geographical_to_cartesian_on_cells.with_backend(None)
+    domain = {dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))}
+    deps = {"lat": "lat", "lon": "lon"}
+    fields = {"x": "x", "y": "y", "z": "z"}
+
+    provider = factory.FieldOperatorProvider(field_op, domain, fields, deps)
+    provider("x", cell_coordinate_source, cell_coordinate_source.backend, cell_coordinate_source)
+    x = provider.fields["x"]
+    assert isinstance(x, gtx.Field)
+    assert dims.CellDim in x.domain.dims
+
+
+@pytest.mark.datatest
+def test_program_provider(height_coordinate_source):
+    program = metrics.compute_z_mc
+    domain = {
+        dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
+        dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
+    }
+    deps = {
+        "z_ifc": "height_coordinate",
+    }
+    fields = {"z_mc": "output_f"}
+    provider = factory.ProgramFieldProvider(program, domain, fields, deps)
+    provider(
+        "output_f",
+        height_coordinate_source,
+        height_coordinate_source.backend,
+        height_coordinate_source,
     )
-    domain = h_grid.domain(dims.EdgeDim)
-    provider = factory.ProgramFieldProvider(
-        func=compute_nudgecoeffs.compute_nudgecoeffs,
-        domain={
-            dims.EdgeDim: (
-                domain(h_grid.Zone.NUDGING_LEVEL_2),
-                domain(h_grid.Zone.LOCAL),
-            ),
-        },
-        deps={"refin_ctrl": "refin_e_ctrl"},
-        fields={"nudgecoeffs_e": "nudging_coefficient_on_edges"},
-        params={
-            "grf_nudge_start_e": 10,
-            "nudge_max_coeffs": 0.375,
-            "nudge_efold_width": 2.0,
-            "nudge_zone_width": 10,
-        },
+    x = provider.fields["output_f"]
+    assert isinstance(x, gtx.Field)
+    assert dims.CellDim in x.domain.dims
+
+
+def test_field_source_raise_error_on_register(cell_coordinate_source):
+    program = metrics.compute_z_mc
+    domain = {
+        dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
+        dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
+    }
+    deps = {
+        "z_ifc": "height_coordinate",
+    }
+    fields = {"z_mc": "output_f"}
+    provider = factory.ProgramFieldProvider(program, domain, fields, deps)
+    with pytest.raises(ValueError) as err:
+        cell_coordinate_source.register_provider(provider)
+        assert "not provided by source " in err.value
+
+
+def test_composite_field_source_contains_all_metadata(
+    cell_coordinate_source, height_coordinate_source
+):
+    backend = cell_coordinate_source.backend
+    grid = cell_coordinate_source.grid
+    foo = test_helpers.random_field(grid, dims.CellDim, dims.KDim)
+    bar = test_helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+    data = {
+        "foo": (foo, {"standard_name": "foo", "units": ""}),
+        "bar": (bar, {"standard_name": "bar", "units": ""}),
+    }
+
+    test_source = SimpleSource(data_=data, grid=grid, backend=backend)
+    composite = factory.CompositeSource(
+        test_source, (cell_coordinate_source, height_coordinate_source)
     )
-    fields_factory.register_provider(provider)
-    fields_factory.with_grid(icon_grid, vertical_grid).with_backend(backend)
-    helpers.dallclose(
-        fields_factory.get("nudging_coefficient_on_edges").asnumpy(),
-        interpolation_savepoint.nudgecoeff_e().asnumpy(),
+
+    assert composite.backend == test_source.backend
+    assert composite.grid.id == test_source.grid.id
+    assert test_source.metadata.items() <= composite.metadata.items()
+    assert height_coordinate_source.metadata.items() <= composite.metadata.items()
+    assert cell_coordinate_source.metadata.items() <= composite.metadata.items()
+
+
+def test_composite_field_source_get_all_fields(cell_coordinate_source, height_coordinate_source):
+    backend = cell_coordinate_source.backend
+    grid = cell_coordinate_source.grid
+    foo = test_helpers.random_field(grid, dims.CellDim, dims.KDim)
+    bar = test_helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+    data = {
+        "foo": (foo, {"standard_name": "foo", "units": ""}),
+        "bar": (bar, {"standard_name": "bar", "units": ""}),
+    }
+
+    test_source = SimpleSource(data_=data, grid=grid, backend=backend)
+    composite = factory.CompositeSource(
+        test_source, (cell_coordinate_source, height_coordinate_source)
     )
+    x = composite.get("foo")
+    assert isinstance(x, gtx.Field)
+    assert dims.CellDim in x.domain.dims
+    assert dims.KDim in x.domain.dims
+    x = composite.get("bar")
+    assert len(x.domain.dims) == 2
+    assert isinstance(x, gtx.Field)
+    assert dims.EdgeDim in x.domain.dims
+    assert dims.KDim in x.domain.dims
+    assert len(x.domain.dims) == 2
+
+    x = composite.get("lon")
+    assert isinstance(x, gtx.Field)
+    assert dims.CellDim in x.domain.dims
+    assert len(x.domain.dims) == 1
+
+    x = composite.get("height_coordinate")
+    assert isinstance(x, gtx.Field)
+    assert dims.KDim in x.domain.dims
+    assert len(x.domain.dims) == 2
+
+
+def test_composite_field_source_raises_upon_get_unknown_field(
+    cell_coordinate_source, height_coordinate_source
+):
+    backend = cell_coordinate_source.backend
+    grid = cell_coordinate_source.grid
+    foo = test_helpers.random_field(grid, dims.CellDim, dims.KDim)
+    bar = test_helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+    data = {
+        "foo": (foo, {"standard_name": "foo", "units": ""}),
+        "bar": (bar, {"standard_name": "bar", "units": ""}),
+    }
+
+    test_source = SimpleSource(data_=data, grid=grid, backend=backend)
+    composite = factory.CompositeSource(
+        test_source, (cell_coordinate_source, height_coordinate_source)
+    )
+    with pytest.raises(ValueError) as err:
+        composite.get("alice")
+        assert "not provided by source " in err.value
