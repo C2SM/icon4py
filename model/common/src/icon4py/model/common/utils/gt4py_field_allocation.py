@@ -6,10 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import logging as log
-from typing import Optional
+from typing import Optional, TypeAlias, Union
 
 import gt4py._core.definitions as gt_core_defs
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import backend
 
 from icon4py.model.common import dimension, type_alias as ta
@@ -24,6 +25,22 @@ CUDA_DEVICE_TYPES = (
     gt_core_defs.DeviceType.CUDA_MANAGED,
     gt_core_defs.DeviceType.ROCM,
 )
+
+
+try:
+    import cupy as xp
+except ImportError:
+    import numpy as xp
+
+
+NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
+
+
+def as_numpy(array: NDArrayInterface):
+    if isinstance(array, np.ndarray):
+        return array
+    else:
+        return array.asnumpy()
 
 
 def is_cupy_device(backend: backend.Backend) -> bool:

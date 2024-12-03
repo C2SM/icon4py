@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ruff: noqa: ERA001
 
+from __future__ import annotations
+
 import gt4py.next as gtx
 from gt4py.next import backend
 
@@ -198,7 +200,6 @@ class VelocityAdvection:
         z_kin_hor_e: fa.EdgeKField[float],
         z_vt_ie: fa.EdgeKField[float],
         dtime: float,
-        ntnd: int,
         cell_areas: fa.CellField[float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
@@ -530,7 +531,7 @@ class VelocityAdvection:
                 local_z_w_con_c=self.z_w_con_c,
                 coeff1_dwdz=self.metric_state.coeff1_dwdz,
                 coeff2_dwdz=self.metric_state.coeff2_dwdz,
-                ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
+                ddt_w_adv=diagnostic_state.ddt_w_adv_pc.predictor,
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
                 vertical_start=1,
@@ -547,7 +548,7 @@ class VelocityAdvection:
                 area=cell_areas,
                 geofac_n2s=self.interpolation_state.geofac_n2s,
                 w=prognostic_state.w,
-                ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
+                ddt_w_adv=diagnostic_state.ddt_w_adv_pc.predictor,
                 scalfac_exdiff=scalfac_exdiff,
                 cfl_w_limit=cfl_w_limit,
                 dtime=dtime,
@@ -602,7 +603,7 @@ class VelocityAdvection:
             z_w_con_c_full=self.z_w_con_c_full,
             vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
+            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.predictor,
             horizontal_start=self._start_edge_nudging_level_2,
             horizontal_end=self._end_edge_local,
             vertical_start=0,
@@ -621,7 +622,7 @@ class VelocityAdvection:
             zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
             vn=prognostic_state.vn,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
+            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.predictor,
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,
@@ -646,28 +647,25 @@ class VelocityAdvection:
 
     def run_corrector_step(
         self,
-        vn_only: bool,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
         z_kin_hor_e: fa.EdgeKField[float],
         z_vt_ie: fa.EdgeKField[float],
         dtime: float,
-        ntnd: int,
         cell_areas: fa.CellField[float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
-        if not vn_only:
-            self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-                p_cell_in=prognostic_state.w,
-                c_intp=self.interpolation_state.c_intp,
-                p_vert_out=self.z_w_v,
-                horizontal_start=self._start_vertex_lateral_boundary_level_2,
-                horizontal_end=self._end_vertex_halo,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
+        self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
+            p_cell_in=prognostic_state.w,
+            c_intp=self.interpolation_state.c_intp,
+            p_vert_out=self.z_w_v,
+            horizontal_start=self._start_vertex_lateral_boundary_level_2,
+            horizontal_end=self._end_vertex_halo,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
 
         self._mo_math_divrot_rot_vertex_ri_dsl(
             vec_e=prognostic_state.vn,
@@ -680,22 +678,21 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        if not vn_only:
-            self._compute_horizontal_advection_term_for_vertical_velocity(
-                vn_ie=diagnostic_state.vn_ie,
-                inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
-                w=prognostic_state.w,
-                z_vt_ie=z_vt_ie,
-                inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-                tangent_orientation=self.edge_params.tangent_orientation,
-                z_w_v=self.z_w_v,
-                z_v_grad_w=self.z_v_grad_w,
-                horizontal_start=self._start_edge_lateral_boundary_level_7,
-                horizontal_end=self._end_edge_halo,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
+        self._compute_horizontal_advection_term_for_vertical_velocity(
+            vn_ie=diagnostic_state.vn_ie,
+            inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
+            w=prognostic_state.w,
+            z_vt_ie=z_vt_ie,
+            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
+            tangent_orientation=self.edge_params.tangent_orientation,
+            z_w_v=self.z_w_v,
+            z_v_grad_w=self.z_v_grad_w,
+            horizontal_start=self._start_edge_lateral_boundary_level_7,
+            horizontal_end=self._end_edge_halo,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
 
         self._interpolate_to_cell_center(
             interpolant=z_kin_hor_e,
@@ -755,7 +752,7 @@ class VelocityAdvection:
             local_z_w_con_c=self.z_w_con_c,
             coeff1_dwdz=self.metric_state.coeff1_dwdz,
             coeff2_dwdz=self.metric_state.coeff2_dwdz,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc.corrector,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
             vertical_start=1,
@@ -772,7 +769,7 @@ class VelocityAdvection:
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             w=prognostic_state.w,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc.corrector,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
@@ -797,7 +794,7 @@ class VelocityAdvection:
             z_w_con_c_full=self.z_w_con_c_full,
             vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
+            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.corrector,
             horizontal_start=self._start_edge_nudging_level_2,
             horizontal_end=self._end_edge_local,
             vertical_start=0,
@@ -816,7 +813,7 @@ class VelocityAdvection:
             zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
             vn=prognostic_state.vn,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
+            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.corrector,
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
             dtime=dtime,
