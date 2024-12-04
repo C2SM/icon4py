@@ -12,7 +12,7 @@ from pathlib import Path
 
 def download_and_extract(
     uri: str, base_path: Path, destination_path: Path, data_file: str = "downloaded.tar.gz"
-):
+) -> None:
     """
     "Download data archive from remote server.
 

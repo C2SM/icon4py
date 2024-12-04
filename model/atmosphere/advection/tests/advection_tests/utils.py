@@ -14,8 +14,8 @@ import numpy as np
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.test_utils import helpers
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc, serialbox as sb
 
 
 # flake8: noqa

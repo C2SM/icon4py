@@ -1,0 +1,70 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0", "wheel>=0.40.0"]
+
+[project]
+authors = [{email = "gridtools@cscs.ch"}, {name = "ETH Zurich"}]
+classifiers = [
+  'Development Status :: 3 - Alpha',
+  'Intended Audience :: Science/Research',
+  'License :: OSI Approved :: BSD License',
+  'Operating System :: POSIX',
+  'Programming Language :: Python',
+  'Programming Language :: Python :: 3',
+  'Programming Language :: Python :: 3 :: Only',
+  'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: 3.11',
+  'Programming Language :: Python :: Implementation :: CPython',
+  'Topic :: Scientific/Engineering :: Atmospheric Science',
+  'Topic :: Scientific/Engineering :: Mathematics',
+  'Topic :: Scientific/Engineering :: Physics'
+]
+dependencies = [
+  # workspace members
+  'icon4py-common[netcdf]>=0.0.6',
+  # external dependencies
+  "gt4py>=1.0.4",
+  "numpy>1.24.0",
+  "serialbox>=0.0.1",
+  "typing-extensions>=4.11.0",
+]
+description = "Testing utils for the icon4py model."
+dynamic = ['version']
+license = {text = "BSD-3 License"}
+name = "icon4py-testing"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.urls]
+repository = "https://github.com/C2SM/icon4py"
+
+# -- bumpversion --
+[tool.bumpversion]
+allow_dirty = false
+commit = false
+current_version = "0.0.6"
+ignore_missing_version = false
+message = 'Bump icon4py.testing version: {current_version} → {new_version}'
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
+serialize = ["{major}.{minor}.{patch}"]
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "src/icon4py/model/testing/__init__.py"
+
+# --ruff --
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint.isort]
+known-first-party = ['icon4py.model']
+known-third-party = ['gt4py']
+
+# -- setuptools --
+[tool.setuptools]
+
+[tool.setuptools.dynamic]
+version = {attr = 'icon4py.model.testing.__init__.__version__'}
+
+[tool.setuptools.package-data]
+'icon4py.model.testing' = ['py.typed']

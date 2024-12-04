@@ -23,7 +23,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common.utils import serialbox as sb
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.driver.test_cases import utils as testcases_utils
 

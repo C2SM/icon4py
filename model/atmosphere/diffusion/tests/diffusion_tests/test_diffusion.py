@@ -24,9 +24,8 @@ from icon4py.model.common.test_utils import (
     grid_utils,
     helpers,
     reference_funcs as ref_funcs,
-    serialbox_utils as sb,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as alloc
+from icon4py.model.common.utils import gt4py_field_allocation as alloc, serialbox as sb
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,

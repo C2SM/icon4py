@@ -10,7 +10,8 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
+from icon4py.model.common.test_utils import helpers
+from icon4py.model.common.utils import serialbox as sb
 
 
 def construct_interpolation_state(

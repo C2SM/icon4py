@@ -5,21 +5,23 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "icon4py-common>=0.0.6",
-    "icon4py-driver>=0.0.6",
     "icon4py-atmosphere-advection>=0.0.6",
     "icon4py-atmosphere-diffusion>=0.0.6",
     "icon4py-atmosphere-dycore>=0.0.6",
-    "icon4py-atmosphere-subgrid_scale_physics-microphysics>=0.0.6"
+    "icon4py-atmosphere-subgrid_scale_physics-microphysics>=0.0.6",
+    "icon4py-common>=0.0.6",
+    "icon4py-driver>=0.0.6",
+    "icon4py-testing>=0.0.6"
 ]
 
 [project.optional-dependencies]
 all = ["icon4py[dace,distributed,integration,io]"]
-dace = ["icon4py-common[dace]>=0.0.6", "dace<1.0"]  # Dace should be removed after updatding gt4py
+dace = ["icon4py-common[dace]>=0.0.6", "dace<1.0"]  # Dace should be removed after updating gt4py
 distributed = ["icon4py-common[distributed]>=0.0.6"]
 integration = ["icon4pytools>=0.0.6"]
 io = ["icon4py-common[io]>=0.0.6"]
 
+# -- dependency groups --
 [dependency-groups]
 build = [
     "bump-my-version>=0.16.0",
@@ -62,7 +64,7 @@ dev = [
     { include-group = "typing" },
 ]
 
-# -- packages & workspace --
+# -- uv: packages & workspace --
 [tool.uv]
 environments = ["sys_platform == 'darwin'", "sys_platform == 'linux'"]
 
@@ -70,12 +72,13 @@ environments = ["sys_platform == 'darwin'", "sys_platform == 'linux'"]
 ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master", subdirectory = "bindings/python" }
 # use GT4Py tagged release until #596 & gt4py#1738 are merged
 gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_20241113" }
-icon4py-common = { workspace = true }
-icon4py-driver = { workspace = true }
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
 icon4py-atmosphere-subgrid_scale_physics-microphysics = { workspace = true }
+icon4py-common = { workspace = true }
+icon4py-driver = { workspace = true }
+icon4py-testing = { workspace = true }
 icon4pytools = { workspace = true }
 serialbox = { git = "https://github.com/GridTools/serialbox", subdirectory = "src/serialbox-python" }
 
@@ -87,9 +90,9 @@ members = [
     "model/atmosphere/subgrid_scale_physics/microphysics",
     "model/common",
     "model/driver",
+    "model/testing",
     "tools",
 ]
-
 
 # -- mypy --
 [tool.mypy]

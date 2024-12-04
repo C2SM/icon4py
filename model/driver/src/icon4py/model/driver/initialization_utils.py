@@ -26,9 +26,8 @@ from icon4py.model.common.states import (
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     helpers,
-    serialbox_utils as sb,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc, serialbox as sb
 from icon4py.model.driver import (
     serialbox_helpers as driver_sb,
 )

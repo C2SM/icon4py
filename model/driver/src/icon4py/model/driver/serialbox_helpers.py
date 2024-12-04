@@ -8,7 +8,7 @@
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common.utils import serialbox as sb
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 
 
