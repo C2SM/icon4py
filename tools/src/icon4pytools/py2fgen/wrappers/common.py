@@ -136,7 +136,7 @@ def construct_icon_grid(
 
 
 def construct_decomposition(
-    c_glb_index: NDArray,
+    c_glb_index: xp.ndarray,
     e_glb_index: NDArray,
     v_glb_index: NDArray,
     c_owner_mask: NDArray,
