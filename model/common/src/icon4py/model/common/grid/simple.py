@@ -33,6 +33,7 @@ from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridS
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.vertical import VerticalGridConfig
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 @dataclasses.dataclass
@@ -446,7 +447,7 @@ class SimpleGrid(BaseGrid):
         return self.config.num_edges
 
     @property
-    def diamond_table(self) -> NDArray:
+    def diamond_table(self) -> field_alloc.NDArray:
         return SimpleGridData.e2c2v_table
 
     @property

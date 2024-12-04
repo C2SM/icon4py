@@ -18,6 +18,8 @@ from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
 
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
 from ..grid.base import BaseGrid
 from ..type_alias import wpfloat
 
@@ -109,10 +111,9 @@ def zero_field(
     extend: Optional[dict[gt_common.Dimension, int]] = None,
     backend=None,
 ) -> gt_common.Field:
-    arr = np.zeros(shape=_shape(grid, *dims, extend=extend))
-    if dtype:
-        arr = arr.astype(dtype)
-    return as_field(dims, arr, allocator=backend)
+    return constructors.zeros(
+        dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtyoe=dtype), allocator=backend
+    )
 
 
 def constant_field(

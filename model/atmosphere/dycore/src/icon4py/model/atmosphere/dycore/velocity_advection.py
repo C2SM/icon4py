@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import backend
 
 import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
@@ -460,8 +459,9 @@ class VelocityAdvection:
         )
 
     def _update_levmask_from_cfl_clipping(self):
+        xp = field_alloc.import_array_ns(self._backend)
         self.levmask = gtx.as_field(
-            domain=(dims.KDim,), data=(np.any(self.cfl_clipping.ndarray, 0)), dtype=bool
+            domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):

@@ -12,7 +12,6 @@ import logging
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import base, horizontal, icon
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from icon4pytools.py2fgen.settings import config
 
@@ -28,21 +27,21 @@ def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
 
 
 def construct_icon_grid(
-    cell_starts: field_alloc.NDArray,
-    cell_ends: field_alloc.NDArray,
-    vertex_starts: field_alloc.NDArray,
-    vertex_ends: field_alloc.NDArray,
-    edge_starts: field_alloc.NDArray,
-    edge_ends: field_alloc.NDArray,
-    c2e: field_alloc.NDArray,
-    e2c: field_alloc.NDArray,
-    c2e2c: field_alloc.NDArray,
-    e2c2e: field_alloc.NDArray,
-    e2v: field_alloc.NDArray,
-    v2e: field_alloc.NDArray,
-    v2c: field_alloc.NDArray,
-    e2c2v: field_alloc.NDArray,
-    c2v: field_alloc.NDArray,
+    cell_starts: xp.ndarray,
+    cell_ends: xp.ndarray,
+    vertex_starts: xp.ndarray,
+    vertex_ends: xp.ndarray,
+    edge_starts: xp.ndarray,
+    edge_ends: xp.ndarray,
+    c2e: xp.ndarray,
+    e2c: xp.ndarray,
+    c2e2c: xp.ndarray,
+    e2c2e: xp.ndarray,
+    e2v: xp.ndarray,
+    v2e: xp.ndarray,
+    v2c: xp.ndarray,
+    e2c2v: xp.ndarray,
+    c2v: xp.ndarray,
     grid_id: str,
     global_grid_params: icon.GlobalGridParams,
     num_vertices: int,
@@ -137,11 +136,11 @@ def construct_icon_grid(
 
 def construct_decomposition(
     c_glb_index: xp.ndarray,
-    e_glb_index: field_alloc.NDArray,
-    v_glb_index: field_alloc.NDArray,
-    c_owner_mask: field_alloc.NDArray,
-    e_owner_mask: field_alloc.NDArray,
-    v_owner_mask: field_alloc.NDArray,
+    e_glb_index: xp.ndarray,
+    v_glb_index: xp.ndarray,
+    c_owner_mask: xp.ndarray,
+    e_owner_mask: xp.ndarray,
+    v_owner_mask: xp.ndarray,
     num_cells: int,
     num_edges: int,
     num_vertices: int,

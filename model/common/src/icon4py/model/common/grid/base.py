@@ -17,6 +17,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import utils as grid_utils
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 class MissingConnectivity(ValueError):
@@ -112,7 +113,7 @@ class BaseGrid(ABC):
         return offset_providers
 
     @utils.chainable
-    def with_connectivities(self, connectivity: Dict[gtx.Dimension, NDArray]):
+    def with_connectivities(self, connectivity: Dict[gtx.Dimension, field_alloc.NDArray]):
         self.connectivities.update(
             {
                 d: k.ndarray.astype(gtx.int32) if hasattr(k, "ndarray") else k.astype(gtx.int32)
