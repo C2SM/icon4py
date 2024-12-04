@@ -47,7 +47,7 @@ class ImmersedBoundaryMethod:
 
     def _make_cell_mask(self, grid: icon_grid.IconGrid) -> fa.CellKField[bool]:
         cell_mask = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
-        cell_mask[313, -2] = True
+        cell_mask[2, -2] = True
         return gtx.as_field((CellDim, KDim), cell_mask)
     
     def _make_edge_mask(self, grid: icon_grid.IconGrid) -> fa.EdgeKField[bool]:
