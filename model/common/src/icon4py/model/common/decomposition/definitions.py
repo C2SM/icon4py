@@ -17,7 +17,7 @@ from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
 from gt4py.next import Dimension
 
 from icon4py.model.common import utils
-from icon4py.model.common.utils.gt4py_field_allocation import NDArray
+from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 
 try:
