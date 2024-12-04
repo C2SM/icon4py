@@ -16,24 +16,10 @@ logging.getLogger("matplotlib").setLevel(logging.WARNING)
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-def create_triangulation_from_gridfile(gridfname: str) -> mpl.tri.Triangulation:
-    """
-    Create a triangulation from a grid file.
-
-    Args:
-        gridfname: The filename of the grid file to open.
-
-    Returns:
-        A triangulation object created from the grid file.
-    """
-
-    grid = xr.open_dataset(gridfname)
-
-    return mpl.tri.Triangulation(
-        grid.cartesian_x_vertices.values,
-        grid.cartesian_y_vertices.values,
-        triangles=grid.vertex_of_cell.values.T-1,
-        )
+X_BOUNDARY = xp.pi
+Y_BOUNDARY = 15/2*xp.pi/180
+X_LIMS = (-X_BOUNDARY*1.02, X_BOUNDARY*1.02)
+Y_LIMS = (-Y_BOUNDARY*1.02, Y_BOUNDARY*1.02)
 
 def remove_boundary_triangles(
         tri: mpl.tri.Triangulation,
@@ -43,9 +29,9 @@ def remove_boundary_triangles(
     """
     Remove boundary triangles from a triangulation.
 
-    This function examines each triangle in the provided triangulation and 
-    determines if it is elongated based on the ratio of its longest edge to 
-    its shortest edge. If the ratio exceeds `ratio`, the triangle is considered 
+    This function examines each triangle in the provided triangulation and
+    determines if it is elongated based on the ratio of its longest edge to
+    its shortest edge. If the ratio exceeds `ratio`, the triangle is considered
     elongated and is masked out.
     Also save the original set of edges
 
@@ -56,6 +42,19 @@ def remove_boundary_triangles(
         The modified triangulation with elongated triangles masked out.
     """
 
+    def check_wrapping(vert_x, vert_y):
+        #return (check_three_numbers(vert_x) or check_three_numbers(vert_y)) \
+        #        and ((xp.abs(vert_x) == X_BOUNDARY).any() or (xp.abs(vert_y) == Y_BOUNDARY).any())
+        return (check_three_numbers(vert_x) and (xp.abs(vert_x) == X_BOUNDARY).any()) \
+            or (check_three_numbers(vert_y) and (xp.abs(vert_y) == Y_BOUNDARY).any())
+
+    def check_three_numbers(numbers):
+        positive_count = sum(1 for x in numbers if x > 0)
+        negative_count = sum(1 for x in numbers if x < 0)
+
+        return (positive_count == 2 and negative_count == 1) or (positive_count == 1 and negative_count == 2)
+
+
     tri.all_edges = tri.edges.copy()
 
     tri.n_all_triangles = tri.triangles.shape[0]
@@ -65,7 +64,7 @@ def remove_boundary_triangles(
     if criterion == 'wrapping':
         # Remove wrapping triangles
         for triangle in tri.triangles:
-            if (tri.x[triangle].max() > 2 and tri.x[triangle].min() < -2) or (tri.y[triangle].max() > 0 and tri.y[triangle].min() < 0):
+            if check_wrapping(tri.x[triangle], tri.y[triangle]):
                 boundary_triangles_mask.append(True)
             else:
                 boundary_triangles_mask.append(False)
@@ -95,36 +94,7 @@ def remove_boundary_triangles(
 
     return tri
 
-def create_edge_centers(tri):
-    edge_centers_x = []
-    edge_centers_y = []
-    for edge in tri.all_edges:
-        x1, y1 = tri.x[edge[0]], tri.y[edge[0]]
-        x2, y2 = tri.x[edge[1]], tri.y[edge[1]]
-        edge_centers_x.append((x1 + x2) / 2)
-        edge_centers_y.append((y1 + y2) / 2)
-    return xp.array(edge_centers_x), xp.array(edge_centers_y)
-
-def create_torus_triangulation_from_gridfile(grid_fname: str) -> mpl.tri.Triangulation:
-    """
-    Create a triangulation for a torus from a grid file.
-    Remove elongated triangles from the triangulation.
-    Take care of elongated edges.
-
-    Args:
-        grid_fname: The filename of the grid file to open.
-
-    Returns:
-        A triangulation object created from the grid file.
-    """
-    tri = create_triangulation_from_gridfile(grid_fname)
-    tri = remove_boundary_triangles(tri, 'elongated')
-    tri.edge_x, tri.edge_y = create_edge_centers(tri)
-    return tri
-
-def create_torus_triangulation_from_icon4py(
-    grid: icon_grid.IconGrid,
-    edge_geometry: grid_states.EdgeParams,
+def create_torus_triangulation_from_savepoint(
     savepoint_path: str,
 ) -> mpl.tri.Triangulation:
     """
@@ -133,22 +103,52 @@ def create_torus_triangulation_from_icon4py(
     Take care of elongated edges.
 
     Args:
-        
+
 
     Returns:
         A triangulation object created from the grid file.
     """
     grid_savepoint = sb.IconSerialDataProvider("icon_pydycore", savepoint_path).from_savepoint_grid('aa', 0, 2)
 
+    vert_x = grid_savepoint.v_lon().ndarray
+    vert_y = grid_savepoint.v_lat().ndarray
+    edge_x = grid_savepoint.edge_center_lon().ndarray
+    edge_y = grid_savepoint.edge_center_lat().ndarray
+    c2v = grid_savepoint.c2v()
+
+    # clean up the grid
+    # Adjust x values to coincide with the periodic boundary
+    vert_x = xp.where(xp.abs(vert_x - X_BOUNDARY) < 1e-14,  X_BOUNDARY, vert_x)
+    vert_x = xp.where(xp.abs(vert_x + X_BOUNDARY) < 1e-14, -X_BOUNDARY, vert_x)
+    # shift all to -X_BOUNDARY
+    vert_x = xp.where(vert_x == X_BOUNDARY, -X_BOUNDARY, vert_x)
+    # Adjust y values to coincide with the periodic boundary
+    vert_y = xp.where(xp.abs(vert_y - Y_BOUNDARY) < 1e-14,  Y_BOUNDARY, vert_y)
+    vert_y = xp.where(xp.abs(vert_y + Y_BOUNDARY) < 1e-14, -Y_BOUNDARY, vert_y)
+
     tri = mpl.tri.Triangulation(
-        grid_savepoint.v_lon().ndarray,
-        grid_savepoint.v_lat().ndarray,
-        triangles=grid.connectivities[dims.C2VDim],
+        vert_x,
+        vert_y,
+        triangles=c2v,
         )
-    tri = remove_boundary_triangles(tri)
-    tri.edge_x = edge_geometry.edge_center[1].ndarray
-    tri.edge_y = edge_geometry.edge_center[0].ndarray
+    tri.edge_x = edge_x
+    tri.edge_y = edge_y
+
+    tri = remove_boundary_triangles(tri, mask_edges=False)
+
     return tri
+
+def plot_grid(tri: mpl.tri.Triangulation) -> None:
+
+    #plt.close('all')
+    fig = plt.figure(1); plt.clf(); plt.show(block=False)
+    ax = fig.subplots(nrows=1, ncols=1)
+    ax.set_xlim(X_LIMS)
+    ax.set_ylim(Y_LIMS)
+    ax.triplot(tri, color='k', linewidth=0.25)
+    ax.scatter(tri.x,      tri.y,      c='red',  s=3**2)
+    ax.scatter(tri.edge_x, tri.edge_y, c='blue', s=3**2)
+    plt.draw()
 
 def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = False) -> None:
     """
@@ -169,15 +169,17 @@ def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = 
         plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=4**2, cmap='viridis') #, vmin=cmin, vmax=cmax)
 
     plt.close('all')
-    fig = plt.figure(1, figsize=(17,min(13,4*nlev))); plt.clf()
+    fig = plt.figure(1, figsize=(14,min(13,4*nlev))); plt.clf()
     axs = fig.subplots(nrows=min(nax_per_col, nlev), ncols=max(1,int(xp.ceil(nlev/nax_per_col))), sharex=True, sharey=True)
     if nlev > 1:
-        axs = axs.flatten()    
+        axs = axs.flatten()
     else:
         axs = [axs]
     for i in range(nlev):
         plot_lev(data, i)
         #axs[i].set_aspect('equal')
+        axs[i].set_xlim(X_LIMS)
+        axs[i].set_ylim(Y_LIMS)
         #axs[i].set_xlabel(f"Level {-i}")
         axs[i].triplot(tri, color='k', linewidth=0.25)
 
@@ -188,21 +190,20 @@ def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = 
         fig.savefig('plot.png', dpi=600, bbox_inches='tight')
         log.debug(f"Saved plot.png")
     else:
-        plt.show()
+        plt.show(block=False)
         plt.pause(1)
 
 
 if __name__ == '__main__':
     # Example usage and testing
-    
-    grid_fname = 'testdata/grids/Torus_Triangles_50000m_x_5000m_res500m.nc'
-    state_fname = 'testdata/prognostic_state.pkl'
-    
-    tri = create_torus_triangulation_from_gridfile(grid_fname)
+
+    state_fname = 'testdata/prognostic_state.torus_small.pkl'
+    savepoint_path = 'testdata/ser_icondata/mpitask1/torus_small.flat_and_zeros/ser_data'
+
+    tri = create_torus_triangulation_from_savepoint(savepoint_path=savepoint_path)
+
     with open(state_fname, 'rb') as f:
-        state = pickle.load(f)
-    
-    #data = state.theta_v.ndarray
-    data = state.vn.ndarray
-    
-    plot_data(tri, data, 2)
+        state = pickle.load(f)[0]
+
+    plot_data(tri, state.theta_v, 2)
+
