@@ -126,7 +126,7 @@ class DecompositionInfo:
     def _to_local_index(self, dim):
         data = self._global_index[dim]
         assert data.ndim == 1
-        if isinstance(data, NDArray):
+        if isinstance(data, np.ndarray):
             import numpy as xp
         else:
             import cupy as xp
