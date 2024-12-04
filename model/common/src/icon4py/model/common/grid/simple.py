@@ -33,7 +33,6 @@ from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridS
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
 from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.common.utils.gt4py_field_allocation import NDArray
 
 
 @dataclasses.dataclass

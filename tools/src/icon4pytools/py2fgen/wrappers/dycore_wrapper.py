@@ -35,7 +35,7 @@ import gt4py.next as gtx
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import common as gt4py_common
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.dimension import (
     C2E2CODim,
     C2EDim,
@@ -63,7 +63,6 @@ from icon4py.model.common.test_utils.helpers import (
     flatten_first_two_dims,
     zero_field,
 )
-from icon4py.model.common import utils import as common_utils
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.settings import backend, device
@@ -404,7 +403,6 @@ def solve_nh_run(
         mass_fl_e=mass_fl_e,
         ddt_vn_phy=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
-        ddt_vn_apc_pc=PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2),
         vt=vt,

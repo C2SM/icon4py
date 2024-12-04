@@ -13,12 +13,13 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Final, Optional, Sequence, Union
 
+import numpy as np
 from gt4py.next import Dimension, Field
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
-from icon4py.model.common.utils.gt4py_field_allocation import NDArray
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 try:
@@ -199,7 +200,9 @@ class GHexMultiNodeExchange:
         )
         return pattern
 
-    def _slice_field_based_on_dim(self, field: Field, dim: definitions.Dimension) -> NDArray:
+    def _slice_field_based_on_dim(
+        self, field: Field, dim: definitions.Dimension
+    ) -> field_alloc.NDArray:
         """
         Slices the field based on the dimension passed in.
         """

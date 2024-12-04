@@ -17,7 +17,6 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import utils as grid_utils
-from icon4py.model.common.utils.gt4py_field_allocation import NDArray
 
 
 class MissingConnectivity(ValueError):

@@ -14,10 +14,11 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
 
+import numpy as np
 from gt4py.next import Dimension
 
 from icon4py.model.common import utils
-from icon4py.model.common.utils import gt4py_field_allocation as alloc
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 try:
@@ -76,7 +77,9 @@ class DecompositionInfo:
         HALO = 2
 
     @utils.chainable
-    def with_dimension(self, dim: Dimension, global_index: NDArray, owner_mask: NDArray):
+    def with_dimension(
+        self, dim: Dimension, global_index: field_alloc.NDArray, owner_mask: field_alloc.NDArray
+    ):
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
 
@@ -134,7 +137,7 @@ class DecompositionInfo:
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> NDArray:
+    def owner_mask(self, dim: Dimension) -> field_alloc.NDArray:
         return self._owner_mask[dim]
 
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):

@@ -20,7 +20,7 @@ import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.states import prognostic_state
-from icon4py.model.common.utils.gt4py_field_allocation import NDArray
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 log = logging.getLogger(__name__)
@@ -319,7 +319,7 @@ class IconGridSavepoint(IconSavepoint):
     def f_e(self):
         return self._get_field("f_e", dims.EdgeDim)
 
-    def print_connectivity_info(self, name: str, ar: NDArray):
+    def print_connectivity_info(self, name: str, ar: field_alloc.NDArray):
         self.log.debug(f" connectivity {name} {ar.shape}")
 
     def c2e(self):
@@ -779,7 +779,7 @@ class MetricSavepoint(IconSavepoint):
         )
 
     def _linearize_first_2dims(
-        self, data: NDArray, sparse_size: int, target_dims: tuple[gtx.Dimension, ...]
+        self, data: field_alloc.NDArray, sparse_size: int, target_dims: tuple[gtx.Dimension, ...]
     ):
         old_shape = data.shape
         assert old_shape[1] == sparse_size

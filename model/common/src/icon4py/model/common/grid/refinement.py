@@ -14,7 +14,6 @@ from gt4py import next as gtx
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils.gt4py_field_allocation import NDArray
 
 
 """

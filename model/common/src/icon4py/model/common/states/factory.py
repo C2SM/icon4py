@@ -72,7 +72,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import model, utils as state_utils
 from icon4py.model.common.states.model import FieldMetaData
 from icon4py.model.common.states.utils import FieldType, to_data_array
-from icon4py.model.common.utils.gt4py_field_allocation import NDArray
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
@@ -426,7 +426,7 @@ class NumpyFieldsProvider(FieldProvider):
         args.update(self._params)
         results = self._func(**args)
         ## TODO: can the order of return values be checked?
-        results = (results,) if isinstance(results, NDArray) else results
+        results = (results,) if isinstance(results, field_alloc.NDArray) else results
         self._fields = {
             k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
             for i, k in enumerate(self.fields)
@@ -437,7 +437,7 @@ class NumpyFieldsProvider(FieldProvider):
         parameters = func_signature.parameters
         for dep_key in self._dependencies.keys():
             parameter_definition = parameters.get(dep_key)
-            assert parameter_definition.annotation == NDArray, (
+            assert parameter_definition.annotation == field_alloc.NDArray, (
                 f"Dependency {dep_key} in function {self._func.__name__}:  does not exist or has "
                 f"wrong type ('expected xp.ndarray') in {func_signature}."
             )
