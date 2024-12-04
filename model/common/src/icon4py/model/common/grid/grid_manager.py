@@ -397,7 +397,7 @@ class GridManager:
     def __call__(self, backend: Optional[gtx_backend.Backend], limited_area=True):
         if not self._reader:
             self.open()
-        on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
+        on_gpu = common_utils.fields.is_cupy_device(backend)
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields(backend)
         self._coordinates = self._read_coordinates(backend)
@@ -529,7 +529,7 @@ class GridManager:
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
         """
-        xp = common_utils.gt4py_field_allocation.import_array_ns(backend)
+        xp = common_utils.fields.import_array_ns(backend)
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,

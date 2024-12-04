@@ -10,7 +10,7 @@ import pytest
 
 from icon4py.model.atmosphere.advection import advection
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import fields as field_utils
 
 from .utils import (
     construct_config,

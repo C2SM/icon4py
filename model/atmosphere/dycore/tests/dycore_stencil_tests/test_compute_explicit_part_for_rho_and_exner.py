@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_
     compute_explicit_part_for_rho_and_exner,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

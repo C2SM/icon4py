@@ -19,13 +19,13 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.settings import backend, xp
-from icon4py.model.common.test_utils import (
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
     helpers,
     reference_funcs as ref_funcs,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as alloc, serialbox as sb
+from icon4py.model.common.utils import fields as alloc, serialbox as sb
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,

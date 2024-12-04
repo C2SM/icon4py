@@ -20,8 +20,8 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
     compute_z_mc,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing.helpers import (
     constant_field,
     dallclose,
     flatten_first_two_dims,

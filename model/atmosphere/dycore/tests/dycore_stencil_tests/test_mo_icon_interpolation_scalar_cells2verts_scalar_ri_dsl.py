@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

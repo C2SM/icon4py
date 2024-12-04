@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     flatten_first_two_dims,
     random_field,

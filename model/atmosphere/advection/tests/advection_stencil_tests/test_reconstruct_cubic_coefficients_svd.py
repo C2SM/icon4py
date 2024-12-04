@@ -10,7 +10,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.reconstruct_cubic_coefficients_svd import (
     reconstruct_cubic_coefficients_svd,
 )

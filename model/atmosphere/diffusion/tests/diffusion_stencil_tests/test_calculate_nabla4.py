@@ -11,7 +11,7 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,

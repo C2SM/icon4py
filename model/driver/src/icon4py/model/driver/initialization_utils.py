@@ -10,6 +10,7 @@ import enum
 import functools
 import logging
 import pathlib
+import uuid
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -23,11 +24,7 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.test_utils import (
-    datatest_utils as dt_utils,
-    helpers,
-)
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc, serialbox as sb
+from icon4py.model.common.utils import fields as field_utils, serialbox as sb
 from icon4py.model.driver import (
     serialbox_helpers as driver_sb,
 )
@@ -36,7 +33,7 @@ from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
 
 GRID_LEVEL = 4
 GRID_ROOT = 2
-GLOBAL_GRID_ID = dt_utils.GRID_IDS[dt_utils.GLOBAL_EXPERIMENT]
+GLOBAL_GRID_ID = uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba")
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = "The requested experiment type is not implemented."
@@ -387,10 +384,10 @@ def read_static_fields(
             pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
             pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
             rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+            e_bln_c_s=field_utils.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
             rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+            geofac_div=field_utils.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
             geofac_n2s=interpolation_savepoint.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],

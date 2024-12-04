@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contr
     compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     random_field,
     random_mask,

@@ -81,7 +81,7 @@ warn_unused_ignores = true
 [tool.pytest]
 
 [tool.pytest.ini_options]
-addopts = ['-p icon4py.model.common.test_utils.pytest_config']
+addopts = ['-p icon4py.model.testing.pytest_config']
 testpaths = 'tests'
 
 [tool.ruff]

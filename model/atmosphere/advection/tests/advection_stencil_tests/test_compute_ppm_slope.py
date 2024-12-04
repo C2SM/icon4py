@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 from gt4py.next import as_field
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_slope import (
     compute_ppm_slope,
 )

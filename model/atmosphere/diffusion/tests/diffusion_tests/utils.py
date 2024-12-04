@@ -11,7 +11,7 @@ import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.testing import helpers
 
 
 def verify_diffusion_fields(

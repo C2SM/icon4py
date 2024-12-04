@@ -29,7 +29,7 @@ from icon4py.model.common.io.io import (
     to_delta,
 )
 from icon4py.model.common.states import data
-from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
+from icon4py.model.testing import datatest_utils, grid_utils, helpers
 
 
 # setting backend to fieldview embedded here.

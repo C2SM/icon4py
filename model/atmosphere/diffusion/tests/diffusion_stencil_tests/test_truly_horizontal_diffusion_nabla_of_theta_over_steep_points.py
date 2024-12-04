@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     flatten_first_two_dims,
     random_field,

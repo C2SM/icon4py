@@ -13,13 +13,13 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8
     fused_velocity_advection_stencil_8_to_13,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,
     zero_field,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import fields as field_utils
 
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
 from .test_correct_contravariant_vertical_velocity import (

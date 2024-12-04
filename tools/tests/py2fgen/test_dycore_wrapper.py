@@ -30,11 +30,11 @@ from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils import (
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import fields as field_utils
 
 from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 

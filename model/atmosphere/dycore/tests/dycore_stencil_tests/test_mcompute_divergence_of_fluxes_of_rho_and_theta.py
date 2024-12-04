@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rh
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,

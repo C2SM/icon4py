@@ -11,8 +11,8 @@ import pytest
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gradekin
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
-from icon4py.model.common.test_utils.helpers import dallclose
+from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing.helpers import dallclose
 
 
 @pytest.mark.datatest

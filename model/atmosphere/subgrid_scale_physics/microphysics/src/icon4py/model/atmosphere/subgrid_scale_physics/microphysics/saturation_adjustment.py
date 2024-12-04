@@ -37,7 +37,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
     tracer_state as tracers,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import fields as field_utils
 
 
 # TODO (Chia Rui): Refactor this class when direct import is enabled for gt4py stencils

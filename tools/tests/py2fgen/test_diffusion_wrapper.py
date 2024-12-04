@@ -14,7 +14,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 from icon4pytools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
 

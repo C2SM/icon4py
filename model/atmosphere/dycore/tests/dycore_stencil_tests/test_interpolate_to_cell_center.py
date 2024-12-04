@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import 
     interpolate_to_cell_center,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,

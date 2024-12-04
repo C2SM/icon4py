@@ -59,11 +59,7 @@ from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    flatten_first_two_dims,
-    zero_field,
-)
+from icon4py.model.common.utils import fields as fields_utils
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
@@ -233,14 +229,14 @@ def solve_nh_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inverse_dual_edge_lengths,
         inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
-        primal_normal_vert_x=as_1D_sparse_field(primal_normal_vert_x, ECVDim),
-        primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, ECVDim),
-        dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, ECVDim),
-        dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, ECVDim),
-        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, ECDim),
-        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, ECDim),
-        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, ECDim),
-        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, ECDim),
+        primal_normal_vert_x=field_utils.as_1D_sparse_field(primal_normal_vert_x, ECVDim),
+        primal_normal_vert_y=field_utils.as_1D_sparse_field(primal_normal_vert_y, ECVDim),
+        dual_normal_vert_x=field_utils.as_1D_sparse_field(dual_normal_vert_x, ECVDim),
+        dual_normal_vert_y=field_utils.as_1D_sparse_field(dual_normal_vert_y, ECVDim),
+        primal_normal_cell_x=field_utils.as_1D_sparse_field(primal_normal_cell_x, ECDim),
+        primal_normal_cell_y=field_utils.as_1D_sparse_field(primal_normal_cell_y, ECDim),
+        dual_normal_cell_x=field_utils.as_1D_sparse_field(dual_normal_cell_x, ECDim),
+        dual_normal_cell_y=field_utils.as_1D_sparse_field(dual_normal_cell_y, ECDim),
         edge_areas=edge_areas,
         f_e=f_e,
         edge_center_lat=edge_center_lat,
@@ -264,13 +260,13 @@ def solve_nh_init(
         e_flx_avg=e_flx_avg,
         geofac_grdiv=geofac_grdiv,
         geofac_rot=geofac_rot,
-        pos_on_tplane_e_1=as_1D_sparse_field(pos_on_tplane_e_1[:, 0:2], ECDim),
-        pos_on_tplane_e_2=as_1D_sparse_field(pos_on_tplane_e_2[:, 0:2], ECDim),
+        pos_on_tplane_e_1=field_utils.as_1D_sparse_field(pos_on_tplane_e_1[:, 0:2], ECDim),
+        pos_on_tplane_e_2=field_utils.as_1D_sparse_field(pos_on_tplane_e_2[:, 0:2], ECDim),
         rbf_vec_coeff_e=rbf_vec_coeff_e,
-        e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
+        e_bln_c_s=field_utils.as_1D_sparse_field(e_bln_c_s, CEDim),
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=as_1D_sparse_field(geofac_div, CEDim),
+        geofac_div=field_utils.as_1D_sparse_field(geofac_div, CEDim),
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
@@ -297,8 +293,8 @@ def solve_nh_init(
         rho_ref_me=rho_ref_me,
         theta_ref_me=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
-        zdiff_gradp=flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp),
-        vertoffset_gradp=flatten_first_two_dims(ECDim, KDim, field=vertoffset_gradp),
+        zdiff_gradp=field_utils.flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp),
+        vertoffset_gradp=field_utils.flatten_first_two_dims(ECDim, KDim, field=vertoffset_gradp),
         ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
@@ -310,7 +306,7 @@ def solve_nh_init(
         scalfac_dd3d=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
-        coeff_gradekin=as_1D_sparse_field(coeff_gradekin, ECDim),
+        coeff_gradekin=field_utils.as_1D_sparse_field(coeff_gradekin, ECDim),
     )
 
     # datatest config
@@ -389,7 +385,7 @@ def solve_nh_run(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=zero_field(dycore_wrapper_state["grid"], CellDim, KDim, dtype=gtx.float64),
+        vol_flx_ic=fields_utils.zero_field(dycore_wrapper_state["grid"], CellDim, KDim, dtype=gtx.float64),
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(

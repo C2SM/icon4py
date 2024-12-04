@@ -13,7 +13,7 @@ from icon4py.model.common import constants as phy_const, dimension as dims, type
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
     diagnose_virtual_temperature_and_temperature,
 )
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.testing import helpers
 
 
 class TestDiagnoseTemperature(helpers.StencilTest):

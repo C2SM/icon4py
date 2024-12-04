@@ -8,7 +8,7 @@
 import gt4py.next as gtx
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 import icon4py.model.common.type_alias as ta
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
@@ -21,7 +21,7 @@ from icon4py.model.common.metrics.reference_atmosphere import (
     compute_reference_atmosphere_cell_fields,
     compute_reference_atmosphere_edge_fields,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
+from icon4py.model.testing import datatest_utils as dt_utils
 
 
 # TODO (@halungge) some tests need to run on a compiled backend: embedded does not work with the

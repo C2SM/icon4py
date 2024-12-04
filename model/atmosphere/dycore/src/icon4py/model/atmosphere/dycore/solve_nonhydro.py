@@ -153,7 +153,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import fields as field_utils
 from icon4py.model.common import field_type_aliases as fa
 import enum
 

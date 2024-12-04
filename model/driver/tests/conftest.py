@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
+from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
     download_ser_data,

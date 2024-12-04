@@ -12,7 +12,7 @@ import icon4py.model.common.grid.simple as simple_grid
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.io import ugrid, utils
 from icon4py.model.common.states import data, model
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.testing import helpers
 
 
 def test_data_array_has_ugrid_and_cf_attributes():

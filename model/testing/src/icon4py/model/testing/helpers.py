@@ -20,8 +20,6 @@ from typing_extensions import Buffer
 
 from icon4py.model.common.settings import xp
 
-from ..grid.base import BaseGrid
-from ..type_alias import wpfloat
 
 
 try:
@@ -54,103 +52,6 @@ def is_embedded(backend) -> bool:
 def is_roundtrip(backend) -> bool:
     return backend.name == "roundtrip" if backend else False
 
-
-def _shape(
-    grid,
-    *dims: gt_common.Dimension,
-    extend: Optional[dict[gt_common.Dimension, int]] = None,
-):
-    if extend is None:
-        extend = {}
-    for d in dims:
-        if d not in extend.keys():
-            extend[d] = 0
-    return tuple(grid.size[dim] + extend[dim] for dim in dims)
-
-
-def random_mask(
-    grid: BaseGrid,
-    *dims: gt_common.Dimension,
-    dtype: Optional[npt.DTypeLike] = None,
-    extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> gt_common.Field:
-    rng = np.random.default_rng()
-    shape = _shape(grid, *dims, extend=extend)
-    arr = np.full(shape, False).flatten()
-    num_true = int(arr.size * 0.5)
-    arr[:num_true] = True
-    rng.shuffle(arr)
-    arr = np.reshape(arr, newshape=shape)
-    if dtype:
-        arr = arr.astype(dtype)
-    return as_field(dims, arr)
-
-
-def random_field(
-    grid,
-    *dims,
-    low: float = -1.0,
-    high: float = 1.0,
-    extend: Optional[dict[gt_common.Dimension, int]] = None,
-    dtype: Optional[npt.DTypeLike] = None,
-) -> gt_common.Field:
-    arr = np.random.default_rng().uniform(
-        low=low, high=high, size=_shape(grid, *dims, extend=extend)
-    )
-    if dtype:
-        arr = arr.astype(dtype)
-    return as_field(dims, arr)
-
-
-def zero_field(
-    grid: BaseGrid,
-    *dims: gt_common.Dimension,
-    dtype=wpfloat,
-    extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> gt_common.Field:
-    return as_field(dims, xp.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
-
-
-def constant_field(
-    grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat
-) -> gt_common.Field:
-    return as_field(
-        dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
-    )
-
-
-def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) -> gt_common.Field:
-    """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    buffer = field.ndarray
-    return numpy_to_1D_sparse_field(buffer, target_dim)
-
-
-def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_common.Field:
-    """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    old_shape = field.shape
-    assert len(old_shape) == 2
-    new_shape = (old_shape[0] * old_shape[1],)
-    return as_field((dim,), field.reshape(new_shape))
-
-
-def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -> gt_common.Field:
-    """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
-    buffer = field.ndarray
-    old_shape = buffer.shape
-    assert len(old_shape) >= 2
-    flattened_size = old_shape[0] * old_shape[1]
-    flattened_shape = (flattened_size,)
-    new_shape = flattened_shape + old_shape[2:]
-    newarray = buffer.reshape(new_shape)
-    return as_field(dims, newarray)
-
-
-def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
-    """Convert a (n-1)-D flattened (Felix-style) sparse field back to a n-D sparse field."""
-    old_shape = np.asarray(field).shape
-    new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
-    return np.asarray(field).reshape(new_shape)
 
 
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:

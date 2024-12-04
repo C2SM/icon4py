@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zer
     init_two_cell_kdim_fields_with_zero_wp,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
+from icon4py.model.testing.helpers import StencilTest, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 

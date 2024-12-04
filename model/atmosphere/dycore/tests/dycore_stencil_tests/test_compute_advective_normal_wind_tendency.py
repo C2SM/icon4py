@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tend
     compute_advective_normal_wind_tendency,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,

@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,

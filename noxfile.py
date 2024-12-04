@@ -86,4 +86,4 @@ commands =
     pytest -v -m "not slow_tests" --datatest {posargs}
 
 
-addopts = ["-p", "icon4py.model.common.test_utils.pytest_config"]
+addopts = ["-p", "icon4py.model.testing.pytest_config"]
