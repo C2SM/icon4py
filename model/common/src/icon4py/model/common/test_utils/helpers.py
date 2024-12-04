@@ -132,7 +132,7 @@ def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) 
 
 
 def numpy_to_1D_sparse_field(
-    field: np.ndarray, dim: gt_common.Dimension, backend=None
+    field: field_alloc.NDArray, dim: gt_common.Dimension, backend=None
 ) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
     old_shape = field.shape
