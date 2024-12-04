@@ -187,7 +187,7 @@ def geographical_to_cartesian_on_vertex(
 
 
 @gtx.field_operator
-def dot_product(
+def dot_product_on_edges(
     x1: fa.EdgeField[ta.wpfloat],
     x2: fa.EdgeField[ta.wpfloat],
     y1: fa.EdgeField[ta.wpfloat],
@@ -200,7 +200,20 @@ def dot_product(
 
 
 @gtx.field_operator
-def cross_product(
+def dot_product_on_cells(
+    x1: fa.CellField[ta.wpfloat],
+    x2: fa.CellField[ta.wpfloat],
+    y1: fa.CellField[ta.wpfloat],
+    y2: fa.CellField[ta.wpfloat],
+    z1: fa.CellField[ta.wpfloat],
+    z2: fa.CellField[ta.wpfloat],
+) -> fa.CellField[ta.wpfloat]:
+    """Compute dot product of cartesian vectors (x1, y1, z1) * (x2, y2, z2)"""
+    return x1 * x2 + y1 * y2 + z1 * z2
+
+
+@gtx.field_operator
+def cross_product_on_edges(
     x1: fa.EdgeField[ta.wpfloat],
     x2: fa.EdgeField[ta.wpfloat],
     y1: fa.EdgeField[ta.wpfloat],
@@ -216,7 +229,7 @@ def cross_product(
 
 
 @gtx.field_operator
-def norm2(
+def norm2_on_edges(
     x: fa.EdgeField[ta.wpfloat], y: fa.EdgeField[ta.wpfloat], z: fa.EdgeField[ta.wpfloat]
 ) -> fa.EdgeField[ta.wpfloat]:
     """
@@ -230,11 +243,29 @@ def norm2(
         norma
 
     """
-    return sqrt(dot_product(x, x, y, y, z, z))
+    return sqrt(dot_product_on_edges(x, x, y, y, z, z))
 
 
 @gtx.field_operator
-def normalize_cartesian_vector(
+def norm2_on_cells(
+    x: fa.CellField[ta.wpfloat], y: fa.CellField[ta.wpfloat], z: fa.CellField[ta.wpfloat]
+) -> fa.CellField[ta.wpfloat]:
+    """
+    Compute 2 norm of a cartesian vector (x, y, z)
+    Args:
+        x: x coordinate
+        y: y coordinate
+        z: z coordinate
+
+    Returns:
+        norma
+
+    """
+    return sqrt(dot_product_on_cells(x, x, y, y, z, z))
+
+
+@gtx.field_operator
+def normalize_cartesian_vector_on_edges(
     v_x: fa.EdgeField[ta.wpfloat], v_y: fa.EdgeField[ta.wpfloat], v_z: fa.EdgeField[ta.wpfloat]
 ) -> tuple[fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat], fa.EdgeField[ta.wpfloat]]:
     """
@@ -249,12 +280,12 @@ def normalize_cartesian_vector(
         normalized vector
 
     """
-    norm = norm2(v_x, v_y, v_z)
+    norm = norm2_on_edges(v_x, v_y, v_z)
     return v_x / norm, v_y / norm, v_z / norm
 
 
 @gtx.field_operator
-def invert(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
+def invert_edge_field(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
     """
     Invert values.
     Args:
@@ -267,13 +298,13 @@ def invert(f: fa.EdgeField[ta.wpfloat]) -> fa.EdgeField[ta.wpfloat]:
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def compute_inverse(
+def compute_inverse_on_edges(
     f: fa.EdgeField[ta.wpfloat],
     f_inverse: fa.EdgeField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
 ):
-    invert(f, out=f_inverse, domain={dims.EdgeDim: (horizontal_start, horizontal_end)})
+    invert_edge_field(f, out=f_inverse, domain={dims.EdgeDim: (horizontal_start, horizontal_end)})
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -389,8 +420,8 @@ def cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
     y = u * cos_lon - v * sin_lat * sin_lon
     z = cos_lat * v
 
-    norm = norm2(x, y, z)
-    return x / norm, y / norm, y / norm
+    norm = norm2_on_edges(x, y, z)
+    return x / norm, y / norm, z / norm
 
 
 @gtx.program
@@ -412,6 +443,60 @@ def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_edges(
         v,
         out=(x, y, z),
         domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@gtx.field_operator
+def cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
+    lat: fa.CellField[ta.wpfloat],
+    lon: fa.CellField[ta.wpfloat],
+    u: fa.CellField[ta.wpfloat],
+    v: fa.CellField[ta.wpfloat],
+) -> tuple[fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat], fa.CellField[ta.wpfloat]]:
+    """
+    Compute cartesian coordinates form zonal an meridonal components at position (lat, lon)
+    Args:
+        lat: latitude
+        lon: longitude
+        u: zonal component
+        v: meridional component
+
+    Returns:
+        x, y, z cartesian components
+
+    """
+    cos_lat = cos(lat)
+    sin_lat = sin(lat)
+    cos_lon = cos(lon)
+    sin_lon = sin(lon)
+
+    x = -u * sin_lon - v * sin_lat * cos_lon
+    y = u * cos_lon - v * sin_lat * sin_lon
+    z = cos_lat * v
+
+    norm = norm2_on_cells(x, y, z)
+    return x / norm, y / norm, z / norm
+
+
+@gtx.program
+def compute_cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
+    cell_lat: fa.CellField[ta.wpfloat],
+    cell_lon: fa.CellField[ta.wpfloat],
+    u: fa.CellField[ta.wpfloat],
+    v: fa.CellField[ta.wpfloat],
+    x: fa.CellField[ta.wpfloat],
+    y: fa.CellField[ta.wpfloat],
+    z: fa.CellField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+):
+    cartesian_coordinates_from_zonal_and_meridional_components_on_cells(
+        cell_lat,
+        cell_lon,
+        u,
+        v,
+        out=(x, y, z),
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -443,4 +528,4 @@ def arc_length(
         arc length
 
     """
-    return radius * arccos(dot_product(x0, x1, y0, y1, z0, z1))
+    return radius * arccos(dot_product_on_edges(x0, x1, y0, y1, z0, z1))
