@@ -9,7 +9,6 @@ import pathlib
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
-import pytest
 
 import icon4py.model.common.grid.grid_manager as gm
 from icon4py.model.common import dimension as dims
@@ -164,8 +163,3 @@ def get_grid_geometry(
             str(resolve_full_grid_file_name(grid_file))
         )
     return grid_geometries[register_name]
-
-
-@pytest.fixture
-def grid(request):
-    return request.param

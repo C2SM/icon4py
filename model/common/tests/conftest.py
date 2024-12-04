@@ -15,7 +15,6 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     decomposition_info,
     experiment,
 )
-from icon4py.model.common.test_utils.grid_utils import grid  # noqa: F401 # fixtures
 from icon4py.model.common.test_utils.helpers import backend  # noqa: F401 # fixtures
 
 
