@@ -15,7 +15,7 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
-from icon4py.model.common.utils.gt4py_field_allocation import NDArray
+from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 
 def compute_c_lin_e(
