@@ -82,7 +82,7 @@ def construct_icon_grid(
     e2c2e = adjust_fortran_indices(e2c2e, offset)
 
     # stacked arrays
-    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c.ndarray))
+    c2e2c0 = xp.column_stack((xp.asarray(range(c2e2c.shape[0])), c2e2c))
     e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e.ndarray))
 
     config = base.GridConfig(
