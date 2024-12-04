@@ -19,6 +19,9 @@ from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
+    init_cell_kdim_field_with_zero_vp,
+)
 
 from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
@@ -26,8 +29,23 @@ from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import 
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation,
 )
+from icon4py.model.atmosphere.dycore.stencils.set_theta_v_prime_ic_at_lower_boundary import (
+    set_theta_v_prime_ic_at_lower_boundary,
+)
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
+    extrapolate_temporally_exner_pressure,
+)
 from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     add_analysis_increments_to_vn,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_first_vertical_derivative import (
+    compute_first_vertical_derivative,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
+    interpolate_to_half_levels_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import (
+    interpolate_to_surface,
 )
 from icon4py.model.atmosphere.dycore.stencils.add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn,
@@ -471,6 +489,15 @@ class SolveNonhydro:
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend)
         self._compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(self._backend)
         self._update_theta_v = update_theta_v.with_backend(self._backend)
+        self._compute_first_vertical_derivative = (
+            compute_first_vertical_derivative.with_backend(self._backend)
+        )
+        self._interpolate_to_half_levels_vp = (
+            interpolate_to_half_levels_vp.with_backend(self._backend)
+        )
+        self._interpolate_to_surface = (
+            interpolate_to_surface.with_backend(self._backend)
+        )
         self._init_two_cell_kdim_fields_with_zero_vp = (
             init_two_cell_kdim_fields_with_zero_vp.with_backend(self._backend)
         )
@@ -503,6 +530,12 @@ class SolveNonhydro:
             compute_horizontal_gradient_of_exner_pressure_for_multiple_levels.with_backend(
                 self._backend
             )
+        )
+        self._extrapolate_temporally_exner_pressure = (
+            extrapolate_temporally_exner_pressure.with_backend(self._backend)
+        )
+        self._set_theta_v_prime_ic_at_lower_boundary = (
+            set_theta_v_prime_ic_at_lower_boundary.with_backend(self._backend)
         )
         self._compute_hydrostatic_correction_term = (
             compute_hydrostatic_correction_term.with_backend(self._backend)
@@ -580,6 +613,9 @@ class SolveNonhydro:
             update_dynamical_exner_time_increment.with_backend(self._backend)
         )
         self._init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
+            self._backend
+        )
+        self._init_cell_kdim_field_with_zero_vp = init_cell_kdim_field_with_zero_vp.with_backend(
             self._backend
         )
         self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(self._backend)
@@ -994,7 +1030,20 @@ class SolveNonhydro:
         #  - $\exnerprime{\n}{\c}{\k}$ : exner - exner_ref_mc
         #  - $\exnerprime{\n-1}{\c}{\k}$ : exner_pr
         #
-        self._predictor_stencils_2_3(
+        #self._predictor_stencils_2_3(
+        #    exner_exfac=self._metric_state_nonhydro.exner_exfac,
+        #    exner=prognostic_state[nnow].exner,
+        #    exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
+        #    exner_pr=diagnostic_state_nh.exner_pr,
+        #    z_exner_ex_pr=self.z_exner_ex_pr,
+        #    horizontal_start=self._start_cell_lateral_boundary_level_3,
+        #    horizontal_end=self._end_cell_halo,
+        #    vertical_start=0,
+        #    vertical_end=self._grid.num_levels + 1,
+        #    offset_provider={},
+        #)
+
+        self._extrapolate_temporally_exner_pressure(
             exner_exfac=self._metric_state_nonhydro.exner_exfac,
             exner=prognostic_state[nnow].exner,
             exner_ref_mc=self._metric_state_nonhydro.exner_ref_mc,
@@ -1003,6 +1052,15 @@ class SolveNonhydro:
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
+            vertical_end=self._grid.num_levels,
+            offset_provider={},
+        )
+
+        self._init_cell_kdim_field_with_zero_wp(
+            field_with_zero_wp=self.z_exner_ex_pr,
+            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            horizontal_end=self._end_cell_halo,
+            vertical_start=self._grid.num_levels,
             vertical_end=self._grid.num_levels + 1,
             offset_provider={},
         )
@@ -1033,17 +1091,50 @@ class SolveNonhydro:
             #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
             #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
             #
-            self._predictor_stencils_4_5_6(
-                wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
-                z_exner_ex_pr=self.z_exner_ex_pr,
-                z_exner_ic=self.z_exner_ic,
+            #self._predictor_stencils_4_5_6(
+            #    wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
+            #    z_exner_ex_pr=self.z_exner_ex_pr,
+            #    z_exner_ic=self.z_exner_ic,
+            #    wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
+            #    inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
+            #    z_dexner_dz_c_1=self.z_dexner_dz_c_1,
+            #    horizontal_start=self._start_cell_lateral_boundary_level_3,
+            #    horizontal_end=self._end_cell_halo,
+            #    vertical_start=max(1, self._vertical_params.nflatlev),
+            #    vertical_end=self._grid.num_levels + 1,
+            #    offset_provider=self._grid.offset_providers,
+            #)
+
+            self._interpolate_to_surface(
+                wgtfacq_c=self._metric_state_nonhydro.wgtfacq_c,
+                interpolant=self.z_exner_ex_pr,
+                interpolation_to_surface=self.z_exner_ic,
+                horizontal_start=self._start_cell_lateral_boundary_level_3,
+                horizontal_end=self._end_cell_halo,
+                vertical_start=self._grid.num_levels,
+                vertical_end=self._grid.num_levels + 1,
+                offset_provider=self._grid.offset_providers,
+            )
+
+            self._interpolate_to_half_levels_vp(
                 wgtfac_c=self._metric_state_nonhydro.wgtfac_c,
+                interpolant=self.z_exner_ex_pr,
+                interpolation_to_half_levels_vp=self.z_exner_ic,
+                horizontal_start=self._start_cell_lateral_boundary_level_3,
+                horizontal_end=self._end_cell_halo,
+                vertical_start=max(1, self._vertical_params.nflatlev),
+                vertical_end=self._grid.num_levels,
+                offset_provider=self._grid.offset_providers,
+            )
+
+            self._compute_first_vertical_derivative(
+                z_exner_ic=self.z_exner_ic,
                 inv_ddqz_z_full=self._metric_state_nonhydro.inv_ddqz_z_full,
                 z_dexner_dz_c_1=self.z_dexner_dz_c_1,
                 horizontal_start=self._start_cell_lateral_boundary_level_3,
                 horizontal_end=self._end_cell_halo,
                 vertical_start=max(1, self._vertical_params.nflatlev),
-                vertical_end=self._grid.num_levels + 1,
+                vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
 
@@ -1076,17 +1167,24 @@ class SolveNonhydro:
         )
 
         # Perturbation theta at top and surface levels
-        self._predictor_stencils_11_lower_upper(
-            wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
+        self._init_cell_kdim_field_with_zero_vp(
+            field_with_zero_vp=self.z_theta_v_pr_ic,
+            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            horizontal_end=self._end_cell_halo,
+            vertical_start=0,
+            vertical_end=1,
+            offset_provider=self._grid.offset_providers,
+        )
+
+        self._set_theta_v_prime_ic_at_lower_boundary(
+            wgtfacq_c=self._metric_state_nonhydro.wgtfacq_c,
             z_rth_pr=self.z_rth_pr_2,
             theta_ref_ic=self._metric_state_nonhydro.theta_ref_ic,
             z_theta_v_pr_ic=self.z_theta_v_pr_ic,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
-            k_field=self.k_field,
-            nlev=self._grid.num_levels,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
-            vertical_start=0,
+            vertical_start=self._grid.num_levels,
             vertical_end=self._grid.num_levels + 1,
             offset_provider=self._grid.offset_providers,
         )
