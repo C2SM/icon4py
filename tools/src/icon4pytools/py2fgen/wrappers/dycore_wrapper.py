@@ -63,7 +63,7 @@ from icon4py.model.common.test_utils.helpers import (
     flatten_first_two_dims,
     zero_field,
 )
-from icon4py.model.common.utils import PredictorCorrectorPair, TimeStepPair
+from icon4py.model.common import utils import as common_utils
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.settings import backend, device
