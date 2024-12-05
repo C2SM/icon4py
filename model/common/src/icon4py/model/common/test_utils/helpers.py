@@ -108,12 +108,10 @@ def zero_field(
     grid: BaseGrid,
     *dims: gt_common.Dimension,
     dtype=wpfloat,
-    extend: Optional[dict[gt_common.Dimension, int]] = None,
     backend=None,
 ) -> gt_common.Field:
-    return constructors.zeros(
-        dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype), allocator=backend
-    )
+    field_domain = {dim: (0, grid.size[dim]) for dim in dims}
+    return constructors.zeros(field_domain, dtype=dtype, allocator=backend)
 
 
 def constant_field(
