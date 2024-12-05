@@ -225,7 +225,7 @@ def _compute_geofac_grg(
             )
         )
     )
-    inverse_neighbor = create_inverse_neighbor_index(e2c, c2e)
+    inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
     for i in range(primal_normal_ec.shape[2]):  # (0,1)
 
         for k in range(e2c.shape[1]):#(0,1)
@@ -262,7 +262,7 @@ def compute_geofac_grg(
     array_ns: ModuleType = np,
 ) -> tuple[alloc.NDArray, alloc.NDArray]:
     primal_normal_ec = functools.partial(_compute_primal_normal_ec, array_ns=array_ns)(
-        primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c, horizontal_start
+        primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c
     )
     return functools.partial(_compute_geofac_grg, array_ns=array_ns)(
         primal_normal_ec, geofac_div, c_lin_e, c2e, e2c, c2e2c, horizontal_start
@@ -377,6 +377,7 @@ def _weighting_factors(
     yloc: alloc.NDArray,
     xloc: alloc.NDArray,
     wgt_loc: ta.wpfloat,
+    array_ns: ModuleType = np
 ) -> np.ndarray:
     """
         Compute weighting factors.
