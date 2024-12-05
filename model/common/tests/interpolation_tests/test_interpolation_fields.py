@@ -11,7 +11,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-import icon4py.model.common.test_utils.helpers as test_helpers
+import icon4py.model.testing.helpers as test_helpers
 from icon4py.model.common import constants
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_lin_e,
@@ -27,8 +27,8 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_pos_on_tplane_e_x_y,
     compute_primal_normal_ec,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     download_ser_data,
     experiment,

@@ -10,10 +10,10 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_wgtfac_c import compute_wgtfac_c
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
+from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import fields as field_utils
 
 
 @pytest.mark.datatest

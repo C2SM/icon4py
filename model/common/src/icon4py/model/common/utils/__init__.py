@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-from . import gt4py_field_allocation
 from ._common import (
     DoubleBuffering,
     Pair,
@@ -17,6 +16,7 @@ from ._common import (
     chainable,
     named_property,
 )
+from . import fields, serialbox
 
 
 __all__ = [
@@ -29,5 +29,6 @@ __all__ = [
     # Functions
     "chainable",
     # Modules
-    "gt4py_field_allocation",
+    "fields",
+    "serialbox",
 ]

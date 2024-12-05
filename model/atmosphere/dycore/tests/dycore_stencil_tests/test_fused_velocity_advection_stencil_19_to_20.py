@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.test_utils.helpers import (
+from icon4py.model.testing.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,

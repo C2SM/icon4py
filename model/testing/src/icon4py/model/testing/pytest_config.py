@@ -12,7 +12,7 @@ import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
 import icon4py.model.common.settings as settings
-from icon4py.model.common.test_utils.datatest_utils import (
+from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
@@ -162,7 +162,7 @@ def pytest_generate_tests(metafunc):
 
                 grid_instance = SimpleGrid()
             elif selected_grid_type == "icon_grid":
-                from icon4py.model.common.test_utils.grid_utils import (
+                from icon4py.model.testing.grid_utils import (
                     get_grid_manager_for_experiment,
                 )
 
@@ -170,7 +170,7 @@ def pytest_generate_tests(metafunc):
                     REGIONAL_EXPERIMENT, backend=selected_backend
                 ).grid
             elif selected_grid_type == "icon_grid_global":
-                from icon4py.model.common.test_utils.grid_utils import (
+                from icon4py.model.testing.grid_utils import (
                     get_grid_manager_for_experiment,
                 )
 

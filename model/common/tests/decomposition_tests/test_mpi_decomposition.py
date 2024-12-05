@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.test_utils.helpers import constant_field
+from icon4py.model.testing.helpers import constant_field
 
 
 try:
@@ -25,7 +25,7 @@ from icon4py.model.common.decomposition.definitions import (
     create_exchange,
 )
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
+from icon4py.model.testing.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
     decomposition_info,
     download_ser_data,
@@ -35,7 +35,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # 
     metrics_savepoint,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.testing.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
     processor_props,
 )

@@ -11,7 +11,7 @@ import random
 
 import pytest
 
-from icon4py.model.common.test_utils.helpers import backend, grid  # noqa: F401 # fixtures
+from icon4py.model.testing.helpers import backend, grid  # noqa: F401 # fixtures
 
 
 @pytest.fixture

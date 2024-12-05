@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.common.test_utils import helpers, parallel_helpers
+from icon4py.model.testing import helpers, parallel_helpers
 
 from .. import utils
 

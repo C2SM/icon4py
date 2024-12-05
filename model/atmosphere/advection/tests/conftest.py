@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
+from icon4py.model.testing.helpers import (  # noqa : F401  # fixtures from test_utils
     backend,
     grid,
 )

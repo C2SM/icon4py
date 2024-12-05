@@ -11,8 +11,8 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.reference_funcs import (
+from icon4py.model.testing.helpers import random_field, zero_field
+from icon4py.model.testing.reference_funcs import (
     enhanced_smagorinski_factor_numpy,
 )
 

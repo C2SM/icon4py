@@ -12,7 +12,7 @@ from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusio
 from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils, helpers, parallel_helpers
+from icon4py.model.testing import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
 

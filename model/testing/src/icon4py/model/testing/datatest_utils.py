@@ -122,7 +122,7 @@ def get_datapath_for_experiment_advection(ranked_base_path, experiment=REGIONAL_
 
 def create_icon_serial_data_provider(datapath, processor_props):
     # note: this needs to be here, otherwise spack doesn't find serialbox
-    from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
+    from icon4py.model.common.utils.serialbox import IconSerialDataProvider
 
     return IconSerialDataProvider(
         fname_prefix="icon_pydycore",
@@ -134,7 +134,7 @@ def create_icon_serial_data_provider(datapath, processor_props):
 
 def create_icon_serial_data_provider_advection(datapath, processor_props):
     # note: this needs to be here, otherwise spack doesn't find serialbox
-    from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
+    from icon4py.model.common.utils.serialbox import IconSerialDataProvider
 
     return IconSerialDataProvider(
         fname_prefix="icon_pyadvection",

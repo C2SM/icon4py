@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_index_wi
     init_two_cell_kdim_fields_index_with_zero_vp,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, _shape, random_field
+from icon4py.model.testing.helpers import StencilTest, _shape, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 

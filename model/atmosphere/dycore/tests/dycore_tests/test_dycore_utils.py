@@ -12,7 +12,7 @@ from icon4py.model.atmosphere.dycore import dycore_utils
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.settings import backend
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.testing import helpers
 
 
 def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: float):

@@ -18,7 +18,7 @@ from icon4py.model.common.grid import (
     simple as simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
 
 
 def test_geometry_raises_for_unknown_field(backend):

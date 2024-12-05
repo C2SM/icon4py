@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_
     add_analysis_increments_from_data_assimilation,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.testing.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

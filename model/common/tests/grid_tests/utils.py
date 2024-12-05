@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.test_utils.datatest_utils import (
+from icon4py.model.testing.datatest_utils import (
     GRIDS_PATH,
     R02B04_GLOBAL,
     REGIONAL_EXPERIMENT,

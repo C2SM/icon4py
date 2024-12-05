@@ -20,11 +20,11 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.settings import backend
-from icon4py.model.common.test_utils import (
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import fields as field_utils
 
 from . import utils
 

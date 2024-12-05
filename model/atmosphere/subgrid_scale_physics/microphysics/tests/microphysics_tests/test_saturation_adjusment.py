@@ -16,8 +16,8 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
     tracer_state as tracers,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
+from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing.helpers import dallclose, zero_field
 
 
 @pytest.mark.parametrize(
