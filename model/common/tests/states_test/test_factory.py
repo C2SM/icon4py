@@ -179,26 +179,24 @@ def test_composite_field_source_get_all_fields(cell_coordinate_source, height_co
     composite = factory.CompositeSource(
         test_source, (cell_coordinate_source, height_coordinate_source)
     )
-    x = composite.get("foo")
-    assert isinstance(x, gtx.Field)
-    assert dims.CellDim in x.domain.dims
-    assert dims.KDim in x.domain.dims
-    x = composite.get("bar")
-    assert len(x.domain.dims) == 2
-    assert isinstance(x, gtx.Field)
-    assert dims.EdgeDim in x.domain.dims
-    assert dims.KDim in x.domain.dims
-    assert len(x.domain.dims) == 2
+    foo = composite.get("foo")
+    assert isinstance(foo, gtx.Field)
+    assert {dims.CellDim, dims.KDim}.issubset(foo.domain.dims)
 
-    x = composite.get("lon")
-    assert isinstance(x, gtx.Field)
-    assert dims.CellDim in x.domain.dims
-    assert len(x.domain.dims) == 1
+    bar = composite.get("bar")
+    assert len(bar.domain.dims) == 2
+    assert isinstance(bar, gtx.Field)
+    assert {dims.EdgeDim, dims.KDim}.issubset(bar.domain.dims)
 
-    x = composite.get("height_coordinate")
-    assert isinstance(x, gtx.Field)
-    assert dims.KDim in x.domain.dims
-    assert len(x.domain.dims) == 2
+    lon = composite.get("lon")
+    assert isinstance(lon, gtx.Field)
+    assert dims.CellDim in lon.domain.dims
+    assert len(lon.domain.dims) == 1
+
+    lat = composite.get("height_coordinate")
+    assert isinstance(lat, gtx.Field)
+    assert dims.KDim in lat.domain.dims
+    assert len(lat.domain.dims) == 2
 
 
 def test_composite_field_source_raises_upon_get_unknown_field(
