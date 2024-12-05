@@ -14,6 +14,7 @@ Creates a DaCe SDFG that fuses any GT4Py Program called by the decorated functio
 
 from __future__ import annotations
 
+import ctypes
 import hashlib
 import inspect
 import operator
@@ -128,8 +129,9 @@ def orchestrate(
                 # we first need to first sort the run-time arguments according to their definition
                 # order and also adding `None`s for the missing ones to make sure we don't use
                 # the wrong one by mistake.
-                ordered_kwargs = [kwargs[key] for key in dace_annotations if key in kwargs]
-                all_args = [*args, *ordered_kwargs]
+                ordered_kwargs = {key: kwargs[key] for key in dace_annotations if key in kwargs}
+                ordered_kwargs_v = list(ordered_kwargs.values())
+                all_args = [*args, *ordered_kwargs_v]
                 compile_time_args_kwargs = {
                     k: arg
                     for arg, (k, v) in zip(all_args, dace_annotations.items(), strict=True)
@@ -162,7 +164,7 @@ def orchestrate(
                 # update the args/kwargs with runtime related values, such as
                 # concretized symbols, runtime connectivity tables, GHEX C++ pointers, and DaCe structures pointers
                 updated_args, updated_kwargs = mod_xargs_for_dace_structures(
-                    dace_annotations, fuse_func.__annotations__, args, kwargs
+                    dace_annotations, fuse_func.__annotations__, args, ordered_kwargs
                 )
                 updated_kwargs = {
                     **updated_kwargs,
@@ -178,7 +180,7 @@ def orchestrate(
                 updated_kwargs = {
                     **updated_kwargs,
                     **dace_symbols_concretization(
-                        grid, dace_annotations, fuse_func.__annotations__, args, kwargs
+                        grid, dace_annotations, fuse_func.__annotations__, args, ordered_kwargs
                     ),
                 }
 
@@ -342,19 +344,30 @@ if dace:
                 if hasattr(fuse_func_type_hints[param.name], "__origin__"):
                     if fuse_func_type_hints[param.name].__origin__ is gtx.Field:
                         dims_ = fuse_func_type_hints[param.name].__args__[0].__args__
-                        dace_dims = [
-                            orchestration_dtypes.gt4py_dim_to_dace_symbol(dim_) for dim_ in dims_
-                        ]
                         dtype_ = fuse_func_type_hints[param.name].__args__[1]
+                        shape_ = [
+                            dace.symbol(f"{param.name}_{dim_.value.lower()}_shape_sym")
+                            for dim_ in dims_
+                        ]
+                        strides_ = [
+                            dace.symbol(f"{param.name}_{dim_.value.lower()}_stride_sym")
+                            for dim_ in dims_
+                        ]
                         dace_annotations[param.name] = dace.data.Array(
                             dtype=orchestration_dtypes.DACE_PRIMITIVE_DTYPES[
                                 orchestration_dtypes.ICON4PY_PRIMITIVE_DTYPES.index(dtype_)
                             ],
-                            shape=dace_dims,
+                            shape=shape_,  # No need to concretize them: automatically inferred by DaCe at runtime
+                            strides=strides_,  # No need to concretize them: automatically inferred by DaCe at runtime
                         )
+                    # elif fuse_func_type_hints[param.name].__origin__ is TimeStepPair and hasattr(fuse_func_type_hints[param.name].__args__[0], "__dataclass_fields__"):
+                    #     dace_annotations[param.name] = dace.data.Structure(
+                    #         orchestration_dtypes.dace_structure_dict(fuse_func_type_hints[param.name].__args__[0]),
+                    #         name=fuse_func_type_hints[param.name].__args__[0].__name__,
+                    #     )
                     else:
                         raise ValueError(
-                            f"The type hint [{fuse_func_type_hints[param.name]}] is not supported."
+                            f"The type hint {fuse_func_type_hints[param.name]} is not supported."
                         )
                 elif hasattr(fuse_func_type_hints[param.name], "__dataclass_fields__"):
                     dace_annotations[param.name] = dace.data.Structure(
@@ -372,7 +385,7 @@ if dace:
                     ]
                 else:
                     raise ValueError(
-                        f"The type hint [{fuse_func_type_hints[param.name]}] is not supported."
+                        f"The type hint {fuse_func_type_hints[param.name]} is not supported."
                     )
             else:
                 dace_annotations[param.name] = dace.compiletime
@@ -547,14 +560,17 @@ if dace:
             },
             # GHEX C++ ptrs
             "__context_ptr": expose_cpp_ptr(exchange_obj._context)
-            if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
+            if exchange_obj is not None
+            and not isinstance(exchange_obj, decomposition.SingleNodeExchange)
             else 0,
             "__comm_ptr": expose_cpp_ptr(exchange_obj._comm)
-            if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
+            if exchange_obj is not None
+            and not isinstance(exchange_obj, decomposition.SingleNodeExchange)
             else 0,
             **{
                 f"__pattern_{dim.value}Dim_ptr": expose_cpp_ptr(exchange_obj._patterns[dim])
-                if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
+                if exchange_obj is not None
+                and not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
                 for dim in dims.global_dimensions.values()
             },
@@ -562,7 +578,8 @@ if dace:
                 f"__domain_descriptor_{dim.value}Dim_ptr": expose_cpp_ptr(
                     exchange_obj._domain_descriptors[dim].__wrapped__
                 )
-                if not isinstance(exchange_obj, decomposition.SingleNodeExchange)
+                if exchange_obj is not None
+                and not isinstance(exchange_obj, decomposition.SingleNodeExchange)
                 else 0
                 for dim in dims.global_dimensions.values()
             },
@@ -605,13 +622,34 @@ if dace:
             for k_v in flattened_xargs_type_value:
                 if k_v[0] is not dace_cls:
                     continue
-                for member in orig_cls.__dataclass_fields__.keys():
-                    for stride in range(getattr(k_v[1], member).ndarray.ndim):
-                        concretized_symbols[
-                            orchestration_dtypes.stride_symbol_name_from_field(
-                                orig_cls, member, stride
-                            )
-                        ] = get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride)
+                for member in dace_cls.members:
+                    attr = getattr(k_v[1], member)
+                    if attr is None:
+                        continue
+                    if hasattr(getattr(k_v[1], member), "ndarray"):
+                        ndarray = getattr(k_v[1], member).ndarray
+                        for axis in range(ndarray.ndim):
+                            concretized_symbols[
+                                dace_cls.members[member].shape[axis].name
+                            ] = ndarray.shape[axis]
+                            concretized_symbols[
+                                orchestration_dtypes.symbol_name_for_field(
+                                    dace_cls.name, member, "stride", axis
+                                )
+                            ] = get_stride_from_numpy_to_dace(ndarray, axis)
+                    else:
+                        for m_ in dace_cls.members[member].members:
+                            ndarray = getattr(getattr(k_v[1], member), m_).ndarray
+                            for axis in range(ndarray.ndim):
+                                concretized_symbols[
+                                    dace_cls.members[member].members[m_].shape[axis].name
+                                ] = ndarray.shape[axis]
+                                concretized_symbols[
+                                    orchestration_dtypes.symbol_name_for_field(
+                                        dace_cls.name, member, "stride", axis, m_
+                                    )
+                                ] = get_stride_from_numpy_to_dace(ndarray, axis)
+
             return concretized_symbols
 
         modified_fuse_func_orig_annotations = modified_orig_annotations(
@@ -630,14 +668,7 @@ if dace:
                 _concretize_symbols_for_dace_structure(annotation_, annotation_orig_)
             )
 
-        return {
-            **{
-                "CellDim_sym": grid.offset_providers["C2E"].table.shape[0],
-                "EdgeDim_sym": grid.offset_providers["E2C"].table.shape[0],
-                "KDim_sym": grid.num_levels,
-            },
-            **concretize_symbols_for_dace_structure,
-        }
+        return concretize_symbols_for_dace_structure
 
     def mod_xargs_for_dace_structures(
         dace_annotations: dict[str, Any],
@@ -662,8 +693,20 @@ if dace:
                 if k_v[0] is dace_cls:
                     mod_args_kwargs[i] = dace_cls.dtype._typeclass.as_ctypes()(
                         **{
-                            member: getattr(k_v[1], member).data_ptr()
-                            for member in orig_cls.__dataclass_fields__.keys()
+                            member: attr.data_ptr()
+                            if (hasattr(attr, "data_ptr"))
+                            else ctypes.pointer(
+                                k_v[0]
+                                .members[member]
+                                .dtype._typeclass.as_ctypes()(
+                                    **{
+                                        m_: getattr(getattr(k_v[1], member), m_).data_ptr()
+                                        for m_ in k_v[0].members[member].members
+                                    }
+                                )
+                            )
+                            for member in dace_cls.members
+                            if (attr := getattr(k_v[1], member)) is not None
                         }
                     )
 
@@ -686,10 +729,18 @@ if dace:
 
         for i, mod_arg_kwarg in enumerate(mod_args_kwargs):
             if hasattr(mod_arg_kwarg, "_fields_"):
-                mod_arg_kwarg.descriptor = dace.data.Structure(
-                    orchestration_dtypes.dace_structure_dict(orig_args_kwargs[i].__class__),
-                    name=orig_args_kwargs[i].__class__.__name__,
-                )
+                dace_data_descriptor = None
+                for v in dace_annotations.values():
+                    if (
+                        type(v) is dace.data.Structure
+                        and v.name == orig_args_kwargs[i].__class__.__name__
+                    ):
+                        dace_data_descriptor = v
+                if not dace_data_descriptor:
+                    raise ValueError(
+                        f"DaCe data descriptor for {orig_args_kwargs[i].__class__.__name__} not found."
+                    )
+                mod_arg_kwarg.descriptor = dace_data_descriptor
 
         return tuple(mod_args_kwargs[0 : len(args)]), {
             k: v for k, v in zip(kwargs.keys(), mod_args_kwargs[len(args) :], strict=True)

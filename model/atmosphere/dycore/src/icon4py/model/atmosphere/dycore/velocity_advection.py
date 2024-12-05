@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import gt4py.next as gtx
-from gt4py.next import backend
+from gt4py.next import backend, int32
 
 import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -50,6 +50,7 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
+from icon4py.model.common.orchestration import decorator as dace_orchestration
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
@@ -67,6 +68,9 @@ class VelocityAdvection:
         backend: backend.Backend,
     ):
         self.grid: icon_grid.IconGrid = grid
+        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
+            self.grid.offset_providers
+        )
         self._backend = backend
         self.metric_state: dycore_states.MetricStateNonHydro = metric_state
         self.interpolation_state: dycore_states.InterpolationState = interpolation_state
@@ -81,45 +85,55 @@ class VelocityAdvection:
 
         self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._mo_math_divrot_rot_vertex_ri_dsl = mo_math_divrot_rot_vertex_ri_dsl.with_backend(
             self._backend
-        )
-        self._compute_tangential_wind = compute_tangential_wind.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._compute_tangential_wind = compute_tangential_wind.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._interpolate_vn_to_ie_and_compute_ekin_on_edges = (
             interpolate_vn_to_ie_and_compute_ekin_on_edges.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._interpolate_vt_to_interface_edges = interpolate_vt_to_interface_edges.with_backend(
             self._backend
-        )
-        self._fused_stencils_4_5 = velocity_stencils.fused_stencils_4_5.with_backend(self._backend)
-        self._extrapolate_at_top = velocity_stencils.extrapolate_at_top.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._fused_stencils_4_5 = velocity_stencils.fused_stencils_4_5.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
+        self._extrapolate_at_top = velocity_stencils.extrapolate_at_top.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_horizontal_advection_term_for_vertical_velocity = (
             compute_horizontal_advection_term_for_vertical_velocity.with_backend(self._backend)
-        )
-        self._interpolate_to_cell_center = interpolate_to_cell_center.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._interpolate_to_cell_center = interpolate_to_cell_center.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._fused_stencils_9_10 = velocity_stencils.fused_stencils_9_10.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._fused_stencils_11_to_13 = velocity_stencils.fused_stencils_11_to_13.with_backend(
             self._backend
-        )
-        self._fused_stencil_14 = velocity_stencils.fused_stencil_14.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._fused_stencil_14 = velocity_stencils.fused_stencil_14.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._interpolate_contravariant_vertical_velocity_to_full_levels = (
             interpolate_contravariant_vertical_velocity_to_full_levels.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._fused_stencils_16_to_17 = velocity_stencils.fused_stencils_16_to_17.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._add_extra_diffusion_for_w_con_approaching_cfl = (
             add_extra_diffusion_for_w_con_approaching_cfl.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_advective_normal_wind_tendency = (
             compute_advective_normal_wind_tendency.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl = (
             add_extra_diffusion_for_normal_wind_tendency_approaching_cfl.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
 
     def _allocate_local_fields(self):
         self.z_w_v = field_alloc.allocate_zero_field(
@@ -147,6 +161,9 @@ class VelocityAdvection:
             dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
         self.levmask = field_alloc.allocate_zero_field(
+            dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
+        )
+        self.levelmask = field_alloc.allocate_zero_field(
             dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
         self.vcfl_dsl = field_alloc.allocate_zero_field(
@@ -189,6 +206,7 @@ class VelocityAdvection:
         self._end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         self._end_cell_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
 
+    @dace_orchestration.orchestrate
     def run_predictor_step(
         self,
         vn_only: bool,
@@ -200,7 +218,8 @@ class VelocityAdvection:
         dtime: float,
         cell_areas: fa.CellField[float],
     ):
-        cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
+        cfl_w_limit = self.cfl_w_limit / dtime
+        scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - cfl_w_limit * dtime))
 
         if not vn_only:
             self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
@@ -357,10 +376,8 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
-            vertical_start=gtx.int32(
-                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
-            ),
-            vertical_end=gtx.int32(self.grid.num_levels - 3),
+            vertical_start=int32(max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1),
+            vertical_end=int32(self.grid.num_levels - 3),
             offset_provider={},
         )
 
@@ -407,10 +424,10 @@ class VelocityAdvection:
                 dtime=dtime,
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(
+                vertical_start=int32(
                     max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
                 ),
-                vertical_end=gtx.int32(self.grid.num_levels - 3),
+                vertical_end=int32(self.grid.num_levels - 3),
                 offset_provider=self.grid.offset_providers,
             )
 
@@ -452,23 +469,23 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=self._start_edge_nudging_level_2,
             horizontal_end=self._end_edge_local,
-            vertical_start=gtx.int32(
-                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
-            ),
-            vertical_end=gtx.int32(self.grid.num_levels - 4),
+            vertical_start=int32(max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1),
+            vertical_end=int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )
 
+    @dace_orchestration.dace_inhibitor
     def _update_levmask_from_cfl_clipping(self):
-        self.levmask = gtx.as_field(
+        self.levmask.ndarray[:] = gtx.as_field(
             domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
-        )
+        ).ndarray
 
     def _scale_factors_by_dtime(self, dtime):
         scaled_cfl_w_limit = self.cfl_w_limit / dtime
         scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - scaled_cfl_w_limit * dtime))
         return scaled_cfl_w_limit, scalfac_exdiff
 
+    @dace_orchestration.orchestrate
     def run_corrector_step(
         self,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
@@ -478,7 +495,8 @@ class VelocityAdvection:
         dtime: float,
         cell_areas: fa.CellField[float],
     ):
-        cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
+        cfl_w_limit = self.cfl_w_limit / dtime
+        scalfac_exdiff = self.scalfac_exdiff / (dtime * (0.85 - cfl_w_limit * dtime))
 
         self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
             p_cell_in=prognostic_state.w,
@@ -552,8 +570,8 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
-            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
-            vertical_end=gtx.int32(self.grid.num_levels - 3),
+            vertical_start=int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=int32(self.grid.num_levels - 3),
             offset_provider={},
         )
 
@@ -599,8 +617,8 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
-            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
-            vertical_end=gtx.int32(self.grid.num_levels - 4),
+            vertical_start=int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )
 
@@ -643,7 +661,21 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=self._start_edge_nudging_level_2,
             horizontal_end=self._end_edge_local,
-            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
-            vertical_end=gtx.int32(self.grid.num_levels - 4),
+            vertical_start=int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
+        )
+
+    def orchestration_uid(self) -> str:
+        members_to_disregard = [
+            "_backend",
+            "grid",
+            *[
+                name
+                for name in self.__dict__.keys()
+                if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
+            ],
+        ]
+        return dace_orchestration.generate_orchestration_uid(
+            self, members_to_disregard=members_to_disregard
         )
