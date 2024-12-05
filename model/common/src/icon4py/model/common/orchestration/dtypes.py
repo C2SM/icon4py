@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import fnmatch
 import sys
 from typing import Final, Optional, Type, Union, get_args, get_origin, get_type_hints
 
@@ -61,7 +62,7 @@ if dace:
         elif "khalf" == dim.value.lower():
             return KHalfDim_sym
         else:
-            raise ValueError(f"The dimension [{dim}] is not supported.")
+            raise ValueError(f"The dimension {dim} is not supported.")
 
     def symbol_name_for_field(
         cls: Type | str,
@@ -77,6 +78,12 @@ if dace:
 
     def is_optional_type(tp) -> bool:
         return get_origin(tp) is Union and type(None) in get_args(tp)
+
+    def get_matching_attr(obj, pattern):
+        for attr in dir(obj):
+            if fnmatch.fnmatch(attr, pattern):
+                return getattr(obj, attr)
+        raise AttributeError(f"No attribute matches the pattern {pattern!r}")
 
     def dace_structure_dict(cls: Type) -> dict[str, dace.data.Array]:
         """
@@ -130,9 +137,14 @@ if dace:
                         dace_symbols[f"{cls.__name__}_{member_name}_stride_1_sym"],
                     ],
                 )
-            elif type_.__origin__ is common_utils.PredictorCorrectorPair:
+            elif issubclass(type_.__origin__, common_utils.Pair):
                 dims_ = type_.__args__[0].__args__[0].__args__  # dimensions of the field
                 dtype_ = type_.__args__[0].__args__[1]  # data type of the field
+
+                pair_members = (
+                    get_matching_attr(type_, "*__first_attr_name"),
+                    get_matching_attr(type_, "*__second_attr_name"),
+                )
 
                 # Define DaCe Symbols: Field Sizes and Strides
                 dace_symbols = {
@@ -140,7 +152,7 @@ if dace:
                         cls, member_name, "size", axis, pair_member
                     ): gt4py_dim_to_dace_symbol(dims_[axis])
                     for axis in range(len(dims_))
-                    for pair_member in ("predictor", "corrector")
+                    for pair_member in pair_members
                 }
                 dace_symbols |= {
                     symbol_name_for_field(
@@ -149,38 +161,46 @@ if dace:
                         symbol_name_for_field(cls, member_name, "stride", axis, pair_member)
                     )
                     for axis in range(len(dims_))
-                    for pair_member in ("predictor", "corrector")
+                    for pair_member in pair_members
                 }
 
-                predictor = dace.data.Array(
+                first = dace.data.Array(
                     dtype=DACE_PRIMITIVE_DTYPES[ICON4PY_PRIMITIVE_DTYPES.index(dtype_)],
                     shape=[
-                        dace_symbols[f"{cls.__name__}_{member_name}_predictor_size_0_sym"],
-                        dace_symbols[f"{cls.__name__}_{member_name}_predictor_size_1_sym"],
+                        dace_symbols[f"{cls.__name__}_{member_name}_{pair_members[0]}_size_0_sym"],
+                        dace_symbols[f"{cls.__name__}_{member_name}_{pair_members[0]}_size_1_sym"],
                     ],
                     strides=[
-                        dace_symbols[f"{cls.__name__}_{member_name}_predictor_stride_0_sym"],
-                        dace_symbols[f"{cls.__name__}_{member_name}_predictor_stride_1_sym"],
+                        dace_symbols[
+                            f"{cls.__name__}_{member_name}_{pair_members[0]}_stride_0_sym"
+                        ],
+                        dace_symbols[
+                            f"{cls.__name__}_{member_name}_{pair_members[0]}_stride_1_sym"
+                        ],
                     ],
                 )
 
-                corrector = dace.data.Array(
+                second = dace.data.Array(
                     dtype=DACE_PRIMITIVE_DTYPES[ICON4PY_PRIMITIVE_DTYPES.index(dtype_)],
                     shape=[
-                        dace_symbols[f"{cls.__name__}_{member_name}_corrector_size_0_sym"],
-                        dace_symbols[f"{cls.__name__}_{member_name}_corrector_size_1_sym"],
+                        dace_symbols[f"{cls.__name__}_{member_name}_{pair_members[1]}_size_0_sym"],
+                        dace_symbols[f"{cls.__name__}_{member_name}_{pair_members[1]}_size_1_sym"],
                     ],
                     strides=[
-                        dace_symbols[f"{cls.__name__}_{member_name}_corrector_stride_0_sym"],
-                        dace_symbols[f"{cls.__name__}_{member_name}_corrector_stride_1_sym"],
+                        dace_symbols[
+                            f"{cls.__name__}_{member_name}_{pair_members[1]}_stride_0_sym"
+                        ],
+                        dace_symbols[
+                            f"{cls.__name__}_{member_name}_{pair_members[1]}_stride_1_sym"
+                        ],
                     ],
                 )
 
                 dace_structure_dict_[member_name] = dace.data.Structure(
-                    dict(
-                        predictor=predictor,
-                        corrector=corrector,
-                    ),
+                    {
+                        pair_members[0]: first,
+                        pair_members[1]: second,
+                    },
                     name=f"{cls.__name__}_{member_name}_Struct",
                 )
                 pass
