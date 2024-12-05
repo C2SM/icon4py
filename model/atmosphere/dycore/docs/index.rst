@@ -32,7 +32,7 @@ These pages present two categories of documentation:
 
    symbols_description
    _source/offset_providers
-   scidoc_parser
+   scidoc_processor
 
 
 Indices and tables
@@ -44,4 +44,4 @@ Indices and tables
 
 .. |csDocExample| replace:: :meth:`NonHydrostaticParams<icon4py.model.atmosphere.dycore.solve_nonhydro.NonHydrostaticParams>`
 .. |sciDocExample| replace:: :doc:`dycore_numerics_nonhydro`
-.. |sciDocParser| replace:: :doc:`scidoc_parser`
+.. |sciDocParser| replace:: :doc:`scidoc_processor`
