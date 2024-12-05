@@ -112,7 +112,7 @@ def zero_field(
     backend=None,
 ) -> gt_common.Field:
     return constructors.zeros(
-        dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtyoe=dtype), allocator=backend
+        dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype), allocator=backend
     )
 
 
