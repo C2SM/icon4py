@@ -74,6 +74,16 @@ mathjax3_config = {
     },
 }
 
+# -- Utterances config ----------------------------------------------------------
+comments_config = {
+   "utterances": {
+      "repo": "C2SM/icon4py",
+      "issue-term": "pathname",
+      "label": "documentation",
+      "optional": "config",
+   }
+}
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
