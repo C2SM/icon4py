@@ -21,14 +21,17 @@ classifiers = [
 ]
 dependencies = [
   "gt4py>=1.0.4",
-  "serialbox>=0.0.1"
+  'packaging>=20.0',
+  "serialbox>=0.0.1",
+  "typing-extensions>=4.11.0"
 ]
 description = "Shared code for the icon4py model."
-dynamic = ['version']
 license = {text = "BSD-3 License"}
 name = "icon4py-common"
 readme = "README.md"
 requires-python = ">=3.10"
+# bump-my-version marker:
+version = "0.0.6"
 
 [project.optional-dependencies]
 all = ["icon4py-common[distributed,io,dace]"]
@@ -39,8 +42,10 @@ io = [
   "icon4py-common[netcdf]",
   # external dependencies
   "cartopy>=0.22.0",
+  "cftime>=1.6.3",
   "datashader>=0.16.1",
   "holoviews>=1.16.0",
+  "numpy>=1.23.3",
   "scikit-learn>=1.4.0",
   # TODO [magdalena] there are failing tests starting from uxarray==2024.4.0: when a data file does not have
   # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
@@ -63,6 +68,17 @@ message = 'Bump icon4pytools version: {current_version} → {new_version}'
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
 serialize = ["{major}.{minor}.{patch}"]
 tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = '''
+# bump-my-version marker:
+version = "{current_version}"
+'''
+replace = '''
+# bump-my-version marker:
+version = "{new_version}"
+'''
 
 [[tool.bumpversion.files]]
 filename = "src/icon4py/model/common/__init__.py"
@@ -110,10 +126,8 @@ known-first-party = ['icon4py.model']
 known-third-party = ['gt4py', 'icon4py']
 
 # -- setuptools --
-[tool.setuptools]
-
-[tool.setuptools.dynamic]
-version = {attr = 'icon4py.model.common.__init__.__version__'}
-
 [tool.setuptools.package-data]
-'icon4py.model.common' = ['py.typed']
+'*' = ['*.in', '*.md', '*.rst', '*.txt', 'LICENSE', 'py.typed']
+
+[tool.setuptools.packages]
+find = {namespaces = true, where = ['src']}
