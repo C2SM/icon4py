@@ -502,7 +502,7 @@ class ProgramFieldProvider(FieldProvider):
     ) -> None:
         try:
             metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
-            dtype = metadata["dtype"]
+            dtype = metadata[list(metadata)[0]]["dtype"]
         except (ValueError, KeyError):
             dtype = ta.wpfloat
 
@@ -589,10 +589,18 @@ class NumpyFieldsProvider(FieldProvider):
         results = self._func(**args)
         ## TODO: can the order of return values be checked?
         results = (results,) if isinstance(results, xp.ndarray) else results
-        self._fields = {
-            k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
-            for i, k in enumerate(self.fields)
-        }
+        try:
+            self._fields = {
+                # k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
+                k: gtx.as_field((self._dims), results[i], allocator=backend)
+                for i, k in enumerate(self.fields)
+            }
+        except:
+            self._fields = {
+                # k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
+                k: gtx.as_field((self._dims,), results[i], allocator=backend)
+                for i, k in enumerate(self.fields)
+            }
 
     def _validate_dependencies(self):
         func_signature = inspect.signature(self._func)

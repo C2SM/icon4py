@@ -598,7 +598,7 @@ def compute_ddxt_z_half_e(
     )
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_ddxn_z_full(
     ddxnt_z_half_e: fa.EdgeKField[wpfloat],
     ddxn_z_full: fa.EdgeKField[wpfloat],
@@ -670,8 +670,8 @@ def _compute_maxslp_maxhgtd(
 def compute_maxslp_maxhgtd(
     ddxn_z_full: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], wpfloat],
     dual_edge_length: gtx.Field[gtx.Dims[dims.EdgeDim], wpfloat],
-    z_maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
-    z_maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxslp: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
+    maxhgtd: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -695,7 +695,7 @@ def compute_maxslp_maxhgtd(
     _compute_maxslp_maxhgtd(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
-        out=(z_maxslp, z_maxhgtd),
+        out=(maxslp, maxhgtd),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
@@ -1049,7 +1049,7 @@ def _compute_pg_exdist_dsl(
     return pg_exdist_dsl
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program
 def compute_pg_exdist_dsl(
     z_ifc_sliced: fa.CellField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
