@@ -108,9 +108,18 @@ def zero_field(
     grid: BaseGrid,
     *dims: gt_common.Dimension,
     dtype=wpfloat,
+    extend: Optional[dict[gt_common.Dimension, int]] = None,
     backend=None,
 ) -> gt_common.Field:
-    field_domain = {dim: (0, grid.size[dim]) for dim in dims}
+    field_domain = {
+        dim: (
+            0,
+            grid.size[dim] + extend[dim]
+            if (extend is not None) and (dim in extend.keys())
+            else grid.size[dim],
+        )
+        for dim in dims
+    }
     return constructors.zeros(field_domain, dtype=dtype, allocator=backend)
 
 
