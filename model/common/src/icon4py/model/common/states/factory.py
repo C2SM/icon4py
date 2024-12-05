@@ -199,7 +199,7 @@ class FieldSource(GridProvider, Protocol):
         for dependency in provider.dependencies:
             if not (dependency in self._providers.keys() or self._provided_by_source(dependency)):
                 raise ValueError(
-                    f"Missing dependency: '{dependency}' not found in registered of sources {self.__class__}"
+                    f"Missing dependency: '{dependency}' in registered of sources {self.__class__}"
                 )
 
         for field in provider.fields:
