@@ -59,6 +59,10 @@ EDGE_NORMAL_VERTEX_U: Final[str] = "eastward_component_of_edge_normal_on_vertex"
 EDGE_NORMAL_VERTEX_V: Final[str] = "northward_component_of_edge_normal_on_vertex"
 EDGE_NORMAL_CELL_U: Final[str] = "eastward_component_of_edge_normal_on_cell"
 EDGE_NORMAL_CELL_V: Final[str] = "northward_component_of_edge_normal_on_cell"
+EDGE_CENTER_X:Final[str] = "x_coordinate_of_edge_center"
+EDGE_CENTER_Y:Final[str] = "y_coordinate_of_edge_center"
+EDGE_CENTER_Z:Final[str] = "z_coordinate_of_edge_center"
+
 
 attrs: dict[str, model.FieldMetaData] = {
     CELL_LAT: dict(
@@ -318,6 +322,31 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_vertex%edge_orientation",
         dtype=ta.wpfloat,
     ),
+    EDGE_CENTER_X: dict(
+        standard_name=EDGE_CENTER_X,
+        long_name="x component of cartesian coordinates of edge centers",
+        units="1",
+        dims=(dims.EdgeDim,),
+        icon_var_name="t_grid_edges%cartesian_center%x(1)",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_CENTER_Y: dict(
+        standard_name=EDGE_CENTER_Y,
+        long_name="x component of cartesian coordinates of edge centers",
+        units="1",
+        dims=(dims.EdgeDim,),
+        icon_var_name="t_grid_edges%cartesian_center%x(2)",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_CENTER_Z: dict(
+        standard_name=EDGE_CENTER_Z,
+        long_name="z component of cartesian coordinates of edge centers",
+        units="1",
+        dims=(dims.EdgeDim,),
+        icon_var_name="t_grid_edges%cartesian_center%x(3)",
+        dtype=ta.wpfloat,
+    ),
+
 }
 
 

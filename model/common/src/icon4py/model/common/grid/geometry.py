@@ -26,6 +26,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
+from icon4py.model.common.math.helpers import geographical_to_cartesian_on_edges
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
 
@@ -436,6 +437,18 @@ class GridGeometry(factory.FieldSource):
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
         )
         self.register_provider(tangent_cell_wrapper)
+        cartesian_edge_centers = factory.FieldOperatorProvider(
+            func=geographical_to_cartesian_on_edges.with_backend(self.backend),
+            domain=(dims.EdgeDim, ),
+            fields={attrs.EDGE_CENTER_X:attrs.EDGE_CENTER_X,
+                    attrs.EDGE_CENTER_Y:attrs.EDGE_CENTER_Y,
+                    attrs.EDGE_CENTER_Z:attrs.EDGE_CENTER_Z},
+            deps = {
+                "lat":attrs.EDGE_LAT,
+                "lon": attrs.EDGE_LON,
+            }
+        )
+        self.register_provider(cartesian_edge_centers)
 
     def _inverse_field_provider(self, field_name: str):
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])

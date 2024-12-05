@@ -12,7 +12,7 @@ from gt4py.next import sin, where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2C2V, E2V, EdgeDim
 from icon4py.model.common.math.helpers import (
-    arc_length,
+    arc_length_on_edges,
     cross_product_on_edges,
     geographical_to_cartesian_on_edges,
     geographical_to_cartesian_on_vertex,
@@ -358,7 +358,7 @@ def cell_center_arc_distance(
     x0, y0, z0 = geographical_to_cartesian_on_edges(lat_neighbor_0, lon_neighbor_0)
     x1, y1, z1 = geographical_to_cartesian_on_edges(lat_neighbor_1, lon_neighbor_1)
     # (xi, yi, zi) are normalized by construction
-    arc = arc_length(x0, x1, y0, y1, z0, z1, radius)
+    arc = arc_length_on_edges(x0, x1, y0, y1, z0, z1, radius)
     return arc
 
 
@@ -402,7 +402,7 @@ def arc_distance_of_far_edges_in_diamond(
     z3 = z(E2C2V[3])
     # (xi, yi, zi) are normalized by construction
 
-    far_vertex_vertex_length = arc_length(x2, x3, y2, y3, z2, z3, radius)
+    far_vertex_vertex_length = arc_length_on_edges(x2, x3, y2, y3, z2, z3, radius)
     return far_vertex_vertex_length
 
 
@@ -436,7 +436,7 @@ def edge_length(
     z1 = z(E2V[1])
     # (xi, yi, zi) are normalized by construction
 
-    length = arc_length(x0, x1, y0, y1, z0, z1, radius)
+    length = arc_length_on_edges(x0, x1, y0, y1, z0, z1, radius)
     return length
 
 
