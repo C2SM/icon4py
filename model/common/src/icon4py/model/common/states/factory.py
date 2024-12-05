@@ -281,7 +281,7 @@ class FieldOperatorProvider(FieldProvider):
         self._dims = domain
         self._dependencies = deps
         self._output = fields
-        self._params = params if params is not None else {}
+        self._params = {} if params is None else params
         self._fields: dict[str, Optional[gtx.Field | state_utils.ScalarType]] = {
             name: None for name in fields.values()
         }
