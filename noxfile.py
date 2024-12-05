@@ -9,7 +9,7 @@
 import nox
 
 nox.options.default_venv_backend = "uv"
-nox.options.sessions = ["lint", "test"]
+#nox.options.sessions = ["lint", "test"]
 
 
 def session_install(
@@ -36,6 +36,7 @@ def session_install(
 def test_tools(session: nox.Session) -> None:
     """Run the unit and regular tests for the integration tools."""
     session_install(session, groups=("test",))
+    session.cd("tools")
     session.run("pytest", "-sv", "-n", session.env.get("NUM_PROCESSES", "1"), *session.posargs)
 
 

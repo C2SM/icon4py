@@ -5,8 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+from __future__ import annotations
+
 import logging as log
-from typing import Optional, TypeAlias, Union
+from typing import Optional, TypeAlias, Union, TYPE_CHECKING
 
 import gt4py._core.definitions as gt_core_defs
 import gt4py.next as gtx
@@ -14,13 +17,16 @@ from gt4py.next import backend
 import numpy as np
 import numpy.typing as npt
 
-from icon4py.model.common import dimension, type_alias as ta
-from icon4py.model.common.grid.base import BaseGrid
+from icon4py.model.common import type_alias as ta
 
-""" Enum values from Enum values taken from DLPack reference implementation at:
-    https://github.com/dmlc/dlpack/blob/main/include/dlpack/dlpack.h
-    via GT4Py
-"""
+if TYPE_CHECKING:
+    from icon4py.model.common import dimension
+    from icon4py.model.common.grid import base as grid_base
+
+
+#: Enum values from Enum values taken from DLPack reference implementation at:
+#:  https://github.com/dmlc/dlpack/blob/main/include/dlpack/dlpack.h
+#:  via GT4Py
 CUDA_DEVICE_TYPES = (
     gt_core_defs.DeviceType.CUDA,
     gt_core_defs.DeviceType.CUDA_MANAGED,
@@ -129,7 +135,7 @@ def random_field(
     return as_field(dims, arr)
 
 def zero_field(
-    grid: BaseGrid,
+    grid: grid_base.BaseGrid,
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
     extend: Optional[dict[gtx.Dimension, int]] = None,
@@ -138,7 +144,7 @@ def zero_field(
 
 
 def constant_field(
-    grid: BaseGrid, value: float, *dims: gtx.Dimension, dtype=ta.wpfloat
+    grid: grid_base.BaseGrid, value: float, *dims: gtx.Dimension, dtype=ta.wpfloat
 ) -> gtx.Field:
     return as_field(
         dims,
@@ -157,7 +163,7 @@ def _shape(
 
 
 def random_mask(
-    grid: BaseGrid,
+    grid: grid_base.BaseGrid,
     *dims: gtx.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gtx.Dimension, int]] = None,
@@ -196,5 +202,3 @@ def allocate_indices(
     xp = import_array_ns(backend)
     shapex = _size(grid, dim, is_halfdim)
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend)
-
-

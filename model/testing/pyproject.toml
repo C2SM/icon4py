@@ -29,6 +29,7 @@ dependencies = [
   "pytest>=8.0.1",
   "serialbox>=0.0.1",
   "typing-extensions>=4.11.0",
+  "wget>=3.2",
 ]
 description = "Testing utils for the icon4py model."
 license = {text = "BSD-3 License"}

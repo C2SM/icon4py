@@ -65,6 +65,9 @@ docs = [
 ]
 lint = ["pre-commit>=4.0.1", "ruff>=0.8.0", "tach>=0.16.0"]
 test = [
+    # workspace members
+    "icon4py-testing>=0.0.6",
+    # external dependencies
     "coverage[toml]>=7.5.0",
     "nox @ git+https://github.com/wntrblm/nox.git@aa09595437608dfe21eb776d8a4bcc0bd5f9916b",  # TODO: remove once next version is released
     "pytest>=8.0.1",
