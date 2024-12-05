@@ -73,8 +73,8 @@ The processor takes care of:
     </iframe>
     </div>
 
-Comment section
-===============
+Scidoc feedback
+---------------
 
 .. raw:: html
 
