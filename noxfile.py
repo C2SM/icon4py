@@ -9,7 +9,7 @@
 import nox
 
 nox.options.default_venv_backend = "uv"
-nox.options.sessions = ["lint", "test"]
+#nox.options.sessions = ["lint", "test"]
 
 
 def session_install(

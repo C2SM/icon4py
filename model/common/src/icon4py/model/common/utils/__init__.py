@@ -8,7 +8,6 @@
 
 from __future__ import annotations
 
-from . import fields
 from ._common import (
     DoubleBuffering,
     Pair,
@@ -17,6 +16,7 @@ from ._common import (
     chainable,
     named_property,
 )
+from . import fields, serialbox
 
 
 __all__ = [
@@ -30,4 +30,5 @@ __all__ = [
     "chainable",
     # Modules
     "fields",
+    "serialbox",
 ]
