@@ -73,6 +73,9 @@ The processor takes care of:
     </iframe>
     </div>
 
+
+.. _feedback-section:
+
 Scidoc feedback
 ---------------
 

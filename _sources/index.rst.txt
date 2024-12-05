@@ -16,7 +16,7 @@ These pages present two categories of documentation:
    it is useful to follow the flow of data and operations within the substep
    itself (e.g. |sciDocExample|).
    This is also automatically generated, but it works with a custom parser
-   documented in |sciDocParser|; feedback on this is very welcome.
+   documented in |sciDocParser|; feedback on this is very welcome (see :ref:`feedback-section`).
 
 
 .. toctree::
@@ -34,6 +34,7 @@ These pages present two categories of documentation:
    _source/offset_providers
    scidoc_processor
 
+:ref:`feedback-section`
 
 Indices and tables
 ==================
