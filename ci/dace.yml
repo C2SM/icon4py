@@ -22,10 +22,10 @@ test_model_stencils_aarch64:
     matrix:
     - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests]
       BACKEND: [dace_cpu_noopt]
-      DACE_ORCHESTRATION: ['--dace-orchestration=True', '']
+      DACE_ORCHESTRATION: ['--dace-orchestration', '']
   rules:
     # TODO(kotsaloscv): enable dycore tests with dace orchestration
-    - if: $COMPONENT == "atmosphere/dycore/tests/dycore_tests" && $DACE_ORCHESTRATION == "--dace-orchestration=True"
+    - if: $COMPONENT == "atmosphere/dycore/tests/dycore_tests" && $DACE_ORCHESTRATION == "--dace-orchestration"
       when: never
     - when: on_success
 test_model_datatests_x86_64:
