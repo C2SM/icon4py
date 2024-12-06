@@ -6,11 +6,11 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from __future__ import annotations
 
 import logging
 import typing
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py.next import backend as gtx_backend
@@ -18,10 +18,10 @@ from gt4py.next import backend as gtx_backend
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     grid_manager as gm,
+    horizontal as h_grid,
     refinement as refin,
     vertical as v_grid,
 )
-from icon4py.model.common.grid.grid_manager import GeometryName
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -256,7 +256,7 @@ def has_invalid_index(ar: np.ndarray):
     return np.any(invalid_index(ar))
 
 
-def invalid_index(ar):
+def invalid_index(ar: np.ndarray):
     return np.where(ar == gm.GridFile.INVALID_INDEX)
 
 
@@ -382,18 +382,17 @@ def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, 
     assert_invalid_indices(serialized_e2c2e, grid_file)
 
     e2c2e_table = grid.get_offset_provider("E2C2E").table
-    e2c2e0_table = grid.get_offset_provider("E2C2EO").table
+    e2c2eO_table = grid.get_offset_provider("E2C2EO").table
 
     assert_invalid_indices(e2c2e_table, grid_file)
     # ICON calculates diamond edges only from rl_start = 2 (lateral_boundary(dims.EdgeDim) + 1 for
     # boundaries all values are INVALID even though the half diamond exists (see mo_model_domimp_setup.f90 ll 163ff.)
-    assert_unless_invalid(e2c2e_table, serialized_e2c2e)
-    assert_unless_invalid(e2c2e0_table, serialized_e2c2eO)
-
-
-def assert_unless_invalid(table, serialized_ref):
-    invalid_positions = invalid_index(table)
-    np.allclose(table[invalid_positions], serialized_ref[invalid_positions])
+    start_index = grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
+    )
+    # e2c2e in ICON (quad_idx) has a different neighbor ordering than the e2c2e constructed in grid_manager.py
+    assert_up_to_order(e2c2e_table, serialized_e2c2e, start_index)
+    assert_up_to_order(e2c2eO_table, serialized_e2c2eO, start_index)
 
 
 @pytest.mark.datatest
@@ -408,11 +407,15 @@ def assert_unless_invalid(table, serialized_ref):
 def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
     caplog.set_level(logging.DEBUG)
     grid = _run_grid_manager(grid_file, backend).grid
+    serialized_ref = grid_savepoint.e2c2v()
     # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
     #   (lateral_boundary(dims.EdgeDim) + 1) to end(dims.EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
-    serialized_ref = grid_savepoint.e2c2v()
     table = grid.get_offset_provider("E2C2V").table
-    assert_unless_invalid(table, serialized_ref)
+    start_index = grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    # e2c2e in ICON (quad_idx) has a different neighbor ordering than the e2c2e constructed in grid_manager.py
+    assert_up_to_order(table, serialized_ref, start_index)
     assert np.allclose(table[:, :2], grid.get_offset_provider("E2V").table)
 
 
@@ -446,10 +449,14 @@ def test_grid_manager_grid_size(dim, size, backend):
     assert size == grid.size[dim]
 
 
-def assert_up_to_order(table, diamond_table):
-    assert table.shape == diamond_table.shape
-    for n in range(table.shape[0]):
-        assert np.all(np.in1d(table[n, :], diamond_table[n, :]))
+def assert_up_to_order(table: np.ndarray, reference_table: np.ndarray, start_index: gtx.int = 0):
+    assert table.shape == reference_table.shape, "arrays need to have the same shape"
+    reduced_table = table[start_index:, :]
+    reduced_reference = reference_table[start_index:, :]
+    for n in range(reduced_table.shape[0]):
+        assert np.all(
+            np.in1d(reduced_table[n, :], reduced_reference[n, :])
+        ), f"values in row {n+start_index} are not equal: {reduced_table[n, :]} vs ref= {reduced_reference[n, :]}."
 
 
 @pytest.mark.with_netcdf
@@ -546,8 +553,8 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
 )
 def test_read_geometry_fields(grid_savepoint, grid_file, backend):
     manager = _run_grid_manager(grid_file, backend=backend)
-    cell_area = manager.geometry[GeometryName.CELL_AREA.value]
-    tangent_orientation = manager.geometry[GeometryName.TANGENT_ORIENTATION.value]
+    cell_area = manager.geometry[gm.GeometryName.CELL_AREA.value]
+    tangent_orientation = manager.geometry[gm.GeometryName.TANGENT_ORIENTATION.value]
 
     assert helpers.dallclose(cell_area.asnumpy(), grid_savepoint.cell_areas().asnumpy())
     assert helpers.dallclose(
@@ -585,7 +592,7 @@ def test_tangent_orientation(grid_file, grid_savepoint, backend):
     manager = _run_grid_manager(grid_file, backend=backend)
     geometry_fields = manager.geometry
     assert helpers.dallclose(
-        geometry_fields[GeometryName.TANGENT_ORIENTATION].asnumpy(), expected.asnumpy()
+        geometry_fields[gm.GeometryName.TANGENT_ORIENTATION].asnumpy(), expected.asnumpy()
     )
 
 
