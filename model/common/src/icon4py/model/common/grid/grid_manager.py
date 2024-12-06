@@ -14,7 +14,6 @@ import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import numpy as np
 
-import icon4py.model.common.utils as common_utils
 from icon4py.model.common import dimension as dims, exceptions, type_alias as ta
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
@@ -259,8 +258,8 @@ class GridFile:
         return self._dataset.getncattr(name)
 
     def int_variable(
-        self, name: FieldName, indices: field_alloc.NDArray = None, transpose: bool = True
-    ) -> field_alloc.NDArray:
+        self, name: FieldName, indices: np.ndarray = None, transpose: bool = True
+    ) -> np.ndarray:
         """Read a integer field from the grid file.
 
         Reads as gtx.int32.
@@ -278,10 +277,10 @@ class GridFile:
     def variable(
         self,
         name: FieldName,
-        indices: field_alloc.NDArray = None,
+        indices: np.ndarray = None,
         transpose=False,
         dtype: np.dtype = gtx.float64,
-    ) -> field_alloc.NDArray:
+    ) -> np.ndarray:
         """Read a  field from the grid file.
 
         If a index array is given it only reads the values at those positions.
@@ -400,7 +399,7 @@ class GridManager:
     def __call__(self, backend: Optional[gtx_backend.Backend], limited_area=True):
         if not self._reader:
             self.open()
-        on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
+        on_gpu = field_alloc.is_cupy_device(backend)
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields(backend)
         self._coordinates = self._read_coordinates(backend)
@@ -549,7 +548,7 @@ class GridManager:
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
         """
-        xp = common_utils.gt4py_field_allocation.import_array_ns(backend)
+        xp = field_alloc.import_array_ns(backend)
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
