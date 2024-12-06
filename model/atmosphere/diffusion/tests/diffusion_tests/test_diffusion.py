@@ -11,11 +11,8 @@ import pytest
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
-from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
-    geometry,
     geometry_attributes as geometry_meta,
-    icon,
     vertical as v_grid,
 )
 from icon4py.model.common.test_utils import (
@@ -25,7 +22,6 @@ from icon4py.model.common.test_utils import (
     reference_funcs as ref_funcs,
     serialbox_utils as sb,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,
@@ -52,26 +48,16 @@ def get_cell_geometry_for_experiment(experiment, backend):
 
 
 def _get_or_initialize(experiment, backend, name):
-    def _construct_minimal_decomposition_info(grid: icon.IconGrid):
-        edge_indices = alloc.allocate_indices(dims.EdgeDim, grid, backend)
-        xp = alloc.import_array_ns(backend)
-        owner_mask = xp.ones((grid.num_edges,), dtype=bool)
-        decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
-        decomposition_info.with_dimension(dims.EdgeDim, edge_indices.ndarray, owner_mask)
-        return decomposition_info
+    grid_file = (
+        dt_utils.REGIONAL_EXPERIMENT
+        if experiment == dt_utils.REGIONAL_EXPERIMENT
+        else dt_utils.R02B04_GLOBAL
+    )
 
     if not grid_functionality[experiment].get(name):
-        gm = grid_utils.get_grid_manager_for_experiment(experiment, backend)
-        grid = gm.grid
-        decomposition_info = _construct_minimal_decomposition_info(grid)
-        geometry_ = geometry.GridGeometry(
-            grid=grid,
-            decomposition_info=decomposition_info,
-            backend=backend,
-            coordinates=gm.coordinates,
-            extra_fields=gm.geometry,
-            metadata=geometry_meta.attrs,
-        )
+        geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
+        grid = geometry_.grid
+
         cell_params = grid_states.CellParams.from_global_num_cells(
             cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
             cell_center_lon=geometry_.get(geometry_meta.CELL_LON),

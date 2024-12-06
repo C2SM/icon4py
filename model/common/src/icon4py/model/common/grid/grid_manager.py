@@ -185,10 +185,15 @@ class ConnectivityName(FieldName):
 
 
 class GeometryName(FieldName):
+    # TODO (@halungge) compute from coordinates
     CELL_AREA = "cell_area"
-    EDGE_NORMAL_ORIENTATION = "orientation_of_normal"
+    # TODO (@halungge) compute from coordinates
+    DUAL_AREA = "dual_area"
+    CELL_NORMAL_ORIENTATION = "orientation_of_normal"
     TANGENT_ORIENTATION = "edge_system_orientation"
-    EDGE_ORIENTATION_ = "edge_orientation"
+    EDGE_ORIENTATION_ON_VERTEX = "edge_orientation"
+    # TODO (@halungge) compute from coordinates
+    EDGE_CELL_DISTANCE = "edge_cell_distance"
 
 
 class CoordinateName(FieldName):
@@ -268,11 +273,14 @@ class GridFile:
 
         """
         _log.debug(f"reading {name}: transposing = {transpose}")
-        data = self.variable(name, indices, dtype=gtx.int32)
-        return np.transpose(data) if transpose else data
+        return self.variable(name, indices, transpose=transpose, dtype=gtx.int32)
 
     def variable(
-        self, name: FieldName, indices: field_alloc.NDArray = None, dtype: np.dtype = gtx.float64
+        self,
+        name: FieldName,
+        indices: field_alloc.NDArray = None,
+        transpose=False,
+        dtype: np.dtype = gtx.float64,
     ) -> field_alloc.NDArray:
         """Read a  field from the grid file.
 
@@ -280,14 +288,16 @@ class GridFile:
         Args:
             name: name of the field to read
             indices: indices to read
+            transpose: flag indicateing whether the array needs to be transposed
+                to match icon4py dimension ordering, defaults to False
             dtype: datatype of the field
         """
         try:
             variable = self._dataset.variables[name]
-            _log.debug(f"reading {name}: {variable}")
+            _log.debug(f"reading {name}: transposing = {transpose}")
             data = variable[:] if indices is None else variable[indices]
             data = np.array(data, dtype=dtype)
-            return data
+            return np.transpose(data) if transpose else data
         except KeyError as err:
             msg = f"{name} does not exist in dataset"
             _log.warning(msg)
@@ -449,10 +459,27 @@ class GridManager:
             GeometryName.CELL_AREA.value: gtx.as_field(
                 (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA), allocator=backend
             ),
+            # TODO (@halungge) easily computed from a neighbor_sum V2C over the cell areas?
+            GeometryName.DUAL_AREA.value: gtx.as_field(
+                (dims.VertexDim,), self._reader.variable(GeometryName.DUAL_AREA)
+            ),
+            GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
+                (dims.EdgeDim, dims.E2CDim),
+                self._reader.variable(GeometryName.EDGE_CELL_DISTANCE, transpose=True),
+            ),
+            # TODO (@halungge) recompute from coordinates? field in gridfile contains NaN on boundary edges
             GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(GeometryName.TANGENT_ORIENTATION),
                 allocator=backend,
+            ),
+            GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
+                (dims.CellDim, dims.C2EDim),
+                self._reader.int_variable(GeometryName.CELL_NORMAL_ORIENTATION, transpose=True),
+            ),
+            GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
+                (dims.VertexDim, dims.V2EDim),
+                self._reader.int_variable(GeometryName.EDGE_ORIENTATION_ON_VERTEX, transpose=True),
             ),
         }
 
