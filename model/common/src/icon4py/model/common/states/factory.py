@@ -596,8 +596,8 @@ class NumpyFieldsProvider(FieldProvider):
             parameter_definition = parameters.get(dep_key)
             checked = _check_union(parameter_definition, union=field_alloc.NDArray)
             assert checked, (
-                f"Dependency {dep_key} in function {_func_name(self._func)}:  does not exist or has "
-                f"wrong type ('expected ndarray') but was {parameter_definition}."
+                f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
+                f"wrong type ('expected ndarray') but was '{parameter_definition}'."
             )
 
         for param_key, param_value in self._params.items():
@@ -608,8 +608,8 @@ class NumpyFieldsProvider(FieldProvider):
                 parameter_definition, param_value, union=state_utils.FloatType
             )
             assert checked, (
-                f"Parameter {param_key} in function {_func_name(self._func)} does not "
-                f"exist or has the wrong type: {type(param_value)}."
+                f"Parameter '{param_key}' in function '{_func_name(self._func)}' does not "
+                f"exist or has the wrong type: '{type(param_value)}'."
             )
 
     @property
@@ -645,9 +645,11 @@ def _check_union(
 ) -> bool:
     members = get_args(union)
     # fix for unions with only one member, which implicitly are not Union but fallback to the type
+    # fix for unions with only one member, which implicitly are not Union but fallback to the type
     if not members:
         members = (union,)
-    return parameter_definition is not None and parameter_definition.annotation in members
+    annotation = parameter_definition.annotation
+    return parameter_definition is not None and (annotation == union or annotation in members)
 
 
 def _func_name(callable_: Callable[..., Any]) -> str:

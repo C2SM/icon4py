@@ -23,7 +23,7 @@ cell_domain = h_grid.domain(dims.CellDim)
 k_domain = v_grid.domain(dims.KDim)
 
 
-class TestFieldSource(factory.FieldSource):
+class SimpleFieldSource(factory.FieldSource):
     def __init__(
         self,
         data_: dict[str, tuple[state_utils.FieldType, model.FieldMetaData]],
@@ -84,7 +84,7 @@ def cell_coordinate_source(grid_savepoint, backend):
         "lon": (lon, {"standard_name": "lon", "units": ""}),
     }
 
-    coordinate_source = TestFieldSource(data_=data, backend=backend, grid=grid)
+    coordinate_source = SimpleFieldSource(data_=data, backend=backend, grid=grid)
     yield coordinate_source
     coordinate_source.reset()
 
@@ -98,7 +98,7 @@ def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
     vct_b = grid_savepoint.vct_b()
     data = {"height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})}
     vertical_grid = v_grid.VerticalGrid(v_grid.VerticalGridConfig(num_levels=10), vct_a, vct_b)
-    field_source = TestFieldSource(
+    field_source = SimpleFieldSource(
         data_=data, backend=backend, grid=grid, vertical_grid=vertical_grid
     )
     yield field_source
@@ -170,7 +170,7 @@ def test_composite_field_source_contains_all_metadata(
         "bar": (bar, {"standard_name": "bar", "units": ""}),
     }
 
-    test_source = TestFieldSource(data_=data, grid=grid, backend=backend)
+    test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
         test_source, (cell_coordinate_source, height_coordinate_source)
     )
@@ -192,7 +192,7 @@ def test_composite_field_source_get_all_fields(cell_coordinate_source, height_co
         "bar": (bar, {"standard_name": "bar", "units": ""}),
     }
 
-    test_source = TestFieldSource(data_=data, grid=grid, backend=backend)
+    test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
         test_source, (cell_coordinate_source, height_coordinate_source)
     )
@@ -228,7 +228,7 @@ def test_composite_field_source_raises_upon_get_unknown_field(
         "bar": (bar, {"standard_name": "bar", "units": ""}),
     }
 
-    test_source = TestFieldSource(data_=data, grid=grid, backend=backend)
+    test_source = SimpleFieldSource(data_=data, grid=grid, backend=backend)
     composite = factory.CompositeSource(
         test_source, (cell_coordinate_source, height_coordinate_source)
     )
