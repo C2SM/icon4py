@@ -13,10 +13,10 @@ import uuid
 from typing import Final
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.common import constants, dimension as dims, utils
 from icon4py.model.common.grid import base, horizontal as h_grid
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 log = logging.getLogger(__name__)
@@ -129,20 +129,12 @@ class IconGrid(base.BaseGrid):
     def with_start_end_indices(
         self,
         dim: gtx.Dimension,
-        start_indices: field_alloc.NDArray,
-        end_indices: field_alloc.NDArray,
+        start_indices: np.ndarray,
+        end_indices: np.ndarray,
     ):
         log.debug(f"Using start_indices {dim} {start_indices}, end_indices {dim} {end_indices}")
-        self._start_indices[dim] = (
-            start_indices.ndarray.astype(gtx.int32)
-            if hasattr(start_indices, "ndarray")
-            else start_indices.astype(gtx.int32)
-        )
-        self._end_indices[dim] = (
-            end_indices.ndarray.astype(gtx.int32)
-            if hasattr(end_indices, "ndarray")
-            else end_indices.astype(gtx.int32)
-        )
+        self._start_indices[dim] = start_indices.astype(gtx.int32)
+        self._end_indices[dim] = end_indices.astype(gtx.int32)
 
     @utils.chainable
     def with_global_params(self, global_params: GlobalGridParams):

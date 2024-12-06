@@ -114,12 +114,7 @@ class BaseGrid(ABC):
 
     @utils.chainable
     def with_connectivities(self, connectivity: Dict[gtx.Dimension, field_alloc.NDArray]):
-        self.connectivities.update(
-            {
-                d: k.ndarray.astype(gtx.int32) if hasattr(k, "ndarray") else k.astype(gtx.int32)
-                for d, k in connectivity.items()
-            }
-        )
+        self.connectivities.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     @utils.chainable
