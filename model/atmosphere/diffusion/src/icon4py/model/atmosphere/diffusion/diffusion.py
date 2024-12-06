@@ -65,7 +65,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
-from icon4py.model.common.orchestration import decorator as orchestration
+from icon4py.model.common.orchestration import decorator as dace_orchestration
 
 
 """
@@ -364,9 +364,11 @@ class Diffusion:
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: backend.Backend,
+        orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._backend = backend
+        self._orchestration = orchestration
         self._exchange = exchange
         self.config = config
         self._params = params
@@ -461,7 +463,7 @@ class Diffusion:
 
         self._determine_horizontal_domains()
 
-        self.compile_time_connectivities = orchestration.build_compile_time_connectivities(
+        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
             self._grid.offset_providers
         )
 
@@ -621,7 +623,7 @@ class Diffusion:
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
-    @orchestration.orchestrate
+    @dace_orchestration.orchestrate
     def _do_diffusion_step(
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
@@ -922,20 +924,13 @@ class Diffusion:
         members_to_disregard = [
             "_backend",
             "_exchange",
-            "mo_intp_rbf_rbf_vec_interpol_vertex",
-            "calculate_nabla2_and_smag_coefficients_for_vn",
-            "calculate_diagnostic_quantities_for_turbulence",
-            "apply_diffusion_to_vn",
-            "apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence",
-            "calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools",
-            "calculate_nabla2_for_theta",
-            "truly_horizontal_diffusion_nabla_of_theta_over_steep_points",
-            "update_theta_and_exner",
-            "copy_field",
-            "scale_k",
-            "setup_fields_for_initial_step",
-            "init_diffusion_local_fields_for_regular_timestep",
+            "_grid",
+            *[
+                name
+                for name in self.__dict__.keys()
+                if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
+            ],
         ]
-        return orchestration.generate_orchestration_uid(
+        return dace_orchestration.generate_orchestration_uid(
             self, members_to_disregard=members_to_disregard
         )

@@ -9,9 +9,8 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as nh
-from icon4py.model.atmosphere.dycore.state_utils import states
-from icon4py.model.common import dimension as dims
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
+from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.test_utils import helpers, parallel_helpers
@@ -95,7 +94,7 @@ def test_run_solve_nonhydro_single_step(
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
-    prep_adv = states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
@@ -107,7 +106,7 @@ def test_run_solve_nonhydro_single_step(
     recompute = sp_v.get_metadata("recompute").get("recompute")
     linit = sp_v.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = states.DiagnosticStateNonHydro(
+    diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -118,10 +117,12 @@ def test_run_solve_nonhydro_single_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+        ),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+        ),
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),

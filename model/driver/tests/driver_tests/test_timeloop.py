@@ -9,9 +9,9 @@
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
+import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -184,8 +184,10 @@ def test_run_timeloop_single_step(
     sp_v = savepoint_velocity_init
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
 
+    linit = sp.get_metadata("linit").get("linit")
+
     grg = interpolation_savepoint.geofac_grg()
-    nonhydro_interpolation_state = solve_nh_states.InterpolationState(
+    nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),
         e_flx_avg=interpolation_savepoint.e_flx_avg(),
@@ -203,7 +205,7 @@ def test_run_timeloop_single_step(
         geofac_grg_y=grg[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    nonhydro_metric_state = solve_nh_states.MetricStateNonHydro(
+    nonhydro_metric_state = dycore_states.MetricStateNonHydro(
         bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
@@ -256,14 +258,15 @@ def test_run_timeloop_single_step(
         timeloop_diffusion_savepoint_init,
     )
 
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
-    nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
+    current_index, next_index = (2, 1) if not linit else (1, 2)
+    nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -274,10 +277,12 @@ def test_run_timeloop_single_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+        ),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_w_adv_pc(current_index), sp_v.ddt_w_adv_pc(next_index)
+        ),
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
@@ -308,12 +313,12 @@ def test_run_timeloop_single_step(
         exner=sp.exner_new(),
     )
 
-    prognostic_state_list = [prognostic_state, prognostic_state_new]
+    prognostic_states = common_utils.TimeStepPair(prognostic_state, prognostic_state_new)
 
     timeloop.time_integration(
         diffusion_diagnostic_state,
         nonhydro_diagnostic_state,
-        prognostic_state_list,
+        prognostic_states,
         prep_adv,
         sp.divdamp_fac_o2(),
         do_prep_adv,
@@ -326,29 +331,29 @@ def test_run_timeloop_single_step(
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+        prognostic_states.current.vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+        prognostic_states.current.w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
+        prognostic_states.current.exner.asnumpy(),
         exner_sp.asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
+        prognostic_states.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=4e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
+        prognostic_states.current.rho.asnumpy(),
         rho_sp.asnumpy(),
     )

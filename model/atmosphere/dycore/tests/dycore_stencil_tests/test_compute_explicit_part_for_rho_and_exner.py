@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
+from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_exner import (
     compute_explicit_part_for_rho_and_exner,
 )
 from icon4py.model.common import dimension as dims

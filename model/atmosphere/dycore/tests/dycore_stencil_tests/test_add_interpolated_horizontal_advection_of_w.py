@@ -9,7 +9,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
+from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advection_of_w import (
     add_interpolated_horizontal_advection_of_w,
 )
 from icon4py.model.common import dimension as dims
