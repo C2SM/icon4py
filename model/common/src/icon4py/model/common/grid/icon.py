@@ -127,7 +127,10 @@ class IconGrid(base.BaseGrid):
 
     @utils.chainable
     def with_start_end_indices(
-        self, dim: gtx.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
+        self,
+        dim: gtx.Dimension,
+        start_indices: np.ndarray,
+        end_indices: np.ndarray,
     ):
         log.debug(f"Using start_indices {dim} {start_indices}, end_indices {dim} {end_indices}")
         self._start_indices[dim] = start_indices.astype(gtx.int32)

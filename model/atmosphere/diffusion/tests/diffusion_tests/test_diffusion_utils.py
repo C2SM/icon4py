@@ -12,7 +12,6 @@ import pytest
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import helpers
 
 from .utils import construct_diffusion_config, diff_multfac_vn_numpy, smag_limit_numpy
@@ -99,14 +98,14 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
 def test_init_zero_vertex_k(backend):
     grid = simple_grid.SimpleGrid()
     f = helpers.random_field(grid, dims.VertexDim, dims.KDim)
-    diffusion_utils.init_zero_v_k(f, offset_provider={})
+    diffusion_utils.init_zero_v_k.with_backend(backend)(f, offset_provider={})
     assert np.allclose(0.0, f.asnumpy())
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps
+    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):
     savepoint = savepoint_diffusion_init
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)

@@ -22,6 +22,7 @@ from icon4py.model.common.grid import (
     refinement as refin,
     vertical as v_grid,
 )
+from icon4py.model.common.grid.grid_manager import GeometryName
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
