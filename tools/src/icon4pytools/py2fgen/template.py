@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import inspect
 from typing import Any, Sequence
 
 from gt4py.eve import Node, datamodels
@@ -20,7 +19,6 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_ISO_C_TYPE,
     BUILTIN_TO_NUMPY_TYPE,
 )
-from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 from icon4pytools.py2fgen.wrappers import wrapper_dimension
 
@@ -100,9 +98,6 @@ class PythonWrapper(CffiPlugin):
     profile: bool
     limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
-    cffi_unpack: str = inspect.getsource(unpack)
-    cffi_unpack_gpu: str = inspect.getsource(unpack_gpu)
-    int_to_bool: str = inspect.getsource(int_array_to_bool_array)
     gt4py_backend: str = datamodels.field(init=False)
     is_gt4py_program_present: bool = datamodels.field(init=False)
 
@@ -237,14 +232,11 @@ class PythonWrapperGenerator(TemplatedGenerator):
 # imports for generated wrapper code
 import logging
 {% if _this_node.profile %}import time{% endif %}
-import math
 from {{ plugin_name }} import ffi
-import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
-from numpy.typing import NDArray
-from gt4py.next.iterator.embedded import np_as_located_field
 from icon4py.model.common.settings import xp
 from icon4py.model.common import dimension as dims
+from icon4pytools.py2fgen.plugin import unpack_and_cache_pointer
 
 {% if _this_node.is_gt4py_program_present %}
 # necessary imports when embedding a gt4py program directly
@@ -275,13 +267,8 @@ import numpy as np
 from {{ module_name }} import {{ func.name }}
 {% endfor %}
 
-{% if _this_node.backend == 'GPU' %}
-{{ cffi_unpack_gpu }}
-{% else %}
-{{ cffi_unpack }}
-{% endif %}
-
-{{ int_to_bool }}
+# holds cached fields
+field_cache = {}
 
 {% for func in _this_node.functions %}
 
@@ -299,37 +286,39 @@ def {{ func.name }}_wrapper(
         logging.info("Python Execution Context Start")
         {% endif %}
 
+        # pack, allocate and cache array fields
+        {% for arg in func.args %}
+        {% if arg.is_array %}
+
         {% if _this_node.profile %}
         cp.cuda.Stream.null.synchronize()
         unpack_start_time = time.perf_counter()
         {% endif %}
 
-        # Unpack pointers into Ndarrays
-        {% for arg in func.args %}
-        {% if arg.is_array %}
         {%- if _this_node.debug_mode %}
-        msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name}})
+        msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name }})
         logging.debug(msg)
         {% endif %}
 
-        {%- if arg.name in _this_node.uninitialised_arrays -%}
-        {{ arg.name }} = xp.ones((1,) * {{ arg.size_args_len }}, dtype={{arg.np_type}}, order="F")
-        {%- else -%}
-        {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
-        {%- endif -%}
-
-        {%- if arg.d_type.name == "BOOL" %}
-        {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
-        {%- endif %}
+        {{ arg.name }} = unpack_and_cache_pointer(
+            pointer={{ arg.name }},
+            key=("{{ arg.name }}", ({{", ".join(arg.size_args) }})),
+            sizes=[{{ ", ".join(arg.size_args) }}],
+            gt_dims=[{{ ", ".join(arg.gtdims) }}],
+            dtype={{ arg.np_type }},
+            is_uninitialized={{ "True" if arg.name in _this_node.uninitialised_arrays else "False" }},
+            is_bool={{ "True" if arg.d_type.name == "BOOL" else "False" }},
+            backend="{{ _this_node.backend }}",
+            cache=field_cache,
+            xp=xp
+        )
 
         {%- if _this_node.debug_mode %}
-        msg = '{{ arg.name }} after unpacking: %s' % str({{ arg.name}})
+        msg = '{{ arg.name }} after unpacking: %s' % str({{ arg.name }})
         logging.debug(msg)
-        msg = 'shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
+        msg = 'shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name }}.shape)
         logging.debug(msg)
         {% endif %}
-        {% endif %}
-        {% endfor %}
 
         {% if _this_node.profile %}
         cp.cuda.Stream.null.synchronize()
@@ -337,29 +326,15 @@ def {{ func.name }}_wrapper(
         logging.critical('{{ func.name }} unpacking arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
         {% endif %}
 
-        {% if _this_node.profile %}
-        cp.cuda.Stream.null.synchronize()
-        allocate_start_time = time.perf_counter()
-        {% endif %}
-
-        # Allocate GT4Py Fields
-        {% for arg in func.args %}
-        {% if arg.is_array %}
-        {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
         {%- if _this_node.debug_mode %}
         msg = 'shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
         logging.debug(msg)
         msg = '{{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
         logging.debug(msg)
         {% endif %}
+
         {% endif %}
         {% endfor %}
-
-        {% if _this_node.profile %}
-        cp.cuda.Stream.null.synchronize()
-        allocate_end_time = time.perf_counter()
-        logging.critical('{{ func.name }} allocating to gt4py fields time per timestep: %s' % str(allocate_end_time - allocate_start_time))
-        {% endif %}
 
         {% if _this_node.profile %}
         cp.cuda.Stream.null.synchronize()
@@ -381,7 +356,6 @@ def {{ func.name }}_wrapper(
         func_end_time = time.perf_counter()
         logging.critical('{{ func.name }} function time per timestep: %s' % str(func_end_time - func_start_time))
         {% endif %}
-
 
         {% if _this_node.debug_mode %}
         # debug info
