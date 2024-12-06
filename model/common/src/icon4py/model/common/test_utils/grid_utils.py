@@ -134,6 +134,7 @@ def get_grid_geometry(
     on_gpu = alloc.is_cupy_device(backend)
     xp = alloc.array_ns(on_gpu)
     num_levels = get_num_levels(experiment)
+    register_name = experiment.join(backend.name)
 
     def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):
@@ -157,8 +158,8 @@ def get_grid_geometry(
         )
         return geometry_source
 
-    if not grid_geometries.get(grid_file):
-        grid_geometries[grid_file] = construct_grid_geometry(
+    if not grid_geometries.get(register_name):
+        grid_geometries[register_name] = construct_grid_geometry(
             str(resolve_full_grid_file_name(grid_file))
         )
-    return grid_geometries[grid_file]
+    return grid_geometries[register_name]
