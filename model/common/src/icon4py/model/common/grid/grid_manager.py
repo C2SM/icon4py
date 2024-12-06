@@ -14,18 +14,12 @@ import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
 import numpy as np
 
-import icon4py.model.common.utils as common_utils
 from icon4py.model.common import dimension as dims, exceptions, type_alias as ta
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
 )
 from icon4py.model.common.grid import base, icon, vertical as v_grid
-
-
-try:
-    import cupy as xp
-except ImportError:
-    import numpy as xp
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 try:
@@ -38,8 +32,6 @@ except ImportError:
         def __init__(self, *args, **kwargs):
             raise ModuleNotFoundError("NetCDF4 is not installed.")
 
-
-NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 
 _log = logging.getLogger(__name__)
 
@@ -276,7 +268,7 @@ class GridFile:
             name: name of the field to read
             transpose: flag to indicate whether the file should be transposed (for 2d fields)
         Returns:
-            np.ndarray: field data
+            NDArray: field data
 
         """
         _log.debug(f"reading {name}: transposing = {transpose}")
@@ -328,20 +320,20 @@ class IndexTransformation(Protocol):
 
     def __call__(
         self,
-        array: NDArray,
-    ) -> NDArray:
+        array: field_alloc.NDArray,
+    ) -> field_alloc.NDArray:
         ...
 
 
 class NoTransformation(IndexTransformation):
     """Empty implementation of the Protocol. Just return zeros."""
 
-    def __call__(self, array: NDArray):
+    def __call__(self, array: field_alloc.NDArray):
         return np.zeros_like(array)
 
 
 class ToZeroBasedIndexTransformation(IndexTransformation):
-    def __call__(self, array: NDArray):
+    def __call__(self, array: field_alloc.NDArray):
         """
         Calculate the index offset needed for usage with python.
 
@@ -407,7 +399,7 @@ class GridManager:
     def __call__(self, backend: Optional[gtx_backend.Backend], limited_area=True):
         if not self._reader:
             self.open()
-        on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
+        on_gpu = field_alloc.is_cupy_device(backend)
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields(backend)
         self._coordinates = self._read_coordinates(backend)
@@ -493,8 +485,8 @@ class GridManager:
     def _read_start_end_indices(
         self,
     ) -> tuple[
-        dict[dims.Dimension : np.ndarray],
-        dict[dims.Dimension : np.ndarray],
+        dict[dims.Dimension : field_alloc.NDArray],
+        dict[dims.Dimension : field_alloc.NDArray],
         dict[dims.Dimension : gtx.int32],
     ]:
         """ "
@@ -549,14 +541,14 @@ class GridManager:
         self,
         backend: gtx_backend.Backend,
         decomposition_info: Optional[decomposition.DecompositionInfo] = None,
-    ) -> tuple[dict[dims.Dimension : NDArray]]:
+    ) -> tuple[dict[dims.Dimension : field_alloc.NDArray]]:
         """
         Reads the refinement control fields from the grid file.
 
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
         """
-        xp = common_utils.gt4py_field_allocation.import_array_ns(backend)
+        xp = field_alloc.import_array_ns(backend)
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
@@ -706,7 +698,9 @@ def _update_size_for_1d_sparse_dims(grid):
     )
 
 
-def _construct_diamond_vertices(e2v: NDArray, c2v: NDArray, e2c: NDArray) -> NDArray:
+def _construct_diamond_vertices(
+    e2v: field_alloc.NDArray, c2v: field_alloc.NDArray, e2c: field_alloc.NDArray
+) -> field_alloc.NDArray:
     r"""
     Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
 
@@ -745,7 +739,9 @@ def _construct_diamond_vertices(e2v: NDArray, c2v: NDArray, e2c: NDArray) -> NDA
     return np.hstack((e2v, far_indices))
 
 
-def _construct_diamond_edges(e2c: NDArray, c2e: NDArray) -> NDArray:
+def _construct_diamond_edges(
+    e2c: field_alloc.NDArray, c2e: field_alloc.NDArray
+) -> field_alloc.NDArray:
     r"""
     Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
 
@@ -784,7 +780,9 @@ def _construct_diamond_edges(e2c: NDArray, c2e: NDArray) -> NDArray:
     return e2c2e
 
 
-def _construct_triangle_edges(c2e2c: NDArray, c2e: NDArray) -> NDArray:
+def _construct_triangle_edges(
+    c2e2c: field_alloc.NDArray, c2e: field_alloc.NDArray
+) -> field_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
 
          ----e3----  ----e7----
@@ -813,7 +811,7 @@ def _construct_triangle_edges(c2e2c: NDArray, c2e: NDArray) -> NDArray:
     return table
 
 
-def _construct_butterfly_cells(c2e2c: NDArray) -> NDArray:
+def _construct_butterfly_cells(c2e2c: field_alloc.NDArray) -> field_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring cells of its cell neighbors.
 
                   /  \        /  \

@@ -50,7 +50,6 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -460,6 +459,7 @@ class VelocityAdvection:
         )
 
     def _update_levmask_from_cfl_clipping(self):
+        xp = field_alloc.import_array_ns(self._backend)
         self.levmask = gtx.as_field(
             domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )

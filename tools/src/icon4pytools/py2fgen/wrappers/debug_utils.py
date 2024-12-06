@@ -18,10 +18,12 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.settings import xp
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.settings import config
 
+
+xp = config.array_ns
 
 log = setup_logger(__name__)
 
