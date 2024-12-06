@@ -6,68 +6,79 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from collections.abc import Sequence
+
 import nox
 
 nox.options.default_venv_backend = "uv"
-#nox.options.sessions = ["lint", "test"]
+# nox.options.sessions = ["lint", "test"]
 
 
-def session_install(
-    session: nox.Session, *, groups: tuple[str, ...]= (), requirements: tuple[tuple[str, ...], ...] = ()
+def install_session_venv(
+    session: nox.Session,
+    *args: str | Sequence[str],
+    extras: Sequence[str] = (),
+    groups: Sequence[str] = (),
 ) -> None:
     """Install session packages using uv."""
     session.run_install(
         "uv",
         "sync",
         "--no-dev",
+        *(f"--extra={e}" for e in extras),
         *(f"--group={g}" for g in groups),
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
-    for item in requirements:
+    for item in args:
         session.run_install(
             "uv",
             "pip",
             "install",
-            *item
+            *((item,) if isinstance(item, str) else item),
+            env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
         )
 
 
 @nox.session(python=["3.10", "3.11"])
 def test_tools(session: nox.Session) -> None:
-    """Run the unit and regular tests for the integration tools."""
-    session_install(session, groups=("test",))
-    session.cd("tools")
-    session.run("pytest", "-sv", "-n", session.env.get("NUM_PROCESSES", "1"), *session.posargs)
+    """Run tests for the integration tools."""
+    install_session_venv(session, extras=["all"], groups=["test"])
+
+    with session.chdir("tools"):
+        session.run(
+            "pytest",
+            "-sv",
+            "-n",
+            session.env.get("NUM_PROCESSES", "auto"),
+            *session.posargs,
+        )
 
 
-# @nox.session(python=["3.10", "3.11"])
-# @nox.parametrize("package", ["atmosphere.dycore", "atmosphere.advection", "atmosphere.diffusion"])
-# def tests_model(session: nox.Session, package: str) -> None:
-#     """Run the unit and regular tests for the model."""
-#     session_install(session, groups=("test",))
-#     session.run(
-#         "pytest", "-v", "-m", "not slow_tests", "--cov", "--cov-append", "--benchmark-skip", "-n",  session.env.get("NUM_PROCESSES", "1"),
-#         "atmosphere/diffusion/tests/diffusion_stencil_tests", *session.posargs
-#     )
-#     pytest -v -m "not slow_tests" --cov --cov-append atmosphere/dcore/tests/dycore_stencil_tests --benchmark-skip -n {env:NUM_PROCESSES:1} {posargs}
-#     pytest -v -m "not slow_tests" --cov --cov-append atmosphere/advection/tests/advection_stencil_tests --benchmark-skip -n {env:NUM_PROCESSES:1} {posargs}
+@nox.session(python=["3.10", "3.11"])
+@nox.parametrize("selection", ["regular_tests", "slow_tests"])
+def test_common(session: nox.Session, selection: str) -> None:
+    """Run tests for the common package of the icon4py model."""
+    install_session_venv(session, extras=["all"], groups=["test"])
 
+    pytest_args = []
+    match selection:
+        case "regular_tests":
+            pytest_args += ["-m", "not slow_tests"]
+        case "slow_tests":
+            pytest_args += ["-m", "slow_tests"]
+        case _:
+            assert False, "unreachable"
 
-
-
-
-# @nox.session(python=["3.10", "3.11"])
-# @nox.parametrize("package", ["atmosphere.dycore", "atmosphere.advection", "atmosphere.diffusion"])
-# def tests_model(session: nox.Session, package: str) -> None:
-#     """Run the unit and regular tests for the model."""
-#     session_install(session, groups=("test",))
-#     session.run(
-#         "pytest", "-v", "-m", "not slow_tests", "--cov", "--cov-append", "--benchmark-skip", "-n",  session.env.get("NUM_PROCESSES", "1"),
-#         "atmosphere/diffusion/tests/diffusion_stencil_tests", *session.posargs
-#     )
-#     pytest -v -m "not slow_tests" --cov --cov-append atmosphere/dcore/tests/dycore_stencil_tests --benchmark-skip -n {env:NUM_PROCESSES:1} {posargs}
-#     pytest -v -m "not slow_tests" --cov --cov-append atmosphere/advection/tests/advection_stencil_tests --benchmark-skip -n {env:NUM_PROCESSES:1} {posargs}
-
+    with session.chdir("model/common"):
+        session.run(
+            "pytest",
+            "-sv",
+            "--benchmark-skip",
+            "-n",
+            session.env.get("NUM_PROCESSES", "auto"),
+            *pytest_args,
+            *session.posargs,
+        )
 
 
 # [testenv:run_stencil_tests]
@@ -85,6 +96,5 @@ def test_tools(session: nox.Session) -> None:
 # [testenv:run_model_tests]
 # commands =
 #     pytest -v -m "not slow_tests" --datatest {posargs}
-
 
 # addopts = ["-p", "icon4py.model.testing.pytest_config"]

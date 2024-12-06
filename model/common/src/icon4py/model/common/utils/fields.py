@@ -90,7 +90,7 @@ def numpy_to_1D_sparse_field(field: np.ndarray, dim: gtx.Dimension) -> gtx.Field
     old_shape = field.shape
     assert len(old_shape) == 2
     new_shape = (old_shape[0] * old_shape[1],)
-    return as_field((dim,), field.reshape(new_shape))
+    return gtx.as_field((dim,), field.reshape(new_shape))
 
 
 def flatten_first_two_dims(*dims: gtx.Dimension, field: gtx.Field) -> gtx.Field:
@@ -102,7 +102,7 @@ def flatten_first_two_dims(*dims: gtx.Dimension, field: gtx.Field) -> gtx.Field:
     flattened_shape = (flattened_size,)
     new_shape = flattened_shape + old_shape[2:]
     newarray = buffer.reshape(new_shape)
-    return as_field(dims, newarray)
+    return gtx.as_field(dims, newarray)
 
 
 def unflatten_first_two_dims(field: gtx.Field) -> np.array:
@@ -132,7 +132,7 @@ def random_field(
     )
     if dtype:
         arr = arr.astype(dtype)
-    return as_field(dims, arr)
+    return gtx.as_field(dims, arr)
 
 def zero_field(
     grid: grid_base.BaseGrid,
@@ -140,13 +140,13 @@ def zero_field(
     dtype=ta.wpfloat,
     extend: Optional[dict[gtx.Dimension, int]] = None,
 ) -> gtx.Field:
-    return as_field(dims, xp.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
+    return gtx.as_field(dims, xp.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
 
 
 def constant_field(
     grid: grid_base.BaseGrid, value: float, *dims: gtx.Dimension, dtype=ta.wpfloat
 ) -> gtx.Field:
-    return as_field(
+    return gtx.as_field(
         dims,
         value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
     )
@@ -177,7 +177,7 @@ def random_mask(
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return as_field(dims, arr)
+    return gtx.as_field(dims, arr)
 
 
 

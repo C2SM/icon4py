@@ -13,7 +13,8 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.model.testing.helpers import StencilTest, random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.utils import fields as field_utils
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -36,11 +37,11 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_e_in = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ptr_coeff_1 = random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
-        ptr_coeff_2 = random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
-        p_v_out = zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
-        p_u_out = zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
+        p_e_in = field_utils.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        ptr_coeff_1 = field_utils.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
+        ptr_coeff_2 = field_utils.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
+        p_v_out = field_utils.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
+        p_u_out = field_utils.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             p_e_in=p_e_in,

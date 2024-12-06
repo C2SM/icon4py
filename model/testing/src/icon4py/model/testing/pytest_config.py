@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
+from collections.abc import Callable
+from typing import Final
 
 import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
@@ -18,15 +20,16 @@ from icon4py.model.testing.datatest_utils import (
 )
 
 
-DEFAULT_BACKEND = "roundtrip"
+DEFAULT_BACKEND: Final = "roundtrip"
 
-backends = {
+BACKENDS: dict[str, Callable] = {
     "embedded": None,
     "roundtrip": itir_python,
     "gtfn_cpu": gtfn_cpu,
     "gtfn_gpu": gtfn_gpu,
 }
-gpu_backends = ["gtfn_gpu"]
+
+GPU_BACKENDS: list[str] =["gtfn_gpu"]
 
 try:
     from gt4py.next.program_processors.runners.dace import (
@@ -36,7 +39,7 @@ try:
         run_dace_gpu_noopt,
     )
 
-    backends.update(
+    BACKENDS.update(
         {
             "dace_cpu": run_dace_cpu,
             "dace_gpu": run_dace_gpu,
@@ -44,16 +47,16 @@ try:
             "dace_gpu_noopt": run_dace_gpu_noopt,
         }
     )
-    gpu_backends.extend(["dace_gpu", "dace_gpu_noopt"])
+    GPU_BACKENDS.extend(["dace_gpu", "dace_gpu_noopt"])
 
 except ImportError:
     # dace module not installed, ignore dace backends
     pass
 
 
-def check_backend_validity(backend_name: str) -> None:
-    if backend_name not in backends:
-        available_backends = ", ".join([f"'{k}'" for k in backends.keys()])
+def _check_backend_validity(backend_name: str) -> None:
+    if backend_name not in BACKENDS:
+        available_backends = ", ".join([f"'{k}'" for k in BACKENDS.keys()])
         raise Exception(
             "Need to select a backend. Select from: ["
             + available_backends
@@ -74,8 +77,8 @@ def pytest_configure(config):
 
     if config.getoption("--backend"):
         backend = config.getoption("--backend")
-        check_backend_validity(backend)
-        settings.backend = backends[backend]
+        _check_backend_validity(backend)
+        settings.backend = BACKENDS[backend]
 
     if config.getoption("--dace-orchestration"):
         settings.dace_orchestration = True
@@ -142,14 +145,14 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
-    selected_backend = backends[DEFAULT_BACKEND]
+    selected_backend = BACKENDS[DEFAULT_BACKEND]
 
     # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
-        check_backend_validity(backend_option)
+        _check_backend_validity(backend_option)
 
-        selected_backend = backends[backend_option]
+        selected_backend = BACKENDS[backend_option]
         metafunc.parametrize("backend", [selected_backend], ids=[f"backend={backend_option}"])
 
     # parametrise grid

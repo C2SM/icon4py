@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import fields as field_utils
 from icon4py.model.common.grid import simple
 from icon4py.model.common.math import helpers
 from icon4py.model.common.settings import xp
@@ -15,15 +16,15 @@ from icon4py.model.testing import helpers as test_helpers
 
 def test_cross_product(backend):
     mesh = simple.SimpleGrid()
-    x1 = test_helpers.random_field(mesh, dims.EdgeDim)
-    y1 = test_helpers.random_field(mesh, dims.EdgeDim)
-    z1 = test_helpers.random_field(mesh, dims.EdgeDim)
-    x2 = test_helpers.random_field(mesh, dims.EdgeDim)
-    y2 = test_helpers.random_field(mesh, dims.EdgeDim)
-    z2 = test_helpers.random_field(mesh, dims.EdgeDim)
-    x = test_helpers.zero_field(mesh, dims.EdgeDim)
-    y = test_helpers.zero_field(mesh, dims.EdgeDim)
-    z = test_helpers.zero_field(mesh, dims.EdgeDim)
+    x1 = field_utils.random_field(mesh, dims.EdgeDim)
+    y1 = field_utils.random_field(mesh, dims.EdgeDim)
+    z1 = field_utils.random_field(mesh, dims.EdgeDim)
+    x2 = field_utils.random_field(mesh, dims.EdgeDim)
+    y2 = field_utils.random_field(mesh, dims.EdgeDim)
+    z2 = field_utils.random_field(mesh, dims.EdgeDim)
+    x = field_utils.zero_field(mesh, dims.EdgeDim)
+    y = field_utils.zero_field(mesh, dims.EdgeDim)
+    z = field_utils.zero_field(mesh, dims.EdgeDim)
 
     helpers.cross_product_on_edges.with_backend(backend)(
         x1, x2, y1, y2, z1, z2, out=(x, y, z), offset_provider={}

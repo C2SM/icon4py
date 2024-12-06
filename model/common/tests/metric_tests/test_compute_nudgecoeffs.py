@@ -23,7 +23,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.testing.helpers import zero_field
+from icon4py.model.common.utils.fields import zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 

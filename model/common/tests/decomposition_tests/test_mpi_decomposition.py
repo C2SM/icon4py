@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.testing.helpers import constant_field
+from icon4py.model.common.utils.fields import constant_field
 
 
 try:

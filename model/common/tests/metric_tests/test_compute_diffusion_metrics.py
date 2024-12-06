@@ -20,14 +20,13 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
     compute_z_mc,
 )
-from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing.helpers import (
+from icon4py.model.common.utils.fields import (
     constant_field,
-    dallclose,
     flatten_first_two_dims,
-    is_roundtrip,
-    zero_field,
+    zero_field
 )
+from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing.helpers import dallclose, is_roundtrip
 
 
 # TODO (halungge) fails in embedded

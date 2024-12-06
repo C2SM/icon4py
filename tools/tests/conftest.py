@@ -7,11 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
-from importlib import reload
+
+import click.testing as click_testing
+import pytest
 
 import icon4py.model.common.type_alias as type_alias
-import pytest
-from click.testing import CliRunner
 from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     damping_height,
     data_provider,
@@ -40,13 +40,47 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     step_date_init,
     stretch_factor,
 )
+from icon4py.model.testing.pytest_config import *  # noqa: F401
+
+__all__ = [
+    # local:
+    "cli",
+    "test_temp_dir",
+    # imported fixtures:
+    "damping_height",
+    "data_provider",
+    "download_ser_data",
+    "experiment",
+    "grid_savepoint",
+    "icon_grid",
+    "interpolation_savepoint",
+    "istep_exit",
+    "istep_init",
+    "jstep_exit",
+    "jstep_init",
+    "linit",
+    "lowest_layer_thickness",
+    "metrics_savepoint",
+    "model_top_height",
+    "ndyn_substeps",
+    "processor_props",
+    "ranked_data_path",
+    "savepoint_diffusion_exit",
+    "savepoint_diffusion_init",
+    "savepoint_nonhydro_exit",
+    "savepoint_nonhydro_init",
+    "savepoint_nonhydro_step_exit",
+    "step_date_exit",
+    "step_date_init",
+    "stretch_factor",
+]
 
 
 @pytest.fixture
 def cli():
-    yield CliRunner()
+    yield click_testing.CliRunner()
     os.environ["FLOAT_PRECISION"] = type_alias.DEFAULT_PRECISION
-    reload(type_alias)
+    type_alias.set_precision(type_alias.DEFAULT_PRECISION)
 
 
 @pytest.fixture
