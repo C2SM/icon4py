@@ -9,6 +9,7 @@ import logging
 import pathlib
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -18,7 +19,6 @@ from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
     edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -90,22 +90,22 @@ def model_initialization_gauss3d(
     )
     end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
-    w_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
-    exner_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    rho_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    temperature_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    pressure_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    theta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
-    eta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    w_numpy = np.zeros((num_cells, num_levels + 1), dtype=float)
+    exner_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    rho_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    temperature_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    pressure_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    theta_v_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    eta_v_numpy = np.zeros((num_cells, num_levels), dtype=float)
 
-    mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
+    mask_array_edge_start_plus1_to_edge_end = np.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
-    mask = xp.repeat(
-        xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
+    mask = np.repeat(
+        np.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
         num_levels,
         axis=1,
     )
-    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
+    primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
 
     # Define test case parameters
     # The topography can only be read from serialized data for now, then these
@@ -121,7 +121,7 @@ def model_initialization_gauss3d(
     log.info("Topography can only be read from serialized data for now.")
 
     # Horizontal wind field
-    u = xp.where(mask, nh_u0, 0.0)
+    u = np.where(mask, nh_u0, 0.0)
     vn_numpy = u * primal_normal_x
     log.info("Wind profile assigned.")
 
@@ -129,14 +129,14 @@ def model_initialization_gauss3d(
     for k_index in range(num_levels - 1, -1, -1):
         z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, k_index]
         # profile of theta is explicitly given
-        theta_v_numpy[:, k_index] = nh_t0 * xp.exp(z_help)
+        theta_v_numpy[:, k_index] = nh_t0 * np.exp(z_help)
 
     # Lower boundary condition for exner pressure
     if nh_brunt_vais != 0.0:
         z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, num_levels - 1]
         exner_numpy[:, num_levels - 1] = (
             phy_const.GRAV / nh_brunt_vais
-        ) ** 2 / nh_t0 / phy_const.CPD * (xp.exp(-z_help) - 1.0) + 1.0
+        ) ** 2 / nh_t0 / phy_const.CPD * (np.exp(-z_help) - 1.0) + 1.0
     else:
         exner_numpy[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / phy_const.CPD / nh_t0
     log.info("Vertical computations completed.")
@@ -179,7 +179,7 @@ def model_initialization_gauss3d(
     virtual_temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_numpy)
     pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_numpy)
     theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_numpy)
-    pressure_ifc_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    pressure_ifc_numpy = np.zeros((num_cells, num_levels + 1), dtype=float)
     pressure_ifc_numpy[
         :, -1
     ] = phy_const.P0REF  # set surface pressure to the prescribed value (only used for IC in JABW test case, then actually computed in the dycore)

@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import astype, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -27,7 +26,7 @@ def _calculate_horizontal_gradients_for_turbulence(
     return astype((dwdx_wp, dwdy_wp), vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_horizontal_gradients_for_turbulence(
     w: fa.CellKField[wpfloat],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, C2E2CODim], wpfloat],

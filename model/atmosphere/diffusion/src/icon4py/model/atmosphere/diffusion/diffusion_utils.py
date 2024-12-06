@@ -13,7 +13,6 @@ from gt4py.next.ffront.fbuiltins import broadcast, minimum, where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -46,7 +45,7 @@ def _init_zero_v_k() -> gtx.Field[[dims.VertexDim, dims.KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_zero_v_k(field: gtx.Field[[dims.VertexDim, dims.KDim], float]):
     _init_zero_v_k(out=field)
 

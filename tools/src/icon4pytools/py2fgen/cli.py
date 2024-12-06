@@ -9,7 +9,6 @@
 import pathlib
 
 import click
-from icon4py.model.common.config import GT4PyBackend
 
 from icon4pytools.common.utils import write_string
 from icon4pytools.py2fgen.generate import (
@@ -19,6 +18,7 @@ from icon4pytools.py2fgen.generate import (
 )
 from icon4pytools.py2fgen.parsing import parse
 from icon4pytools.py2fgen.plugin import generate_and_compile_cffi_plugin
+from icon4pytools.py2fgen.settings import GT4PyBackend
 
 
 def parse_comma_separated_list(ctx, param, value) -> list[str]:

@@ -17,7 +17,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import utils as grid_utils
-from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 class MissingConnectivity(ValueError):
@@ -113,7 +113,7 @@ class BaseGrid(ABC):
         return offset_providers
 
     @utils.chainable
-    def with_connectivities(self, connectivity: Dict[gtx.Dimension, np.ndarray]):
+    def with_connectivities(self, connectivity: Dict[gtx.Dimension, field_alloc.NDArray]):
         self.connectivities.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
@@ -137,7 +137,7 @@ class BaseGrid(ABC):
             dim, self.connectivities[dim].dtype
         )
         return gtx.NeighborTableOffsetProvider(
-            xp.asarray(self.connectivities[dim]),
+            self.connectivities[dim],
             from_dim,
             to_dim,
             self.size[dim],
