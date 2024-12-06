@@ -36,7 +36,7 @@ SPECIAL_DOMAIN_MARKERS = [H_START, H_END, V_START, V_END]
 
 @dataclass(frozen=True)
 class StencilInfo:
-    fendef: itir.FencilDefinition
+    program: itir.Program
     fields: dict[str, FieldInfo]
     connectivity_chains: list[eve.concepts.SymbolRef]
     offset_provider: dict
@@ -206,7 +206,7 @@ def get_stencil_info(
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = _get_fvprog(fencil_def)
     offsets = _scan_for_offsets(fvprog)
-    fendef = fvprog.itir
+    program = fvprog.itir
 
     fields = _get_field_infos(fvprog)
 
@@ -216,7 +216,7 @@ def get_stencil_info(
         offset_provider[offset] = _provide_offset(offset, is_global)
         if offset != dims.Koff.value:
             connectivity_chains.append(offset)
-    return StencilInfo(fendef, fields, connectivity_chains, offset_provider)
+    return StencilInfo(program, fields, connectivity_chains, offset_provider)
 
 
 def _calc_num_neighbors(dim_list: list[Dimension], includes_center: bool) -> int:
