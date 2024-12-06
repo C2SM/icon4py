@@ -117,6 +117,14 @@ class IconGrid(base.BaseGrid):
     def __repr__(self):
         return f"{self.__class__.__name__}: id={self._id}, R{self.global_properties.root}B{self.global_properties.level}"
 
+    def __eq__(self, other: "IconGrid"):
+        """TODO (@halungge)  this might not be enough at least for the distributed case: we might additional properties like sizes"""
+        if isinstance(other, IconGrid):
+            return self.id == other.id
+
+        else:
+            return False
+
     @utils.chainable
     def with_start_end_indices(
         self, dim: gtx.Dimension, start_indices: np.ndarray, end_indices: np.ndarray

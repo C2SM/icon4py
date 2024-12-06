@@ -33,6 +33,8 @@ except ImportError:
     import numpy as xp
 
 
+NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
+
 NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
 
 
