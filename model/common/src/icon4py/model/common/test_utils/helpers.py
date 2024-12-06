@@ -111,15 +111,13 @@ def zero_field(
     extend: Optional[dict[gt_common.Dimension, int]] = None,
     backend=None,
 ) -> gt_common.Field:
-    field_domain = {
-        dim: (
-            0,
-            grid.size[dim] + extend[dim]
-            if (extend is not None) and (dim in extend.keys())
-            else grid.size[dim],
-        )
-        for dim in dims
-    }
+    if extend is not None:
+        field_domain = {
+            dim: (0, grid.size[dim] + extend[dim] if dim in extend.keys() else grid.size[dim])
+            for dim in dims
+        }
+    else:
+        field_domain = {dim: (0, grid.size[dim]) for dim in dims}
     return constructors.zeros(field_domain, dtype=dtype, allocator=backend)
 
 
