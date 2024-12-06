@@ -9,17 +9,13 @@ from __future__ import annotations
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.test_utils.datatest_utils import (
-    GRIDS_PATH,
-    R02B04_GLOBAL,
-    REGIONAL_EXPERIMENT,
-)
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 
 
-r04b09_dsl_grid_path = GRIDS_PATH.joinpath(REGIONAL_EXPERIMENT)
+r04b09_dsl_grid_path = dt_utils.GRIDS_PATH.joinpath(dt_utils.REGIONAL_EXPERIMENT)
 r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1.tar.gz").name
 
-r02b04_global_grid_path = GRIDS_PATH.joinpath(R02B04_GLOBAL)
+r02b04_global_grid_path = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL)
 r02b04_global_data_file = r02b04_global_grid_path.joinpath("icon_grid_0013_R02B04_R.tar.gz").name
 
 
