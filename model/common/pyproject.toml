@@ -23,6 +23,7 @@ dependencies = [
   "gt4py>=1.0.4",
   'packaging>=20.0',
   "serialbox>=0.0.1",
+  'packaging>=20.0',
   "typing-extensions>=4.11.0"
 ]
 description = "Shared code for the icon4py model."
@@ -64,7 +65,7 @@ allow_dirty = false
 commit = false
 current_version = "0.0.6"
 ignore_missing_version = false
-message = 'Bump icon4pytools version: {current_version} → {new_version}'
+message = 'Bump icon4py-common version: {current_version} → {new_version}'
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
 serialize = ["{major}.{minor}.{patch}"]
 tag = false
@@ -119,8 +120,8 @@ testpaths = 'tests'
 extend = "../../pyproject.toml"
 
 [tool.ruff.lint.isort]
-known-first-party = ['icon4py.model']
-known-third-party = ['gt4py', 'icon4py']
+known-first-party = ['icon4py']
+known-third-party = ['gt4py']
 
 # -- setuptools --
 [tool.setuptools.package-data]

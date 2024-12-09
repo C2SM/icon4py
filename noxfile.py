@@ -40,21 +40,6 @@ def install_session_venv(
 
 
 @nox.session(python=["3.10", "3.11"])
-def test_tools(session: nox.Session) -> None:
-    """Run tests for the integration tools."""
-    install_session_venv(session, extras=["all"], groups=["test"])
-
-    with session.chdir("tools"):
-        session.run(
-            "pytest",
-            "-sv",
-            "-n",
-            session.env.get("NUM_PROCESSES", "auto"),
-            *session.posargs,
-        )
-
-
-@nox.session(python=["3.10", "3.11"])
 @nox.parametrize("selection", ["regular_tests", "slow_tests"])
 def test_common(session: nox.Session, selection: str) -> None:
     """Run tests for the common package of the icon4py model."""
@@ -66,8 +51,6 @@ def test_common(session: nox.Session, selection: str) -> None:
             pytest_args += ["-m", "not slow_tests"]
         case "slow_tests":
             pytest_args += ["-m", "slow_tests"]
-        case _:
-            assert False, "unreachable"
 
     with session.chdir("model/common"):
         session.run(
@@ -79,6 +62,35 @@ def test_common(session: nox.Session, selection: str) -> None:
             *pytest_args,
             *session.posargs,
         )
+
+@nox.session(python=["3.10", "3.11"])
+def test_driver(session: nox.Session) -> None:
+    """Run tests for the driver."""
+    install_session_venv(session, extras=["all"], groups=["test"])
+
+    with session.chdir("model/driver"):
+        session.run(
+            "pytest",
+            "-sv",
+            "-n",
+            session.env.get("NUM_PROCESSES", "auto"),
+            *session.posargs,
+        )
+
+@nox.session(python=["3.10", "3.11"])
+def test_tools(session: nox.Session) -> None:
+    """Run tests for the Fortran integration tools."""
+    install_session_venv(session, extras=["all"], groups=["test"])
+
+    with session.chdir("tools"):
+        session.run(
+            "pytest",
+            "-sv",
+            "-n",
+            session.env.get("NUM_PROCESSES", "auto"),
+            *session.posargs,
+        )
+
 
 
 # [testenv:run_stencil_tests]

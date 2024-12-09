@@ -48,7 +48,7 @@ allow_dirty = false
 commit = false
 current_version = "0.0.6"
 ignore_missing_version = false
-message = 'Bump icon4py.testing version: {current_version} → {new_version}'
+message = 'Bump icon4py-testing version: {current_version} → {new_version}'
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
 serialize = ["{major}.{minor}.{patch}"]
 tag = false
@@ -72,7 +72,7 @@ filename = "src/icon4py/model/testing/__init__.py"
 extend = "../../pyproject.toml"
 
 [tool.ruff.lint.isort]
-known-first-party = ['icon4py.model']
+known-first-party = ['icon4py']
 known-third-party = ['gt4py']
 
 # -- setuptools --
