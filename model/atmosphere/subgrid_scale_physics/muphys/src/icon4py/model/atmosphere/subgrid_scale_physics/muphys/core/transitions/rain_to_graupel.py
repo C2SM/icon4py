@@ -19,7 +19,7 @@ def _rain_to_graupel(
     qi:        fa.CellField[ta.wpfloat],             # Ice specific mass
     qs:        fa.CellField[ta.wpfloat],             # Snow specific mass
     mi:        fa.CellField[ta.wpfloat],             # Ice crystal mass
-    dvsw:      ta.wpfloat,                           # qv-qsat_water (T)
+    dvsw:      fa.CellField[ta.wpfloat],             # qv-qsat_water (T)
     dt:        ta.wpfloat,                           # time step
     QMIN:      ta.wpfloat,
     TFRZ_HOM:  ta.wpfloat,
@@ -51,7 +51,7 @@ def rain_to_graupel(
     qi:              fa.CellField[ta.wpfloat],       # Ice specific mass
     qs:              fa.CellField[ta.wpfloat],       # Snow specific mass
     mi:              fa.CellField[ta.wpfloat],       # Ice crystal mass
-    dvsw:            ta.wpfloat,                     # qv-qsat_water (T)
+    dvsw:            fa.CellField[ta.wpfloat],       # qv-qsat_water (T)
     dt:              ta.wpfloat,                     # time step
     QMIN:            ta.wpfloat,
     TFRZ_HOM:        ta.wpfloat,
