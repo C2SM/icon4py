@@ -23,7 +23,7 @@ from icon4py.model.common.states import (
     prognostic_state,
     tracer_state as tracers,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
 @pytest.mark.datatest

@@ -23,7 +23,7 @@ from icon4py.model.common.interpolation import (
     interpolation_fields,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.utils import gt4py_field_allocation as alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -40,7 +40,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         metadata: dict[str, model.FieldMetaData],
     ):
         self._backend = backend
-        self._xp = alloc.import_array_ns(backend)
+        self._xp = data_alloc.import_array_ns(backend)
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
         self._decomposition_info = decomposition_info

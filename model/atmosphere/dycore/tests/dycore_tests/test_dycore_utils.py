@@ -11,7 +11,8 @@ import numpy as np
 from icon4py.model.atmosphere.dycore import dycore_utils
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.common.settings import backend
+from icon4py.model.testing import helpers
 
 
 def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: float):
@@ -23,7 +24,7 @@ def bdy_divdamp_numpy(coeff: float, field: np.array):
     return 0.75 / (coeff + constants.DBL_EPS) * np.abs(field)
 
 
-def test_caclulate_scal_divdamp_order_24(backend):
+def test_caclulate_scal_divdamp_order_24():
     divdamp_fac_o2 = 3.0
     divdamp_order = 24
     mean_cell_area = 1000.0
@@ -44,7 +45,7 @@ def test_caclulate_scal_divdamp_order_24(backend):
     assert helpers.dallclose(ref, out.asnumpy())
 
 
-def test_calculate_scal_divdamp_any_order(backend):
+def test_calculate_scal_divdamp_any_order():
     divdamp_fac_o2 = 4.2
     divdamp_order = 3
     mean_cell_area = 1000.0
@@ -64,7 +65,7 @@ def test_calculate_scal_divdamp_any_order(backend):
     assert helpers.dallclose(enhanced_factor, out.asnumpy())
 
 
-def test_calculate_bdy_divdamp(backend):
+def test_calculate_bdy_divdamp():
     grid = simple_grid.SimpleGrid()
     scal_divdamp = helpers.random_field(grid, dims.KDim)
     out = helpers.zero_field(grid, dims.KDim)
@@ -75,7 +76,7 @@ def test_calculate_bdy_divdamp(backend):
     assert helpers.dallclose(out.asnumpy(), bdy_divdamp_numpy(coeff, scal_divdamp.asnumpy()))
 
 
-def test_calculate_divdamp_fields(backend):
+def test_calculate_divdamp_fields():
     grid = simple_grid.SimpleGrid()
     divdamp_field = helpers.random_field(grid, dims.KDim)
     scal_divdamp = helpers.zero_field(grid, dims.KDim)

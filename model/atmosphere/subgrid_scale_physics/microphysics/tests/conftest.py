@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
+from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     lowest_layer_thickness,
     maximal_layer_thickness,
     model_top_height,

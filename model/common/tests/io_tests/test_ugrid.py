@@ -17,7 +17,7 @@ from icon4py.model.common.io.ugrid import (
     extract_horizontal_coordinates,
     load_data_file,
 )
-from icon4py.model.common.test_utils import datatest_utils, grid_utils
+from icon4py.model.testing import datatest_utils, grid_utils
 
 
 def grid_files():

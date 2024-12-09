@@ -20,7 +20,7 @@ from icon4py.model.common.io.writers import (
     filter_by_standard_name,
 )
 from icon4py.model.common.states import data, metadata
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.testing import helpers
 
 from . import test_io
 

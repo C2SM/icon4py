@@ -11,7 +11,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 from icon4py.model.atmosphere.diffusion import diffusion_states
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.testing import helpers
 
 
 @pytest.mark.datatest

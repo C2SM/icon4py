@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advect
     add_interpolated_horizontal_advection_of_w,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
+from icon4py.model.testing.helpers import StencilTest, as_1D_sparse_field, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

@@ -12,7 +12,7 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
-from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.testing.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
     processor_props,
 )

@@ -5,23 +5,27 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
+from icon4py.model.common import settings
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
+    geometry,
     geometry_attributes as geometry_meta,
+    icon,
     vertical as v_grid,
 )
-from icon4py.model.common.test_utils import (
+from icon4py.model.common.settings import backend, xp
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
     helpers,
     reference_funcs as ref_funcs,
-    serialbox_utils as sb,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc, serialbox as sb
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,
@@ -48,16 +52,25 @@ def get_cell_geometry_for_experiment(experiment, backend):
 
 
 def _get_or_initialize(experiment, backend, name):
-    grid_file = (
-        dt_utils.REGIONAL_EXPERIMENT
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else dt_utils.R02B04_GLOBAL
-    )
+    def _construct_minimal_decomposition_info(grid: icon.IconGrid):
+        edge_indices = data_alloc.allocate_indices(dims.EdgeDim, grid)
+        owner_mask = xp.ones((grid.num_edges,), dtype=bool)
+        decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
+        decomposition_info.with_dimension(dims.EdgeDim, edge_indices.ndarray, owner_mask)
+        return decomposition_info
 
     if not grid_functionality[experiment].get(name):
-        geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
-        grid = geometry_.grid
-
+        gm = grid_utils.get_grid_manager_for_experiment(experiment, backend)
+        grid = gm.grid
+        decomposition_info = _construct_minimal_decomposition_info(grid)
+        geometry_ = geometry.GridGeometry(
+            grid=grid,
+            decomposition_info=decomposition_info,
+            backend=backend,
+            coordinates=gm.coordinates,
+            extra_fields=gm.geometry,
+            metadata=geometry_meta.attrs,
+        )
         cell_params = grid_states.CellParams.from_global_num_cells(
             cell_center_lat=geometry_.get(geometry_meta.CELL_LAT),
             cell_center_lon=geometry_.get(geometry_meta.CELL_LON),
@@ -160,7 +173,7 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     params = diffusion.DiffusionParams(construct_diffusion_config(experiment, ndyn_substeps=5))
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
-    assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
+    assert xp.all(params.smagorinski_factor >= xp.zeros(len(params.smagorinski_factor)))
 
 
 @pytest.mark.datatest
@@ -271,7 +284,7 @@ def test_diffusion_init(
 
 
 def _verify_init_values_against_savepoint(
-    savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion, backend
+    savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion
 ):
     dtime = savepoint.get_metadata("dtime")["dtime"]
 
@@ -373,11 +386,10 @@ def test_verify_diffusion_init_against_savepoint(
         interpolation_state,
         edge_params,
         cell_params,
-        orchestration=True,
         backend=backend,
     )
 
-    _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule, backend)
+    _verify_init_values_against_savepoint(savepoint_diffusion_init, diffusion_granule)
 
 
 @pytest.mark.datatest
@@ -388,7 +400,7 @@ def test_verify_diffusion_init_against_savepoint(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps, orchestration", [(2, [True, False])])
+@pytest.mark.parametrize("ndyn_substeps", (2,))
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -401,10 +413,7 @@ def test_run_diffusion_single_step(
     damping_height,
     ndyn_substeps,
     backend,
-    orchestration,
 ):
-    if orchestration and ("dace" not in backend.name.lower()):
-        raise pytest.skip("This test is only executed for `dace backends.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -465,7 +474,6 @@ def test_run_diffusion_single_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        orchestration=orchestration,
     )
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, savepoint_diffusion_init)
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
@@ -502,8 +510,9 @@ def test_run_diffusion_multiple_steps(
     backend,
     icon_grid,
 ):
-    if "dace" not in backend.name.lower():
-        raise pytest.skip("This test is only executed for `dace backends.")
+    if settings.dace_orchestration is None:
+        raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
+
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -550,6 +559,7 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe NON-Orchestrated Backend
     ######################################################################
+    settings.dace_orchestration = None
 
     diagnostic_state_dace_non_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -568,7 +578,6 @@ def test_run_diffusion_multiple_steps(
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
         cell_params=cell_geometry,
-        orchestration=False,
         backend=backend,
     )
 
@@ -582,6 +591,7 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe Orchestrated Backend
     ######################################################################
+    settings.dace_orchestration = True
 
     diagnostic_state_dace_orch = diffusion_states.DiffusionDiagnosticState(
         hdef_ic=savepoint_diffusion_init.hdef_ic(),
@@ -601,7 +611,6 @@ def test_run_diffusion_multiple_steps(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        orchestration=True,
     )
 
     for _ in range(3):
@@ -624,7 +633,7 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
-@pytest.mark.parametrize("linit, orchestration", [(True, [True, False])])
+@pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(
     experiment,
     linit,
@@ -637,10 +646,7 @@ def test_run_diffusion_initial_step(
     interpolation_savepoint,
     metrics_savepoint,
     backend,
-    orchestration,
 ):
-    if orchestration and ("dace" not in backend.name.lower()):
-        raise pytest.skip("This test is only executed for `dace backends.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -697,7 +703,6 @@ def test_run_diffusion_initial_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
         backend=backend,
-        orchestration=orchestration,
     )
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v

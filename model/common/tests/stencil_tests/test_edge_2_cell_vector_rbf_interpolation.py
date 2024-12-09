@@ -13,7 +13,7 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.testing import helpers
 
 
 class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
