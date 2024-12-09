@@ -18,7 +18,7 @@ from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
 
-from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 
@@ -53,7 +53,6 @@ def is_roundtrip(backend) -> bool:
     return backend.name == "roundtrip" if backend else False
 
 
-
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
@@ -81,10 +80,7 @@ class Output:
 def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
-        **{
-            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
-            for k, v in input_data.items()
-        },
+        **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
     )
 
     input_data = allocate_data(backend, input_data)

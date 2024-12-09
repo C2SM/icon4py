@@ -33,14 +33,12 @@ CUDA_DEVICE_TYPES = (
     gt_core_defs.DeviceType.ROCM,
 )
 
-
 try:
     import cupy as xp
 except ImportError:
-    import numpy as xp
+    import numpy as cp
 
-
-NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
+NDArrayInterface: TypeAlias = Union[np.ndarray, "cp.ndarray", gtx.Field]
 
 
 def as_numpy(array: NDArrayInterface):
@@ -112,35 +110,32 @@ def unflatten_first_two_dims(field: gtx.Field) -> np.array:
     return np.asarray(field).reshape(new_shape)
 
 
-def _size(grid, dim: gtx.Dimension, is_half_dim: bool) -> int:
-    if dim == dimension.KDim and is_half_dim:
-        return grid.size[dim] + 1
-    return grid.size[dim]
-
-
-
 def random_field(
     grid,
     *dims,
     low: float = -1.0,
     high: float = 1.0,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
     dtype: Optional[npt.DTypeLike] = None,
+    extend: Optional[dict[gtx.Dimension, int]] = None,
+    backend=None
 ) -> gtx.Field:
     arr = np.random.default_rng().uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr)
+    return gtx.as_field(dims, arr, allocator=backend)
+
 
 def zero_field(
     grid: grid_base.BaseGrid,
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
     extend: Optional[dict[gtx.Dimension, int]] = None,
+    backend=None
 ) -> gtx.Field:
-    return gtx.as_field(dims, xp.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
+    field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
+    return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=backend)
 
 
 def constant_field(
@@ -152,14 +147,18 @@ def constant_field(
     )
 
 
-
 def _shape(
     grid,
     *dims: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
-):
+) -> tuple[int, ...]:
     extend = extend or {}
     return tuple(grid.size[dim] + extend.get(dim, 0) for dim in dims)
+
+def _size(grid, dim: gtx.Dimension, is_half_dim: bool) -> int:
+    if dim == dimension.KDim and is_half_dim:
+        return grid.size[dim] + 1
+    return grid.size[dim]
 
 
 def random_mask(
@@ -180,7 +179,7 @@ def random_mask(
     return gtx.as_field(dims, arr)
 
 
-
+# TODO: are the following functions needed? Don't they overlap with the above ones?
 def allocate_zero_field(
     *dims: gtx.Dimension,
     grid,

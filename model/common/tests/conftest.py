@@ -11,7 +11,11 @@ import random
 
 import pytest
 
-from icon4py.model.testing.helpers import backend, grid
+from icon4py.model.testing.datatest_fixtures import (
+    decomposition_info,
+    experiment,
+)
+from icon4py.model.testing.helpers import backend
 from icon4py.model.testing.pytest_config import *  # noqa: F401
 
 __all__ = [
@@ -20,7 +24,8 @@ __all__ = [
     "test_path",
     # imported fixtures:
     "backend",
-    "grid",
+    "decomposition_info",
+    "experiment"
 ]
 
 

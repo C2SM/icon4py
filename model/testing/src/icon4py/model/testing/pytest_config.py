@@ -13,7 +13,6 @@ from typing import Final
 import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
-import icon4py.model.common.settings as settings
 from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
@@ -78,10 +77,6 @@ def pytest_configure(config):
     if config.getoption("--backend"):
         backend = config.getoption("--backend")
         _check_backend_validity(backend)
-        settings.backend = BACKENDS[backend]
-
-    if config.getoption("--dace-orchestration"):
-        settings.dace_orchestration = True
 
 
 def pytest_addoption(parser):
@@ -123,16 +118,6 @@ def pytest_addoption(parser):
             action="store_true",
             help="Switch unit tests from double to mixed-precision",
             default=False,
-        )
-    except ValueError:
-        pass
-
-    try:
-        parser.addoption(
-            "--dace-orchestration",
-            action="store",
-            default=None,
-            help="Performs DaCe orchestration. Any value will enable it.",
         )
     except ValueError:
         pass
