@@ -38,6 +38,7 @@ val = factory.get("foo", RetrievalType.DATA_ARRAY)
 TODO: @halungge: allow to read configuration data
 
 """
+
 import collections
 import enum
 import functools
@@ -344,8 +345,8 @@ class FieldOperatorProvider(FieldProvider):
                 horizontal_offsets = {
                     k: v
                     for k, v in grid.offset_providers.items()
-                    if isinstance(v, gtx.NeighborTableOffsetProvider)
-                    and v.origin_axis.kind == gtx.DimensionKind.HORIZONTAL
+                    if isinstance(v, gtx.Connectivity)
+                    and v.domain.dims[0].kind == gtx.DimensionKind.HORIZONTAL
                 }
                 offset_providers.update(horizontal_offsets)
             if dim.kind == gtx.DimensionKind.VERTICAL:
@@ -445,8 +446,8 @@ class ProgramFieldProvider(FieldProvider):
                 horizontal_offsets = {
                     k: v
                     for k, v in grid.offset_providers.items()
-                    if isinstance(v, gtx.NeighborTableOffsetProvider)
-                    and v.origin_axis.kind == gtx.DimensionKind.HORIZONTAL
+                    if isinstance(v, gtx.Connectivity)
+                    and v.domain.dims[0].kind == gtx.DimensionKind.HORIZONTAL
                 }
                 offset_providers.update(horizontal_offsets)
             if dim.kind == gtx.DimensionKind.VERTICAL:

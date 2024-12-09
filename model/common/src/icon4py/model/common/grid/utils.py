@@ -7,10 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next import Dimension, NeighborTableOffsetProvider
+from gt4py.next import Dimension
 
 
 def neighbortable_offset_provider_for_1d_sparse_fields(
+    dim: Dimension,
     old_shape: tuple[int, int],
     origin_axis: Dimension,
     neighbor_axis: Dimension,
@@ -22,10 +23,9 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
     ), 'Neighbor table\'s ("{}" to "{}") data type for 1d sparse fields must be gtx.int32. Instead it\'s "{}"'.format(
         origin_axis, neighbor_axis, table.dtype
     )
-    return NeighborTableOffsetProvider(
-        table,
-        origin_axis,
+    return gtx.as_connectivity(
+        [origin_axis, dim],
         neighbor_axis,
-        table.shape[1],
-        has_skip_values=has_skip_values,
+        table,
+        skip_value=-1 if has_skip_values else None,
     )
