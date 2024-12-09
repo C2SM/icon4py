@@ -72,21 +72,3 @@ The processor takes care of:
             style="border: 0px none; margin-left: -36px; margin-top: 0px; height: 440px; width: 768px;"> <!--768px is the max width without sidebar-->
     </iframe>
     </div>
-
-
-.. _feedback-section:
-
-Scidoc feedback
----------------
-
-.. raw:: html
-
-    <div id="utterances-comments"></div>
-    <script src="https://utteranc.es/client.js"
-        repo="C2SM/icon4py"
-        issue-term="pathname"
-        label="documentation"
-        theme="github-light"
-        crossorigin="anonymous"
-        async>
-    </script>
