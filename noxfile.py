@@ -40,6 +40,64 @@ def install_session_venv(
 
 
 @nox.session(python=["3.10", "3.11"])
+def test_atmosphere_advection(session: nox.Session) -> None:
+    """Run tests for the advection component of model.atmosphere."""
+    install_session_venv(session, extras=["all"], groups=["test"])
+
+    with session.chdir("model/atmosphere/advection"):
+        session.run(
+            "pytest",
+            "-sv",
+            "-n",
+            session.env.get("NUM_PROCESSES", "auto"),
+            *session.posargs,
+        )
+
+
+@nox.session(python=["3.10", "3.11"])
+def test_atmosphere_diffusion(session: nox.Session) -> None:
+    """Run tests for the diffusion component of model.atmosphere."""
+    install_session_venv(session, extras=["all"], groups=["test"])
+
+    with session.chdir("model/atmosphere/diffusion"):
+        session.run(
+            "pytest",
+            "-sv",
+            "-n",
+            session.env.get("NUM_PROCESSES", "auto"),
+            *session.posargs,
+        )
+
+
+@nox.session(python=["3.10", "3.11"])
+def test_atmosphere_dycore(session: nox.Session) -> None:
+    """Run tests for the dycore component of model.atmosphere."""
+    install_session_venv(session, extras=["all"], groups=["test"])
+
+    with session.chdir("model/atmosphere/dycore"):
+        session.run(
+            "pytest",
+            "-sv",
+            "-n",
+            session.env.get("NUM_PROCESSES", "auto"),
+            *session.posargs,
+        )
+
+@nox.session(python=["3.10", "3.11"])
+def test_atmosphere_microphysics(session: nox.Session) -> None:
+    """Run tests for the microphysics component of model.atmosphere.subgrid_scale_physics."""
+    install_session_venv(session, extras=["all"], groups=["test"])
+
+    with session.chdir("model/atmosphere/subgrid_scale_physics/microphysics"):
+        session.run(
+            "pytest",
+            "-sv",
+            "-n",
+            session.env.get("NUM_PROCESSES", "auto"),
+            *session.posargs,
+        )
+
+@nox.session(python=["3.10", "3.11"])
 @nox.parametrize("selection", ["regular_tests", "slow_tests"])
 def test_common(session: nox.Session, selection: str) -> None:
     """Run tests for the common package of the icon4py model."""
