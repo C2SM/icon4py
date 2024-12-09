@@ -1,10 +1,10 @@
 Welcome to ICON4Py's documentation!
 ===================================
 
-ICON4Py is an ICON inspired code written in Python and GT4Py.
-The documentation is currently at a very early stage of development, as the code
-is constantly evolving, but you can take a look at the numerical documentation
-for the dycore.
+`ICON4Py <https://github.com/C2SM/icon4py>`_ is an ICON inspired code written in
+Python and GT4Py. The documentation is currently at a very early stage of
+development, as the code is constantly evolving, but you can take a look at the
+numerical documentation for the dycore.
 
 These pages present two categories of documentation:
  - a classical software documentation, ideally suited for compact
@@ -16,7 +16,7 @@ These pages present two categories of documentation:
    it is useful to follow the flow of data and operations within the substep
    itself (e.g. |sciDocExample|).
    This is also automatically generated, but it works with a custom parser
-   documented in |sciDocParser|; feedback on this is very welcome (see :ref:`feedback-section`).
+   documented in |sciDocParser|; feedback is very welcome (see :doc:`feedback`).
 
 
 .. toctree::
