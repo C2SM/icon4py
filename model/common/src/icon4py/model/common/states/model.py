@@ -21,6 +21,7 @@ import icon4py.model.common.type_alias as ta
 DimensionNames = Literal["cell", "edge", "vertex"]
 DimensionT = Union[gtx.Dimension, DimensionNames]
 BufferT = Union[np_t.ArrayLike, gtx.Field]
+DTypeT = Union[ta.wpfloat, ta.vpfloat, gtx.int32, gtx.int64, gtx.float32, gtx.float64]
 
 
 class OptionalMetaData(TypedDict, total=False):
