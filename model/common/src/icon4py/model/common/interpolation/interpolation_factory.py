@@ -199,6 +199,3 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
     @property
     def vertical_grid(self):
         return None
-
-    def retrieve_field(self, name: str):
-        return self._providers[name].fields
