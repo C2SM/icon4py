@@ -1,7 +1,18 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from typing import Final
+
 import gt4py.next as gtx
+
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
+
 
 Z_MC: Final[str] = "height"
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
@@ -57,12 +68,12 @@ attrs: dict[str, model.FieldMetaData] = {
         dtype=ta.wpfloat,
     ),
     DDQZ_Z_HALF: dict(
-            standard_name=DDQZ_Z_HALF,
-            long_name="functional_determinant_of_metrics_on_interface_levels",
-            units="",
-            dims=(dims.CellDim, dims.KHalfDim),
-            icon_var_name="ddqz_z_half",
-            dtype=ta.wpfloat,
+        standard_name=DDQZ_Z_HALF,
+        long_name="functional_determinant_of_metrics_on_interface_levels",
+        units="",
+        dims=(dims.CellDim, dims.KHalfDim),
+        icon_var_name="ddqz_z_half",
+        dtype=ta.wpfloat,
     ),
     DDQZ_Z_FULL: dict(
         standard_name=DDQZ_Z_FULL,
