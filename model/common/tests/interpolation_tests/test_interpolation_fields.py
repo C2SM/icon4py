@@ -26,7 +26,6 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_geofac_rot,
     compute_mass_conserving_bilinear_cell_average_weight,
     compute_pos_on_tplane_e_x_y,
-    compute_primal_normal_ec,
 )
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
@@ -157,16 +156,11 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
     e2c = icon_grid.connectivities[dims.E2CDim]
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    primal_normal_ec = compute_primal_normal_ec(
+
+    geofac_grg_0, geofac_grg_1 = compute_geofac_grg(
         primal_normal_cell_x,
         primal_normal_cell_y,
-        owner_mask,
-        c2e,
-        e2c,
-        horizontal_start,
-    )
-    geofac_grg = compute_geofac_grg(
-        primal_normal_ec,
+        owner_mask.asnumpy(),
         geofac_div.asnumpy(),
         c_lin_e.asnumpy(),
         c2e,
@@ -175,10 +169,10 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         horizontal_start,
     )
     assert test_helpers.dallclose(
-        geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7
+        alloc.as_numpy(geofac_grg_0), geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7
     )
     assert test_helpers.dallclose(
-        geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7
+        alloc.as_numpy(geofac_grg_1), geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7
     )
 
 

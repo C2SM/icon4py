@@ -40,6 +40,7 @@ TODO: @halungge: allow to read configuration data
 """
 import collections
 import enum
+import functools
 import inspect
 from functools import cached_property
 from typing import (
@@ -70,8 +71,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import model, utils as state_utils
-from icon4py.model.common.states.model import FieldMetaData
-from icon4py.model.common.states.utils import FieldType, to_data_array
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
@@ -143,7 +143,7 @@ class FieldSource(GridProvider, Protocol):
         return self
 
     @property
-    def metadata(self) -> MutableMapping[str, FieldMetaData]:
+    def metadata(self) -> MutableMapping[str, model.FieldMetaData]:
         """Returns metadata for the fields that this field source provides."""
         ...
 
@@ -156,7 +156,7 @@ class FieldSource(GridProvider, Protocol):
 
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> Union[FieldType, xa.DataArray, model.FieldMetaData]:
+    ) -> Union[state_utils.FieldType, xa.DataArray, model.FieldMetaData]:
         """
         Get a field or its metadata from the factory.
 
@@ -186,7 +186,7 @@ class FieldSource(GridProvider, Protocol):
                 return (
                     buffer
                     if type_ == RetrievalType.FIELD
-                    else to_data_array(buffer, self.metadata[field_name])
+                    else state_utils.to_data_array(buffer, self.metadata[field_name])
                 )
             case _:
                 raise ValueError(f"Invalid retrieval type {type_}")
@@ -199,7 +199,7 @@ class FieldSource(GridProvider, Protocol):
         for dependency in provider.dependencies:
             if not (dependency in self._providers.keys() or self._provided_by_source(dependency)):
                 raise ValueError(
-                    f"Missing dependency: '{dependency}' not found in registered of sources {self.__class__}"
+                    f"Missing dependency: '{dependency}' in registered of sources {self.__class__}"
                 )
 
         for field in provider.fields:
@@ -215,7 +215,7 @@ class CompositeSource(FieldSource):
         self._providers = collections.ChainMap(me._providers, *(s._providers for s in others))
 
     @cached_property
-    def metadata(self) -> MutableMapping[str, FieldMetaData]:
+    def metadata(self) -> MutableMapping[str, model.FieldMetaData]:
         return self._metadata
 
     @property
@@ -281,7 +281,7 @@ class FieldOperatorProvider(FieldProvider):
         self._dims = domain
         self._dependencies = deps
         self._output = fields
-        self._params = params if params is not None else {}
+        self._params = {} if params is None else params
         self._fields: dict[str, Optional[gtx.Field | state_utils.ScalarType]] = {
             name: None for name in fields.values()
         }
@@ -532,11 +532,6 @@ class NumpyFieldsProvider(FieldProvider):
     """
     Computes a field defined by a numpy function.
 
-    TODO (halungge): - need to specify a parameter source to be able to postpone evaluation:  paramters are mostly
-                    configuration values
-                    - need to able to access fields from several sources.
-
-
     Args:
         func: numpy function that computes the fields
         domain: the compute domain used for the stencil computation
@@ -607,19 +602,22 @@ class NumpyFieldsProvider(FieldProvider):
         parameters = func_signature.parameters
         for dep_key in self._dependencies.keys():
             parameter_definition = parameters.get(dep_key)
-            assert parameter_definition.annotation == xp.ndarray, (
-                f"Dependency {dep_key} in function {self._func.__name__}:  does not exist or has "
-                f"wrong type ('expected xp.ndarray') in {func_signature}."
+            checked = _check_union(parameter_definition, union=field_alloc.NDArray)
+            assert checked, (
+                f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
+                f"wrong type ('expected ndarray') but was '{parameter_definition}'."
             )
 
         for param_key, param_value in self._params.items():
             parameter_definition = parameters.get(param_key)
-            checked = _check(
+            checked = _check_union_and_type(
                 parameter_definition, param_value, union=state_utils.IntegerType
-            ) or _check(parameter_definition, param_value, union=state_utils.FloatType)
+            ) or _check_union_and_type(
+                parameter_definition, param_value, union=state_utils.FloatType
+            )
             assert checked, (
-                f"Parameter {param_key} in function {self._func.__name__} does not "
-                f"exist or has the wrong type: {type(param_value)}."
+                f"Parameter '{param_key}' in function '{_func_name(self._func)}' does not "
+                f"exist or has the wrong type: '{type(param_value)}'."
             )
 
     @property
@@ -635,14 +633,35 @@ class NumpyFieldsProvider(FieldProvider):
         return self._fields
 
 
-def _check(
+def _check_union_and_type(
     parameter_definition: inspect.Parameter,
     value: Union[state_utils.ScalarType, gtx.Field],
     union: Union,
 ) -> bool:
+    _check_union(parameter_definition, union) and type(value) in get_args(union)
     members = get_args(union)
     return (
         parameter_definition is not None
         and parameter_definition.annotation in members
         and type(value) in members
     )
+
+
+def _check_union(
+    parameter_definition: inspect.Parameter,
+    union: Union,
+) -> bool:
+    members = get_args(union)
+    # fix for unions with only one member, which implicitly are not Union but fallback to the type
+    # fix for unions with only one member, which implicitly are not Union but fallback to the type
+    if not members:
+        members = (union,)
+    annotation = parameter_definition.annotation
+    return parameter_definition is not None and (annotation == union or annotation in members)
+
+
+def _func_name(callable_: Callable[..., Any]) -> str:
+    if isinstance(callable_, functools.partial):
+        return callable_.func.__name__
+    else:
+        return callable_.__name__
