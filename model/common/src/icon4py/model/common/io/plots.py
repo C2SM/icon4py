@@ -24,7 +24,7 @@ Y_LIMS = (-Y_BOUNDARY*1.02, Y_BOUNDARY*1.02)
 def remove_boundary_triangles(
         tri: mpl.tri.Triangulation,
         criterion: str = 'wrapping',
-        mask_edges: bool = True,
+        mask_edges: bool = False,
 ) -> mpl.tri.Triangulation:
     """
     Remove boundary triangles from a triangulation.
