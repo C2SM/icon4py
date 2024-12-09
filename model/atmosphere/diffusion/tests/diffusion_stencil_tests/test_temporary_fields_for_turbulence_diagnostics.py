@@ -37,7 +37,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
         **kwargs,
     ) -> dict:
         c2e = grid.connectivities[dims.C2EDim]
-        c2ce = grid.get_offset_provider("C2CE").table
+        c2ce = grid.get_offset_provider("C2CE").ndarray
 
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
