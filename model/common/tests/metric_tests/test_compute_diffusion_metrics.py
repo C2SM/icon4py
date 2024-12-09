@@ -20,7 +20,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
     compute_z_mc,
 )
-from icon4py.model.common.utils.fields import (
+from icon4py.model.common.utils.data_allocation import (
     constant_field,
     flatten_first_two_dims,
     zero_field

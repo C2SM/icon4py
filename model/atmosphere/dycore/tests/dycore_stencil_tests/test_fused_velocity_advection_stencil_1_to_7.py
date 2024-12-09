@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.testing.helpers import StencilTest, random_field, zero_field
-from icon4py.model.common.utils import fields as field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -220,7 +220,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim)
         wgtfacq_e = random_field(grid, dims.EdgeDim, dims.KDim)
 
-        k = field_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
+        k = data_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
 
         edge = zero_field(grid, dims.EdgeDim, dtype=gtx.int32)
         for e in range(grid.num_edges):

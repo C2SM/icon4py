@@ -48,7 +48,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_z_mc,
 )
 from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.common.utils import fields as field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import (
     StencilTest,
     dallclose,
@@ -78,8 +78,8 @@ class TestComputeZMc(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        z_mc = field_utils.zero_field(grid, dims.CellDim, dims.KDim)
-        z_if = field_utils.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        z_mc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_if = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         horizontal_start = 0
         horizontal_end = grid.num_cells
         vertical_start = 0
@@ -102,7 +102,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         pytest.skip("skipping: unsupported backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
     nlevp1 = icon_grid.num_levels + 1
     k_index = gtx.as_field((dims.KDim,), np.arange(nlevp1, dtype=gtx.int32))
     compute_z_mc.with_backend(backend)(
@@ -114,7 +114,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
-    ddqz_z_half = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+    ddqz_z_half = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
     compute_ddqz_z_half.with_backend(backend=backend)(
         z_ifc=z_ifc,
@@ -139,8 +139,8 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
-    ddqz_z_full = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    inv_ddqz_z_full = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    inv_ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
 
     compute_ddqz_z_full_and_inverse.with_backend(backend)(
         z_ifc=z_ifc,
@@ -161,7 +161,7 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
-    scalfac_dd3d_full = field_utils.zero_field(icon_grid, dims.KDim)
+    scalfac_dd3d_full = data_alloc.zero_field(icon_grid, dims.KDim)
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = 3
@@ -186,7 +186,7 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
 def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savepoint, backend):
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
-    rayleigh_w_full = field_utils.zero_field(icon_grid, dims.KDim, extend={dims.KDim: 1})
+    rayleigh_w_full = data_alloc.zero_field(icon_grid, dims.KDim, extend={dims.KDim: 1})
     rayleigh_type = 2
     rayleigh_coeff = 0.1 if experiment == dt_utils.GLOBAL_EXPERIMENT else 5.0
     damping_height = 50000.0 if experiment == dt_utils.GLOBAL_EXPERIMENT else 12500.0
@@ -216,8 +216,8 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
 
-    coeff1_dwdz_full = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    coeff2_dwdz_full = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    coeff1_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    coeff2_dwdz_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim), 1 / metrics_savepoint.inv_ddqz_z_full().asnumpy()
     )
@@ -245,7 +245,7 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     compute_z_mc.with_backend(backend)(
         z_ifc=z_ifc,
         z_mc=z_mc,
@@ -259,8 +259,8 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
     d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
     d2dexdz2_fac2_mc_ref = metrics_savepoint.d2dexdz2_fac2_mc()
 
-    d2dexdz2_fac1_mc_full = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    d2dexdz2_fac2_mc_full = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    d2dexdz2_fac1_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    d2dexdz2_fac2_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     cpd = constants.CPD
     grav = constants.GRAV
     del_t_bg = constants.DEL_T_BG
@@ -313,7 +313,7 @@ def test_compute_ddxt_z_full_e(
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
-    z_ifv = field_utils.zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
+    z_ifv = data_alloc.zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
     compute_cell_2_vertex_interpolation.with_backend(backend)(
         z_ifc,
         gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts),
@@ -324,7 +324,7 @@ def test_compute_ddxt_z_full_e(
         vertical_end=vertical_end,
         offset_provider={"V2C": icon_grid.get_offset_provider("V2C")},
     )
-    ddxt_z_half_e = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    ddxt_z_half_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
     compute_ddxt_z_half_e.with_backend(backend)(
         z_ifv=z_ifv,
         inv_primal_edge_length=inv_primal_edge_length,
@@ -336,7 +336,7 @@ def test_compute_ddxt_z_full_e(
         vertical_end=vertical_end,
         offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
     )
-    ddxt_z_full = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    ddxt_z_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     compute_ddxn_z_full.with_backend(backend)(
         z_ddxnt_z_half_e=ddxt_z_half_e,
         ddxn_z_full=ddxt_z_full,
@@ -349,7 +349,7 @@ def test_compute_ddxt_z_full_e(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
-    vwind_expl_wgt_full = field_utils.zero_field(icon_grid, dims.CellDim)
+    vwind_expl_wgt_full = data_alloc.zero_field(icon_grid, dims.CellDim)
     vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
     vwind_impl_wgt = metrics_savepoint.vwind_impl_wgt()
 
@@ -378,7 +378,7 @@ def test_compute_ddqz_z_full_e(
     ddqz_z_full_e_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
     vertical_start = 0
     vertical_end = icon_grid.num_levels
-    ddqz_z_full_e = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    ddqz_z_full_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     cell_2_edge_interpolation.with_backend(backend)(
         in_field=ddqz_z_full,
         coeff=c_lin_e,
@@ -406,7 +406,7 @@ def test_compute_ddxn_z_full(
     horizontal_end = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
-    ddxn_z_half_e = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    ddxn_z_half_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
     compute_ddxn_z_half_e.with_backend(backend)(
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
@@ -417,7 +417,7 @@ def test_compute_ddxn_z_full(
         vertical_end=vertical_end,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
-    ddxn_z_full = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    ddxn_z_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     compute_ddxn_z_full.with_backend(backend)(
         z_ddxnt_z_half_e=ddxn_z_half_e,
         ddxn_z_full=ddxn_z_full,
@@ -449,7 +449,7 @@ def test_compute_ddxt_z_full(
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
-    z_ifv = field_utils.zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
+    z_ifv = data_alloc.zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
     compute_cell_2_vertex_interpolation.with_backend(backend)(
         z_ifc,
         gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts),
@@ -460,7 +460,7 @@ def test_compute_ddxt_z_full(
         vertical_start=vertical_start,
         vertical_end=vertical_end,
     )
-    ddxt_z_half_e = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    ddxt_z_half_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
     compute_ddxt_z_half_e.with_backend(backend)(
         z_ifv=z_ifv,
         inv_primal_edge_length=inv_primal_edge_length,
@@ -472,7 +472,7 @@ def test_compute_ddxt_z_full(
         vertical_end=vertical_end,
         offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
     )
-    ddxt_z_full = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    ddxt_z_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     compute_ddxn_z_full.with_backend(backend)(
         z_ddxnt_z_half_e=ddxt_z_half_e,
         ddxn_z_full=ddxt_z_full,
@@ -523,11 +523,11 @@ def test_compute_vwind_impl_wgt(
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    z_ddxn_z_half_e = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    z_ddxn_z_half_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
-    z_ddxt_z_half_e = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-    z_ifv = field_utils.zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
+    z_ddxt_z_half_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    z_ifv = data_alloc.zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     horizontal_end = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
@@ -615,7 +615,7 @@ def test_compute_vwind_impl_wgt(
 def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid, backend):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
-    wgtfac_e = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    wgtfac_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
     wgtfac_e_ref = metrics_savepoint.wgtfac_e()
     compute_wgtfac_e.with_backend(backend)(
         wgtfac_c=metrics_savepoint.wgtfac_c(),
@@ -640,13 +640,13 @@ def test_compute_pg_exdist_dsl(
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     nlev = icon_grid.num_levels
     k_lev = gtx.as_field((dims.KDim,), np.arange(nlev, dtype=gtx.int32))
-    pg_edgeidx = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-    pg_vertidx = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-    pg_exdist_dsl = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
-    z_me = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
-    z_aux2 = field_utils.zero_field(icon_grid, dims.EdgeDim)
-    z_mc = field_utils.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    flat_idx = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    pg_edgeidx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+    pg_vertidx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+    pg_exdist_dsl = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    z_me = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    z_aux2 = data_alloc.zero_field(icon_grid, dims.EdgeDim)
+    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    flat_idx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     z_ifc = metrics_savepoint.z_ifc()
     z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, nlev])
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
@@ -724,7 +724,7 @@ def test_compute_pg_exdist_dsl(
         },
     )
 
-    pg_edgeidx_dsl = field_utils.zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=bool)
+    pg_edgeidx_dsl = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=bool)
     pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
 
     compute_pg_edgeidx_dsl.with_backend(backend)(
@@ -745,7 +745,7 @@ def test_compute_pg_exdist_dsl(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backend):
-    mask_prog_halo_c_full = field_utils.zero_field(icon_grid, dims.CellDim, dtype=bool)
+    mask_prog_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
@@ -763,7 +763,7 @@ def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backend):
-    bdy_halo_c_full = field_utils.zero_field(icon_grid, dims.CellDim, dtype=bool)
+    bdy_halo_c_full = data_alloc.zero_field(icon_grid, dims.CellDim, dtype=bool)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
@@ -783,7 +783,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backend):
-    hmask_dd3d_full = field_utils.zero_field(icon_grid, dims.EdgeDim)
+    hmask_dd3d_full = data_alloc.zero_field(icon_grid, dims.EdgeDim)
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()

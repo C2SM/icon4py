@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import ap
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing.helpers import StencilTest, as_1D_sparse_field, random_field
-from icon4py.model.common.utils import fields as field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -98,7 +98,7 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        edge = field_alloc.allocate_indices(dims.EdgeDim, grid=grid, is_halfdim=False)
+        edge = data_alloc.allocate_indices(dims.EdgeDim, grid=grid, is_halfdim=False)
 
         u_vert = random_field(grid, dims.VertexDim, dims.KDim)
         v_vert = random_field(grid, dims.VertexDim, dims.KDim)

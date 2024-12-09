@@ -24,7 +24,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.model.common.utils import fields as field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from . import utils
 
@@ -38,9 +38,9 @@ def test_validate_divdamp_fields_against_savepoint_values(
     config = solve_nh.NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
-    enh_divdamp_fac = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
-    scal_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
-    bdy_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    enh_divdamp_fac = data_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    scal_divdamp = data_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    bdy_divdamp = data_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
         config.divdamp_fac,

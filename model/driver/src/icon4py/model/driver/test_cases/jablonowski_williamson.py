@@ -25,7 +25,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import serialbox as sb
-from icon4py.model.common.utils import fields as field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.test_cases import utils as testcases_utils
 
 
@@ -192,7 +192,7 @@ def model_initialization_jabw(
     log.info("Newton iteration completed!")
 
     eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_numpy)
-    eta_v_e = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid)
+    eta_v_e = data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid)
     cell_2_edge_interpolation.cell_2_edge_interpolation(
         eta_v,
         cell_2_edge_coeff,
@@ -250,8 +250,8 @@ def model_initialization_jabw(
     rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_numpy)
     theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_numpy)
 
-    u = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
-    v = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
+    u = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
+    v = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation(
         vn,
         rbf_vec_coeff_c1,
@@ -267,7 +267,7 @@ def model_initialization_jabw(
 
     log.info("U, V computation completed.")
 
-    exner_pr = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
+    exner_pr = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
     testcases_utils.compute_perturbed_exner(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
@@ -328,12 +328,12 @@ def model_initialization_jabw(
         ddt_vn_phy=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         grf_tend_vn=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-            field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+            data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+            data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
-            field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
+            data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
+            data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
         ),
         vt=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         vn_ie=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, is_halfdim=True),

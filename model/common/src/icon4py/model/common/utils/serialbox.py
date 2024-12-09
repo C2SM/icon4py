@@ -16,11 +16,11 @@ import serialbox
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.grid.states as grid_states
-import icon4py.model.common.utils.fields as field_utils
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.states import prognostic_state
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
@@ -319,7 +319,7 @@ class IconGridSavepoint(IconSavepoint):
     def f_e(self):
         return self._get_field("f_e", dims.EdgeDim)
 
-    def print_connectivity_info(self, name: str, ar: field_alloc.NDArray):
+    def print_connectivity_info(self, name: str, ar: data_alloc.NDArray):
         self.log.debug(f" connectivity {name} {ar.shape}")
 
     def c2e(self):
@@ -499,28 +499,28 @@ class IconGridSavepoint(IconSavepoint):
         primal_normal_vert: tuple[
             gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
         ] = (
-            field_utils.as_1D_sparse_field(self.primal_normal_vert_x(), dims.ECVDim),
-            field_utils.as_1D_sparse_field(self.primal_normal_vert_y(), dims.ECVDim),
+            data_alloc.as_1D_sparse_field(self.primal_normal_vert_x(), dims.ECVDim),
+            data_alloc.as_1D_sparse_field(self.primal_normal_vert_y(), dims.ECVDim),
         )
         dual_normal_vert: tuple[
             gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
         ] = (
-            field_utils.as_1D_sparse_field(self.dual_normal_vert_x(), dims.ECVDim),
-            field_utils.as_1D_sparse_field(self.dual_normal_vert_y(), dims.ECVDim),
+            data_alloc.as_1D_sparse_field(self.dual_normal_vert_x(), dims.ECVDim),
+            data_alloc.as_1D_sparse_field(self.dual_normal_vert_y(), dims.ECVDim),
         )
 
         primal_normal_cell: tuple[
             gtx.Field[[dims.ECDim], float], gtx.Field[[dims.ECDim], float]
         ] = (
-            field_utils.as_1D_sparse_field(self.primal_normal_cell_x(), dims.ECDim),
-            field_utils.as_1D_sparse_field(self.primal_normal_cell_y(), dims.ECDim),
+            data_alloc.as_1D_sparse_field(self.primal_normal_cell_x(), dims.ECDim),
+            data_alloc.as_1D_sparse_field(self.primal_normal_cell_y(), dims.ECDim),
         )
 
         dual_normal_cell: tuple[
             gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
         ] = (
-            field_utils.as_1D_sparse_field(self.dual_normal_cell_x(), dims.ECDim),
-            field_utils.as_1D_sparse_field(self.dual_normal_cell_y(), dims.ECDim),
+            data_alloc.as_1D_sparse_field(self.dual_normal_cell_x(), dims.ECDim),
+            data_alloc.as_1D_sparse_field(self.dual_normal_cell_y(), dims.ECDim),
         )
         return grid_states.EdgeParams(
             tangent_orientation=self.tangent_orientation(),
@@ -597,11 +597,11 @@ class InterpolationSavepoint(IconSavepoint):
 
     def pos_on_tplane_e_x(self):
         field = self._get_field("pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim)
-        return field_utils.as_1D_sparse_field(field[:, 0:2], dims.ECDim)
+        return data_alloc.as_1D_sparse_field(field[:, 0:2], dims.ECDim)
 
     def pos_on_tplane_e_y(self):
         field = self._get_field("pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim)
-        return field_utils.as_1D_sparse_field(field[:, 0:2], dims.ECDim)
+        return data_alloc.as_1D_sparse_field(field[:, 0:2], dims.ECDim)
 
     def rbf_vec_coeff_e(self):
         buffer = np.squeeze(
@@ -706,13 +706,13 @@ class MetricSavepoint(IconSavepoint):
 
     def zdiff_gradp(self):
         field = self._get_field("zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim)
-        return field_utils.flatten_first_two_dims(dims.ECDim, dims.KDim, field=field)
+        return data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=field)
 
     def vertoffset_gradp(self):
         field = self._get_field(
             "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
         )
-        return field_utils.flatten_first_two_dims(dims.ECDim, dims.KDim, field=field)
+        return data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=field)
 
     def coeff1_dwdz(self):
         return self._get_field("coeff1_dwdz", dims.CellDim, dims.KDim)
@@ -722,7 +722,7 @@ class MetricSavepoint(IconSavepoint):
 
     def coeff_gradekin(self):
         field = self._get_field("coeff_gradekin", dims.EdgeDim, dims.E2CDim)
-        return field_utils.as_1D_sparse_field(field, dims.ECDim)
+        return data_alloc.as_1D_sparse_field(field, dims.ECDim)
 
     def ddqz_z_full_e(self):
         return self._get_field("ddqz_z_full_e", dims.EdgeDim, dims.KDim)
@@ -779,7 +779,7 @@ class MetricSavepoint(IconSavepoint):
         )
 
     def _linearize_first_2dims(
-        self, data: field_alloc.NDArray, sparse_size: int, target_dims: tuple[gtx.Dimension, ...]
+        self, data: data_alloc.NDArray, sparse_size: int, target_dims: tuple[gtx.Dimension, ...]
     ):
         old_shape = data.shape
         assert old_shape[1] == sparse_size
@@ -799,11 +799,11 @@ class MetricSavepoint(IconSavepoint):
 class LeastSquaresSavepoint(IconSavepoint):
     def lsq_pseudoinv_1(self):
         field = self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
-        return field_utils.as_1D_sparse_field(field, dims.CECDim)
+        return data_alloc.as_1D_sparse_field(field, dims.CECDim)
 
     def lsq_pseudoinv_2(self):
         field = self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
-        return field_utils.as_1D_sparse_field(field, dims.CECDim)
+        return data_alloc.as_1D_sparse_field(field, dims.CECDim)
 
 
 class AdvectionInitSavepoint(IconSavepoint):

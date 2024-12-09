@@ -19,7 +19,7 @@ from gt4py.next import Dimension, Field
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
@@ -202,7 +202,7 @@ class GHexMultiNodeExchange:
 
     def _slice_field_based_on_dim(
         self, field: Field, dim: definitions.Dimension
-    ) -> field_alloc.NDArray:
+    ) -> data_alloc.NDArray:
         """
         Slices the field based on the dimension passed in.
         """

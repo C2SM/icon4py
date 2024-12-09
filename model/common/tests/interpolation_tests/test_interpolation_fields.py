@@ -35,7 +35,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -46,7 +46,7 @@ vertex_domain = h_grid.domain(dims.VertexDim)
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, backend):  # fixture
-    xp = alloc.import_array_ns(backend)
+    xp = data_alloc.import_array_ns(backend)
     func = functools.partial(compute_c_lin_e, array_ns=xp)
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
@@ -124,7 +124,7 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, backend):
-    xp = alloc.import_array_ns(backend)
+    xp = data_alloc.import_array_ns(backend)
     dual_edge_length = grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
@@ -169,10 +169,10 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         horizontal_start,
     )
     assert test_helpers.dallclose(
-        alloc.as_numpy(geofac_grg_0), geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7
+        data_alloc.as_numpy(geofac_grg_0), geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7
     )
     assert test_helpers.dallclose(
-        alloc.as_numpy(geofac_grg_1), geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7
+        data_alloc.as_numpy(geofac_grg_1), geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7
     )
 
 

@@ -20,7 +20,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.testing import data_handling, datatest_utils as dt_utils
-from icon4py.model.common.utils import fields as alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -131,14 +131,14 @@ def get_num_levels(experiment: str):
 def get_grid_geometry(
     backend: gtx_backend.Backend, experiment: str, grid_file: str
 ) -> geometry.GridGeometry:
-    on_gpu = alloc.is_cupy_device(backend)
-    xp = alloc.array_ns(on_gpu)
+    on_gpu = data_alloc.is_cupy_device(backend)
+    xp = data_alloc.array_ns(on_gpu)
     num_levels = get_num_levels(experiment)
     register_name = experiment.join(backend.name)
 
     def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):
-            indices = alloc.allocate_indices(dim, grid)
+            indices = data_alloc.allocate_indices(dim, grid)
             owner_mask = xp.ones((grid.size[dim],), dtype=bool)
             decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 

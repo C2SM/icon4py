@@ -34,7 +34,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.model.common.utils import fields as field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 

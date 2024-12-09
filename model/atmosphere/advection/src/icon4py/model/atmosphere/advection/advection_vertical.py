@@ -69,7 +69,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
-from icon4py.model.common.utils import fields as field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
@@ -192,7 +192,7 @@ class NoLimiter(VerticalLimiter):
         self._backend = backend
 
         # fields
-        self._l_limit = field_alloc.allocate_zero_field(
+        self._l_limit = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
 
@@ -262,10 +262,10 @@ class SemiMonotonicLimiter(VerticalLimiter):
         self._backend = backend
 
         # fields
-        self._k_field = field_alloc.allocate_indices(
+        self._k_field = data_alloc.allocate_indices(
             dims.KDim, grid=self._grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._l_limit = field_alloc.allocate_zero_field(
+        self._l_limit = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, dtype=gtx.int32, backend=self._backend
         )
 
@@ -543,7 +543,7 @@ class FirstOrderUpwind(FiniteVolume):
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         # fields
-        self._k_field = field_alloc.allocate_indices(
+        self._k_field = data_alloc.allocate_indices(
             dims.KDim, grid=self._grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
 
@@ -680,28 +680,28 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         # fields
-        self._k_field = field_alloc.allocate_indices(
+        self._k_field = data_alloc.allocate_indices(
             dims.KDim, grid=self._grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._z_cfl = field_alloc.allocate_zero_field(
+        self._z_cfl = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._z_slope = field_alloc.allocate_zero_field(
+        self._z_slope = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self._z_face = field_alloc.allocate_zero_field(
+        self._z_face = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._z_face_up = field_alloc.allocate_zero_field(
+        self._z_face_up = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self._z_face_low = field_alloc.allocate_zero_field(
+        self._z_face_low = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self._z_delta_q = field_alloc.allocate_zero_field(
+        self._z_delta_q = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self._z_a1 = field_alloc.allocate_zero_field(
+        self._z_a1 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
 

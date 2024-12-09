@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.testing import helpers
-from icon4py.model.common.utils import fields as field_utils, serialbox as sb
+from icon4py.model.common.utils import data_allocation as data_alloc, serialbox as sb
 
 
 # flake8: noqa
@@ -88,7 +88,7 @@ def construct_diagnostic_init_state(
 def construct_diagnostic_exit_state(
     icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int
 ) -> advection_states.AdvectionDiagnosticState:
-    zero_f = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
+    zero_f = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
     return advection_states.AdvectionDiagnosticState(
         airmass_now=zero_f,  # init field
         airmass_new=zero_f,  # init field

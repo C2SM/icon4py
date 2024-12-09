@@ -19,7 +19,7 @@ from icon4py.model.testing.helpers import (
     random_field,
     zero_field,
 )
-from icon4py.model.common.utils import fields as field_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
 from .test_correct_contravariant_vertical_velocity import (
@@ -110,7 +110,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         z_w_con_c = zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
-        k = field_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
+        k = data_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
 
         nlev = grid.num_levels
         nflatlev = 4

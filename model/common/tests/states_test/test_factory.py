@@ -16,7 +16,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon, vertical as v_
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.metrics import metric_fields as metrics
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.common.test_utils import helpers as test_helpers
+from icon4py.model.testing import helpers as test_helpers
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -75,7 +75,7 @@ class SimpleFieldSource(factory.FieldSource):
 
 @pytest.fixture(scope="function")
 def cell_coordinate_source(grid_savepoint, backend):
-    on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
+    on_gpu = common_utils.data_allocation.is_cupy_device(backend)
     grid = grid_savepoint.construct_icon_grid(on_gpu)
     lat = grid_savepoint.lat(dims.CellDim)
     lon = grid_savepoint.lon(dims.CellDim)
@@ -91,7 +91,7 @@ def cell_coordinate_source(grid_savepoint, backend):
 
 @pytest.fixture(scope="function")
 def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
-    on_gpu = common_utils.gt4py_field_allocation.is_cupy_device(backend)
+    on_gpu = common_utils.data_allocation.is_cupy_device(backend)
     grid = grid_savepoint.construct_icon_grid(on_gpu)
     z_ifc = metrics_savepoint.z_ifc()
     vct_a = grid_savepoint.vct_a()

@@ -20,7 +20,7 @@ from icon4py.model.common.metrics.metric_fields import (
     _compute_z_aux2,
     compute_z_mc,
 )
-from icon4py.model.common.utils.fields import flatten_first_two_dims, zero_field
+from icon4py.model.common.utils.data_allocation import flatten_first_two_dims, zero_field
 from icon4py.model.testing.helpers import (
     dallclose,
     is_roundtrip,

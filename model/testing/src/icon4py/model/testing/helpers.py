@@ -18,7 +18,7 @@ from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
 
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 

@@ -16,7 +16,7 @@ from ._common import (
     chainable,
     named_property,
 )
-from . import fields, serialbox
+from . import data_allocation, serialbox
 
 
 __all__ = [
@@ -29,6 +29,6 @@ __all__ = [
     # Functions
     "chainable",
     # Modules
-    "fields",
+    "data_allocation",
     "serialbox",
 ]

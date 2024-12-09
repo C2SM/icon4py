@@ -9,7 +9,7 @@
 import numpy as np
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import fields as f_utils
+from icon4py.model.common.utils import data_allocation as f_utils
 
 
 def compute_coeff_gradekin(
