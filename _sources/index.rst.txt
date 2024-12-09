@@ -33,8 +33,8 @@ These pages present two categories of documentation:
    symbols_description
    _source/offset_providers
    scidoc_processor
+   feedback
 
-:ref:`feedback-section`
 
 Indices and tables
 ==================
