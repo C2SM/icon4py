@@ -14,6 +14,8 @@ jobs:
   pre-commit-icon4py-model:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
+
       - name: Install Dependencies
         uses: ./.github/workflows/install-dependencies.yml
         with:

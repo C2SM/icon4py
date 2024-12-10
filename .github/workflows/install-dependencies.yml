@@ -11,9 +11,6 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      # Checkout the repository
-      - uses: actions/checkout@v3
-
       # Install system dependencies
       - name: Install system dependencies
         run: |
