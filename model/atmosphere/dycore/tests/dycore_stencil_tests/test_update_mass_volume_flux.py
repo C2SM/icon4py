@@ -11,7 +11,8 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import update_mass_volume_flux
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest, random_field
+from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import wpfloat
 
 

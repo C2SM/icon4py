@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.testing.helpers as helpers
+import icon4py.model.common.utils.data_allocation as data_allocation
 from icon4py.model.atmosphere.advection.stencils.compute_barycentric_backtrajectory_alt import (
     compute_barycentric_backtrajectory_alt,
 )
@@ -81,22 +82,22 @@ class TestComputeBarycentricBacktrajectoryAlt(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_vt = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        pos_on_tplane_e_1 = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_1_new = helpers.as_1D_sparse_field(pos_on_tplane_e_1, dims.ECDim)
-        pos_on_tplane_e_2 = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_2_new = helpers.as_1D_sparse_field(pos_on_tplane_e_2, dims.ECDim)
-        primal_normal_cell_1 = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_1_new = helpers.as_1D_sparse_field(primal_normal_cell_1, dims.ECDim)
-        dual_normal_cell_1 = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_1_new = helpers.as_1D_sparse_field(dual_normal_cell_1, dims.ECDim)
-        primal_normal_cell_2 = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_2_new = helpers.as_1D_sparse_field(primal_normal_cell_2, dims.ECDim)
-        dual_normal_cell_2 = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_2_new = helpers.as_1D_sparse_field(dual_normal_cell_2, dims.ECDim)
-        p_distv_bary_1 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_distv_bary_2 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vn = data_allocation.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vt = data_allocation.random_field(grid, dims.EdgeDim, dims.KDim)
+        pos_on_tplane_e_1 = data_allocation.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        pos_on_tplane_e_1_new = data_allocation.as_1D_sparse_field(pos_on_tplane_e_1, dims.ECDim)
+        pos_on_tplane_e_2 = data_allocation.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        pos_on_tplane_e_2_new = data_allocation.as_1D_sparse_field(pos_on_tplane_e_2, dims.ECDim)
+        primal_normal_cell_1 = data_allocation.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_1_new = data_allocation.as_1D_sparse_field(primal_normal_cell_1, dims.ECDim)
+        dual_normal_cell_1 = data_allocation.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_1_new = data_allocation.as_1D_sparse_field(dual_normal_cell_1, dims.ECDim)
+        primal_normal_cell_2 = data_allocation.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_2_new = data_allocation.as_1D_sparse_field(primal_normal_cell_2, dims.ECDim)
+        dual_normal_cell_2 = data_allocation.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_2_new = data_allocation.as_1D_sparse_field(dual_normal_cell_2, dims.ECDim)
+        p_distv_bary_1 = data_allocation.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_distv_bary_2 = data_allocation.random_field(grid, dims.EdgeDim, dims.KDim)
         p_dthalf = 2.0
 
         return dict(

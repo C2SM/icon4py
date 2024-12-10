@@ -40,7 +40,7 @@ def construct_interpolation_state(
     savepoint: sb.InterpolationSavepoint,
 ) -> advection_states.AdvectionInterpolationState:
     return advection_states.AdvectionInterpolationState(
-        geofac_div=helpers.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
@@ -76,10 +76,10 @@ def construct_diagnostic_init_state(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
-        hfl_tracer=field_alloc.allocate_zero_field(
+        hfl_tracer=data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=icon_grid
         ),  # exit field
-        vfl_tracer=field_alloc.allocate_zero_field(  # TODO (dastrm): should be KHalfDim
+        vfl_tracer=data_alloc.allocate_zero_field(  # TODO (dastrm): should be KHalfDim
             dims.CellDim, dims.KDim, is_halfdim=True, grid=icon_grid
         ),  # exit field
     )

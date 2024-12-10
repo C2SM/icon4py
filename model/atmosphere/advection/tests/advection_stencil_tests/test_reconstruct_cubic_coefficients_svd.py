@@ -11,6 +11,7 @@ import numpy as np
 import pytest
 
 import icon4py.model.testing.helpers as helpers
+import icon4py.model.common.utils.data_allocation as data_allocation
 from icon4py.model.atmosphere.advection.stencils.reconstruct_cubic_coefficients_svd import (
     reconstruct_cubic_coefficients_svd,
 )
@@ -313,53 +314,53 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        lsq_pseudoinv_1_field = helpers.as_1D_sparse_field(
-            helpers.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        p_cc = data_allocation.random_field(grid, dims.CellDim, dims.KDim)
+        lsq_pseudoinv_1_field = data_allocation.as_1D_sparse_field(
+            data_allocation.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_pseudoinv_2_field = helpers.as_1D_sparse_field(
-            helpers.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_2_field = data_allocation.as_1D_sparse_field(
+            data_allocation.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_pseudoinv_3_field = helpers.as_1D_sparse_field(
-            helpers.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_3_field = data_allocation.as_1D_sparse_field(
+            data_allocation.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_pseudoinv_4_field = helpers.as_1D_sparse_field(
-            helpers.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_4_field = data_allocation.as_1D_sparse_field(
+            data_allocation.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_pseudoinv_5_field = helpers.as_1D_sparse_field(
-            helpers.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_5_field = data_allocation.as_1D_sparse_field(
+            data_allocation.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_pseudoinv_6_field = helpers.as_1D_sparse_field(
-            helpers.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_6_field = data_allocation.as_1D_sparse_field(
+            data_allocation.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_pseudoinv_7_field = helpers.as_1D_sparse_field(
-            helpers.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_7_field = data_allocation.as_1D_sparse_field(
+            data_allocation.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_pseudoinv_8_field = helpers.as_1D_sparse_field(
-            helpers.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_8_field = data_allocation.as_1D_sparse_field(
+            data_allocation.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_pseudoinv_9_field = helpers.as_1D_sparse_field(
-            helpers.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_9_field = data_allocation.as_1D_sparse_field(
+            data_allocation.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
         )
-        lsq_moments_1 = helpers.random_field(grid, dims.CellDim)
-        lsq_moments_2 = helpers.random_field(grid, dims.CellDim)
-        lsq_moments_3 = helpers.random_field(grid, dims.CellDim)
-        lsq_moments_4 = helpers.random_field(grid, dims.CellDim)
-        lsq_moments_5 = helpers.random_field(grid, dims.CellDim)
-        lsq_moments_6 = helpers.random_field(grid, dims.CellDim)
-        lsq_moments_7 = helpers.random_field(grid, dims.CellDim)
-        lsq_moments_8 = helpers.random_field(grid, dims.CellDim)
-        lsq_moments_9 = helpers.random_field(grid, dims.CellDim)
-        p_coeff_1_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_2_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_3_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_4_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_5_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_6_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_7_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_8_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_9_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_coeff_10_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        lsq_moments_1 = data_allocation.random_field(grid, dims.CellDim)
+        lsq_moments_2 = data_allocation.random_field(grid, dims.CellDim)
+        lsq_moments_3 = data_allocation.random_field(grid, dims.CellDim)
+        lsq_moments_4 = data_allocation.random_field(grid, dims.CellDim)
+        lsq_moments_5 = data_allocation.random_field(grid, dims.CellDim)
+        lsq_moments_6 = data_allocation.random_field(grid, dims.CellDim)
+        lsq_moments_7 = data_allocation.random_field(grid, dims.CellDim)
+        lsq_moments_8 = data_allocation.random_field(grid, dims.CellDim)
+        lsq_moments_9 = data_allocation.random_field(grid, dims.CellDim)
+        p_coeff_1_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_2_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_3_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_4_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_5_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_6_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_7_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_8_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_9_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
+        p_coeff_10_dsl = data_allocation.zero_field(grid, dims.CellDim, dims.KDim)
 
         cell_domain = h_grid.domain(dims.CellDim)
         horizontal_start = (

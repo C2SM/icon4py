@@ -13,7 +13,8 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
     fused_velocity_advection_stencil_1_to_7,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy

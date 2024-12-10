@@ -13,11 +13,10 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import (
-    StencilTest,
-    as_1D_sparse_field,
+from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.utils.data_allocation import (
     random_field,
-    zero_field,
+    zero_field
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 

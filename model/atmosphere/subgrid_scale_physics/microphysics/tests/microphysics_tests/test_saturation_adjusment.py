@@ -17,7 +17,8 @@ from icon4py.model.common.states import (
     tracer_state as tracers,
 )
 from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing.helpers import dallclose, zero_field
+from icon4py.model.testing.helpers import dallclose
+from icon4py.model.common.utils.data_allocation import zero_field
 
 
 @pytest.mark.parametrize(

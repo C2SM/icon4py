@@ -13,7 +13,8 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical
     interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 from icon4py.model.common.type_alias import vpfloat
 
 

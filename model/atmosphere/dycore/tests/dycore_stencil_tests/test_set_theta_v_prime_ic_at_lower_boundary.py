@@ -13,7 +13,8 @@ from icon4py.model.atmosphere.dycore.stencils.set_theta_v_prime_ic_at_lower_boun
     set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 from .test_interpolate_to_surface import interpolate_to_surface_numpy
