@@ -366,7 +366,7 @@ def generate_mesh_figure(nx, ny, label, static_dir):
 
 
 # ===============================================================================
-def generate_figures(static_dir: str):
+def generate_figures(static_dir: str = "."):
     # ---------------------------------------------------------------------------
     fig, ax, T = generate_mesh_figure(2, 2, "c2e", static_dir)
 
@@ -469,6 +469,27 @@ def generate_figures(static_dir: str):
     draw_arrow(ax, Tb.CA, Tb.CC, 2)
     Ta.color_edges(2)
     Tb.color_edges(2)
+
+    fig.save()
+
+    # ---------------------------------------------------------------------------
+    fig, ax, T = generate_mesh_figure(2, 2, "e2c2v", static_dir)
+
+    Ta = T[1]
+    Tb = T[7]
+    Ta.color_edge("BC")
+    draw_arrow(ax, Ta.CC, Ta.BC, 1)
+    draw_arrow(ax, Tb.CC, Tb.AB, 1)
+    Ta.color_cell(1)
+    Tb.color_cell(1)
+    draw_arrow(ax, Ta.A, Ta.CC, 2)
+    draw_arrow(ax, Ta.B, Ta.CC, 2)
+    draw_arrow(ax, Ta.C, Ta.CC, 2)
+    draw_arrow(ax, Tb.A, Tb.CC, 2)
+    draw_arrow(ax, Tb.B, Tb.CC, 2)
+    draw_arrow(ax, Tb.C, Tb.CC, 2)
+    Ta.color_vertices(2)
+    Tb.color_vertices(2)
 
     fig.save()
 
