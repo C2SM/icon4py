@@ -23,6 +23,10 @@ This page contains the figures for the offset providers.
    :align: center
    :alt: static/img/e2c2e
    :class: offset-provider-img
+.. image:: ../static/img/offsetProvider_e2c2v.png
+   :align: center
+   :alt: static/img/e2c2v
+   :class: offset-provider-img
 .. image:: ../static/img/offsetProvider_e2v.png
    :align: center
    :alt: static/img/e2v
