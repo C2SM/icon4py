@@ -13,7 +13,8 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damp
     apply_nabla2_to_w_in_upper_damping_layer,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

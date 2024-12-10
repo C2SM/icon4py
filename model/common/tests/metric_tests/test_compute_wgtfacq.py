@@ -13,8 +13,8 @@ from icon4py.model.common.metrics.compute_wgtfacq import (
     compute_wgtfacq_c_dsl,
     compute_wgtfacq_e_dsl,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
-from icon4py.model.common.test_utils.helpers import dallclose
+from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing.helpers import dallclose
 
 
 @pytest.mark.datatest

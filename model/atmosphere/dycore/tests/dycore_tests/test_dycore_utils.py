@@ -11,7 +11,7 @@ import numpy as np
 from icon4py.model.atmosphere.dycore import dycore_utils
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.testing import helpers
 
 
 def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: float):
@@ -23,7 +23,7 @@ def bdy_divdamp_numpy(coeff: float, field: np.array):
     return 0.75 / (coeff + constants.DBL_EPS) * np.abs(field)
 
 
-def test_caclulate_scal_divdamp_order_24(backend):
+def test_calculate_scal_divdamp_order_24(backend):
     divdamp_fac_o2 = 3.0
     divdamp_order = 24
     mean_cell_area = 1000.0

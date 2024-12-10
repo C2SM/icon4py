@@ -35,7 +35,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
@@ -248,7 +248,7 @@ class GodunovSplittingAdvection(Advection):
 
         # density fields
         #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
-        self._rhodz_ast2 = field_alloc.allocate_zero_field(
+        self._rhodz_ast2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
 
