@@ -1,0 +1,26 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Dependencies
+        uses: ./.github/workflows/install-dependencies.yml
+        with:
+          python-version: "3.10"
+
+      - name: Build documentation
+        run: |
+          cd model/atmosphere/dycore/docs
+          make html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: model/atmosphere/dycore/docs/_build/html
