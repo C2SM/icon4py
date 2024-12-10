@@ -12,7 +12,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.testing.helpers import StencilTest, as_1D_sparse_field, random_field
+from icon4py.model.testing.helpers import StencilTest
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
@@ -100,24 +100,24 @@ class TestApplyDiffusionToVn(StencilTest):
     def input_data(self, grid):
         edge = data_alloc.allocate_indices(dims.EdgeDim, grid=grid, is_halfdim=False)
 
-        u_vert = random_field(grid, dims.VertexDim, dims.KDim)
-        v_vert = random_field(grid, dims.VertexDim, dims.KDim)
+        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
+        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
 
-        primal_normal_vert_v1 = random_field(grid, dims.EdgeDim, dims.E2C2VDim)
-        primal_normal_vert_v2 = random_field(grid, dims.EdgeDim, dims.E2C2VDim)
+        primal_normal_vert_v1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
+        primal_normal_vert_v2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
 
-        primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, dims.ECVDim)
-        primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, dims.ECVDim)
+        primal_normal_vert_v1_new = data_alloc.as_1D_sparse_field(primal_normal_vert_v1, dims.ECVDim)
+        primal_normal_vert_v2_new = data_alloc.as_1D_sparse_field(primal_normal_vert_v2, dims.ECVDim)
 
-        inv_vert_vert_length = random_field(grid, dims.EdgeDim)
-        inv_primal_edge_length = random_field(grid, dims.EdgeDim)
+        inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim)
+        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
 
-        area_edge = random_field(grid, dims.EdgeDim)
-        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        diff_multfac_vn = random_field(grid, dims.KDim)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim)
-        nudgecoeff_e = random_field(grid, dims.EdgeDim)
+        area_edge = data_alloc.random_field(grid, dims.EdgeDim)
+        kh_smag_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        diff_multfac_vn = data_alloc.random_field(grid, dims.KDim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim)
 
         limited_area = grid.limited_area if hasattr(grid, "limited_area") else True
         fac_bdydiff_v = 5.0

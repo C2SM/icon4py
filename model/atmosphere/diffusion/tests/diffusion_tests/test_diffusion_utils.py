@@ -12,7 +12,6 @@ import pytest
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.settings import backend
 from icon4py.model.testing import helpers
 
 from .utils import construct_diffusion_config, diff_multfac_vn_numpy, smag_limit_numpy
