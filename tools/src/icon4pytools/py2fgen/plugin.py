@@ -21,10 +21,6 @@ from numpy.typing import NDArray
 
 from icon4pytools.common.logger import setup_logger
 
-
-if typing.TYPE_CHECKING:
-    import cupy as cp  # type: ignore
-
 ffi = FFI()  # needed for unpack and unpack_gpu functions
 
 logger = setup_logger(__name__)
@@ -92,8 +88,8 @@ def unpack_gpu(ptr: cffi.api.FFI.CData, *sizes: int):
     c_type = ffi.getctype(ffi.typeof(ptr).item)
 
     dtype_map = {
-        "int": cp.int32,
-        "double": cp.float64,
+        "int": xp.int32,
+        "double": xp.float64,
     }
     dtype = dtype_map.get(c_type, None)
     if dtype is None:
@@ -103,11 +99,11 @@ def unpack_gpu(ptr: cffi.api.FFI.CData, *sizes: int):
     total_size = length * itemsize
 
     # cupy array from OpenACC device pointer
-    current_device = cp.cuda.Device()
+    current_device = xp.cuda.Device()
     ptr_val = int(ffi.cast("uintptr_t", ptr))
-    mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
-    memptr = cp.cuda.MemoryPointer(mem, 0)
-    arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
+    mem = xp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
+    memptr = xp.cuda.MemoryPointer(mem, 0)
+    arr = xp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
     return arr
 
 
@@ -187,7 +183,7 @@ def unpack_and_cache_pointer(
             unpacked = xp.ones((1,) * len(sizes), dtype=dtype, order="F")
         else:
             unpacked = unpack_gpu(pointer, *sizes) if backend == "GPU" else unpack(pointer, *sizes)
-
+            
         if is_bool:
             unpacked = int_array_to_bool_array(unpacked)
 
