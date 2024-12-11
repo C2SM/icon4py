@@ -14,6 +14,7 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
     cell_2_edge_interpolation,
 )
 from icon4py.model.testing import helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestCell2EdgeInterpolation(helpers.StencilTest):
@@ -32,9 +33,9 @@ class TestCell2EdgeInterpolation(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        in_field = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        coeff = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
-        out_field = helpers.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        in_field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        coeff = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        out_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             in_field=in_field,

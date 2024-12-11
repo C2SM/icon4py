@@ -14,6 +14,7 @@ from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature 
     diagnose_virtual_temperature_and_temperature,
 )
 from icon4py.model.testing import helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestDiagnoseTemperature(helpers.StencilTest):
@@ -43,32 +44,32 @@ class TestDiagnoseTemperature(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        theta_v = helpers.random_field(
+        theta_v = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, high=1.0, dtype=ta.wpfloat
         )
-        exner = helpers.random_field(
+        exner = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, high=1.0, dtype=ta.wpfloat
         )
-        qv = helpers.random_field(
+        qv = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
         )
-        qc = helpers.random_field(
+        qc = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
         )
-        qi = helpers.random_field(
+        qi = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
         )
-        qr = helpers.random_field(
+        qr = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
         )
-        qs = helpers.random_field(
+        qs = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
         )
-        qg = helpers.random_field(
+        qg = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat
         )
-        virtual_temperature = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        temperature = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        virtual_temperature = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        temperature = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             qv=qv,
