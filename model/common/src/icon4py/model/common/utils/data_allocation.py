@@ -120,7 +120,7 @@ def random_field(
     backend=None
 ) -> gtx.Field:
     arr = np.random.default_rng().uniform(
-        low=low, high=high, size=shape(grid, *dims, extend=extend)
+        low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
     if dtype:
         arr = arr.astype(dtype)
@@ -134,7 +134,7 @@ def zero_field(
     extend: Optional[dict[gtx.Dimension, int]] = None,
     backend=None
 ) -> gtx.Field:
-    field_domain = {dim: (0, stop) for dim, stop in zip(dims, shape(grid, *dims, extend=extend))}
+    field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
     return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=backend)
 
 
@@ -147,7 +147,7 @@ def constant_field(
     )
 
 
-def shape(
+def _shape(
     grid,
     *dims: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
@@ -168,7 +168,7 @@ def random_mask(
     extend: Optional[dict[gtx.Dimension, int]] = None,
 ) -> gtx.Field:
     rng = np.random.default_rng()
-    shape = shape(grid, *dims, extend=extend)
+    shape = _shape(grid, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
     num_true = int(arr.size * 0.5)
     arr[:num_true] = True
