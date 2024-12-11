@@ -15,6 +15,7 @@ import sys
 from typing import Final
 
 import gt4py.next as gtx
+from gt4py.next.ffront import decorator
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import int32
 
@@ -364,11 +365,9 @@ class Diffusion:
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: backend.Backend,
-        orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._backend = backend
-        self._orchestration = orchestration
         self._exchange = exchange
         self.config = config
         self._params = params
@@ -465,6 +464,55 @@ class Diffusion:
 
         self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
             self._grid.offset_providers
+        )
+
+        self.scale_k = self.scale_k.with_connectivities(self.compile_time_connectivities).freeze()
+        self.mo_intp_rbf_rbf_vec_interpol_vertex = (
+            self.mo_intp_rbf_rbf_vec_interpol_vertex.with_connectivities(
+                self.compile_time_connectivities
+            ).freeze()
+        )
+        self.calculate_nabla2_and_smag_coefficients_for_vn = (
+            self.calculate_nabla2_and_smag_coefficients_for_vn.with_connectivities(
+                self.compile_time_connectivities
+            ).freeze()
+        )
+        self.calculate_diagnostic_quantities_for_turbulence = (
+            self.calculate_diagnostic_quantities_for_turbulence.with_connectivities(
+                self.compile_time_connectivities
+            ).freeze()
+        )
+        self.apply_diffusion_to_vn = self.apply_diffusion_to_vn.with_connectivities(
+            self.compile_time_connectivities
+        ).freeze()
+        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_connectivities(
+            self.compile_time_connectivities
+        ).freeze()
+        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_connectivities(
+            self.compile_time_connectivities
+        ).freeze()
+        self.calculate_nabla2_for_theta = self.calculate_nabla2_for_theta.with_connectivities(
+            self.compile_time_connectivities
+        ).freeze()
+        self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
+            self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_connectivities(
+                self.compile_time_connectivities
+            ).freeze()
+        )
+        self.update_theta_and_exner = self.update_theta_and_exner.with_connectivities(
+            self.compile_time_connectivities
+        ).freeze()
+        self.copy_field = self.copy_field.with_connectivities(
+            self.compile_time_connectivities
+        ).freeze()
+        self.setup_fields_for_initial_step = self.setup_fields_for_initial_step.with_connectivities(
+            self.compile_time_connectivities
+        ).freeze()
+
+        self.init_diffusion_local_fields_for_regular_timestep = (
+            self.init_diffusion_local_fields_for_regular_timestep.with_connectivities(
+                self.compile_time_connectivities
+            ).freeze()
         )
 
     def _allocate_temporary_fields(self):
@@ -646,14 +694,10 @@ class Diffusion:
 
         """
         # dtime dependent: enh_smag_factor,
-        self.scale_k.with_connectivities(self.compile_time_connectivities)(
-            self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
-        )
+        self.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
-        self.mo_intp_rbf_rbf_vec_interpol_vertex.with_connectivities(
-            self.compile_time_connectivities
-        )(
+        self.mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self._interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self._interpolation_state.rbf_coeff_2,
@@ -678,9 +722,7 @@ class Diffusion:
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
-        self.calculate_nabla2_and_smag_coefficients_for_vn.with_connectivities(
-            self.compile_time_connectivities
-        )(
+        self.calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
             tangent_orientation=self._edge_params.tangent_orientation,
             inv_primal_edge_length=self._edge_params.inverse_primal_edge_lengths,
@@ -711,9 +753,7 @@ class Diffusion:
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
             )
-            self.calculate_diagnostic_quantities_for_turbulence.with_connectivities(
-                self.compile_time_connectivities
-            )(
+            self.calculate_diagnostic_quantities_for_turbulence(
                 kh_smag_ec=self.kh_smag_ec,
                 vn=prognostic_state.vn,
                 e_bln_c_s=self._interpolation_state.e_bln_c_s,
@@ -740,9 +780,7 @@ class Diffusion:
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
-        self.mo_intp_rbf_rbf_vec_interpol_vertex.with_connectivities(
-            self.compile_time_connectivities
-        )(
+        self.mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self._interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self._interpolation_state.rbf_coeff_2,
@@ -767,7 +805,7 @@ class Diffusion:
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
-        self.apply_diffusion_to_vn.with_connectivities(self.compile_time_connectivities)(
+        self.apply_diffusion_to_vn(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             primal_normal_vert_v1=self._edge_params.primal_normal_vert[0],
@@ -800,13 +838,9 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        self.copy_field.with_connectivities(self.compile_time_connectivities)(
-            prognostic_state.w, self.w_tmp, offset_provider={}
-        )
+        self.copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
 
-        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_connectivities(
-            self.compile_time_connectivities
-        )(
+        self.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self._cell_params.area,
             geofac_n2s=self._interpolation_state.geofac_n2s,
             geofac_grg_x=self._interpolation_state.geofac_grg_x,
@@ -841,9 +875,7 @@ class Diffusion:
             "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
 
-        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_connectivities(
-            self.compile_time_connectivities
-        )(
+        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self._metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
@@ -860,7 +892,7 @@ class Diffusion:
         )
 
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-        self.calculate_nabla2_for_theta.with_connectivities(self.compile_time_connectivities)(
+        self.calculate_nabla2_for_theta(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
             theta_v=prognostic_state.theta_v,
@@ -877,9 +909,7 @@ class Diffusion:
             "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
         if self.config.apply_zdiffusion_t:
-            self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_connectivities(
-                self.compile_time_connectivities
-            )(
+            self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
                 mask=self._metric_state.mask_hdiff,
                 zd_vertoffset=self._metric_state.zd_vertoffset,
                 zd_diffcoef=self._metric_state.zd_diffcoef,
@@ -899,7 +929,7 @@ class Diffusion:
                 "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
             )
         log.debug("running stencil 16 (update_theta_and_exner): start")
-        self.update_theta_and_exner.with_connectivities(self.compile_time_connectivities)(
+        self.update_theta_and_exner(
             z_temp=self.z_temp,
             area=self._cell_params.area,
             theta_v=prognostic_state.theta_v,
