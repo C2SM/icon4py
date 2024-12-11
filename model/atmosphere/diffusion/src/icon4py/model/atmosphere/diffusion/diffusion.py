@@ -15,13 +15,11 @@ import sys
 from typing import Final
 
 import gt4py.next as gtx
-from gt4py.next.ffront import decorator
-import icon4py.model.common.grid.states as grid_states
+from gt4py.next import backend
 from gt4py.next import int32
 
+import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.states.prognostic_state as prognostics
-from gt4py.next import backend
-
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
@@ -63,11 +61,8 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-
 from icon4py.model.common.orchestration import decorator as dace_orchestration
-
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
