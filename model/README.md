@@ -1,5 +1,7 @@
 # ICON4Py Model
 
+[![Nox](https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg)](https://github.com/wntrblm/nox)
+
 This folder contains Python implementations for multiple ICON components.
 
 It includes the following packages:
