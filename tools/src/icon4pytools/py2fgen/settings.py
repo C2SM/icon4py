@@ -122,3 +122,4 @@ backend = config.gt4py_runner
 dace_orchestration = config.icon4py_dace_orchestration
 device = config.device
 limited_area = config.limited_area
+xp = config.array_ns
