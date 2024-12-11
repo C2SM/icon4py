@@ -497,7 +497,7 @@ def test_compute_exner_exfac(
         else MetricsConfig()
     )
 
-    exner_exfac = constant_field(icon_grid, config.exner_expol, dims.CellDim, dims.KDim)
+    exner_exfac = data_alloc.constant_field(icon_grid, config.exner_expol, dims.CellDim, dims.KDim)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
@@ -584,9 +584,9 @@ def test_compute_vwind_impl_wgt(
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
     vwind_offctr = 0.2
-    vwind_impl_wgt_full = constant_field(icon_grid, 0.5 + vwind_offctr, dims.CellDim)
+    vwind_impl_wgt_full = data_alloc.constant_field(icon_grid, 0.5 + vwind_offctr, dims.CellDim)
     init_val = 0.65 if experiment == dt_utils.GLOBAL_EXPERIMENT else 0.7
-    vwind_impl_wgt_k = constant_field(icon_grid, init_val, dims.CellDim, dims.KDim)
+    vwind_impl_wgt_k = data_alloc.constant_field(icon_grid, init_val, dims.CellDim, dims.KDim)
 
     vwind_impl_wgt = compute_vwind_impl_wgt(
         backend=backend,

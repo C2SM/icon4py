@@ -53,7 +53,7 @@ def get_cell_geometry_for_experiment(experiment, backend):
 def _get_or_initialize(experiment, backend, name):
     def _construct_minimal_decomposition_info(grid: icon.IconGrid):
         edge_indices = data_alloc.allocate_indices(dims.EdgeDim, grid)
-        owner_mask = xp.ones((grid.num_edges,), dtype=bool)
+        owner_mask = np.ones((grid.num_edges,), dtype=bool)
         decomposition_info = definitions.DecompositionInfo(klevels=grid.num_levels)
         decomposition_info.with_dimension(dims.EdgeDim, edge_indices.ndarray, owner_mask)
         return decomposition_info
@@ -283,7 +283,7 @@ def test_diffusion_init(
 
 
 def _verify_init_values_against_savepoint(
-    savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion
+    savepoint: sb.IconDiffusionInitSavepoint, diffusion_granule: diffusion.Diffusion, backend
 ):
     dtime = savepoint.get_metadata("dtime")["dtime"]
 

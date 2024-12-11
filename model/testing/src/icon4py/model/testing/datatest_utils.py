@@ -43,7 +43,7 @@ GRID_IDS = {
 
 def get_test_data_root_path() -> pathlib.Path:
     test_utils_path = pathlib.Path(__file__).parent
-    model_path = test_utils_path.parent.parent
+    model_path = test_utils_path.parent
     common_path = model_path.parent.parent.parent.parent
     env_base_path = os.getenv("TEST_DATA_PATH")
 

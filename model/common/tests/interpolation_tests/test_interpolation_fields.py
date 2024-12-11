@@ -62,7 +62,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
         horizontal_start,
         xp,
     )
-    assert test_helpers.dallclose(alloc.as_numpy(c_lin_e), c_lin_e_ref.asnumpy())
+    assert test_helpers.dallclose(data_alloc.as_numpy(c_lin_e), c_lin_e_ref.asnumpy())
 
     c_lin_e_partial = func(
         edge_cell_length.ndarray,
@@ -70,7 +70,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
         edge_owner_mask.ndarray,
         horizontal_start,
     )
-    assert test_helpers.dallclose(alloc.as_numpy(c_lin_e_partial), c_lin_e_ref.asnumpy())
+    assert test_helpers.dallclose(data_alloc.as_numpy(c_lin_e_partial), c_lin_e_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -140,7 +140,7 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, 
         c2e2c,
         horizontal_start,
     )
-    assert test_helpers.dallclose(alloc.as_numpy(geofac_n2s), geofac_n2s_ref.asnumpy())
+    assert test_helpers.dallclose(data_alloc.as_numpy(geofac_n2s), geofac_n2s_ref.asnumpy())
 
 
 @pytest.mark.datatest

@@ -16,7 +16,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon, vertical as v_
 from icon4py.model.common.math import helpers as math_helpers
 from icon4py.model.common.metrics import metric_fields as metrics
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -163,8 +163,8 @@ def test_composite_field_source_contains_all_metadata(
 ):
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = test_helpers.random_field(grid, dims.CellDim, dims.KDim)
-    bar = test_helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
     data = {
         "foo": (foo, {"standard_name": "foo", "units": ""}),
         "bar": (bar, {"standard_name": "bar", "units": ""}),
@@ -185,8 +185,8 @@ def test_composite_field_source_contains_all_metadata(
 def test_composite_field_source_get_all_fields(cell_coordinate_source, height_coordinate_source):
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = test_helpers.random_field(grid, dims.CellDim, dims.KDim)
-    bar = test_helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
     data = {
         "foo": (foo, {"standard_name": "foo", "units": ""}),
         "bar": (bar, {"standard_name": "bar", "units": ""}),
@@ -221,8 +221,8 @@ def test_composite_field_source_raises_upon_get_unknown_field(
 ):
     backend = cell_coordinate_source.backend
     grid = cell_coordinate_source.grid
-    foo = test_helpers.random_field(grid, dims.CellDim, dims.KDim)
-    bar = test_helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+    foo = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+    bar = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
     data = {
         "foo": (foo, {"standard_name": "foo", "units": ""}),
         "bar": (bar, {"standard_name": "bar", "units": ""}),

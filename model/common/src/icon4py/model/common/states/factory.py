@@ -42,7 +42,6 @@ import collections
 import enum
 import functools
 import inspect
-from functools import cached_property
 from typing import (
     Any,
     Callable,
@@ -213,7 +212,7 @@ class CompositeSource(FieldSource):
         self._metadata = collections.ChainMap(me.metadata, *(s.metadata for s in others))
         self._providers = collections.ChainMap(me._providers, *(s._providers for s in others))
 
-    @cached_property
+    @functools.cached_property
     def metadata(self) -> MutableMapping[str, model.FieldMetaData]:
         return self._metadata
 
@@ -593,7 +592,7 @@ class NumpyFieldsProvider(FieldProvider):
         parameters = func_signature.parameters
         for dep_key in self._dependencies.keys():
             parameter_definition = parameters.get(dep_key)
-            checked = _check_union(parameter_definition, union=field_alloc.NDArray)
+            checked = _check_union(parameter_definition, union=data_alloc.NDArray)
             assert checked, (
                 f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
                 f"wrong type ('expected ndarray') but was '{parameter_definition}'."
