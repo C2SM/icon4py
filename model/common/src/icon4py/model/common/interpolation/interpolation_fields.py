@@ -830,7 +830,7 @@ def compute_cells_aw_verts(
 
     Args:
         dual_area: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
-        edge_vert_length: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        edge_vert_length: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat]
         edge_cell_length: //
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], bool]
         v2e: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2EDim], gtx.int32]
@@ -847,14 +847,18 @@ def compute_cells_aw_verts(
         cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
             # INVALID_INDEX
-            if je > gm.GridFile.INVALID_INDEX and (je > 0 and v2e[jv, je] == v2e[jv, je - 1]):
+            if v2e[jv, je] == gm.GridFile.INVALID_INDEX or (
+                je > 0 and v2e[jv, je] == v2e[jv, je - 1]
+            ):
                 continue
             ile = v2e[jv, je]
             idx_ve = 0 if e2v[ile, 0] == jv else 1
             cell_offset_idx_0 = e2c[ile, 0]
             cell_offset_idx_1 = e2c[ile, 1]
             for jc in range(v2e.shape[1]):
-                if jc > gm.GridFile.INVALID_INDEX and (jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]):
+                if v2c[jv, jc] == gm.GridFile.INVALID_INDEX or (
+                    jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]
+                ):
                     continue
                 if cell_offset_idx_0 == v2c[jv, jc]:
                     cells_aw_verts[jv, jc] = (
