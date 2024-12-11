@@ -360,9 +360,11 @@ class Diffusion:
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: backend.Backend,
+        orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._backend = backend
+        self._orchestration = orchestration
         self._exchange = exchange
         self.config = config
         self._params = params
