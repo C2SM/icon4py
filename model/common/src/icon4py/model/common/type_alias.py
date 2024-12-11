@@ -15,7 +15,7 @@ from gt4py.next.ffront.fbuiltins import float32, float64
 DEFAULT_PRECISION = "double"
 
 wpfloat: TypeAlias = float64
-vpfloat: type[float64] | type[float64] = wpfloat
+vpfloat: type[float32] | type[float64] = wpfloat
 
 precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 

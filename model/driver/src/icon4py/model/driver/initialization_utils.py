@@ -31,7 +31,7 @@ from icon4py.model.driver import (
 from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
 
 
-# TODO(egparedes): Read these hardcoded constants from configuration files
+# TODO(egparedes): Read these hardcoded constants from grid file
 GRID_LEVEL = 4
 GRID_ROOT = 2
 GLOBAL_GRID_ID = uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba")
