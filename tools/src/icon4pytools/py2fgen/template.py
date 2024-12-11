@@ -12,19 +12,21 @@ from gt4py.eve import Node, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 from gt4py.next import Dimension
 from gt4py.next.type_system.type_specifications import ScalarKind
-from icon4py.model.common.config import GT4PyBackend
 
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
     BUILTIN_TO_NUMPY_TYPE,
 )
+from icon4pytools.py2fgen import settings
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 from icon4pytools.py2fgen.wrappers import wrapper_dimension
 
 
 # these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
 # therefore unpacking needs to be skipped as otherwise it will trigger an error.
+
+
 UNINITIALISED_ARRAYS = [
     "mask_hdiff",
     "zd_diffcoef",
@@ -102,7 +104,7 @@ class PythonWrapper(CffiPlugin):
     is_gt4py_program_present: bool = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.gt4py_backend = GT4PyBackend[self.backend].value
+        self.gt4py_backend = settings.GT4PyBackend[self.backend].value
         self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
         self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 

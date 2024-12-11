@@ -8,7 +8,6 @@
 
 import logging
 import math
-import typing
 from pathlib import Path
 from typing import Tuple
 
@@ -16,10 +15,11 @@ import cffi
 import gt4py.next as gtx
 import numpy as np
 from cffi import FFI
-from icon4py.model.common.settings import xp
 from numpy.typing import NDArray
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.settings import xp
+
 
 ffi = FFI()  # needed for unpack and unpack_gpu functions
 
@@ -183,7 +183,7 @@ def unpack_and_cache_pointer(
             unpacked = xp.ones((1,) * len(sizes), dtype=dtype, order="F")
         else:
             unpacked = unpack_gpu(pointer, *sizes) if backend == "GPU" else unpack(pointer, *sizes)
-            
+
         if is_bool:
             unpacked = int_array_to_bool_array(unpacked)
 

@@ -5,8 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-# Assuming this code is in a module called icon4py_config.py
 import dataclasses
 import os
 from enum import Enum
@@ -21,7 +19,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 
 
 try:
-    import dace
+    import dace  # type: ignore[import-not-found, import-untyped]
     from gt4py.next.program_processors.runners.dace import (
         run_dace_cpu,
         run_dace_cpu_noopt,
@@ -32,7 +30,7 @@ except ImportError:
     from types import ModuleType
     from typing import Optional
 
-    dace: Optional[ModuleType] = None
+    dace: Optional[ModuleType] = None  # type: ignore[no-redef] # definition needed here
 
 
 class Device(Enum):
@@ -71,7 +69,7 @@ class Icon4PyConfig:
     @cached_property
     def array_ns(self):
         if self.device == Device.GPU:
-            import cupy as cp  # type: ignore[import-untyped]
+            import cupy as cp  # type: ignore[import-not-found]
 
             return cp
         else:
@@ -117,3 +115,11 @@ class Icon4PyConfig:
     @cached_property
     def parallel_run(self):
         return os.environ.get("ICON4PY_PARALLEL", False)
+
+
+config = Icon4PyConfig()
+backend = config.gt4py_runner
+dace_orchestration = config.icon4py_dace_orchestration
+device = config.device
+limited_area = config.limited_area
+xp = config.array_ns

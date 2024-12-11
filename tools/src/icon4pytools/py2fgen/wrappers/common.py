@@ -10,17 +10,20 @@
 import logging
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions, mpi_decomposition as mpi
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import base, horizontal, icon
-from icon4py.model.common.settings import xp
 
+from icon4pytools.py2fgen.settings import config
+
+
+xp = config.array_ns
 
 log = logging.getLogger(__name__)
 
 
 def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
-    return xp.subtract(inp.ndarray, offset)
+    return xp.subtract(inp, offset)
 
 
 def construct_icon_grid(
@@ -61,9 +64,9 @@ def construct_icon_grid(
     vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
     edge_start_index = adjust_fortran_indices(edge_starts, offset)
 
-    cells_end_index = cell_ends.ndarray
-    vertex_end_index = vertex_ends.ndarray
-    edge_end_index = edge_ends.ndarray
+    cells_end_index = cell_ends
+    vertex_end_index = vertex_ends
+    edge_end_index = edge_ends
 
     c2e = adjust_fortran_indices(c2e, offset)
     c2v = adjust_fortran_indices(c2v, offset)
@@ -153,9 +156,9 @@ def construct_decomposition(
     e_glb_index = adjust_fortran_indices(e_glb_index, offset)
     v_glb_index = adjust_fortran_indices(v_glb_index, offset)
 
-    c_owner_mask = c_owner_mask.ndarray[:num_cells]
-    e_owner_mask = e_owner_mask.ndarray[:num_edges]
-    v_owner_mask = v_owner_mask.ndarray[:num_vertices]
+    c_owner_mask = c_owner_mask[:num_cells]
+    e_owner_mask = e_owner_mask[:num_edges]
+    v_owner_mask = v_owner_mask[:num_vertices]
 
     decomposition_info = (
         definitions.DecompositionInfo(
@@ -165,7 +168,7 @@ def construct_decomposition(
         .with_dimension(dims.EdgeDim, e_glb_index, e_owner_mask)
         .with_dimension(dims.VertexDim, v_glb_index, v_owner_mask)
     )
-    processor_props = mpi.get_multinode_properties(definitions.MultiNodeRun(), comm_id)
+    processor_props = definitions.get_processor_properties(definitions.MultiNodeRun(), comm_id)
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     return processor_props, decomposition_info, exchange
