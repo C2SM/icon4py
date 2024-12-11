@@ -200,7 +200,7 @@ def test_initialize_writer_create_dimensions(
 
     assert writer["title"] == "test"
     assert writer["institution"] == "EXCLAIM - ETH Zurich"
-    assert len(writer.dims) == 6
+    assert len(writer.dims) == 7
     assert writer.dims[writers.MODEL_LEVEL].size == grid.num_levels
     assert writer.dims[writers.MODEL_INTERFACE_LEVEL].size == grid.num_levels + 1
     assert writer.dims[writers.CELL].size == grid.num_cells
