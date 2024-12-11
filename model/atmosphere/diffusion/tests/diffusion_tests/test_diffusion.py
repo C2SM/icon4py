@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -13,9 +12,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
-    geometry,
     geometry_attributes as geometry_meta,
-    icon,
     vertical as v_grid,
 )
 from icon4py.model.testing import (
@@ -391,8 +388,7 @@ def test_verify_diffusion_init_against_savepoint(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps", (2,))
-@pytest.mark.parametrize("orchestration", [True, False])
+@pytest.mark.parametrize("ndyn_substeps, orchestration", [(2, [True, False])])
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -507,7 +503,7 @@ def test_run_diffusion_multiple_steps(
     icon_grid,
 ):
     if "dace" not in backend.name.lower():
-        raise pytest.skip("This test is only executed for `dace backends.")
+        raise pytest.skip("This test is only executed for DaCe backends.")
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -628,8 +624,7 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
-@pytest.mark.parametrize("linit", (True, ))
-@pytest.mark.parametrize("orchestration", [True, False])
+@pytest.mark.parametrize("linit, orchestration", [(True, [True, False])])
 def test_run_diffusion_initial_step(
     experiment,
     linit,
