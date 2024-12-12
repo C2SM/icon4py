@@ -27,7 +27,8 @@ from icon4py.model.testing.datatest_fixtures import (
     processor_props,
     ranked_data_path,
 )
-
+from icon4py.model.testing.helpers import backend, grid
+from icon4py.model.testing.pytest_config import *  # noqa: F401
 
 __all__ = [
     # imported fixtures:
@@ -49,4 +50,6 @@ __all__ = [
     "ndyn_substeps",
     "processor_props",
     "ranked_data_path",
+    "backend",
+    "grid"
 ]
