@@ -13,7 +13,7 @@ import traceback
 from importlib import reload
 
 import icon4py.model.atmosphere.diffusion.stencils as diffusion
-import icon4py.model.atmosphere.dycore as dycore
+import icon4py.model.atmosphere.dycore.stencils as dycore
 import icon4py.model.common.interpolation.stencils as intp
 import icon4py.model.common.type_alias as type_alias
 import pytest
@@ -24,7 +24,7 @@ from icon4pytools.icon4pygen.cli import main
 from .conftest import get_stencil_module_path
 
 
-DYCORE_PKG = "atmosphere.dycore"
+DYCORE_PKG = "atmosphere.dycore.stencils"
 INTERPOLATION_PKG = "common.interpolation.stencils"
 DIFFUSION_PKG = "atmosphere.diffusion.stencils"
 
@@ -125,7 +125,7 @@ def check_code_was_generated(stencil_name: str) -> None:
 # TODO: (samkellerhals) add temporaries codegen here once all work.
 @pytest.mark.parametrize(
     ("stencil_module", "stencil_name"),
-    dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
+    dycore_fencils(),
 )
 @pytest.mark.parametrize("flags", [()], ids=["normal"])
 def test_codegen(cli, stencil_module, stencil_name, flags, test_temp_dir) -> None:

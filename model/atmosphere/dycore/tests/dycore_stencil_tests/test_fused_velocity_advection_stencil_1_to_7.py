@@ -5,16 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 import (
+from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1_to_7 import (
     fused_velocity_advection_stencil_1_to_7,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -203,10 +201,6 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         pytest.xfail(
             "Verification of z_v_grad_w currently not working, because numpy version incorrect."
         )
-        if isinstance(grid, IconGrid) and grid.limited_area:
-            pytest.xfail(
-                "Execution domain needs to be restricted or boundary taken into account in stencil."
-            )
 
         c_intp = random_field(grid, dims.VertexDim, dims.V2CDim)
         vn = random_field(grid, dims.EdgeDim, dims.KDim)
@@ -228,7 +222,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         k = field_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
 
-        edge = zero_field(grid, dims.EdgeDim, dtype=int32)
+        edge = zero_field(grid, dims.EdgeDim, dtype=gtx.int32)
         for e in range(grid.num_edges):
             edge[e] = e
 

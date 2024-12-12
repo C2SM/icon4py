@@ -5,12 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_wp import (
+from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_wp import (
     init_two_cell_kdim_fields_with_zero_wp,
 )
 from icon4py.model.common import dimension as dims
@@ -45,7 +44,7 @@ class TestInitTwoCellKdimFieldsWithZeroWp(StencilTest):
             cell_kdim_field_with_zero_wp_1=cell_kdim_field_with_zero_wp_1,
             cell_kdim_field_with_zero_wp_2=cell_kdim_field_with_zero_wp_2,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

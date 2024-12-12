@@ -227,7 +227,7 @@ def test_py2fgen_compilation_and_profiling(
 def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_path, test_temp_dir):
     run_test_case(
         cli_runner,
-        "icon4pytools.py2fgen.wrappers.diffusion",
+        "icon4pytools.py2fgen.wrappers.diffusion_wrapper",
         "diffusion_init,diffusion_run,profile_enable,profile_disable",
         "diffusion_plugin",
         "GPU",
@@ -245,7 +245,7 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
 def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, test_temp_dir):
     run_test_case(
         cli_runner,
-        "icon4pytools.py2fgen.wrappers.diffusion",
+        "icon4pytools.py2fgen.wrappers.diffusion_wrapper",
         "diffusion_init,diffusion_run,profile_enable,profile_disable",
         "diffusion_plugin",
         "CPU",
@@ -253,4 +253,37 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, t
         "test_diffusion",
         test_temp_dir,
         limited_area=True,
+    )
+
+
+@pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
+def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test_temp_dir):
+    run_test_case(
+        cli_runner,
+        "icon4pytools.py2fgen.wrappers.dycore_wrapper",
+        "solve_nh_init,solve_nh_run,grid_init,profile_enable,profile_disable",
+        "dycore_plugin",
+        "CPU",
+        samples_path,
+        "test_dycore",
+        test_temp_dir,
+        limited_area=True,
+    )
+
+
+@pytest.mark.skip("Fortran driver needs to pass connectivities to construct grid.")
+def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path, test_temp_dir):
+    run_test_case(
+        cli_runner,
+        "icon4pytools.py2fgen.wrappers.dycore_wrapper",
+        "solve_nh_init,solve_nh_run,profile_enable,profile_disable",
+        "dycore_plugin",
+        "GPU",
+        samples_path,
+        "test_dycore",
+        test_temp_dir,
+        os.environ["NVFORTRAN_COMPILER"],
+        ("-acc", "-Minfo=acc"),
+        limited_area=True,
+        env_vars={"ICON4PY_BACKEND": "GPU"},
     )

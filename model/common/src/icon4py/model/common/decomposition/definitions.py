@@ -13,14 +13,23 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Protocol
+from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
 
 import numpy as np
-import numpy.ma as ma
 from gt4py.next import Dimension
 
-from icon4py.model.common.settings import xp
-from icon4py.model.common.utils import builder
+from icon4py.model.common import utils
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
+
+try:
+    import dace
+
+    from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
+except ImportError:
+    from types import ModuleType
+
+    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
 
 
 log = logging.getLogger(__name__)
@@ -71,26 +80,43 @@ class DecompositionInfo:
         OWNED = 1
         HALO = 2
 
-    @builder.builder
+    @utils.chainable
     def with_dimension(
-        self,
-        dim: Dimension,
-        global_index: np.ndarray,
-        owner_mask: np.ndarray,
-        halo_levels: np.ndarray,
+        self, dim: Dimension, global_index: field_alloc.NDArray, owner_mask: field_alloc.NDArray
     ):
-        masked_global_index = ma.array(global_index, mask=owner_mask)
-        self._global_index[dim] = masked_global_index
-        self._halo_levels[dim] = halo_levels
+        self._global_index[dim] = global_index
+        self._owner_mask[dim] = owner_mask
 
-    def __init__(self, klevels: int):
+    def __init__(
+        self,
+        klevels: int,
+        num_cells: Optional[int] = None,
+        num_edges: Optional[int] = None,
+        num_vertices: Optional[int] = None,
+    ):
         self._global_index = {}
         self._halo_levels = {}
         self._klevels = klevels
+        self._owner_mask = {}
+        self._num_vertices = num_vertices
+        self._num_cells = num_cells
+        self._num_edges = num_edges
 
     @property
     def klevels(self):
         return self._klevels
+
+    @property
+    def num_cells(self):
+        return self._num_cells
+
+    @property
+    def num_edges(self):
+        return self._num_edges
+
+    @property
+    def num_vertices(self):
+        return self._num_vertices
 
     def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
@@ -98,31 +124,35 @@ class DecompositionInfo:
                 return self._to_local_index(dim)
             case DecompositionInfo.EntryType.HALO:
                 index = self._to_local_index(dim)
-                mask = self._global_index[dim].mask
+                mask = self._owner_mask[dim]
                 return index[~mask]
             case DecompositionInfo.EntryType.OWNED:
                 index = self._to_local_index(dim)
-                mask = self._global_index[dim].mask
+                mask = self._owner_mask[dim]
                 return index[mask]
 
     def _to_local_index(self, dim):
-        data = ma.getdata(self._global_index[dim], subok=False)
+        data = self._global_index[dim]
         assert data.ndim == 1
-        return np.arange(data.shape[0])
+        if isinstance(data, np.ndarray):
+            import numpy as xp
+        else:
+            import cupy as xp
 
-    def owner_mask(self, dim: Dimension) -> np.ndarray:
-        return self._global_index[dim].mask
+            xp.arange(data.shape[0])
+        return xp.arange(data.shape[0])
+
+    def owner_mask(self, dim: Dimension) -> field_alloc.NDArray:
+        return self._owner_mask[dim]
 
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
         match entry_type:
             case DecompositionInfo.EntryType.ALL:
-                return ma.getdata(self._global_index[dim], subok=False)
+                return self._global_index[dim]
             case DecompositionInfo.EntryType.OWNED:
-                global_index = self._global_index[dim]
-                return ma.getdata(global_index[global_index.mask])
+                return self._global_index[dim][self._owner_mask[dim]]
             case DecompositionInfo.EntryType.HALO:
-                global_index = self._global_index[dim]
-                return ma.getdata(global_index[~global_index.mask])
+                return self._global_index[dim][~self._owner_mask[dim]]
             case _:
                 raise NotImplementedError()
 
@@ -130,7 +160,7 @@ class DecompositionInfo:
         return self._halo_levels[dim]
 
     def halo_level_mask(self, dim: Dimension, level: DecompositionFlag):
-        return xp.where(self._halo_levels[dim] == level, True, False)
+        return np.where(self._halo_levels[dim] == level, True, False)
 
 
 class ExchangeResult(Protocol):
@@ -141,6 +171,7 @@ class ExchangeResult(Protocol):
         ...
 
 
+@runtime_checkable
 class ExchangeRuntime(Protocol):
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         ...
@@ -153,12 +184,6 @@ class ExchangeRuntime(Protocol):
 
     def my_rank(self):
         ...
-
-    def wait(self):
-        pass
-
-    def is_ready(self) -> bool:
-        return True
 
 
 @dataclass
@@ -174,6 +199,140 @@ class SingleNodeExchange:
 
     def get_size(self):
         return 1
+
+    def __call__(self, *args, **kwargs) -> Optional[ExchangeResult]:
+        """Perform a halo exchange operation.
+
+        Args:
+            args: The fields to be exchanged.
+
+        Keyword Args:
+            dim: The dimension along which the exchange is performed.
+            wait: If True, the operation will block until the exchange is completed (default: True).
+        """
+        dim = kwargs.get("dim", None)
+        wait = kwargs.get("wait", True)
+
+        res = self.exchange(dim, *args)
+        if wait:
+            res.wait()
+        else:
+            return res
+
+    if dace:
+        # Implementation of DaCe SDFGConvertible interface
+        # For more see [dace repo]/dace/frontend/python/common.py#[class SDFGConvertible]
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+            sdfg = DummyNestedSDFG().__sdfg__()
+            sdfg.name = "_halo_exchange_"
+            return sdfg
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            return DummyNestedSDFG().__sdfg_closure__()
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            return DummyNestedSDFG().__sdfg_signature__()
+
+    else:
+
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+            raise NotImplementedError(
+                "__sdfg__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            raise NotImplementedError(
+                "__sdfg_closure__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            raise NotImplementedError(
+                "__sdfg_signature__ is only supported when the 'dace' module is available."
+            )
+
+    __sdfg__ = dace__sdfg__
+    __sdfg_closure__ = dace__sdfg_closure__
+    __sdfg_signature__ = dace__sdfg_signature__
+
+
+class HaloExchangeWaitRuntime(Protocol):
+    """Protocol for halo exchange wait."""
+
+    def __call__(self, communication_handle: ExchangeResult) -> None:
+        """Wait on the communication handle."""
+        ...
+
+    def __sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+        """DaCe related: SDFGConvertible interface."""
+        ...
+
+    def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
+        """DaCe related: SDFGConvertible interface."""
+        ...
+
+    def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+        """DaCe related: SDFGConvertible interface."""
+        ...
+
+
+@dataclass
+class HaloExchangeWait:
+    exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
+
+    def __call__(self, communication_handle: SingleNodeResult) -> None:
+        communication_handle.wait()
+
+    if dace:
+        # Implementation of DaCe SDFGConvertible interface
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+            sdfg = DummyNestedSDFG().__sdfg__()
+            sdfg.name = "_halo_exchange_wait_"
+            return sdfg
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            return DummyNestedSDFG().__sdfg_closure__()
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            return DummyNestedSDFG().__sdfg_signature__()
+
+    else:
+
+        def dace__sdfg__(self, *args, **kwargs) -> dace.sdfg.sdfg.SDFG:
+            raise NotImplementedError(
+                "__sdfg__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            raise NotImplementedError(
+                "__sdfg_closure__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            raise NotImplementedError(
+                "__sdfg_signature__ is only supported when the 'dace' module is available."
+            )
+
+    __sdfg__ = dace__sdfg__
+    __sdfg_closure__ = dace__sdfg_closure__
+    __sdfg_signature__ = dace__sdfg_signature__
+
+
+@functools.singledispatch
+def create_halo_exchange_wait(runtime: ExchangeRuntime) -> HaloExchangeWaitRuntime:
+    raise TypeError(f"Unknown ExchangeRuntime type ({type(runtime)})")
+
+
+@create_halo_exchange_wait.register(SingleNodeExchange)
+def create_single_node_halo_exchange_wait(runtime: SingleNodeExchange) -> HaloExchangeWait:
+    return HaloExchangeWait(runtime)
 
 
 class SingleNodeResult:
@@ -220,12 +379,12 @@ def get_runtype(with_mpi: bool = False) -> RunType:
 
 
 @functools.singledispatch
-def get_processor_properties(runtime) -> ProcessProperties:
+def get_processor_properties(runtime: RunType, comm_id: Union[int, None]) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
 
 
 @get_processor_properties.register(SingleNodeRun)
-def get_single_node_properties(s: SingleNodeRun) -> ProcessProperties:
+def get_single_node_properties(s: SingleNodeRun, comm_id=None) -> ProcessProperties:
     return SingleNodeProcessProperties()
 
 

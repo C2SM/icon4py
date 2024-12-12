@@ -5,12 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
 from icon4py.model.common import dimension as dims
@@ -58,10 +57,10 @@ class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
         vt: np.array,
         vn_ie: np.array,
         z_kin_hor_e: np.array,
-        horizontal_start: int32,
-        horizontal_end: int32,
-        vertical_start: int32,
-        vertical_end: int32,
+        horizontal_start: gtx.int32,
+        horizontal_end: gtx.int32,
+        vertical_start: gtx.int32,
+        vertical_end: gtx.int32,
     ) -> dict:
         subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
         vn_ie, z_kin_hor_e = vn_ie.copy(), z_kin_hor_e.copy()
@@ -91,7 +90,7 @@ class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
             vn_ie=vn_ie,
             z_kin_hor_e=z_kin_hor_e,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_edges),
+            horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=1,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

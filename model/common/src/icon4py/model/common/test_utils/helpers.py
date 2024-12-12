@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import hashlib
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
@@ -15,6 +16,9 @@ import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
+from typing_extensions import Buffer
+
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from ..grid.base import BaseGrid
 from ..type_alias import wpfloat
@@ -28,6 +32,11 @@ except ModuleNotFoundError:
 
 @pytest.fixture
 def backend(request):
+    return request.param
+
+
+@pytest.fixture
+def grid(request):
     return request.param
 
 
@@ -64,6 +73,7 @@ def random_mask(
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
+    backend=None,
 ) -> gt_common.Field:
     rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
@@ -74,7 +84,7 @@ def random_mask(
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return as_field(dims, arr)
+    return as_field(dims, arr, allocator=backend)
 
 
 def random_field(
@@ -84,13 +94,14 @@ def random_field(
     high: float = 1.0,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
     dtype: Optional[npt.DTypeLike] = None,
+    backend=None,
 ) -> gt_common.Field:
     arr = np.random.default_rng().uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
     if dtype:
         arr = arr.astype(dtype)
-    return as_field(dims, arr)
+    return as_field(dims, arr, allocator=backend)
 
 
 def zero_field(
@@ -98,16 +109,25 @@ def zero_field(
     *dims: gt_common.Dimension,
     dtype=wpfloat,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
+    backend=None,
 ) -> gt_common.Field:
-    return as_field(dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
+    if extend is not None:
+        field_domain = {
+            dim: (0, grid.size[dim] + extend[dim] if dim in extend.keys() else grid.size[dim])
+            for dim in dims
+        }
+    else:
+        field_domain = {dim: (0, grid.size[dim]) for dim in dims}
+    return constructors.zeros(field_domain, dtype=dtype, allocator=backend)
 
 
 def constant_field(
-    grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat
+    grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat, backend=None
 ) -> gt_common.Field:
     return as_field(
         dims,
         value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
+        allocator=backend,
     )
 
 
@@ -117,15 +137,19 @@ def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) 
     return numpy_to_1D_sparse_field(buffer, target_dim)
 
 
-def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_common.Field:
+def numpy_to_1D_sparse_field(
+    field: field_alloc.NDArray, dim: gt_common.Dimension, backend=None
+) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
     old_shape = field.shape
     assert len(old_shape) == 2
     new_shape = (old_shape[0] * old_shape[1],)
-    return as_field((dim,), field.reshape(new_shape))
+    return as_field((dim,), field.reshape(new_shape), allocator=backend)
 
 
-def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -> gt_common.Field:
+def flatten_first_two_dims(
+    *dims: gt_common.Dimension, field: gt_common.Field, backend=None
+) -> gt_common.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
     buffer = field.ndarray
     old_shape = buffer.shape
@@ -134,7 +158,7 @@ def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -
     flattened_shape = (flattened_size,)
     new_shape = flattened_shape + old_shape[2:]
     newarray = buffer.reshape(new_shape)
-    return as_field(dims, newarray)
+    return as_field(dims, newarray, allocator=backend)
 
 
 def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
@@ -142,6 +166,10 @@ def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
     old_shape = np.asarray(field).shape
     new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
     return np.asarray(field).reshape(new_shape)
+
+
+def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
+    return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
 
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
@@ -167,10 +195,7 @@ class Output:
 def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
-        **{
-            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
-            for k, v in input_data.items()
-        },
+        **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
     )
 
     input_data = allocate_data(backend, input_data)

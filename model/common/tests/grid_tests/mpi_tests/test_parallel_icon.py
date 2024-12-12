@@ -21,14 +21,23 @@ from .. import utils
 
 
 try:
-    import mpi4py  # noqa F401:  import mpi4py to check for optional mpi dependency
+    import mpi4py  # F401:  import mpi4py to check for optional mpi dependency
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 
+@pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props):  # noqa: F811  # fixture
+    """dummy test to check whether the MPI initialization and GHEX setup works."""
+    import ghex.context as ghex
+
     assert processor_props.comm
+
+    assert isinstance(
+        processor_props.comm, mpi4py.MPI.Comm
+    ), "comm needs to be an instance of MPI.Comm"
+    ghex.make_context(processor_props.comm)
 
 
 LOCAL_IDX_2 = {

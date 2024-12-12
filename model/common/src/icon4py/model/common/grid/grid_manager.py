@@ -5,26 +5,22 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import enum
 import logging
 import pathlib
-from typing import Callable, Optional, Protocol, Sequence, Union
+from typing import Callable, Literal, Optional, Protocol, Sequence, TypeAlias, Union
 
 import gt4py.next as gtx
+import gt4py.next.backend as gtx_backend
+import numpy as np
 
-from icon4py.model.common import dimension as dims, exceptions
+from icon4py.model.common import dimension as dims, exceptions, type_alias as ta, utils
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
     halo,
 )
-from icon4py.model.common.grid import (
-    base,
-    icon,
-    vertical as v_grid,
-)
-from icon4py.model.common.settings import xp
-from icon4py.model.common.utils import builder
+from icon4py.model.common.grid import base, icon, vertical as v_grid
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 try:
@@ -195,9 +191,15 @@ class ConnectivityName(FieldName):
 
 
 class GeometryName(FieldName):
-    CELL_AREA = "cell_area"  # steradian (DWD), m^2 (MPI-M)
-    EDGE_LENGTH = "edge_length"  # radians (DWD), m (MPI-M)
-    DUAL_EDGE_LENGTH = "dual_edge_length"  # radians (DWD), m (MPI-M)
+    # TODO (@halungge) compute from coordinates
+    CELL_AREA = "cell_area"
+    # TODO (@halungge) compute from coordinates
+    DUAL_AREA = "dual_area"
+    CELL_NORMAL_ORIENTATION = "orientation_of_normal"
+    TANGENT_ORIENTATION = "edge_system_orientation"
+    EDGE_ORIENTATION_ON_VERTEX = "edge_orientation"
+    # TODO (@halungge) compute from coordinates
+    EDGE_CELL_DISTANCE = "edge_cell_distance"
 
 
 class CoordinateName(FieldName):
@@ -263,40 +265,45 @@ class GridFile:
         return self._dataset.getncattr(name)
 
     def int_variable(
-        self, name: FieldName, indices: xp.ndarray = None, transpose: bool = True
-    ) -> xp.ndarray:
+        self, name: FieldName, indices: np.ndarray = None, transpose: bool = True
+    ) -> np.ndarray:
         """Read a integer field from the grid file.
 
-        Reads as int32.
+        Reads as gtx.int32.
 
         Args:
             name: name of the field to read
             transpose: flag to indicate whether the file should be transposed (for 2d fields)
         Returns:
-            xp.ndarray: field data
+            NDArray: field data
 
         """
         _log.debug(f"reading {name}: transposing = {transpose}")
-        data = self.variable(name, indices, dtype=gtx.int32)
-        return xp.transpose(data) if transpose else data
+        return self.variable(name, indices, transpose=transpose, dtype=gtx.int32)
 
     def variable(
-        self, name: FieldName, indices: xp.ndarray = None, dtype: xp.dtype = gtx.float64
-    ) -> xp.ndarray:
+        self,
+        name: FieldName,
+        indices: np.ndarray = None,
+        transpose=False,
+        dtype: np.dtype = gtx.float64,
+    ) -> np.ndarray:
         """Read a  field from the grid file.
 
         If a index array is given it only reads the values at those positions.
         Args:
             name: name of the field to read
             indices: indices to read
+            transpose: flag indicateing whether the array needs to be transposed
+                to match icon4py dimension ordering, defaults to False
             dtype: datatype of the field
         """
         try:
             variable = self._dataset.variables[name]
-            _log.debug(f"reading {name}: {variable}")
+            _log.debug(f"reading {name}: transposing = {transpose}")
             data = variable[:] if indices is None else variable[indices]
-            data = xp.array(data, dtype=dtype)
-            return data
+            data = np.array(data, dtype=dtype)
+            return np.transpose(data) if transpose else data
         except KeyError as err:
             msg = f"{name} does not exist in dataset"
             _log.warning(msg)
@@ -320,27 +327,31 @@ class IndexTransformation(Protocol):
 
     def __call__(
         self,
-        array: xp.ndarray,
-    ) -> xp.ndarray:
+        array: field_alloc.NDArray,
+    ) -> field_alloc.NDArray:
         ...
 
 
 class NoTransformation(IndexTransformation):
     """Empty implementation of the Protocol. Just return zeros."""
 
-    def __call__(self, array: xp.ndarray):
-        return xp.zeros_like(array)
+    def __call__(self, array: field_alloc.NDArray):
+        return np.zeros_like(array)
 
 
 class ToZeroBasedIndexTransformation(IndexTransformation):
-    def __call__(self, array: xp.ndarray):
+    def __call__(self, array: field_alloc.NDArray):
         """
         Calculate the index offset needed for usage with python.
 
         Fortran indices are 1-based, hence the offset is -1 for 0-based ness of python except for
         INVALID values which are marked with -1 in the grid file and are kept such.
         """
-        return xp.asarray(xp.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
+        return np.asarray(np.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
+
+
+CoordinateDict: TypeAlias = dict[dims.Dimension, dict[Literal["lat", "lon"], gtx.Field]]
+GeometryDict: TypeAlias = dict[GeometryName, gtx.Field]
 
 
 class GridManager:
@@ -360,7 +371,7 @@ class GridManager:
         transformation: IndexTransformation,
         grid_file: Union[pathlib.Path, str],
         config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove to separate vertical and horizontal grid
-        decomposer: Callable[[xp.ndarray, int], xp.ndarray] = halo.SingleNodeDecomposer(),
+        decomposer: Callable[[np.ndarray, int], np.ndarray] = halo.SingleNodeDecomposer(),
         run_properties: decomposition.ProcessProperties = _single_node_properties,
     ):
         self._run_properties = run_properties
@@ -370,7 +381,9 @@ class GridManager:
         self._vertical_config = config
         self._grid: Optional[icon.IconGrid] = None
         self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
+        self._geometry: GeometryDict = {}
         self._reader = None
+        self._coordinates: CoordinateDict = {}
 
     def open(self):
         """Open the gridfile resource for reading."""
@@ -395,26 +408,106 @@ class GridManager:
             raise FileNotFoundError(f"gridfile {self._file_name} not found, aborting")
 
     # TODO # add args to __call__?
-    @builder.builder
+    @utils.chainable
     def with_decomposer(
         self,
-        decomposer: Callable[[xp.ndarray, int], xp.ndarray],
+        decomposer: Callable[[np.ndarray, int], np.ndarray],
         run_properties: decomposition.ProcessProperties,
     ):
         self._run_properties = run_properties
         self._decompose = decomposer
 
-    def __call__(self, on_gpu: bool = False, limited_area=True):
+    def __call__(self, backend: Optional[gtx_backend.Backend], limited_area=True):
         if not self._reader:
             self.open()
+        on_gpu = field_alloc.is_cupy_device(backend)
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
-        self._refinement = self._read_grid_refinement_fields()
+        self._refinement = self._read_grid_refinement_fields(backend)
+        self._coordinates = self._read_coordinates(backend)
+        self._geometry = self._read_geometry_fields(backend)
+
+    def _read_coordinates(self, backend: Optional[gtx_backend.Backend]) -> CoordinateDict:
+        return {
+            dims.CellDim: {
+                "lat": gtx.as_field(
+                    (dims.CellDim,),
+                    self._reader.variable(CoordinateName.CELL_LATITUDE),
+                    dtype=ta.wpfloat,
+                    allocator=backend,
+                ),
+                "lon": gtx.as_field(
+                    (dims.CellDim,),
+                    self._reader.variable(CoordinateName.CELL_LONGITUDE),
+                    dtype=ta.wpfloat,
+                    allocator=backend,
+                ),
+            },
+            dims.EdgeDim: {
+                "lat": gtx.as_field(
+                    (dims.EdgeDim,),
+                    self._reader.variable(CoordinateName.EDGE_LATITUDE),
+                    dtype=ta.wpfloat,
+                    allocator=backend,
+                ),
+                "lon": gtx.as_field(
+                    (dims.EdgeDim,),
+                    self._reader.variable(CoordinateName.EDGE_LONGITUDE),
+                    dtype=ta.wpfloat,
+                    allocator=backend,
+                ),
+            },
+            dims.VertexDim: {
+                "lat": gtx.as_field(
+                    (dims.VertexDim,),
+                    self._reader.variable(CoordinateName.VERTEX_LATITUDE),
+                    allocator=backend,
+                    dtype=ta.wpfloat,
+                ),
+                "lon": gtx.as_field(
+                    (dims.VertexDim,),
+                    self._reader.variable(CoordinateName.VERTEX_LONGITUDE),
+                    allocator=backend,
+                    dtype=ta.wpfloat,
+                ),
+            },
+        }
+
+    def _read_geometry_fields(self, backend: Optional[gtx_backend.Backend]):
+        return {
+            # TODO (@halungge) still needs to ported, values from "our" grid files contains (wrong) values:
+            #   based on bug in generator fixed with this [PR40](https://gitlab.dkrz.de/dwd-sw/dwd_icon_tools/-/merge_requests/40) .
+            GeometryName.CELL_AREA.value: gtx.as_field(
+                (dims.CellDim,), self._reader.variable(GeometryName.CELL_AREA), allocator=backend
+            ),
+            # TODO (@halungge) easily computed from a neighbor_sum V2C over the cell areas?
+            GeometryName.DUAL_AREA.value: gtx.as_field(
+                (dims.VertexDim,), self._reader.variable(GeometryName.DUAL_AREA)
+            ),
+            GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
+                (dims.EdgeDim, dims.E2CDim),
+                self._reader.variable(GeometryName.EDGE_CELL_DISTANCE, transpose=True),
+            ),
+            # TODO (@halungge) recompute from coordinates? field in gridfile contains NaN on boundary edges
+            GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
+                (dims.EdgeDim,),
+                self._reader.variable(GeometryName.TANGENT_ORIENTATION),
+                allocator=backend,
+            ),
+            GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
+                (dims.CellDim, dims.C2EDim),
+                self._reader.int_variable(GeometryName.CELL_NORMAL_ORIENTATION, transpose=True),
+            ),
+            GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
+                (dims.VertexDim, dims.V2EDim),
+                self._reader.int_variable(GeometryName.EDGE_ORIENTATION_ON_VERTEX, transpose=True),
+            ),
+        }
 
     def _read_start_end_indices(
         self,
     ) -> tuple[
-        dict[dims.Dimension : xp.ndarray],
-        dict[dims.Dimension : xp.ndarray],
+        dict[dims.Dimension : field_alloc.NDArray],
+        dict[dims.Dimension : field_alloc.NDArray],
         dict[dims.Dimension : gtx.int32],
     ]:
         """ "
@@ -466,28 +559,31 @@ class GridManager:
         return start_indices, end_indices, grid_refinement_dimensions
 
     def _read_grid_refinement_fields(
-        self, decomposition_info: Optional[decomposition.DecompositionInfo] = None
-    ) -> tuple[dict[dims.Dimension : xp.ndarray]]:
+        self,
+        backend: gtx_backend.Backend,
+        decomposition_info: Optional[decomposition.DecompositionInfo] = None,
+    ) -> tuple[dict[dims.Dimension : field_alloc.NDArray]]:
         """
         Reads the refinement control fields from the grid file.
 
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
         """
+        xp = field_alloc.import_array_ns(backend)
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
             dims.VertexDim: GridRefinementName.CONTROL_VERTICES,
         }
         refinement_control_fields = {
-            dim: self._reader.int_variable(name, decomposition_info, transpose=False)
+            dim: np.asarray(self._reader.int_variable(name, decomposition_info, transpose=False))
             for dim, name in refinement_control_names.items()
         }
         return refinement_control_fields
 
     def _read(
         self,
-        reader_func: Callable[[GridFileName, xp.ndarray, xp.dtype], xp.ndarray],
+        reader_func: Callable[[GridFileName, np.ndarray, np.dtype], np.ndarray],
         decomposition_info: decomposition.DecompositionInfo,
         fields: dict[dims.Dimension, Sequence[GridFileName]],
     ):
@@ -557,7 +653,7 @@ class GridManager:
         )
 
     @property
-    def grid(self):
+    def grid(self) -> icon.IconGrid:
         return self._grid
 
     @property
@@ -568,6 +664,14 @@ class GridManager:
         TODO (@halungge) should those be added to the IconGrid?
         """
         return self._refinement
+
+    @property
+    def geometry(self) -> GeometryDict:
+        return self._geometry
+
+    @property
+    def coordinates(self) -> CoordinateDict:
+        return self._coordinates
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon.IconGrid:
         """Construct the grid topology from the icon grid file.
@@ -649,22 +753,24 @@ def _add_derived_connectivities(grid: icon.IconGrid) -> icon.IconGrid:
     e2c2e = _construct_diamond_edges(
         grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim]
     )
-    e2c2e0 = xp.column_stack((xp.asarray(range(e2c2e.shape[0])), e2c2e))
+    e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
 
     c2e2c2e = _construct_triangle_edges(
         grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim]
     )
-    c2e2c0 = xp.column_stack(
+    c2e2c0 = np.column_stack(
         (
-            xp.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
+            np.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
             (grid.connectivities[dims.C2E2CDim]),
         )
     )
+    c2e2c2e2c = _construct_butterfly_cells(grid.connectivities[dims.C2E2CDim])
 
     grid.with_connectivities(
         {
             dims.C2E2CODim: c2e2c0,
             dims.C2E2C2EDim: c2e2c2e,
+            dims.C2E2C2E2CDim: c2e2c2e2c,
             dims.E2C2VDim: e2c2v,
             dims.E2C2EDim: e2c2e,
             dims.E2C2EODim: e2c2e0,
@@ -684,68 +790,73 @@ def _update_size_for_1d_sparse_dims(grid):
     )
 
 
-def _construct_diamond_vertices(e2v: xp.ndarray, c2v: xp.ndarray, e2c: xp.ndarray) -> xp.ndarray:
+def _construct_diamond_vertices(
+    e2v: field_alloc.NDArray, c2v: field_alloc.NDArray, e2c: field_alloc.NDArray
+) -> field_alloc.NDArray:
     r"""
     Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
 
     Starting from the e2v and c2v connectivity the connectivity table for e2c2v is built up.
 
-                 v0
-                / \
-              /    \
-             /      \
-            /        \
-           v1---e0---v3
-            \       /
-             \     /
-              \   /
-               \ /
-                v2
+             v0
+            /  \
+           /    \
+          /      \
+         /        \
+        v1---e0---v3
+         \        /
+          \      /
+           \    /
+            \  /
+             v2
+
     For example for this diamond: e0 -> (v0, v1, v2, v3)
     Ordering is the same as ICON uses.
 
     Args:
-        e2v: xp.ndarray containing the connectivity table for edge-to-vertex
-        c2v: xp.ndarray containing the connectivity table for cell-to-vertex
-        e2c: xp.ndarray containing the connectivity table for edge-to-cell
+        e2v: ndarray containing the connectivity table for edge-to-vertex
+        c2v: ndarray containing the connectivity table for cell-to-vertex
+        e2c: ndarray containing the connectivity table for edge-to-cell
 
-    Returns: xp.ndarray containing the connectivity table for edge-to-vertex on the diamond
+    Returns: ndarray containing the connectivity table for edge-to-vertex on the diamond
     """
     dummy_c2v = _patch_with_dummy_lastline(c2v)
     expanded = dummy_c2v[e2c, :]
     sh = expanded.shape
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
-    far_indices = xp.zeros_like(e2v)
+    far_indices = np.zeros_like(e2v)
     # TODO (magdalena) vectorize speed this up?
     for i in range(sh[0]):
-        far_indices[i, :] = flat[i, ~xp.isin(flat[i, :], e2v[i, :])][:2]
-    return xp.hstack((e2v, far_indices))
+        far_indices[i, :] = flat[i, ~np.isin(flat[i, :], e2v[i, :])][:2]
+    return np.hstack((e2v, far_indices))
 
 
-def _construct_diamond_edges(e2c: xp.ndarray, c2e: xp.ndarray) -> xp.ndarray:
+def _construct_diamond_edges(
+    e2c: field_alloc.NDArray, c2e: field_alloc.NDArray
+) -> field_alloc.NDArray:
     r"""
     Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
 
     Starting from the e2c and c2e connectivity the connectivity table for e2c2e is built up.
 
-        / \
-      /    \
-     e2    e1
-    /    c0  \
-    ----e0----
-    \   c1   /
-     e3    e4
-      \   /
-       \ /
+            /  \
+           /    \
+          e2 c0 e1
+         /        \
+         ----e0----
+         \        /
+          e3 c1 e4
+           \    /
+            \  /
 
     For example, for this diamond for e0 -> (e1, e2, e3, e4)
 
 
     Args:
-        e2c: xp.ndarray containing the connectivity table for edge-to-cell
-        c2e: xp.ndarray containing the connectivity table for cell-to-edge
+        e2c: ndarray containing the connectivity table for edge-to-cell
+        c2e: ndarray containing the connectivity table for cell-to-edge
 
-    Returns: xp.ndarray containing the connectivity table for central edge-to- boundary edges
+    Returns: ndarray containing the connectivity table for central edge-to- boundary edges
              on the diamond
     """
     dummy_c2e = _patch_with_dummy_lastline(c2e)
@@ -754,39 +865,73 @@ def _construct_diamond_edges(e2c: xp.ndarray, c2e: xp.ndarray) -> xp.ndarray:
     flattened = expanded.reshape(sh[0], sh[1] * sh[2])
 
     diamond_sides = 4
-    e2c2e = GridFile.INVALID_INDEX * xp.ones((sh[0], diamond_sides), dtype=gtx.int32)
+    e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=gtx.int32)
     for i in range(sh[0]):
-        var = flattened[i, (~xp.isin(flattened[i, :], xp.asarray([i, GridFile.INVALID_INDEX])))]
+        var = flattened[i, (~np.isin(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
         e2c2e[i, : var.shape[0]] = var
     return e2c2e
 
 
-def _construct_triangle_edges(c2e2c, c2e):
+def _construct_triangle_edges(
+    c2e2c: field_alloc.NDArray, c2e: field_alloc.NDArray
+) -> field_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
 
-       ____e3________e7____
-       \   c1  / \   c3  /
-        \     /   \     /
-        e4   e2    e1  e8
-          \ /   c0  \ /
-            ----e0----
-            \   c2  /
-             e5    e6
-              \   /
-               \ /
+         ----e3----  ----e7----
+         \        /  \        /
+          e4 c1  /    \  c3 e8
+           \    e2 c0 e1    /
+            \  /        \  /
+               ----e0----
+               \        /
+                e5 c2 e6
+                 \    /
+                  \  /
+
 
     For example, for the triangular shape above, c0 -> (e3, e4, e2, e0, e5, e6, e7, e1, e8).
 
     Args:
-        c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
-        c2e: shape (n_cell, 3), connectivity table from a cell to its neighboring edges
+        c2e2c: shape (n_cells, 3) connectivity table from a central cell to its cell neighbors
+        c2e: shape (n_cells, 3), connectivity table from a cell to its neighboring edges
     Returns:
-        xp.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
+        ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
             edges of its cell neighbors
     """
     dummy_c2e = _patch_with_dummy_lastline(c2e)
-    table = xp.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
+    table = np.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
     return table
+
+
+def _construct_butterfly_cells(c2e2c: field_alloc.NDArray) -> field_alloc.NDArray:
+    r"""Compute the connectivity from a central cell to all neighboring cells of its cell neighbors.
+
+                  /  \        /  \
+                 /    \      /    \
+                /  c4  \    /  c5  \
+               /        \  /        \
+               ----e3----  ----e7----
+            /  \        /  \        /  \
+           /    e4 c1  /    \  c3 e8    \
+          /  c9  \    e2 c0 e1    /  c6  \
+         /        \  /        \  /        \
+         ----------  ----e0----  ----------
+                  /  \        /  \
+                 /    e5 c2 e6    \
+                /  c8  \    /  c7  \
+               /        \  /        \
+               ----------  ----------
+
+    For example, for the shape above, c0 -> (c1, c4, c9, c2, c7, c8, c3, c5, c6).
+
+    Args:
+        c2e2c: shape (n_cells, 3) connectivity table from a central cell to its cell neighbors
+    Returns:
+        ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
+    """
+    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
+    c2e2c2e2c = np.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
+    return c2e2c2e2c
 
 
 def _patch_with_dummy_lastline(ar):
@@ -797,14 +942,14 @@ def _patch_with_dummy_lastline(ar):
     encountering a -1 = GridFile.INVALID_INDEX value
 
     Args:
-        ar: xp.ndarray connectivity array to be patched
+        ar: ndarray connectivity array to be patched
 
     Returns: same array with an additional line containing only GridFile.INVALID_INDEX
 
     """
-    patched_ar = xp.append(
+    patched_ar = np.append(
         ar,
-        GridFile.INVALID_INDEX * xp.ones((1, ar.shape[1]), dtype=gtx.int32),
+        GridFile.INVALID_INDEX * np.ones((1, ar.shape[1]), dtype=gtx.int32),
         axis=0,
     )
     return patched_ar
@@ -813,8 +958,8 @@ def _patch_with_dummy_lastline(ar):
 def construct_local_connectivity(
     field_offset: gtx.FieldOffset,
     decomposition_info: decomposition.DecompositionInfo,
-    connectivity: xp.ndarray,
-) -> xp.ndarray:
+    connectivity: np.ndarray,
+) -> np.ndarray:
     """
     Construct a connectivity table for use on a given rank: it maps from source to target dimension in _local_ indices.
 
@@ -842,16 +987,16 @@ def construct_local_connectivity(
     )
 
     # replace indices in the connectivity that do not exist on the local node by the SKIP_VALUE (those are for example neighbors of the outermost halo points)
-    local_connectivity = xp.where(
-        xp.isin(sliced_connectivity, global_idx), sliced_connectivity, GridFile.INVALID_INDEX
+    local_connectivity = np.where(
+        np.isin(sliced_connectivity, global_idx), sliced_connectivity, GridFile.INVALID_INDEX
     )
 
     # map to local source indices
-    sorted_index_of_global_idx = xp.argsort(global_idx)
+    sorted_index_of_global_idx = np.argsort(global_idx)
     global_idx_sorted = global_idx[sorted_index_of_global_idx]
-    for i in xp.arange(local_connectivity.shape[0]):
+    for i in np.arange(local_connectivity.shape[0]):
         valid_neighbor_mask = local_connectivity[i, :] != GridFile.INVALID_INDEX
-        positions = xp.searchsorted(global_idx_sorted, local_connectivity[i, valid_neighbor_mask])
+        positions = np.searchsorted(global_idx_sorted, local_connectivity[i, valid_neighbor_mask])
         indices = sorted_index_of_global_idx[positions]
         local_connectivity[i, valid_neighbor_mask] = indices
     # _log.debug(f"rank {self._props.rank} has local connectivity f: {local_connectivity}")

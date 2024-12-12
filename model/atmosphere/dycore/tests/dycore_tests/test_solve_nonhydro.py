@@ -10,36 +10,27 @@ import logging
 
 import pytest
 
-import icon4py.model.common.grid.geometry as geometry
-from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.state_utils import (
-    states as solve_nh_states,
-    utils as solve_nh_utils,
+import icon4py.model.common.grid.states as grid_states
+from icon4py.model.atmosphere.dycore import (
+    dycore_states,
+    dycore_utils,
+    solve_nonhydro as solve_nh,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
-from icon4py.model.common.settings import backend
-from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     helpers,
-    serialbox_utils as sb,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
-from .utils import (
-    construct_config,
-    construct_interpolation_state_for_nonhydro,
-    construct_nh_metric_state,
-)
+from . import utils
 
 
 @pytest.mark.datatest
 def test_validate_divdamp_fields_against_savepoint_values(
-    grid_savepoint,
-    savepoint_nonhydro_init,
-    icon_grid,
+    grid_savepoint, savepoint_nonhydro_init, icon_grid, backend
 ):
     config = solve_nh.NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
@@ -60,7 +51,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         enh_divdamp_fac,
         offset_provider={"Koff": dims.KDim},
     )
-    solve_nh_utils._calculate_scal_divdamp.with_backend(backend)(
+    dycore_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_order=config.divdamp_order,
         mean_cell_area=mean_cell_area,
@@ -68,7 +59,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         out=scal_divdamp,
         offset_provider={},
     )
-    solve_nh_utils._calculate_bdy_divdamp.with_backend(backend)(
+    dycore_utils._calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp,
         config.nudge_max_coeff,
         constants.DBL_EPS,
@@ -83,9 +74,46 @@ def test_validate_divdamp_fields_against_savepoint_values(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only, at_initial_timestep",
+    [
+        (1, 0, "2021-06-20T12:00:10.000", 1, 0, "2021-06-20T12:00:10.000", False, True),
+        (2, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000", False, True),
+        (1, 1, "2021-06-20T12:00:10.000", 1, 1, "2021-06-20T12:00:10.000", True, True),
+        (2, 1, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False, True),
+        (1, 0, "2021-06-20T12:00:20.000", 1, 0, "2021-06-20T12:00:20.000", True, False),
+        (2, 0, "2021-06-20T12:00:20.000", 2, 0, "2021-06-20T12:00:20.000", False, False),
+        (1, 1, "2021-06-20T12:00:20.000", 1, 1, "2021-06-20T12:00:20.000", True, False),
+        (2, 1, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", False, False),
+    ],
+)
+def test_time_step_flags(
+    experiment,
+    istep_init,
+    jstep_init,
+    step_date_init,
+    istep_exit,
+    jstep_exit,
+    step_date_exit,
+    vn_only,
+    at_initial_timestep,
+    savepoint_nonhydro_init,
+):
+    sp = savepoint_nonhydro_init
+    recompute = sp.get_metadata("recompute").get("recompute")
+    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
+    linit = sp.get_metadata("linit").get("linit")
+
+    assert recompute == (jstep_init == 0)
+    assert clean_mflx == (jstep_init == 0)
+    assert linit == (at_initial_timestep and (jstep_init == 0))
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 1, True)])
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
     [
         (
             dt_utils.REGIONAL_EXPERIMENT,
@@ -117,10 +145,12 @@ def test_nonhydro_predictor_step(
     savepoint_nonhydro_exit,
     experiment,
     ndyn_substeps,
+    at_initial_timestep,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
-    config = construct_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -131,25 +161,18 @@ def test_nonhydro_predictor_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    recompute = sp.get_metadata("recompute").get("recompute")
-    linit = sp.get_metadata("linit").get("linit")
 
-    nnow = 0
-    nnew = 1
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
 
-    diagnostic_state_nh = construct_diagnostics(sp)
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
-
-    solve_nonhydro = solve_nh.SolveNonhydro()
-    nlev = icon_grid.num_levels
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -159,21 +182,27 @@ def test_nonhydro_predictor_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
+    )
+    nlev = icon_grid.num_levels
+    at_first_substep = jstep_init == 0
+
+    prognostic_states = utils.create_prognostic_states(sp)
+    solve_nonhydro.update_time_levels_for_velocity_tendencies(
+        diagnostic_state_nh,
+        at_first_substep=at_first_substep,
+        at_initial_timestep=at_initial_timestep,
     )
 
-    prognostic_state_ls = create_prognostic_states(sp)
-    solve_nonhydro.set_timelevels(nnow, nnew)
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state=prognostic_state_ls,
+        prognostic_states=prognostic_states,
         z_fields=solve_nonhydro.intermediate_fields,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        at_first_substep=(jstep_init == 0),
-        nnow=nnow,
-        nnew=nnew,
+        at_initial_timestep=at_initial_timestep,
+        at_first_substep=at_first_substep,
     )
+
     cell_domain = h_grid.domain(dims.CellDim)
     edge_domain = h_grid.domain(dims.EdgeDim)
 
@@ -311,7 +340,7 @@ def test_nonhydro_predictor_step(
         sp_exit.z_hydro_corr().asnumpy()[edge_start_nudging_level_2:, nlev - 1],
         atol=1e-20,
     )
-    prognostic_state_nnew = prognostic_state_ls[1]
+    prognostic_state_nnew = prognostic_states.next
     vn_new_reference = sp_exit.vn_new().asnumpy()
 
     # stencils 24
@@ -469,43 +498,8 @@ def test_nonhydro_predictor_step(
     )
 
 
-def construct_diagnostics(init_savepoint: sb.IconNonHydroInitSavepoint):
-    return solve_nh_states.DiagnosticStateNonHydro(
-        theta_v_ic=init_savepoint.theta_v_ic(),
-        exner_pr=init_savepoint.exner_pr(),
-        rho_ic=init_savepoint.rho_ic(),
-        ddt_exner_phy=init_savepoint.ddt_exner_phy(),
-        grf_tend_rho=init_savepoint.grf_tend_rho(),
-        grf_tend_thv=init_savepoint.grf_tend_thv(),
-        grf_tend_w=init_savepoint.grf_tend_w(),
-        mass_fl_e=init_savepoint.mass_fl_e(),
-        ddt_vn_phy=init_savepoint.ddt_vn_phy(),
-        grf_tend_vn=init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_ntl1=init_savepoint.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=init_savepoint.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=init_savepoint.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=init_savepoint.ddt_w_adv_pc(2),
-        vt=init_savepoint.vt(),
-        vn_ie=init_savepoint.vn_ie(),
-        w_concorr_c=init_savepoint.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=init_savepoint.exner_dyn_incr(),
-    )
-
-
-def create_vertical_params(vertical_config, grid_savepoint):
-    return v_grid.VerticalGrid(
-        config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
-    )
-
-
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(2, 2, True)])
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit",
     [
@@ -539,10 +533,12 @@ def test_nonhydro_corrector_step(
     savepoint_nonhydro_exit,
     experiment,
     ndyn_substeps,
+    at_initial_timestep,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
-    config = construct_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
@@ -552,21 +548,17 @@ def test_nonhydro_corrector_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
-    nnow = 0
-    nnew = 1
-
-    diagnostic_state_nh = construct_diagnostics(sp)
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
 
     z_fields = solve_nh.IntermediateFields(
         z_gradh_exner=sp.z_gradh_exner(),
@@ -587,14 +579,13 @@ def test_nonhydro_corrector_step(
 
     divdamp_fac_o2 = sp.divdamp_fac_o2()
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -604,24 +595,30 @@ def test_nonhydro_corrector_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
+    at_first_substep = jstep_init == 0
+    at_last_substep = jstep_init == (ndyn_substeps - 1)
 
-    prognostic_state_ls = create_prognostic_states(sp)
-    solve_nonhydro.set_timelevels(nnow, nnew)
+    prognostic_states = utils.create_prognostic_states(sp)
+    solve_nonhydro.update_time_levels_for_velocity_tendencies(
+        diagnostic_state_nh,
+        at_first_substep=at_first_substep,
+        at_initial_timestep=at_initial_timestep,
+    )
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state=prognostic_state_ls,
+        prognostic_states=prognostic_states,
         z_fields=z_fields,
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
-        nnew=nnew,
-        nnow=nnow,
-        lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
-        at_last_substep=jstep_init == (ndyn_substeps - 1),
+        at_first_substep=at_first_substep,
+        at_last_substep=at_last_substep,
     )
+
     if icon_grid.limited_area:
         assert helpers.dallclose(solve_nonhydro._bdy_divdamp.asnumpy(), sp.bdy_divdamp().asnumpy())
 
@@ -646,29 +643,29 @@ def test_nonhydro_corrector_step(
 
     # stencil 23,26, 27, 4th_order_divdamp
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].vn.asnumpy(),
+        prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-9,  # TODO (magdalena) was 1e-10 for local experiment only
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].exner.asnumpy(),
+        prognostic_states.next.exner.asnumpy(),
         savepoint_nonhydro_exit.exner_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].rho.asnumpy(),
+        prognostic_states.next.rho.asnumpy(),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].w.asnumpy(),
+        prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].theta_v.asnumpy(),
+        prognostic_states.next.theta_v.asnumpy(),
         savepoint_nonhydro_exit.theta_v_new().asnumpy(),
     )
     # stencil 31
@@ -706,9 +703,11 @@ def test_nonhydro_corrector_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init,jstep_init, istep_exit,jstep_exit", [(1, 0, 2, 0)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit",
+    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+)
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
     [
         (
             dt_utils.REGIONAL_EXPERIMENT,
@@ -742,10 +741,12 @@ def test_run_solve_nonhydro_single_step(
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
+    at_initial_timestep,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
@@ -757,32 +758,25 @@ def test_run_solve_nonhydro_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
-    nnow = 0
-    nnew = 1
-    recompute = sp.get_metadata("recompute").get("recompute")
-    linit = sp.get_metadata("linit").get("linit")
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
 
-    diagnostic_state_nh = construct_diagnostics(sp)
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
-
-    solve_nonhydro = solve_nh.SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -792,27 +786,24 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
-    prognostic_state_ls = create_prognostic_states(sp)
+    prognostic_states = utils.create_prognostic_states(sp)
 
     initial_divdamp_fac = sp.divdamp_fac_o2()
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state_ls=prognostic_state_ls,
+        prognostic_states=prognostic_states,
         prep_adv=prep_adv,
         divdamp_fac_o2=initial_divdamp_fac,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        nnew=nnew,
-        nnow=nnow,
-        lclean_mflx=clean_mflx,
+        at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=jstep_init == 0,
         at_last_substep=jstep_init == (ndyn_substeps - 1),
     )
-    prognostic_state_nnew = prognostic_state_ls[1]
+    prognostic_state_nnew = prognostic_states.next
     assert helpers.dallclose(
         prognostic_state_nnew.theta_v.asnumpy(),
         sp_step_exit.theta_v_new().asnumpy(),
@@ -850,10 +841,10 @@ def test_run_solve_nonhydro_single_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only, at_initial_timestep",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
-        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False, True),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True, False),
     ],
 )
 def test_run_solve_nonhydro_multi_step(
@@ -873,8 +864,10 @@ def test_run_solve_nonhydro_multi_step(
     savepoint_nonhydro_step_exit,
     experiment,
     ndyn_substeps,
+    backend,
+    at_initial_timestep,
 ):
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -885,33 +878,28 @@ def test_run_solve_nonhydro_multi_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
-    prep_adv = solve_nh_states.PrepAdvection(
+    prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
         vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
-    nnow = 0
-    nnew = 1
-    recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = construct_diagnostics(sp)
-    prognostic_state_ls = create_prognostic_states(sp)
+    diagnostic_state_nh = utils.construct_diagnostics(sp, swap_ddt_w_adv_pc=not linit)
+    prognostic_states = utils.create_prognostic_states(sp)
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -921,33 +909,27 @@ def test_run_solve_nonhydro_multi_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
     for i_substep in range(ndyn_substeps):
-        is_first_substep = i_substep == 0
-        is_last_substep = i_substep == (ndyn_substeps - 1)
+        at_first_substep = i_substep == 0
+        at_last_substep = i_substep == (ndyn_substeps - 1)
+
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
-            prognostic_state_ls=prognostic_state_ls,
+            prognostic_states=prognostic_states,
             prep_adv=prep_adv,
             divdamp_fac_o2=sp.divdamp_fac_o2(),
             dtime=dtime,
-            l_recompute=recompute,
-            l_init=linit,
-            nnew=nnew,
-            nnow=nnow,
-            lclean_mflx=clean_mflx,
+            at_initial_timestep=at_initial_timestep,
             lprep_adv=lprep_adv,
-            at_first_substep=is_first_substep,
-            at_last_substep=is_last_substep,
+            at_first_substep=at_first_substep,
+            at_last_substep=at_last_substep,
         )
-        linit = False
-        recompute = False
-        clean_mflx = False
-        if not is_last_substep:
-            ntemp = nnow
-            nnow = nnew
-            nnew = ntemp
+
+        if not at_last_substep:
+            prognostic_states.swap()
 
     cell_start_lb_plus2 = icon_grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
@@ -991,28 +973,28 @@ def test_run_solve_nonhydro_multi_step(
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].theta_v.asnumpy(),
+        prognostic_states.next.theta_v.asnumpy(),
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].rho.asnumpy(),
+        prognostic_states.next.rho.asnumpy(),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].exner.asnumpy(),
+        prognostic_states.next.exner.asnumpy(),
         sp_step_exit.exner_new().asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].w.asnumpy(),
+        prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_ls[nnew].vn.asnumpy(),
+        prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         atol=5e-13,
     )
@@ -1032,22 +1014,3 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     assert params.wgt_nnow_vel == savepoint_nonhydro_init.wgt_nnow_vel()
     assert params.wgt_nnew_rth == savepoint_nonhydro_init.wgt_nnew_rth()
     assert params.wgt_nnow_rth == savepoint_nonhydro_init.wgt_nnow_rth()
-
-
-def create_prognostic_states(sp):
-    prognostic_state_nnow = prognostics.PrognosticState(
-        w=sp.w_now(),
-        vn=sp.vn_now(),
-        theta_v=sp.theta_v_now(),
-        rho=sp.rho_now(),
-        exner=sp.exner_now(),
-    )
-    prognostic_state_nnew = prognostics.PrognosticState(
-        w=sp.w_new(),
-        vn=sp.vn_new(),
-        theta_v=sp.theta_v_new(),
-        rho=sp.rho_new(),
-        exner=sp.exner_new(),
-    )
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
-    return prognostic_state_ls

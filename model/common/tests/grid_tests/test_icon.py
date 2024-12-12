@@ -10,25 +10,25 @@ import re
 
 import pytest
 
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
-    geometry,
     grid_manager as gm,
     horizontal as h_grid,
     icon,
     vertical as v_grid,
 )
+from icon4py.model.common.test_utils import grid_utils as gridtest_utils
 
 from . import utils
 
 
 @functools.cache
 def grid_from_file() -> icon.IconGrid:
-    file_name = utils.resolve_file_from_gridfile_name("mch_ch_r04b09_dsl")
+    file_name = gridtest_utils.resolve_full_grid_file_name("mch_ch_r04b09_dsl")
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(1)
     )
-    manager()
+    manager(backend=None)
     return manager.grid
 
 
@@ -159,17 +159,3 @@ def test_grid_size(icon_grid):
     assert 10663 == icon_grid.size[dims.VertexDim]
     assert 20896 == icon_grid.size[dims.CellDim]
     assert 31558 == icon_grid.size[dims.EdgeDim]
-
-
-@pytest.mark.parametrize(
-    "grid_root,grid_level,expected",
-    [
-        (2, 4, 24907282236.708576),
-        (4, 9, 6080879.45232143),
-    ],
-)
-def test_mean_cell_area_calculation(grid_root, grid_level, expected):
-    params = icon.GlobalGridParams(grid_root, grid_level)
-    assert expected == geometry.CellParams._compute_mean_cell_area(
-        constants.EARTH_RADIUS, params.num_cells
-    )
