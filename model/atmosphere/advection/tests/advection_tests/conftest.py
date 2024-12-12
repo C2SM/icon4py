@@ -36,6 +36,16 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
 
 
 @pytest.fixture
+def use_high_order_quadrature():
+    return True
+
+
+@pytest.fixture
+def enable_plots():
+    return False
+
+
+@pytest.fixture
 def least_squares_savepoint(
     data_provider,  # noqa: F811 # imported fixtures data_provider
     data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection

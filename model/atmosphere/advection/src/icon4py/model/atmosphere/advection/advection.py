@@ -79,6 +79,8 @@ class VerticalAdvectionType(Enum):
     UPWIND_1ST_ORDER = auto()
     #: 3rd order PPM
     PPM_3RD_ORDER = auto()
+    #: broken 3rd order PPM
+    BROKEN_PPM_3RD_ORDER = auto()
 
 
 class VerticalAdvectionLimiter(Enum):
@@ -373,7 +375,7 @@ class GodunovSplittingAdvection(Advection):
         log.debug("advection run - end")
 
 
-def convert_config_to_horizontal_vertical_advection(
+def convert_config_to_horizontal_advection(
     config: AdvectionConfig,
     grid: icon_grid.IconGrid,
     interpolation_state: advection_states.AdvectionInterpolationState,
@@ -383,7 +385,7 @@ def convert_config_to_horizontal_vertical_advection(
     cell_params: grid_states.CellParams,
     backend: backend.Backend,
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
-) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
+) -> advection_horizontal.HorizontalAdvection:
     match config.horizontal_advection_limiter:
         case HorizontalAdvectionLimiter.NO_LIMITER:
             horizontal_limiter = advection_horizontal.HorizontalFluxLimiter()
@@ -421,6 +423,15 @@ def convert_config_to_horizontal_vertical_advection(
         case _:
             raise NotImplementedError(f"Unknown horizontal advection type.")
 
+    return horizontal_advection
+
+
+def convert_config_to_vertical_advection(
+    config: AdvectionConfig,
+    grid: icon_grid.IconGrid,
+    metric_state: advection_states.AdvectionMetricState,
+    backend: backend.Backend,
+) -> advection_vertical.VerticalAdvection:
     match config.vertical_advection_limiter:
         case VerticalAdvectionLimiter.NO_LIMITER:
             vertical_limiter = advection_vertical.NoLimiter(grid=grid, backend=backend)
@@ -449,10 +460,19 @@ def convert_config_to_horizontal_vertical_advection(
                 metric_state=metric_state,
                 backend=backend,
             )
+        case VerticalAdvectionType.BROKEN_PPM_3RD_ORDER:
+            boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
+            vertical_advection = advection_vertical.BrokenPiecewiseParabolicMethod(
+                boundary_conditions=boundary_conditions,
+                vertical_limiter=vertical_limiter,
+                grid=grid,
+                metric_state=metric_state,
+                backend=backend,
+            )
         case _:
             raise NotImplementedError(f"Unknown vertical advection type.")
 
-    return horizontal_advection, vertical_advection
+    return vertical_advection
 
 
 def convert_config_to_advection(
@@ -474,7 +494,7 @@ def convert_config_to_advection(
         # advection is disabled for all tracers
         return NoAdvection(grid=grid, backend=backend)
 
-    horizontal_advection, vertical_advection = convert_config_to_horizontal_vertical_advection(
+    horizontal_advection = convert_config_to_horizontal_advection(
         config=config,
         grid=grid,
         interpolation_state=interpolation_state,
@@ -484,6 +504,10 @@ def convert_config_to_advection(
         cell_params=cell_params,
         backend=backend,
         exchange=exchange,
+    )
+
+    vertical_advection = convert_config_to_vertical_advection(
+        config=config, grid=grid, metric_state=metric_state, backend=backend
     )
 
     advection = GodunovSplittingAdvection(

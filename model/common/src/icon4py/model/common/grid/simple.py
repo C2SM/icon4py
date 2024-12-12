@@ -461,11 +461,11 @@ class SimpleGrid(BaseGrid):
     def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         return False
 
-    def _configure(self):
+    def _configure(self, num_levels=10):
         horizontal_grid_size = HorizontalGridSize(
             num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
         )
-        vertical_grid_config = VerticalGridConfig(num_levels=10)
+        vertical_grid_config = VerticalGridConfig(num_levels=num_levels)
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
             vertical_size=vertical_grid_config.num_levels,
@@ -495,3 +495,9 @@ class SimpleGrid(BaseGrid):
                 dims.ECDim: self.size[dims.EdgeDim] * self.size[dims.E2CDim],
             }
         )
+
+    def start_index(a, b) -> gtx.int32:
+        return 0
+
+    def end_index(a, b) -> gtx.int32:
+        return 1
