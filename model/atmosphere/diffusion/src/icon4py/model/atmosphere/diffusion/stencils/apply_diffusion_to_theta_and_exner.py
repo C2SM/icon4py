@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     _calculate_nabla2_for_z,
@@ -23,7 +22,6 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     _update_theta_and_exner,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -32,13 +30,13 @@ def _apply_diffusion_to_theta_and_exner(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v_in: fa.CellKField[wpfloat],
-    geofac_div: Field[[dims.CEDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     mask: fa.CellKField[bool],
-    zd_vertoffset: Field[[dims.CECDim, dims.KDim], int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
-    geofac_n2s_nbh: Field[[dims.CECDim], wpfloat],
-    vcoef: Field[[dims.CECDim, dims.KDim], wpfloat],
+    geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CECDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], wpfloat],
     area: fa.CellField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
@@ -59,26 +57,26 @@ def _apply_diffusion_to_theta_and_exner(
     return theta_v, exner
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_diffusion_to_theta_and_exner(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v_in: fa.CellKField[wpfloat],
-    geofac_div: Field[[dims.CEDim], wpfloat],
+    geofac_div: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     mask: fa.CellKField[bool],
-    zd_vertoffset: Field[[dims.CECDim, dims.KDim], int32],
+    zd_vertoffset: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], gtx.int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
-    geofac_n2s_nbh: Field[[dims.CECDim], wpfloat],
-    vcoef: Field[[dims.CECDim, dims.KDim], wpfloat],
+    geofac_n2s_nbh: gtx.Field[gtx.Dims[dims.CECDim], wpfloat],
+    vcoef: gtx.Field[gtx.Dims[dims.CECDim, dims.KDim], wpfloat],
     area: fa.CellField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _apply_diffusion_to_theta_and_exner(
         kh_smag_e,

@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 from typing import Tuple
 
 import gt4py.next as gtx
@@ -14,7 +13,6 @@ from gt4py.next.ffront.fbuiltins import broadcast, minimum, where
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
-from icon4py.model.common.settings import backend
 
 
 @gtx.field_operator
@@ -22,7 +20,7 @@ def _identity_c_k(field: fa.CellKField[float]) -> fa.CellKField[float]:
     return field
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def copy_field(old_f: fa.CellKField[float], new_f: fa.CellKField[float]):
     _identity_c_k(old_f, out=new_f)
 
@@ -37,7 +35,7 @@ def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
     return field * factor
 
 
-@gtx.program(backend=backend)
+@gtx.program
 def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
     _scale_k(field, factor, out=scaled_field)
 
@@ -47,7 +45,7 @@ def _init_zero_v_k() -> gtx.Field[[dims.VertexDim, dims.KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_zero_v_k(field: gtx.Field[[dims.VertexDim, dims.KDim], float]):
     _init_zero_v_k(out=field)
 
@@ -78,7 +76,7 @@ def _setup_fields_for_initial_step(
     return diff_multfac_vn, smag_limit
 
 
-@gtx.program(backend=backend)
+@gtx.program
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
@@ -122,7 +120,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
     )
 
 
-@gtx.program(backend=backend)
+@gtx.program
 def init_diffusion_local_fields_for_regular_timestep(
     k4: float,
     dyn_substeps: float,

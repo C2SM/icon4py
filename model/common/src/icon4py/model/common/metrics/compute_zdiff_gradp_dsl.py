@@ -8,19 +8,21 @@
 
 import numpy as np
 
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
 
 def compute_zdiff_gradp_dsl(
     e2c,
-    z_me: np.ndarray,
-    z_mc: np.ndarray,
-    z_ifc: np.ndarray,
-    flat_idx: np.ndarray,
-    z_aux2: np.ndarray,
+    z_me: field_alloc.NDArray,
+    z_mc: field_alloc.NDArray,
+    z_ifc: field_alloc.NDArray,
+    flat_idx: field_alloc.NDArray,
+    z_aux2: field_alloc.NDArray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
     nedges: int,
-) -> np.ndarray:
+) -> field_alloc.NDArray:
     zdiff_gradp = np.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
         np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
@@ -48,13 +50,13 @@ def compute_zdiff_gradp_dsl(
             >>> _compute_param.with_backend(backend)(
             >>>     z_me_jk=z_me[je, jk],
             >>>     z_ifc_off=z_ifc_off_e,
-            >>>     z_ifc_off_koff=as_field((KDim,), z_ifc_off_koff.asnumpy()[je, :]),
+            >>>     z_ifc_off_koff=as_field((KDim,), z_ifc_off_koff.ndarray[je, :]),
             >>>     lower=int(flat_idx[je]),
             >>>     nlev=nlev - 1,
             >>>     out=(param_3, param_2),
             >>>     offset_provider={}
             >>> )
-            >>> zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], np.where(param_2.asnumpy())[0][0]]
+            >>> zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], np.where(param_2.ndarray)[0][0]]
             """
 
             param = [False] * nlev

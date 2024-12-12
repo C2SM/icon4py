@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import datetime as dt
 import pathlib
 import re
@@ -33,13 +32,17 @@ from icon4py.model.common.states import data
 from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
 
 
+# setting backend to fieldview embedded here.
+backend = None
 UNLIMITED = None
 simple_grid = simple.SimpleGrid()
 
 grid_file = datatest_utils.GRIDS_PATH.joinpath(
     datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE
 )
-global_grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
+global_grid = grid_utils.get_grid_manager_for_experiment(
+    datatest_utils.GLOBAL_EXPERIMENT, backend
+).grid
 
 
 def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
@@ -176,7 +179,9 @@ def test_io_monitor_write_ugrid_file(test_path):
 )
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
-    grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
+    grid = grid_utils.get_grid_manager_for_experiment(
+        datatest_utils.GLOBAL_EXPERIMENT, backend
+    ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -226,7 +231,9 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
-    grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
+    grid = grid_utils.get_grid_manager_for_experiment(
+        datatest_utils.GLOBAL_EXPERIMENT, backend
+    ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
@@ -450,7 +457,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
         grid_id=simple_grid.id,
         output_path=test_path,
     )
-    with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing in state"):
+    with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing"):
         group_monitor.store(
             model_state(simple_grid), dt.datetime.fromisoformat("2023-04-04T11:00:00")
         )

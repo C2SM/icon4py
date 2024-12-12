@@ -5,12 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_15_to_18 import (
+from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_15_to_18 import (
     fused_velocity_advection_stencil_15_to_18,
 )
 from icon4py.model.common import dimension as dims
@@ -208,11 +207,11 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         cfl_w_limit = 3.0
         dtime = 2.0
 
-        k = zero_field(grid, dims.KDim, dtype=int32)
+        k = zero_field(grid, dims.KDim, dtype=gtx.int32)
         for level in range(grid.num_levels):
             k[level] = level
 
-        cell = zero_field(grid, dims.CellDim, dtype=int32)
+        cell = zero_field(grid, dims.CellDim, dtype=gtx.int32)
         for c in range(grid.num_cells):
             cell[c] = c
 

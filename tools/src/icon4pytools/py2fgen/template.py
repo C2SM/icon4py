@@ -13,7 +13,6 @@ from gt4py.eve import Node, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 from gt4py.next import Dimension
 from gt4py.next.type_system.type_specifications import ScalarKind
-from icon4py.model.common.config import GT4PyBackend
 
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
@@ -21,12 +20,15 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_NUMPY_TYPE,
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
+from icon4pytools.py2fgen.settings import GT4PyBackend
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 from icon4pytools.py2fgen.wrappers import wrapper_dimension
 
 
 # these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
 # therefore unpacking needs to be skipped as otherwise it will trigger an error.
+
+
 UNINITIALISED_ARRAYS = [
     "mask_hdiff",
     "zd_diffcoef",
@@ -243,8 +245,8 @@ import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.ffront.fbuiltins import int32
-from icon4py.model.common.settings import xp
+from icon4pytools.py2fgen.settings import config
+xp = config.array_ns
 from icon4py.model.common import dimension as dims
 
 {% if _this_node.is_gt4py_program_present %}
@@ -263,6 +265,8 @@ logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else 
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
 {% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
+
+import numpy as np
 
 # embedded module imports
 {% for stmt in imports -%}
@@ -290,7 +294,7 @@ def {{ func.name }}_wrapper(
 {{ arg.name }}: {{ arg.py_type_hint | replace("KHalfDim","KDim") }}{% if not loop.last or func.global_size_args %}, {% endif %}
 {%- endfor %}
 {%- for arg in func.global_size_args -%}
-{{ arg }}: int32{{ ", " if not loop.last else "" }}
+{{ arg }}: gtx.int32{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
     try:

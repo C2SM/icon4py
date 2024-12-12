@@ -5,12 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.extrapolate_at_top import extrapolate_at_top
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_at_top import extrapolate_at_top
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -52,7 +51,7 @@ class TestExtrapolateAtTop(StencilTest):
             vn=vn,
             vn_ie=vn_ie,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(grid.num_levels),
-            vertical_end=int32(grid.num_levels + 1),
+            horizontal_end=gtx.int32(grid.num_edges),
+            vertical_start=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import functools
 import logging
 import uuid
@@ -16,11 +15,12 @@ import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
-import icon4py.model.common.grid.geometry as geometry
+import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.states import prognostic_state
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 log = logging.getLogger(__name__)
@@ -64,10 +64,9 @@ class IconSavepoint:
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dimensions, buffer)
 
-    def _get_field_component(self, name: str, ntnd: int, dims: tuple[gtx.Dimension, gtx.Dimension]):
-        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(float))[
-            :, :, ntnd - 1
-        ]
+    def _get_field_component(self, name: str, ntnd: int, dims: tuple[gtx.Dimension, gtx]):
+        buffer = self.serializer.read(name, self.savepoint).astype(float)
+        buffer = np.squeeze(buffer)[:, :, ntnd - 1]
         buffer = self._reduce_to_dim_size(buffer, dims)
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dims, buffer)
@@ -93,7 +92,7 @@ class IconSavepoint:
         Read a start indices field.
 
         use for start indices: the shift accounts for the zero based python
-        values are converted to int32
+        values are converted to gtx.int32
         """
         return self._read_int32(name, offset=1)
 
@@ -103,7 +102,7 @@ class IconSavepoint:
 
         use this for end indices: because FORTRAN slices  are inclusive [from:to] _and_ one based
         this accounts for being exclusive python exclusive bounds: [from:to)
-        field values are convert to int32
+        field values are convert to gtx.int32
         """
         return self._read(name, offset, dtype=gtx.int32)
 
@@ -129,9 +128,11 @@ class IconGridSavepoint(IconSavepoint):
         self.global_grid_params = icon.GlobalGridParams(root, level)
 
     def verts_vertex_lat(self):
+        """vertex latituted"""
         return self._get_field("verts_vertex_lat", dims.VertexDim)
 
     def verts_vertex_lon(self):
+        """vertex longitude"""
         return self._get_field("verts_vertex_lon", dims.VertexDim)
 
     def primal_normal_v1(self):
@@ -147,18 +148,15 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_field("dual_normal_v2", dims.EdgeDim)
 
     def edges_center_lat(self):
+        """edge center latitude"""
         return self._get_field("edges_center_lat", dims.EdgeDim)
 
     def edges_center_lon(self):
+        """edge center longitude"""
         return self._get_field("edges_center_lon", dims.EdgeDim)
 
-    def v_num_edges(self):
-        return self._get_field("v_num_edges", dims.VertexDim)
-
-    def v_dual_area(self):
-        return self._get_field("v_dual_area", dims.VertexDim)
-
     def edge_vert_length(self):
+        """length of edge midpoint to vertex"""
         return self._get_field("edge_vert_length", dims.EdgeDim, dims.E2C2VDim)
 
     def vct_a(self):
@@ -194,6 +192,15 @@ class IconGridSavepoint(IconSavepoint):
     def primal_cart_normal_z(self):
         return self._get_field("primal_cart_normal_z", dims.EdgeDim)
 
+    def dual_cart_normal_x(self):
+        return self._get_field("dual_cart_normal_x", dims.EdgeDim)
+
+    def dual_cart_normal_y(self):
+        return self._get_field("dual_cart_normal_y", dims.EdgeDim)
+
+    def dual_cart_normal_z(self):
+        return self._get_field("dual_cart_normal_z", dims.EdgeDim)
+
     def inv_vert_vert_length(self):
         return self._get_field("inv_vert_vert_length", dims.EdgeDim)
 
@@ -221,14 +228,30 @@ class IconGridSavepoint(IconSavepoint):
     def dual_normal_cell_y(self):
         return self._get_field("dual_normal_cell_y", dims.EdgeDim, dims.E2CDim)
 
-    def primal_normal_x(self):
-        return self._get_field("primal_normal_v1", dims.EdgeDim)
-
-    def primal_normal_y(self):
-        return self._get_field("primal_normal_v2", dims.EdgeDim)
-
     def cell_areas(self):
         return self._get_field("cell_areas", dims.CellDim)
+
+    def lat(self, dim: gtx.Dimension):
+        match dim:
+            case dims.CellDim:
+                return self.cell_center_lat()
+            case dims.EdgeDim:
+                return self.edges_center_lat()
+            case dims.VertexDim:
+                return self.verts_vertex_lat()
+            case _:
+                raise ValueError
+
+    def lon(self, dim: gtx.Dimension):
+        match dim:
+            case dims.CellDim:
+                return self.cell_center_lon()
+            case dims.EdgeDim:
+                return self.edges_center_lon()
+            case dims.VertexDim:
+                return self.verts_vertex_lon()
+            case _:
+                raise ValueError
 
     def cell_center_lat(self):
         return self._get_field("cell_center_lat", dims.CellDim)
@@ -255,6 +278,7 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_field("dual_edge_length", dims.EdgeDim)
 
     def edge_cell_length(self):
+        """length of edge midpoint to cell center"""
         return self._get_field("edge_cell_length", dims.EdgeDim, dims.E2CDim)
 
     def cells_start_index(self):
@@ -295,7 +319,7 @@ class IconGridSavepoint(IconSavepoint):
     def f_e(self):
         return self._get_field("f_e", dims.EdgeDim)
 
-    def print_connectivity_info(self, name: str, ar: np.ndarray):
+    def print_connectivity_info(self, name: str, ar: field_alloc.NDArray):
         self.log.debug(f" connectivity {name} {ar.shape}")
 
     def c2e(self):
@@ -308,6 +332,7 @@ class IconGridSavepoint(IconSavepoint):
             ]
         else:
             connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
+        connectivity = np.asarray(connectivity)
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
@@ -393,7 +418,12 @@ class IconGridSavepoint(IconSavepoint):
 
     def construct_decomposition_info(self):
         return (
-            decomposition.DecompositionInfo(klevels=self.num(dims.KDim))
+            decomposition.DecompositionInfo(
+                klevels=self.num(dims.KDim),
+                num_cells=self.num(dims.CellDim),
+                num_edges=self.num(dims.EdgeDim),
+                num_vertices=self.num(dims.VertexDim),
+            )
             .with_dimension(*self._get_decomp_fields(dims.CellDim))
             .with_dimension(*self._get_decomp_fields(dims.EdgeDim))
             .with_dimension(*self._get_decomp_fields(dims.VertexDim))
@@ -424,8 +454,8 @@ class IconGridSavepoint(IconSavepoint):
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
-        c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
-        e2c2e0 = np.column_stack(((np.asarray(range(e2c2e.shape[0]))), e2c2e))
+        c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
+        e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
         grid = (
             icon.IconGrid(self._grid_id)
             .with_config(config)
@@ -465,7 +495,7 @@ class IconGridSavepoint(IconSavepoint):
 
         return grid
 
-    def construct_edge_geometry(self) -> geometry.EdgeParams:
+    def construct_edge_geometry(self) -> grid_states.EdgeParams:
         primal_normal_vert: tuple[
             gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
         ] = (
@@ -492,7 +522,7 @@ class IconGridSavepoint(IconSavepoint):
             helpers.as_1D_sparse_field(self.dual_normal_cell_x(), dims.ECDim),
             helpers.as_1D_sparse_field(self.dual_normal_cell_y(), dims.ECDim),
         )
-        return geometry.EdgeParams(
+        return grid_states.EdgeParams(
             tangent_orientation=self.tangent_orientation(),
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
@@ -509,12 +539,12 @@ class IconGridSavepoint(IconSavepoint):
             f_e=self.f_e(),
             edge_center_lat=self.edge_center_lat(),
             edge_center_lon=self.edge_center_lon(),
-            primal_normal_x=self.primal_normal_x(),
-            primal_normal_y=self.primal_normal_y(),
+            primal_normal_x=self.primal_normal_v1(),
+            primal_normal_y=self.primal_normal_v2(),
         )
 
-    def construct_cell_geometry(self) -> geometry.CellParams:
-        return geometry.CellParams.from_global_num_cells(
+    def construct_cell_geometry(self) -> grid_states.CellParams:
+        return grid_states.CellParams.from_global_num_cells(
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
@@ -749,7 +779,7 @@ class MetricSavepoint(IconSavepoint):
         )
 
     def _linearize_first_2dims(
-        self, data: np.ndarray, sparse_size: int, target_dims: tuple[gtx.Dimension, ...]
+        self, data: field_alloc.NDArray, sparse_size: int, target_dims: tuple[gtx.Dimension, ...]
     ):
         old_shape = data.shape
         assert old_shape[1] == sparse_size
@@ -764,6 +794,66 @@ class MetricSavepoint(IconSavepoint):
 
     def zd_indlist(self):
         return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
+
+
+class LeastSquaresSavepoint(IconSavepoint):
+    def lsq_pseudoinv_1(self):
+        field = self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
+        return helpers.as_1D_sparse_field(field, dims.CECDim)
+
+    def lsq_pseudoinv_2(self):
+        field = self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
+        return helpers.as_1D_sparse_field(field, dims.CECDim)
+
+
+class AdvectionInitSavepoint(IconSavepoint):
+    def airmass_now(self):
+        return self._get_field("airmass_now", dims.CellDim, dims.KDim)
+
+    def airmass_new(self):
+        return self._get_field("airmass_new", dims.CellDim, dims.KDim)
+
+    def vn_traj(self):
+        return self._get_field("vn_traj", dims.EdgeDim, dims.KDim)
+
+    def mass_flx_me(self):
+        return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
+
+    def mass_flx_ic(self):
+        return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
+
+    def grf_tend_tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"grf_tend_tracer_{i}", dims.CellDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+
+    def tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"tracer_{i}", dims.CellDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+
+
+class AdvectionExitSavepoint(IconSavepoint):
+    def hfl_tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"hfl_tracer_{i}", dims.EdgeDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+
+    def vfl_tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                # TODO (dastrm): should be KHalfDim
+                return self._get_field(f"vfl_tracer_{i}", dims.CellDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+
+    def tracer(self, ntracer: int):
+        for i in range(1, 6):
+            if i == ntracer:
+                return self._get_field(f"tracer_{i}", dims.CellDim, dims.KDim)
+        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
@@ -1688,14 +1778,15 @@ class IconGraupelInitSavepoint(IconSavepoint):
 
 
 class IconSerialDataProvider:
-    def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0):
+    def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0, advection=False):
         self.rank = mpi_rank
         self.serializer: serialbox.Serializer = None
         self.file_path: str = path
         self.fname = f"{fname_prefix}_rank{self.rank!s}"
         self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
-        self.grid_size = self._grid_size()
+        if not advection:  # TODO (dastrm): somebody should make this class load only what it needs
+            self.grid_size = self._grid_size()
 
     def _init_serializer(self, do_print: bool):
         if not self.fname:
@@ -1779,6 +1870,18 @@ class IconSerialDataProvider:
     def from_metrics_savepoint(self) -> MetricSavepoint:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
         return MetricSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_least_squares_savepoint(self, size: dict) -> LeastSquaresSavepoint:
+        savepoint = self.serializer.savepoint["least_squares_state"].jg[1].as_savepoint()
+        return LeastSquaresSavepoint(savepoint, self.serializer, size=size)
+
+    def from_advection_init_savepoint(self, size: dict, date: str) -> AdvectionInitSavepoint:
+        savepoint = self.serializer.savepoint["advection_init"].jg[1].date[date].as_savepoint()
+        return AdvectionInitSavepoint(savepoint, self.serializer, size=size)
+
+    def from_advection_exit_savepoint(self, size: dict, date: str) -> AdvectionExitSavepoint:
+        savepoint = self.serializer.savepoint["advection_exit"].jg[1].date[date].as_savepoint()
+        return AdvectionExitSavepoint(savepoint, self.serializer, size=size)
 
     def from_savepoint_diffusion_exit(self, linit: bool, date: str) -> IconDiffusionExitSavepoint:
         savepoint = (

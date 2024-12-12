@@ -320,9 +320,8 @@ class EndFusedStencilStatementGenerator(BaseEndStencilStatementGenerator):
         {%- if _this_node.verification %}
         !$ACC EXIT DATA DELETE( &
         {%- for d in _this_node.copy_declarations %}
-        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
+        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) {%- endif -%}
         {%- endfor %}
-        !$ACC      IF ( i_am_accel_node )
         {%- endif %}
         """
     )
@@ -375,15 +374,14 @@ class StartStencilStatementGenerator(TemplatedGenerator):
         {% if _this_node.verification %}
         !$ACC DATA CREATE( &
         {%- for d in _this_node.copy_declarations %}
-        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
+        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) {%- endif -%}
         {%- endfor %}
-        !$ACC      IF ( i_am_accel_node )
         {% endif %}
 
         #ifdef __DSL_VERIFY
         {%- if _this_node.verification %}
         {% if _this_node.stencil_data.copies -%}
-        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
+        !$ACC KERNELS DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
@@ -405,12 +403,11 @@ class StartFusedStencilStatementGenerator(TemplatedGenerator):
         {%- if _this_node.verification %}
         !$ACC ENTER DATA CREATE( &
         {%- for d in _this_node.copy_declarations %}
-        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
+        !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) {%- endif -%}
         {%- endfor %}
-        !$ACC      IF ( i_am_accel_node )
 
         #ifdef __DSL_VERIFY
-        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1)
+        !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
@@ -447,10 +444,9 @@ class StartCreateStatementGenerator(TemplatedGenerator):
         !$ACC DATA CREATE( &
         {%- if _this_node.extra_fields -%}
         {%- for name in extra_fields %}
-        !$ACC   {{ name }} {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
+        !$ACC   {{ name }} {%- if not loop.last -%}, & {% else %} ) {%- endif -%}
         {%- endfor %}
         {%- endif %}
-        !$ACC   IF ( i_am_accel_node )
         """
     )
 

@@ -79,6 +79,7 @@ depends_on = [
 path = "icon4pytools.py2fgen"
 depends_on = [
     { path = "icon4py.model.atmosphere.diffusion" },
+    { path = "icon4py.model.atmosphere.dycore" },
     { path = "icon4py.model.common" },
     { path = "icon4pytools.common" },
     { path = "icon4pytools.icon4pygen" },

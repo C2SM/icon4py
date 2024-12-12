@@ -12,3 +12,6 @@ from gt4py.next import Dimension
 CellIndexDim = Dimension("CellIndex")
 EdgeIndexDim = Dimension("EdgeIndex")
 VertexIndexDim = Dimension("VertexIndex")
+CellGlobalIndexDim = Dimension("CellGlobalIndex")
+EdgeGlobalIndexDim = Dimension("EdgeGlobalIndex")
+VertexGlobalIndexDim = Dimension("VertexGlobalIndex")

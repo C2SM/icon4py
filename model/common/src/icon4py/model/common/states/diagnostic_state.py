@@ -5,11 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 from dataclasses import dataclass
 
-from gt4py.next import as_field
-from gt4py.next.common import Field
+import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
@@ -37,7 +35,7 @@ class DiagnosticState:
 
     @property
     def surface_pressure(self) -> fa.CellField[ta.wpfloat]:
-        return as_field((dims.CellDim,), self.pressure_ifc.ndarray[:, -1])
+        return gtx.as_field((dims.CellDim,), self.pressure_ifc.ndarray[:, -1])
 
 
 @dataclass
@@ -45,5 +43,5 @@ class DiagnosticMetricState:
     """Class that contains the diagnostic metric state for computing the diagnostic state."""
 
     ddqz_z_full: fa.CellKField[ta.wpfloat]
-    rbf_vec_coeff_c1: Field[[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
-    rbf_vec_coeff_c2: Field[[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
+    rbf_vec_coeff_c1: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
+    rbf_vec_coeff_c2: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]

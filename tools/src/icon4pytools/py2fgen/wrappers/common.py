@@ -7,60 +7,49 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # type: ignore
 
-import cProfile
 import logging
-import pstats
 
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import base, horizontal, icon
-from icon4py.model.common.settings import xp
 
+from icon4pytools.py2fgen.settings import config
+
+
+xp = config.array_ns
 
 log = logging.getLogger(__name__)
 
-GLOBAL_STATE = {"diffusion_granule": Diffusion(), "profiler": cProfile.Profile()}
-
-
-# profiling utils
-def profile_enable():
-    GLOBAL_STATE["profiler"].enable()
-
-
-def profile_disable():
-    GLOBAL_STATE["profiler"].disable()
-    stats = pstats.Stats(GLOBAL_STATE["profiler"])
-    stats.dump_stats(f"{__name__}.profile")
-
 
 def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
-    return xp.subtract(inp.ndarray, offset)
+    """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
+    return xp.subtract(inp, offset)
 
 
 def construct_icon_grid(
-    grid_id,
-    global_grid_params,
-    num_vertices,
-    num_cells,
-    num_edges,
-    vertical_size,
-    limited_area,
-    on_gpu,
-    cell_starts,
-    cell_ends,
-    vertex_starts,
-    vertex_ends,
-    edge_starts,
-    edge_ends,
-    c2e,
-    e2c,
-    c2e2c,
-    e2c2e,
-    e2v,
-    v2e,
-    v2c,
-    e2c2v,
-    c2v,
+    cell_starts: xp.ndarray,
+    cell_ends: xp.ndarray,
+    vertex_starts: xp.ndarray,
+    vertex_ends: xp.ndarray,
+    edge_starts: xp.ndarray,
+    edge_ends: xp.ndarray,
+    c2e: xp.ndarray,
+    e2c: xp.ndarray,
+    c2e2c: xp.ndarray,
+    e2c2e: xp.ndarray,
+    e2v: xp.ndarray,
+    v2e: xp.ndarray,
+    v2c: xp.ndarray,
+    e2c2v: xp.ndarray,
+    c2v: xp.ndarray,
+    grid_id: str,
+    global_grid_params: icon.GlobalGridParams,
+    num_vertices: int,
+    num_cells: int,
+    num_edges: int,
+    vertical_size: int,
+    limited_area: bool,
+    on_gpu: bool,
 ):
     log.debug("Constructing ICON Grid in Python...")
     log.debug("num_cells:%s", num_cells)
@@ -75,14 +64,16 @@ def construct_icon_grid(
     vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
     edge_start_index = adjust_fortran_indices(edge_starts, offset)
 
-    cells_end_index = cell_ends.ndarray
-    vertex_end_index = vertex_ends.ndarray
-    edge_end_index = edge_ends.ndarray
+    cells_end_index = cell_ends
+    vertex_end_index = vertex_ends
+    edge_end_index = edge_ends
 
     c2e = adjust_fortran_indices(c2e, offset)
     c2v = adjust_fortran_indices(c2v, offset)
     v2c = adjust_fortran_indices(v2c, offset)
-    e2v = adjust_fortran_indices(e2v, offset)
+    e2v = adjust_fortran_indices(e2v, offset)[
+        :, 0:2
+    ]  # slicing required for e2v as input data is actually e2c2v
     c2e2c = adjust_fortran_indices(c2e2c, offset)
     v2e = adjust_fortran_indices(v2e, offset)
     e2c2v = adjust_fortran_indices(e2c2v, offset)
@@ -141,3 +132,43 @@ def construct_icon_grid(
     )
 
     return grid
+
+
+def construct_decomposition(
+    c_glb_index: xp.ndarray,
+    e_glb_index: xp.ndarray,
+    v_glb_index: xp.ndarray,
+    c_owner_mask: xp.ndarray,
+    e_owner_mask: xp.ndarray,
+    v_owner_mask: xp.ndarray,
+    num_cells: int,
+    num_edges: int,
+    num_vertices: int,
+    num_levels: int,
+    comm_id: int,
+) -> tuple[
+    definitions.ProcessProperties, definitions.DecompositionInfo, definitions.ExchangeRuntime
+]:
+    log.debug("Offsetting Fortran connectivitity arrays by 1")
+    offset = 1
+
+    c_glb_index = adjust_fortran_indices(c_glb_index, offset)
+    e_glb_index = adjust_fortran_indices(e_glb_index, offset)
+    v_glb_index = adjust_fortran_indices(v_glb_index, offset)
+
+    c_owner_mask = c_owner_mask[:num_cells]
+    e_owner_mask = e_owner_mask[:num_edges]
+    v_owner_mask = v_owner_mask[:num_vertices]
+
+    decomposition_info = (
+        definitions.DecompositionInfo(
+            klevels=num_levels, num_cells=num_cells, num_edges=num_edges, num_vertices=num_vertices
+        )
+        .with_dimension(dims.CellDim, c_glb_index, c_owner_mask)
+        .with_dimension(dims.EdgeDim, e_glb_index, e_owner_mask)
+        .with_dimension(dims.VertexDim, v_glb_index, v_owner_mask)
+    )
+    processor_props = definitions.get_processor_properties(definitions.MultiNodeRun(), comm_id)
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+
+    return processor_props, decomposition_info, exchange
