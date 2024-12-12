@@ -16,7 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory imp
     compute_ffsl_backtrajectory,
 )
 from icon4py.model.common import dimension as dims
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 class TestComputeFfslBacktrajectory(helpers.StencilTest):
     PROGRAM = compute_ffsl_backtrajectory

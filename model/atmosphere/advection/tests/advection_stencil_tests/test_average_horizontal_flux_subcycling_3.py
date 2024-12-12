@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.advection.stencils.average_horizontal_flux_subcycl
     average_horizontal_flux_subcycling_3,
 )
 from icon4py.model.common import dimension as dims
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 class TestAverageHorizontalFluxSubcycling3(helpers.StencilTest):
     PROGRAM = average_horizontal_flux_subcycling_3
@@ -34,10 +34,10 @@ class TestAverageHorizontalFluxSubcycling3(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        z_tracer_mflx_1_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_tracer_mflx_2_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_tracer_mflx_3_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_out_e = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        z_tracer_mflx_1_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_tracer_mflx_2_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_tracer_mflx_3_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             z_tracer_mflx_1_dsl=z_tracer_mflx_1_dsl,
             z_tracer_mflx_2_dsl=z_tracer_mflx_2_dsl,

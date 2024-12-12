@@ -15,6 +15,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_parabola_coeffi
     compute_ppm4gpu_parabola_coefficients,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestComputePpm4gpuParabolaCoefficients(helpers.StencilTest):
@@ -31,11 +32,11 @@ class TestComputePpm4gpuParabolaCoefficients(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        z_face_up = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_face_low = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_delta_q = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        z_a1 = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        z_face_up = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_face_low = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_delta_q = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_a1 = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             z_face_up=z_face_up,
             z_face_low=z_face_low,
