@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common.settings import xp
+from icon4pytools.py2fgen.wrappers.common import xp
 
 
 def compute_flat_idx_max(

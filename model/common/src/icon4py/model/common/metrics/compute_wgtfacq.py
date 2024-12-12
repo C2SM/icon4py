@@ -6,7 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common.settings import xp
+from icon4pytools.py2fgen.wrappers.common import xp
+
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 

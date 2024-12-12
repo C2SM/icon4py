@@ -27,8 +27,9 @@ from gt4py.next import (
     tanh,
     where,
 )
+from icon4pytools.py2fgen import settings
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import (
     C2E,
     C2E2C,
