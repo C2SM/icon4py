@@ -21,8 +21,8 @@ from .. import utils
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
-@pytest.mark.parametrize("linit", [([True, False])])
-@pytest.mark.parametrize("orchestration", [([True, False])])
+@pytest.mark.parametrize("linit", [True, False])
+@pytest.mark.parametrize("orchestration", [True, False])
 def test_parallel_diffusion(
     experiment,
     step_date_init,

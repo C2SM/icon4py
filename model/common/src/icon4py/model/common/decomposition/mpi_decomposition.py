@@ -237,7 +237,7 @@ class GHexMultiNodeExchange:
                 make_field_descriptor(
                     domain_descriptor,
                     f,
-                    arch=Architecture.CPU if isinstance(f, np.ndarrray) else Architecture.GPU,
+                    arch=Architecture.CPU if isinstance(f, np.ndarray) else Architecture.GPU,
                 )
             )
             for f in sliced_fields
