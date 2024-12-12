@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 
 import pytest
 
+from icon4py.model.testing.helpers import backend
+from icon4py.model.testing.pytest_config import *  # noqa: F401
+
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.testing.datatest_fixtures import (
     damping_height,
@@ -49,7 +52,8 @@ __all__ = [
     # local:
     "r04b09_diffusion_config",
     "r04b09_iconrun_config",
-    "timeloop_diffusion_savepoint_init" "timeloop_diffusion_savepoint_exit",
+    "timeloop_diffusion_savepoint_init",
+    "timeloop_diffusion_savepoint_exit",
     "timeloop_date_init",
     "timeloop_date_exit",
     # imported fixtures:
@@ -82,6 +86,7 @@ __all__ = [
     "stretch_factor",
     "top_height_limit_for_maximal_layer_thickness",
     "vn_only",
+    "backend"
 ]
 
 
