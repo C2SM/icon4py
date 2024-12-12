@@ -46,17 +46,20 @@ def is_python(backend: gtx_backend.Backend) -> bool:
     #   - roundtrip is very slow on large grid
     return is_embedded(backend) or is_roundtrip(backend)
 
-def is_gtfn_cpu(backend:gtx_backend.Backend)-> bool:
+
+def is_gtfn_cpu(backend: gtx_backend.Backend) -> bool:
     return backend.name == "gtfn_cpu"
 
-def is_gtfn(backend:gtx_backend.Backend)-> bool:
+
+def is_gtfn(backend: gtx_backend.Backend) -> bool:
     return "gtfn" in backend.name
 
-def is_embedded(backend:gtx_backend.Backend) -> bool:
+
+def is_embedded(backend: gtx_backend.Backend) -> bool:
     return backend is None
 
 
-def is_roundtrip(backend:gtx_backend.Backend) -> bool:
+def is_roundtrip(backend: gtx_backend.Backend) -> bool:
     return backend.name == "roundtrip" if backend else False
 
 

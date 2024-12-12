@@ -59,10 +59,14 @@ def test_solve_tridiagonal_matrix_for_w_forward_sweep(backend, grid):
     vwind_impl_wgt = helpers.random_field(grid, dims.CellDim, dtype=wpfloat)
     theta_v_ic = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
     ddqz_z_half = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-    z_alpha = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat)
+    z_alpha = helpers.random_field(
+        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
+    )
     z_beta = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
     z_exner_expl = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-    z_w_expl = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+    z_w_expl = helpers.random_field(
+        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat
+    )
     dtime = wpfloat("8.0")
     cpd = wpfloat("7.0")
 
