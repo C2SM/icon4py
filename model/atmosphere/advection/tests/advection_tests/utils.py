@@ -59,7 +59,7 @@ def construct_least_squares_state(
 def construct_metric_state(
     icon_grid, savepoint: sb.MetricSavepoint
 ) -> advection_states.AdvectionMetricState:
-    constant_f = helpers.constant_field(icon_grid, 1.0, dims.KDim)
+    constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
     return advection_states.AdvectionMetricState(
         deepatmo_divh=constant_f,
