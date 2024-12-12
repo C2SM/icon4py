@@ -121,6 +121,7 @@ class NETCDFWriter:
             icon4py.model.common.states.metadata.INTERFACE_LEVEL_STANDARD_NAME
         )
         interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
+
         heights = self.dataset.createVariable("height", np.float64, (MODEL_INTERFACE_LEVEL,))
         heights.units = "m"
         heights.positive = "up"
