@@ -101,17 +101,6 @@ def test_initialize_writer_interface_levels(test_path, random_name):
     assert np.all(interface_levels == np.arange(grid.num_levels + 1))
 
 
-def test_initialize_writer_interface_edge(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
-    interface_edge = dataset.variables[writers.MODEL_INTERFACE_EDGE]
-    assert interface_edge.units == "1"
-    assert interface_edge.datatype == np.int32
-    assert interface_edge.long_name == "model interface edge index"
-    assert interface_edge.standard_name == metadata.INTERFACE_EDGE_STANDARD_NAME
-    assert len(interface_edge) == grid.num_edges
-    assert np.all(interface_edge == np.arange(grid.num_edges))
-
-
 def test_initialize_writer_heights(test_path, random_name):
     dataset, grid = initialized_writer(test_path, random_name)
     heights = dataset.variables["height"]
@@ -201,7 +190,7 @@ def test_initialize_writer_create_dimensions(
 
     assert writer["title"] == "test"
     assert writer["institution"] == "EXCLAIM - ETH Zurich"
-    assert len(writer.dims) == 7
+    assert len(writer.dims) == 6
     assert writer.dims[writers.MODEL_LEVEL].size == grid.num_levels
     assert writer.dims[writers.MODEL_INTERFACE_LEVEL].size == grid.num_levels + 1
     assert writer.dims[writers.CELL].size == grid.num_cells

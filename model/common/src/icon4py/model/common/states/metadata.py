@@ -16,7 +16,6 @@ from icon4py.model.common.states import model
 INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
 
 INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
-INTERFACE_EDGE_STANDARD_NAME: Final[str] = "interface_model_edge_number"
 
 attrs: Final[dict[str, model.FieldMetaData]] = {
     "theta_ref_mc": dict(
@@ -97,14 +96,6 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         units="",
         dims=(dims.KHalfDim,),
         icon_var_name="k_index",
-        dtype=gtx.int32,
-    ),
-    INTERFACE_EDGE_STANDARD_NAME: dict(
-        standard_name=INTERFACE_EDGE_STANDARD_NAME,
-        long_name="model interface edge number",
-        units="",
-        dims=(dims.EdgeDim,),
-        icon_var_name="e_index",
         dtype=gtx.int32,
     ),
     "weighting_factor_for_quadratic_interpolation_to_cell_surface": dict(

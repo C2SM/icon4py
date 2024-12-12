@@ -27,7 +27,6 @@ EDGE: Final[str] = "edge"
 VERTEX: Final[str] = "vertex"
 CELL: Final[str] = "cell"
 MODEL_INTERFACE_LEVEL: Final[str] = "interface_level"
-MODEL_INTERFACE_EDGE: Final[str] = "interface_edge"
 MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
@@ -75,10 +74,6 @@ class NETCDFWriter:
         return self._vertical_params.interface_physical_height.ndarray.shape[0] - 1
 
     @functools.cached_property
-    def num_edges(self) -> int:
-        return self._horizontal_size.num_edges
-
-    @functools.cached_property
     def num_interfaces(self) -> int:
         return self._vertical_params.interface_physical_height.ndarray.shape[0]
 
@@ -97,7 +92,6 @@ class NETCDFWriter:
         self.dataset.createDimension(TIME, None)
         self.dataset.createDimension(MODEL_LEVEL, self.num_levels)
         self.dataset.createDimension(MODEL_INTERFACE_LEVEL, self.num_interfaces)
-        self.dataset.createDimension(MODEL_INTERFACE_EDGE, self.num_edges)
         self.dataset.createDimension(CELL, self._horizontal_size.num_cells)
         self.dataset.createDimension(VERTEX, self._horizontal_size.num_vertices)
         self.dataset.createDimension(EDGE, self._horizontal_size.num_edges)
@@ -127,18 +121,6 @@ class NETCDFWriter:
             icon4py.model.common.states.metadata.INTERFACE_LEVEL_STANDARD_NAME
         )
         interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
-
-        interface_edges = self.dataset.createVariable(
-            MODEL_INTERFACE_EDGE, np.int32, (MODEL_INTERFACE_EDGE,)
-        )
-        interface_edges.units = "1"
-        interface_edges.positive = "down"
-        interface_edges.long_name = "model interface edge index"
-        interface_edges.standard_name = (
-            icon4py.model.common.states.metadata.INTERFACE_EDGE_STANDARD_NAME
-        )
-        interface_edges[:] = np.arange(self.num_edges, dtype=np.int32)
-
         heights = self.dataset.createVariable("height", np.float64, (MODEL_INTERFACE_LEVEL,))
         heights.units = "m"
         heights.positive = "up"

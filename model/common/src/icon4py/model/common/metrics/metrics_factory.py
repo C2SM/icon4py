@@ -123,8 +123,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "cells_aw_verts_field": self._interpolation_source.get(
                         interpolation_attributes.CELL_AW_VERTS
                     ),
-                    "k_lev": k_index,  # mt.attrs.get(mt.INTERFACE_LEVEL_STANDARD_NAME), # TODO
-                    "e_lev": e_lev,  # mt.attrs.get(mt.INTERFACE_EDGE_STANDARD_NAME) # TODO
+                    "k_lev": k_index,
+                    "e_lev": e_lev,
                 }
             )
         )
