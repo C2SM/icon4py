@@ -116,8 +116,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "vct_a": vct_a,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
-                    "interface_model_level_number": k_index,
-                    "e_lev": e_lev,
                     "e_owner_mask": e_owner_mask,
                     "c_owner_mask": c_owner_mask,
                     "c_lin_e": self._interpolation_source.get(interpolation_attributes.C_LIN_E),
@@ -125,8 +123,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "cells_aw_verts_field": self._interpolation_source.get(
                         interpolation_attributes.CELL_AW_VERTS
                     ),
-                    "k_lev": k_index, #mt.attrs.get(mt.INTERFACE_LEVEL_STANDARD_NAME), # TODO
-                    "e_lev": e_lev#mt.attrs.get(mt.INTERFACE_EDGE_STANDARD_NAME) # TODO
+                    "k_lev": k_index,  # mt.attrs.get(mt.INTERFACE_LEVEL_STANDARD_NAME), # TODO
+                    "e_lev": e_lev,  # mt.attrs.get(mt.INTERFACE_EDGE_STANDARD_NAME) # TODO
                 }
             )
         )

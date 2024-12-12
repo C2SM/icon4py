@@ -26,7 +26,7 @@ attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
         standard_name=C_LIN_E,
         long_name="interpolation coefficient from cell to edges",
-        units="",  # TODO check or confirm
+        units="",  # TODO (@halungge) check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="c_lin_e",
         dtype=ta.wpfloat,

@@ -100,6 +100,7 @@ def test_initialize_writer_interface_levels(test_path, random_name):
     assert len(interface_levels) == grid.num_levels + 1
     assert np.all(interface_levels == np.arange(grid.num_levels + 1))
 
+
 def test_initialize_writer_interface_edge(test_path, random_name):
     dataset, grid = initialized_writer(test_path, random_name)
     interface_edge = dataset.variables[writers.MODEL_INTERFACE_EDGE]

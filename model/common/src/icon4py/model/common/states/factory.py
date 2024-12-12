@@ -69,7 +69,6 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import model, utils as state_utils
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -583,7 +582,7 @@ class NumpyFieldsProvider(FieldProvider):
         args.update(self._params)
         results = self._func(**args)
         ## TODO: can the order of return values be checked?
-        results = (results,) if isinstance(results, xp.ndarray) else results
+        results = (results,) if isinstance(results, field_alloc.NDArray) else results
         self._fields = {
             k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
             for i, k in enumerate(self.fields)

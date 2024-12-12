@@ -11,7 +11,6 @@ from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -27,7 +26,7 @@ def _interpolate_to_half_levels_vp(
     return interpolation_to_half_levels_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def interpolate_to_half_levels_vp(
     wgtfac_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],

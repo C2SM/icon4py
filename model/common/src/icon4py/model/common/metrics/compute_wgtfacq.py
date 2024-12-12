@@ -7,11 +7,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 def _compute_z1_z2_z3(
-    z_ifc: xp.ndarray, i1: int, i2: int, i3: int, i4: int
-) -> tuple[xp.ndarray, xp.ndarray, xp.ndarray]:
+    z_ifc: field_alloc.NDArray, i1: int, i2: int, i3: int, i4: int
+) -> tuple[field_alloc.NDArray, field_alloc.NDArray, field_alloc.NDArray]:
     z1 = 0.5 * (z_ifc[:, i2] - z_ifc[:, i1])
     z2 = 0.5 * (z_ifc[:, i2] + z_ifc[:, i3]) - z_ifc[:, i1]
     z3 = 0.5 * (z_ifc[:, i3] + z_ifc[:, i4]) - z_ifc[:, i1]
@@ -19,9 +20,9 @@ def _compute_z1_z2_z3(
 
 
 def compute_wgtfacq_c_dsl(
-    z_ifc: xp.ndarray,
+    z_ifc: field_alloc.NDArray,
     nlev: int,
-) -> xp.ndarray:
+) -> field_alloc.NDArray:
     """
     Compute weighting factor for quadratic interpolation to surface.
 
@@ -47,10 +48,10 @@ def compute_wgtfacq_c_dsl(
 
 
 def compute_wgtfacq_e_dsl(
-    e2c: xp.ndarray,
-    z_ifc: xp.ndarray,
-    c_lin_e: xp.ndarray,
-    wgtfacq_c_dsl: xp.ndarray,
+    e2c,
+    z_ifc: field_alloc.NDArray,
+    c_lin_e: field_alloc.NDArray,
+    wgtfacq_c_dsl: field_alloc.NDArray,
     n_edges: int,
     nlev: int,
 ):
