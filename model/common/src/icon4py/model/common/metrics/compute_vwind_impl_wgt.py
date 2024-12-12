@@ -5,8 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from icon4pytools.py2fgen.wrappers.common import xp
+import numpy as np
+
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
 
 def compute_vwind_impl_wgt(
     c2e: field_alloc.NDArray,
@@ -21,7 +23,7 @@ def compute_vwind_impl_wgt(
     n_cells: int,
 ) -> field_alloc.NDArray:
     init_val = 0.5 + vwind_offctr
-    vwind_impl_wgt = xp.full(z_ifc.shape[0], init_val)
+    vwind_impl_wgt = np.full(z_ifc.shape[0], init_val)
     for je in range(horizontal_start_cell, n_cells):
         zn_off_0 = z_ddxn_z_half_e[c2e[je, 0], nlev]
         zn_off_1 = z_ddxn_z_half_e[c2e[je, 1], nlev]

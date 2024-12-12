@@ -373,6 +373,7 @@ def test_verify_diffusion_init_against_savepoint(
         interpolation_state,
         edge_params,
         cell_params,
+        orchestration=True,
         backend=backend,
     )
 

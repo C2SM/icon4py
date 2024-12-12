@@ -27,7 +27,6 @@ from gt4py.next import (
     tanh,
     where,
 )
-from icon4pytools.py2fgen import settings
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import (
@@ -67,7 +66,7 @@ class MetricsConfig:
     vwind_offctr: Final[wpfloat] = 0.15
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_z_mc(
     z_ifc: fa.CellKField[wpfloat],
     z_mc: fa.CellKField[wpfloat],
