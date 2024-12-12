@@ -59,18 +59,32 @@ def construct_rbf_matrix_offsets_tables_for_cells(grid:base_grid.BaseGrid)->fiel
     flattened_offset = offset.reshape(new_shape)
     return flattened_offset
     
-def dot_product(v:np.ndarray)->np.ndarray:
-    v_tilde = np.moveaxis(v, 1, -1)
+def dot_product(v1:np.ndarray, v2:np.ndarray)->np.ndarray:
+    v2_tilde = np.moveaxis(v2, 1, -1)
     # use linalg.matmul (array API compatible)
-    return np.matmul(v, v_tilde)
+    return np.matmul(v1, v2_tilde)
 
-def arc_length(v:np.ndarray)->np.ndarray:
-    norms = np.sqrt(np.sum(v * v, axis=2))
-    v = v / norms[:, :, np.newaxis]
-    v_tilde = np.moveaxis(v, 1, -1)
+def arc_length_matrix(v:np.ndarray)->np.ndarray:
+    v_norm = _normalize_along_last_axis(v)
+    return _arc_length_of_normalized_input(v_norm, v_norm)
 
-    d = np.matmul(v, v_tilde)
+def arc_length(v1:np.ndarray, v2:np.ndarray)->np.ndarray:
+
+    v1_norm = _normalize_along_last_axis(v1)
+    v2_norm = _normalize_along_last_axis(v2)
+
+    return _arc_length_of_normalized_input(v1_norm, v2_norm)
+
+
+def _arc_length_of_normalized_input(v1_norm, v2_norm):
+    d = dot_product(v1_norm, v2_norm)
     return np.arccos(d)
+
+
+def _normalize_along_last_axis(v:np.ndarray):
+    norms =  np.sqrt(np.sum(v * 1, axis=-1))
+    return v / norms[:, :, np.newaxis]
+
 
 def gaussian(lengths:np.ndarray, scale:float)->np.ndarray:
     val = lengths / scale
@@ -118,10 +132,10 @@ def compute_rbf_interpolation_matrix(
     x_center = edge_center_x[rbf_offset]
     y_center = edge_center_y[rbf_offset]
     z_center = edge_center_z[rbf_offset]
-    edge_center = np.stack((x_center, y_center, z_center), axis=-1)
+    edge_centers = np.stack((x_center, y_center, z_center), axis=-1)
 
-    z_nxprod = dot_product(normal)
-    z_dist = arc_length(edge_center)
+    z_nxprod = dot_product(normal, normal)
+    z_dist = arc_length_matrix(edge_centers)
 
     z_rbfmat = z_nxprod * kernel(rbf_kernel, z_dist, scale_factor)
 
@@ -129,8 +143,19 @@ def compute_rbf_interpolation_matrix(
 
 
     # right hand side
-    cell_centers = np.stack(cell_center_x, cell_center_y, cell_center_z, axis=-1)
-    arc_length(cell_centers, )
+    cell_centers = np.stack((cell_center_x, cell_center_y, cell_center_z), axis=-1)
+    vector_dist = arc_length(cell_centers, edge_centers)
+    rbf_val = kernel(rbf_kernel, vector_dist, scale_factor)
+    # projection
+    #dot_product(primal_cart_normal,CALL gvec2cvec(1._wp,0._wp,z_lon,z_lat,z_nx1(jc,1),z_nx1(jc,2),z_nx1(jc,3),ptr_patch%geometry_info))
+# dot_product(primal_cart_normal, CALL gvec2cvec(0._wp,1._wp,z_lon,z_lat,z_nx2(jc,1),z_nx2(jc,2),z_nx2(jc,3),ptr_patch%geometry_geinfo)aslkdjflkasjdf)
+    z_nx1_on_z_nx3 = field_alloc.allocate_zero_field()
+    z_nx2_on_z_nx3
+    rhs1 = z_nx1_on_z_nx3 * rbf_val
+    rhs2 = z_nx2_on_z_nx3
+
+    
+    
 
 
 
