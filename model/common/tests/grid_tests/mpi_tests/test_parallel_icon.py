@@ -17,18 +17,27 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # 
     processor_props,
 )
 
-from .. import test_icon
+from .. import utils
 
 
 try:
-    import mpi4py  # noqa F401:  import mpi4py to check for optional mpi dependency
+    import mpi4py  # F401:  import mpi4py to check for optional mpi dependency
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
 
+@pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_props(processor_props):  # noqa: F811  # fixture
+    """dummy test to check whether the MPI initialization and GHEX setup works."""
+    import ghex.context as ghex
+
     assert processor_props.comm
+
+    assert isinstance(
+        processor_props.comm, mpi4py.MPI.Comm
+    ), "comm needs to be an instance of MPI.Comm"
+    ghex.make_context(processor_props.comm)
 
 
 LOCAL_IDX_2 = {
@@ -49,7 +58,7 @@ LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("dim", test_icon.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.horizontal_dim())
 def test_distributed_local(processor_props, dim, icon_grid, caplog):  # noqa: F811  # fixture
     caplog.set_level(logging.INFO)
     check_comm_size(processor_props)
@@ -106,7 +115,7 @@ HALO_IDX = {4: HALO_IDX_4, 2: HALO_IDX_2}
 @pytest.mark.datatest
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.mpi
-@pytest.mark.parametrize("dim", test_icon.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.horizontal_dim())
 @pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
 def test_distributed_halo(processor_props, dim, marker, icon_grid):  # noqa: F811  # fixture
     check_comm_size(processor_props)

@@ -5,12 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.interpolate_to_surface import interpolate_to_surface
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import interpolate_to_surface
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
@@ -58,7 +57,7 @@ class TestInterpolateToSurface(StencilTest):
             wgtfacq_c=wgtfacq_c,
             interpolation_to_surface=interpolation_to_surface,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=3,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

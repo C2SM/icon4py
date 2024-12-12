@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import TypeAlias, Union
 
 from gt4py.next.common import DimensionKind
 from gt4py.next.ffront.fbuiltins import Dimension, FieldOffset
@@ -57,6 +56,3 @@ C2CECEC = FieldOffset("C2CECEC", source=CECECDim, target=(CellDim, C2E2C2E2CDim)
 V2E2V = FieldOffset("V2E2V", source=VertexDim, target=(VertexDim, V2E2VDim))
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 KHalfOff = FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
-
-
-VerticalDim: TypeAlias = Union[KDim, KHalfDim]

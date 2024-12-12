@@ -11,7 +11,7 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -49,6 +49,7 @@ class TestApplyDiffusionToVn(StencilTest):
         limited_area,
         **kwargs,
     ):
+        vn_cp = vn.copy()
         z_nabla4_e2 = calculate_nabla4_numpy(
             grid,
             u_vert,
@@ -89,15 +90,14 @@ class TestApplyDiffusionToVn(StencilTest):
                 vn,
             )
 
+        # restriction of execution domain
+        vn[0 : kwargs["horizontal_start"], :] = vn_cp[0 : kwargs["horizontal_start"], :]
+        vn[kwargs["horizontal_end"] :, :] = vn_cp[kwargs["horizontal_end"] :, :]
+
         return dict(vn=vn)
 
     @pytest.fixture
     def input_data(self, grid):
-        if isinstance(grid, IconGrid) and grid.limited_area:
-            pytest.xfail(
-                "Execution domain needs to be restricted or boundary taken into account in stencil."
-            )
-
         edge = field_alloc.allocate_indices(dims.EdgeDim, grid=grid, is_halfdim=False)
 
         u_vert = random_field(grid, dims.VertexDim, dims.KDim)
@@ -119,11 +119,23 @@ class TestApplyDiffusionToVn(StencilTest):
         vn = random_field(grid, dims.EdgeDim, dims.KDim)
         nudgecoeff_e = random_field(grid, dims.EdgeDim)
 
-        limited_area = True
+        limited_area = grid.limited_area if hasattr(grid, "limited_area") else True
         fac_bdydiff_v = 5.0
         nudgezone_diff = 9.0
 
         start_2nd_nudge_line_idx_e = 6
+
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        horizontal_start = (
+            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        horizontal_end = (
+            grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+            if hasattr(grid, "end_index")
+            else grid.num_edges
+        )
 
         return dict(
             u_vert=u_vert,
@@ -143,8 +155,8 @@ class TestApplyDiffusionToVn(StencilTest):
             fac_bdydiff_v=fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=start_2nd_nudge_line_idx_e,
             limited_area=limited_area,
-            horizontal_start=0,
-            horizontal_end=grid.num_edges,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=grid.num_levels,
         )

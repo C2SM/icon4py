@@ -5,12 +5,17 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import logging
+
 import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.horizontal as h_grid
 
-from . import test_icon
+from . import utils
+
+
+log = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("dim", [dims.C2EDim, dims.C2E2C2EDim, dims.E2VDim, dims.V2EDim, dims.KDim])
@@ -25,10 +30,11 @@ def zones():
         yield zone
 
 
-@pytest.mark.parametrize("dim", test_icon.horizontal_dim())
+@pytest.mark.parametrize("dim", utils.horizontal_dim())
 @pytest.mark.parametrize("zone", zones())
-def test_domain_raises_for_invalid_zones(dim, zone):
-    print(f"dim={dim}, zone={zone},")
+def test_domain_raises_for_invalid_zones(dim, zone, caplog):
+    caplog.set_level(logging.DEBUG)
+    log.debug(f"dim={dim}, zone={zone},")
     if dim == dims.CellDim or dim == dims.VertexDim:
         if zone in (
             h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5,
@@ -38,3 +44,16 @@ def test_domain_raises_for_invalid_zones(dim, zone):
             with pytest.raises(AssertionError) as e:
                 h_grid.domain(dim)(zone)
             e.match("not a valid zone")
+
+
+@pytest.mark.parametrize("dim", utils.horizontal_dim())
+def test_zone_and_domain_index(dim, caplog):
+    """test mostly used for documentation purposes"""
+    caplog.set_level(logging.INFO)
+    for zone in zones():
+        try:
+            domain = h_grid.domain(dim)(zone)
+            log.info(f"dim={dim}: zone={zone:16}: index={domain():3}")
+            assert domain() <= h_grid._BOUNDS[dim][1]
+        except AssertionError:
+            log.info(f"dim={dim}: zone={zone:16}: invalid")

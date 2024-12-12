@@ -5,13 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import astype, broadcast, int32, maximum
+from gt4py.next.ffront.fbuiltins import astype, broadcast, maximum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -38,7 +37,7 @@ def _apply_nabla2_and_nabla4_to_vn(
     return vn_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_nabla2_and_nabla4_to_vn(
     area_edge: fa.EdgeField[wpfloat],
     kh_smag_e: fa.EdgeKField[vpfloat],
@@ -48,10 +47,10 @@ def apply_nabla2_and_nabla4_to_vn(
     nudgecoeff_e: fa.EdgeField[wpfloat],
     vn: fa.EdgeKField[wpfloat],
     nudgezone_diff: vpfloat,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _apply_nabla2_and_nabla4_to_vn(
         area_edge,
