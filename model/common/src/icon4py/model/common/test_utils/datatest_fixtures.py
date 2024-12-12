@@ -72,7 +72,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             processor_props.comm.barrier()
     except KeyError as err:
         raise AssertionError(
-            f"no data for communicator of size {processor_props.comm_size} exists, use 1, 2 or 4"
+            f"No data URL for experiment {experiment} and comm size {processor_props.comm_size} available."
         ) from err
 
 
