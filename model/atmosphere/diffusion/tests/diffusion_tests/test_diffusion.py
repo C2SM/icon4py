@@ -504,7 +504,6 @@ def test_run_diffusion_multiple_steps(
 ):
     if "dace" not in backend.name.lower():
         raise pytest.skip("This test is only executed for `dace backends.")
-
     ######################################################################
     # Diffusion initialization
     ######################################################################
