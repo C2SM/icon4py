@@ -1017,3 +1017,231 @@ class PiecewiseParabolicMethod(FiniteVolume):
         log.debug("running stencil integrate_tracer_vertically - end")
 
         log.debug("vertical unknowns update - end")
+
+
+class BrokenPiecewiseParabolicMethod(PiecewiseParabolicMethod):
+    """Class that does one broken vertical PPM finite volume advection step."""
+
+    def _compute_numerical_flux(
+        self,
+        prep_adv: advection_states.AdvectionPrepAdvState,
+        p_tracer_now: fa.CellKField[ta.wpfloat],
+        rhodz_now: fa.CellKField[ta.wpfloat],
+        p_mflx_tracer_v: fa.CellKField[ta.wpfloat],  # TODO (dastrm): should be KHalfDim
+        dtime: ta.wpfloat,
+        even_timestep: bool,
+    ):
+        log.debug("vertical numerical flux computation - start")
+
+        horizontal_start, horizontal_end = self._get_horizontal_start_end(
+            even_timestep=even_timestep
+        )
+
+        ## compute density-weighted Courant number
+
+        log.debug("running stencil init_constant_cell_kdim_field - start")
+        self._init_constant_cell_kdim_field(
+            field=self._z_cfl,
+            value=0.0,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=0,
+            vertical_end=self._grid.num_levels + 1,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil init_constant_cell_kdim_field - end")
+
+        log.debug("running stencil compute_ppm4gpu_courant_number - start")
+        self._compute_ppm4gpu_courant_number(
+            p_mflx_contra_v=prep_adv.mass_flx_ic,
+            p_cellmass_now=rhodz_now,
+            z_cfl=self._z_cfl,
+            k=self._k_field,
+            slevp1_ti=self._slevp1_ti,
+            nlev=self._nlev,
+            dbl_eps=constants.DBL_EPS,
+            p_dtime=dtime,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=1,
+            vertical_end=self._grid.num_levels,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil compute_ppm4gpu_courant_number - end")
+
+        ## reconstruct face values
+
+        # compute slope
+        log.debug("running stencil compute_ppm_slope - start")
+        self._compute_ppm_slope(
+            p_cc=p_tracer_now,
+            p_cellhgt_mc_now=self._metric_state.ddqz_z_full,
+            k=self._k_field,
+            z_slope=self._z_slope,
+            elev=self._elev,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=1,
+            vertical_end=self._grid.num_levels,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil compute_ppm_slope - end")
+
+        # limit slope
+        self._vertical_limiter.limit_slope(
+            p_tracer_now=p_tracer_now,
+            z_slope=self._z_slope,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+        )
+
+        # compute second highest face value
+        log.debug("running stencil compute_ppm_quadratic_face_values - start")
+        self._compute_ppm_quadratic_face_values(
+            p_cc=p_tracer_now,
+            p_cellhgt_mc_now=self._metric_state.ddqz_z_full,
+            p_face=self._z_face,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=1,
+            vertical_end=2,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil compute_ppm_quadratic_face_values - end")
+
+        # compute second lowest face value
+        log.debug("running stencil compute_ppm_quadratic_face_values - start")
+        self._compute_ppm_quadratic_face_values(
+            p_cc=p_tracer_now,
+            p_cellhgt_mc_now=self._metric_state.ddqz_z_full,
+            p_face=self._z_face,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=self._grid.num_levels - 1,
+            vertical_end=self._grid.num_levels,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil compute_ppm_quadratic_face_values - end")
+
+        # compute highest face value
+        log.debug("running stencil copy_cell_kdim_field - start")
+        self._copy_cell_kdim_field(
+            field_in=p_tracer_now,
+            field_out=self._z_face,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=0,
+            vertical_end=1,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil copy_cell_kdim_field - end")
+
+        # compute lowest face value
+        log.debug("running stencil copy_cell_kdim_field_koff_minus1 - start")
+        self._copy_cell_kdim_field_koff_minus1(
+            field_in=p_tracer_now,
+            field_out=self._z_face,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=self._grid.num_levels,
+            vertical_end=self._grid.num_levels + 1,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil copy_cell_kdim_field_koff_minus1 - end")
+
+        # compute all other face values
+        log.debug("running stencil compute_ppm_quartic_face_values - start")
+        self._compute_ppm_quartic_face_values(
+            p_cc=p_tracer_now,
+            p_cellhgt_mc_now=self._metric_state.ddqz_z_full,
+            z_slope=self._z_slope,
+            p_face=self._z_face,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=2,
+            vertical_end=self._grid.num_levels - 1,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil compute_ppm_quartic_face_values - end")
+
+        ## limit reconstruction
+
+        self._vertical_limiter.limit_parabola(
+            p_tracer_now=p_tracer_now,
+            p_face=self._z_face,
+            p_face_up=self._z_face_up,
+            p_face_low=self._z_face_low,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+        )
+
+        ## compute fractional numerical flux
+
+        log.debug("running stencil compute_ppm4gpu_parabola_coefficients - start")
+        self._compute_ppm4gpu_parabola_coefficients(
+            z_face_up=self._z_face_low,  # here's the bug that makes this
+            z_face_low=self._z_face_up,  # scheme first-order accurate
+            p_cc=p_tracer_now,
+            z_delta_q=self._z_delta_q,
+            z_a1=self._z_a1,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=0,
+            vertical_end=self._grid.num_levels,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil compute_ppm4gpu_parabola_coefficients - end")
+
+        log.debug("running stencil compute_ppm4gpu_fractional_flux - start")
+        self._compute_ppm4gpu_fractional_flux(
+            p_cc=p_tracer_now,
+            p_cellmass_now=rhodz_now,
+            z_cfl=self._z_cfl,
+            z_delta_q=self._z_delta_q,
+            z_a1=self._z_a1,
+            p_upflux=p_mflx_tracer_v,
+            k=self._k_field,
+            slev=self._slev,
+            p_dtime=dtime,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=1,
+            vertical_end=self._grid.num_levels,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil compute_ppm4gpu_fractional_flux - end")
+
+        ## compute integer numerical flux
+
+        log.debug("running stencil compute_ppm4gpu_integer_flux - start")
+        self._compute_ppm4gpu_integer_flux(
+            p_cc=p_tracer_now,
+            p_cellmass_now=rhodz_now,
+            z_cfl=self._z_cfl,
+            p_upflux=p_mflx_tracer_v,
+            k=self._k_field,
+            slev=self._slev,
+            p_dtime=dtime,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=1,
+            vertical_end=self._grid.num_levels,
+            offset_provider=self._grid.offset_providers,
+        )
+        log.debug("running stencil compute_ppm4gpu_integer_flux - end")
+
+        ## set boundary conditions
+
+        self._boundary_conditions.run(
+            p_mflx_tracer_v=p_mflx_tracer_v,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+        )
+
+        ## apply flux limiter
+
+        self._vertical_limiter.limit_fluxes(
+            horizontal_start=horizontal_start, horizontal_end=horizontal_end
+        )
+
+        log.debug("vertical numerical flux computation - end")
