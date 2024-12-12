@@ -493,7 +493,7 @@ class SaturationAdjustment:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=self.grid.num_levels,
-                vertical_end=self.grid.num_levels + gtx.int32(1),
+                vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={"Koff": dims.KDim},
             )
 
@@ -531,7 +531,7 @@ class SaturationAdjustment:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=gtx.int32(0),
-                vertical_end=self.grid.num_levels + gtx.int32(1),
+                vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={},
             )
 
