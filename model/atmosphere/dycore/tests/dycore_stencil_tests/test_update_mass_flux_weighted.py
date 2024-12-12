@@ -5,12 +5,13 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import update_mass_flux_weighted
+from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
+    update_mass_flux_weighted,
+)
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -61,7 +62,7 @@ class TestUpdateMassFluxWeighted(StencilTest):
             mass_flx_ic=mass_flx_ic,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

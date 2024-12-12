@@ -5,15 +5,15 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next.ffront.fbuiltins import int32
+import pytest
 
-from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
+from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import random_field
+from icon4py.model.common.test_utils import helpers
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -54,18 +54,20 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
 
 
 def test_solve_tridiagonal_matrix_for_w_forward_sweep(backend, grid):
-    vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
-    theta_v_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-    ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-    z_alpha = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat)
-    z_beta = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-    z_exner_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-    z_w_expl = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+    if not helpers.is_gtfn(backend):
+        pytest.mark.xfail("Only supported by CPU backend")
+    vwind_impl_wgt = helpers.random_field(grid, dims.CellDim, dtype=wpfloat)
+    theta_v_ic = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    ddqz_z_half = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    z_alpha = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat)
+    z_beta = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    z_exner_expl = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    z_w_expl = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
     dtime = wpfloat("8.0")
     cpd = wpfloat("7.0")
 
-    z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-    w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    z_q = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    w = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
     z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
         vwind_impl_wgt.asnumpy(),
@@ -81,9 +83,9 @@ def test_solve_tridiagonal_matrix_for_w_forward_sweep(backend, grid):
         cpd,
     )
     h_start = 0
-    h_end = int32(grid.num_cells)
+    h_end = gtx.int32(grid.num_cells)
     v_start = 1
-    v_end = int32(grid.num_levels)
+    v_end = gtx.int32(grid.num_levels)
     solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)(
         vwind_impl_wgt=vwind_impl_wgt,
         theta_v_ic=theta_v_ic,

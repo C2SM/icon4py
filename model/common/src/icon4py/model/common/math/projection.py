@@ -8,13 +8,15 @@
 
 import numpy as np
 
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
 
 def gnomonic_proj(
-    lon_c: np.ndarray,
-    lat_c: np.ndarray,
-    lon: np.ndarray,
-    lat: np.ndarray,
-) -> tuple[np.ndarray, np.ndarray]:
+    lon_c: field_alloc.NDArray,
+    lat_c: field_alloc.NDArray,
+    lon: field_alloc.NDArray,
+    lat: field_alloc.NDArray,
+) -> tuple[field_alloc.NDArray, field_alloc.NDArray]:
     """
     Compute gnomonic projection.
 

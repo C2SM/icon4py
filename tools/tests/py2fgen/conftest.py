@@ -5,12 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
-from pathlib import Path
+import pathlib
 
 import pytest
 
 
 @pytest.fixture
 def samples_path():
-    return Path(__file__).parent / "fortran_samples"
+    return pathlib.Path(__file__).parent / "fortran_samples"

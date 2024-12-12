@@ -5,10 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner,
@@ -26,9 +25,9 @@ def update_theta_and_exner_numpy(
     exner: np.array,
     rd_o_cvd: float,
 ) -> tuple[np.array]:
-    area = np.expand_dims(area, axis=0)
+    area = np.expand_dims(area, axis=-1)
     z_theta = theta_v
-    theta_v = theta_v + (np.expand_dims(area, axis=-1) * z_temp)
+    theta_v = theta_v + (area * z_temp)
     exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
     return theta_v, exner
 
@@ -65,7 +64,7 @@ class TestUpdateThetaAndExner(StencilTest):
             exner=exner,
             rd_o_cvd=rd_o_cvd,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
+            horizontal_end=gtx.int32(grid.num_cells),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

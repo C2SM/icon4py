@@ -1,10 +1,10 @@
 # Naming convection of stencils in ICON4Py
 
-This naming convection should help to have a common style for stencil names.
+This naming convention should help to have a common style for stencil names.
 It should help to read and understand stencil code.
 
 ## Multiple-word identifier format
-The stencils should should flow snake case.
+The stencils must follow snake case.
 
 ## Length of name
 The program name of the stencil needs to have less then 70 characters.
