@@ -6,16 +6,17 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import pytest
+from icon4pytools.py2fgen import settings
+from icon4pytools.py2fgen.settings import backend
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
-from icon4py.model.common import settings
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid,
 )
-from icon4py.model.common.settings import backend, xp
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     grid_utils,
