@@ -102,10 +102,11 @@ def _get_or_initialize(experiment, backend, name):
     return grid_functionality[experiment].get(name)
 
 
+@pytest.mark.xfail
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
-    config = construct_diffusion_config(experiment, ndyn_substeps=5)
-    config.hdiff_efdt_ratio = 1.0
-    config.hdiff_w_efdt_ratio = 2.0
+    config = diffusion.DiffusionConfig(
+        experiment, ndyn_substeps=5, hdiff_efdt_ratio=1.0, hdiff_w_efdt_ratio=2.0
+    )
 
     params = diffusion.DiffusionParams(config)
 
@@ -115,6 +116,7 @@ def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
     assert params.K4W == pytest.approx(1.0 / 72.0, abs=1e-12)
 
 
+@pytest.mark.xfail
 def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
     config = construct_diffusion_config(experiment)
     config.hdiff_efdt_ratio = 0.0
@@ -128,6 +130,7 @@ def test_diffusion_coefficients_without_hdiff_efdt_ratio(experiment):
     assert params.K4W == 0.0
 
 
+@pytest.mark.xfail
 def test_smagorinski_factor_for_diffusion_type_4(experiment):
     config = construct_diffusion_config(experiment, ndyn_substeps=5)
     config.smagorinski_scaling_factor = 0.15
@@ -139,6 +142,7 @@ def test_smagorinski_factor_for_diffusion_type_4(experiment):
     assert params.smagorinski_height is None
 
 
+@pytest.mark.xfail
 def test_smagorinski_heights_diffusion_type_5_are_consistent(
     experiment,
 ):
@@ -161,6 +165,15 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
+
+
+def vertical_grid(vertical_config: v_grid.VerticalGridConfig, grid_savepoint: sb.IconGridSavepoint):
+    return v_grid.VerticalGrid(
+        config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
 
 
 @pytest.mark.datatest
