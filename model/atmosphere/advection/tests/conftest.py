@@ -7,10 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-from icon4py.model.testing.helpers import backend
+from icon4py.model.testing.helpers import backend, grid
 from icon4py.model.testing.pytest_config import *  # noqa: F401
 
 __all__ = [
     # imported fixtures:
     "backend",
+    "grid"
 ]
