@@ -153,7 +153,7 @@ def _compute_primal_normal_ec(
     c2e: alloc.NDArray,
     e2c: alloc.NDArray,
     array_ns: ModuleType = np,
-) -> alloc.NDArray:
+) -> tuple[alloc.NDArray, alloc.NDArray]:
     """
     Compute primal_normal_ec.
 
@@ -167,21 +167,19 @@ def _compute_primal_normal_ec(
     Returns:
         primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
     """
-    primal_normal_ec = np.zeros([c2e.shape[0], c2e.shape[1], 2])
-
+   
     owned = np.stack((owner_mask,owner_mask,owner_mask)).T
 
     inv_neighbor_index = create_inverse_neighbor_index(e2c, c2e, array_ns)
     u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
     v_component = primal_normal_cell_y[c2e, inv_neighbor_index]
-    # TODO return this as tuple
-    primal_normal_ec[:,:,0] =  np.where(owned, u_component, 0.0)
-    primal_normal_ec[:,:,1] = np.where(owned, v_component, 0.0)
-    return primal_normal_ec
+    return (np.where(owned, u_component, 0.0), np.where(owned, v_component, 0.0))
+
 
 
 def _compute_geofac_grg(
-    primal_normal_ec: alloc.NDArray,
+    primal_normal_ec_u: alloc.NDArray,
+    primal_normal_ec_v: alloc.NDArray,
     geofac_div: alloc.NDArray,
     c_lin_e: alloc.NDArray,
     c2e: alloc.NDArray,
@@ -216,25 +214,32 @@ def _compute_geofac_grg(
     inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
     
     tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
-    geofac_grg_x[:, 0] = np.sum(primal_normal_ec[:, :, 0] * tmp, axis=1)
-    geofac_grg_y[:, 0] = np.sum(primal_normal_ec[:, :, 1]  * tmp, axis=1)
+    geofac_grg_x[:, 0] = np.sum(primal_normal_ec_u * tmp, axis=1)
+    geofac_grg_y[:, 0] = np.sum(primal_normal_ec_v  * tmp, axis=1)
     geofac_grg[llb:, 0, 0] = geofac_grg_x[llb:, 0]
     geofac_grg[llb:, 0, 1] = geofac_grg_y[llb:, 0]
 
     #tmp = geofac_div * c_lin_e[c2e, inverse_cell_neighbor]
     #geofac_grg_x[:, 1:] = np.sum(primal_normal_ec * tmp, axis = 1)
     #geofac_grg_y[:, 1:] = np.sum(primal_normal_ec * tmp, axis = 1)
-    for i in range(primal_normal_ec.shape[2]):
-        for j in range(c2e.shape[1]):
-            for k in range(e2c.shape[1]): # (0,1)
-                mask = e2c[c2e, k] == c2e2c
-                #np.sum(mask[llb:, :] * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[llb:, :], axis = 1)
+    #for i in range(primal_normal_ec.shape[2]):
+    for j in range(c2e.shape[1]):
+        for k in range(e2c.shape[1]): # (0,1)
+            mask = e2c[c2e, k] == c2e2c
+            #np.sum(mask[llb:, :] * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[llb:, :], axis = 1)
 
-                foo = mask[llb:, j]* (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[llb:, j]
-                #foo1 = mask[:, j]* (primal_normal_ec[:, :, i] * geofac_div)[:, j] * c_lin_e[c2e[:, j], k]
-                geofac_grg[llb:, 1 + j, i] = (
-                    geofac_grg[llb:, 1 + j, i] + foo
-                )
+            foo = mask[llb:, j]* (primal_normal_ec_u * geofac_div * c_lin_e[c2e, k])[llb:, j]
+            #foo1 = mask[:, j]* (primal_normal_ec[:, :, i] * geofac_div)[:, j] * c_lin_e[c2e[:, j], k]
+            geofac_grg[llb:, 1 + j, 0] = geofac_grg[llb:, 1 + j, 0] + foo
+
+    for j in range(c2e.shape[1]):
+        for k in range(e2c.shape[1]): # (0,1)
+            mask = e2c[c2e, k] == c2e2c
+            #np.sum(mask[llb:, :] * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[llb:, :], axis = 1)
+
+            foo = mask[llb:, j]* (primal_normal_ec_v * geofac_div * c_lin_e[c2e, k])[llb:, j]
+            #foo1 = mask[:, j]* (primal_normal_ec[:, :, i] * geofac_div)[:, j] * c_lin_e[c2e[:, j], k]
+            geofac_grg[llb:, 1 + j, 1] = geofac_grg[llb:, 1 + j, 1] + foo
 
     #assert np.allclose(geofac_grg_x[llb:, 1:], geofac_grg[llb:, 1:, 0])
    # assert np.allclose(geofac_grg_y[llb:, 1:], geofac_grg[llb:, 1:, 1])
@@ -254,11 +259,11 @@ def compute_geofac_grg(
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> tuple[alloc.NDArray, alloc.NDArray]:
-    primal_normal_ec = functools.partial(_compute_primal_normal_ec, array_ns=array_ns)(
+    primal_normal_ec_u, primal_normal_ec_v = functools.partial(_compute_primal_normal_ec, array_ns=array_ns)(
         primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c
     )
     return functools.partial(_compute_geofac_grg, array_ns=array_ns)(
-        primal_normal_ec, geofac_div, c_lin_e, c2e, e2c, c2e2c, horizontal_start
+        primal_normal_ec_u, primal_normal_ec_v, geofac_div, c_lin_e, c2e, e2c, c2e2c, horizontal_start
     )
 
 
