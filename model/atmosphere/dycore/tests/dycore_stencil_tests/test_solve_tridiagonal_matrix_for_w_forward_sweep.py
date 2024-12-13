@@ -55,7 +55,7 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
 
 def test_solve_tridiagonal_matrix_for_w_forward_sweep(backend, grid):
     if not helpers.is_gtfn(backend):
-        pytest.mark.xfail("Only supported by CPU backend")
+        pytest.skip("Skipping: Only supported by GTFN backend")
     vwind_impl_wgt = helpers.random_field(grid, dims.CellDim, dtype=wpfloat)
     theta_v_ic = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
     ddqz_z_half = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

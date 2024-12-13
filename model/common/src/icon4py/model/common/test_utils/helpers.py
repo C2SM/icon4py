@@ -47,9 +47,6 @@ def is_python(backend: gtx_backend.Backend) -> bool:
     return is_embedded(backend) or is_roundtrip(backend)
 
 
-def is_gtfn_cpu(backend: gtx_backend.Backend) -> bool:
-    return backend.name == "gtfn_cpu"
-
 
 def is_gtfn(backend: gtx_backend.Backend) -> bool:
     return "gtfn" in backend.name
