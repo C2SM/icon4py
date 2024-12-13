@@ -24,7 +24,6 @@ from icon4py.model.common.metrics.compute_vwind_impl_wgt import (
     compute_vwind_impl_wgt,
 )
 from icon4py.model.common.metrics.metric_fields import (
-    MetricsConfig,
     _compute_flat_idx,
     _compute_pg_edgeidx_vertidx,
     compute_bdy_halo_c,
@@ -479,11 +478,7 @@ def test_compute_exner_exfac(
     grid_savepoint, experiment, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    config = (
-        MetricsConfig(exner_expol=0.333)
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else MetricsConfig()
-    )
+    exner_expol = 0.333 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.3333333333333
 
     exner_exfac = zero_field(icon_grid, dims.CellDim, dims.KDim)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
@@ -491,7 +486,7 @@ def test_compute_exner_exfac(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
         exner_exfac=exner_exfac,
-        exner_expol=config.exner_expol,
+        exner_expol=exner_expol,
         horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_cells,
         vertical_start=gtx.int32(0),
@@ -557,11 +552,7 @@ def test_compute_vwind_impl_wgt(
     )
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
-    config = (
-        MetricsConfig(vwind_offctr=0.2)
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else MetricsConfig()
-    )
+    vwind_offctr = 0.2 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.15
 
     vwind_impl_wgt = compute_vwind_impl_wgt(
         c2e=icon_grid.connectivities[dims.C2EDim],
@@ -570,7 +561,7 @@ def test_compute_vwind_impl_wgt(
         z_ddxn_z_half_e=z_ddxn_z_half_e.asnumpy(),
         z_ddxt_z_half_e=z_ddxt_z_half_e.asnumpy(),
         dual_edge_length=dual_edge_length.asnumpy(),
-        vwind_offctr=config.vwind_offctr,
+        vwind_offctr=vwind_offctr,
         nlev=icon_grid.num_levels,
         horizontal_start_cell=horizontal_start_cell,
         n_cells=icon_grid.num_cells,
