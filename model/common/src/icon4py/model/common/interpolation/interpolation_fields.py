@@ -196,7 +196,6 @@ def _compute_geofac_grg(
     c2e: alloc.NDArray,
     e2c: alloc.NDArray,
     c2e2c: alloc.NDArray,
-    c2e2c0,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> tuple[alloc.NDArray, alloc.NDArray]:
@@ -223,35 +222,13 @@ def _compute_geofac_grg(
     geofac_grg_x = array_ns.zeros(target_shape)
     geofac_grg_y = array_ns.zeros(c2e2c.shape)
 
-    index = array_ns.transpose(
-        array_ns.vstack(
-            (
-                array_ns.arange(num_cells),
-                array_ns.arange(num_cells),
-                array_ns.arange(num_cells),
-            )
-        )
-    )
     inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
-    inverse_cell_neighbor = create_inverse_neighbor_index(c2e2c, c2e2c, array_ns)
-
+    
     tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
     geofac_grg_x[:, 0] = np.sum(primal_normal_ec[:, :, 0] * tmp, axis=1)
     geofac_grg_y[:, 0] = np.sum(primal_normal_ec[:, :, 1]  * tmp, axis=1)
-
-    for i in range(primal_normal_ec.shape[2]):  # (0,1)
-
-        for k in range(e2c.shape[1]):#(0,1)
-            mask = e2c[c2e, k] == index
-            for j in range(c2e.shape[1]): #(0,1,2)
-                foo = mask[llb:, j] * (primal_normal_ec[:, :, i] *
-                                       geofac_div)[llb:, j] * c_lin_e[c2e[llb:,j], k]
-
-                geofac_grg[llb:, 0, i] = geofac_grg[llb:, 0, i] + foo
-
-
-    assert np.allclose(geofac_grg_x[llb:, 0], geofac_grg[llb:, 0, 0] )
-    assert np.allclose(geofac_grg_y[llb:, 0], geofac_grg[llb:, 0, 1])
+    geofac_grg[llb:, 0, 0] = geofac_grg_x[llb:, 0]
+    geofac_grg[llb:, 0, 1] = geofac_grg_y[llb:, 0]
 
     #tmp = geofac_div * c_lin_e[c2e, inverse_cell_neighbor]
     #geofac_grg_x[:, 1:] = np.sum(primal_normal_ec * tmp, axis = 1)
@@ -290,7 +267,7 @@ def compute_geofac_grg(
         primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c
     )
     return functools.partial(_compute_geofac_grg, array_ns=array_ns)(
-        primal_normal_ec, geofac_div, c_lin_e, c2e, e2c, c2e2c,c2e2c0, horizontal_start
+        primal_normal_ec, geofac_div, c_lin_e, c2e, e2c, c2e2c, horizontal_start
     )
 
 

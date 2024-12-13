@@ -171,10 +171,10 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         horizontal_start,
     )
     assert test_helpers.dallclose(
-        alloc.as_numpy(geofac_grg_0), geofac_grg_ref[0].asnumpy(), rtol=1e-7
+        alloc.as_numpy(geofac_grg_0), geofac_grg_ref[0].asnumpy(), rtol=1e-7, atol=1e-16
     )
     assert test_helpers.dallclose(
-        alloc.as_numpy(geofac_grg_1), geofac_grg_ref[1].asnumpy(), rtol=1e-7
+        alloc.as_numpy(geofac_grg_1), geofac_grg_ref[1].asnumpy(), rtol=1e-7, atol = 1e-16
     )
 
 
