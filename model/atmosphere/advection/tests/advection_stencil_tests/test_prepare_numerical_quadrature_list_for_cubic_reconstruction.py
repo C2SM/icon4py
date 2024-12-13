@@ -17,8 +17,6 @@ from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_li
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
-# TODO (@halungge): remove slow test marker: runs in reasonable time on gtfn backend
-@pytest.mark.slow_tests
 class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTest):
     PROGRAM = prepare_numerical_quadrature_list_for_cubic_reconstruction
     OUTPUTS = (

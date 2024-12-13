@@ -113,7 +113,6 @@ def _line_intersect_numpy(
     return intersect_1, intersect_2
 
 
-@pytest.mark.slow_tests
 class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
     PROGRAM = prepare_ffsl_flux_area_patches_list
     OUTPUTS = (

@@ -18,8 +18,6 @@ from icon4py.model.atmosphere.advection.stencils.reconstruct_cubic_coefficients_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 
-# TODO (@halungge): remove slow test marker: runs in reasonable time on gtfn backend
-@pytest.mark.slow_tests
 class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
     PROGRAM = reconstruct_cubic_coefficients_svd
     OUTPUTS = (

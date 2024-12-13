@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-@pytest.mark.slow_tests
 class TestPrepareNumericalQuadratureForCubicReconstruction(helpers.StencilTest):
     PROGRAM = prepare_numerical_quadrature_for_cubic_reconstruction
     OUTPUTS = (

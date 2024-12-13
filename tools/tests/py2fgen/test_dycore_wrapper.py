@@ -1148,7 +1148,6 @@ def test_granule_solve_nonhydro_single_step_regional(
     )
 
 
-@pytest.mark.slow_tests
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
