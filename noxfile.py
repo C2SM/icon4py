@@ -6,12 +6,14 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from __future__ import annotations
+
 from collections.abc import Sequence
 
 import nox
 
 nox.options.default_venv_backend = "uv"
-# nox.options.sessions = ["lint", "test"]
+nox.options.sessions = ["test_atmosphere", "test_common", "test_driver", "test_tools"]
 
 
 @nox.session(python=["3.10", "3.11"])
@@ -24,7 +26,7 @@ def benchmark_atmosphere(session: nox.Session, subpackage: str) -> None:
     _install_session_venv(session, extras=["all"], groups=["test"])
 
     with session.chdir(f"model/atmosphere/{subpackage}"):
-        session.run("pytest", "-sv", "--benchmark-only", *session.posargs)
+        session.run(*"pytest -sv --benchmark-only".split(), *session.posargs)
 
 
 @nox.session(python=["3.10", "3.11"])
@@ -32,140 +34,102 @@ def benchmark_atmosphere(session: nox.Session, subpackage: str) -> None:
     "subpackage",
     ["advection", "diffusion", "dycore", "subgrid_scale_physics/microphysics"],
 )
-@nox.parametrize("selection", ["regular_tests", "slow_tests"])
-def test_atmosphere(session: nox.Session, subpackage: str, selection: str) -> None:
+@nox.parametrize("datatest", [False, True])
+def test_atmosphere(session: nox.Session, subpackage: str, datatest: bool) -> None:
     """Run tests for the `model.atmosphere` subpackages."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
-    assert (
-        selection in _SELECTION_PARAM_TO_PYTEST_MARKERS
-    ), f"Invalid test selection argument: {selection}"
-    pytest_args = sum(
-        (["-m", tag] for tag in _SELECTION_PARAM_TO_PYTEST_MARKERS[selection]), start=[]
-    )
-
     with session.chdir(f"model/atmosphere/{subpackage}"):
         session.run(
-            "pytest",
-            "-sv",
-            "-n",
-            session.env.get("NUM_PROCESSES", "auto"),
-            "--benchmark-skip",
-            *pytest_args,
-            *session.posargs,
+            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} -m {'' if datatest else 'not'} datatest".split(),
+            *session.posargs
         )
 
 
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("selection", ["regular_tests", "slow_tests"])
-def test_atmosphere_advection(session: nox.Session, selection: str) -> None:
+@nox.parametrize("datatest", [False, True])
+def test_atmosphere_advection(session: nox.Session, datatest: bool) -> None:
     session.notify(
-        f"test_atmosphere-{session.python}(selection='{selection}', subpackage='advection')"
+        f"test_atmosphere-{session.python}(datatest='{datatest}', subpackage='advection')"
     )
 
 
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("selection", ["regular_tests", "slow_tests"])
-def test_atmosphere_diffusion(session: nox.Session, selection: str) -> None:
+@nox.parametrize("datatest", [False, True])
+def test_atmosphere_diffusion(session: nox.Session, datatest: bool) -> None:
     session.notify(
-        f"test_atmosphere-{session.python}(selection='{selection}', subpackage='diffusion')"
+        f"test_atmosphere-{session.python}(datatest='{datatest}', subpackage='diffusion')"
     )
 
 
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("selection", ["regular_tests", "slow_tests"])
-def test_atmosphere_dycore(session: nox.Session, selection: str) -> None:
+@nox.parametrize("datatest", [False, True])
+def test_atmosphere_dycore(session: nox.Session, datatest: bool) -> None:
     session.notify(
-        f"test_atmosphere-{session.python}(selection='{selection}', subpackage='dycore')"
+        f"test_atmosphere-{session.python}(datatest='{datatest}', subpackage='dycore')"
     )
 
 
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("selection", ["regular_tests", "slow_tests"])
-def test_atmosphere_microphysics(session: nox.Session, selection: str) -> None:
+@nox.parametrize("datatest", [False, True])
+def test_atmosphere_microphysics(session: nox.Session, datatest: bool) -> None:
     session.notify(
-        f"test_atmosphere-{session.python}(selection='{selection}', subpackage='subgrid_scale_physics/microphysics')"
+        f"test_atmosphere-{session.python}(datatest='{datatest}', subpackage='subgrid_scale_physics/microphysics')"
     )
 
 
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("selection", ["regular_tests", "slow_tests"])
-def test_common(session: nox.Session, selection: str) -> None:
+@nox.parametrize("datatest", [False, True])
+def test_common(session: nox.Session, datatest: bool) -> None:
     """Run tests for the common package of the icon4py model."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
-    assert (
-        selection in _SELECTION_PARAM_TO_PYTEST_MARKERS
-    ), f"Invalid test selection argument: {selection}"
-    pytest_args = sum(
-        (["-m", tag] for tag in _SELECTION_PARAM_TO_PYTEST_MARKERS[selection]), start=[]
-    )
-
     with session.chdir("model/common"):
         session.run(
-            "pytest",
-            "-sv",
-            "--benchmark-skip",
-            "-n",
-            session.env.get("NUM_PROCESSES", "auto"),
-            *pytest_args,
-            *session.posargs,
+            *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -m {'' if datatest else 'not'} datatest".split(),
+            *session.posargs
         )
 
 
 @nox.session(python=["3.10", "3.11"])
-def test_driver(session: nox.Session) -> None:
+@nox.parametrize("datatest", [False, True])
+def test_driver(session: nox.Session, datatest: bool) -> None:
     """Run tests for the driver."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
     with session.chdir("model/driver"):
         session.run(
-            "pytest",
-            "-sv",
-            "-n",
-            session.env.get("NUM_PROCESSES", "auto"),
-            *session.posargs,
+            *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -m {'' if datatest else 'not'} datatest".split(),
+            *session.posargs
         )
+
+@nox.session(python=["3.10", "3.11"])
+def test_model_datatest(session: nox.Session) -> None:
+    session.run(
+        *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -m datatest".split(),
+        *session.posargs
+    )
 
 
 @nox.session(python=["3.10", "3.11"])
-def test_tools(session: nox.Session) -> None:
+def test_model_operators(session: nox.Session) -> None:
+    session.run(
+        *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -k 'stencil_tests'".split(),
+        *session.posargs
+    )
+
+
+@nox.session(python=["3.10", "3.11"])
+@nox.parametrize("datatest", [False, True])
+def test_tools(session: nox.Session, datatest: bool) -> None:
     """Run tests for the Fortran integration tools."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
     with session.chdir("tools"):
         session.run(
-            "pytest",
-            "-sv",
-            "-n",
-            session.env.get("NUM_PROCESSES", "auto"),
-            *session.posargs,
+            *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -m {'' if datatest else 'not'} datatest".split(),
+            *session.posargs
         )
-
-
-# [testenv:run_stencil_tests]
-# commands =
-#     pytest -v -m "not slow_tests" --cov --cov-append atmosphere/diffusion/tests/diffusion_stencil_tests --benchmark-skip -n {env:NUM_PROCESSES:1} {posargs}
-#     pytest -v -m "not slow_tests" --cov --cov-append atmosphere/dycore/tests/dycore_stencil_tests --benchmark-skip -n {env:NUM_PROCESSES:1} {posargs}
-#     pytest -v -m "not slow_tests" --cov --cov-append atmosphere/advection/tests/advection_stencil_tests --benchmark-skip -n {env:NUM_PROCESSES:1} {posargs}
-
-# [testenv:run_benchmarks]
-# commands =
-#     pytest -v -m "not slow_tests" atmosphere/diffusion/tests/diffusion_stencil_tests --benchmark-only {posargs}
-#     pytest -v -m "not slow_tests" atmosphere/dycore/tests/dycore_stencil_tests --benchmark-only {posargs}
-#     pytest -v -m "not slow_tests" atmosphere/advection/tests/advection_stencil_tests --benchmark-only {posargs}
-
-# [testenv:run_model_tests]
-# commands =
-#     pytest -v -m "not slow_tests" --datatest {posargs}
-
-# addopts = ["-p", "icon4py.model.testing.pytest_config"]
-
-
-_SELECTION_PARAM_TO_PYTEST_MARKERS: dict[str, list[str]] = {
-    "regular_tests": ["not slow_tests"],
-    "slow_tests": ["slow_tests"],
-}
 
 
 def _install_session_venv(

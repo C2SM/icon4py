@@ -65,7 +65,6 @@ def _check_backend_validity(backend_name: str) -> None:
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
-    config.addinivalue_line("markers", "slow_tests: this test takes a very long time")
     config.addinivalue_line(
         "markers", "with_netcdf: test uses netcdf which is an optional dependency"
     )
