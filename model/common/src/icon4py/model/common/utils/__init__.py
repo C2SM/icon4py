@@ -16,7 +16,7 @@ from ._common import (
     chainable,
     named_property,
 )
-from . import data_allocation, serialbox
+from . import data_allocation
 
 
 __all__ = [

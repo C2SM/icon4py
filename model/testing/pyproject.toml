@@ -21,7 +21,7 @@ classifiers = [
 ]
 dependencies = [
   # workspace members
-  'icon4py-common[netcdf]>=0.0.6',
+  'icon4py-common[io]>=0.0.6',
   # external dependencies
   "gt4py>=1.0.4",
   "numpy>=1.23.3",

@@ -20,8 +20,9 @@ from icon4py.model.testing import (
     grid_utils,
     helpers,
     reference_funcs as ref_funcs,
+    serialbox as sb,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc, serialbox as sb
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,

@@ -24,11 +24,12 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc, serialbox as sb
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     serialbox_helpers as driver_sb,
 )
 from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
+from icon4py.model.testing import serialbox as sb
 
 
 # TODO(egparedes): Read these hardcoded constants from grid file

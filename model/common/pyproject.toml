@@ -39,13 +39,12 @@ all = ["icon4py-common[distributed,io,dace]"]
 dace = ["gt4py[dace]>=1.0.4"]
 distributed = ["ghex>=0.3.0", "mpi4py>=3.1.5"]
 io = [
-  # self dependency
-  "icon4py-common[netcdf]",
   # external dependencies
   "cartopy>=0.22.0",
   "cftime>=1.6.3",
   "datashader>=0.16.1",
   "holoviews>=1.16.0",
+  "netcdf4>=1.6.1",
   "numpy>=1.23.3",
   "scikit-learn>=1.4.0",
   # TODO [magdalena] there are failing tests starting from uxarray==2024.4.0: when a data file does not have
@@ -54,7 +53,6 @@ io = [
   "uxarray==2024.3.0",
   "xarray[complete]>=2024.3.0"
 ]
-netcdf = ["netcdf4>=1.6.1"]
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"

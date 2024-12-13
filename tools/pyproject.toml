@@ -24,7 +24,7 @@ dependencies = [
   'icon4py-atmosphere-advection>=0.0.6',
   'icon4py-atmosphere-diffusion>=0.0.6',
   'icon4py-atmosphere-dycore>=0.0.6',
-  'icon4py-common[netcdf]>=0.0.6',
+  'icon4py-common>=0.0.6',
   # external dependencies
   'cffi>=1.5',
   'fprettify>=0.3.7',
