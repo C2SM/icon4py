@@ -192,7 +192,8 @@ def _compute_geofac_grg(
     Compute geometrical factor for Green-Gauss gradient.
 
     Args:
-        primal_normal_ec: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
+        primal_normal_ec_u: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
+        primal_normal_ec_v: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
         geofac_div: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
         c_lin_e: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         c2e: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
@@ -206,7 +207,6 @@ def _compute_geofac_grg(
     llb = horizontal_start
     num_cells = c2e.shape[0]
     targ_local_size = c2e.shape[1] + 1
-    geofac_grg = array_ns.zeros([num_cells, targ_local_size, 2])
     target_shape = (num_cells, targ_local_size)
     geofac_grg_x = array_ns.zeros(target_shape)
     geofac_grg_y = array_ns.zeros(target_shape)
@@ -214,10 +214,9 @@ def _compute_geofac_grg(
     inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
     
     tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
-    geofac_grg_x[:, 0] = np.sum(primal_normal_ec_u * tmp, axis=1)
-    geofac_grg_y[:, 0] = np.sum(primal_normal_ec_v  * tmp, axis=1)
-    geofac_grg[llb:, 0, 0] = geofac_grg_x[llb:, 0]
-    geofac_grg[llb:, 0, 1] = geofac_grg_y[llb:, 0]
+    geofac_grg_x[llb:, 0] = np.sum(primal_normal_ec_u * tmp, axis=1)[llb:]
+    geofac_grg_y[llb:, 0] = np.sum(primal_normal_ec_v  * tmp, axis=1)[llb:]
+
 
     #tmp = geofac_div * c_lin_e[c2e, inverse_cell_neighbor]
     #geofac_grg_x[:, 1:] = np.sum(primal_normal_ec * tmp, axis = 1)
@@ -230,7 +229,7 @@ def _compute_geofac_grg(
 
             foo = mask[llb:, j]* (primal_normal_ec_u * geofac_div * c_lin_e[c2e, k])[llb:, j]
             #foo1 = mask[:, j]* (primal_normal_ec[:, :, i] * geofac_div)[:, j] * c_lin_e[c2e[:, j], k]
-            geofac_grg[llb:, 1 + j, 0] = geofac_grg[llb:, 1 + j, 0] + foo
+            geofac_grg_x[llb:, 1 + j] = geofac_grg_x[llb:, 1 + j] + foo
 
     for j in range(c2e.shape[1]):
         for k in range(e2c.shape[1]): # (0,1)
@@ -239,11 +238,11 @@ def _compute_geofac_grg(
 
             foo = mask[llb:, j]* (primal_normal_ec_v * geofac_div * c_lin_e[c2e, k])[llb:, j]
             #foo1 = mask[:, j]* (primal_normal_ec[:, :, i] * geofac_div)[:, j] * c_lin_e[c2e[:, j], k]
-            geofac_grg[llb:, 1 + j, 1] = geofac_grg[llb:, 1 + j, 1] + foo
+            geofac_grg_y[llb:, 1 + j] = geofac_grg_y[llb:, 1 + j] + foo
 
     #assert np.allclose(geofac_grg_x[llb:, 1:], geofac_grg[llb:, 1:, 0])
    # assert np.allclose(geofac_grg_y[llb:, 1:], geofac_grg[llb:, 1:, 1])
-    return geofac_grg[:, :, 0], geofac_grg[:, :, 1]
+    return geofac_grg_x, geofac_grg_y
 
 
 def compute_geofac_grg(
