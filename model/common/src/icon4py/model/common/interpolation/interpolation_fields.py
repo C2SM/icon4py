@@ -169,16 +169,7 @@ def _compute_primal_normal_ec(
     """
     primal_normal_ec = np.zeros([c2e.shape[0], c2e.shape[1], 2])
 
-
-    owned = array_ns.transpose(
-        np.vstack(
-            (
-                owner_mask,
-                owner_mask,
-                owner_mask,
-            )
-        )
-    )
+    owned = np.stack((owner_mask,owner_mask,owner_mask)).T
 
     inv_neighbor_index = create_inverse_neighbor_index(e2c, c2e, array_ns)
     u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
@@ -217,10 +208,10 @@ def _compute_geofac_grg(
     llb = horizontal_start
     num_cells = c2e.shape[0]
     targ_local_size = c2e.shape[1] + 1
-    geofac_grg = array_ns.zeros([num_cells, targ_local_size, primal_normal_ec.shape[2]])
+    geofac_grg = array_ns.zeros([num_cells, targ_local_size, 2])
     target_shape = (num_cells, targ_local_size)
     geofac_grg_x = array_ns.zeros(target_shape)
-    geofac_grg_y = array_ns.zeros(c2e2c.shape)
+    geofac_grg_y = array_ns.zeros(target_shape)
 
     inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
     
