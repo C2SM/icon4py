@@ -14,7 +14,7 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 from gt4py._core.definitions import is_scalar_type
-from gt4py.next import as_field, common as gt_common, constructors
+from gt4py.next import as_field, backend as gtx_backend, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
 
@@ -40,18 +40,23 @@ def grid(request):
     return request.param
 
 
-def is_python(backend) -> bool:
+def is_python(backend: gtx_backend.Backend) -> bool:
     # want to exclude python backends:
     #   - cannot run on embedded: because of slicing
     #   - roundtrip is very slow on large grid
     return is_embedded(backend) or is_roundtrip(backend)
 
 
-def is_embedded(backend) -> bool:
+
+def is_gtfn(backend: gtx_backend.Backend) -> bool:
+    return "gtfn" in backend.name
+
+
+def is_embedded(backend: gtx_backend.Backend) -> bool:
     return backend is None
 
 
-def is_roundtrip(backend) -> bool:
+def is_roundtrip(backend: gtx_backend.Backend) -> bool:
     return backend.name == "roundtrip" if backend else False
 
 
