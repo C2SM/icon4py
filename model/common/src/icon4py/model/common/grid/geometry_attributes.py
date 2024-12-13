@@ -31,6 +31,7 @@ CELL_AREA: Final[str] = "cell_area"
 EDGE_AREA: Final[str] = "edge_area"
 DUAL_AREA: Final[str] = "dual_area"
 EDGE_CELL_DISTANCE: Final[str] = "edge_midpoint_to_cell_center_distance"
+EDGE_VERTEX_DISTANCE: Final[str] = "edge_midpoint_to_vertex_distance"
 TANGENT_ORIENTATION: Final[str] = "edge_orientation"
 CELL_NORMAL_ORIENTATION: Final[str] = "orientation_of_normal_to_cell_edges"
 VERTEX_EDGE_ORIENTATION: Final[str] = "orientation_of_edges_around_vertex"
@@ -124,6 +125,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="m",
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="t_grid_edges%edge_cell_length",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_VERTEX_DISTANCE: dict(
+        standard_name=EDGE_VERTEX_DISTANCE,
+        long_name="distances between edge midpoint and adjacent vertices",
+        units="m",
+        dims=(dims.EdgeDim, dims.E2VDim),
+        icon_var_name="t_grid_edges%edge_vert_length",
         dtype=ta.wpfloat,
     ),
     DUAL_EDGE_LENGTH: dict(

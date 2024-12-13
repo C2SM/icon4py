@@ -10,14 +10,15 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import numpy_to_1D_sparse_field
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 def compute_coeff_gradekin(
-    edge_cell_length: np.array,
-    inv_dual_edge_length: np.array,
-    horizontal_start: float,
-    horizontal_end: float,
-) -> np.array:
+    edge_cell_length: field_alloc.NDArray,
+    inv_dual_edge_length: field_alloc.NDArray,
+    horizontal_start: int,
+    horizontal_end: int,
+):
     """
     Compute coefficients for improved calculation of kinetic energy gradient
 
@@ -37,4 +38,5 @@ def compute_coeff_gradekin(
             edge_cell_length[e, 0] / edge_cell_length[e, 1] * inv_dual_edge_length[e]
         )
     coeff_gradekin_full = np.column_stack((coeff_gradekin_0, coeff_gradekin_1))
-    return numpy_to_1D_sparse_field(coeff_gradekin_full, dims.ECDim)
+    coeff_gradekin = numpy_to_1D_sparse_field(coeff_gradekin_full, dims.ECDim)
+    return coeff_gradekin.asnumpy()

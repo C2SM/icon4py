@@ -11,6 +11,15 @@ import numpy as np
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
+def compute_max_nbhgt_np(
+    c2e2c: field_alloc.NDArray, z_mc: field_alloc.NDArray, nlev: int
+) -> field_alloc.NDArray:
+    z_mc_nlev = z_mc[:, nlev - 1]
+    max_nbhgt_0_1 = np.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
+    max_nbhgt = np.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
+    return max_nbhgt
+
+
 def _compute_nbidx(
     k_range: range,
     z_mc: field_alloc.NDArray,
@@ -62,8 +71,8 @@ def _compute_z_vintcoeff(
 def _compute_ls_params(
     k_start: list,
     k_end: list,
-    z_maxslp_avg: field_alloc.NDArray,
-    z_maxhgtd_avg: field_alloc.NDArray,
+    maxslp_avg: field_alloc.NDArray,
+    maxhgtd_avg: field_alloc.NDArray,
     c_owner_mask: field_alloc.NDArray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
@@ -78,8 +87,7 @@ def _compute_ls_params(
 
     for jc in range(cell_nudging, n_cells):
         if (
-            z_maxslp_avg[jc, nlev - 1] >= thslp_zdiffu
-            or z_maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
+            maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
         ) and c_owner_mask[jc]:
             ji += 1
             indlist[ji] = jc
@@ -96,8 +104,8 @@ def _compute_ls_params(
 def _compute_k_start_end(
     z_mc: field_alloc.NDArray,
     max_nbhgt: field_alloc.NDArray,
-    z_maxslp_avg: field_alloc.NDArray,
-    z_maxhgtd_avg: field_alloc.NDArray,
+    maxslp_avg: field_alloc.NDArray,
+    maxhgtd_avg: field_alloc.NDArray,
     c_owner_mask: field_alloc.NDArray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
@@ -109,8 +117,7 @@ def _compute_k_start_end(
     k_end = [None] * n_cells
     for jc in range(cell_nudging, n_cells):
         if (
-            z_maxslp_avg[jc, nlev - 1] >= thslp_zdiffu
-            or z_maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
+            maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
         ) and c_owner_mask[jc]:
             for jk in reversed(range(nlev)):
                 if z_mc[jc, jk] >= max_nbhgt[jc]:
@@ -118,7 +125,7 @@ def _compute_k_start_end(
                     break
 
             for jk in range(nlev):
-                if z_maxslp_avg[jc, jk] >= thslp_zdiffu or z_maxhgtd_avg[jc, jk] >= thhgtd_zdiffu:
+                if maxslp_avg[jc, jk] >= thslp_zdiffu or maxhgtd_avg[jc, jk] >= thhgtd_zdiffu:
                     k_start[jc] = jk
                     break
 
@@ -129,29 +136,32 @@ def _compute_k_start_end(
 
 
 def compute_diffusion_metrics(
+    c2e2c: field_alloc.NDArray,
     z_mc: field_alloc.NDArray,
-    z_mc_off: field_alloc.NDArray,
     max_nbhgt: field_alloc.NDArray,
     c_owner_mask: field_alloc.NDArray,
-    nbidx: field_alloc.NDArray,
-    z_vintcoeff: field_alloc.NDArray,
-    z_maxslp_avg: field_alloc.NDArray,
-    z_maxhgtd_avg: field_alloc.NDArray,
-    mask_hdiff: field_alloc.NDArray,
-    zd_diffcoef_dsl: field_alloc.NDArray,
-    zd_intcoef_dsl: field_alloc.NDArray,
-    zd_vertoffset_dsl: field_alloc.NDArray,
+    maxslp_avg: field_alloc.NDArray,
+    maxhgtd_avg: field_alloc.NDArray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
+    n_c2e2c: int,
     cell_nudging: int,
     n_cells: int,
     nlev: int,
 ) -> tuple[field_alloc.NDArray, field_alloc.NDArray, field_alloc.NDArray, field_alloc.NDArray]:
+    z_mc_off = z_mc[c2e2c]
+    nbidx = np.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
+    z_vintcoeff = np.zeros(shape=(n_cells, n_c2e2c, nlev))
+    mask_hdiff = np.zeros(shape=(n_cells, nlev), dtype=bool)
+    zd_vertoffset_dsl = np.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_intcoef_dsl = np.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_diffcoef_dsl = np.zeros(shape=(n_cells, nlev))
+
     k_start, k_end = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
-        z_maxslp_avg=z_maxslp_avg,
-        z_maxhgtd_avg=z_maxhgtd_avg,
+        maxslp_avg=maxslp_avg,
+        maxhgtd_avg=maxhgtd_avg,
         c_owner_mask=c_owner_mask,
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
@@ -163,8 +173,8 @@ def compute_diffusion_metrics(
     indlist, listreduce, ji = _compute_ls_params(
         k_start=k_start,
         k_end=k_end,
-        z_maxslp_avg=z_maxslp_avg,
-        z_maxhgtd_avg=z_maxhgtd_avg,
+        maxslp_avg=maxslp_avg,
+        maxhgtd_avg=maxhgtd_avg,
         c_owner_mask=c_owner_mask,
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
@@ -191,10 +201,18 @@ def compute_diffusion_metrics(
             zd_diffcoef_dsl_var = np.maximum(
                 0.0,
                 np.maximum(
-                    np.sqrt(np.maximum(0.0, z_maxslp_avg[jc, k_range] - thslp_zdiffu)) / 250.0,
-                    2.0e-4 * np.sqrt(np.maximum(0.0, z_maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)),
+                    np.sqrt(np.maximum(0.0, maxslp_avg[jc, k_range] - thslp_zdiffu)) / 250.0,
+                    2.0e-4 * np.sqrt(np.maximum(0.0, maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)),
                 ),
             )
             zd_diffcoef_dsl[jc, k_range] = np.minimum(0.002, zd_diffcoef_dsl_var)
+
+    # flatten first two dims:
+    zd_intcoef_dsl = zd_intcoef_dsl.reshape(
+        (zd_intcoef_dsl.shape[0] * zd_intcoef_dsl.shape[1],) + zd_intcoef_dsl.shape[2:]
+    )
+    zd_vertoffset_dsl = zd_vertoffset_dsl.reshape(
+        (zd_vertoffset_dsl.shape[0] * zd_vertoffset_dsl.shape[1],) + zd_vertoffset_dsl.shape[2:]
+    )
 
     return mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl
