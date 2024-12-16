@@ -8,9 +8,8 @@ with some additions tailored for ICON4Py long methods.
 
 Using the scidoc processor in the sphinx documentation
 ------------------------------------------------------
-Using the processor to document a class/method/function is done in the same way as
-sphinx's autodoc, just using the ``autoscidoc`` keyword instead of ``autodoc``,
-and is as easy as:
+Analogously to sphinx's autodoc, the process to document a class/method/function
+simply requires to apply the ``autoscidoc`` keyword instead of ``autodoc``:
 
 .. code-block:: restructuredtext
 
@@ -33,9 +32,8 @@ results in the web page section displayed in the frame below (and part of the
 
 All that is required are the **Outputs** and **Inputs** sections, within which 
 variables processed by the stencil are listed.
-A few lines can (should) be added describing the numerical operations resulting
-in the ouput variables, using the names in the namespace of the calling method
-(not of the stencil which could be a generic a+b operation).
+Computation parameters should be described in a few lines where parameters
+labels have to match namespace names of the calling method.
 
 The processor takes care of:
  - generating a title that is also a hyperlink to the stencil documentation,

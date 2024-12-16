@@ -115,12 +115,13 @@ class Triangle:
             vertex : Vertex to be colored ('A', 'B', or 'C')
         """
         vertex_size = self.vertex_size - 2 * coloridx
-        if vertex == "A":
-            self.ax.plot(self.A[0], self.A[1], "o", color=COLORS[coloridx], markersize=vertex_size)
-        elif vertex == "B":
-            self.ax.plot(self.B[0], self.B[1], "o", color=COLORS[coloridx], markersize=vertex_size)
-        elif vertex == "C":
-            self.ax.plot(self.C[0], self.C[1], "o", color=COLORS[coloridx], markersize=vertex_size)
+        match vertex:
+            case "A":
+                self.ax.plot(self.A[0], self.A[1], "o", color=COLORS[coloridx], markersize=vertex_size)
+            case "B":
+                self.ax.plot(self.B[0], self.B[1], "o", color=COLORS[coloridx], markersize=vertex_size)
+            case "C":
+                self.ax.plot(self.C[0], self.C[1], "o", color=COLORS[coloridx], markersize=vertex_size)
 
     def color_vertices(self, coloridx=0):
         """
@@ -167,11 +168,11 @@ class Triangle:
             edge : Edge to be colored ('AB', 'BC', or 'CA')
         """
         edge_offset = self.edge_offset + self.edge_offset / 4 * coloridx
-        if edge == "AB":
-            if self.orientation == "up":
+        match (edge, self.orientation):
+            case ("AB", "up"):
                 V0 = (self.A[0] + edge_offset, self.A[1])
                 V1 = (self.B[0] - edge_offset, self.B[1])
-            else:
+            case ("AB", "down"):
                 V0 = (
                     self.A[0] + edge_offset * np.cos(np.pi / 3),
                     self.A[1] + edge_offset * np.sin(np.pi / 3),
@@ -180,8 +181,7 @@ class Triangle:
                     self.B[0] - edge_offset * np.cos(np.pi / 3),
                     self.B[1] - edge_offset * np.sin(np.pi / 3),
                 )
-        elif edge == "BC":
-            if self.orientation == "up":
+            case ("BC", "up"):
                 V0 = (
                     self.B[0] - edge_offset * np.cos(np.pi / 3),
                     self.B[1] + edge_offset * np.sin(np.pi / 3),
@@ -190,11 +190,10 @@ class Triangle:
                     self.C[0] + edge_offset * np.cos(np.pi / 3),
                     self.C[1] - edge_offset * np.sin(np.pi / 3),
                 )
-            else:
+            case ("BC", "down"):
                 V0 = (self.B[0] - edge_offset, self.B[1])
                 V1 = (self.C[0] + edge_offset, self.C[1])
-        elif edge == "CA":
-            if self.orientation == "up":
+            case ("CA", "up"):
                 V0 = (
                     self.C[0] - edge_offset * np.cos(np.pi / 3),
                     self.C[1] - edge_offset * np.sin(np.pi / 3),
@@ -203,7 +202,7 @@ class Triangle:
                     self.A[0] + edge_offset * np.cos(np.pi / 3),
                     self.A[1] + edge_offset * np.sin(np.pi / 3),
                 )
-            else:
+            case ("CA", "down"):
                 V0 = (
                     self.C[0] + edge_offset * np.cos(np.pi / 3),
                     self.C[1] - edge_offset * np.sin(np.pi / 3),
