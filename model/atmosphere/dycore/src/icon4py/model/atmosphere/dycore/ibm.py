@@ -4,13 +4,13 @@ import logging
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import where
 
-from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.settings import xp
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.states import prognostic_state
+
+import numpy as np
 
 """
 Immersed boundary method module
@@ -46,7 +46,7 @@ class ImmersedBoundaryMethod:
         pass
 
     def _make_cell_mask(self, grid: icon_grid.IconGrid) -> fa.CellKField[bool]:
-        cell_mask = xp.zeros((grid.num_cells, grid.num_levels), dtype=bool)
+        cell_mask = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
         cell_mask[2, -2] = True
         return gtx.as_field((CellDim, KDim), cell_mask)
     
@@ -55,9 +55,9 @@ class ImmersedBoundaryMethod:
             raise ValueError("Cell mask must be set before edge mask.")
         cell_mask = self.cell_mask.ndarray
         c2e = grid.connectivities[dims.C2EDim]
-        edge_mask = xp.zeros((grid.num_edges, grid.num_levels), dtype=bool)
+        edge_mask = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
         for k in range(grid.num_levels):
-            edge_mask[c2e[xp.where(cell_mask[:,k])], k] = True
+            edge_mask[c2e[np.where(cell_mask[:,k])], k] = True
         return gtx.as_field((EdgeDim, KDim), edge_mask)
 
     def set_boundary_conditions(

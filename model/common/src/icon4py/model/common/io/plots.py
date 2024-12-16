@@ -3,9 +3,9 @@ import pickle
 from icon4py.model.common.test_utils import serialbox_utils as sb
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+import numpy as np
 
 # prevent matplotlib logging spam
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
@@ -147,12 +147,12 @@ def plot_grid(tri: mpl.tri.Triangulation) -> None:
     ax.scatter(tri.edge_x, tri.edge_y, c='blue', s=3**2)
     plt.draw()
 
-def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = False) -> None:
+def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, file_name: str = '') -> None:
     """
     Plot data on a triangulation.
     """
     nax_per_col = 10
-    if type(data) is not field_alloc.NDArray:
+    if type(data) is not np.ndarray:
         data = data.ndarray
 
     cmin = data.min()
@@ -172,23 +172,37 @@ def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = 
         axs = axs.flatten()
     else:
         axs = [axs]
+
+    caxs = [make_axes_locatable(ax).append_axes('right', size='3%', pad=0.02) for ax in axs]
+
     for i in range(nlev):
-        plot_lev(data, i)
+        im = plot_lev(data, i)
+        cbar = fig.colorbar(im, cax=caxs[i], orientation='vertical')
+        cbar.set_ticks(np.linspace(cbar.vmin, cbar.vmax, 5))
         #axs[i].set_aspect('equal')
         axs[i].set_xlim(X_LIMS)
         axs[i].set_ylim(Y_LIMS)
         #axs[i].set_xlabel(f"Level {-i}")
         axs[i].triplot(tri, color='k', linewidth=0.25)
 
-    fig.subplots_adjust(wspace=0, hspace=0)
+    fig.subplots_adjust(wspace=0.02, hspace=0.06)
     plt.draw()
 
-    if save_to_file:
-        fig.savefig('plot.png', dpi=600, bbox_inches='tight')
-        log.debug(f"Saved plot.png")
+    if file_name != '':
+        fig.savefig(f"{file_name}.png", bbox_inches='tight')
+        log.debug(f"Saved {file_name}")
     else:
         plt.show(block=False)
         plt.pause(1)
+
+class Plot:
+    def __init__(self, savepoint_path: str):
+        self.tri = create_torus_triangulation_from_savepoint(savepoint_path=savepoint_path)
+        self.plot_counter = 0
+
+    def plot_data(self, data, nlev: int, label: str = ''):
+        plot_data(self.tri, data, nlev, f"imgs/{self.plot_counter:05d}_{label}")
+        self.plot_counter += 1
 
 
 if __name__ == '__main__':

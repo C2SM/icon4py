@@ -459,7 +459,7 @@ class SolveNonhydro:
         self._exchange = exchange
         self._backend = backend
 
-        self._tri = plots.create_torus_triangulation_from_savepoint(
+        self.plot = plots.Plot(
             savepoint_path='testdata/ser_icondata/mpitask1/torus_small.flat_and_zeros/ser_data'
             )
         self._ibm = ibm.ImmersedBoundaryMethod(grid)
@@ -982,6 +982,8 @@ class SolveNonhydro:
         log.info(
             f"running predictor step: dtime = {dtime}, initial_timestep = {at_initial_timestep} at_first_substep = {at_first_substep}"
         )
+
+        #self._ibm.set_boundary_conditions(prognostic_states.current)
 
         if at_first_substep:
             # Recompute only vn tendency

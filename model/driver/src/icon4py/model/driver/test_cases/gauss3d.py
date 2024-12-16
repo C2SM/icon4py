@@ -116,7 +116,7 @@ def model_initialization_gauss3d(
     # - mount_height
     # - mount_width
     nh_t0 = 300.0
-    nh_u0 = 0.0
+    nh_u0 = 1.0
     nh_brunt_vais = 0.01
     log.info("Topography can only be read from serialized data for now.")
 

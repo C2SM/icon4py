@@ -16,6 +16,7 @@ import click
 from devtools import Timer
 from gt4py.next import gtfn_cpu
 
+from icon4py.model.common.io import plots
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
@@ -64,6 +65,10 @@ class TimeLoop:
         self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
+
+        self.plot = plots.Plot(
+            savepoint_path='testdata/ser_icondata/mpitask1/torus_small.flat_and_zeros/ser_data'
+            )
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -149,10 +154,10 @@ class TimeLoop:
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f" MAX VN: {prognostic_states.current.vn.asnumpy().max():.15e} , MAX W: {prognostic_states.current.w.asnumpy().max():.15e}"
+                f" MAX VN: {prognostic_states.current.vn.ndarray.max():.15e} , MAX W: {prognostic_states.current.w.ndarray.max():.15e}"
             )
             log.info(
-                f" MAX RHO: {prognostic_states.current.rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_states.current.theta_v.asnumpy().max():.15e}"
+                f" MAX RHO: {prognostic_states.current.rho.ndarray.max():.15e} , MAX THETA_V: {prognostic_states.current.theta_v.ndarray.max():.15e}"
             )
             # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
@@ -161,6 +166,8 @@ class TimeLoop:
             # update boundary condition
 
             timer.start()
+            self.plot.plot_data(prognostic_states.current.vn,      5, label=f"driver_{time_step:05d}_vn")
+            self.plot.plot_data(prognostic_states.current.theta_v, 5, label=f"driver_{time_step:05d}_theta_v")
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
@@ -226,6 +233,8 @@ class TimeLoop:
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
             )
+            self.plot.plot_data(prognostic_states.current.vn,      5, label=f"dynstep_{dyn_substep:05d}_vn")
+            self.plot.plot_data(prognostic_states.current.theta_v, 5, label=f"dynstep_{dyn_substep:05d}_theta_v")
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
@@ -373,7 +382,6 @@ def initialize(
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
         grid=icon_grid,
         backend=gtfn_cpu,
-        grid=icon_grid,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
