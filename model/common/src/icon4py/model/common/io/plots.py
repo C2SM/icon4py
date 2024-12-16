@@ -1,14 +1,11 @@
 import logging
 import pickle
-from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.test_utils import serialbox_utils as sb
-from icon4py.model.common import dimension as dims
-import icon4py.model.common.grid.states as grid_states
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import xarray as xr
+import numpy as np
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
-from icon4py.model.common.settings import xp
 
 # prevent matplotlib logging spam
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
@@ -16,8 +13,8 @@ logging.getLogger("matplotlib").setLevel(logging.WARNING)
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-X_BOUNDARY = xp.pi
-Y_BOUNDARY = 15/2*xp.pi/180
+X_BOUNDARY = np.pi
+Y_BOUNDARY = 15/2*np.pi/180
 X_LIMS = (-X_BOUNDARY*1.02, X_BOUNDARY*1.02)
 Y_LIMS = (-Y_BOUNDARY*1.02, Y_BOUNDARY*1.02)
 
@@ -44,9 +41,9 @@ def remove_boundary_triangles(
 
     def check_wrapping(vert_x, vert_y):
         #return (check_three_numbers(vert_x) or check_three_numbers(vert_y)) \
-        #        and ((xp.abs(vert_x) == X_BOUNDARY).any() or (xp.abs(vert_y) == Y_BOUNDARY).any())
-        return (check_three_numbers(vert_x) and (xp.abs(vert_x) == X_BOUNDARY).any()) \
-            or (check_three_numbers(vert_y) and (xp.abs(vert_y) == Y_BOUNDARY).any())
+        #        and ((np.abs(vert_x) == X_BOUNDARY).any() or (np.abs(vert_y) == Y_BOUNDARY).any())
+        return (check_three_numbers(vert_x) and (np.abs(vert_x) == X_BOUNDARY).any()) \
+            or (check_three_numbers(vert_y) and (np.abs(vert_y) == Y_BOUNDARY).any())
 
     def check_three_numbers(numbers):
         positive_count = sum(1 for x in numbers if x > 0)
@@ -72,10 +69,10 @@ def remove_boundary_triangles(
         # Remove elongated triangles
         ratio = 4
         for triangle in tri.triangles:
-            node_x_diff = tri.x[triangle] - xp.roll(tri.x[triangle], 1)
-            node_y_diff = tri.y[triangle] - xp.roll(tri.y[triangle], 1)
-            edges = xp.sqrt(node_x_diff**2 + node_y_diff**2)
-            if xp.max(edges) > ratio*xp.min(edges):
+            node_x_diff = tri.x[triangle] - np.roll(tri.x[triangle], 1)
+            node_y_diff = tri.y[triangle] - np.roll(tri.y[triangle], 1)
+            edges = np.sqrt(node_x_diff**2 + node_y_diff**2)
+            if np.max(edges) > ratio*np.min(edges):
                 boundary_triangles_mask.append(True)
             else:
                 boundary_triangles_mask.append(False)
@@ -84,9 +81,9 @@ def remove_boundary_triangles(
 
     if mask_edges:
         # Mask out edges that are part of boundary triangles
-        edges_mask = xp.ones(tri.all_edges.shape[0], dtype=bool)
+        edges_mask = np.ones(tri.all_edges.shape[0], dtype=bool)
         for i, edge in enumerate(tri.all_edges):
-            if any(xp.array_equal(edge, filtered_edge) for filtered_edge in tri.edges):
+            if any(np.array_equal(edge, filtered_edge) for filtered_edge in tri.edges):
                 edges_mask[i] = False
         tri.edges_mask = edges_mask
     else:
@@ -118,13 +115,13 @@ def create_torus_triangulation_from_savepoint(
 
     # clean up the grid
     # Adjust x values to coincide with the periodic boundary
-    vert_x = xp.where(xp.abs(vert_x - X_BOUNDARY) < 1e-14,  X_BOUNDARY, vert_x)
-    vert_x = xp.where(xp.abs(vert_x + X_BOUNDARY) < 1e-14, -X_BOUNDARY, vert_x)
+    vert_x = np.where(np.abs(vert_x - X_BOUNDARY) < 1e-14,  X_BOUNDARY, vert_x)
+    vert_x = np.where(np.abs(vert_x + X_BOUNDARY) < 1e-14, -X_BOUNDARY, vert_x)
     # shift all to -X_BOUNDARY
-    vert_x = xp.where(vert_x == X_BOUNDARY, -X_BOUNDARY, vert_x)
+    vert_x = np.where(vert_x == X_BOUNDARY, -X_BOUNDARY, vert_x)
     # Adjust y values to coincide with the periodic boundary
-    vert_y = xp.where(xp.abs(vert_y - Y_BOUNDARY) < 1e-14,  Y_BOUNDARY, vert_y)
-    vert_y = xp.where(xp.abs(vert_y + Y_BOUNDARY) < 1e-14, -Y_BOUNDARY, vert_y)
+    vert_y = np.where(np.abs(vert_y - Y_BOUNDARY) < 1e-14,  Y_BOUNDARY, vert_y)
+    vert_y = np.where(np.abs(vert_y + Y_BOUNDARY) < 1e-14, -Y_BOUNDARY, vert_y)
 
     tri = mpl.tri.Triangulation(
         vert_x,
@@ -155,7 +152,7 @@ def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = 
     Plot data on a triangulation.
     """
     nax_per_col = 10
-    if type(data) is not xp.ndarray:
+    if type(data) is not field_alloc.NDArray:
         data = data.ndarray
 
     cmin = data.min()
@@ -170,7 +167,7 @@ def plot_data(tri: mpl.tri.Triangulation, data, nlev: int, save_to_file: bool = 
 
     plt.close('all')
     fig = plt.figure(1, figsize=(14,min(13,4*nlev))); plt.clf()
-    axs = fig.subplots(nrows=min(nax_per_col, nlev), ncols=max(1,int(xp.ceil(nlev/nax_per_col))), sharex=True, sharey=True)
+    axs = fig.subplots(nrows=min(nax_per_col, nlev), ncols=max(1,int(np.ceil(nlev/nax_per_col))), sharex=True, sharey=True)
     if nlev > 1:
         axs = axs.flatten()
     else:

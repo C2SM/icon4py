@@ -990,8 +990,6 @@ class SolveNonhydro:
                 and not (at_initial_timestep and at_first_substep)
             )
 
-            #plots.plot_data(self._tri, prognostic_state[nnow].vn, 2)
-            #self._ibm.set_boundary_conditions(prognostic_state[nnow])
             self.velocity_advection.run_predictor_step(
                 vn_only=lvn_only,
                 diagnostic_state=diagnostic_state_nh,
