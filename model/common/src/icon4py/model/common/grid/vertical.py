@@ -561,7 +561,10 @@ def compute_SLEVE_coordinate_from_vcta_and_topography(
     """
 
     def _decay_func(
-        vct_a: field_alloc.NDArray, model_top_height: float, decay_scale: float, decay_exponent: float
+        vct_a: field_alloc.NDArray,
+        model_top_height: float,
+        decay_scale: float,
+        decay_exponent: float,
     ) -> field_alloc.NDArray:
         return np.sinh(
             (model_top_height / decay_scale) ** decay_exponent
