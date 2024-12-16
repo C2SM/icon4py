@@ -17,12 +17,14 @@ from icon4py.model.testing.datatest_fixtures import (
 )
 from icon4py.model.testing.helpers import backend, grid
 
+
 # Make sure custom icon4py pytest hooks are loaded
 try:
     import sys
+
     _ = sys.modules["icon4py.model.testing.pytest_config"]
 except KeyError:
-    from icon4py.model.testing.pytest_config import *  # noqa: F401
+    from icon4py.model.testing.pytest_config import *  # noqa: F403
 
 __all__ = [
     # local:
@@ -32,7 +34,7 @@ __all__ = [
     "backend",
     "grid",
     "decomposition_info",
-    "experiment"
+    "experiment",
 ]
 
 

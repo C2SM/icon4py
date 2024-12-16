@@ -211,6 +211,7 @@ ignore = [
     'E501',   # Line too long (using Bugbear's B950 warning)
     'RUF009', # Do not perform function call in dataclass defaults
     'B010',   # Do not call `setattr` with a constant attribute value.
+    'B905',   # Checks for zip calls without an explicit strict parameter.
 ]
 
 [tool.ruff.lint.isort]

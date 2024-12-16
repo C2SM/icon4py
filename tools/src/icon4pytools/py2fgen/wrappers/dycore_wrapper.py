@@ -32,8 +32,9 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
-import icon4py.model.common.grid.states as grid_states
 from gt4py.next import common as gt4py_common
+
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.dimension import (
@@ -58,8 +59,7 @@ from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utils import data_allocation as fields_utils
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.settings import backend, device
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
@@ -385,7 +385,9 @@ def solve_nh_run(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=fields_utils.zero_field(dycore_wrapper_state["grid"], CellDim, KDim, dtype=gtx.float64),
+        vol_flx_ic=data_alloc.zero_field(
+            dycore_wrapper_state["grid"], CellDim, KDim, dtype=gtx.float64
+        ),
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(

@@ -12,7 +12,7 @@ import click.testing as click_testing
 import pytest
 
 import icon4py.model.common.type_alias as type_alias
-from icon4py.model.testing.datatest_fixtures import (  # noqa F401
+from icon4py.model.testing.datatest_fixtures import (  # F401
     damping_height,
     data_provider,
     download_ser_data,
@@ -41,12 +41,14 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     stretch_factor,
 )
 
+
 # Make sure custom icon4py pytest hooks are loaded
 try:
     import sys
+
     _ = sys.modules["icon4py.model.testing.pytest_config"]
 except KeyError:
-    from icon4py.model.testing.pytest_config import *  # noqa: F401
+    from icon4py.model.testing.pytest_config import *  # noqa: F403
 
 
 __all__ = [
