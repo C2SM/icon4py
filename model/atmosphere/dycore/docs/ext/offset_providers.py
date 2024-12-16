@@ -117,11 +117,17 @@ class Triangle:
         vertex_size = self.vertex_size - 2 * coloridx
         match vertex:
             case "A":
-                self.ax.plot(self.A[0], self.A[1], "o", color=COLORS[coloridx], markersize=vertex_size)
+                self.ax.plot(
+                    self.A[0], self.A[1], "o", color=COLORS[coloridx], markersize=vertex_size
+                )
             case "B":
-                self.ax.plot(self.B[0], self.B[1], "o", color=COLORS[coloridx], markersize=vertex_size)
+                self.ax.plot(
+                    self.B[0], self.B[1], "o", color=COLORS[coloridx], markersize=vertex_size
+                )
             case "C":
-                self.ax.plot(self.C[0], self.C[1], "o", color=COLORS[coloridx], markersize=vertex_size)
+                self.ax.plot(
+                    self.C[0], self.C[1], "o", color=COLORS[coloridx], markersize=vertex_size
+                )
 
     def color_vertices(self, coloridx=0):
         """

@@ -192,8 +192,14 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         ]
 
         for offprov in offset_providers:
-            op_section.extend([f" .. image:: static/img/offsetProvider_{offprov}.png",
-            f"    :alt: {offprov}", "    :class: offset-provider-img", ""])
+            op_section.extend(
+                [
+                    f" .. image:: static/img/offsetProvider_{offprov}.png",
+                    f"    :alt: {offprov}",
+                    "    :class: offset-provider-img",
+                    "",
+                ]
+            )
 
         return op_section
 
