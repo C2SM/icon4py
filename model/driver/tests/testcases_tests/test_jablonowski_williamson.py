@@ -9,7 +9,7 @@
 import pytest
 
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-from icon4py.model.driver.test_cases import jablonowski_williamson as jabw
+from icon4py.model.driver.testcases import jablonowski_williamson as jabw
 
 
 @pytest.mark.datatest
