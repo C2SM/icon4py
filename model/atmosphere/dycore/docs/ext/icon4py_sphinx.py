@@ -29,16 +29,18 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
     # Configuration options:
     #: The keyword identifying the start of a documentation block
     docblock_keyword: ClassVar[str] = "scidoc"
+    #: Collapse the Inputs section
+    collapse_inputs: ClassVar[bool] = True
     #: Add type information to variable names in the Inputs section
-    var_type_in_inputs: ClassVar[bool] = True
+    add_var_type_in_inputs: ClassVar[bool] = True
     #: The font format for variable types in the rendered documentation
     var_type_formatting: ClassVar[str] = "``"
     #: Print the long names of variables in the rendered documentation
     print_variable_longnames: ClassVar[bool] = True
     #: Footer lines with a horizontal line at the end
     scidoc_footer_lines: ClassVar[list[str]] = ["", ".. raw:: html", "", "   <hr>"]
-    #: Code block lines for the source code of the next method call
-    scidoc_code_block_lines: ClassVar[list[str]] = [
+    #: ReST format lines for the call to the next method
+    scidoc_method_call_lines: ClassVar[list[str]] = [
         "",
         ".. collapse:: Source code",
         "",
@@ -78,8 +80,11 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             formatted_docblock = docblock.splitlines()
             formatted_docblock = self.format_docblock(formatted_docblock, self.docblock_keyword)
             formatted_docblock = self.make_header(next_method_info) + formatted_docblock
-            formatted_docblock = self.process_scidoc_lines(formatted_docblock, next_method_info)
-            formatted_docblock += self.scidoc_code_block_lines + [
+            formatted_docblock, offset_providers = self.process_scidoc_lines(
+                formatted_docblock, next_method_info
+            )
+            formatted_docblock = formatted_docblock + self.make_offset_providers(offset_providers)
+            formatted_docblock += self.scidoc_method_call_lines + [
                 " " * 6 + line for line in call_string
             ]
 
@@ -167,6 +172,37 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         title = f":meth:`{label}<{link_destination}>`"
         return [title, "=" * len(title), ""]
 
+    def make_offset_providers(self, offset_providers: set) -> list[str]:
+        """
+        Generate the offset providers section.
+
+        Args:
+            offset_providers: The set of offset providers.
+
+        Returns:
+            The formatted offset providers section.
+        """
+        if not offset_providers:
+            return []
+
+        op_section = [
+            "",
+            ".. collapse:: Offset providers",
+            "",
+        ]
+
+        for offprov in offset_providers:
+            op_section.extend(
+                [
+                    f" .. image:: static/img/offsetProvider_{offprov}.png",
+                    f"    :alt: {offprov}",
+                    "    :class: offset-provider-img",
+                    "",
+                ]
+            )
+
+        return op_section
+
     def process_scidoc_lines(self, docblock_lines: list[str], method_info: dict) -> list[str]:
         """
         Process a list of documentation string lines and apply specific
@@ -187,9 +223,11 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             rules.
         """
 
-        section: Literal["Inputs", "Outputs", None] = None
-        latex = {"Math": False, "MathMultiline": False}
+        section: Literal["Inputs", "Outputs", "Offset providers", None] = None
+        latex = {"Math": False, "NeedsAlignChar": False, "Indent": 0}
         processed_lines = []
+
+        offset_providers = set()
 
         for line_num, line in enumerate(docblock_lines):
             # Identify and process section headers
@@ -201,30 +239,42 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             elif line.startswith("Inputs:"):
                 section = "Inputs"
                 # Drop the colon from the Inputs section and make it collapsible
-                processed_lines.append(".. collapse:: Inputs")
-                processed_lines.append("")
+                if self.collapse_inputs:
+                    processed_lines.append(".. collapse:: Inputs")
+                    processed_lines.append("")
+                else:
+                    processed_lines.append("Inputs")
                 continue
 
-            # Identify LaTeX math (multiline) blocks
+            # Identify LaTeX math
             if line.strip().startswith("$$"):
                 latex["Math"] = not latex["Math"]
-                if docblock_lines[line_num + 1].rstrip().endswith(r"\\"):  # multiline math block :
-                    latex["MathMultiline"] = True
-                else:  # single line math block or end of block
-                    latex["MathMultiline"] = False
+                latex["Indent"] = len(line) - len(line.lstrip())
                 processed_lines.append(line)
                 continue
 
+            # Collect offset providers
+            if "\offProv" in line:
+                match = re.search(r"\\offProv\{([^}]+)\}", line)
+                if match:
+                    offset_providers.add(match.group(1))
+
             # Process math lines
             if latex["Math"]:
-                processed_lines.append(self.process_math_line(line, latex["MathMultiline"]))
+                if line.rstrip().endswith(r"\\") or docblock_lines[line_num - 1].rstrip().endswith(
+                    r"\\"
+                ):
+                    latex["NeedsAlignChar"] = True
+                else:
+                    latex["NeedsAlignChar"] = False
+                processed_lines.append(self.process_math_line(line, latex))
                 continue
 
             # Only in bullet point lines:
             # Add type information to variable names.
             # Optionally print the long names of variables.
             if line.strip().startswith("-") and (":" in line):
-                if section == "Inputs" and not self.var_type_in_inputs:
+                if section == "Inputs" and not self.add_var_type_in_inputs:
                     # Skip adding type information to variable names in the Inputs section
                     processed_lines.append(line)
                 else:
@@ -236,19 +286,18 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             if self.print_variable_longnames:
                                 # long name version, with small font size for the prefix
                                 var_longname = method_info["map_shortname_to_longname"][element]
-                                prefix = ".".join(var_longname.split(".")[:-1])
-                                suffix = var_longname.split(".")[-1]
+                                parent_name, short_name = self.split_variable_name(var_longname)
                                 vname = (
-                                    f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{prefix}.}}}}}}$"
-                                    if prefix
+                                    f"$\color{{grey}}{{\scriptstyle{{\\texttt{{{parent_name}.}}}}}}$"
+                                    if parent_name
                                     else ""
-                                ) + f" **{suffix}**\\ "
+                                ) + f"{short_name}"
                             else:
                                 # short name version
                                 vname = element
                             split_line[
                                 i
-                            ] = f"{vname}:{self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
+                            ] = f"{vname}: {self.var_type_formatting}{method_info['map_shortname_to_type'][element]}{self.var_type_formatting}"
                         elif element == ":":
                             if section == "Outputs":
                                 # Drop the colon from the bullet point line
@@ -261,26 +310,33 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
             # Keep the line as is
             processed_lines.append(line)
 
-        return processed_lines
+        return processed_lines, offset_providers
 
-    def process_math_line(self, line: str, multiline: bool) -> str:
+    def process_math_line(self, line: str, options: dict) -> str:
         """
         Process a line of LaTeX math and apply specific formatting rules.
 
         Args:
             line: The line of the LaTeX math to process.
-            multiline: A boolean flag indicating if the math block is multiline.
+            options: A dictionary containing formatting options for LaTeX math.
 
         Returns:
             The processed LaTeX math line with applied formatting rules.
         """
         symbols_needing_space = ["\Wrbf", "\Wlev", "\WtimeExner"]
 
-        if multiline:
+        if options["NeedsAlignChar"]:
             # Align multiline equations to the left
             # (single line equations are already left-aligned)
-            start_idx = len(line) - len(line.lstrip())
-            line = f"{line[:start_idx]}&{line[start_idx:]}"
+            start_idx = options["Indent"]
+            line = f"{line[:start_idx]}& {line[start_idx:]}"
+        else:
+            # Remove white space except for the outer indent
+            line = " " * options["Indent"] + line.lstrip()
+
+        if line.rstrip().endswith(r"\\"):
+            # add a more vertical space than the default
+            line = f"{line}[3pt]"
 
         # Add a small space character '\,' after symbols if followed by other
         # symbols starting with '\' and a letter
@@ -545,6 +601,19 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
                             return method_obj, module_obj.__name__
         return None, None
 
+    def split_variable_name(self, var_name: str) -> tuple[str, str]:
+        """
+        Split a variable name into its parent and short name.
+
+        Args:
+            var_name: The variable name to split.
+
+        Returns:
+            A tuple containing the parent name and short name of the variable.
+        """
+        parts = re.split(r"\.(?![^\[\]]*\])", var_name)
+        return ".".join(parts[:-1]), parts[-1]
+
     def map_variable_names(
         self, function_call_str: list[str]
     ) -> tuple[dict[str, str], dict[str, str]]:
@@ -578,7 +647,7 @@ class ScidocMethodDocumenter(autodoc.MethodDocumenter):
         map_shortname_to_longname = {}
         for arg_name, arg_value in matches:
             # Extract the shortname: last part of the argument value after the last period
-            short_name = arg_value.split(".")[-1]
+            _, short_name = self.split_variable_name(arg_value)
             map_argname_to_shortname[arg_name] = short_name
             map_shortname_to_longname[short_name] = arg_value
         return map_argname_to_shortname, map_shortname_to_longname
