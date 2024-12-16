@@ -3,7 +3,7 @@ Scidoc processor
 
 The scidoc processor is an extension of `sphinx's autodoc
 documenter <https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html>`_
-with some additions tailored to documenting ICON4Py long methods.
+with some additions tailored for ICON4Py long methods.
 
 
 Using the scidoc processor in the sphinx documentation
@@ -22,7 +22,7 @@ results of which can be found at :doc:`dycore_numerics_nonhydro`.
 
 Adding scidoc documentation to the code
 ---------------------------------------
-The processor is designed in such a way that the source code needs just a few
+The processor is designed in such a way that the source code needs only a few
 comment lines for a fully featured documentation page to be automatically
 generated.
 
@@ -31,8 +31,8 @@ stencil ``_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates``
 results in the web page section displayed in the frame below (and part of the
 :doc:`dycore_numerics_nonhydro` page).
 
-All that is required are the **Outputs** and **Inputs** sections, listing the
-variables processed by the stencil.
+All that is required are the **Outputs** and **Inputs** sections, within which 
+variables processed by the stencil are listed.
 A few lines can (should) be added describing the numerical operations resulting
 in the ouput variables, using the names in the namespace of the calling method
 (not of the stencil which could be a generic a+b operation).

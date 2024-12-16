@@ -134,10 +134,10 @@ We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) 
 
 ### Documentation
 
-The documentation is at a very early stage given the constant state of development.
-Some effort is ongoing to document the dycore and can be viewed at [c2sm.github.io/icon4py](https://c2sm.github.io/icon4py).
+Documentation is at a very early stage given the constant state of development.
+Ongoing efforts to document the dycore can be viewed at [c2sm.github.io/icon4py](https://c2sm.github.io/icon4py).
 
-If you want to build the documentation locally, move to the dycore docs folder and build the html documentation with the provided makefile:
+To build the html documentation locally in icon4py starting from the most upwards directory, apply the following commands: 
 
 ```bash
 cd model/atmosphere/dycore/docs
