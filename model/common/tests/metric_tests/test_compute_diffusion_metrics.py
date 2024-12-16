@@ -37,9 +37,13 @@ def test_compute_diffusion_metrics(
         pytest.skip(f"Fields not computed for {experiment}")
 
     mask_hdiff = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=bool).asnumpy()
-    zd_vertoffset_dsl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim).asnumpy()
+    zd_vertoffset_dsl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim
+    ).asnumpy()
     z_vintcoeff = data_alloc.zero_field(icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim).asnumpy()
-    zd_intcoef_dsl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim).asnumpy()
+    zd_intcoef_dsl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim
+    ).asnumpy()
     z_maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     z_maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     zd_diffcoef_dsl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).asnumpy()
@@ -139,6 +143,10 @@ def test_compute_diffusion_metrics(
     )
 
     assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
-    assert helpers.dallclose(zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11)
-    assert helpers.dallclose(zd_vertoffset_dsl.asnumpy(), metrics_savepoint.zd_vertoffset().asnumpy())
+    assert helpers.dallclose(
+        zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
+    )
+    assert helpers.dallclose(
+        zd_vertoffset_dsl.asnumpy(), metrics_savepoint.zd_vertoffset().asnumpy()
+    )
     assert helpers.dallclose(zd_intcoef_dsl.asnumpy(), metrics_savepoint.zd_intcoef().asnumpy())

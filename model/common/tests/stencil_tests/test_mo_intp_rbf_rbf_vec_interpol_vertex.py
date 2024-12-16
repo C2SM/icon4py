@@ -13,9 +13,9 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):

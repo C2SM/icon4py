@@ -47,8 +47,8 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_wgtfac_e,
     compute_z_mc,
 )
-from icon4py.model.testing import datatest_utils as dt_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils as dt_utils
 from icon4py.model.testing.helpers import (
     StencilTest,
     dallclose,
@@ -523,10 +523,14 @@ def test_compute_vwind_impl_wgt(
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    z_ddxn_z_half_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    z_ddxn_z_half_e = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+    )
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
-    z_ddxt_z_half_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    z_ddxt_z_half_e = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+    )
     z_ifv = data_alloc.zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 

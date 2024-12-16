@@ -13,8 +13,8 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
-from icon4py.model.testing import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import helpers
 
 
 class TestCell2EdgeInterpolation(helpers.StencilTest):

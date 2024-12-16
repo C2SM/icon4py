@@ -12,13 +12,15 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_wgtfac_c import compute_wgtfac_c
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing import helpers
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfac_c(icon_grid, metrics_savepoint):  # fixture
-    wgtfac_c = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1})
+    wgtfac_c = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=wpfloat, extend={dims.KDim: 1}
+    )
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()
     k = data_alloc.allocate_indices(dims.KDim, grid=icon_grid, is_halfdim=True)

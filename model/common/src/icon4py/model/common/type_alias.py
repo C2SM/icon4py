@@ -19,6 +19,7 @@ vpfloat: type[float32] | type[float64] = wpfloat
 
 precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 
+
 def set_precision(new_precision: Literal["double", "mixed"]) -> None:
     global precision
     global vpfloat
@@ -31,5 +32,6 @@ def set_precision(new_precision: Literal["double", "mixed"]) -> None:
             vpfloat = float32
         case _:
             raise ValueError("Only 'double' and 'mixed' precision are supported.")
+
 
 set_precision(precision)

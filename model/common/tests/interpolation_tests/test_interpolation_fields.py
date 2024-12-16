@@ -27,6 +27,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_mass_conserving_bilinear_cell_average_weight,
     compute_pos_on_tplane_e_x_y,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
@@ -35,7 +36,6 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)

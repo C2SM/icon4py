@@ -14,8 +14,8 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     compute_cell_2_vertex_interpolation,
 )
-from icon4py.model.testing import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import helpers
 
 
 class TestComputeCells2VertsInterpolation(helpers.StencilTest):

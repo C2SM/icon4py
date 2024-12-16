@@ -20,6 +20,7 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
+
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
@@ -39,9 +40,8 @@ from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.type_alias import wpfloat
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.settings import backend, config as config_settings, device
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
@@ -219,7 +219,9 @@ def diffusion_init(
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         zd_intcoef=data_alloc.flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
-        zd_vertoffset=data_alloc.flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset),
+        zd_vertoffset=data_alloc.flatten_first_two_dims(
+            dims.CECDim, dims.KDim, field=zd_vertoffset
+        ),
         zd_diffcoef=zd_diffcoef,
     )
 

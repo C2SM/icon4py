@@ -20,7 +20,6 @@ from icon4py.model.common.io.writers import (
     filter_by_standard_name,
 )
 from icon4py.model.common.states import data, metadata
-from icon4py.model.testing import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 from . import test_io

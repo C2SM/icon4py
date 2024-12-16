@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+from . import data_allocation
 from ._common import (
     DoubleBuffering,
     Pair,
@@ -16,7 +17,6 @@ from ._common import (
     chainable,
     named_property,
 )
-from . import data_allocation
 
 
 __all__ = [

@@ -9,15 +9,16 @@
 from __future__ import annotations
 
 import logging as log
-from typing import Optional, TypeAlias, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, TypeAlias, Union
 
 import gt4py._core.definitions as gt_core_defs
 import gt4py.next as gtx
-from gt4py.next import backend
 import numpy as np
 import numpy.typing as npt
+from gt4py.next import backend
 
 from icon4py.model.common import dimension, type_alias as ta
+
 
 if TYPE_CHECKING:
     from icon4py.model.common.grid import base as grid_base
@@ -46,6 +47,7 @@ def as_numpy(array: NDArrayInterface):
         return array
     else:
         return array.asnumpy()
+
 
 def is_cupy_device(backend: backend.Backend) -> bool:
     if backend is not None:
@@ -117,7 +119,7 @@ def random_field(
     high: float = 1.0,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gtx.Dimension, int]] = None,
-    backend=None
+    backend=None,
 ) -> gtx.Field:
     arr = np.random.default_rng().uniform(
         low=low, high=high, size=_shape(grid, *dims, extend=extend)
@@ -132,7 +134,7 @@ def zero_field(
     *dims: gtx.Dimension,
     dtype=ta.wpfloat,
     extend: Optional[dict[gtx.Dimension, int]] = None,
-    backend=None
+    backend=None,
 ) -> gtx.Field:
     field_domain = {dim: (0, stop) for dim, stop in zip(dims, _shape(grid, *dims, extend=extend))}
     return gtx.constructors.zeros(field_domain, dtype=dtype, allocator=backend)
@@ -154,6 +156,7 @@ def _shape(
 ) -> tuple[int, ...]:
     extend = extend or {}
     return tuple(grid.size[dim] + extend.get(dim, 0) for dim in dims)
+
 
 def _size(grid, dim: gtx.Dimension, is_half_dim: bool) -> int:
     if dim == dimension.KDim and is_half_dim:

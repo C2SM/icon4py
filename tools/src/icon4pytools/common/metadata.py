@@ -12,7 +12,6 @@ import types
 from dataclasses import dataclass
 from typing import Any, TypeGuard
 
-import icon4py.model.common.dimension
 from gt4py import eve
 from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
@@ -21,8 +20,9 @@ from gt4py.next.ffront.fbuiltins import FieldOffset
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.model.common import dimension as dims
 
+import icon4py.model.common.dimension
+from icon4py.model.common import dimension as dims
 from icon4pytools.common import icochainsize as ico
 
 

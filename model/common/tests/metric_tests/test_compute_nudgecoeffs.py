@@ -12,6 +12,8 @@ import pytest
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, refinement
 from icon4py.model.common.metrics.compute_nudgecoeffs import compute_nudgecoeffs
+from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils.data_allocation import zero_field
 from icon4py.model.testing import datatest_utils as dt_utils
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
@@ -23,8 +25,6 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.utils.data_allocation import zero_field
-from icon4py.model.common.type_alias import wpfloat
 
 
 @pytest.mark.datatest
