@@ -30,6 +30,7 @@ import gt4py.next as gtx
 import numpy as np
 from gt4py._core import definitions as core_defs
 
+import icon4py.model.common.utils as common_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import icon as icon_grid
@@ -191,14 +192,6 @@ def orchestrate(
                     return compiled_sdfg(**sdfg_args)
             else:
                 return fuse_func(*args, **kwargs)
-
-        # Pytest does not clear the cache between runs in a proper way -pytest.mark.parametrize(...)-.
-        # This leads to corrupted cache and subsequent errors.
-        # To avoid this, we provide a way to clear the cache.
-        def clear_cache():
-            orchestrator_cache.clear()
-
-        wrapper.clear_cache = clear_cache
 
         return wrapper
 
@@ -365,11 +358,29 @@ if dace:
                             shape=shape_,  # No need to concretize them: automatically inferred by DaCe at runtime
                             strides=strides_,  # No need to concretize them: automatically inferred by DaCe at runtime
                         )
-                    # elif fuse_func_type_hints[param.name].__origin__ is TimeStepPair and hasattr(fuse_func_type_hints[param.name].__args__[0], "__dataclass_fields__"):
-                    #     dace_annotations[param.name] = dace.data.Structure(
-                    #         orchestration_dtypes.dace_structure_dict(fuse_func_type_hints[param.name].__args__[0]),
-                    #         name=fuse_func_type_hints[param.name].__args__[0].__name__,
-                    #     )
+                    elif issubclass(fuse_func_type_hints[param.name].__origin__, common_utils.Pair):
+                        type_ = fuse_func_type_hints[param.name]
+                        pair_members = (
+                            orchestration_dtypes.get_matching_attr(type_, "*__first_attr_name"),
+                            orchestration_dtypes.get_matching_attr(type_, "*__second_attr_name"),
+                        )
+                        dace_annotations[param.name] = dace.data.Structure(
+                            {
+                                pair_members[0]: dace.data.Structure(
+                                    orchestration_dtypes.dace_structure_dict(
+                                        fuse_func_type_hints[param.name].__args__[0]
+                                    ),
+                                    name=f"Pair_{fuse_func_type_hints[param.name].__args__[0].__name__}_{pair_members[0]}",
+                                ),
+                                pair_members[1]: dace.data.Structure(
+                                    orchestration_dtypes.dace_structure_dict(
+                                        fuse_func_type_hints[param.name].__args__[0]
+                                    ),
+                                    name=f"Pair_{fuse_func_type_hints[param.name].__args__[0].__name__}_{pair_members[1]}",
+                                ),
+                            },
+                            name=fuse_func_type_hints[param.name].__name__,
+                        )
                     else:
                         raise ValueError(
                             f"The type hint {fuse_func_type_hints[param.name]} is not supported."
@@ -623,7 +634,7 @@ if dace:
             )
         )
 
-        def _concretize_symbols_for_dace_structure(dace_cls, orig_cls):
+        def _concretize_symbols_for_dace_structure(dace_cls):
             concretized_symbols = {}
             for k_v in flattened_xargs_type_value:
                 if k_v[0] is not dace_cls:
@@ -650,28 +661,28 @@ if dace:
                                 concretized_symbols[
                                     dace_cls.members[member].members[m_].shape[axis].name
                                 ] = ndarray.shape[axis]
-                                concretized_symbols[
+                                # TODO (kotsaloscv): Correct the hardcoded part
+                                stride_name = (
                                     orchestration_dtypes.symbol_name_for_field(
                                         dace_cls.name, member, "stride", axis, m_
                                     )
-                                ] = get_stride_from_numpy_to_dace(ndarray, axis)
+                                    if "pair" not in dace_cls.name.lower()
+                                    else orchestration_dtypes.symbol_name_for_field(
+                                        "PrognosticState", m_, "stride", axis
+                                    )
+                                )
+                                concretized_symbols[stride_name] = get_stride_from_numpy_to_dace(
+                                    ndarray, axis
+                                )
 
             return concretized_symbols
 
-        modified_fuse_func_orig_annotations = modified_orig_annotations(
-            dace_annotations, fuse_func_orig_annotations
-        )
-
         concretize_symbols_for_dace_structure = {}
-        for annotation_, annotation_orig_ in zip(
-            dace_annotations.values(),
-            modified_fuse_func_orig_annotations.values(),
-            strict=True,
-        ):
+        for annotation_ in dace_annotations.values():
             if type(annotation_) is not dace.data.Structure:
                 continue
             concretize_symbols_for_dace_structure.update(
-                _concretize_symbols_for_dace_structure(annotation_, annotation_orig_)
+                _concretize_symbols_for_dace_structure(annotation_)
             )
 
         return concretize_symbols_for_dace_structure

@@ -11,7 +11,7 @@ import dataclasses
 from typing import Final, Literal, Optional
 
 import gt4py.next as gtx
-from gt4py.next import backend
+from gt4py.next import backend, int32
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -156,6 +156,8 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.common import field_type_aliases as fa
 import enum
+
+from icon4py.model.common.orchestration import decorator as dace_orchestration
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -451,12 +453,17 @@ class SolveNonhydro:
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
         backend: backend.Backend,
+        orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
         self._backend = backend
+        self._orchestration = orchestration
 
         self._grid = grid
+        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
+            self._grid.offset_providers
+        )
         self._config = config
         self._params = params
         self._metric_state_nonhydro = metric_state_nonhydro
@@ -468,158 +475,188 @@ class SolveNonhydro:
         self.enh_divdamp_fac: Optional[fa.KField[float]] = None
         self.jk_start = 0  # used in stencil_55
 
-        self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend)
-        self._compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(self._backend)
-        self._update_theta_v = update_theta_v.with_backend(self._backend)
+        self._compute_theta_and_exner = compute_theta_and_exner.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
+        self._compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
+        self._update_theta_v = update_theta_v.with_backend(self._backend).with_connectivities(
+            self.compile_time_connectivities
+        )
         self._init_two_cell_kdim_fields_with_zero_vp = (
             init_two_cell_kdim_fields_with_zero_vp.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_approx_of_2nd_vertical_derivative_of_exner = (
             compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_perturbation_of_rho_and_theta = (
             compute_perturbation_of_rho_and_theta.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._mo_math_gradients_grad_green_gauss_cell_dsl = (
             mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._init_two_edge_kdim_fields_with_zero_wp = (
             init_two_edge_kdim_fields_with_zero_wp.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates = (
             compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(
                 self._backend
             )
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates = (
             compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates.with_backend(
                 self._backend
             )
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_horizontal_gradient_of_exner_pressure_for_multiple_levels = (
             compute_horizontal_gradient_of_exner_pressure_for_multiple_levels.with_backend(
                 self._backend
             )
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_hydrostatic_correction_term = (
             compute_hydrostatic_correction_term.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure = (
             apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(
                 self._backend
             )
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._add_temporal_tendencies_to_vn = add_temporal_tendencies_to_vn.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._add_analysis_increments_to_vn = add_analysis_increments_to_vn.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_avg_vn_and_graddiv_vn_and_vt = (
             compute_avg_vn_and_graddiv_vn_and_vt.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._compute_mass_flux = compute_mass_flux.with_backend(self._backend).with_connectivities(
+            self.compile_time_connectivities
         )
-        self._compute_mass_flux = compute_mass_flux.with_backend(self._backend)
         self._compute_divergence_of_fluxes_of_rho_and_theta = (
             compute_divergence_of_fluxes_of_rho_and_theta.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._init_two_cell_kdim_fields_with_zero_wp = (
             init_two_cell_kdim_fields_with_zero_wp.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._add_analysis_increments_from_data_assimilation = (
             add_analysis_increments_from_data_assimilation.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._solve_tridiagonal_matrix_for_w_forward_sweep = (
             solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._solve_tridiagonal_matrix_for_w_back_substitution = (
             solve_tridiagonal_matrix_for_w_back_substitution.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._apply_rayleigh_damping_mechanism = apply_rayleigh_damping_mechanism.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_results_for_thermodynamic_variables = (
             compute_results_for_thermodynamic_variables.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_dwdz_for_divergence_damping = (
             compute_dwdz_for_divergence_damping.with_backend(self._backend)
-        )
-        self._copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_rho_virtual_potential_temperatures_and_pressure_gradient = (
             compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(
                 self._backend
             )
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._add_vertical_wind_derivative_to_divergence_damping = (
             add_vertical_wind_derivative_to_divergence_damping.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._add_temporal_tendencies_to_vn_by_interpolating_between_time_levels = (
             add_temporal_tendencies_to_vn_by_interpolating_between_time_levels.with_backend(
                 self._backend
             )
-        )
-        self._compute_graddiv2_of_vn = compute_graddiv2_of_vn.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._compute_graddiv2_of_vn = compute_graddiv2_of_vn.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._apply_2nd_order_divergence_damping = apply_2nd_order_divergence_damping.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._apply_weighted_2nd_and_4th_order_divergence_damping = (
             apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._apply_4th_order_divergence_damping = apply_4th_order_divergence_damping.with_backend(
             self._backend
+        ).with_connectivities(self.compile_time_connectivities)
+        self._compute_avg_vn = compute_avg_vn.with_backend(self._backend).with_connectivities(
+            self.compile_time_connectivities
         )
-        self._compute_avg_vn = compute_avg_vn.with_backend(self._backend)
-        self._accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(self._backend)
-        self._update_mass_volume_flux = update_mass_volume_flux.with_backend(self._backend)
+        self._accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
+        self._update_mass_volume_flux = update_mass_volume_flux.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._update_dynamical_exner_time_increment = (
             update_dynamical_exner_time_increment.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._init_cell_kdim_field_with_zero_wp = init_cell_kdim_field_with_zero_wp.with_backend(
             self._backend
-        )
-        self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(self._backend)
-        self._compute_z_raylfac = dycore_utils.compute_z_raylfac.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._update_mass_flux_weighted = update_mass_flux_weighted.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
+        self._compute_z_raylfac = dycore_utils.compute_z_raylfac.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._predictor_stencils_2_3 = nhsolve_stencils.predictor_stencils_2_3.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._predictor_stencils_4_5_6 = nhsolve_stencils.predictor_stencils_4_5_6.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures = nhsolve_stencils.compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._predictor_stencils_11_lower_upper = (
             nhsolve_stencils.predictor_stencils_11_lower_upper.with_backend(self._backend)
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._compute_horizontal_advection_of_rho_and_theta = (
             nhsolve_stencils.compute_horizontal_advection_of_rho_and_theta.with_backend(
                 self._backend
             )
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._predictor_stencils_35_36 = nhsolve_stencils.predictor_stencils_35_36.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
         self._predictor_stencils_37_38 = nhsolve_stencils.predictor_stencils_37_38.with_backend(
             self._backend
-        )
-        self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._stencils_39_40 = nhsolve_stencils.stencils_39_40.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._stencils_43_44_45_45b = nhsolve_stencils.stencils_43_44_45_45b.with_backend(
             self._backend
-        )
-        self._stencils_47_48_49 = nhsolve_stencils.stencils_47_48_49.with_backend(self._backend)
-        self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._stencils_47_48_49 = nhsolve_stencils.stencils_47_48_49.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
+        self._stencils_61_62 = nhsolve_stencils.stencils_61_62.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._en_smag_fac_for_zero_nshift = smagorinsky.en_smag_fac_for_zero_nshift.with_backend(
             self._backend
-        )
-        self._init_test_fields = nhsolve_stencils.init_test_fields.with_backend(self._backend)
+        ).with_connectivities(self.compile_time_connectivities)
+        self._init_test_fields = nhsolve_stencils.init_test_fields.with_backend(
+            self._backend
+        ).with_connectivities(self.compile_time_connectivities)
         self._stencils_42_44_45_45b = nhsolve_stencils.stencils_42_44_45_45b.with_backend(
             self._backend
-        )
+        ).with_connectivities(self.compile_time_connectivities)
 
         self.velocity_advection = VelocityAdvection(
             grid,
@@ -881,7 +918,7 @@ class SolveNonhydro:
                 self._end_edge_local,
                 self._start_cell_lateral_boundary,
                 self._end_cell_end,
-                vertical_start=gtx.int32(0),
+                vertical_start=int32(0),
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
@@ -1281,7 +1318,7 @@ class SolveNonhydro:
                 horizontal_start=self._start_edge_nudging_level_2,
                 horizontal_end=self._end_edge_local,
                 vertical_start=self._vertical_params.nflatlev,
-                vertical_end=gtx.int32(self._vertical_params.nflat_gradp + 1),
+                vertical_end=int32(self._vertical_params.nflat_gradp + 1),
                 offset_provider=self._grid.offset_providers,
             )
 
@@ -1295,7 +1332,7 @@ class SolveNonhydro:
                 z_gradh_exner=z_fields.z_gradh_exner,
                 horizontal_start=self._start_edge_nudging_level_2,
                 horizontal_end=self._end_edge_local,
-                vertical_start=gtx.int32(self._vertical_params.nflat_gradp + 1),
+                vertical_start=int32(self._vertical_params.nflat_gradp + 1),
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
@@ -1450,7 +1487,7 @@ class SolveNonhydro:
             wgtfacq_c_dsl=self._metric_state_nonhydro.wgtfacq_c,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             k_field=self.k_field,
-            nflatlev_startindex_plus1=gtx.int32(self._vertical_params.nflatlev + 1),
+            nflatlev_startindex_plus1=int32(self._vertical_params.nflatlev + 1),
             nlev=self._grid.num_levels,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
@@ -1579,6 +1616,8 @@ class SolveNonhydro:
         )
 
         if self._config.rayleigh_type == constants.RayleighType.KLEMP:
+            if self._orchestration:
+                prognostic_states.next.w_1[:] = prognostic_states.next.w[:, 0]
             self._apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_states.next.w_1,
@@ -1586,7 +1625,7 @@ class SolveNonhydro:
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
                 vertical_start=1,
-                vertical_end=gtx.int32(
+                vertical_end=int32(
                     self._vertical_params.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
@@ -1612,7 +1651,7 @@ class SolveNonhydro:
             cvd_o_rd=constants.CVD_O_RD,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
-            vertical_start=gtx.int32(self.jk_start),
+            vertical_start=int32(self.jk_start),
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
@@ -1657,7 +1696,7 @@ class SolveNonhydro:
                 horizontal_start=self._start_cell_lateral_boundary,
                 horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=0,
-                vertical_end=gtx.int32(self._grid.num_levels + 1),
+                vertical_end=int32(self._grid.num_levels + 1),
                 offset_provider={},
             )
 
@@ -1681,6 +1720,7 @@ class SolveNonhydro:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(dims.CellDim, prognostic_states.next.w)
 
+    @dace_orchestration.orchestrate
     def run_corrector_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
@@ -1710,7 +1750,7 @@ class SolveNonhydro:
 
         dycore_utils._calculate_divdamp_fields(
             self.enh_divdamp_fac,
-            gtx.int32(self._config.divdamp_order),
+            int32(self._config.divdamp_order),
             self._cell_params.mean_cell_area,
             divdamp_fac_o2,
             self._config.nudge_max_coeff,
@@ -1719,15 +1759,15 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        log.debug(f"corrector run velocity advection")
-        self.velocity_advection.run_corrector_step(
-            diagnostic_state=diagnostic_state_nh,
-            prognostic_state=prognostic_states.next,
-            z_kin_hor_e=z_fields.z_kin_hor_e,
-            z_vt_ie=z_fields.z_vt_ie,
-            dtime=dtime,
-            cell_areas=self._cell_params.area,
-        )
+        # log.debug(f"corrector run velocity advection")
+        # self.velocity_advection.run_corrector_step(
+        #     diagnostic_state=diagnostic_state_nh,
+        #     prognostic_state=prognostic_states.next,
+        #     z_kin_hor_e=z_fields.z_kin_hor_e,
+        #     z_vt_ie=z_fields.z_vt_ie,
+        #     dtime=dtime,
+        #     cell_areas=self._cell_params.area,
+        # )
 
         self._compute_z_raylfac(
             self._metric_state_nonhydro.rayleigh_w,
@@ -1816,7 +1856,7 @@ class SolveNonhydro:
             )
 
         if (
-            self._config.divdamp_order == DivergenceDampingOrder.COMBINED
+            self._config.divdamp_order == DivergenceDampingOrder.COMBINED.value
             and scal_divdamp_o2 > 1.0e-6
         ):
             log.debug(f"corrector: start stencil 26")
@@ -1833,7 +1873,7 @@ class SolveNonhydro:
 
         # TODO: this does not get accessed in FORTRAN
         if (
-            self._config.divdamp_order == DivergenceDampingOrder.COMBINED
+            self._config.divdamp_order == DivergenceDampingOrder.COMBINED.value
             and divdamp_fac_o2 <= 4 * self._config.divdamp_fac
         ):
             if self._grid.limited_area:
@@ -1877,7 +1917,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug("exchanging prognostic field 'vn'")
-        self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
+        self._exchange(prognostic_states.next.vn, dim=dims.EdgeDim, wait=True)
         log.debug("corrector: start stencil 31")
         self._compute_avg_vn(
             e_flx_avg=self._interpolation_state.e_flx_avg,
@@ -2063,38 +2103,40 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
-        log.debug(f"corrector start stencil 52")
-        self._solve_tridiagonal_matrix_for_w_forward_sweep(
-            vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
-            ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
-            z_alpha=z_fields.z_alpha,
-            z_beta=z_fields.z_beta,
-            z_w_expl=z_fields.z_w_expl,
-            z_exner_expl=z_fields.z_exner_expl,
-            z_q=z_fields.z_q,
-            w=prognostic_states.next.w,
-            dtime=dtime,
-            cpd=constants.CPD,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=1,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
-        )
-        log.debug(f"corrector start stencil 53")
-        self._solve_tridiagonal_matrix_for_w_back_substitution(
-            z_q=z_fields.z_q,
-            w=prognostic_states.next.w,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=1,
-            vertical_end=self._grid.num_levels,
-            offset_provider={},
-        )
+        # log.debug(f"corrector start stencil 52")
+        # self._solve_tridiagonal_matrix_for_w_forward_sweep(
+        #     vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
+        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
+        #     ddqz_z_half=self._metric_state_nonhydro.ddqz_z_half,
+        #     z_alpha=z_fields.z_alpha,
+        #     z_beta=z_fields.z_beta,
+        #     z_w_expl=z_fields.z_w_expl,
+        #     z_exner_expl=z_fields.z_exner_expl,
+        #     z_q=z_fields.z_q,
+        #     w=prognostic_states.next.w,
+        #     dtime=dtime,
+        #     cpd=constants.CPD,
+        #     horizontal_start=self._start_cell_nudging,
+        #     horizontal_end=self._end_cell_local,
+        #     vertical_start=1,
+        #     vertical_end=self._grid.num_levels,
+        #     offset_provider=self._grid.offset_providers,
+        # )
+        # log.debug(f"corrector start stencil 53")
+        # self._solve_tridiagonal_matrix_for_w_back_substitution(
+        #     z_q=z_fields.z_q,
+        #     w=prognostic_states.next.w,
+        #     horizontal_start=self._start_cell_nudging,
+        #     horizontal_end=self._end_cell_local,
+        #     vertical_start=1,
+        #     vertical_end=self._grid.num_levels,
+        #     offset_provider={},
+        # )
 
         if self._config.rayleigh_type == constants.RayleighType.KLEMP:
             log.debug(f"corrector start stencil 54")
+            if self._orchestration:
+                prognostic_states.next.w_1[:] = prognostic_states.next.w[:, 0]
             self._apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_states.next.w_1,
@@ -2102,7 +2144,7 @@ class SolveNonhydro:
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
                 vertical_start=1,
-                vertical_end=gtx.int32(
+                vertical_end=int32(
                     self._vertical_params.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
@@ -2128,7 +2170,7 @@ class SolveNonhydro:
             cvd_o_rd=constants.CVD_O_RD,
             horizontal_start=self._start_cell_nudging,
             horizontal_end=self._end_cell_local,
-            vertical_start=gtx.int32(self.jk_start),
+            vertical_start=int32(self.jk_start),
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
@@ -2170,7 +2212,7 @@ class SolveNonhydro:
                 horizontal_start=self._start_cell_nudging,
                 horizontal_end=self._end_cell_local,
                 vertical_start=self._vertical_params.kstart_moist,
-                vertical_end=gtx.int32(self._grid.num_levels),
+                vertical_end=int32(self._grid.num_levels),
                 offset_provider={},
             )
 
@@ -2202,9 +2244,26 @@ class SolveNonhydro:
                 offset_provider={},
             )
             log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
-            self._exchange.exchange_and_wait(
-                dims.CellDim,
+            self._exchange(
                 prognostic_states.next.rho,
                 prognostic_states.next.exner,
                 prognostic_states.next.w,
+                dim=dims.CellDim,
+                wait=True,
             )
+
+    def orchestration_uid(self) -> str:
+        members_to_disregard = [
+            "_exchange",
+            "_backend",
+            "_grid",
+            "velocity_advection",
+            *[
+                name
+                for name in self.__dict__.keys()
+                if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
+            ],
+        ]
+        return dace_orchestration.generate_orchestration_uid(
+            self, members_to_disregard=members_to_disregard
+        )

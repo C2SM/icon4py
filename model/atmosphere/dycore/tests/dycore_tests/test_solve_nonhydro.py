@@ -508,11 +508,21 @@ def test_nonhydro_predictor_step(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
+    ],
+)
+@pytest.mark.parametrize(
+    "orchestration",
+    [
         (
-            dt_utils.GLOBAL_EXPERIMENT,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-        ),
+            [
+                True,
+            ]
+        )
     ],
 )
 def test_nonhydro_corrector_step(
@@ -536,7 +546,10 @@ def test_nonhydro_corrector_step(
     at_initial_timestep,
     caplog,
     backend,
+    orchestration,
 ):
+    if orchestration and ("dace" not in backend.name.lower()):
+        raise pytest.skip("This test is only executed for `dace backends.")
     caplog.set_level(logging.DEBUG)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
@@ -596,6 +609,7 @@ def test_nonhydro_corrector_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
+        orchestration=orchestration,
     )
     at_first_substep = jstep_init == 0
     at_last_substep = jstep_init == (ndyn_substeps - 1)

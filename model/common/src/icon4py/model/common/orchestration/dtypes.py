@@ -34,6 +34,7 @@ if dace:
         int64,
         int,
     )
+    # One-to-one mapping between ICON4Py primitive data types and DaCe primitive data types.
     DACE_PRIMITIVE_DTYPES: Final = (
         dace.float64,
         dace.float64 if type_alias.precision == "double" else dace.float32,
@@ -137,6 +138,12 @@ if dace:
                         dace_symbols[f"{cls.__name__}_{member_name}_stride_1_sym"],
                     ],
                 )
+                if cls.__name__ == "PrognosticState" and member_name == "w":
+                    dace_structure_dict_["w_1"] = dace.data.Array(
+                        dtype=DACE_PRIMITIVE_DTYPES[ICON4PY_PRIMITIVE_DTYPES.index(dtype_)],
+                        shape=[dace_symbols[f"{cls.__name__}_{member_name}_size_0_sym"]],
+                        strides=[1],
+                    )
             elif issubclass(type_.__origin__, common_utils.Pair):
                 dims_ = type_.__args__[0].__args__[0].__args__  # dimensions of the field
                 dtype_ = type_.__args__[0].__args__[1]  # data type of the field
