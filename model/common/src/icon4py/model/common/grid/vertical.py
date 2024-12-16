@@ -543,8 +543,8 @@ def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField,
 
 
 def compute_SLEVE_coordinate_from_vcta_and_topography(
-    vct_a: xp.ndarray,
-    topography: xp.ndarray,
+    vct_a: fa.KField[ta.wpfloat],
+    topography: fa.CellField[ta.wpfloat],
     cell_areas: fa.CellField[ta.wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
     grid: icon_grid.IconGrid,
@@ -578,6 +578,7 @@ def compute_SLEVE_coordinate_from_vcta_and_topography(
         backend=backend,
     ).ndarray
     topography = topography.ndarray
+    vct_a = vct_a.ndarray
 
     vertical_coordinate = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
     vertical_coordinate[:, grid.num_levels] = topography
@@ -611,7 +612,7 @@ def compute_SLEVE_coordinate_from_vcta_and_topography(
     return vertical_coordinate
 
 
-def check_and_correct_layer_thickness(
+def _check_and_correct_layer_thickness(
     vertical_coordinate: xp.ndarray,
     vct_a: xp.ndarray,
     vertical_config: VerticalGridConfig,
@@ -706,7 +707,7 @@ def check_and_correct_layer_thickness(
     return vertical_coordinate
 
 
-def check_flatness_of_flat_level(
+def _check_flatness_of_flat_level(
     vertical_coordinate: xp.ndarray,
     vct_a: xp.ndarray,
     vertical_geometry: VerticalGrid,
@@ -750,7 +751,6 @@ def compute_vertical_coordinate(
     """
 
     vertical_config = vertical_geometry.config
-    vct_a = vct_a.ndarray
 
     vertical_coordinate = compute_SLEVE_coordinate_from_vcta_and_topography(
         vct_a,
@@ -762,10 +762,10 @@ def compute_vertical_coordinate(
         vertical_geometry,
         backend,
     )
-    vertical_coordinate = check_and_correct_layer_thickness(
+    vertical_coordinate = _check_and_correct_layer_thickness(
         vertical_coordinate, vct_a, vertical_config, grid
     )
 
-    check_flatness_of_flat_level(vertical_coordinate, vct_a, vertical_geometry)
+    _check_flatness_of_flat_level(vertical_coordinate, vct_a, vertical_geometry)
 
     return gtx.as_field((dims.CellDim, dims.KDim), vertical_coordinate)
