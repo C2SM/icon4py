@@ -13,7 +13,7 @@ import pathlib
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, utils as common_utils
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
@@ -139,10 +139,14 @@ def model_initialization_serialbox(
         mass_fl_e=solve_nonhydro_init_savepoint.mass_fl_e(),
         ddt_vn_phy=solve_nonhydro_init_savepoint.ddt_vn_phy(),
         grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_ntl1=velocity_init_savepoint.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=velocity_init_savepoint.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=velocity_init_savepoint.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=velocity_init_savepoint.ddt_w_adv_pc(2),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+            velocity_init_savepoint.ddt_vn_apc_pc(1),
+            velocity_init_savepoint.ddt_vn_apc_pc(2),
+        ),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+            velocity_init_savepoint.ddt_w_adv_pc(1),
+            velocity_init_savepoint.ddt_w_adv_pc(2),
+        ),
         vt=velocity_init_savepoint.vt(),
         vn_ie=velocity_init_savepoint.vn_ie(),
         w_concorr_c=velocity_init_savepoint.w_concorr_c(),
@@ -448,7 +452,9 @@ def read_static_fields(
 
 
 def configure_logging(
-    run_path: str, experiment_name: str, processor_procs: decomposition.ProcessProperties = None
+    run_path: str,
+    experiment_name: str,
+    processor_procs: decomposition.ProcessProperties = None,
 ) -> None:
     """
     Configure logging.

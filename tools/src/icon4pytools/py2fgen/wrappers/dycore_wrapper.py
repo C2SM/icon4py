@@ -35,7 +35,7 @@ import gt4py.next as gtx
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import common as gt4py_common
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
-from icon4py.model.common import dimension as dims, settings
+from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.dimension import (
     C2E2CODim,
     C2EDim,
@@ -57,7 +57,6 @@ from icon4py.model.common.dimension import (
 from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -66,6 +65,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.settings import backend, device
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
     CellIndexDim,
@@ -378,16 +378,12 @@ def solve_nh_run(
     vn_traj: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
     dtime: gtx.float64,
     lprep_adv: bool,
-    clean_mflx: bool,
-    recompute: bool,
-    linit: bool,
+    at_initial_timestep: bool,
     divdamp_fac_o2: gtx.float64,
     ndyn_substeps: gtx.float64,
     idyn_timestep: gtx.int32,
-    nnew: gtx.int32,
-    nnow: gtx.int32,
 ):
-    logger.info(f"Using Device = {settings.device}")
+    logger.info(f"Using Device = {device}")
 
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=vn_traj,
@@ -407,10 +403,8 @@ def solve_nh_run(
         mass_fl_e=mass_fl_e,
         ddt_vn_phy=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
-        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
-        ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-        ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2),
         vt=vt,
         vn_ie=vn_ie,
         w_concorr_c=w_concorr_c,
@@ -434,24 +428,18 @@ def solve_nh_run(
         rho=rho_new,
         exner=exner_new,
     )
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
 
     # adjust for Fortran indexes
-    nnow = nnow - 1
-    nnew = nnew - 1
     idyn_timestep = idyn_timestep - 1
 
     dycore_wrapper_state["granule"].time_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state_ls=prognostic_state_ls,
+        prognostic_states=prognostic_states,
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        nnew=nnew,
-        nnow=nnow,
-        lclean_mflx=clean_mflx,
+        at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps - 1),
@@ -496,20 +484,20 @@ def grid_init(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        c2e=c2e,
-        e2c=e2c,
-        c2e2c=c2e2c,
-        e2c2e=e2c2e,
-        e2v=e2v,
-        v2e=v2e,
-        v2c=v2c,
-        e2c2v=e2c2v,
-        c2v=c2v,
+        on_gpu=True if device == "GPU" else False,
+        cell_starts=cell_starts.ndarray,
+        cell_ends=cell_ends.ndarray,
+        vertex_starts=vertex_starts.ndarray,
+        vertex_ends=vertex_ends.ndarray,
+        edge_starts=edge_starts.ndarray,
+        edge_ends=edge_ends.ndarray,
+        c2e=c2e.ndarray,
+        e2c=e2c.ndarray,
+        c2e2c=c2e2c.ndarray,
+        e2c2e=e2c2e.ndarray,
+        e2v=e2v.ndarray,
+        v2e=v2e.ndarray,
+        v2c=v2c.ndarray,
+        e2c2v=e2c2v.ndarray,
+        c2v=c2v.ndarray,
     )

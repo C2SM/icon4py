@@ -65,7 +65,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
-from icon4py.model.common.orchestration import decorator as orchestration
+from icon4py.model.common.orchestration import decorator as dace_orchestration
 
 
 """
@@ -364,9 +364,11 @@ class Diffusion:
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: backend.Backend,
+        orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._backend = backend
+        self._orchestration = orchestration
         self._exchange = exchange
         self.config = config
         self._params = params
@@ -461,7 +463,7 @@ class Diffusion:
 
         self._determine_horizontal_domains()
 
-        self.compile_time_connectivities = orchestration.build_compile_time_connectivities(
+        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
             self._grid.offset_providers
         )
 
@@ -621,7 +623,7 @@ class Diffusion:
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
-    @orchestration.orchestrate
+    @dace_orchestration.orchestrate
     def _do_diffusion_step(
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
@@ -929,6 +931,6 @@ class Diffusion:
                 if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
             ],
         ]
-        return orchestration.generate_orchestration_uid(
+        return dace_orchestration.generate_orchestration_uid(
             self, members_to_disregard=members_to_disregard
         )

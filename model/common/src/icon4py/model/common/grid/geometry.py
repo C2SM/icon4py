@@ -8,8 +8,10 @@
 import functools
 from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
 
+# TODO (@halungge ) test on GPU (NEP 18 ?)
+import numpy as np
 from gt4py import next as gtx
-from gt4py.next import backend, backend as gtx_backend
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.grid.geometry_attributes as attrs
 import icon4py.model.common.math.helpers as math_helpers
@@ -26,10 +28,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.common.states.factory import FieldProvider
-from icon4py.model.common.states.model import FieldMetaData
 
 
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
@@ -93,6 +92,7 @@ class GridGeometry(factory.FieldSource):
             metadata: a dictionary of FieldMetaData for all fields computed in GridGeometry.
 
         """
+        self._providers = {}
         self._backend = backend
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
@@ -100,7 +100,6 @@ class GridGeometry(factory.FieldSource):
         self._attrs = metadata
         self._geometry_type: icon.GeometryType = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
-        self._providers: dict[str, factory.FieldProvider] = {}
 
         (
             edge_orientation0_lat,
@@ -131,10 +130,25 @@ class GridGeometry(factory.FieldSource):
 
         input_fields_provider = factory.PrecomputedFieldProvider(
             {
+                # TODO (@magdalena) rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
+                attrs.EDGE_CELL_DISTANCE: extra_fields[gm.GeometryName.EDGE_CELL_DISTANCE],
                 attrs.CELL_AREA: extra_fields[gm.GeometryName.CELL_AREA],
+                attrs.DUAL_AREA: extra_fields[gm.GeometryName.DUAL_AREA],
                 attrs.TANGENT_ORIENTATION: extra_fields[gm.GeometryName.TANGENT_ORIENTATION],
                 "edge_owner_mask": gtx.as_field(
                     (dims.EdgeDim,), decomposition_info.owner_mask(dims.EdgeDim), dtype=bool
+                ),
+                attrs.CELL_NORMAL_ORIENTATION: extra_fields[
+                    gm.GeometryName.CELL_NORMAL_ORIENTATION
+                ],
+                attrs.VERTEX_EDGE_ORIENTATION: extra_fields[
+                    gm.GeometryName.EDGE_ORIENTATION_ON_VERTEX
+                ],
+                "vertex_owner_mask": gtx.as_field(
+                    (dims.VertexDim,), decomposition_info.owner_mask(dims.VertexDim)
+                ),
+                "cell_owner_mask": gtx.as_field(
+                    (dims.VertexDim,), decomposition_info.owner_mask(dims.CellDim)
                 ),
             }
         )
@@ -429,7 +443,7 @@ class GridGeometry(factory.FieldSource):
         name = meta["standard_name"]
         self._attrs.update({name: meta})
         provider = factory.ProgramFieldProvider(
-            func=math_helpers.compute_inverse,
+            func=math_helpers.compute_inverse_on_edges,
             deps={"f": field_name},
             fields={"f_inverse": name},
             domain={
@@ -445,20 +459,12 @@ class GridGeometry(factory.FieldSource):
         return f"{self.__class__.__name__} for geometry_type={self._geometry_type._name_} (grid={self._grid.id!r})"
 
     @property
-    def providers(self) -> dict[str, FieldProvider]:
-        return self._providers
-
-    @property
-    def metadata(self) -> dict[str, FieldMetaData]:
+    def metadata(self) -> dict[str, model.FieldMetaData]:
         return self._attrs
 
     @property
-    def backend(self) -> backend.Backend:
+    def backend(self) -> gtx_backend.Backend:
         return self._backend
-
-    @property
-    def grid_provider(self):
-        return self
 
     @property
     def grid(self):
@@ -527,7 +533,7 @@ def as_sparse_field(
     fields = []
     for t in data:
         buffers = list(b.ndarray for b in t)
-        field = gtx.as_field(target_dims, data=(xp.vstack(buffers).T), dtype=buffers[0].dtype)
+        field = gtx.as_field(target_dims, data=(np.vstack(buffers).T), dtype=buffers[0].dtype)
         fields.append(field)
     return fields
 
@@ -568,7 +574,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
     for i in (0, 1):
-        boundary_edges = xp.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
+        boundary_edges = np.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
         lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]
         lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
 

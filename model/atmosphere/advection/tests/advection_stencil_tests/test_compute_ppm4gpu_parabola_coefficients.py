@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -14,7 +15,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm4gpu_parabola_coeffi
     compute_ppm4gpu_parabola_coefficients,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
 
 
 class TestComputePpm4gpuParabolaCoefficients(helpers.StencilTest):
@@ -23,7 +23,7 @@ class TestComputePpm4gpuParabolaCoefficients(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, z_face_up: xp.ndarray, z_face_low: xp.ndarray, p_cc: xp.ndarray, **kwargs
+        grid, z_face_up: np.ndarray, z_face_low: np.ndarray, p_cc: np.ndarray, **kwargs
     ) -> dict:
         z_delta_q = 0.5 * (z_face_up - z_face_low)
         z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)

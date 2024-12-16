@@ -11,7 +11,6 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -21,7 +20,7 @@ def _init_cell_kdim_field_with_zero_vp() -> fa.CellKField[vpfloat]:
     return broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def init_cell_kdim_field_with_zero_vp(
     field_with_zero_vp: fa.CellKField[vpfloat],
     horizontal_start: gtx.int32,

@@ -14,16 +14,11 @@ import pathlib
 from typing import Final
 
 import gt4py.next as gtx
+import numpy as np
 
 import icon4py.model.common.states.metadata as data
-from icon4py.model.common import (
-    dimension as dims,
-    exceptions,
-    field_type_aliases as fa,
-    type_alias as ta,
-)
-from icon4py.model.common.grid import icon as icon_grid, topography as topo
-from icon4py.model.common.settings import xp
+from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 log = logging.getLogger(__name__)
@@ -269,30 +264,32 @@ class VerticalGrid:
 
     @classmethod
     def _determine_start_level_of_moist_physics(
-        cls, vct_a: xp.ndarray, top_moist_threshold: float, nshift_total: int = 0
+        cls, vct_a: field_alloc.NDArray, top_moist_threshold: float, nshift_total: int = 0
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
-        return gtx.int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
+        return gtx.int32(np.min(np.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
-    def _determine_damping_height_index(cls, vct_a: xp.ndarray, damping_height: float) -> gtx.int32:
+    def _determine_damping_height_index(
+        cls, vct_a: field_alloc.NDArray, damping_height: float
+    ) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
         return (
             0
             if damping_height > vct_a[0]
-            else gtx.int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
+            else gtx.int32(np.argmax(np.where(vct_a >= damping_height)[0]).item())
         )
 
     @classmethod
     def _determine_end_index_of_flat_layers(
-        cls, vct_a: xp.ndarray, flat_height: float
+        cls, vct_a: field_alloc.NDArray, flat_height: float
     ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
             0
             if flat_height > vct_a[0]
-            else gtx.int32(xp.max(xp.where(vct_a >= flat_height)[0]).item())
+            else gtx.int32(np.max(np.where(vct_a >= flat_height)[0]).item())
         )
 
 
@@ -316,8 +313,8 @@ def _read_vct_a_and_vct_b_from_file(
     Returns:  one dimensional vct_a and vct_b arrays.
     """
     num_levels_plus_one = num_levels + 1
-    vct_a = xp.zeros(num_levels_plus_one, dtype=float)
-    vct_b = xp.zeros(num_levels_plus_one, dtype=float)
+    vct_a = np.zeros(num_levels_plus_one, dtype=float)
+    vct_b = np.zeros(num_levels_plus_one, dtype=float)
     try:
         with open(file_path, "r") as vertical_grid_file:
             # skip the first line that contains titles
@@ -381,12 +378,12 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
     """
     num_levels_plus_one = vertical_config.num_levels + 1
     if vertical_config.lowest_layer_thickness > 0.01:
-        vct_a_exponential_factor = xp.log(
+        vct_a_exponential_factor = np.log(
             vertical_config.lowest_layer_thickness / vertical_config.model_top_height
-        ) / xp.log(
+        ) / np.log(
             2.0
             / math.pi
-            * xp.arccos(
+            * np.arccos(
                 float(vertical_config.num_levels - 1) ** vertical_config.stretch_factor
                 / float(vertical_config.num_levels) ** vertical_config.stretch_factor
             )
@@ -397,8 +394,8 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
             * (
                 2.0
                 / math.pi
-                * xp.arccos(
-                    xp.arange(vertical_config.num_levels + 1, dtype=float)
+                * np.arccos(
+                    np.arange(vertical_config.num_levels + 1, dtype=float)
                     ** vertical_config.stretch_factor
                     / float(vertical_config.num_levels) ** vertical_config.stretch_factor
                 )
@@ -412,10 +409,10 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
             < 0.5 * vertical_config.top_height_limit_for_maximal_layer_thickness
         ):
             layer_thickness = vct_a[: vertical_config.num_levels] - vct_a[1:]
-            lowest_level_exceeding_limit = xp.max(
-                xp.where(layer_thickness > vertical_config.maximal_layer_thickness)
+            lowest_level_exceeding_limit = np.max(
+                np.where(layer_thickness > vertical_config.maximal_layer_thickness)
             )
-            modified_vct_a = xp.zeros(num_levels_plus_one, dtype=float)
+            modified_vct_a = np.zeros(num_levels_plus_one, dtype=float)
             lowest_level_unmodified_thickness = 0
             shifted_levels = 0
             for k in range(vertical_config.num_levels - 1, -1, -1):
@@ -423,7 +420,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
                     modified_vct_a[k + 1]
                     < vertical_config.top_height_limit_for_maximal_layer_thickness
                 ):
-                    modified_vct_a[k] = modified_vct_a[k + 1] + xp.minimum(
+                    modified_vct_a[k] = modified_vct_a[k + 1] + np.minimum(
                         vertical_config.maximal_layer_thickness, layer_thickness[k]
                     )
                 elif lowest_level_unmodified_thickness == 0:
@@ -454,7 +451,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
 
             for k in range(vertical_config.num_levels - 1, -1, -1):
                 if vct_a[k + 1] < vertical_config.top_height_limit_for_maximal_layer_thickness:
-                    vct_a[k] = vct_a[k + 1] + xp.minimum(
+                    vct_a[k] = vct_a[k + 1] + np.minimum(
                         vertical_config.maximal_layer_thickness, layer_thickness[k]
                     )
                 else:
@@ -477,7 +474,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
                     ):
                         modified_vct_a[k] = vct_a[k]
                     else:
-                        modified_layer_thickness = xp.minimum(
+                        modified_layer_thickness = np.minimum(
                             1.025 * (vct_a[k] - vct_a[k + 1]),
                             1.025
                             * (
@@ -490,7 +487,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
                             )
                             * (modified_vct_a[k + 1] - modified_vct_a[k + 2]),
                         )
-                        modified_vct_a[k] = xp.minimum(
+                        modified_vct_a[k] = np.minimum(
                             vct_a[k], modified_vct_a[k + 1] + modified_layer_thickness
                         )
                 if modified_vct_a[0] == vct_a[0]:
@@ -507,12 +504,12 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
     else:
         vct_a = (
             vertical_config.model_top_height
-            * (float(vertical_config.num_levels) - xp.arange(num_levels_plus_one, dtype=float))
+            * (float(vertical_config.num_levels) - np.arange(num_levels_plus_one, dtype=float))
             / float(vertical_config.num_levels)
         )
-    vct_b = xp.exp(-vct_a / 5000.0)
+    vct_b = np.exp(-vct_a / 5000.0)
 
-    if not xp.allclose(vct_a[0], vertical_config.model_top_height):
+    if not np.allclose(vct_a[0], vertical_config.model_top_height):
         log.warning(
             f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
         )
@@ -543,10 +540,10 @@ def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField,
 
 
 def compute_SLEVE_coordinate_from_vcta_and_topography(
-    vct_a: fa.KField[ta.wpfloat],
-    topography: fa.CellField[ta.wpfloat],
-    cell_areas: fa.CellField[ta.wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
+    vct_a: fa.KField[float],
+    topography: fa.CellField[float],
+    cell_areas: fa.CellField[float],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], float],
     grid: icon_grid.IconGrid,
     vertical_config: VerticalGridConfig,
     vertical_geometry: VerticalGrid,
@@ -580,7 +577,7 @@ def compute_SLEVE_coordinate_from_vcta_and_topography(
     topography = topography.ndarray
     vct_a = vct_a.ndarray
 
-    vertical_coordinate = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
+    vertical_coordinate = xp.zeros((grid.num_cells, grid.num_levels + 1), dtype=float)
     vertical_coordinate[:, grid.num_levels] = topography
 
     # Small-scale topography (i.e. full topo - smooth topo)
@@ -618,7 +615,7 @@ def _check_and_correct_layer_thickness(
     vertical_config: VerticalGridConfig,
     grid: icon_grid.IconGrid,
 ) -> xp.ndarray:
-    ktop_thicklimit = xp.asarray(grid.num_cells * [grid.num_levels], dtype=ta.wpfloat)
+    ktop_thicklimit = xp.asarray(grid.num_cells * [grid.num_levels], dtype=float)
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
     for k in reversed(range(grid.num_levels)):
@@ -721,14 +718,14 @@ def _check_flatness_of_flat_level(
 
 
 def compute_vertical_coordinate(
-    vct_a: fa.KField[ta.wpfloat],
-    topography: fa.CellField[ta.wpfloat],
-    cell_areas: fa.CellField[ta.wpfloat],
-    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], ta.wpfloat],
+    vct_a: fa.KField[float],
+    topography: fa.CellField[float],
+    cell_areas: fa.CellField[float],
+    geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], float],
     grid: icon_grid.IconGrid,
     vertical_geometry: VerticalGrid,
     backend,
-) -> fa.CellKField[ta.wpfloat]:
+) -> fa.CellKField[float]:
     """
     Compute the (Cell, K) vertical coordinate field starting from the
     "flat/uniform/aquaplanet" vertical coordinate.
