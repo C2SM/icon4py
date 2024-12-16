@@ -12,7 +12,6 @@ from gt4py.next.ffront.fbuiltins import neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2CDim
-from icon4py.model.common.settings import backend
 
 
 @field_operator
@@ -31,7 +30,7 @@ def _cell_2_edge_interpolation(
     return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def cell_2_edge_interpolation(
     in_field: fa.CellKField[ta.wpfloat],
     coeff: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], ta.wpfloat],
