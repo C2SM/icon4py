@@ -85,10 +85,6 @@ filename = "src/icon4py/model/atmosphere/subgrid_scale_physics/microphysics/__in
 # parallel = true
 # source_pkgs = ['driver']
 
-# -- pytest --
-[tool.pytest.ini_options]
-testpaths = 'tests'
-
 # --ruff --
 [tool.ruff]
 extend = "../../../../pyproject.toml"

@@ -41,7 +41,7 @@ def test_atmosphere(session: nox.Session, subpackage: str, datatest: bool) -> No
 
     with session.chdir(f"model/atmosphere/{subpackage}"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} -m {'' if datatest else 'not'} datatest".split(),
+            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
             *session.posargs
         )
 
@@ -86,7 +86,7 @@ def test_common(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("model/common"):
         session.run(
-            *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -m {'' if datatest else 'not'} datatest".split(),
+            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
             *session.posargs
         )
 
@@ -99,22 +99,26 @@ def test_driver(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("model/driver"):
         session.run(
-            *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -m {'' if datatest else 'not'} datatest".split(),
+            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
             *session.posargs
         )
 
 @nox.session(python=["3.10", "3.11"])
 def test_model_datatest(session: nox.Session) -> None:
+    _install_session_venv(session, extras=["all"], groups=["test"])
+
     session.run(
-        *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -m datatest".split(),
+        *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} --datatest".split(),
         *session.posargs
     )
 
 
 @nox.session(python=["3.10", "3.11"])
 def test_model_operators(session: nox.Session) -> None:
+    _install_session_venv(session, extras=["all"], groups=["test"])
+
     session.run(
-        *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -k 'stencil_tests'".split(),
+        *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} -k 'stencil_tests'".split(),
         *session.posargs
     )
 
@@ -127,7 +131,7 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("tools"):
         session.run(
-            *f"pytest -sv -n {session.env.get('NUM_PROCESSES', 'auto')} -m {'' if datatest else 'not'} datatest".split(),
+            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
             *session.posargs
         )
 

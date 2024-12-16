@@ -101,10 +101,6 @@ filename = "src/icon4pytools/__init__.py"
 # parallel = true
 # source_pkgs = ['icon4pytools']
 
-# -- pytest --
-[tool.pytest.ini_options]
-testpaths = 'tests'
-
 # -- ruff --
 [tool.ruff]
 extend = "../pyproject.toml"

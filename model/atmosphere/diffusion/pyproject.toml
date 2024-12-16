@@ -85,10 +85,6 @@ filename = "src/icon4py/model/atmosphere/diffusion/__init__.py"
 # parallel = true
 # source_pkgs = ['driver']
 
-# -- pytest --
-[tool.pytest.ini_options]
-testpaths = 'tests'
-
 # --ruff --
 [tool.ruff]
 extend = "../../../pyproject.toml"

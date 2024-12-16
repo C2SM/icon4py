@@ -40,7 +40,14 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     step_date_init,
     stretch_factor,
 )
-from icon4py.model.testing.pytest_config import *  # noqa: F401
+
+# Make sure custom icon4py pytest hooks are loaded
+try:
+    import sys
+    _ = sys.modules["icon4py.model.testing.pytest_config"]
+except KeyError:
+    from icon4py.model.testing.pytest_config import *  # noqa: F401
+
 
 __all__ = [
     # local:
