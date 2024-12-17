@@ -40,4 +40,4 @@ def deposition_factor(
     TMELT:        ta.wpfloat,
     deposition_factor: fa.CellField[ta.wpfloat],        # output
 ):
-    _deposition_factor(qi, m_ice, ice_dep, QMIN, out=deposition_factor)
+    _deposition_factor(t, qvsi, ice_dep, QMIN, ALS, RD, RV, TMELT, out=deposition_factor)

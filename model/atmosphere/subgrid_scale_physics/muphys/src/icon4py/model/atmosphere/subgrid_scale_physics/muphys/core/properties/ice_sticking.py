@@ -29,4 +29,4 @@ def ice_sticking(
     TMELT:    ta.wpfloat,
     ice_sticking: fa.CellField[ta.wpfloat]  # output
 ):
-    _ice_sticking( qi, ni, M0_ICE, out=ice_sticking )
+    _ice_sticking( t, TMELT, out=ice_sticking )

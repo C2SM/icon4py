@@ -26,6 +26,6 @@ def ice_number(
     t:         fa.CellField[ta.wpfloat],             # Ambient temperature
     rho:       fa.CellField[ta.wpfloat],             # Ambient density
     TMELT:     ta.wpfloat,
-    ice_number: fa.CellField[ta.wpfloat]  # output
+    ice_number: fa.CellField[ta.wpfloat]             # output
 ):
-    _ice_number( qi, ni, M0_ICE, out=ice_number )
+    _ice_number( t, rho, TMELT, out=ice_number )
