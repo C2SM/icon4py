@@ -8,7 +8,7 @@ This repository hosts a work-in-progress Python implementation of the ICON clima
 
 ## Project Structure
 
-The repository is organized as a _monorepo_, where various ICON model components and utilities are developed as independent Python namespace packages in subfolders. An `icon4py` Python package is defined at the root folder just to collect the specific versions of the different components as project dependencies. The component packages can also be installed independently, although since they are not (yet) available from a package repository, they need to be installed from their specific location within this repository. This can be easily done by following the [Installation instructions](#installation-instructions) explained below.
+The repository is organized as a _monorepo_, where various ICON model components and utilities are developed as independent Python namespace packages in subfolders. An `icon4py` Python package is defined at the root folder with the purpose to collect specific versions of the different components in the form of project dependencies. The component packages can also be installed independently, although since they are not (yet) available from a package repository, they need to be installed from their specific location within this repository. This can be easily done by following the [Installation instructions](#installation-instructions) explained below.
 
 ## License
 
