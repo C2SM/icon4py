@@ -8,7 +8,7 @@
 
 import logging
 import dataclasses
-from typing import Final,Literal, Optional
+from typing import Final, Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend
@@ -154,7 +154,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common import field_type_aliases as fa
 import enum
 

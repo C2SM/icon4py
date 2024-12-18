@@ -17,8 +17,8 @@ from icon4py.model.common.states import (
     tracer_state as tracers,
 )
 from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing.helpers import dallclose
-from icon4py.model.common.utils.data_allocation import zero_field
+from icon4py.model.testing import helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @pytest.mark.parametrize(
@@ -96,8 +96,8 @@ def test_saturation_adjustment_in_gscp_call(
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=gscp_satad_entry_savepoint.temperature(),
         virtual_temperature=None,
-        pressure=zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        pressure_ifc=zero_field(
+        pressure=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        pressure_ifc=data_alloc.zero_field(
             icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}
         ),
         u=None,
@@ -123,17 +123,17 @@ def test_saturation_adjustment_in_gscp_call(
         + gscp_saturation_adjustment_granule.temperature_tendency.ndarray * dtime
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         updated_qv,
         gscp_satad_exit_savepoint.qv().ndarray,
         atol=1.0e-13,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         updated_qc,
         gscp_satad_exit_savepoint.qc().ndarray,
         atol=1.0e-13,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         updated_temperature,
         gscp_satad_exit_savepoint.temperature().ndarray,
         atol=1.0e-13,
@@ -261,37 +261,37 @@ def test_saturation_adjustment_in_physics_interface_call(
         + nwp_interface_saturation_adjustment_granule.pressure_ifc_tendency.ndarray * dtime
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         updated_qv,
         nwp_interface_satad_exit_savepoint.qv().ndarray,
         atol=1.0e-13,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         updated_qc,
         nwp_interface_satad_exit_savepoint.qc().ndarray,
         atol=1.0e-13,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         updated_temperature,
         nwp_interface_satad_exit_savepoint.temperature().ndarray,
         atol=1.0e-13,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         updated_virtual_temperature,
         nwp_interface_satad_diag_exit_savepoint.virtual_temperature().ndarray,
         atol=1.0e-13,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         updated_exner,
         nwp_interface_satad_diag_exit_savepoint.exner().ndarray,
         atol=1.0e-13,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         updated_pressure,
         nwp_interface_satad_diag_exit_savepoint.pressure().ndarray,
         atol=1.0e-13,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         updated_pressure_ifc,
         nwp_interface_satad_diag_exit_savepoint.pressure_ifc().ndarray,
         atol=1.0e-13,
