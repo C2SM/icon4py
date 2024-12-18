@@ -390,7 +390,7 @@ class VelocityAdvection:
             interpolation_to_half_levels_vp=diagnostic_state.w_concorr_c,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
-            vertical_start=self.vertical_params.nflatlev + 1,
+            vertical_start=gtx.int32(self.vertical_params.nflatlev + 1),
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
@@ -642,7 +642,7 @@ class VelocityAdvection:
             w_concorr_c=diagnostic_state.w_concorr_c,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
-            vertical_start=self.vertical_params.nflatlev + 1,
+            vertical_start=gtx.int32(self.vertical_params.nflatlev + 1),
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )

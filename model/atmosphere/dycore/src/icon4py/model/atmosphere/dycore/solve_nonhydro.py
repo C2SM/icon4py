@@ -1122,7 +1122,7 @@ class SolveNonhydro:
                 interpolation_to_half_levels_vp=self.z_exner_ic,
                 horizontal_start=self._start_cell_lateral_boundary_level_3,
                 horizontal_end=self._end_cell_halo,
-                vertical_start=max(1, self._vertical_params.nflatlev),
+                vertical_start=gtx.int32(max(1, self._vertical_params.nflatlev)),
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
@@ -1133,7 +1133,7 @@ class SolveNonhydro:
                 z_dexner_dz_c_1=self.z_dexner_dz_c_1,
                 horizontal_start=self._start_cell_lateral_boundary_level_3,
                 horizontal_end=self._end_cell_halo,
-                vertical_start=max(1, self._vertical_params.nflatlev),
+                vertical_start=gtx.int32(max(1, self._vertical_params.nflatlev)),
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
