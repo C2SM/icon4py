@@ -59,6 +59,9 @@ The `pyproject.toml` file at the root folder contains both the definition of the
 
 By following the installation instructions above, the source files are imported directly by the Python interpreter meaning that any code change is available and executed by the interpreter.
 
+To add new dependencies to the project, either core/optional run-time or development-only dependencies, it is possible to use the `uv` cli direcly or to modify by hand the appropriate tables in the corresponding `pyproject.toml` (check `uv` documentation for more information [https://docs.astral.sh/uv/concepts/projects/dependencies/](https://docs.astral.sh/uv/concepts/projects/dependencies/)).
+
+
 ### Code quality checks
 
 [pre-commit](https://pre-commit.com/) is used to run several linting and checking tools. It should always be executed locally before opening a pull request. When executing pre-commit locally you can either run it for the `model` or `tools` folder:

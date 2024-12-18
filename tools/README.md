@@ -6,18 +6,7 @@ Tools and utilities for integrating icon4py code into the ICON model.
 
 ## Installation instructions
 
-To install `icon4pytools` in a virtual environment, one can use pip with either the `requirements-dev.txt` or `requirements.txt` file. While the `requirements.txt` file will install the package along with its runtime dependencies, the `requirements-dev.txt` file additionally includes development dependencies required for running tests, generating documentation, and building the package from source. Furthermore by using the `requirements-dev.txt` file, the package will be installed in editable mode, allowing the user to make changes to the package's source code and immediately see the effects without having to reinstall the package every time. This is particularly useful during development and testing phases.
-
-```bash
-# create a virtual environment
-python3 -m venv .venv
-
-# activate the virtual environment
-source .venv/bin/activate
-
-# install all dependencies
-pip install -r requirements-dev.txt
-```
+Until the development reaches a stable state, we recommend you to follow the general instructions in the [../README.md](../README.md) root folder to install `icon4pytools` and all its dependencies in a virtual environment for development.
 
 ## Command-line tools
 
