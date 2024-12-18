@@ -26,11 +26,6 @@ ICON4Py requires **_Python >= 3.10_** and **_boost >= 1.85.0_**, and uses the `u
 ```bash
 $ curl -LsSf https://astral.sh/uv/install.sh | sh 
 ```
-although it can also be installed with `pip` / `pipx`
-
-```bash
-$ pipx install uv
-```
 
 ### ICON4Py development environment
 
