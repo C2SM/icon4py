@@ -45,7 +45,9 @@ uv sync --extra all
 source .venv/bin/activate
 ```
 
-The new _venv_ is a standard Python virtual environment with all the necessary run-time and development dependencies, where all the icon4py subpackages have been already installed in editable mode. New packages can be installed with the `uv pip` subcommand which emulates the `pip` interface or even using the regular `pip` which is also available in the _venv_ (although it's usually much slower and not really recommended).   
+The new _venv_ is a standard Python virtual environment preconfigured with all necessary runtime and development dependencies. Additionally, all icon4py subpackages are installed in editable mode, allowing for seamless development and testing.
+
+To install new packages, use the `uv pip` subcommand, which emulates the `pip` interface and is generally much faster. Alternatively, the standard `pip` command is also available within the venv, although using `pip` directly is slower and not recommended.
 
 The `pyproject.toml` file at the root folder contains both the definition of the `icon4py` Python distribution package and the settings of the development tools used in this project, most notably `uv`, `ruff`, `mypy` and `pytest`. It also contains _dependency groups_ (see [PEP 735](https://peps.python.org/pep-0735/) for further reference) with the development requirements listed in different groups (`build`, `docs`, `lint`, `test`, `typing`, ...) and collected together in the general `dev` group which gets installed by default by `uv`.
 
