@@ -6,7 +6,7 @@ Tools and utilities for integrating icon4py code into the ICON model.
 
 ## Installation instructions
 
-Until the development reaches a stable state, we recommend you to follow the general instructions in the [../README.md](../README.md) root folder to install `icon4pytools` and all its dependencies in a virtual environment for development.
+Until development reaches a stable state, we recommend that you follow the general instructions in the [../README.md](../README.md) root folder to install `icon4pytools` and all of its dependencies in a virtual environment.
 
 ## Command-line tools
 
