@@ -16,7 +16,7 @@ ICON4Py is licensed under the terms of the BSD-3-Clause.
 
 ## Installation instructions
 
-Since this project is still in a highly experimental state, it is not yet available as a regular Python distribution project through PyPI. The expected installation procedure is to clone the [https://github.com/C2SM/icon4py](https://github.com/C2SM/icon4py) repository and install it in a venv using the following development workflow.  
+Since this project is still in a highly experimental state, it is not yet available as a regular Python distribution project through PyPI. The installation procedure comprises cloning the [https://github.com/C2SM/icon4py](https://github.com/C2SM/icon4py) repository and install it in a `venv` using the following development workflow.  
 
 ### System dependencies
 
