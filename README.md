@@ -8,7 +8,7 @@ This repository hosts a work-in-progress Python implementation of the ICON clima
 
 ## Project Structure
 
-The repository is organized as a _monorepo_, where various ICON model components and utilities are developed as independent Python namespace packages in subfolders. An `icon4py` Python package is defined at the root folder with the purpose to collect specific versions of the different components in the form of project dependencies. The component packages can also be installed independently, although since they are not (yet) available from a package repository, they need to be installed from their specific location within this repository. This can be easily done by following the [Installation instructions](#installation-instructions) explained below.
+The repository is organized as a _monorepo_, where various ICON model components and utilities are developed as independent Python namespace packages in subfolders. An `icon4py` Python package is defined at the root folder with the purpose to collect specific versions of the different components as package dependencies. The component can also be installed independently, although since they are not (yet) available from a package repository, they need to be installed from their specific location within this repository.
 
 ## License
 
@@ -16,7 +16,7 @@ ICON4Py is licensed under the terms of the BSD-3-Clause.
 
 ## Installation instructions
 
-Since this project is still in a highly experimental state, it is not yet available as a regular Python distribution project through PyPI. The installation procedure comprises cloning the [https://github.com/C2SM/icon4py](https://github.com/C2SM/icon4py) repository and install it in a `venv` using the following development workflow.  
+Since this project is still in a highly experimental state, it is not yet available as a regular Python distribution project through PyPI. The installation procedure comprises cloning the [https://github.com/C2SM/icon4py](https://github.com/C2SM/icon4py) repository and install it in a _venv_ using the following development workflow.  
 
 ### System dependencies
 
@@ -45,7 +45,7 @@ uv sync --extra all
 source .venv/bin/activate
 ```
 
-The new `venv` is a standard Python virtual environment with all the necessary run-time and development dependencies, where all the icon4py subpackages have been already installed in editable mode. New packages can be installed with the `uv pip` subcommand which emulates the `pip` interface or even using the regular `pip` which is also available in the venv (although it's usually much slower and not really recommended).   
+The new _venv_ is a standard Python virtual environment with all the necessary run-time and development dependencies, where all the icon4py subpackages have been already installed in editable mode. New packages can be installed with the `uv pip` subcommand which emulates the `pip` interface or even using the regular `pip` which is also available in the _venv_ (although it's usually much slower and not really recommended).   
 
 The `pyproject.toml` file at the root folder contains both the definition of the `icon4py` Python distribution package and the settings of the development tools used in this project, most notably `uv`, `ruff`, `mypy` and `pytest`. It also contains _dependency groups_ (see [PEP 735](https://peps.python.org/pep-0735/) for further reference) with the development requirements listed in different groups (`build`, `docs`, `lint`, `test`, `typing`, ...) and collected together in the general `dev` group which gets installed by default by `uv`.
 
@@ -93,8 +93,6 @@ nox -s 'test_common'
 # Run a test session for a specific python version and parameter values
 nox -s 'test_atmosphere_advection-3.10(datatest=True)'
 ```
-
-The default `tox` environment is configured to generate HTML test coverage reports in `_reports/coverage_html/`.
 
 ### Benchmarking
 

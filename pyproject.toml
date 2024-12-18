@@ -99,8 +99,7 @@ environments = [
 ]
 
 [tool.uv.sources]
-ghex = { git = "https://github.com/havogt/GHEX.git", branch = "fix_rpath", subdirectory = "bindings/python" }
-#ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master", subdirectory = "bindings/python" }
+# ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
 # use GT4Py tagged release until #596 & gt4py#1738 are merged
 gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_20241113" }
 icon4py-atmosphere-advection = { workspace = true }
