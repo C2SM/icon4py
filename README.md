@@ -81,7 +81,7 @@ pytest -v
 pytest -v path/to/test/folder
 ```
 
-Nonetheless, we also recommended to use `nox` to run the parametrized test suite:
+`nox` is recommended for running comprehensive test suites across multiple Python versions and configurations, mirroring the setup used in the CI pipeline.
 
 ```bash
 # List all available test sessions (colored items are the default sessions)
@@ -90,7 +90,7 @@ nox -l
 # Run all parametrized cases of a session
 nox -s 'test_common'
 
-# Run a test session for a specific python version and parameter values
+# Run a test session for a specific python version and parameter value
 nox -s 'test_atmosphere_advection-3.10(datatest=True)'
 ```
 
