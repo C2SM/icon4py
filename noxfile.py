@@ -50,7 +50,7 @@ def test_atmosphere(session: nox.Session, subpackage: str, datatest: bool) -> No
 @nox.parametrize("datatest", [False, True])
 def test_atmosphere_advection(session: nox.Session, datatest: bool) -> None:
     session.notify(
-        f"test_atmosphere-{session.python}(datatest='{datatest}', subpackage='advection')"
+        f"test_atmosphere-{session.python}(datatest={datatest}, subpackage='advection')"
     )
 
 
@@ -58,7 +58,7 @@ def test_atmosphere_advection(session: nox.Session, datatest: bool) -> None:
 @nox.parametrize("datatest", [False, True])
 def test_atmosphere_diffusion(session: nox.Session, datatest: bool) -> None:
     session.notify(
-        f"test_atmosphere-{session.python}(datatest='{datatest}', subpackage='diffusion')"
+        f"test_atmosphere-{session.python}(datatest={datatest}, subpackage='diffusion')"
     )
 
 
@@ -66,7 +66,7 @@ def test_atmosphere_diffusion(session: nox.Session, datatest: bool) -> None:
 @nox.parametrize("datatest", [False, True])
 def test_atmosphere_dycore(session: nox.Session, datatest: bool) -> None:
     session.notify(
-        f"test_atmosphere-{session.python}(datatest='{datatest}', subpackage='dycore')"
+        f"test_atmosphere-{session.python}(datatest={datatest}, subpackage='dycore')"
     )
 
 
@@ -74,7 +74,7 @@ def test_atmosphere_dycore(session: nox.Session, datatest: bool) -> None:
 @nox.parametrize("datatest", [False, True])
 def test_atmosphere_microphysics(session: nox.Session, datatest: bool) -> None:
     session.notify(
-        f"test_atmosphere-{session.python}(datatest='{datatest}', subpackage='subgrid_scale_physics/microphysics')"
+        f"test_atmosphere-{session.python}(datatest={datatest}, subpackage='subgrid_scale_physics/microphysics')"
     )
 
 
