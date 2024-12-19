@@ -37,7 +37,7 @@ version = "0.0.6"
 
 [project.optional-dependencies]
 all = ["icon4py[dace,distributed,fortran,io,testing]"]
-dace = ["icon4py-common[dace]>=0.0.6", "dace<1.0"]  # Dace should be removed after updating gt4py
+dace = ["icon4py-common[dace]>=0.0.6", "dace<1.0"]  # TODO(egparedes): Dace should be removed after updating gt4py
 distributed = ["icon4py-common[distributed]>=0.0.6"]
 fortran = ["icon4pytools>=0.0.6"]
 io = ["icon4py-common[io]>=0.0.6"]
@@ -93,13 +93,15 @@ dev = [
 
 # -- uv: packages & workspace --
 [tool.uv]
-environments = [
-    "implementation_name == 'cpython' and sys_platform != 'windows'"
-]
+
+[[tool.uv.index]]
+name = "test.pypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
 
 [tool.uv.sources]
 # ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
-# use GT4Py tagged release until #596 & gt4py#1738 are merged
+# TODO(egparedes): use GT4Py tagged release until #596 & gt4py#1738 are merged
 gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_20241113" }
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
@@ -109,7 +111,8 @@ icon4py-common = { workspace = true }
 icon4py-driver = { workspace = true }
 icon4py-testing = { workspace = true }
 icon4pytools = { workspace = true }
-serialbox = { git = "https://github.com/GridTools/serialbox", subdirectory = "src/serialbox-python" }
+serialbox4py = { index = "test.pypi" }
+# serialbox4py = { git = "https://github.com/GridTools/serialbox", rev = "b3a7e22b73b6294011e900aa4f5b3a304860e67a" }
 
 [tool.uv.workspace]
 members = [

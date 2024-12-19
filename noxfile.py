@@ -9,120 +9,84 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Final, Literal, TypeAlias
 
 import nox
 
+# -- Parameter sets --
+ModelSubpackagePath: TypeAlias = Literal[
+    "atmosphere/advection",
+    "atmosphere/diffusion",
+    "atmosphere/dycore",
+    "atmosphere/subgrid_scale_physics/microphysics",
+    "common",
+    "driver",
+    # "testing", #TODO: Add tests to testing subpackage
+]
+ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
+
+MODEL_SUBPACKAGE_PATHS: Final[Sequence[str]] = ModelSubpackagePath.__args__
+MODEL_TESTS_SUBSETS: Final[Sequence[str]] = ModelTestsSubset.__args__
+
+# -- nox configuration --
 nox.options.default_venv_backend = "uv"
-nox.options.sessions = ["test_atmosphere", "test_common", "test_driver", "test_tools"]
+nox.options.sessions = ["test_model", "test_tools"]
 
 
+# -- nox sessions --
+# Model benchmark sessions
+# TODO(egparedes): Add backend parameter
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize(
-    "subpackage",
-    ["advection", "diffusion", "dycore", "subgrid_scale_physics/microphysics"],
-)
-def benchmark_atmosphere(session: nox.Session, subpackage: str) -> None:
-    """Run pytest benchmarks for the `model.atmosphere` subpackages."""
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
+    """Run pytest benchmarks for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
-    with session.chdir(f"model/atmosphere/{subpackage}"):
+    with session.chdir(f"model/{subpackage}"):
         session.run(*"pytest -sv --benchmark-only".split(), *session.posargs)
 
 
+# Model test sessions
+# TODO(egparedes): Add backend parameter
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize(
-    "subpackage",
-    ["advection", "diffusion", "dycore", "subgrid_scale_physics/microphysics"],
-)
-@nox.parametrize("datatest", [False, True])
-def test_atmosphere(session: nox.Session, subpackage: str, datatest: bool) -> None:
-    """Run tests for the `model.atmosphere` subpackages."""
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+@nox.parametrize("selection", MODEL_TESTS_SUBSETS)
+def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath) -> None:
+    """Run tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["all"], groups=["test"])
 
-    with session.chdir(f"model/atmosphere/{subpackage}"):
+    pytest_args = _selection_to_pytest_args(selection)
+    with session.chdir(f"model/{subpackage}"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
-            *session.posargs
-        )
-
-
-@nox.session(python=["3.10", "3.11"])
-@nox.parametrize("datatest", [False, True])
-def test_atmosphere_advection(session: nox.Session, datatest: bool) -> None:
-    session.notify(
-        f"test_atmosphere-{session.python}(datatest={datatest}, subpackage='advection')"
-    )
-
-
-@nox.session(python=["3.10", "3.11"])
-@nox.parametrize("datatest", [False, True])
-def test_atmosphere_diffusion(session: nox.Session, datatest: bool) -> None:
-    session.notify(
-        f"test_atmosphere-{session.python}(datatest={datatest}, subpackage='diffusion')"
-    )
-
-
-@nox.session(python=["3.10", "3.11"])
-@nox.parametrize("datatest", [False, True])
-def test_atmosphere_dycore(session: nox.Session, datatest: bool) -> None:
-    session.notify(
-        f"test_atmosphere-{session.python}(datatest={datatest}, subpackage='dycore')"
-    )
-
-
-@nox.session(python=["3.10", "3.11"])
-@nox.parametrize("datatest", [False, True])
-def test_atmosphere_microphysics(session: nox.Session, datatest: bool) -> None:
-    session.notify(
-        f"test_atmosphere-{session.python}(datatest={datatest}, subpackage='subgrid_scale_physics/microphysics')"
-    )
-
-
-@nox.session(python=["3.10", "3.11"])
-@nox.parametrize("datatest", [False, True])
-def test_common(session: nox.Session, datatest: bool) -> None:
-    """Run tests for the common package of the icon4py model."""
-    _install_session_venv(session, extras=["all"], groups=["test"])
-
-    with session.chdir("model/common"):
-        session.run(
-            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
-            *session.posargs
-        )
-
-
-@nox.session(python=["3.10", "3.11"])
-@nox.parametrize("datatest", [False, True])
-def test_driver(session: nox.Session, datatest: bool) -> None:
-    """Run tests for the driver."""
-    _install_session_venv(session, extras=["all"], groups=["test"])
-
-    with session.chdir("model/driver"):
-        session.run(
-            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
+            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')}".split(),
+            *pytest_args,
             *session.posargs
         )
 
 @nox.session(python=["3.10", "3.11"])
-def test_model_datatest(session: nox.Session) -> None:
-    _install_session_venv(session, extras=["all"], groups=["test"])
-
-    session.run(
-        *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} --datatest".split(),
-        *session.posargs
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+def test_model_datatest(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
+    session.notify(
+        f"test_model-{session.python}(selection='datatest', subpackage='{subpackage}')"
     )
 
 
 @nox.session(python=["3.10", "3.11"])
-def test_model_operators(session: nox.Session) -> None:
-    _install_session_venv(session, extras=["all"], groups=["test"])
-
-    session.run(
-        *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} -k 'stencil_tests'".split(),
-        *session.posargs
+@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
+def test_model_stencils(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
+    session.notify(
+        f"test_model-{session.python}(selection='stencils', subpackage='{subpackage}')"
     )
 
+# @nox.session(python=["3.10", "3.11"])
+# @nox.parametrize("selection", MODEL_TEST_SELECTION)
+# def test_testing(session: nox.Session, selection: ModelTestKind) -> None:
+#     session.notify(
+#         f"test_model-{session.python}(selection='{selection}', subpackage='testing')"
+#     )
 
+
+# Tools test sessions
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("datatest", [False, True])
 def test_tools(session: nox.Session, datatest: bool) -> None:
@@ -135,7 +99,7 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
             *session.posargs
         )
 
-
+# -- utils --
 def _install_session_venv(
     session: nox.Session,
     *args: str | Sequence[str],
@@ -159,3 +123,18 @@ def _install_session_venv(
             *((item,) if isinstance(item, str) else item),
             env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
         )
+
+def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
+    pytest_args = []
+    
+    match selection:
+        case "datatest":
+            pytest_args.append("--datatest")
+        case "stencils":
+            pytest_args.extend(["-k", "stencil_tests"])
+        case "basic":
+            pytest_args.extend(["-k", "not stencil_tests"])
+        case _:
+            raise AssertionError(f"Invalid selection: {selection}")
+        
+    return pytest_args

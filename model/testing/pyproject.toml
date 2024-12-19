@@ -27,7 +27,7 @@ dependencies = [
   "numpy>=1.23.3",
   'packaging>=20.0',
   "pytest>=8.0.1",
-  "serialbox>=0.0.1",
+  "serialbox4py>=2.6.2",
   "typing-extensions>=4.11.0",
   "wget>=3.2",
 ]

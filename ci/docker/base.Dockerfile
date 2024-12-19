@@ -81,5 +81,8 @@ RUN pyenv update && \
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
 
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh 
+
 ARG CUPY_PACKAGE=cupy-cuda11x
 RUN pip install --upgrade pip setuptools wheel tox clang-format ${CUPY_PACKAGE}

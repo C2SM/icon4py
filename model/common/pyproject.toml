@@ -22,7 +22,7 @@ classifiers = [
 dependencies = [
   "gt4py>=1.0.4",
   'packaging>=20.0',
-  "serialbox>=0.0.1",
+  "serialbox4py>=2.6.2",
   'packaging>=20.0',
   "typing-extensions>=4.11.0"
 ]
