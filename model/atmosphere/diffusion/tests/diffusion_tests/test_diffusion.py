@@ -161,7 +161,7 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     params = diffusion.DiffusionParams(construct_diffusion_config(experiment, ndyn_substeps=5))
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
-    assert all(params.smagorinski_factor >= 0)
+    assert all(p >= 0 for p in params.smagorinski_factor)
 
 
 @pytest.mark.datatest
