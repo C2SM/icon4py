@@ -27,10 +27,10 @@ jobs:
                   cache-dependency-path: |
                     **/pyproject.toml
                     uv.lock
-            - name: Install all icon4py namespace packages
-              run: |
-                  uv sync --extra all
+            # - name: Install all icon4py namespace packages
+            #   run: |
+            #       uv sync --extra all
+            #       source .venv/bin/activate
             - name: Run checks
               run: |
-                  source .venv/bin/activate
                   pre-commit run
