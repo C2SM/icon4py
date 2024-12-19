@@ -1,4 +1,5 @@
-FROM ubuntu:20.04
+ARG UBUNTU_VERSION=22.04
+FROM ubuntu:${UBUNTU_VERSION}
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -24,7 +25,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libffi-dev \
     libhdf5-dev \
     liblzma-dev \
-    python-openssl \
+    $( [ "${UBUNTU_VERSION}" = "20.04" ] && echo "python-openssl" || echo "python3-openssl" ) \
     libreadline-dev \
     git \
     rustc \
@@ -32,8 +33,8 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Install NVIDIA HPC SDK for nvfortran
-ARG HPC_SDK_VERSION=22.11
-ARG HPC_SDK_NAME=nvhpc_2022_2211_Linux_x86_64_cuda_11.8
+ARG HPC_SDK_VERSION=24.11
+ARG HPC_SDK_NAME=nvhpc_2024_2411_Linux_aarch64_cuda_12.6
 ENV HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
 
 RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
@@ -45,7 +46,7 @@ ENV NVHPC_SILENT=1
 RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 
 # Set environment variables
-ARG ARCH=x86_64
+ARG ARCH=aarch64
 ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
 # The variable CUDA_PATH is used by cupy to find the cuda toolchain
 ENV CUDA_PATH=${HPC_SDK_PATH}/cuda \
@@ -81,5 +82,6 @@ RUN pyenv update && \
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
 
-ARG CUPY_PACKAGE=cupy-cuda11x
-RUN pip install --upgrade pip setuptools wheel tox clang-format ${CUPY_PACKAGE}
+ARG CUPY_PACKAGE=cupy-cuda12x
+ARG CUPY_VERSION=13.3.0
+RUN pip install --upgrade pip setuptools wheel tox clang-format ${CUPY_PACKAGE}==${CUPY_VERSION}
