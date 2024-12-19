@@ -4,7 +4,7 @@
 
 default_stages: [pre-commit, pre-push]
 default_language_version:
-  python: python3.11
+  python: python3.10
 minimum_pre_commit_version: 3.8.0
 files: |
   (?x)^(
