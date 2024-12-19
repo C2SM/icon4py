@@ -8,7 +8,6 @@
 import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
-import icon4py.model.common.settings as settings
 import icon4py.model.common.type_alias as types
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import V2C, V2CDim
@@ -23,7 +22,7 @@ def _compute_cell_2_vertex_interpolation(
     return vert_out
 
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=settings.backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def compute_cell_2_vertex_interpolation(
     cell_in: gtx.Field[[dims.CellDim, dims.KDim], types.wpfloat],
     c_int: gtx.Field[[dims.VertexDim, V2CDim], types.wpfloat],

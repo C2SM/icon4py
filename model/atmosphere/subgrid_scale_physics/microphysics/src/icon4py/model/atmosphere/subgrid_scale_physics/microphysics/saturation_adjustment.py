@@ -9,6 +9,7 @@ import dataclasses
 from typing import Final
 
 import gt4py.next as gtx
+import numpy as np
 from gt4py.eve.utils import FrozenNamespace
 from gt4py.next import backend, broadcast
 from gt4py.next.ffront.fbuiltins import (
@@ -30,7 +31,6 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     model,
@@ -382,7 +382,7 @@ class SaturationAdjustment:
         temperature_list = [self._temperature1, self._temperature2]
         ncurrent, nnext = 0, 1
         for _ in range(self.config.max_iter):
-            if xp.any(
+            if np.any(
                 self._newton_iteration_mask.ndarray[
                     start_cell_nudging:end_cell_local, 0 : self.grid.num_levels
                 ]
@@ -428,13 +428,13 @@ class SaturationAdjustment:
                 nnext = (nnext + 1) % 2
             else:
                 break
-        if xp.any(
+        if np.any(
             self._newton_iteration_mask.ndarray[
                 start_cell_nudging:end_cell_local, 0 : self.grid.num_levels
             ]
         ):
             raise ConvergenceError(
-                f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {xp.abs(self.new_temperature1.ndarray - self.new_temperature2.ndarray).max()} . Please raise max_iter"
+                f"Maximum iteration of saturation adjustment ({self.config.max_iter}) is not enough. The max absolute error is {np.abs(self.new_temperature1.ndarray - self.new_temperature2.ndarray).max()} . Please raise max_iter"
             )
         self.update_temperature_qv_qc_tendencies(
             dtime,

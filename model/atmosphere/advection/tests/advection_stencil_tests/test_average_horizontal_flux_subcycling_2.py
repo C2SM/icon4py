@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -14,7 +15,6 @@ from icon4py.model.atmosphere.advection.stencils.average_horizontal_flux_subcycl
     average_horizontal_flux_subcycling_2,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
 
 
 class TestAverageHorizontalFluxSubcycling2(helpers.StencilTest):
@@ -24,8 +24,8 @@ class TestAverageHorizontalFluxSubcycling2(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        z_tracer_mflx_1_dsl: xp.array,
-        z_tracer_mflx_2_dsl: xp.array,
+        z_tracer_mflx_1_dsl: np.array,
+        z_tracer_mflx_2_dsl: np.array,
         **kwargs,
     ) -> dict:
         p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl) / float(2)

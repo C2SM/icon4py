@@ -32,14 +32,16 @@ from icon4py.model.common.states import data
 from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
 
 
+# setting backend to fieldview embedded here.
+backend = None
 UNLIMITED = None
 simple_grid = simple.SimpleGrid()
 
 grid_file = datatest_utils.GRIDS_PATH.joinpath(
     datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE
 )
-global_grid = grid_utils.get_icon_grid_from_gridfile(
-    datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False
+global_grid = grid_utils.get_grid_manager_for_experiment(
+    datatest_utils.GLOBAL_EXPERIMENT, backend
 ).grid
 
 
@@ -177,8 +179,8 @@ def test_io_monitor_write_ugrid_file(test_path):
 )
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
-    grid = grid_utils.get_icon_grid_from_gridfile(
-        datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False
+    grid = grid_utils.get_grid_manager_for_experiment(
+        datatest_utils.GLOBAL_EXPERIMENT, backend
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
@@ -229,8 +231,8 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
-    grid = grid_utils.get_icon_grid_from_gridfile(
-        datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False
+    grid = grid_utils.get_grid_manager_for_experiment(
+        datatest_utils.GLOBAL_EXPERIMENT, backend
     ).grid
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
