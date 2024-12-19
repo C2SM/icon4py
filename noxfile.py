@@ -36,11 +36,12 @@ nox.options.sessions = ["test_model", "test_tools"]
 # -- nox sessions --
 # Model benchmark sessions
 # TODO(egparedes): Add backend parameter
+# TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
     """Run pytest benchmarks for selected icon4py model subpackages."""
-    _install_session_venv(session, extras=["all"], groups=["test"])
+    _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
     with session.chdir(f"model/{subpackage}"):
         session.run(*"pytest -sv --benchmark-only".split(), *session.posargs)
@@ -48,12 +49,13 @@ def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> No
 
 # Model test sessions
 # TODO(egparedes): Add backend parameter
+# TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
 def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath) -> None:
     """Run tests for selected icon4py model subpackages."""
-    _install_session_venv(session, extras=["all"], groups=["test"])
+    _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
@@ -87,11 +89,12 @@ def test_model_stencils(session: nox.Session, subpackage: ModelSubpackagePath) -
 
 
 # Tools test sessions
+# TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("datatest", [False, True])
 def test_tools(session: nox.Session, datatest: bool) -> None:
     """Run tests for the Fortran integration tools."""
-    _install_session_venv(session, extras=["all"], groups=["test"])
+    _install_session_venv(session, extras=["fortran,", "io", "testing"], groups=["test"])
 
     with session.chdir("tools"):
         session.run(
