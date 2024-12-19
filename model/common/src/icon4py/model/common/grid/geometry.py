@@ -29,6 +29,7 @@ from icon4py.model.common.grid import (
     icon,
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
+from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
@@ -94,6 +95,7 @@ class GridGeometry(factory.FieldSource):
         """
         self._providers = {}
         self._backend = backend
+        self._xp = alloc.import_array_ns(backend)
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
         self._decomposition_info = decomposition_info
@@ -460,6 +462,18 @@ class GridGeometry(factory.FieldSource):
             pairs=(("u_cell_1", "u_cell_2"), ("v_cell_1", "v_cell_2")),
         )
         self.register_provider(tangent_cell_wrapper)
+
+        primal_cart_normal = factory.NumpyFieldsProvider(
+            func=functools.partial(stencils.compute_primal_cart_normal, array_ns=self._xp),
+            fields=(attrs.EDGE_NORMAL,),
+            domain=(dims.EdgeDim, dims.E2CDim),
+            deps={
+                "primal_cart_normal_x": attrs.EDGE_NORMAL_X,
+                "primal_cart_normal_y": attrs.EDGE_NORMAL_Y,
+                "primal_cart_normal_z": attrs.EDGE_NORMAL_Z,
+            },
+        )
+        self.register_provider(primal_cart_normal)
 
     def _inverse_field_provider(self, field_name: str):
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])

@@ -8,7 +8,6 @@
 import functools
 
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import constants, dimension as dims
@@ -50,28 +49,6 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._geometry = geometry_source
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
         self._config = {"divavg_cntrwgt": 0.5}
-        primal_cart_normal_x = self._geometry.get(geometry_attrs.EDGE_NORMAL_X)
-        primal_cart_normal_y = self._geometry.get(geometry_attrs.EDGE_NORMAL_Y)
-        primal_cart_normal_z = self._geometry.get(geometry_attrs.EDGE_NORMAL_Z)
-        primal_cart_normal = gtx.as_field(
-            (
-                dims.EdgeDim,
-                dims.E2CDim,
-            ),
-            np.transpose(
-                np.stack(
-                    (
-                        primal_cart_normal_x.asnumpy(),
-                        primal_cart_normal_y.asnumpy(),
-                        primal_cart_normal_z.asnumpy(),
-                    )
-                )
-            ),
-        )
-        self.register_provider(
-            factory.PrecomputedFieldProvider({"primal_cart_normal": primal_cart_normal})
-        )
-
         self._register_computed_fields()
 
     def __repr__(self):
@@ -217,7 +194,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "c_bln_avg": attrs.C_BLN_AVG,
                 "geofac_div": attrs.GEOFAC_DIV,
                 "owner_mask": "edge_owner_mask",
-                "primal_cart_normal": "primal_cart_normal",
+                "primal_cart_normal": geometry_attrs.EDGE_NORMAL,
             },
             connectivities={
                 "e2c": dims.E2CDim,
