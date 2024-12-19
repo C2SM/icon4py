@@ -18,7 +18,8 @@ from icon4py.model.common.grid import (
     simple as simple,
 )
 from icon4py.model.common.grid.geometry import as_sparse_field
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
 
 
 def test_geometry_raises_for_unknown_field(backend):
@@ -309,10 +310,10 @@ def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
 
 def test_sparse_fields_creator():
     grid = simple.SimpleGrid()
-    f1 = helpers.random_field(grid, dims.EdgeDim)
-    f2 = helpers.random_field(grid, dims.EdgeDim)
-    g1 = helpers.random_field(grid, dims.EdgeDim)
-    g2 = helpers.random_field(grid, dims.EdgeDim)
+    f1 = data_alloc.random_field(grid, dims.EdgeDim)
+    f2 = data_alloc.random_field(grid, dims.EdgeDim)
+    g1 = data_alloc.random_field(grid, dims.EdgeDim)
+    g2 = data_alloc.random_field(grid, dims.EdgeDim)
 
     sparse = as_sparse_field((dims.EdgeDim, dims.E2CDim), [(f1, f2), (g1, g2)])
     sparse_e2c = functools.partial(as_sparse_field, (dims.EdgeDim, dims.E2CDim))

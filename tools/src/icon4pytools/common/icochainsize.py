@@ -106,6 +106,7 @@ from dataclasses import dataclass
 from typing import ClassVar, List, TypeAlias
 
 from gt4py.next.common import Dimension
+
 from icon4py.model.common import dimension as dims
 
 

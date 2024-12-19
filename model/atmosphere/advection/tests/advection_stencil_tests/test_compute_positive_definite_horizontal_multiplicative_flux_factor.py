@@ -10,7 +10,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
@@ -54,12 +55,12 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        geofac_div = helpers.random_field(grid, dims.CellDim, dims.C2EDim)
-        geofac_div_new = helpers.as_1D_sparse_field(geofac_div, dims.CEDim)
-        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_rhodz_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_tracer_h = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        r_m = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
+        geofac_div_new = data_alloc.as_1D_sparse_field(geofac_div, dims.CEDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        r_m = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         p_dtime = np.float64(5)
         dbl_eps = np.float64(1e-9)
         return dict(

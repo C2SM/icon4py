@@ -12,13 +12,13 @@ import re
 import traceback
 from importlib import reload
 
+import pytest
+from gt4py.next.ffront.fbuiltins import float32, float64
+
 import icon4py.model.atmosphere.diffusion.stencils as diffusion
 import icon4py.model.atmosphere.dycore.stencils as dycore
 import icon4py.model.common.interpolation.stencils as intp
 import icon4py.model.common.type_alias as type_alias
-import pytest
-from gt4py.next.ffront.fbuiltins import float32, float64
-
 from icon4pytools.icon4pygen.cli import main
 
 from .conftest import get_stencil_module_path

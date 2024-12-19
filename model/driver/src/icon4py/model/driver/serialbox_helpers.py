@@ -8,8 +8,8 @@
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils import serialbox_utils as sb
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
+from icon4py.model.testing import serialbox as sb
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
@@ -27,10 +27,10 @@ def construct_interpolation_state_for_diffusion(
 ) -> diffus_states.DiffusionInterpolationState:
     grg = savepoint.geofac_grg()
     return diffus_states.DiffusionInterpolationState(
-        e_bln_c_s=as_1D_sparse_field(savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
-        geofac_div=as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],

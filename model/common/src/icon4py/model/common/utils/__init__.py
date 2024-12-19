@@ -8,7 +8,7 @@
 
 from __future__ import annotations
 
-from . import gt4py_field_allocation
+from . import data_allocation
 from ._common import (
     DoubleBuffering,
     Pair,
@@ -29,5 +29,6 @@ __all__ = [
     # Functions
     "chainable",
     # Modules
-    "gt4py_field_allocation",
+    "data_allocation",
+    "serialbox",
 ]

@@ -9,9 +9,9 @@
 import gt4py.next as gtx
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import neighbor_sum
+
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import E2CDim
-
 from icon4pytools.common.metadata import get_stencil_info
 from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
 

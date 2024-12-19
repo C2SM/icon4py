@@ -10,11 +10,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_vertical_tracer_flux_upwind import (
     compute_vertical_tracer_flux_upwind,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 outslice = (slice(None), slice(1, None))
@@ -40,11 +41,11 @@ class TestComputeVerticalTracerFluxUpwind(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_contra_v = helpers.random_field(
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_mflx_contra_v = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim
         )  # TODO (dastrm): should be KHalfDim
-        p_upflux = helpers.zero_field(
+        p_upflux = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim
         )  # TODO (dastrm): should be KHalfDim
         return dict(

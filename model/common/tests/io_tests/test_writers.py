@@ -20,7 +20,7 @@ from icon4py.model.common.io.writers import (
     filter_by_standard_name,
 )
 from icon4py.model.common.states import data, metadata
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from . import test_io
 
@@ -165,7 +165,7 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
     assert len(dataset.variables[writers.TIME]) == 1
     assert "air_density" in dataset.variables
 
-    new_rho = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    new_rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
     state["air_density"] = utils.to_data_array(
         new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
     )

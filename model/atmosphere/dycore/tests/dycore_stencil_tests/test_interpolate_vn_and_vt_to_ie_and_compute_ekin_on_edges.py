@@ -13,7 +13,8 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_and_vt_to_ie_and_co
     interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

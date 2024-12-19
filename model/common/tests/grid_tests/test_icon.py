@@ -17,7 +17,7 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
-from icon4py.model.common.test_utils import grid_utils as gridtest_utils
+from icon4py.model.testing import grid_utils as gridtest_utils
 
 from . import utils
 
