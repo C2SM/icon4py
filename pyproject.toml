@@ -42,6 +42,8 @@ distributed = ["icon4py-common[distributed]>=0.0.6"]
 fortran = ["icon4pytools>=0.0.6"]
 io = ["icon4py-common[io]>=0.0.6"]
 testing = ["icon4py-testing>=0.0.6"]
+cuda11 = ["cupy-cuda11x>=12.0"]
+cuda12 = ["cupy-cuda12x>=12.0"]
 
 [project.urls]
 Homepage = 'https://github.com/C2SM/icon4py'

@@ -111,13 +111,14 @@ def _install_session_venv(
     groups: Sequence[str] = (),
 ) -> None:
     """Install session packages using uv."""
+    extra_args = session.env.get("ICON4PY_NOX_UV_EXTRA_ARGS", "").split()
     session.run_install(
         "uv",
         "sync",
         "--no-dev",
-        "--system-site-packages", # TODO: temporarily to give access to cupy
         *(f"--extra={e}" for e in extras),
         *(f"--group={g}" for g in groups),
+        *extra_args,
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
     for item in args:
