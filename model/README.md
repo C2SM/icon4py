@@ -11,20 +11,9 @@ It includes the following packages:
 - `common`: Contains shared functionality that is required by multiple components.
 - `driver`: Contains the driving code for the model
 
-## Installation Instructions
+## Installation instructions
 
-You can follow the general installation instructions used for the entire icon4py repository, or install each namespace package within this folder independently using the individual folder-specific `requirements.txt` or `requirements-dev.txt` files.
-
-In the following example it is assumed that you have already created and activated a virtual environment.
-
-```bash
-# changing into the corresponding directory
-cd model/atmosphere/dycore
-cd model/atmosphere/advection
-
-# installing a development version
-pip install -r requirements-dev.txt
-```
+Until the development reaches a stable state, we recommend you to follow the general instructions in the [../README.md](../README.md) root folder to install all model component and all its dependencies in a virtual environment for development.
 
 **Note**: For more information specific to each component, please refer to the README in their respective subfolders.
 

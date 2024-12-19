@@ -11,25 +11,36 @@ import random
 
 import pytest
 
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.testing.datatest_fixtures import (
     decomposition_info,
     experiment,
 )
-from icon4py.model.common.test_utils.helpers import backend  # noqa: F401 # fixtures
+from icon4py.model.testing.helpers import backend, grid
+
+
+# Make sure custom icon4py pytest hooks are loaded
+try:
+    import sys
+
+    _ = sys.modules["icon4py.model.testing.pytest_config"]
+except KeyError:
+    from icon4py.model.testing.pytest_config import *  # noqa: F403
+
+__all__ = [
+    # local:
+    "random_name",
+    "test_path",
+    # imported fixtures:
+    "backend",
+    "grid",
+    "decomposition_info",
+    "experiment",
+]
 
 
 @pytest.fixture
-def random_name():
+def random_name() -> str:
     return "test" + str(random.randint(0, 100000))
-
-
-def delete_recursive(p: pathlib.Path):
-    for child in p.iterdir():
-        if child.is_file():
-            child.unlink()
-        else:
-            delete_recursive(child)
-    p.rmdir()
 
 
 @pytest.fixture
@@ -37,4 +48,13 @@ def test_path(tmp_path):
     base_path = tmp_path.joinpath("io_tests")
     base_path.mkdir(exist_ok=True, parents=True, mode=0o777)
     yield base_path
-    delete_recursive(base_path)
+    _delete_recursive(base_path)
+
+
+def _delete_recursive(p: pathlib.Path) -> None:
+    for child in p.iterdir():
+        if child.is_file():
+            child.unlink()
+        else:
+            _delete_recursive(child)
+    p.rmdir()

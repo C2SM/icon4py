@@ -23,7 +23,8 @@ from icon4py.model.common.states import (
     prognostic_state,
     tracer_state as tracers,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
 @pytest.mark.datatest
@@ -48,22 +49,22 @@ def test_diagnose_temperature(
         theta_v=sp.theta_v(),
     )
     diagnostic_state = diagnostics.DiagnosticState(
-        temperature=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        virtual_temperature=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        pressure=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        pressure_ifc=helpers.zero_field(
+        temperature=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        virtual_temperature=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        pressure=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        pressure_ifc=data_alloc.zero_field(
             icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}
         ),
-        u=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        u=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        v=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
     tracer_state = tracers.TracerState(
-        qv=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        qc=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        qr=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        qi=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        qs=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        qg=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qv=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qc=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qr=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qi=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qs=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        qg=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
 
     temperature.diagnose_virtual_temperature_and_temperature(
@@ -118,14 +119,14 @@ def test_diagnose_meridional_and_zonal_winds(
         theta_v=sp.theta_v(),
     )
     diagnostic_state = diagnostics.DiagnosticState(
-        temperature=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        pressure=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        pressure_ifc=helpers.zero_field(
+        temperature=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        pressure=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        pressure_ifc=data_alloc.zero_field(
             icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}
         ),
-        u=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        virtual_temperature=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        u=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        v=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        virtual_temperature=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
     cell_domain = h_grid.domain(dims.CellDim)
     rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
@@ -186,12 +187,12 @@ def test_diagnose_pressure(
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=sp.temperature(),
         virtual_temperature=sp.temperature(),
-        pressure=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        pressure_ifc=helpers.zero_field(
+        pressure=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        pressure_ifc=data_alloc.zero_field(
             icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}
         ),
-        u=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        u=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
+        v=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
 
     cell_domain = h_grid.domain(dims.CellDim)

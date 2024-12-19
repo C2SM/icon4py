@@ -6,11 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from icon4py.model.testing import serialbox as sb
 import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
+from icon4py.model.testing import helpers
 
 
 def verify_diffusion_fields(

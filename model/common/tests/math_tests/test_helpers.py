@@ -6,26 +6,26 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-
 import numpy as np
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple
 from icon4py.model.common.math import helpers
-from icon4py.model.common.test_utils import helpers as test_helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import helpers as test_helpers
 
 
 def test_cross_product(backend):
     mesh = simple.SimpleGrid()
-    x1 = test_helpers.random_field(mesh, dims.EdgeDim)
-    y1 = test_helpers.random_field(mesh, dims.EdgeDim)
-    z1 = test_helpers.random_field(mesh, dims.EdgeDim)
-    x2 = test_helpers.random_field(mesh, dims.EdgeDim)
-    y2 = test_helpers.random_field(mesh, dims.EdgeDim)
-    z2 = test_helpers.random_field(mesh, dims.EdgeDim)
-    x = test_helpers.zero_field(mesh, dims.EdgeDim)
-    y = test_helpers.zero_field(mesh, dims.EdgeDim)
-    z = test_helpers.zero_field(mesh, dims.EdgeDim)
+    x1 = data_alloc.random_field(mesh, dims.EdgeDim)
+    y1 = data_alloc.random_field(mesh, dims.EdgeDim)
+    z1 = data_alloc.random_field(mesh, dims.EdgeDim)
+    x2 = data_alloc.random_field(mesh, dims.EdgeDim)
+    y2 = data_alloc.random_field(mesh, dims.EdgeDim)
+    z2 = data_alloc.random_field(mesh, dims.EdgeDim)
+    x = data_alloc.zero_field(mesh, dims.EdgeDim)
+    y = data_alloc.zero_field(mesh, dims.EdgeDim)
+    z = data_alloc.zero_field(mesh, dims.EdgeDim)
 
     helpers.cross_product_on_edges.with_backend(backend)(
         x1, x2, y1, y2, z1, z2, out=(x, y, z), offset_provider={}

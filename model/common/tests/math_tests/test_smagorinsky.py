@@ -11,8 +11,8 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.reference_funcs import (
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.reference_funcs import (
     enhanced_smagorinski_factor_numpy,
 )
 
@@ -21,8 +21,8 @@ from icon4py.model.common.test_utils.reference_funcs import (
 def test_init_enh_smag_fac(backend, grid):
     if backend is None:
         pytest.skip("test does not run on embedded backend")
-    enh_smag_fac = zero_field(grid, dims.KDim)
-    a_vec = random_field(grid, dims.KDim, low=1.0, high=10.0, extend={dims.KDim: 1})
+    enh_smag_fac = data_alloc.zero_field(grid, dims.KDim)
+    a_vec = data_alloc.random_field(grid, dims.KDim, low=1.0, high=10.0, extend={dims.KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 

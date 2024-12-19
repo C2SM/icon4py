@@ -37,7 +37,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
     tracer_state as tracers,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 # TODO (Chia Rui): Refactor this class when direct import is enabled for gt4py stencils
@@ -244,64 +244,64 @@ class SaturationAdjustment:
 
     def _allocate_tendencies(self):
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
-        self._temperature1 = field_alloc.allocate_zero_field(
+        self._temperature1 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         #: it was originally named as twork in ICON. New temperature before iteration.
-        self._temperature2 = field_alloc.allocate_zero_field(
+        self._temperature2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         #: A mask that indicates whether the grid cell is subsaturated or not.
-        self._subsaturated_mask = field_alloc.allocate_zero_field(
+        self._subsaturated_mask = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
         #: A mask that indicates whether next Newton iteration is required.
-        self._newton_iteration_mask = field_alloc.allocate_zero_field(
+        self._newton_iteration_mask = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
         #: latent heat vaporization / dry air heat capacity at constant volume
-        self._lwdocvd = field_alloc.allocate_zero_field(
+        self._lwdocvd = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self._k_field = field_alloc.allocate_indices(
+        self._k_field = data_alloc.allocate_indices(
             dims.KDim, grid=self.grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
         )
         # TODO (Chia Rui): remove local pressure and pressire_ifc when scan operator can be called along with pressure tendency computation
-        self._pressure = field_alloc.allocate_zero_field(
+        self._pressure = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self._pressure_ifc = field_alloc.allocate_zero_field(
+        self._pressure_ifc = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
-        self._pressure_ifc = field_alloc.allocate_zero_field(
+        self._pressure_ifc = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
-        self._new_exner = field_alloc.allocate_zero_field(
+        self._new_exner = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self._new_virtual_temperature = field_alloc.allocate_zero_field(
+        self._new_virtual_temperature = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
         # TODO (Chia Rui): remove the tendency terms below when architecture of the entire phyiscs component is ready to use.
-        self.temperature_tendency = field_alloc.allocate_zero_field(
+        self.temperature_tendency = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.qv_tendency = field_alloc.allocate_zero_field(
+        self.qv_tendency = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.qc_tendency = field_alloc.allocate_zero_field(
+        self.qc_tendency = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.virtual_temperature_tendency = field_alloc.allocate_zero_field(
+        self.virtual_temperature_tendency = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.exner_tendency = field_alloc.allocate_zero_field(
+        self.exner_tendency = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.pressure_tendency = field_alloc.allocate_zero_field(
+        self.pressure_tendency = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.pressure_ifc_tendency = field_alloc.allocate_zero_field(
+        self.pressure_ifc_tendency = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
 
@@ -493,7 +493,7 @@ class SaturationAdjustment:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=self.grid.num_levels,
-                vertical_end=self.grid.num_levels + gtx.int32(1),
+                vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={"Koff": dims.KDim},
             )
 
@@ -531,7 +531,7 @@ class SaturationAdjustment:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=gtx.int32(0),
-                vertical_end=self.grid.num_levels + gtx.int32(1),
+                vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={},
             )
 

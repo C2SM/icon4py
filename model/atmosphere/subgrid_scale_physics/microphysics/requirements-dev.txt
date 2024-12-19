@@ -1,3 +1,0 @@
--r ../../../../base-requirements-dev.txt
--e ../../../common
--e .

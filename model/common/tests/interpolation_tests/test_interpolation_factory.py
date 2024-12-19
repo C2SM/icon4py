@@ -15,7 +15,7 @@ from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
 )
-from icon4py.model.common.test_utils import (
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     helpers as test_helpers,

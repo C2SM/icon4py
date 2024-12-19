@@ -13,7 +13,8 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.common.test_utils import helpers, parallel_helpers
+from icon4py.model.testing import helpers, parallel_helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .. import utils
 
@@ -98,7 +99,7 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
     )
 
     nnow = 0
@@ -138,8 +139,8 @@ def test_run_solve_nonhydro_single_step(
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    prognostic_state_ls = utils.create_prognostic_states(sp)
-    prognostic_state_nnew = prognostic_state_ls[1]
+    prognostic_states = utils.create_prognostic_states(sp)
+
 
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
@@ -163,15 +164,11 @@ def test_run_solve_nonhydro_single_step(
 
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state_ls=prognostic_state_ls,
+        prognostic_states=prognostic_states,
         prep_adv=prep_adv,
         divdamp_fac_o2=initial_divdamp_fac,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        nnew=nnew,
-        nnow=nnow,
-        lclean_mflx=clean_mflx,
+        at_initial_timestep=recompute,
         lprep_adv=lprep_adv,
         at_first_substep=jstep_init == 0,
         at_last_substep=jstep_init == (ndyn_substeps - 1),
@@ -179,30 +176,30 @@ def test_run_solve_nonhydro_single_step(
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: dycore step run ")
 
     expected_theta_v = sp_step_exit.theta_v_new().asnumpy()
-    calculated_theta_v = prognostic_state_nnew.theta_v.asnumpy()
+    calculated_theta_v = prognostic_states.next.theta_v.asnumpy()
     assert helpers.dallclose(
         expected_theta_v,
         calculated_theta_v,
     )
     expected_exner = sp_step_exit.exner_new().asnumpy()
-    calculated_exner = prognostic_state_nnew.exner.asnumpy()
+    calculated_exner = prognostic_states.next.exner.asnumpy()
     assert helpers.dallclose(
         expected_exner,
         calculated_exner,
     )
     assert helpers.dallclose(
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        prognostic_state_nnew.vn.asnumpy(),
+        prognostic_states.next.vn.asnumpy(),
         rtol=1e-10,
     )
     assert helpers.dallclose(
         savepoint_nonhydro_exit.w_new().asnumpy(),
-        prognostic_state_nnew.w.asnumpy(),
+        prognostic_states.next.w.asnumpy(),
         atol=8e-14,
     )
     assert helpers.dallclose(
         savepoint_nonhydro_exit.rho_new().asnumpy(),
-        prognostic_state_nnew.rho.asnumpy(),
+        prognostic_states.next.rho.asnumpy(),
     )
 
     assert helpers.dallclose(
