@@ -41,7 +41,7 @@ nox.options.sessions = ["test_model", "test_tools"]
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
     """Run pytest benchmarks for selected icon4py model subpackages."""
-    _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
+    _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
 
     with session.chdir(f"model/{subpackage}"):
         session.run(*"pytest -sv --benchmark-only".split(), *session.posargs)
@@ -55,7 +55,7 @@ def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> No
 @nox.parametrize("selection", MODEL_TESTS_SUBSETS)
 def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: ModelSubpackagePath) -> None:
     """Run tests for selected icon4py model subpackages."""
-    _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
+    _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
 
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
@@ -94,7 +94,7 @@ def test_model_stencils(session: nox.Session, subpackage: ModelSubpackagePath) -
 @nox.parametrize("datatest", [False, True])
 def test_tools(session: nox.Session, datatest: bool) -> None:
     """Run tests for the Fortran integration tools."""
-    _install_session_venv(session, extras=["fortran,", "io", "testing"], groups=["test"])
+    _install_session_venv(session, extras=["fortran", "io", "testing"], groups=["test"])
 
     with session.chdir("tools"):
         session.run(
