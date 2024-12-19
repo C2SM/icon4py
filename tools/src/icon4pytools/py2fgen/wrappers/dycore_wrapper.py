@@ -420,21 +420,21 @@ def solve_nh_run(
         exner_dyn_incr=exner_dyn_incr,
     )
 
-    prognostic_state_nnow = PrognosticState(
-        w=w_now,
-        vn=vn_now,
-        theta_v=theta_v_now,
-        rho=rho_now,
-        exner=exner_now,
-    )
-    prognostic_state_nnew = PrognosticState(
-        w=w_new,
-        vn=vn_new,
-        theta_v=theta_v_new,
-        rho=rho_new,
-        exner=exner_new,
-    )
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    # prognostic_state_nnow = PrognosticState(
+    #     w=w_now,
+    #     vn=vn_now,
+    #     theta_v=theta_v_now,
+    #     rho=rho_now,
+    #     exner=exner_now,
+    # )
+    # prognostic_state_nnew = PrognosticState(
+    #     w=w_new,
+    #     vn=vn_new,
+    #     theta_v=theta_v_new,
+    #     rho=rho_new,
+    #     exner=exner_new,
+    # )
+    # prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
 
     # adjust for Fortran indexes
     nnow = nnow - 1
@@ -443,7 +443,16 @@ def solve_nh_run(
 
     dycore_wrapper_state["granule"].time_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state_ls=prognostic_state_ls,
+        rho_now=rho_now,
+        rho_new=rho_new,
+        exner_now=exner_now,
+        exner_new=exner_new,
+        w_now=w_now,
+        w_new=w_new,
+        theta_v_now=theta_v_now,
+        theta_v_new=theta_v_new,
+        vn_now=vn_now,
+        vn_new=vn_new,
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
