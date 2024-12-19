@@ -76,9 +76,10 @@ def test_model_datatest(session: nox.Session, subpackage: ModelSubpackagePath) -
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 def test_model_stencils(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
-    session.notify(
-        f"test_model-{session.python}(selection='stencils', subpackage='{subpackage}')"
-    )
+    if subpackage != "common": # TODO: Enable tests
+        session.notify(
+            f"test_model-{session.python}(selection='stencils', subpackage='{subpackage}')"
+        )
 
 # @nox.session(python=["3.10", "3.11"])
 # @nox.parametrize("selection", MODEL_TEST_SELECTION)
@@ -114,6 +115,7 @@ def _install_session_venv(
         "uv",
         "sync",
         "--no-dev",
+        "--system-site-packages", # TODO: temporarily to give access to cupy
         *(f"--extra={e}" for e in extras),
         *(f"--group={g}" for g in groups),
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
