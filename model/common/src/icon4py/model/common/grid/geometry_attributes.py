@@ -55,6 +55,8 @@ EDGE_NORMAL_Y: Final[str] = "y_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_Z: Final[str] = "z_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_U: Final[str] = "eastward_component_of_edge_normal"
 EDGE_NORMAL_V: Final[str] = "northward_component_of_edge_normal"
+EDGE_DUAL_U: Final[str] = "eastward_component_of_edge_dual"
+EDGE_DUAL_V: Final[str] = "northward_component_of_edge_dual"
 EDGE_NORMAL_VERTEX_U: Final[str] = "eastward_component_of_edge_normal_on_vertex"
 EDGE_NORMAL_VERTEX_V: Final[str] = "northward_component_of_edge_normal_on_vertex"
 EDGE_NORMAL_CELL_U: Final[str] = "eastward_component_of_edge_normal_on_cell"
@@ -316,6 +318,22 @@ attrs: dict[str, model.FieldMetaData] = {
         units="1",
         dims=(dims.VertexDim, dims.V2EDim),
         icon_var_name="t_grid_vertex%edge_orientation",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_DUAL_U: dict(
+        standard_name=EDGE_DUAL_U,
+        long_name="ptr_patch%edges%dual_normal_vert_x",
+        units="",  # TODO
+        dims=(dims.EdgeDim, dims.E2CDim),
+        icon_var_name="ptr_patch%edges%dual_normal_vert_x",
+        dtype=ta.wpfloat,
+    ),
+    EDGE_DUAL_V: dict(
+        standard_name=EDGE_DUAL_V,
+        long_name="ptr_patch%edges%dual_normal_vert_y",
+        units="",  # TODO
+        dims=(dims.EdgeDim, dims.E2CDim),
+        icon_var_name="ptr_patch%edges%dual_normal_vert_y",
         dtype=ta.wpfloat,
     ),
 }
