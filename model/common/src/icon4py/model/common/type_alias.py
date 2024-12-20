@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
-from typing import TypeAlias
+from typing import Literal, TypeAlias
 
 from gt4py.next.ffront.fbuiltins import float32, float64
 
@@ -15,12 +15,23 @@ from gt4py.next.ffront.fbuiltins import float32, float64
 DEFAULT_PRECISION = "double"
 
 wpfloat: TypeAlias = float64
+vpfloat: type[float32] | type[float64] = wpfloat
 
 precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
-match precision:
-    case "double":
-        vpfloat = wpfloat
-    case "mixed":
-        vpfloat: TypeAlias = float32
-    case other:
-        raise ValueError("Only 'double' and 'mixed' precision are supported.")
+
+
+def set_precision(new_precision: Literal["double", "mixed"]) -> None:
+    global precision
+    global vpfloat
+
+    precision = new_precision.lower()
+    match precision:
+        case "double":
+            vpfloat = wpfloat
+        case "mixed":
+            vpfloat = float32
+        case _:
+            raise ValueError("Only 'double' and 'mixed' precision are supported.")
+
+
+set_precision(precision)
