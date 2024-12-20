@@ -41,7 +41,7 @@ nox.options.sessions = ["test_model", "test_tools"]
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
     """Run pytest benchmarks for selected icon4py model subpackages."""
-    _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
+    _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
     with session.chdir(f"model/{subpackage}"):
         session.run(*"pytest -sv --benchmark-only".split(), *session.posargs)
@@ -57,13 +57,20 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
     """Run tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
 
+    no_test_subpackages = {  # subpackages where test discovery fails because no stencil tests found
+        "atmosphere/subgrid_scale_physics/microphysics",
+        "driver",
+    }
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
-        session.run(
-            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')}".split(),
-            *pytest_args,
-            *session.posargs
-        )
+        if subpackage in no_test_subpackages:
+            session.skip(f"no tests configured for {subpackage} subpackage")
+        else:
+            session.run(
+                *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')}".split(),
+                *pytest_args,
+                *session.posargs
+            )
 
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
