@@ -57,20 +57,13 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
     """Run tests for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "fortran", "io", "testing"], groups=["test"])
 
-    no_test_subpackages = {  # subpackages where test discovery fails because no stencil tests found
-        "atmosphere/subgrid_scale_physics/microphysics",
-        "driver",
-    }
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
-        if subpackage in no_test_subpackages:
-            session.skip(f"no tests configured for {subpackage} subpackage")
-        else:
-            session.run(
-                *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')}".split(),
-                *pytest_args,
-                *session.posargs
-            )
+        session.run(
+            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')}".split(),
+            *pytest_args,
+            *session.posargs
+        )
 
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
@@ -83,7 +76,13 @@ def test_model_datatest(session: nox.Session, subpackage: ModelSubpackagePath) -
 @nox.session(python=["3.10", "3.11"])
 @nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
 def test_model_stencils(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
-    if subpackage != "common": # TODO: Enable tests
+    notest_subpackages = {  # test discovery fails because no stencil tests found
+        "atmosphere/subgrid_scale_physics/microphysics",
+        "driver",
+    }
+    if subpackage in notest_subpackages:
+        session.skip(f"no tests configured for {subpackage} subpackage")
+    elif subpackage != "common":  # TODO: Enable tests
         session.notify(
             f"test_model-{session.python}(selection='stencils', subpackage='{subpackage}')"
         )
