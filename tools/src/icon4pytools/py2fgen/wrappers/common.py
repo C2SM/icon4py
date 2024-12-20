@@ -12,7 +12,6 @@ import logging
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import base, horizontal, icon
-
 from icon4pytools.py2fgen.settings import config
 
 

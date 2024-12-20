@@ -9,9 +9,10 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.atmosphere.dycore import dycore_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.testing import helpers
 
 
 def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: float):
@@ -23,13 +24,13 @@ def bdy_divdamp_numpy(coeff: float, field: np.array):
     return 0.75 / (coeff + constants.DBL_EPS) * np.abs(field)
 
 
-def test_caclulate_scal_divdamp_order_24(backend):
+def test_calculate_scal_divdamp_order_24(backend):
     divdamp_fac_o2 = 3.0
     divdamp_order = 24
     mean_cell_area = 1000.0
     grid = simple_grid.SimpleGrid()
-    enh_divdamp_fac = helpers.random_field(grid, dims.KDim)
-    out = helpers.random_field(grid, dims.KDim)
+    enh_divdamp_fac = data_alloc.random_field(grid, dims.KDim)
+    out = data_alloc.random_field(grid, dims.KDim)
 
     dycore_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
@@ -49,8 +50,8 @@ def test_calculate_scal_divdamp_any_order(backend):
     divdamp_order = 3
     mean_cell_area = 1000.0
     grid = simple_grid.SimpleGrid()
-    enh_divdamp_fac = helpers.random_field(grid, dims.KDim)
-    out = helpers.random_field(grid, dims.KDim)
+    enh_divdamp_fac = data_alloc.random_field(grid, dims.KDim)
+    out = data_alloc.random_field(grid, dims.KDim)
 
     dycore_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
@@ -66,8 +67,8 @@ def test_calculate_scal_divdamp_any_order(backend):
 
 def test_calculate_bdy_divdamp(backend):
     grid = simple_grid.SimpleGrid()
-    scal_divdamp = helpers.random_field(grid, dims.KDim)
-    out = helpers.zero_field(grid, dims.KDim)
+    scal_divdamp = data_alloc.random_field(grid, dims.KDim)
+    out = data_alloc.zero_field(grid, dims.KDim)
     coeff = 0.3
     dycore_utils._calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp, coeff, constants.DBL_EPS, out=out, offset_provider={}
@@ -77,9 +78,9 @@ def test_calculate_bdy_divdamp(backend):
 
 def test_calculate_divdamp_fields(backend):
     grid = simple_grid.SimpleGrid()
-    divdamp_field = helpers.random_field(grid, dims.KDim)
-    scal_divdamp = helpers.zero_field(grid, dims.KDim)
-    boundary_divdamp = helpers.zero_field(grid, dims.KDim)
+    divdamp_field = data_alloc.random_field(grid, dims.KDim)
+    scal_divdamp = data_alloc.zero_field(grid, dims.KDim)
+    boundary_divdamp = data_alloc.zero_field(grid, dims.KDim)
     divdamp_order = gtx.int32(24)
     mean_cell_area = 1000.0
     divdamp_fac_o2 = 0.7

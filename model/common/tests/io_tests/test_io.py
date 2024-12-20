@@ -29,7 +29,8 @@ from icon4py.model.common.io.io import (
     to_delta,
 )
 from icon4py.model.common.states import data
-from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils, grid_utils
 
 
 # setting backend to fieldview embedded here.
@@ -46,11 +47,13 @@ global_grid = grid_utils.get_grid_manager_for_experiment(
 
 
 def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
-    rho = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    exner = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    theta_v = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
-    w = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=np.float32)
-    vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim, dtype=np.float32)
+    rho = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    w = data_alloc.random_field(
+        grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=np.float32
+    )
+    vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=np.float32)
     return {
         "air_density": utils.to_data_array(rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
         "exner_function": utils.to_data_array(
