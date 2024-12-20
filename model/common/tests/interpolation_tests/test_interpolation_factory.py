@@ -237,9 +237,9 @@ def test_get_mass_conserving_cell_average_weight(
 def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol):
     field_ref = interpolation_savepoint.e_flx_avg()
     factory = get_interpolation_factory(backend, experiment, grid_file)
-    # grid = factory.grid
+    grid = factory.grid
     field = factory.get(attrs.E_FLX_AVG)
-    # assert field.shape == (grid.num_edges, V2E_SIZE)
+    assert field.shape == (grid.num_edges, grid.connectivities[dims.E2C2EODim].shape[1])
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=rtol)
 
 
