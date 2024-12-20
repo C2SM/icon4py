@@ -10,11 +10,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_vertical_parabola_limiter_condition import (
     compute_vertical_parabola_limiter_condition,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestComputeVerticalParabolaLimiterCondition(helpers.StencilTest):
@@ -30,9 +31,9 @@ class TestComputeVerticalParabolaLimiterCondition(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_face = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        l_limit = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        l_limit = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
         return dict(
             p_face=p_face,
             p_cc=p_cc,

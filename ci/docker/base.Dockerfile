@@ -82,6 +82,4 @@ RUN pyenv update && \
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
 
-ARG CUPY_PACKAGE=cupy-cuda12x
-ARG CUPY_VERSION=13.3.0
-RUN pip install --upgrade pip setuptools wheel tox clang-format ${CUPY_PACKAGE}==${CUPY_VERSION}
+RUN pip install --upgrade pip setuptools wheel uv nox clang-format

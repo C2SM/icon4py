@@ -10,8 +10,8 @@ import string
 
 import pytest
 from gt4py.next.type_system.type_specifications import ScalarKind
-from icon4py.model.common import dimension as dims
 
+from icon4py.model.common import dimension as dims
 from icon4pytools.py2fgen.generate import (
     generate_c_header,
     generate_f90_interface,
