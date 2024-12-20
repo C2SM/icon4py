@@ -20,7 +20,7 @@ test_model_stencils_aarch64:
     - nox -s "test_model_datatest-3.10(subpackage='$COMPONENT')" -- --backend=$BACKEND
   parallel:
     matrix:
-    - COMPONENT: [atmosphere/advection/tests/advection_tests, atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests]
+    - COMPONENT: [atmosphere/advection, atmosphere/diffusion, atmosphere/dycore]
       BACKEND: [dace_cpu]
 test_model_datatests_x86_64:
   extends: [.test_model_datatests, .test_template_x86_64]
