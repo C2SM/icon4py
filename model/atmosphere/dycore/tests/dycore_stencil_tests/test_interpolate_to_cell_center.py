@@ -26,7 +26,7 @@ def interpolate_to_cell_center_numpy(
     grid, interpolant: np.array, e_bln_c_s: np.array, **kwargs
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    c2ce = grid.get_offset_provider("C2CE").table
+    c2ce = grid.get_offset_provider("C2CE").ndarray
 
     interpolation = np.sum(
         interpolant[grid.connectivities[dims.C2EDim]] * e_bln_c_s[c2ce],
