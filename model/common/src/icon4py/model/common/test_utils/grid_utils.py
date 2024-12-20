@@ -27,9 +27,13 @@ REGIONAL_GRIDFILE = "grid.nc"
 
 GLOBAL_GRIDFILE = "icon_grid_0013_R02B04_R.nc"
 
+TORUS_GRIDFILE = "Torus_Triangles_1000m_x_1000m_res250m.nc"
+
 GLOBAL_NUM_LEVELS = 60
 
 MCH_CH_R04B09_LEVELS = 65
+
+TORUS_NUM_LEVELS = 35
 
 grid_geometries = {}
 
@@ -49,6 +53,12 @@ def get_grid_manager_for_experiment(
             num_levels=MCH_CH_R04B09_LEVELS,
             backend=backend,
         )
+    elif experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        return _download_and_load_gridfile(
+            dt_utils.GAUSS3D_EXPERIMENT,
+            num_levels=TORUS_NUM_LEVELS,
+            backend=backend,
+        )
     else:
         raise ValueError(f"Unknown experiment: {experiment}")
 
@@ -65,6 +75,8 @@ def _file_name(grid_file: str):
             return REGIONAL_GRIDFILE
         case dt_utils.R02B04_GLOBAL:
             return GLOBAL_GRIDFILE
+        case dt_utils.GAUSS3D_EXPERIMENT:
+            return TORUS_GRIDFILE
         case _:
             raise NotImplementedError(f"Add grid path for experiment '{grid_file}'")
 
@@ -125,7 +137,13 @@ def is_regional(experiment_or_file: str):
 
 
 def get_num_levels(experiment: str):
-    return MCH_CH_R04B09_LEVELS if experiment == dt_utils.REGIONAL_EXPERIMENT else GLOBAL_NUM_LEVELS
+    match experiment:
+        case dt_utils.REGIONAL_EXPERIMENT:
+            return MCH_CH_R04B09_LEVELS
+        case dt_utils.GAUSS3D_EXPERIMENT:
+            return TORUS_NUM_LEVELS
+        case _:
+            return GLOBAL_NUM_LEVELS
 
 
 def get_grid_geometry(

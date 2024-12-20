@@ -22,6 +22,8 @@ from icon4py.model.common.test_utils import (
     reference_funcs as ref_funcs,
     serialbox_utils as sb,
 )
+from icon4py.model.driver import icon4py_configuration
+from icon4py.model.driver.test_cases import gauss3d
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,
@@ -32,7 +34,7 @@ from .utils import (
 )
 
 
-grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}}
+grid_functionality = {dt_utils.GLOBAL_EXPERIMENT: {}, dt_utils.REGIONAL_EXPERIMENT: {}, dt_utils.GAUSS3D_EXPERIMENT: {}}
 
 
 def get_grid_for_experiment(experiment, backend):
@@ -48,11 +50,15 @@ def get_cell_geometry_for_experiment(experiment, backend):
 
 
 def _get_or_initialize(experiment, backend, name):
-    grid_file = (
-        dt_utils.REGIONAL_EXPERIMENT
-        if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else dt_utils.R02B04_GLOBAL
-    )
+    match experiment:
+        case dt_utils.REGIONAL_EXPERIMENT:
+            grid_file = dt_utils.REGIONAL_EXPERIMENT
+        case dt_utils.GLOBAL_EXPERIMENT:
+            grid_file = dt_utils.R02B04_GLOBAL
+        case dt_utils.GAUSS3D_EXPERIMENT:
+            grid_file = dt_utils.GAUSS3D_EXPERIMENT
+        case _:
+            raise NotImplementedError(f"Unknown experiment")
 
     if not grid_functionality[experiment].get(name):
         geometry_ = grid_utils.get_grid_geometry(backend, experiment, grid_file)
@@ -386,9 +392,10 @@ def test_verify_diffusion_init_against_savepoint(
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GAUSS3D_EXPERIMENT, "2001-01-01T00:00:02.000", "2001-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps, orchestration", [(2, [True, False])])
+@pytest.mark.parametrize("ndyn_substeps, orchestration", [(5, [False, False])])
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -402,6 +409,7 @@ def test_run_diffusion_single_step(
     ndyn_substeps,
     backend,
     orchestration,
+    ranked_data_path,
 ):
     if orchestration and ("dace" not in backend.name.lower()):
         raise pytest.skip("This test is only executed for `dace backends.")
@@ -430,21 +438,35 @@ def test_run_diffusion_single_step(
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
 
-    diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=savepoint_diffusion_init.hdef_ic(),
-        div_ic=savepoint_diffusion_init.div_ic(),
-        dwdx=savepoint_diffusion_init.dwdx(),
-        dwdy=savepoint_diffusion_init.dwdy(),
-    )
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        exp_config = icon4py_configuration.read_config(experiment)
+        vertical_config = exp_config.vertical_grid_config
+        (
+        diagnostic_state, # (of diffusion)
+        _, _, _, _, _, _,
+        ) = gauss3d.model_initialization_gauss3d(
+            grid,
+            edge_geometry,
+            ranked_data_path.joinpath(f"{experiment}").joinpath("ser_data"),
+            0,
+        )
+    else:
+        diagnostic_state = diffusion_states.DiffusionDiagnosticState(
+            hdef_ic=savepoint_diffusion_init.hdef_ic(),
+            div_ic=savepoint_diffusion_init.div_ic(),
+            dwdx=savepoint_diffusion_init.dwdx(),
+            dwdy=savepoint_diffusion_init.dwdy(),
+        )
+        vertical_config = v_grid.VerticalGridConfig(
+            grid.num_levels,
+            lowest_layer_thickness=lowest_layer_thickness,
+            model_top_height=model_top_height,
+            stretch_factor=stretch_factor,
+            rayleigh_damping_height=damping_height,
+        )
+
     prognostic_state = savepoint_diffusion_init.construct_prognostics()
 
-    vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
     vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
