@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from typing import Final, Literal, TypeAlias
 
@@ -119,14 +120,14 @@ def _install_session_venv(
     groups: Sequence[str] = (),
 ) -> None:
     """Install session packages using uv."""
-    extra_args = session.env.get("ICON4PY_NOX_UV_EXTRA_ARGS", "").split()
+    if (env_extras := session.env.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", "")):
+        extras = [*extras, *re.split(r'\W+', env_extras)]
     session.run_install(
         "uv",
         "sync",
         "--no-dev",
         *(f"--extra={e}" for e in extras),
         *(f"--group={g}" for g in groups),
-        *extra_args,
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},
     )
     for item in args:

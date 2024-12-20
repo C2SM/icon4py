@@ -78,7 +78,7 @@ build_image_aarch64:
   variables:
     CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/22.11"
-    ICON4PY_NOX_UV_EXTRA_ARGS: "--extra=cuda11"
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda11"
 .test_template_aarch64:
   extends: [.container-runner-todi-gh200, .test_template]
   needs: [build_image_aarch64]
@@ -91,4 +91,4 @@ build_image_aarch64:
     # Another problem, observed in test stage, is that gpu tests hang in combination with CUDA MPS,
     # when high test parallelism is used.
     NUM_PROCESSES: 16
-    ICON4PY_NOX_UV_EXTRA_ARGS: "--extra=cuda12"
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
