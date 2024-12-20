@@ -37,13 +37,13 @@ version = "0.0.6"
 
 [project.optional-dependencies]
 all = ["icon4py[dace,distributed,fortran,io,testing]"]
-dace = ["icon4py-common[dace]>=0.0.6", "dace<1.0"]  # TODO(egparedes): Dace should be removed after updating gt4py
-distributed = ["icon4py-common[distributed]>=0.0.6"]
+cuda11 = ["icon4py-common[cuda11]"]
+cuda12 = ["icon4py-common[cuda12]"]
+dace = ["icon4py-common[dace]"]
+distributed = ["icon4py-common[distributed]"]
 fortran = ["icon4pytools>=0.0.6"]
-io = ["icon4py-common[io]>=0.0.6"]
-testing = ["icon4py-testing>=0.0.6"]
-cuda11 = ["cupy-cuda11x>=12.0"]
-cuda12 = ["cupy-cuda12x>=12.0"]
+io = ["icon4py-common[io]"]
+testing = ["icon4py-testing"]
 
 [project.urls]
 Homepage = 'https://github.com/C2SM/icon4py'
@@ -95,6 +95,12 @@ dev = [
 
 # -- uv: packages & workspace --
 [tool.uv]
+conflicts = [
+  [
+    {extra = "cuda11"},
+    {extra = "cuda12"},
+  ],
+]
 
 [[tool.uv.index]]
 name = "test.pypi"

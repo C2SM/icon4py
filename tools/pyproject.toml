@@ -41,8 +41,8 @@ requires-python = '>=3.10'
 version = "0.0.6"
 
 [project.optional-dependencies]
-cupy11 = ['cupy-cuda11x>=13.0']
-cupy12 = ['cupy-cuda12x>=13.0']
+cuda11 = ['cupy-cuda11x>=13.0', 'gt4py[cuda11]']
+cuda12 = ['cupy-cuda12x>=13.0', 'gt4py[cuda12]']
 
 [project.scripts]
 f2ser = 'icon4pytools.f2ser.cli:main'
@@ -115,12 +115,3 @@ known-third-party = ['gt4py']
 
 [tool.setuptools.packages]
 find = {namespaces = true, where = ['src']}
-
-# -- uv --
-[tool.uv]
-conflicts = [
-  [
-    {extra = "cupy11"},
-    {extra = "cupy12"}
-  ]
-]
