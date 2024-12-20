@@ -17,11 +17,11 @@ test_model_stencils_aarch64:
 .test_model_datatests:
   stage: test
   script:
-    - nox -s "test_model_datatest-3.10(subpackage='$COMPONENT')" -- --backend=$BACKEND --verbose
+    - nox -s "test_model_datatest-3.10(subpackage='$COMPONENT')" -- --backend=$BACKEND
   parallel:
     matrix:
-    - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests]
-      BACKEND: [dace_cpu_noopt]
+    - COMPONENT: [atmosphere/advection/tests/advection_tests, atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests]
+      BACKEND: [dace_cpu]
 test_model_datatests_x86_64:
   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
