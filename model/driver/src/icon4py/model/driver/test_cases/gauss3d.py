@@ -98,13 +98,6 @@ def model_initialization_gauss3d(
     theta_v_numpy = np.zeros((num_cells, num_levels), dtype=float)
     eta_v_numpy = np.zeros((num_cells, num_levels), dtype=float)
 
-    mask_array_edge_start_plus1_to_edge_end = np.ones(num_edges, dtype=bool)
-    mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
-    mask = np.repeat(
-        np.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1),
-        num_levels,
-        axis=1,
-    )
     primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
 
     # Define test case parameters
@@ -121,8 +114,7 @@ def model_initialization_gauss3d(
     log.info("Topography can only be read from serialized data for now.")
 
     # Horizontal wind field
-    u = np.where(mask, nh_u0, 0.0)
-    vn_numpy = u * primal_normal_x
+    vn_numpy = nh_u0 * primal_normal_x
     log.info("Wind profile assigned.")
 
     # Vertical temperature profile
