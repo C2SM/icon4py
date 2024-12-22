@@ -494,15 +494,13 @@ class SolveNonhydro:
         self._compute_theta_and_exner = compute_theta_and_exner.with_backend(self._backend)
         self._compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(self._backend)
         self._update_theta_v = update_theta_v.with_backend(self._backend)
-        self._compute_first_vertical_derivative = (
-            compute_first_vertical_derivative.with_backend(self._backend)
+        self._compute_first_vertical_derivative = compute_first_vertical_derivative.with_backend(
+            self._backend
         )
-        self._interpolate_to_half_levels_vp = (
-            interpolate_to_half_levels_vp.with_backend(self._backend)
+        self._interpolate_to_half_levels_vp = interpolate_to_half_levels_vp.with_backend(
+            self._backend
         )
-        self._interpolate_to_surface = (
-            interpolate_to_surface.with_backend(self._backend)
-        )
+        self._interpolate_to_surface = interpolate_to_surface.with_backend(self._backend)
         self._init_two_cell_kdim_fields_with_zero_vp = (
             init_two_cell_kdim_fields_with_zero_vp.with_backend(self._backend)
         )
@@ -1029,7 +1027,7 @@ class SolveNonhydro:
                 ntnd=self.ntl1,
                 cell_areas=self._cell_params.area,
                 w_now=w_now,
-                vn_now=vn_now
+                vn_now=vn_now,
             )
 
         #  Precompute Rayleigh damping factor
@@ -1777,9 +1775,7 @@ class SolveNonhydro:
                 offset_provider=self._grid.offset_providers,
             )
             log.debug("exchanging prognostic field 'w' and local field 'z_dwdz_dd'")
-            self._exchange.exchange_and_wait(
-                dims.CellDim, w_new, z_fields.z_dwdz_dd
-            )
+            self._exchange.exchange_and_wait(dims.CellDim, w_new, z_fields.z_dwdz_dd)
         else:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(dims.CellDim, w_new)
@@ -1846,7 +1842,7 @@ class SolveNonhydro:
             ntnd=self.ntl2,
             cell_areas=self._cell_params.area,
             w_new=w_new,
-            vn_new=vn_new
+            vn_new=vn_new,
         )
 
         nvar = nnew
