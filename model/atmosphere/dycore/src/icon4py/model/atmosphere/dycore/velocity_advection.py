@@ -13,11 +13,14 @@ from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
-    correct_contravariant_vertical_velocity,
+from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
+    add_extra_diffusion_for_w_con_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
-    copy_cell_kdim_field_to_vp,
+from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advection_of_w import (
+    add_interpolated_horizontal_advection_of_w,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
+    compute_advective_normal_wind_tendency,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_advective_vertical_wind_tendency import (
     compute_advective_vertical_wind_tendency,
@@ -25,33 +28,30 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advective_vertical_wind_te
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     compute_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advection_of_w import (
-    add_interpolated_horizontal_advection_of_w,
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
+    compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
     compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
-    interpolate_to_half_levels_vp,
+from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
+from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
+    copy_cell_kdim_field_to_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
+    correct_contravariant_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     init_cell_kdim_field_with_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
-    add_extra_diffusion_for_w_con_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
-    compute_advective_normal_wind_tendency,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
-    compute_horizontal_advection_term_for_vertical_velocity,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
 from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical_velocity_to_full_levels import (
     interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
     interpolate_to_cell_center,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
+    interpolate_to_half_levels_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
@@ -144,17 +144,15 @@ class VelocityAdvection:
         self._correct_contravariant_vertical_velocity = (
             correct_contravariant_vertical_velocity.with_backend(self._backend)
         )
-        self._copy_cell_kdim_field_to_vp = (
-            copy_cell_kdim_field_to_vp.with_backend(self._backend)
+        self._copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(self._backend)
+        self._compute_contravariant_correction = compute_contravariant_correction.with_backend(
+            self._backend
         )
-        self._compute_contravariant_correction = (
-            compute_contravariant_correction.with_backend(self._backend)
+        self._compute_horizontal_kinetic_energy = compute_horizontal_kinetic_energy.with_backend(
+            self._backend
         )
-        self._compute_horizontal_kinetic_energy = (
-            compute_horizontal_kinetic_energy.with_backend(self._backend)
-        )
-        self._init_cell_kdim_field_with_zero_vp = (
-            init_cell_kdim_field_with_zero_vp.with_backend(self._backend)
+        self._init_cell_kdim_field_with_zero_vp = init_cell_kdim_field_with_zero_vp.with_backend(
+            self._backend
         )
         self._add_extra_diffusion_for_w_con_approaching_cfl = (
             add_extra_diffusion_for_w_con_approaching_cfl.with_backend(self._backend)
@@ -246,7 +244,6 @@ class VelocityAdvection:
         cell_areas: fa.CellField[float],
         w_now,
         vn_now,
-
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -565,7 +562,7 @@ class VelocityAdvection:
         ntnd: int,
         cell_areas: fa.CellField[float],
         w_new,
-        vn_new
+        vn_new,
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
