@@ -10,23 +10,19 @@ import datetime
 import logging
 import pathlib
 import uuid
-from typing import Callable, NamedTuple
+from typing import Callable
 
 import click
 from devtools import Timer
-from gt4py.next import gtfn_cpu
 
-import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
     diffusion_states,
 )
-from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state as prognostics,
-)
+from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
@@ -65,10 +61,15 @@ class TimeLoop:
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
 
+        self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
+        self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
+
     def re_init(self):
         self._simulation_date = self.run_config.start_date
         self._is_first_step_in_simulation = True
         self._n_substeps_var = self.run_config.n_substeps
+        self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
+        self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
     def _validate_config(self):
         if self._n_time_steps < 0:
@@ -97,6 +98,14 @@ class TimeLoop:
         return self._simulation_date
 
     @property
+    def prognostic_now(self):
+        return self._now
+
+    @property
+    def prognostic_next(self):
+        return self._next
+
+    @property
     def n_time_steps(self):
         return self._n_time_steps
 
@@ -104,18 +113,23 @@ class TimeLoop:
     def substep_timestep(self):
         return self._substep_timestep
 
+    def _swap(self):
+        time_n_swap = self._next
+        self._next = self._now
+        self._now = time_n_swap
+
     def _full_name(self, func: Callable):
         return ":".join((self.__class__.__name__, func.__name__))
 
     def time_integration(
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
+        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
         # TODO (Chia Rui): expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
-        prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
+        prognostic_state_list: list[prognostics.PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
-        prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        prep_adv: solve_nh_states.PrepAdvection,
+        inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
         log.info(
@@ -136,10 +150,10 @@ class TimeLoop:
             and self.run_config.apply_initial_stabilization
             and self._is_first_step_in_simulation
         ):
-            log.info("running initial step to diffuse fields before time loop starts")
+            log.info("running initial step to diffuse fields before timeloop starts")
             self.diffusion.initial_run(
                 diffusion_diagnostic_state,
-                prognostic_states.current,
+                prognostic_state_list[self._now],
                 self.dtime_in_seconds,
             )
         log.info(
@@ -149,10 +163,10 @@ class TimeLoop:
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f" MAX VN: {prognostic_states.current.vn.asnumpy().max():.15e} , MAX W: {prognostic_states.current.w.asnumpy().max():.15e}"
+                f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.15e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.15e}"
             )
             log.info(
-                f" MAX RHO: {prognostic_states.current.rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_states.current.theta_v.asnumpy().max():.15e}"
+                f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.15e}"
             )
             # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
@@ -164,14 +178,12 @@ class TimeLoop:
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
-                prognostic_states,
+                prognostic_state_list,
                 prep_adv,
-                initial_divdamp_fac_o2,
+                inital_divdamp_fac_o2,
                 do_prep_adv,
             )
             timer.capture()
-
-            self._is_first_step_in_simulation = False
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
@@ -184,94 +196,74 @@ class TimeLoop:
     def _integrate_one_time_step(
         self,
         diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
-        prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
-        prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        prognostic_state_list: list[prognostics.PrognosticState],
+        prep_adv: solve_nh_states.PrepAdvection,
+        inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
         # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
 
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
-            prognostic_states,
+            prognostic_state_list,
             prep_adv,
-            initial_divdamp_fac_o2,
+            inital_divdamp_fac_o2,
             do_prep_adv,
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
-                diffusion_diagnostic_state,
-                prognostic_states.next,
-                self.dtime_in_seconds,
+                diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
 
-        prognostic_states.swap()
+        self._swap()
 
         # TODO (Chia Rui): add tracer advection here
 
     def _do_dyn_substepping(
         self,
-        solve_nonhydro_diagnostic_state: dycore_states.DiagnosticStateNonHydro,
-        prognostic_states: common_utils.TimeStepPair[prognostics.PrognosticState],
-        prep_adv: dycore_states.PrepAdvection,
-        initial_divdamp_fac_o2: float,
+        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        prognostic_state_list: list[prognostics.PrognosticState],
+        prep_adv: solve_nh_states.PrepAdvection,
+        inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
+        do_recompute = True
+        do_clean_mflx = True
         for dyn_substep in range(self._n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
-                f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
+                f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}, "
+                f"nnow: {self._now}, nnew : {self._next}"
             )
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
-                prognostic_states,
+                prognostic_state_list,
                 prep_adv=prep_adv,
-                divdamp_fac_o2=initial_divdamp_fac_o2,
+                divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
-                at_initial_timestep=self._is_first_step_in_simulation,
+                l_recompute=do_recompute,
+                l_init=self._is_first_step_in_simulation,
+                nnew=self._next,
+                nnow=self._now,
+                lclean_mflx=do_clean_mflx,
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
             )
 
+            do_recompute = False
+            do_clean_mflx = False
+
             if not self._is_last_substep(dyn_substep):
-                prognostic_states.swap()
+                self._swap()
+
+            self._is_first_step_in_simulation = False
 
         # TODO (Chia Rui): compute airmass for prognostic_state here
-
-
-class DriverStates(NamedTuple):
-    """
-    Initialized states for the driver run.
-
-    Attributes:
-        prep_advection_prognostic: Fields collecting data for advection during the solve nonhydro timestep.
-        solve_nonhydro_diagnostic: Initial state for solve_nonhydro diagnostic variables.
-        diffusion_diagnostic: Initial state for diffusion diagnostic variables.
-        prognostics: Initial state for prognostic variables (double buffered).
-        diagnostic: Initial state for global diagnostic variables.
-    """
-
-    prep_advection_prognostic: dycore_states.PrepAdvection
-    solve_nonhydro_diagnostic: dycore_states.DiagnosticStateNonHydro
-    diffusion_diagnostic: diffusion_states.DiffusionDiagnosticState
-    prognostics: common_utils.TimeStepPair[prognostics.PrognosticState]
-    diagnostic: diagnostics.DiagnosticState
-
-
-class DriverParams(NamedTuple):
-    """
-    Parameters for the driver run.
-
-    Attributes:
-        divdamp_fac_o2: Second order divergence damping factor.
-    """
-
-    divdamp_fac_o2: float
 
 
 def initialize(
@@ -282,34 +274,35 @@ def initialize(
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
-) -> tuple[TimeLoop, DriverStates, DriverParams]:
+    icon4py_driver_backend: driver_config.DriverBackends,
+):
     """
-    Initialize the driver run.
+    Inititalize the driver run.
 
-    This function does the following:
-    - load configuration
-    - load grid information
-    - initialize components: diffusion and solve_nh
-    - load diagnostic and prognostic variables (serialized data)
-    - setup the time loop
+    "reads" in
+        - load configuration
 
-    Parameters:
-        file_path: Path to the serialized data.
-        props: Processor properties.
-        serialization_type: Serialization type.
-        experiment_type: Experiment type.
-        grid_id: Grid ID.
-        grid_root: Grid root.
-        grid_level: Grid level.
+        - load grid information
 
-    Returns:
-        TimeLoop: Time loop object.
-        DriverStates: Initial states for the driver run.
-        DriverParams: Parameters for the driver run.
+        - initialize components: diffusion and solve_nh
+
+        - load diagnostic and prognostic variables (serialized data)
+
+        - setup the time loop
+
+     Returns:
+         tl: configured timeloop,
+         diffusion_diagnostic_state: initial state for diffusion diagnostic variables
+         nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
+         prognostic_state: initial state for prognostic variables
+         diagnostic_state: initial state for global diagnostic variables
+         prep_advection: fields collecting data for advection during the solve nonhydro timestep
+         inital_divdamp_fac_o2: initial divergence damping factor
+
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = driver_config.read_config(experiment_type)
+    config = driver_config.read_config(icon4py_driver_backend, experiment_type)
 
     decomp_info = driver_init.read_decomp_info(
         file_path, props, serialization_type, grid_id, grid_root, grid_level
@@ -365,14 +358,13 @@ def initialize(
         edge_geometry,
         cell_geometry,
         exchange=exchange,
-        backend=gtfn_cpu,
+        backend=config.run_config.backend,
     )
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro(
-        grid=icon_grid,
-        backend=gtfn_cpu,
+        backend=config.run_config.backend,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=solve_nonhydro_metric_state,
@@ -387,7 +379,7 @@ def initialize(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prep_adv,
-        initial_divdamp_fac_o2,
+        inital_divdamp_fac_o2,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
@@ -396,27 +388,25 @@ def initialize(
         cell_geometry,
         edge_geometry,
         file_path,
+        backend=config.run_config.backend,
         rank=props.rank,
         experiment_type=experiment_type,
     )
-    prognostics_states = common_utils.TimeStepPair(prognostic_state_now, prognostic_state_next)
+    prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
-    time_loop = TimeLoop(
+    timeloop = TimeLoop(
         run_config=config.run_config,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
     )
-
     return (
-        time_loop,
-        DriverStates(
-            prep_advection_prognostic=prep_adv,
-            solve_nonhydro_diagnostic=solve_nonhydro_diagnostic_state,
-            diffusion_diagnostic=diffusion_diagnostic_state,
-            prognostics=prognostics_states,
-            diagnostic=diagnostic_state,
-        ),
-        DriverParams(divdamp_fac_o2=initial_divdamp_fac_o2),
+        timeloop,
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prognostic_state_list,
+        diagnostic_state,
+        prep_adv,
+        inital_divdamp_fac_o2,
     )
 
 
@@ -464,9 +454,29 @@ def initialize(
     default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
     help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
 )
+@click.option(
+    "--enable_output",
+    is_flag=True,
+    help="Enable all debugging messages. Otherwise, only critical error messages are printed.",
+)
+@click.option(
+    "--icon4py_driver_backend",
+    default=driver_config.DriverBackends.GTFN_CPU,
+    show_default=True,
+    help="Backend for all components executed in icon4py driver. Choose between GTFN_CPU or GTFN_GPU. Please see abs_path_to_icon4py/model/driver/src/icon4py/model/driver/icon4py_configuration/) ",
+)
 def icon4py_driver(
-    input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level
-) -> None:
+    input_path,
+    run_path,
+    mpi,
+    serialization_type,
+    experiment_type,
+    grid_id,
+    grid_root,
+    grid_level,
+    enable_output,
+    icon4py_driver_backend,
+):
     """
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
 
@@ -489,12 +499,16 @@ def icon4py_driver(
     """
     parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     grid_id = uuid.UUID(grid_id)
-    driver_init.configure_logging(run_path, experiment_type, parallel_props)
-
-    time_loop: TimeLoop
-    ds: DriverStates
-    dp: DriverParams
-    time_loop, ds, dp = initialize(
+    driver_init.configure_logging(run_path, experiment_type, enable_output, parallel_props)
+    (
+        timeloop,
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prognostic_state_list,
+        diagnostic_state,
+        prep_adv,
+        inital_divdamp_fac_o2,
+    ) = initialize(
         pathlib.Path(input_path),
         parallel_props,
         serialization_type,
@@ -502,27 +516,28 @@ def icon4py_driver(
         grid_id,
         grid_root,
         grid_level,
+        icon4py_driver_backend,
     )
-    log.info(f"Starting ICON dycore run: {time_loop.simulation_date.isoformat()}")
+    log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
-        f"input args: input_path={input_path}, n_time_steps={time_loop.n_time_steps}, ending date={time_loop.run_config.end_date}"
+        f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
     )
 
-    log.info(f"input args: input_path={input_path}, n_time_steps={time_loop.n_time_steps}")
+    log.info(f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}")
 
     log.info("dycore configuring: DONE")
-    log.info("time loop: START")
+    log.info("timeloop: START")
 
-    time_loop.time_integration(
-        ds.diffusion_diagnostic,
-        ds.solve_nonhydro_diagnostic,
-        ds.prognostics,
-        ds.prep_advection_prognostic,
-        dp.divdamp_fac_o2,
+    timeloop.time_integration(
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prognostic_state_list,
+        prep_adv,
+        inital_divdamp_fac_o2,
         do_prep_adv=False,
     )
 
-    log.info("time loop:  DONE")
+    log.info("timeloop:  DONE")
 
 
 if __name__ == "__main__":

@@ -46,22 +46,22 @@ def test_gauss3d_initial_condition(
 
     # only verifying those assigned in the IC rather than all (at least for now)
     assert helpers.dallclose(
-        prognostic_state_now.rho.asnumpy(),
+        prognostic_state_now.rho.ndarray,
         data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
         .rho_now()
-        .asnumpy(),
+        .ndarray,
     )
 
     assert helpers.dallclose(
-        prognostic_state_now.exner.asnumpy(),
+        prognostic_state_now.exner.ndarray,
         data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
         .exner_now()
-        .asnumpy(),
+        .ndarray,
     )
 
     assert helpers.dallclose(
-        prognostic_state_now.theta_v.asnumpy(),
+        prognostic_state_now.theta_v.ndarray,
         data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
         .theta_v_now()
-        .asnumpy(),
+        .ndarray,
     )
