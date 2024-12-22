@@ -9,12 +9,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_15_to_18 import (
+from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_15_to_18 import (
     fused_velocity_advection_stencil_15_to_18,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
+from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.utils.data_allocation import (
     as_1D_sparse_field,
     random_field,
     random_mask,

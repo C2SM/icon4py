@@ -7,16 +7,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.settings import xp
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTest):
     PROGRAM = compute_horizontal_tracer_flux_from_linear_coefficients_alt
@@ -25,14 +25,14 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTe
     @staticmethod
     def reference(
         grid,
-        z_lsq_coeff_1: xp.array,
-        z_lsq_coeff_2: xp.array,
-        z_lsq_coeff_3: xp.array,
-        distv_bary_1: xp.array,
-        distv_bary_2: xp.array,
-        p_mass_flx_e: xp.array,
-        p_vn: xp.array,
-        p_out_e: xp.array,
+        z_lsq_coeff_1: np.array,
+        z_lsq_coeff_2: np.array,
+        z_lsq_coeff_3: np.array,
+        distv_bary_1: np.array,
+        distv_bary_2: np.array,
+        p_mass_flx_e: np.array,
+        p_vn: np.array,
+        p_out_e: np.array,
         **kwargs,
     ) -> dict:
         p_out_e_cp = p_out_e.copy()
@@ -44,9 +44,9 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTe
         lvn_pos_inv = p_vn < 0.0
 
         p_out_e = (
-            xp.where(lvn_pos_inv, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
-            + distv_bary_1 * xp.where(lvn_pos_inv, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
-            + distv_bary_2 * xp.where(lvn_pos_inv, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
+            np.where(lvn_pos_inv, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
+            + distv_bary_1 * np.where(lvn_pos_inv, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
+            + distv_bary_2 * np.where(lvn_pos_inv, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
         ) * p_mass_flx_e
 
         # restriction of execution domain
@@ -57,14 +57,14 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTe
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        z_lsq_coeff_1 = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_lsq_coeff_2 = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_lsq_coeff_3 = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        distv_bary_1 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        distv_bary_2 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_mass_flx_e = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_out_e = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        z_lsq_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_3 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = (

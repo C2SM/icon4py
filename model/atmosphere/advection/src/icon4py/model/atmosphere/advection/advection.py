@@ -11,6 +11,7 @@ from enum import Enum, auto
 import dataclasses
 import logging
 
+import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend
 
 from icon4py.model.atmosphere.advection import (
@@ -34,7 +35,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
@@ -74,6 +75,10 @@ class VerticalAdvectionType(Enum):
 
     #: no vertical advection
     NO_ADVECTION = auto()
+    #: 1st order upwind
+    UPWIND_1ST_ORDER = auto()
+    #: 3rd order PPM
+    PPM_3RD_ORDER = auto()
 
 
 class VerticalAdvectionLimiter(Enum):
@@ -83,6 +88,8 @@ class VerticalAdvectionLimiter(Enum):
 
     #: no vertical limiter
     NO_LIMITER = auto()
+    #: semi-monotonic vertical limiter
+    SEMI_MONOTONIC = auto()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -241,7 +248,7 @@ class GodunovSplittingAdvection(Advection):
 
         # density fields
         #: intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2]
-        self._rhodz_ast2 = field_alloc.allocate_zero_field(
+        self._rhodz_ast2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
 
@@ -372,8 +379,8 @@ def convert_config_to_horizontal_vertical_advection(
     interpolation_state: advection_states.AdvectionInterpolationState,
     least_squares_state: advection_states.AdvectionLeastSquaresState,
     metric_state: advection_states.AdvectionMetricState,
-    edge_params: geometry.EdgeParams,
-    cell_params: geometry.CellParams,
+    edge_params: grid_states.EdgeParams,
+    cell_params: grid_states.CellParams,
     backend: backend.Backend,
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
@@ -392,7 +399,7 @@ def convert_config_to_horizontal_vertical_advection(
 
     match config.horizontal_advection_type:
         case HorizontalAdvectionType.NO_ADVECTION:
-            horizontal_advection = advection_horizontal.NoAdvection(grid=grid)
+            horizontal_advection = advection_horizontal.NoAdvection(grid=grid, backend=backend)
         case HorizontalAdvectionType.LINEAR_2ND_ORDER:
             tracer_flux = advection_horizontal.SecondOrderMiura(
                 grid=grid,
@@ -416,13 +423,32 @@ def convert_config_to_horizontal_vertical_advection(
 
     match config.vertical_advection_limiter:
         case VerticalAdvectionLimiter.NO_LIMITER:
-            ...
+            vertical_limiter = advection_vertical.NoLimiter(grid=grid, backend=backend)
+        case VerticalAdvectionLimiter.SEMI_MONOTONIC:
+            vertical_limiter = advection_vertical.SemiMonotonicLimiter(grid=grid, backend=backend)
         case _:
             raise NotImplementedError(f"Unknown vertical advection limiter.")
 
     match config.vertical_advection_type:
         case VerticalAdvectionType.NO_ADVECTION:
             vertical_advection = advection_vertical.NoAdvection(grid=grid, backend=backend)
+        case VerticalAdvectionType.UPWIND_1ST_ORDER:
+            boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
+            vertical_advection = advection_vertical.FirstOrderUpwind(
+                boundary_conditions=boundary_conditions,
+                grid=grid,
+                metric_state=metric_state,
+                backend=backend,
+            )
+        case VerticalAdvectionType.PPM_3RD_ORDER:
+            boundary_conditions = advection_vertical.NoFluxCondition(grid=grid, backend=backend)
+            vertical_advection = advection_vertical.PiecewiseParabolicMethod(
+                boundary_conditions=boundary_conditions,
+                vertical_limiter=vertical_limiter,
+                grid=grid,
+                metric_state=metric_state,
+                backend=backend,
+            )
         case _:
             raise NotImplementedError(f"Unknown vertical advection type.")
 
@@ -435,8 +461,8 @@ def convert_config_to_advection(
     interpolation_state: advection_states.AdvectionInterpolationState,
     least_squares_state: advection_states.AdvectionLeastSquaresState,
     metric_state: advection_states.AdvectionMetricState,
-    edge_params: geometry.EdgeParams,
-    cell_params: geometry.CellParams,
+    edge_params: grid_states.EdgeParams,
+    cell_params: grid_states.CellParams,
     backend: backend.Backend,
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     even_timestep: bool = False,

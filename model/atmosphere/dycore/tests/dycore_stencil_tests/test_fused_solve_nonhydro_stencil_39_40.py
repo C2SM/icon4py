@@ -9,11 +9,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_39_40 import (
+from icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40 import (
     fused_solve_nonhydro_stencil_39_40,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy

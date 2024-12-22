@@ -8,19 +8,21 @@
 
 import numpy as np
 
+from icon4py.model.common.utils import data_allocation as data_alloc
+
 
 def compute_zdiff_gradp_dsl(
     e2c,
-    z_me: np.ndarray,
-    z_mc: np.ndarray,
-    z_ifc: np.ndarray,
-    flat_idx: np.ndarray,
-    z_aux2: np.ndarray,
+    z_me: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    flat_idx: data_alloc.NDArray,
+    z_aux2: data_alloc.NDArray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
     nedges: int,
-) -> np.ndarray:
+) -> data_alloc.NDArray:
     zdiff_gradp = np.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
         np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]

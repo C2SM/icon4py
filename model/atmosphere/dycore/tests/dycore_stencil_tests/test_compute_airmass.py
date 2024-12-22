@@ -9,9 +9,10 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.dycore.compute_airmass import compute_airmass
+from icon4py.model.atmosphere.dycore.stencils.compute_airmass import compute_airmass
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import wpfloat
 
 

@@ -7,17 +7,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_list_for_cubic_reconstruction import (
     prepare_numerical_quadrature_list_for_cubic_reconstruction,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import data_allocation as data_alloc
 
-
-@pytest.mark.slow_tests
 class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTest):
     PROGRAM = prepare_numerical_quadrature_list_for_cubic_reconstruction
     OUTPUTS = (
@@ -89,18 +88,18 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             1.0 + zeta_4,
         )
 
-        famask_bool = xp.where(famask_int == 1, True, False)
+        famask_bool = np.where(famask_int == 1, True, False)
 
-        p_coords_dreg_v_1_x = xp.where(famask_bool, p_coords_dreg_v_1_x, 0.0)
-        p_coords_dreg_v_2_x = xp.where(famask_bool, p_coords_dreg_v_2_x, 0.0)
-        p_coords_dreg_v_3_x = xp.where(famask_bool, p_coords_dreg_v_3_x, 0.0)
-        p_coords_dreg_v_4_x = xp.where(famask_bool, p_coords_dreg_v_4_x, 0.0)
-        p_coords_dreg_v_1_y = xp.where(famask_bool, p_coords_dreg_v_1_y, 0.0)
-        p_coords_dreg_v_2_y = xp.where(famask_bool, p_coords_dreg_v_2_y, 0.0)
-        p_coords_dreg_v_3_y = xp.where(famask_bool, p_coords_dreg_v_3_y, 0.0)
-        p_coords_dreg_v_4_y = xp.where(famask_bool, p_coords_dreg_v_4_y, 0.0)
+        p_coords_dreg_v_1_x = np.where(famask_bool, p_coords_dreg_v_1_x, 0.0)
+        p_coords_dreg_v_2_x = np.where(famask_bool, p_coords_dreg_v_2_x, 0.0)
+        p_coords_dreg_v_3_x = np.where(famask_bool, p_coords_dreg_v_3_x, 0.0)
+        p_coords_dreg_v_4_x = np.where(famask_bool, p_coords_dreg_v_4_x, 0.0)
+        p_coords_dreg_v_1_y = np.where(famask_bool, p_coords_dreg_v_1_y, 0.0)
+        p_coords_dreg_v_2_y = np.where(famask_bool, p_coords_dreg_v_2_y, 0.0)
+        p_coords_dreg_v_3_y = np.where(famask_bool, p_coords_dreg_v_3_y, 0.0)
+        p_coords_dreg_v_4_y = np.where(famask_bool, p_coords_dreg_v_4_y, 0.0)
 
-        wgt_t_detjac_1 = xp.where(
+        wgt_t_detjac_1 = np.where(
             famask_bool,
             dbl_eps
             + z_wgt_1
@@ -125,7 +124,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             0.0,
         )
 
-        wgt_t_detjac_2 = xp.where(
+        wgt_t_detjac_2 = np.where(
             famask_bool,
             dbl_eps
             + z_wgt_2
@@ -150,7 +149,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             0.0,
         )
 
-        wgt_t_detjac_3 = xp.where(
+        wgt_t_detjac_3 = np.where(
             famask_bool,
             dbl_eps
             + z_wgt_3
@@ -174,7 +173,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
             ),
             0.0,
         )
-        wgt_t_detjac_4 = xp.where(
+        wgt_t_detjac_4 = np.where(
             famask_bool,
             dbl_eps
             + z_wgt_4
@@ -374,16 +373,16 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
     def reference(
         cls,
         grid,
-        famask_int: xp.array,
-        p_coords_dreg_v_1_x: xp.array,
-        p_coords_dreg_v_2_x: xp.array,
-        p_coords_dreg_v_3_x: xp.array,
-        p_coords_dreg_v_4_x: xp.array,
-        p_coords_dreg_v_1_y: xp.array,
-        p_coords_dreg_v_2_y: xp.array,
-        p_coords_dreg_v_3_y: xp.array,
-        p_coords_dreg_v_4_y: xp.array,
-        p_dreg_area_in: xp.array,
+        famask_int: np.array,
+        p_coords_dreg_v_1_x: np.array,
+        p_coords_dreg_v_2_x: np.array,
+        p_coords_dreg_v_3_x: np.array,
+        p_coords_dreg_v_4_x: np.array,
+        p_coords_dreg_v_1_y: np.array,
+        p_coords_dreg_v_2_y: np.array,
+        p_coords_dreg_v_3_y: np.array,
+        p_coords_dreg_v_4_y: np.array,
+        p_dreg_area_in: np.array,
         shape_func_1_1: float,
         shape_func_2_1: float,
         shape_func_3_1: float,
@@ -520,27 +519,27 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        famask_int = helpers.constant_field(grid, 1, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_coords_dreg_v_1_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_1_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_dreg_area_in = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_1 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_2 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_3 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_4 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_5 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_6 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_7 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_8 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_9 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_10 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_dreg_area = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        famask_int = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_coords_dreg_v_1_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_1_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_dreg_area_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_1 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_2 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_3 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_4 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_5 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_6 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_7 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_8 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_9 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_10 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_dreg_area = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         shape_func_1_1 = 0.001
         shape_func_2_1 = 0.001
         shape_func_3_1 = 0.001
@@ -569,7 +568,7 @@ class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTe
         wgt_zeta_2 = 0.003
         wgt_eta_1 = 0.002
         wgt_eta_2 = 0.007
-        dbl_eps = xp.float64(0.1)
+        dbl_eps = np.float64(0.1)
         eps = 0.1
         return dict(
             famask_int=famask_int,

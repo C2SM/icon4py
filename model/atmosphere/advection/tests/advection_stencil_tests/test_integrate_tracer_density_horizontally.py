@@ -7,15 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_density_horizontally import (
     integrate_tracer_density_horizontally,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
     PROGRAM = integrate_tracer_density_horizontally
@@ -29,25 +29,25 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
     @staticmethod
     def reference(
         grid,
-        p_mass_flx_e: xp.array,
-        geofac_div: xp.array,
-        z_rhofluxdiv_c: xp.array,
-        z_tracer_mflx: xp.array,
-        z_rho_now: xp.array,
-        z_tracer_now: xp.array,
+        p_mass_flx_e: np.array,
+        geofac_div: np.array,
+        z_rhofluxdiv_c: np.array,
+        z_tracer_mflx: np.array,
+        z_rho_now: np.array,
+        z_tracer_now: np.array,
         z_dtsub: float,
         nsub: gtx.int32,
         **kwargs,
     ) -> dict:
         c2e = grid.connectivities[dims.C2EDim]
         p_mass_flx_e_c2e = p_mass_flx_e[c2e]
-        geofac_div = xp.expand_dims(geofac_div, axis=-1)
+        geofac_div = np.expand_dims(geofac_div, axis=-1)
         z_tracer_mflx_c2e = z_tracer_mflx[c2e]
 
         z_rhofluxdiv_c_out = (
-            xp.sum(p_mass_flx_e_c2e * geofac_div, axis=1) if nsub == 1 else z_rhofluxdiv_c
+            np.sum(p_mass_flx_e_c2e * geofac_div, axis=1) if nsub == 1 else z_rhofluxdiv_c
         )
-        z_fluxdiv_c_dsl = xp.sum(z_tracer_mflx_c2e * geofac_div, axis=1)
+        z_fluxdiv_c_dsl = np.sum(z_tracer_mflx_c2e * geofac_div, axis=1)
         z_rho_new_dsl = z_rho_now - z_dtsub * z_rhofluxdiv_c_out
         z_tracer_new_dsl = (z_tracer_now * z_rho_now - z_dtsub * z_fluxdiv_c_dsl) / z_rho_new_dsl
 
@@ -60,16 +60,16 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_mass_flx_e = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        geofac_div = helpers.random_field(grid, dims.CellDim, dims.C2EDim)
-        z_rhofluxdiv_c = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_mflx = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_rho_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_rhofluxdiv_c_out = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        z_fluxdiv_c_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        z_rho_new_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_new_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
+        z_rhofluxdiv_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_mflx = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_rhofluxdiv_c_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_fluxdiv_c_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_rho_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         z_dtsub = 0.5
         nsub = 1
         return dict(

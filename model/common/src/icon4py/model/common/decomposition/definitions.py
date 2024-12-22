@@ -12,12 +12,13 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Optional, Protocol, Sequence, runtime_checkable
+from typing import Any, Optional, Protocol, Sequence, Union, runtime_checkable
 
+import numpy as np
 from gt4py.next import Dimension
 
-from icon4py.model.common.settings import xp
-from icon4py.model.common.utils import builder
+from icon4py.model.common import utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
@@ -75,8 +76,10 @@ class DecompositionInfo:
         OWNED = 1
         HALO = 2
 
-    @builder.builder
-    def with_dimension(self, dim: Dimension, global_index: xp.ndarray, owner_mask: xp.ndarray):
+    @utils.chainable
+    def with_dimension(
+        self, dim: Dimension, global_index: data_alloc.NDArray, owner_mask: data_alloc.NDArray
+    ):
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
 
@@ -126,9 +129,15 @@ class DecompositionInfo:
     def _to_local_index(self, dim):
         data = self._global_index[dim]
         assert data.ndim == 1
+        if isinstance(data, np.ndarray):
+            import numpy as xp
+        else:
+            import cupy as xp
+
+            xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> xp.ndarray:
+    def owner_mask(self, dim: Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
@@ -359,12 +368,12 @@ def get_runtype(with_mpi: bool = False) -> RunType:
 
 
 @functools.singledispatch
-def get_processor_properties(runtime) -> ProcessProperties:
+def get_processor_properties(runtime: RunType, comm_id: Union[int, None]) -> ProcessProperties:
     raise TypeError(f"Cannot define ProcessProperties for ({type(runtime)})")
 
 
 @get_processor_properties.register(SingleNodeRun)
-def get_single_node_properties(s: SingleNodeRun) -> ProcessProperties:
+def get_single_node_properties(s: SingleNodeRun, comm_id=None) -> ProcessProperties:
     return SingleNodeProcessProperties()
 
 

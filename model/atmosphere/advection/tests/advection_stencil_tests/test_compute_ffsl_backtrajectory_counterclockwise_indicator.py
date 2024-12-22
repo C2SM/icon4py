@@ -7,15 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory_counterclockwise_indicator import (
     compute_ffsl_backtrajectory_counterclockwise_indicator,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest):
     PROGRAM = compute_ffsl_backtrajectory_counterclockwise_indicator
@@ -23,25 +23,25 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest
 
     @staticmethod
     def reference(
-        grid, p_vn: xp.array, tangent_orientation: xp.array, lcounterclock: bool, **kwargs
+        grid, p_vn: np.array, tangent_orientation: np.array, lcounterclock: bool, **kwargs
     ) -> dict:
-        tangent_orientation = xp.expand_dims(tangent_orientation, axis=-1)
+        tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
-        tangent_orientation = xp.broadcast_to(tangent_orientation, p_vn.shape)
+        tangent_orientation = np.broadcast_to(tangent_orientation, p_vn.shape)
 
-        lvn_sys_pos_true = xp.where(tangent_orientation * p_vn >= 0.0, True, False)
+        lvn_sys_pos_true = np.where(tangent_orientation * p_vn >= 0.0, True, False)
 
-        mask_lcounterclock = xp.broadcast_to(lcounterclock, p_vn.shape)
+        mask_lcounterclock = np.broadcast_to(lcounterclock, p_vn.shape)
 
-        lvn_sys_pos = xp.where(mask_lcounterclock, lvn_sys_pos_true, False)
+        lvn_sys_pos = np.where(mask_lcounterclock, lvn_sys_pos_true, False)
 
         return dict(lvn_sys_pos=lvn_sys_pos)
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        tangent_orientation = helpers.random_field(grid, dims.EdgeDim)
-        lvn_sys_pos = helpers.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=bool)
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
+        lvn_sys_pos = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=bool)
         lcounterclock = True
         return dict(
             p_vn=p_vn,

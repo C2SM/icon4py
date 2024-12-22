@@ -13,7 +13,8 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     calculate_nabla2_for_w,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.utils.data_allocation import constant_field, zero_field
 
 
 def calculate_nabla2_for_w_numpy(grid, w: np.array, geofac_n2s: np.array):

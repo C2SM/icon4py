@@ -9,12 +9,12 @@ import gt4py.next as gtx
 import numpy as np
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
-from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
+from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field
+from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

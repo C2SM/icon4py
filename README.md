@@ -1,95 +1,63 @@
 [![Open in Gitpod](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod)](https://gitpod.io/#https://github.com/C2SM/icon4py)
+[![Nox](https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg)](https://github.com/wntrblm/nox)
+
 
 # ICON4Py
 
-ICON4Py hosts Python implementations of various components from the ICON climate and weather model. Additionally, it includes icon4pytools, a collection of command-line interfaces (CLIs), and utilities required for the integration of ICON4Py code into the ICON Fortran model. ICON4Py leverages [GT4Py](https://github.com/GridTools/gt4py) to ensure efficient and performance portable implementations of these components.
+This repository hosts a work-in-progress Python implementation of the ICON climate and weather model. Additionally, it includes `icon4pytools`, a collection of command-line interfaces (CLIs), and utilities required for the integration of ICON4Py code into the ICON Fortran model. ICON4Py leverages [GT4Py](https://github.com/GridTools/gt4py) to ensure efficient and performance portable implementations of these components.
 
 ## Project Structure
 
-The repository is organized into directories, each containing independent Python namespace packages for different ICON components or utility packages. These packages can be installed independently. Since these packages are not available from a package repository (yet), you need to specify the location of dependencies within this repository. This can be done by installing the required dependencies first. Refer to the [Installation instructions](#installation-instructions) below.
+The repository is organized as a _monorepo_, where various ICON model components and utilities are developed as independent Python namespace packages in subfolders. An `icon4py` Python package is defined at the root folder with the purpose to collect specific versions of the different components as package dependencies. The component can also be installed independently, although since they are not (yet) available from a package repository, they need to be installed from their specific location within this repository.
 
 ## License
 
 ICON4Py is licensed under the terms of the BSD-3-Clause.
 
 ## Installation instructions
-### Dependencies
-A minimal installation of ICON4Py needs 
-- Python 3.10
-- boost >= 1.85.0
 
-You can install all packages at once by using the provided `requirements.txt` or `requirements-dev.txt` files in the root of the repository. For example:
-The `-dev.txt` file installs ICON4Py packages and GT4Py in editable mode, such that source changes are immediatly picked up and used in the virtual environment. 
+Since this project is still in a highly experimental state, it is not yet available as a regular Python distribution project through PyPI. The installation procedure comprises cloning the [https://github.com/C2SM/icon4py](https://github.com/C2SM/icon4py) repository and install it in a _venv_ using the following development workflow.  
+
+### System dependencies
+
+ICON4Py requires **_Python >= 3.10_** and **_boost >= 1.85.0_**, and uses the `uv` tool to manage the development workflow. `uv` is a versatile tool which bundles together functionality from different applications: it can work as a _fast_ Python package manager (like `pip`), as a dependency version exporter (like `pip-tools`), as a Python application runner (like `pipx`) or as a full project development manager (like `hatch`). 
+`uv` can be installed in different ways (check its [installation instructions](https://docs.astral.sh/uv/getting-started/installation/)), like using the recommended standalone installer:
+
 ```bash
-# Clone the repository
-git clone git@github.com:C2SM/icon4py.git
-cd icon4py
-
-# Create a (Python 3.10) virtual environment (usually at `.venv`)
-python3.10 -m venv .venv
-
-# Activate the virtual environment and make sure that 'wheel' is installed
-source .venv/bin/activate
-pip install --upgrade wheel pip setuptools
-
-# Install all the ICON4Py packages and its dependencies
-# External dependencies would be checked out at './_external_src'
-pip install --src _external_src -r requirements-dev.txt
-
-# Finally, check that everything works
-pytest -v
+$ curl -LsSf https://astral.sh/uv/install.sh | sh 
 ```
 
-The `--src _external_src` option tells `pip` to use a specific folder as the base path for checked out sources, which is very convenient for development tasks involving changes in external dependencies like `gt4py`. For convenience, `./_external_src` has been already added to the repository `.gitignore`.
+### ICON4Py development environment
 
-You can also use [tox](https://tox.wiki/en/latest/) for the automatic installation of all packages in development mode in a single step:
-
+Once `uv` is installed in your system, it is enough to clone this repository and let `uv` handling the installation of the development environment.
 
 ```bash
 # Clone the repository
 git clone git@github.com:C2SM/icon4py.git
 cd icon4py
 
-# Use tox to create and set up a development environment (usually at `.venv`) in verbose mode
-pip install tox
-python -m tox -vv -e dev --devenv .venv
+# Let uv create the development environment at `.venv`.
+# The `--extra all` option tells uv to install all optional
+# dependencies of icon4py so it is not strictly necessary
+uv sync --extra all
 
-# Activate the virtual environment and check that everything works
+# Activate the virtual environment and start writing code!
 source .venv/bin/activate
-pytest -v
 ```
 
+The new _venv_ is a standard Python virtual environment preconfigured with all necessary runtime and development dependencies. Additionally, all icon4py subpackages are installed in editable mode, allowing for seamless development and testing.
 
+To install new packages, use the `uv pip` subcommand, which emulates the `pip` interface and is generally much faster. Alternatively, the standard `pip` command is also available within the venv, although using `pip` directly is slower and not recommended.
 
-### Installation of specific subpackages
+The `pyproject.toml` file at the root folder contains both the definition of the `icon4py` Python distribution package and the settings of the development tools used in this project, most notably `uv`, `ruff`, `mypy` and `pytest`. It also contains _dependency groups_ (see [PEP 735](https://peps.python.org/pep-0735/) for further reference) with the development requirements listed in different groups (`build`, `docs`, `lint`, `test`, `typing`, ...) and collected together in the general `dev` group which gets installed by default by `uv`.
 
-In case you only want to install a specific subpackage, use the actual subpackage `requirements.txt` or `requirements-dev.txt` files.
-
-For example:
-
-```bash
-# Clone the repository
-git clone git@github.com:C2SM/icon4py.git
-cd icon4py
-
-# Create a (Python 3.10) virtual environment (usually at `.venv`)
-python3.10 -m venv .venv
-
-# Activate the virtual environment and make sure that 'wheel' is installed
-source .venv/bin/activate
-pip install --upgrade wheel
-
-# Install a specific ICON4Py subpackage and its dependencies
-cd _SUBPACKAGE_  # where _SUBPACKAGE_ in model/atmosphere/dycore | tools | ...
-pip install -r requirements-dev.txt
-
-# or in the case of there being a pyproject.toml file
-pip install .
-```
 
 ## Development instructions
 
-After following the installation instructions above using the development requirements (`*-dev.txt` files), an _editable_ installation of all the packages will be active in the virtual environment. In this mode, code changes are immediately visible since source files are imported directly by the Python interpreter.
+By following the installation instructions above, the source files are imported directly by the Python interpreter meaning that any code change is available and executed by the interpreter.
+
+To add new dependencies to the project, either core/optional run-time or development-only dependencies, it is possible to use the `uv` cli direcly or to modify by hand the appropriate tables in the corresponding `pyproject.toml` (check `uv` documentation for more information [https://docs.astral.sh/uv/concepts/projects/dependencies/](https://docs.astral.sh/uv/concepts/projects/dependencies/)).
+
 
 ### Code quality checks
 
@@ -115,21 +83,37 @@ pytest -v
 pytest -v path/to/test/folder
 ```
 
-Nonetheless, we also recommended to use `tox` to run the complete test suite:
+`nox` is recommended for running comprehensive test suites across multiple Python versions and configurations, mirroring the setup used in the CI pipeline.
 
 ```bash
-# Run test suite in the default environment
-tox
+# List all available test sessions (colored items are the default sessions)
+nox -l
 
-# Run test suite in a specific environment (use `tox -a` to see list of envs)
-tox -e py310
+# Run all parametrized cases of a session
+nox -s 'test_common'
+
+# Run a test session for a specific python version and parameter value
+nox -s 'test_atmosphere_advection-3.10(datatest=True)'
 ```
-
-The default `tox` environment is configured to generate HTML test coverage reports in `_reports/coverage_html/`.
 
 ### Benchmarking
 
 We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) to benchmark the execution time of stencils in icon4py. To disable benchmarking during testing you can use `--benchmark-disable` when invoking `pytest`.
+
+### Documentation
+
+The documentation is at a very early stage given the constant state of development. Some effort is ongoing to document the dycore and can be compiled as follows.
+
+You can install the required packages by using the provided `requirements-dev.txt` file in the root of the repository.
+
+Then move to the dycore docs folder and build the html documentation with the provided makefile:
+
+```bash
+cd model/atmosphere/dycore/docs
+make html
+```
+
+The documentation can then be accessed at `docs/_build/html/index.html`
 
 ### More Information
 

@@ -7,15 +7,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients import (
     compute_horizontal_tracer_flux_from_linear_coefficients,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import data_allocation as data_alloc
+
 
 
 class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest):
@@ -25,14 +27,14 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest)
     @staticmethod
     def reference(
         grid,
-        z_lsq_coeff_1: xp.array,
-        z_lsq_coeff_2: xp.array,
-        z_lsq_coeff_3: xp.array,
-        distv_bary_1: xp.array,
-        distv_bary_2: xp.array,
-        p_mass_flx_e: xp.array,
-        cell_rel_idx_dsl: xp.array,
-        p_out_e: xp.array,
+        z_lsq_coeff_1: np.array,
+        z_lsq_coeff_2: np.array,
+        z_lsq_coeff_3: np.array,
+        distv_bary_1: np.array,
+        distv_bary_2: np.array,
+        p_mass_flx_e: np.array,
+        cell_rel_idx_dsl: np.array,
+        p_out_e: np.array,
         **kwargs,
     ) -> dict:
         p_out_e_cp = p_out_e.copy()
@@ -42,11 +44,11 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest)
         z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
 
         p_out_e = (
-            xp.where(cell_rel_idx_dsl == 1, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
+            np.where(cell_rel_idx_dsl == 1, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
             + distv_bary_1
-            * xp.where(cell_rel_idx_dsl == 1, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
+            * np.where(cell_rel_idx_dsl == 1, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
             + distv_bary_2
-            * xp.where(cell_rel_idx_dsl == 1, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
+            * np.where(cell_rel_idx_dsl == 1, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
         ) * p_mass_flx_e
 
         # restriction of execution domain
@@ -57,16 +59,16 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest)
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        z_lsq_coeff_1 = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_lsq_coeff_2 = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_lsq_coeff_3 = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        distv_bary_1 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        distv_bary_2 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_mass_flx_e = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_rel_idx_dsl = helpers.random_field(
+        z_lsq_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_3 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        cell_rel_idx_dsl = data_alloc.random_field(
             grid, dims.EdgeDim, dims.KDim, low=0.0, high=2.0, dtype=gtx.int32
         )
-        p_out_e = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = (

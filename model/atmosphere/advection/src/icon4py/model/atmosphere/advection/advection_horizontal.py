@@ -9,6 +9,7 @@
 from abc import ABC, abstractmethod
 import logging
 
+import icon4py.model.common.grid.states as grid_states
 from gt4py.next import backend
 
 from icon4py.model.atmosphere.advection import advection_states
@@ -44,7 +45,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
@@ -98,7 +99,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # limiter fields
-        self._r_m = field_alloc.allocate_zero_field(
+        self._r_m = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
 
@@ -212,13 +213,13 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # reconstruction fields
-        self._p_coeff_1 = field_alloc.allocate_zero_field(
+        self._p_coeff_1 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self._p_coeff_2 = field_alloc.allocate_zero_field(
+        self._p_coeff_2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self._p_coeff_3 = field_alloc.allocate_zero_field(
+        self._p_coeff_3 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
 
@@ -437,8 +438,8 @@ class SemiLagrangian(FiniteVolume):
         interpolation_state: advection_states.AdvectionInterpolationState,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
         metric_state: advection_states.AdvectionMetricState,
-        edge_params: geometry.EdgeParams,
-        cell_params: geometry.CellParams,
+        edge_params: grid_states.EdgeParams,
+        cell_params: grid_states.CellParams,
         backend: backend.Backend,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
@@ -471,13 +472,13 @@ class SemiLagrangian(FiniteVolume):
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # backtrajectory fields
-        self._z_real_vt = field_alloc.allocate_zero_field(
+        self._z_real_vt = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self._p_distv_bary_1 = field_alloc.allocate_zero_field(
+        self._p_distv_bary_1 = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, dtype=ta.vpfloat, backend=self._backend
         )
-        self._p_distv_bary_2 = field_alloc.allocate_zero_field(
+        self._p_distv_bary_2 = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, dtype=ta.vpfloat, backend=self._backend
         )
 

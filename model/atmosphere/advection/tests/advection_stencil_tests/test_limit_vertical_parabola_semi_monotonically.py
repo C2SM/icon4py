@@ -7,14 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.limit_vertical_parabola_semi_monotonically import (
     limit_vertical_parabola_semi_monotonically,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestLimitVerticalParabolaSemiMonotonically(helpers.StencilTest):
@@ -22,13 +23,13 @@ class TestLimitVerticalParabolaSemiMonotonically(helpers.StencilTest):
     OUTPUTS = ("p_face_up", "p_face_low")
 
     @staticmethod
-    def reference(grid, l_limit: xp.array, p_face: xp.array, p_cc: xp.array, **kwargs) -> dict:
-        q_face_up, q_face_low = xp.where(
+    def reference(grid, l_limit: np.array, p_face: np.array, p_cc: np.array, **kwargs) -> dict:
+        q_face_up, q_face_low = np.where(
             l_limit != 0,
-            xp.where(
-                (p_cc < xp.minimum(p_face[:, :-1], p_face[:, 1:])),
+            np.where(
+                (p_cc < np.minimum(p_face[:, :-1], p_face[:, 1:])),
                 (p_cc, p_cc),
-                xp.where(
+                np.where(
                     p_face[:, :-1] > p_face[:, 1:],
                     (3.0 * p_cc - 2.0 * p_face[:, 1:], p_face[:, 1:]),
                     (p_face[:, :-1], 3.0 * p_cc - 2.0 * p_face[:, :-1]),
@@ -40,11 +41,11 @@ class TestLimitVerticalParabolaSemiMonotonically(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        l_limit = helpers.random_mask(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
-        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_face = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        p_face_up = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        p_face_low = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        l_limit = data_alloc.random_mask(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_face_up = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        p_face_low = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             l_limit=l_limit,
             p_cc=p_cc,

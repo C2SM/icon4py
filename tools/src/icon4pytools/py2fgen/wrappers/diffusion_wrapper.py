@@ -20,6 +20,8 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
+
+import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -31,21 +33,17 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common import dimension as dims, field_type_aliases as fa, settings
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid import geometry, icon
+from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
-from icon4py.model.common.settings import backend, device, parallel_run
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    flatten_first_two_dims,  # todo: move away from test_utils
-)
 from icon4py.model.common.type_alias import wpfloat
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.settings import backend, config as config_settings, device
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
 from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
 from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
@@ -147,19 +145,19 @@ def diffusion_init(
         )
 
     # Edge geometry
-    edge_params = geometry.EdgeParams(
+    edge_params = grid_states.EdgeParams(
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim),
-        primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim),
-        dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim),
-        dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim),
-        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, dims.ECDim),
-        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, dims.ECDim),
-        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, dims.ECDim),
-        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, dims.ECDim),
+        primal_normal_vert_x=data_alloc.as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim),
+        primal_normal_vert_y=data_alloc.as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim),
+        dual_normal_vert_x=data_alloc.as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim),
+        dual_normal_vert_y=data_alloc.as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim),
+        primal_normal_cell_x=data_alloc.as_1D_sparse_field(primal_normal_cell_x, dims.ECDim),
+        primal_normal_cell_y=data_alloc.as_1D_sparse_field(primal_normal_cell_y, dims.ECDim),
+        dual_normal_cell_x=data_alloc.as_1D_sparse_field(dual_normal_cell_x, dims.ECDim),
+        dual_normal_cell_y=data_alloc.as_1D_sparse_field(dual_normal_cell_y, dims.ECDim),
         edge_areas=edge_areas,
         f_e=f_e,
         edge_center_lat=edge_center_lat,
@@ -169,7 +167,7 @@ def diffusion_init(
     )
 
     # Cell geometry
-    cell_params = geometry.CellParams.from_global_num_cells(
+    cell_params = grid_states.CellParams.from_global_num_cells(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
@@ -220,17 +218,19 @@ def diffusion_init(
         mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        zd_intcoef=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
-        zd_vertoffset=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset),
+        zd_intcoef=data_alloc.flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
+        zd_vertoffset=data_alloc.flatten_first_two_dims(
+            dims.CECDim, dims.KDim, field=zd_vertoffset
+        ),
         zd_diffcoef=zd_diffcoef,
     )
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=as_1D_sparse_field(geofac_div, dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(geofac_div, dims.CEDim),
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
@@ -331,21 +331,21 @@ def grid_init_diffusion(
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
     diffusion_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        c2e=c2e,
-        e2c=e2c,
-        c2e2c=c2e2c,
-        e2c2e=e2c2e,
-        e2v=e2v,
-        v2e=v2e,
-        v2c=v2c,
-        e2c2v=e2c2v,
-        c2v=c2v,
+        cell_starts=cell_starts.ndarray,
+        cell_ends=cell_ends.ndarray,
+        vertex_starts=vertex_starts.ndarray,
+        vertex_ends=vertex_ends.ndarray,
+        edge_starts=edge_starts.ndarray,
+        edge_ends=edge_ends.ndarray,
+        c2e=c2e.ndarray,
+        e2c=e2c.ndarray,
+        c2e2c=c2e2c.ndarray,
+        e2c2e=e2c2e.ndarray,
+        e2v=e2v.ndarray,
+        v2e=v2e.ndarray,
+        v2c=v2c.ndarray,
+        e2c2v=e2c2v.ndarray,
+        c2v=c2v.ndarray,
         grid_id="icon_grid",
         global_grid_params=global_grid_params,
         num_vertices=num_vertices,
@@ -353,10 +353,11 @@ def grid_init_diffusion(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=True if settings.device == "GPU" else False,
+        on_gpu=True if config_settings.device == "GPU" else False,
     )
 
-    if parallel_run:
+    if config_settings.parallel_run:
+        # Set MultiNodeExchange as exchange runtime
         (
             processor_props,
             decomposition_info,

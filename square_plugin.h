@@ -1,0 +1,1 @@
+extern int square_wrapper(double* inp, double* result, int n_CE, int n_K);

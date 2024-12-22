@@ -7,17 +7,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_for_cubic_reconstruction import (
     prepare_numerical_quadrature_for_cubic_reconstruction,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-@pytest.mark.slow_tests
 class TestPrepareNumericalQuadratureForCubicReconstruction(helpers.StencilTest):
     PROGRAM = prepare_numerical_quadrature_for_cubic_reconstruction
     OUTPUTS = (
@@ -337,14 +337,14 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(helpers.StencilTest):
     def reference(
         cls,
         grid,
-        p_coords_dreg_v_1_x: xp.array,
-        p_coords_dreg_v_2_x: xp.array,
-        p_coords_dreg_v_3_x: xp.array,
-        p_coords_dreg_v_4_x: xp.array,
-        p_coords_dreg_v_1_y: xp.array,
-        p_coords_dreg_v_2_y: xp.array,
-        p_coords_dreg_v_3_y: xp.array,
-        p_coords_dreg_v_4_y: xp.array,
+        p_coords_dreg_v_1_x: np.array,
+        p_coords_dreg_v_2_x: np.array,
+        p_coords_dreg_v_3_x: np.array,
+        p_coords_dreg_v_4_x: np.array,
+        p_coords_dreg_v_1_y: np.array,
+        p_coords_dreg_v_2_y: np.array,
+        p_coords_dreg_v_3_y: np.array,
+        p_coords_dreg_v_4_y: np.array,
         shape_func_1_1: float,
         shape_func_2_1: float,
         shape_func_3_1: float,
@@ -464,10 +464,10 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(helpers.StencilTest):
         )
 
         z_area = p_quad_vector_sum_1
-        p_dreg_area_out = xp.where(
+        p_dreg_area_out = np.where(
             z_area >= 0.0,
-            xp.maximum(eps, xp.absolute(z_area)),
-            -xp.maximum(eps, xp.absolute(z_area)),
+            np.maximum(eps, np.absolute(z_area)),
+            -np.maximum(eps, np.absolute(z_area)),
         )
         return dict(
             p_quad_vector_sum_1=p_quad_vector_sum_1,
@@ -485,25 +485,25 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_coords_dreg_v_1_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_x = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_1_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_y = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_1 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_2 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_3 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_4 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_5 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_6 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_7 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_8 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_9 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_quad_vector_sum_10 = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
-        p_dreg_area_out = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_1_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_1_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_y = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_1 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_2 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_3 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_4 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_5 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_6 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_7 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_8 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_9 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_quad_vector_sum_10 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        p_dreg_area_out = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         shape_func_1_1 = 0.001
         shape_func_2_1 = 0.001
         shape_func_3_1 = 0.001
@@ -532,7 +532,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(helpers.StencilTest):
         wgt_zeta_2 = 0.003
         wgt_eta_1 = 0.002
         wgt_eta_2 = 0.007
-        dbl_eps = xp.float64(0.1)
+        dbl_eps = np.float64(0.1)
         eps = 0.1
         return dict(
             p_coords_dreg_v_1_x=p_coords_dreg_v_1_x,

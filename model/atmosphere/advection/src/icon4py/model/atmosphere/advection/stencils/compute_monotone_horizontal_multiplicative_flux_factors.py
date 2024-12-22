@@ -24,10 +24,10 @@ def _compute_monotone_horizontal_multiplicative_flux_factors_min_max(
     beta_fct: ta.wpfloat,
     r_beta_fct: ta.wpfloat,
 ) -> tuple[fa.CellKField[ta.vpfloat], fa.CellKField[ta.vpfloat]]:
-    z_max = vpfloat(beta_fct) * maximum(
+    z_max = astype(beta_fct, vpfloat) * maximum(
         max_over(z_tracer_max(C2E2C), axis=dims.C2E2CDim), z_tracer_max
     )
-    z_min = vpfloat(r_beta_fct) * minimum(
+    z_min = astype(r_beta_fct, vpfloat) * minimum(
         min_over(z_tracer_min(C2E2C), axis=dims.C2E2CDim), z_tracer_min
     )
     return z_max, z_min
