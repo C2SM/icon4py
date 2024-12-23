@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import TypeAlias, TypeVar
+from typing import TypeAlias, TypeVar, Union
 
 import gt4py.next as gtx
 import numpy as np
@@ -14,6 +14,11 @@ from gt4py.next import Dims, Field
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+
+try:
+    import cupy as xp
+except ImportError:
+    import numpy as xp
 
 T = TypeVar("T", wpfloat, vpfloat, float, bool, gtx.int32, gtx.int64)
 
@@ -26,5 +31,5 @@ CellKField: TypeAlias = Field[Dims[dims.CellDim, dims.KDim], T]
 EdgeKField: TypeAlias = Field[Dims[dims.EdgeDim, dims.KDim], T]
 VertexKField: TypeAlias = Field[Dims[dims.VertexDim, dims.KDim], T]
 
-# TODO (anyone): add cupy if cupy is installed?
-AnyNDArray: TypeAlias = np.ndarray
+NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
+

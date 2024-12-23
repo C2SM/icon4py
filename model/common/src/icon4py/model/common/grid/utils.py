@@ -8,7 +8,7 @@
 import gt4py.next as gtx
 from gt4py.next import Dimension, NeighborTableOffsetProvider
 
-from icon4py.model.common.utils import array_allocation as array_alloc
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 def neighbortable_offset_provider_for_1d_sparse_fields(
@@ -18,7 +18,7 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
     neighbor_axis: Dimension,
     has_skip_values: bool,
 ):
-    xp = array_alloc.array_ns(on_gpu)
+    xp = field_alloc.array_ns(on_gpu)
     table = xp.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)
     assert (
         table.dtype == gtx.int32

@@ -174,17 +174,17 @@ def model_initialization_serialbox(
     )
 
     prognostic_state_next = prognostics.PrognosticState(
-        w=solve_nonhydro_init_savepoint.w_new(),
-        vn=solve_nonhydro_init_savepoint.vn_new(),
-        theta_v=solve_nonhydro_init_savepoint.theta_v_new(),
-        rho=solve_nonhydro_init_savepoint.rho_new(),
-        exner=solve_nonhydro_init_savepoint.exner_new(),
+        w=field_alloc.as_field(solve_nonhydro_init_savepoint.w_new(), backend=backend),
+        vn=field_alloc.as_field(solve_nonhydro_init_savepoint.vn_new(), backend=backend),
+        theta_v=field_alloc.as_field(solve_nonhydro_init_savepoint.theta_v_new(), backend=backend),
+        rho=field_alloc.as_field(solve_nonhydro_init_savepoint.rho_new(), backend=backend),
+        exner=field_alloc.as_field(solve_nonhydro_init_savepoint.exner_new(), backend=backend),
     )
 
     prep_adv = dycore_states.PrepAdvection(
-        vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
-        mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
-        mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
+        vn_traj=field_alloc.as_field(solve_nonhydro_init_savepoint.vn_traj(), backend=backend),
+        mass_flx_me=field_alloc.as_field(solve_nonhydro_init_savepoint.mass_flx_me(), backend=backend),
+        mass_flx_ic=field_alloc.as_field(solve_nonhydro_init_savepoint.mass_flx_ic(), backend=backend),
         vol_flx_ic=field_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, backend=backend
         ),

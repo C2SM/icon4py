@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.helpers as helpers
@@ -15,7 +16,6 @@ from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.settings import xp
 
 
 class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest):
@@ -25,14 +25,14 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest)
     @staticmethod
     def reference(
         grid,
-        z_lsq_coeff_1: xp.array,
-        z_lsq_coeff_2: xp.array,
-        z_lsq_coeff_3: xp.array,
-        distv_bary_1: xp.array,
-        distv_bary_2: xp.array,
-        p_mass_flx_e: xp.array,
-        cell_rel_idx_dsl: xp.array,
-        p_out_e: xp.array,
+        z_lsq_coeff_1: np.array,
+        z_lsq_coeff_2: np.array,
+        z_lsq_coeff_3: np.array,
+        distv_bary_1: np.array,
+        distv_bary_2: np.array,
+        p_mass_flx_e: np.array,
+        cell_rel_idx_dsl: np.array,
+        p_out_e: np.array,
         **kwargs,
     ) -> dict:
         p_out_e_cp = p_out_e.copy()
@@ -42,11 +42,11 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest)
         z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
 
         p_out_e = (
-            xp.where(cell_rel_idx_dsl == 1, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
+            np.where(cell_rel_idx_dsl == 1, z_lsq_coeff_1_e2c[:, 1], z_lsq_coeff_1_e2c[:, 0])
             + distv_bary_1
-            * xp.where(cell_rel_idx_dsl == 1, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
+            * np.where(cell_rel_idx_dsl == 1, z_lsq_coeff_2_e2c[:, 1], z_lsq_coeff_2_e2c[:, 0])
             + distv_bary_2
-            * xp.where(cell_rel_idx_dsl == 1, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
+            * np.where(cell_rel_idx_dsl == 1, z_lsq_coeff_3_e2c[:, 1], z_lsq_coeff_3_e2c[:, 0])
         ) * p_mass_flx_e
 
         # restriction of execution domain
