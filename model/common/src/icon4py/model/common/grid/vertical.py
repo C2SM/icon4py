@@ -19,7 +19,7 @@ from gt4py.next import backend as gt4py_backend
 
 import icon4py.model.common.states.metadata as data
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
-from icon4py.model.common.utils import array_allocation as array_alloc
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 log = logging.getLogger(__name__)
@@ -248,19 +248,19 @@ class VerticalGrid:
 
     @classmethod
     def _determine_start_level_of_moist_physics(
-        cls, vct_a: fa.AnyNDArray, top_moist_threshold: float, nshift_total: int = 0
+        cls, vct_a: fa.NDArrayInterface, top_moist_threshold: float, nshift_total: int = 0
     ) -> gtx.int32:
-        xp = array_alloc.array_ns_from_obj(vct_a)
+        xp = field_alloc.array_ns_from_obj(vct_a)
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
         return gtx.int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
     def _determine_damping_height_index(
-        cls, vct_a: fa.AnyNDArray, damping_height: float
+        cls, vct_a: fa.NDArrayInterface, damping_height: float
     ) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
-        xp = array_alloc.array_ns_from_obj(vct_a)
+        xp = field_alloc.array_ns_from_obj(vct_a)
         return (
             0
             if damping_height > vct_a[0]
@@ -269,10 +269,10 @@ class VerticalGrid:
 
     @classmethod
     def _determine_end_index_of_flat_layers(
-        cls, vct_a: fa.AnyNDArray, flat_height: float
+        cls, vct_a: fa.NDArrayInterface, flat_height: float
     ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
-        xp = array_alloc.array_ns_from_obj(vct_a)
+        xp = field_alloc.array_ns_from_obj(vct_a)
         return (
             0
             if flat_height > vct_a[0]

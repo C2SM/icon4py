@@ -18,26 +18,24 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import (
-    array_allocation as array_alloc,
     gt4py_field_allocation as field_alloc,
 )
 
 
 def hydrostatic_adjustment_ndarray(
-    wgtfac_c: fa.AnyNDArray,
-    ddqz_z_half: fa.AnyNDArray,
-    exner_ref_mc: fa.AnyNDArray,
-    d_exner_dz_ref_ic: fa.AnyNDArray,
-    theta_ref_mc: fa.AnyNDArray,
-    theta_ref_ic: fa.AnyNDArray,
-    rho: fa.AnyNDArray,
-    exner: fa.AnyNDArray,
-    theta_v: fa.AnyNDArray,
+    wgtfac_c: fa.NDArrayInterface,
+    ddqz_z_half: fa.NDArrayInterface,
+    exner_ref_mc: fa.NDArrayInterface,
+    d_exner_dz_ref_ic: fa.NDArrayInterface,
+    theta_ref_mc: fa.NDArrayInterface,
+    theta_ref_ic: fa.NDArrayInterface,
+    rho: fa.NDArrayInterface,
+    exner: fa.NDArrayInterface,
+    theta_v: fa.NDArrayInterface,
     num_levels: int,
     backend: gt4py_backend.Backend,
-) -> tuple[fa.AnyNDArray, fa.AnyNDArray, fa.AnyNDArray]:
-    is_cupy = array_alloc.is_cupy_device(backend)
-    xp = array_alloc.array_ns(is_cupy)
+) -> tuple[fa.NDArrayInterface, fa.NDArrayInterface, fa.NDArrayInterface]:
+    xp = field_alloc.import_array_ns(backend)
 
     # virtual temperature
     temp_v = theta_v * exner
@@ -68,17 +66,17 @@ def hydrostatic_adjustment_ndarray(
 
 
 def hydrostatic_adjustment_constant_thetav_ndarray(
-    wgtfac_c: fa.AnyNDArray,
-    ddqz_z_half: fa.AnyNDArray,
-    exner_ref_mc: fa.AnyNDArray,
-    d_exner_dz_ref_ic: fa.AnyNDArray,
-    theta_ref_mc: fa.AnyNDArray,
-    theta_ref_ic: fa.AnyNDArray,
-    rho: fa.AnyNDArray,
-    exner: fa.AnyNDArray,
-    theta_v: fa.AnyNDArray,
+    wgtfac_c: fa.NDArrayInterface,
+    ddqz_z_half: fa.NDArrayInterface,
+    exner_ref_mc: fa.NDArrayInterface,
+    d_exner_dz_ref_ic: fa.NDArrayInterface,
+    theta_ref_mc: fa.NDArrayInterface,
+    theta_ref_ic: fa.NDArrayInterface,
+    rho: fa.NDArrayInterface,
+    exner: fa.NDArrayInterface,
+    theta_v: fa.NDArrayInterface,
     num_levels: int,
-) -> tuple[fa.AnyNDArray, fa.AnyNDArray]:
+) -> tuple[fa.NDArrayInterface, fa.NDArrayInterface]:
     """
     Computes a hydrostatically balanced profile. In constrast to the above
     hydrostatic_adjustment_ndarray, the virtual temperature is kept (assumed)
@@ -113,12 +111,12 @@ def zonalwind_2_normalwind_ndarray(
     jw_up: float,
     lat_perturbation_center: float,
     lon_perturbation_center: float,
-    edge_lat: fa.AnyNDArray,
-    edge_lon: fa.AnyNDArray,
-    primal_normal_x: fa.AnyNDArray,
-    eta_v_e: fa.AnyNDArray,
+    edge_lat: fa.NDArrayInterface,
+    edge_lon: fa.NDArrayInterface,
+    primal_normal_x: fa.NDArrayInterface,
+    eta_v_e: fa.NDArrayInterface,
     backend: gt4py_backend.Backend,
-) -> fa.AnyNDArray:
+) -> fa.NDArrayInterface:
     """
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
 
@@ -136,8 +134,7 @@ def zonalwind_2_normalwind_ndarray(
     """
     # TODO (Chia Rui) this function needs a test
 
-    is_cupy = array_alloc.is_cupy_device(backend)
-    xp = array_alloc.array_ns(is_cupy)
+    xp = field_alloc.import_array_ns(backend)
 
     mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
@@ -317,14 +314,14 @@ def initialize_prep_advection(
 
 
 def create_gt4py_field_for_prognostic_and_diagnostic_variables(
-    vn_ndarray: fa.AnyNDArray,
-    w_ndarray: fa.AnyNDArray,
-    exner_ndarray: fa.AnyNDArray,
-    rho_ndarray: fa.AnyNDArray,
-    theta_v_ndarray: fa.AnyNDArray,
-    temperature_ndarray: fa.AnyNDArray,
-    pressure_ndarray: fa.AnyNDArray,
-    pressure_ifc_ndarray: fa.AnyNDArray,
+    vn_ndarray: fa.NDArrayInterface,
+    w_ndarray: fa.NDArrayInterface,
+    exner_ndarray: fa.NDArrayInterface,
+    rho_ndarray: fa.NDArrayInterface,
+    theta_v_ndarray: fa.NDArrayInterface,
+    temperature_ndarray: fa.NDArrayInterface,
+    pressure_ndarray: fa.NDArrayInterface,
+    pressure_ifc_ndarray: fa.NDArrayInterface,
     grid: icon_grid.IconGrid,
     backend: gt4py_backend.Backend,
 ) -> tuple[

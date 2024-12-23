@@ -25,7 +25,7 @@ def test_cross_product(backend):
     y = test_helpers.zero_field(mesh, dims.EdgeDim)
     z = test_helpers.zero_field(mesh, dims.EdgeDim)
 
-    helpers.cross_product.with_backend(backend)(
+    helpers.cross_product_on_edges.with_backend(backend)(
         x1, x2, y1, y2, z1, z2, out=(x, y, z), offset_provider={}
     )
     a = xp.column_stack((x1.ndarray, y1.ndarray, z1.ndarray))
