@@ -20,6 +20,7 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
+
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
@@ -39,12 +40,8 @@ from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    flatten_first_two_dims,  # todo: move away from test_utils
-)
 from icon4py.model.common.type_alias import wpfloat
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.settings import backend, config as config_settings, device
 from icon4pytools.py2fgen.wrappers import common as wrapper_common
@@ -153,14 +150,14 @@ def diffusion_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim),
-        primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim),
-        dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim),
-        dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim),
-        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, dims.ECDim),
-        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, dims.ECDim),
-        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, dims.ECDim),
-        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, dims.ECDim),
+        primal_normal_vert_x=data_alloc.as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim),
+        primal_normal_vert_y=data_alloc.as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim),
+        dual_normal_vert_x=data_alloc.as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim),
+        dual_normal_vert_y=data_alloc.as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim),
+        primal_normal_cell_x=data_alloc.as_1D_sparse_field(primal_normal_cell_x, dims.ECDim),
+        primal_normal_cell_y=data_alloc.as_1D_sparse_field(primal_normal_cell_y, dims.ECDim),
+        dual_normal_cell_x=data_alloc.as_1D_sparse_field(dual_normal_cell_x, dims.ECDim),
+        dual_normal_cell_y=data_alloc.as_1D_sparse_field(dual_normal_cell_y, dims.ECDim),
         edge_areas=edge_areas,
         f_e=f_e,
         edge_center_lat=edge_center_lat,
@@ -221,17 +218,19 @@ def diffusion_init(
         mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        zd_intcoef=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
-        zd_vertoffset=flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset),
+        zd_intcoef=data_alloc.flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_intcoef),
+        zd_vertoffset=data_alloc.flatten_first_two_dims(
+            dims.CECDim, dims.KDim, field=zd_vertoffset
+        ),
         zd_diffcoef=zd_diffcoef,
     )
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=as_1D_sparse_field(geofac_div, dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(geofac_div, dims.CEDim),
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
