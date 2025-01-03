@@ -22,7 +22,7 @@ from icon4py.model.common.math.helpers import (
     normalize_cartesian_vector_on_edges,
     zonal_and_meridional_components_on_edges,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as alloc
 
 
 @gtx.field_operator(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -574,11 +574,11 @@ def compute_coriolis_parameter_on_edges(
 
 
 def compute_primal_cart_normal(
-    primal_cart_normal_x: field_alloc.NDArray,
-    primal_cart_normal_y: field_alloc.NDArray,
-    primal_cart_normal_z: field_alloc.NDArray,
+    primal_cart_normal_x: alloc.NDArray,
+    primal_cart_normal_y: alloc.NDArray,
+    primal_cart_normal_z: alloc.NDArray,
     array_ns: ModuleType = np,
-) -> field_alloc.NDArray:
+) -> alloc.NDArray:
     primal_cart_normal = array_ns.transpose(
         array_ns.stack(
             (

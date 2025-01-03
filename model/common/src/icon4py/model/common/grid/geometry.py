@@ -29,7 +29,7 @@ from icon4py.model.common.grid import (
     icon,
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
-from icon4py.model.common.utils import gt4py_field_allocation as alloc
+from icon4py.model.common.utils import data_allocation as alloc
 
 
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
