@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 def correct_contravariant_vertical_velocity_numpy(
-    w_concorr_c: np.array, z_w_con_c: np.array
+    z_w_con_c: np.array, w_concorr_c: np.array
 ) -> np.array:
     z_w_con_c = z_w_con_c - w_concorr_c
     return z_w_con_c
