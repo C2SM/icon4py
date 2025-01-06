@@ -9,13 +9,14 @@
 import pytest
 
 import icon4py.model.common.grid.states as grid_states
+import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration,
     icon4py_driver,
@@ -187,6 +188,8 @@ def test_run_timeloop_single_step(
     sp_v = savepoint_velocity_init
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
 
+    linit = sp.get_metadata("linit").get("linit")
+
     grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = dycore_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
@@ -197,10 +200,10 @@ def test_run_timeloop_single_step(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
@@ -263,11 +266,12 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(
+        vol_flx_ic=data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
         ),
     )
 
+    current_index, next_index = (2, 1) if not linit else (1, 2)
     nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
@@ -279,10 +283,12 @@ def test_run_timeloop_single_step(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+        ),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+            sp_v.ddt_w_adv_pc(current_index), sp_v.ddt_w_adv_pc(next_index)
+        ),
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
@@ -313,12 +319,12 @@ def test_run_timeloop_single_step(
         exner=sp.exner_new(),
     )
 
-    prognostic_state_list = [prognostic_state, prognostic_state_new]
+    prognostic_states = common_utils.TimeStepPair(prognostic_state, prognostic_state_new)
 
     timeloop.time_integration(
         diffusion_diagnostic_state,
         nonhydro_diagnostic_state,
-        prognostic_state_list,
+        prognostic_states,
         prep_adv,
         sp.divdamp_fac_o2(),
         do_prep_adv,
@@ -331,29 +337,29 @@ def test_run_timeloop_single_step(
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+        prognostic_states.current.vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+        prognostic_states.current.w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-14,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
+        prognostic_states.current.exner.asnumpy(),
         exner_sp.asnumpy(),
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
+        prognostic_states.current.theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=4e-12,
     )
 
     assert helpers.dallclose(
-        prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
+        prognostic_states.current.rho.asnumpy(),
         rho_sp.asnumpy(),
     )

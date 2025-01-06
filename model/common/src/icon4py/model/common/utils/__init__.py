@@ -8,12 +8,12 @@
 
 from __future__ import annotations
 
-from . import gt4py_field_allocation
+from . import data_allocation
 from ._common import (
     DoubleBuffering,
-    NextStepPair,
     Pair,
-    PreviousStepPair,
+    PredictorCorrectorPair,
+    TimeStepPair,
     chainable,
     named_property,
 )
@@ -22,12 +22,13 @@ from ._common import (
 __all__ = [
     # Classes
     "DoubleBuffering",
-    "NextStepPair",
     "Pair",
-    "PreviousStepPair",
+    "TimeStepPair",
+    "PredictorCorrectorPair",
     "named_property",
     # Functions
     "chainable",
     # Modules
-    "gt4py_field_allocation",
+    "data_allocation",
+    "serialbox",
 ]

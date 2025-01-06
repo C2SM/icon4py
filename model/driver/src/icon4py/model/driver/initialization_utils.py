@@ -10,12 +10,13 @@ import enum
 import functools
 import logging
 import pathlib
+import uuid
 
 from gt4py.next import backend as gt4py_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, utils as common_utils
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
@@ -25,22 +26,19 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.test_utils import (
-    datatest_utils as dt_utils,
-    helpers,
-    serialbox_utils as sb,
-)
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     serialbox_helpers as driver_sb,
 )
 from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
+from icon4py.model.testing import serialbox as sb
 
 
+# TODO(egparedes): Read these hardcoded constants from grid file
 GRID_LEVEL = 4
 GRID_ROOT = 2
-GLOBAL_GRID_ID = dt_utils.GRID_IDS[dt_utils.GLOBAL_EXPERIMENT]
+GLOBAL_GRID_ID = uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba")
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = "The requested experiment type is not implemented."
@@ -143,10 +141,14 @@ def model_initialization_serialbox(
         mass_fl_e=solve_nonhydro_init_savepoint.mass_fl_e(),
         ddt_vn_phy=solve_nonhydro_init_savepoint.ddt_vn_phy(),
         grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_ntl1=velocity_init_savepoint.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=velocity_init_savepoint.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=velocity_init_savepoint.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=velocity_init_savepoint.ddt_w_adv_pc(2),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+            velocity_init_savepoint.ddt_vn_apc_pc(1),
+            velocity_init_savepoint.ddt_vn_apc_pc(2),
+        ),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+            velocity_init_savepoint.ddt_w_adv_pc(1),
+            velocity_init_savepoint.ddt_w_adv_pc(2),
+        ),
         vt=velocity_init_savepoint.vt(),
         vn_ie=velocity_init_savepoint.vn_ie(),
         w_concorr_c=velocity_init_savepoint.w_concorr_c(),
@@ -157,35 +159,35 @@ def model_initialization_serialbox(
     )
 
     diagnostic_state = diagnostics.DiagnosticState(
-        pressure=field_alloc.allocate_zero_field(
+        pressure=data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, backend=backend
         ),
-        pressure_ifc=field_alloc.allocate_zero_field(
+        pressure_ifc=data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
         ),
-        temperature=field_alloc.allocate_zero_field(
+        temperature=data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, backend=backend
         ),
-        virtual_temperature=field_alloc.allocate_zero_field(
+        virtual_temperature=data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, backend=backend
         ),
-        u=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend),
-        v=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend),
+        u=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend),
+        v=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend),
     )
 
     prognostic_state_next = prognostics.PrognosticState(
-        w=field_alloc.as_field(solve_nonhydro_init_savepoint.w_new(), backend=backend),
-        vn=field_alloc.as_field(solve_nonhydro_init_savepoint.vn_new(), backend=backend),
-        theta_v=field_alloc.as_field(solve_nonhydro_init_savepoint.theta_v_new(), backend=backend),
-        rho=field_alloc.as_field(solve_nonhydro_init_savepoint.rho_new(), backend=backend),
-        exner=field_alloc.as_field(solve_nonhydro_init_savepoint.exner_new(), backend=backend),
+        w=data_alloc.as_field(solve_nonhydro_init_savepoint.w_new(), backend=backend),
+        vn=data_alloc.as_field(solve_nonhydro_init_savepoint.vn_new(), backend=backend),
+        theta_v=data_alloc.as_field(solve_nonhydro_init_savepoint.theta_v_new(), backend=backend),
+        rho=data_alloc.as_field(solve_nonhydro_init_savepoint.rho_new(), backend=backend),
+        exner=data_alloc.as_field(solve_nonhydro_init_savepoint.exner_new(), backend=backend),
     )
 
     prep_adv = dycore_states.PrepAdvection(
-        vn_traj=field_alloc.as_field(solve_nonhydro_init_savepoint.vn_traj(), backend=backend),
-        mass_flx_me=field_alloc.as_field(solve_nonhydro_init_savepoint.mass_flx_me(), backend=backend),
-        mass_flx_ic=field_alloc.as_field(solve_nonhydro_init_savepoint.mass_flx_ic(), backend=backend),
-        vol_flx_ic=field_alloc.allocate_zero_field(
+        vn_traj=data_alloc.as_field(solve_nonhydro_init_savepoint.vn_traj(), backend=backend),
+        mass_flx_me=data_alloc.as_field(solve_nonhydro_init_savepoint.mass_flx_me(), backend=backend),
+        mass_flx_ic=data_alloc.as_field(solve_nonhydro_init_savepoint.mass_flx_ic(), backend=backend),
+        vol_flx_ic=data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=grid, backend=backend
         ),
     )
@@ -415,10 +417,10 @@ def read_static_fields(
             pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
             pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
             rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+            e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
             rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+            geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
             geofac_n2s=interpolation_savepoint.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],
