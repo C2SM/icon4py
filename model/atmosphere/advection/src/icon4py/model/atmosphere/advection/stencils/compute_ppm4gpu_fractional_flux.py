@@ -25,16 +25,23 @@ def _sum_neighbor_contributions(
     js: fa.CellKField[ta.wpfloat],
     p_cc: fa.CellKField[ta.wpfloat],
 ) -> fa.CellKField[ta.wpfloat]:
-    p_cc_p0 = where(mask1 & (js == 0.0), p_cc, 0.0)
-    p_cc_p1 = where(mask1 & (js == 1.0), p_cc(Koff[1]), 0.0)
-    p_cc_p2 = where(mask1 & (js == 2.0), p_cc(Koff[2]), 0.0)
-    p_cc_p3 = where(mask1 & (js == 3.0), p_cc(Koff[3]), 0.0)
-    p_cc_p4 = where(mask1 & (js == 4.0), p_cc(Koff[4]), 0.0)
-    p_cc_m0 = where(mask2 & (js == 0.0), p_cc(Koff[-1]), 0.0)
-    p_cc_m1 = where(mask2 & (js == 1.0), p_cc(Koff[-2]), 0.0)
-    p_cc_m2 = where(mask2 & (js == 2.0), p_cc(Koff[-3]), 0.0)
-    p_cc_m3 = where(mask2 & (js == 3.0), p_cc(Koff[-4]), 0.0)
-    p_cc_m4 = where(mask2 & (js == 4.0), p_cc(Koff[-5]), 0.0)
+    js_eq0 = js == 0.0
+    js_eq1 = js == 1.0
+    js_eq2 = js == 2.0
+    js_eq3 = js == 3.0
+    js_eq4 = js == 4.0
+
+    p_cc_p0 = where(mask1 & js_eq0, p_cc, 0.0)
+    p_cc_p1 = where(mask1 & js_eq1, p_cc(Koff[1]), 0.0)
+    p_cc_p2 = where(mask1 & js_eq2, p_cc(Koff[2]), 0.0)
+    p_cc_p3 = where(mask1 & js_eq3, p_cc(Koff[3]), 0.0)
+    p_cc_p4 = where(mask1 & js_eq4, p_cc(Koff[4]), 0.0)
+    p_cc_m0 = where(mask2 & js_eq0, p_cc(Koff[-1]), 0.0)
+    p_cc_m1 = where(mask2 & js_eq1, p_cc(Koff[-2]), 0.0)
+    p_cc_m2 = where(mask2 & js_eq2, p_cc(Koff[-3]), 0.0)
+    p_cc_m3 = where(mask2 & js_eq3, p_cc(Koff[-4]), 0.0)
+    p_cc_m4 = where(mask2 & js_eq4, p_cc(Koff[-5]), 0.0)
+
     p_cc_jks = (
         p_cc_p0
         + p_cc_p1
@@ -63,17 +70,21 @@ def _compute_ppm4gpu_fractional_flux(
 ) -> fa.CellKField[ta.wpfloat]:
     js = floor(abs(z_cfl))
     z_cflfrac = abs(z_cfl) - js
+    z_cflfrac_nonzero = z_cflfrac != 0.0
 
     z_cfl_pos = z_cfl > 0.0
-    z_cfl_neg = not z_cfl_pos
+    z_cfl_neg = z_cfl < 0.0
     wsign = where(z_cfl_pos, 1.0, -1.0)
+
+    mask1 = z_cfl_pos & z_cflfrac_nonzero
+    mask2 = z_cfl_neg & z_cflfrac_nonzero
 
     in_slev_bounds = astype(k, wpfloat) - js >= astype(slev, wpfloat)
 
-    p_cc_jks = _sum_neighbor_contributions(z_cfl_pos, z_cfl_neg, js, p_cc)
-    p_cellmass_now_jks = _sum_neighbor_contributions(z_cfl_pos, z_cfl_neg, js, p_cellmass_now)
-    z_delta_q_jks = _sum_neighbor_contributions(z_cfl_pos, z_cfl_neg, js, z_delta_q)
-    z_a1_jks = _sum_neighbor_contributions(z_cfl_pos, z_cfl_neg, js, z_a1)
+    p_cc_jks = _sum_neighbor_contributions(mask1, mask2, js, p_cc)
+    p_cellmass_now_jks = _sum_neighbor_contributions(mask1, mask2, js, p_cellmass_now)
+    z_delta_q_jks = _sum_neighbor_contributions(mask1, mask2, js, z_delta_q)
+    z_a1_jks = _sum_neighbor_contributions(mask1, mask2, js, z_a1)
 
     z_q_int = (
         p_cc_jks

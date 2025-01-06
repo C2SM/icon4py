@@ -1,6 +1,0 @@
--r ../base-requirements-dev.txt
--e ../model/atmosphere/dycore
--e ../model/atmosphere/diffusion
--e ../model/atmosphere/advection
--e ../model/common[netcdf]
--e .[all]

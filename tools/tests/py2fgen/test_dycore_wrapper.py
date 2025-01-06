@@ -24,17 +24,18 @@ from unittest import mock
 
 import gt4py.next as gtx
 import pytest
+
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
-from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common import constants, dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import (
+from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-
 from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 
 from . import utils
@@ -44,7 +45,9 @@ logging.basicConfig(level=logging.INFO)
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init,jstep_init, istep_exit,jstep_exit", [(1, 0, 2, 0)])
+@pytest.mark.parametrize(
+    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+)
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -77,6 +80,7 @@ def test_dycore_wrapper_granule_inputs(
     savepoint_nonhydro_step_exit,
     caplog,
     icon_grid,
+    at_initial_timestep,
 ):
     caplog.set_level(logging.DEBUG)
 
@@ -126,7 +130,6 @@ def test_dycore_wrapper_granule_inputs(
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
 
     # Cell geometry
     cell_center_lat = grid_savepoint.cell_center_lat()
@@ -249,8 +252,6 @@ def test_dycore_wrapper_granule_inputs(
     global_level = 9
 
     # --- Granule input parameters for dycore run
-    recompute = sp.get_metadata("recompute").get("recompute")
-    linit = sp.get_metadata("linit").get("linit")
     initial_divdamp_fac = sp.divdamp_fac_o2()
 
     # PrepAdvection
@@ -292,8 +293,6 @@ def test_dycore_wrapper_granule_inputs(
     exner_new = sp.exner_new()
 
     # using fortran indices
-    nnow = 1
-    nnew = 2
     jstep_init_fortran = jstep_init + 1
 
     # --- Expected objects that form inputs into init function ---
@@ -309,10 +308,10 @@ def test_dycore_wrapper_granule_inputs(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -381,10 +380,8 @@ def test_dycore_wrapper_granule_inputs(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp.ddt_w_adv_pc(2),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(sp.ddt_vn_apc_pc(1), sp.ddt_vn_apc_pc(2)),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(sp.ddt_w_adv_pc(1), sp.ddt_w_adv_pc(2)),
         vt=sp.vt(),
         vn_ie=sp.vn_ie(),
         w_concorr_c=sp.w_concorr_c(),
@@ -407,22 +404,19 @@ def test_dycore_wrapper_granule_inputs(
         rho=sp.rho_new(),
         exner=sp.exner_new(),
     )
-    expected_prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+    expected_prognostic_states = common_utils.TimeStepPair(
+        prognostic_state_nnow, prognostic_state_nnew
+    )
 
     expected_prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
     expected_initial_divdamp_fac = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
-    expected_recompute = sp.get_metadata("recompute").get("recompute")
-    expected_linit = sp.get_metadata("linit").get("linit")
-    expected_clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     expected_lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    expected_nnow = 0
-    expected_nnew = 1
     expected_at_first_substep = jstep_init == 0
     expected_at_last_substep = jstep_init == (ndyn_substeps - 1)
 
@@ -655,14 +649,10 @@ def test_dycore_wrapper_granule_inputs(
             vn_traj=vn_traj,
             dtime=dtime,
             lprep_adv=lprep_adv,
-            clean_mflx=clean_mflx,
-            recompute=recompute,
-            linit=linit,
+            at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=initial_divdamp_fac,
             ndyn_substeps=ndyn_substeps,
             idyn_timestep=jstep_init_fortran,
-            nnow=nnow,
-            nnew=nnew,
         )
 
         # Check input arguments to SolveNonhydro.time_step
@@ -674,7 +664,7 @@ def test_dycore_wrapper_granule_inputs(
         assert result, f"Diagnostic State comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
-            captured_kwargs["prognostic_state_ls"], expected_prognostic_state_ls
+            captured_kwargs["prognostic_states"], expected_prognostic_states
         )
         assert result, f"Prognostic State comparison failed: {error_message}"
 
@@ -692,28 +682,9 @@ def test_dycore_wrapper_granule_inputs(
         assert result, f"dtime comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
-            captured_kwargs["l_recompute"], expected_recompute
-        )
-        assert result, f"Recompute flag comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(captured_kwargs["l_init"], expected_linit)
-        assert result, f"Init flag comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
-            captured_kwargs["lclean_mflx"], expected_clean_mflx
-        )
-        assert result, f"Clean MFLX flag comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(
             captured_kwargs["lprep_adv"], expected_lprep_adv
         )
         assert result, f"Prep Advection flag comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(captured_kwargs["nnew"], expected_nnew)
-        assert result, f"nnew comparison failed: {error_message}"
-
-        result, error_message = utils.compare_objects(captured_kwargs["nnow"], expected_nnow)
-        assert result, f"nnow comparison failed: {error_message}"
 
         result, error_message = utils.compare_objects(
             captured_kwargs["at_first_substep"], expected_at_first_substep
@@ -727,7 +698,9 @@ def test_dycore_wrapper_granule_inputs(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init,jstep_init, istep_exit,jstep_exit", [(1, 0, 2, 0)])
+@pytest.mark.parametrize(
+    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+)
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit",
     [
@@ -759,6 +732,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     savepoint_nonhydro_step_exit,
     caplog,
     icon_grid,
+    at_initial_timestep,
 ):
     caplog.set_level(logging.DEBUG)
 
@@ -807,7 +781,6 @@ def test_granule_solve_nonhydro_single_step_regional(
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
 
     # Cell geometry
     cell_center_lat = grid_savepoint.cell_center_lat()
@@ -1062,8 +1035,6 @@ def test_granule_solve_nonhydro_single_step_regional(
     )
 
     # solve nh run parameters
-    recompute = sp.get_metadata("recompute").get("recompute")
-    linit = sp.get_metadata("linit").get("linit")
     initial_divdamp_fac = sp.divdamp_fac_o2()
 
     # PrepAdvection
@@ -1105,8 +1076,6 @@ def test_granule_solve_nonhydro_single_step_regional(
     exner_new = sp.exner_new()
 
     # using fortran indices
-    nnow = 1
-    nnew = 2
     jstep_init_fortran = jstep_init + 1
 
     dycore_wrapper.solve_nh_run(
@@ -1143,14 +1112,10 @@ def test_granule_solve_nonhydro_single_step_regional(
         vn_traj=vn_traj,
         dtime=dtime,
         lprep_adv=lprep_adv,
-        clean_mflx=clean_mflx,
-        recompute=recompute,
-        linit=linit,
+        at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=initial_divdamp_fac,
         ndyn_substeps=ndyn_substeps,
         idyn_timestep=jstep_init_fortran,
-        nnow=nnow,
-        nnew=nnew,
     )
 
     assert helpers.dallclose(
@@ -1182,14 +1147,13 @@ def test_granule_solve_nonhydro_single_step_regional(
     )
 
 
-@pytest.mark.slow_tests
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only, at_initial_timestep",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
-        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False, True),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True, False),
     ],
 )
 def test_granule_solve_nonhydro_multi_step_regional(
@@ -1212,6 +1176,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     savepoint_nonhydro_step_exit,
     experiment,
     ndyn_substeps,
+    at_initial_timestep,
 ):
     # savepoints
     sp = savepoint_nonhydro_init
@@ -1258,7 +1223,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
 
     # Cell geometry
     cell_center_lat = grid_savepoint.cell_center_lat()
@@ -1513,7 +1477,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
     )
 
     # solve nh run parameters
-    recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
     initial_divdamp_fac = sp.divdamp_fac_o2()
 
@@ -1535,8 +1498,12 @@ def test_granule_solve_nonhydro_multi_step_regional(
     grf_tend_vn = sp.grf_tend_vn()
     ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(1)
     ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(2)
-    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
-    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
+    if linit:
+        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
+        ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
+    else:
+        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(2)
+        ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
     vt = sp.vt()
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
@@ -1555,29 +1522,42 @@ def test_granule_solve_nonhydro_multi_step_regional(
     rho_new = sp.rho_new()
     exner_new = sp.exner_new()
 
-    # use fortran indices (also in the driving loop to compute i_substep)
-    nnow = 1
-    nnew = 2
+    prognostic_state_nnow = PrognosticState(
+        w=w_now,
+        vn=vn_now,
+        theta_v=theta_v_now,
+        rho=rho_now,
+        exner=exner_now,
+    )
+    prognostic_state_nnew = PrognosticState(
+        w=w_new,
+        vn=vn_new,
+        theta_v=theta_v_new,
+        rho=rho_new,
+        exner=exner_new,
+    )
+    prognostic_states = common_utils.TimeStepPair(prognostic_state_nnow, prognostic_state_nnew)
+    ddt_vn_apc = common_utils.PredictorCorrectorPair(ddt_vn_apc_ntl1, ddt_vn_apc_ntl2)
+    ddt_w_adv = common_utils.PredictorCorrectorPair(ddt_w_adv_ntl1, ddt_w_adv_ntl2)
 
+    # use fortran indices in the driving loop to compute i_substep
     for i_substep in range(1, ndyn_substeps + 1):
-        is_last_substep = i_substep == (ndyn_substeps)
-
         dycore_wrapper.solve_nh_run(
-            rho_now=rho_now,
-            rho_new=rho_new,
-            exner_now=exner_now,
-            exner_new=exner_new,
-            w_now=w_now,
-            w_new=w_new,
-            theta_v_now=theta_v_now,
-            theta_v_new=theta_v_new,
-            vn_now=vn_now,
-            vn_new=vn_new,
+            rho_now=prognostic_states.current.rho,
+            rho_new=prognostic_states.next.rho,
+            exner_now=prognostic_states.current.exner,
+            exner_new=prognostic_states.next.exner,
+            w_now=prognostic_states.current.w,
+            w_new=prognostic_states.next.w,
+            theta_v_now=prognostic_states.current.theta_v,
+            theta_v_new=prognostic_states.next.theta_v,
+            vn_now=prognostic_states.current.vn,
+            vn_new=prognostic_states.next.vn,
             w_concorr_c=w_concorr_c,
-            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-            ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
-            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-            ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+            ddt_vn_apc_ntl1=ddt_vn_apc.predictor,
+            ddt_vn_apc_ntl2=ddt_vn_apc.corrector,
+            ddt_w_adv_ntl1=ddt_w_adv.predictor,
+            ddt_w_adv_ntl2=ddt_w_adv.corrector,
             theta_v_ic=theta_v_ic,
             rho_ic=rho_ic,
             exner_pr=exner_pr,
@@ -1596,22 +1576,18 @@ def test_granule_solve_nonhydro_multi_step_regional(
             vn_traj=vn_traj,
             dtime=dtime,
             lprep_adv=lprep_adv,
-            clean_mflx=clean_mflx,
-            recompute=recompute,
-            linit=linit,
+            at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=initial_divdamp_fac,
             ndyn_substeps=ndyn_substeps,
             idyn_timestep=i_substep,
-            nnow=nnow,
-            nnew=nnew,
         )
-        linit = False
-        recompute = False
-        clean_mflx = False
-        if not is_last_substep:
-            ntemp = nnow
-            nnow = nnew
-            nnew = ntemp
+
+        prognostic_states.swap()
+
+        if not (at_initial_timestep and (i_substep - 1 == 0)):
+            ddt_w_adv.swap()
+        if not (i_substep - 1 == 0):
+            ddt_vn_apc.swap()
 
     cell_start_lb_plus2 = icon_grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
