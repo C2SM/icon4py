@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def copy_cell_kdim_field_to_vp_numpy(field: np.array) -> np.array:
-    field_copy = field[...]
+    field_copy = field.copy()
     return field_copy
 
 
