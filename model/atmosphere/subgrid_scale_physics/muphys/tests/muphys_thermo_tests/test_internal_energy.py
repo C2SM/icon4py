@@ -22,7 +22,7 @@ class TestInternalEnergy(StencilTest):
 
     @staticmethod
     def reference(grid, t: np.array, qv: np.array, qliq: np.array, qice: np.array, rho: np.array, dz: np.array, CI: wpfloat, CLW: wpfloat, CVD: wpfloat, CVV: wpfloat, LSC: wpfloat, LVC: wpfloat, **kwargs) -> dict:
-        return dict(exchange_rate=np.full(t.shape, 38265357.270336017))
+        return dict(internal_energy=np.full(t.shape, 38265357.270336017))
 
     @pytest.fixture
     def input_data(self, grid):

@@ -22,7 +22,7 @@ class TestTFromInternalEnergy(StencilTest):
 
     @staticmethod
     def reference(grid, u: np.array, qv: np.array, qliq: np.array, qice: np.array, rho: np.array, dz: np.array, CI: wpfloat, CLW: wpfloat, CVD: wpfloat, CVV: wpfloat, LSC: wpfloat, LVC: wpfloat, **kwargs) -> dict:
-        return dict(exchange_rate=np.full(u.shape, 255.75599999999997))
+        return dict(temperature=np.full(u.shape, 255.75599999999997))
 
     @pytest.fixture
     def input_data(self, grid):
@@ -42,4 +42,3 @@ class TestTFromInternalEnergy(StencilTest):
             LVC              = graupel_ct.lvc,
             temperature      = constant_field(grid, 0., dims.CellDim, dtype=wpfloat)
         )
-
