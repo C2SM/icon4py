@@ -11,6 +11,7 @@ import math
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next import backend as gtx_backend
+from model.testing.src.icon4py.model.testing import datatest_utils as dt_utils
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -35,9 +36,6 @@ from icon4py.model.common.metrics import (
     metrics_attributes as attrs,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.test_utils import (
-    datatest_utils as dt_utils,
-)
 from icon4py.model.common.utils import gt4py_field_allocation as alloc
 
 

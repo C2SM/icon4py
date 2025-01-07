@@ -8,7 +8,6 @@
 
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import constants
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
@@ -16,7 +15,7 @@ from icon4py.model.common.metrics import (
     metrics_attributes as attrs,
     metrics_factory,
 )
-from icon4py.model.common.test_utils import (
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     helpers as test_helpers,
@@ -245,8 +244,8 @@ def test_factory_facs_mc(grid_savepoint, metrics_savepoint, grid_file, experimen
     )
     field_1 = factory.get(attrs.D2DEXDZ2_FAC1_MC)
     field_2 = factory.get(attrs.D2DEXDZ2_FAC2_MC)
-    assert helpers.dallclose(field_1.asnumpy(), field_ref_1.asnumpy())
-    assert helpers.dallclose(field_2.asnumpy(), field_ref_2.asnumpy())
+    assert test_helpers.dallclose(field_1.asnumpy(), field_ref_1.asnumpy())
+    assert test_helpers.dallclose(field_2.asnumpy(), field_ref_2.asnumpy())
 
 
 @pytest.mark.parametrize(
