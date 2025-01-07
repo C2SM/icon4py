@@ -15,7 +15,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 from . import utils
 

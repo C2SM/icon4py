@@ -8,7 +8,7 @@
 
 import logging
 import dataclasses
-from typing import Final, Literal, Optional
+from typing import Final, Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend, int32
@@ -16,6 +16,7 @@ from gt4py.next import backend, int32
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
@@ -153,7 +154,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.common import field_type_aliases as fa
 import enum
 
@@ -253,46 +253,46 @@ class IntermediateFields:
         backend: Optional[backend.Backend] = None,
     ):
         return IntermediateFields(
-            z_gradh_exner=field_alloc.allocate_zero_field(
+            z_gradh_exner=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_alpha=field_alloc.allocate_zero_field(
+            z_alpha=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, is_halfdim=True, grid=grid, backend=backend
             ),
-            z_beta=field_alloc.allocate_zero_field(
+            z_beta=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_w_expl=field_alloc.allocate_zero_field(
+            z_w_expl=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, is_halfdim=True, grid=grid, backend=backend
             ),
-            z_exner_expl=field_alloc.allocate_zero_field(
+            z_exner_expl=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_q=field_alloc.allocate_zero_field(
+            z_q=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_contr_w_fl_l=field_alloc.allocate_zero_field(
+            z_contr_w_fl_l=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, is_halfdim=True, grid=grid, backend=backend
             ),
-            z_rho_e=field_alloc.allocate_zero_field(
+            z_rho_e=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_theta_v_e=field_alloc.allocate_zero_field(
+            z_theta_v_e=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_graddiv_vn=field_alloc.allocate_zero_field(
+            z_graddiv_vn=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_rho_expl=field_alloc.allocate_zero_field(
+            z_rho_expl=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_dwdz_dd=field_alloc.allocate_zero_field(
+            z_dwdz_dd=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_kin_hor_e=field_alloc.allocate_zero_field(
+            z_kin_hor_e=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_vt_ie=field_alloc.allocate_zero_field(
+            z_vt_ie=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
         )
@@ -696,85 +696,85 @@ class SolveNonhydro:
         self.p_test_run = True
 
     def _allocate_local_fields(self):
-        self.z_exner_ex_pr = field_alloc.allocate_zero_field(
+        self.z_exner_ex_pr = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, is_halfdim=True, grid=self._grid, backend=self._backend
         )
-        self.z_exner_ic = field_alloc.allocate_zero_field(
+        self.z_exner_ic = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, is_halfdim=True, grid=self._grid, backend=self._backend
         )
-        self.z_dexner_dz_c_1 = field_alloc.allocate_zero_field(
+        self.z_dexner_dz_c_1 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_theta_v_pr_ic = field_alloc.allocate_zero_field(
+        self.z_theta_v_pr_ic = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, is_halfdim=True, grid=self._grid, backend=self._backend
         )
-        self.z_th_ddz_exner_c = field_alloc.allocate_zero_field(
+        self.z_th_ddz_exner_c = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_rth_pr_1 = field_alloc.allocate_zero_field(
+        self.z_rth_pr_1 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_rth_pr_2 = field_alloc.allocate_zero_field(
+        self.z_rth_pr_2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_grad_rth_1 = field_alloc.allocate_zero_field(
+        self.z_grad_rth_1 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_grad_rth_2 = field_alloc.allocate_zero_field(
+        self.z_grad_rth_2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_grad_rth_3 = field_alloc.allocate_zero_field(
+        self.z_grad_rth_3 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_grad_rth_4 = field_alloc.allocate_zero_field(
+        self.z_grad_rth_4 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_dexner_dz_c_2 = field_alloc.allocate_zero_field(
+        self.z_dexner_dz_c_2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_hydro_corr = field_alloc.allocate_zero_field(
+        self.z_hydro_corr = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_vn_avg = field_alloc.allocate_zero_field(
+        self.z_vn_avg = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_theta_v_fl_e = field_alloc.allocate_zero_field(
+        self.z_theta_v_fl_e = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_flxdiv_mass = field_alloc.allocate_zero_field(
+        self.z_flxdiv_mass = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_flxdiv_theta = field_alloc.allocate_zero_field(
+        self.z_flxdiv_theta = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_rho_v = field_alloc.allocate_zero_field(
+        self.z_rho_v = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_theta_v_v = field_alloc.allocate_zero_field(
+        self.z_theta_v_v = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_graddiv2_vn = field_alloc.allocate_zero_field(
+        self.z_graddiv2_vn = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.k_field = field_alloc.allocate_indices(
+        self.k_field = data_alloc.allocate_indices(
             dims.KDim, grid=self._grid, backend=self._backend, is_halfdim=True
         )
-        self.z_w_concorr_me = field_alloc.allocate_zero_field(
+        self.z_w_concorr_me = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_hydro_corr_horizontal = field_alloc.allocate_zero_field(
+        self.z_hydro_corr_horizontal = data_alloc.allocate_zero_field(
             dims.EdgeDim, grid=self._grid, backend=self._backend
         )
-        self.z_raylfac = field_alloc.allocate_zero_field(
+        self.z_raylfac = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.enh_divdamp_fac = field_alloc.allocate_zero_field(
+        self.enh_divdamp_fac = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self._bdy_divdamp = field_alloc.allocate_zero_field(
+        self._bdy_divdamp = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.scal_divdamp = field_alloc.allocate_zero_field(
+        self.scal_divdamp = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
         self.intermediate_fields = IntermediateFields.allocate(

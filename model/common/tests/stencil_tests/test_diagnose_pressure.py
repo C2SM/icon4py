@@ -13,7 +13,8 @@ from icon4py.model.common import constants as phy_const, dimension as dims, type
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
     diagnose_pressure,
 )
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import helpers
 
 
 class TestDiagnosePressure(helpers.StencilTest):
@@ -51,15 +52,15 @@ class TestDiagnosePressure(helpers.StencilTest):
         if helpers.is_roundtrip:
             pytest.xfail("This stencil currently does not work properly with roundtrip backend.")
 
-        ddqz_z_full = helpers.random_field(
+        ddqz_z_full = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
         )
-        virtual_temperature = helpers.random_field(
+        virtual_temperature = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
         )
-        surface_pressure = helpers.random_field(grid, dims.CellDim, low=1.0e-6, dtype=ta.wpfloat)
-        pressure = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        pressure_ifc = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        surface_pressure = data_alloc.random_field(grid, dims.CellDim, low=1.0e-6, dtype=ta.wpfloat)
+        pressure = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        pressure_ifc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             ddqz_z_full=ddqz_z_full,

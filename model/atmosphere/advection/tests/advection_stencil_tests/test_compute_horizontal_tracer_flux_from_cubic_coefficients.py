@@ -10,12 +10,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_cubic_coefficients import (
     compute_horizontal_tracer_flux_from_cubic_coefficients,
 )
 from icon4py.model.common import dimension as dims
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 class TestComputeHorizontalTracerFluxFromCubicCoefficients(helpers.StencilTest):
     PROGRAM = compute_horizontal_tracer_flux_from_cubic_coefficients
@@ -35,9 +35,9 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_out_e_hybrid_2 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_mass_flx_e = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_dreg_area = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_out_e_hybrid_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_dreg_area = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             p_mass_flx_e=p_mass_flx_e,
             z_dreg_area=z_dreg_area,
