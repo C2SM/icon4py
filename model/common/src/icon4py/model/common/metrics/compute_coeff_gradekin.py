@@ -13,8 +13,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_coeff_gradekin(
-    edge_cell_length: field_alloc.NDArray,
-    inv_dual_edge_length: field_alloc.NDArray,
+    edge_cell_length: data_alloc.NDArray,
+    inv_dual_edge_length: data_alloc.NDArray,
     horizontal_start: int,
     horizontal_end: int,
 ):

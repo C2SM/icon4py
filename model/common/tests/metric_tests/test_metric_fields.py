@@ -312,7 +312,7 @@ def test_compute_ddxt_z_full_e(
         offset_provider={"V2C": icon_grid.get_offset_provider("V2C")},
     )
     ddxn_z_half_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-    compute_ddxn_data_alloc.z_half_e(
+    compute_ddxn_z_half_e(
         z_ifc=z_ifc,
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
         ddxn_z_half_e=ddxn_z_half_e,
@@ -324,7 +324,7 @@ def test_compute_ddxt_z_full_e(
         vertical_end=vertical_end,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
-    ddxt_z_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    ddxn_z_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     compute_ddxn_z_full.with_backend(backend)(
         ddxnt_z_half_e=ddxn_z_half_e,
         ddxn_z_full=ddxn_z_full,
@@ -508,7 +508,9 @@ def test_compute_vwind_impl_wgt(
     )
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
-    z_ddxt_z_half_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+    z_ddxt_z_half_e = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}
+    )
     horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     horizontal_end = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
@@ -750,8 +752,8 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
-    exner_ref_mc_full = zero_field(icon_grid, dims.CellDim, dims.KDim)
-    theta_ref_mc_full = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    exner_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    theta_ref_mc_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     t0sl_bg = constants.SEA_LEVEL_TEMPERATURE
     del_t_bg = constants.DELTA_TEMPERATURE
     h_scal_bg = constants._H_SCAL_BG
@@ -763,7 +765,7 @@ def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     average_cell_kdim_level_up.with_backend(backend)(
         z_ifc, out=z_mc, offset_provider={"Koff": icon_grid.get_offset_provider("Koff")}
     )

@@ -7,19 +7,16 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import numpy as np
 
-import icon4py.model.common.field_type_aliases as fa
-from icon4py.model.common.grid import base as grid
-from icon4py.model.common.metrics.metric_fields import compute_vwind_impl_wgt_partial
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 def compute_vwind_impl_wgt(
-    c2e: field_alloc.NDArray,
-    vct_a: field_alloc.NDArray,
-    z_ifc: field_alloc.NDArray,
-    z_ddxn_z_half_e: field_alloc.NDArray,
-    z_ddxt_z_half_e: field_alloc.NDArray,
-    dual_edge_length: field_alloc.NDArray,
+    c2e: data_alloc.NDArray,
+    vct_a: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    z_ddxn_z_half_e: data_alloc.NDArray,
+    z_ddxt_z_half_e: data_alloc.NDArray,
+    dual_edge_length: data_alloc.NDArray,
     vwind_offctr: float,
     nlev: int,
     horizontal_start_cell: int,

@@ -115,6 +115,8 @@ def test_compute_diffusion_metrics(
         nlev=nlev,
     )
     assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
-    assert helpers.dallclose(zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11)
+    assert helpers.dallclose(
+        zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11
+    )
     assert helpers.dallclose(zd_vertoffset_dsl, metrics_savepoint.zd_vertoffset().asnumpy())
     assert helpers.dallclose(zd_intcoef_dsl, metrics_savepoint.zd_intcoef().asnumpy())

@@ -12,8 +12,8 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_max_nbhgt_np(
-    c2e2c: field_alloc.NDArray, z_mc: field_alloc.NDArray, nlev: int
-) -> field_alloc.NDArray:
+    c2e2c: data_alloc.NDArray, z_mc: data_alloc.NDArray, nlev: int
+) -> data_alloc.NDArray:
     z_mc_nlev = z_mc[:, nlev - 1]
     max_nbhgt_0_1 = np.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
     max_nbhgt = np.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
