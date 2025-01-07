@@ -7,8 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import numpy as np
 
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-
+import icon4py.model.common.field_type_aliases as fa
+from icon4py.model.common.grid import base as grid
+from icon4py.model.common.metrics.metric_fields import compute_vwind_impl_wgt_partial
+from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 def compute_vwind_impl_wgt(
     c2e: field_alloc.NDArray,
@@ -21,7 +24,7 @@ def compute_vwind_impl_wgt(
     nlev: int,
     horizontal_start_cell: int,
     n_cells: int,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     init_val = 0.5 + vwind_offctr
     vwind_impl_wgt = np.full(z_ifc.shape[0], init_val)
     for je in range(horizontal_start_cell, n_cells):
@@ -51,5 +54,4 @@ def compute_vwind_impl_wgt(
             z_diff_2 = (z_ifc[je, jk] - z_ifc[je, jk + 1]) / (vct_a[jk] - vct_a[jk + 1])
             if z_diff_2 < 0.6:
                 vwind_impl_wgt[je] = max(vwind_impl_wgt[je], 1.2 - z_diff_2)
-
     return vwind_impl_wgt

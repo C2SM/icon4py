@@ -8,7 +8,7 @@
 
 import numpy as np
 
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_max_nbhgt_np(
@@ -22,12 +22,12 @@ def compute_max_nbhgt_np(
 
 def _compute_nbidx(
     k_range: range,
-    z_mc: field_alloc.NDArray,
-    z_mc_off: field_alloc.NDArray,
-    nbidx: field_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    z_mc_off: data_alloc.NDArray,
+    nbidx: data_alloc.NDArray,
     jc: int,
     nlev: int,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     for ind in range(3):
         jk_start = nlev - 1
         for jk in reversed(k_range):
@@ -45,12 +45,12 @@ def _compute_nbidx(
 
 def _compute_z_vintcoeff(
     k_range: range,
-    z_mc: field_alloc.NDArray,
-    z_mc_off: field_alloc.NDArray,
-    z_vintcoeff: field_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    z_mc_off: data_alloc.NDArray,
+    z_vintcoeff: data_alloc.NDArray,
     jc: int,
     nlev: int,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     for ind in range(3):
         jk_start = nlev - 1
         for jk in reversed(k_range):
@@ -71,9 +71,9 @@ def _compute_z_vintcoeff(
 def _compute_ls_params(
     k_start: list,
     k_end: list,
-    maxslp_avg: field_alloc.NDArray,
-    maxhgtd_avg: field_alloc.NDArray,
-    c_owner_mask: field_alloc.NDArray,
+    maxslp_avg: data_alloc.NDArray,
+    maxhgtd_avg: data_alloc.NDArray,
+    c_owner_mask: data_alloc.NDArray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     cell_nudging: int,
@@ -102,11 +102,11 @@ def _compute_ls_params(
 
 
 def _compute_k_start_end(
-    z_mc: field_alloc.NDArray,
-    max_nbhgt: field_alloc.NDArray,
-    maxslp_avg: field_alloc.NDArray,
-    maxhgtd_avg: field_alloc.NDArray,
-    c_owner_mask: field_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    max_nbhgt: data_alloc.NDArray,
+    maxslp_avg: data_alloc.NDArray,
+    maxhgtd_avg: data_alloc.NDArray,
+    c_owner_mask: data_alloc.NDArray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     cell_nudging: int,
@@ -136,19 +136,19 @@ def _compute_k_start_end(
 
 
 def compute_diffusion_metrics(
-    c2e2c: field_alloc.NDArray,
-    z_mc: field_alloc.NDArray,
-    max_nbhgt: field_alloc.NDArray,
-    c_owner_mask: field_alloc.NDArray,
-    maxslp_avg: field_alloc.NDArray,
-    maxhgtd_avg: field_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    max_nbhgt: data_alloc.NDArray,
+    c_owner_mask: data_alloc.NDArray,
+    maxslp_avg: data_alloc.NDArray,
+    maxhgtd_avg: data_alloc.NDArray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
     n_c2e2c: int,
     cell_nudging: int,
     n_cells: int,
     nlev: int,
-) -> tuple[field_alloc.NDArray, field_alloc.NDArray, field_alloc.NDArray, field_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
     z_mc_off = z_mc[c2e2c]
     nbidx = np.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
     z_vintcoeff = np.zeros(shape=(n_cells, n_c2e2c, nlev))
@@ -156,7 +156,6 @@ def compute_diffusion_metrics(
     zd_vertoffset_dsl = np.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_intcoef_dsl = np.zeros(shape=(n_cells, n_c2e2c, nlev))
     zd_diffcoef_dsl = np.zeros(shape=(n_cells, nlev))
-
     k_start, k_end = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,

@@ -11,21 +11,21 @@ from gt4py.next import as_field
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import flatten_first_two_dims
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_zdiff_gradp_dsl(
     e2c,
-    z_mc: field_alloc.NDArray,
-    c_lin_e: field_alloc.NDArray,
-    z_ifc: field_alloc.NDArray,
-    flat_idx: field_alloc.NDArray,
-    z_ifc_sliced: field_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    flat_idx: data_alloc.NDArray,
+    z_ifc_sliced: data_alloc.NDArray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
     nedges: int,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     z_me = np.sum(z_mc[e2c] * np.expand_dims(c_lin_e, axis=-1), axis=1)
     z_aux1 = np.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0  # extrapol_dist
