@@ -666,6 +666,7 @@ class SolveNonhydro:
             edge_geometry,
             owner_mask,
             backend=self._backend,
+            orchestration=self._orchestration,
         )
         self._allocate_local_fields()
         self._determine_local_domains()
@@ -1759,15 +1760,16 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        # log.debug(f"corrector run velocity advection")
-        # self.velocity_advection.run_corrector_step(
-        #     diagnostic_state=diagnostic_state_nh,
-        #     prognostic_state=prognostic_states.next,
-        #     z_kin_hor_e=z_fields.z_kin_hor_e,
-        #     z_vt_ie=z_fields.z_vt_ie,
-        #     dtime=dtime,
-        #     cell_areas=self._cell_params.area,
-        # )
+        log.debug(f"corrector run velocity advection")
+        self.velocity_advection.run_corrector_step(
+            # self_return_SDFG=self.velocity_advection,
+            diagnostic_state=diagnostic_state_nh,
+            prognostic_state=prognostic_states.next,
+            z_kin_hor_e=z_fields.z_kin_hor_e,
+            z_vt_ie=z_fields.z_vt_ie,
+            dtime=dtime,
+            cell_areas=self._cell_params.area,
+        )
 
         self._compute_z_raylfac(
             self._metric_state_nonhydro.rayleigh_w,

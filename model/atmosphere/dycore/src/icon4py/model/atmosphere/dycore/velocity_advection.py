@@ -65,12 +65,14 @@ class VelocityAdvection:
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
         backend: backend.Backend,
+        orchestration: bool = False,
     ):
         self.grid: icon_grid.IconGrid = grid
         self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
             self.grid.offset_providers
         )
         self._backend = backend
+        self._orchestration = orchestration
         self.metric_state: dycore_states.MetricStateNonHydro = metric_state
         self.interpolation_state: dycore_states.InterpolationState = interpolation_state
         self.vertical_params = vertical_params
