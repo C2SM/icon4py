@@ -373,7 +373,7 @@ class Diffusion:
         self.config = config
         self._params = params
         self._grid = grid
-        self.compile_time_connectivities = orchestration.build_compile_time_connectivities(
+        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
             self._grid.offset_providers
         )
         self._vertical_grid = vertical_grid
