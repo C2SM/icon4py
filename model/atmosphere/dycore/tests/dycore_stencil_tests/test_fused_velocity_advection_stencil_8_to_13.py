@@ -123,7 +123,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
-            e_bln_c_s=as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+            e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             w=w,
