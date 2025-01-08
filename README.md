@@ -38,7 +38,7 @@ Finally, make sure **_boost >= 1.85.0_** is installed in your system, which is r
 
 Once `uv` is installed in your system, it is enough to clone this repository and let `uv` handling the installation of the development environment. 
 
-**Important**: the `uv sync` command should always be executed from the **root folder** of the repository, to make sure it install all the workspace dependencies and not only the dependencies of a subproject. 
+**Important**: the `uv sync` command should always be executed from the **root folder** of the repository, to make sure it installs all the workspace dependencies and not only the dependencies of a subproject. 
 
 ```bash
 # Clone the repository
