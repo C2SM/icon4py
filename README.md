@@ -14,22 +14,31 @@ The repository is organized as a _monorepo_, where various ICON model components
 
 ICON4Py is licensed under the terms of the BSD-3-Clause.
 
-## Installation instructions
+## Installation Instructions
 
-Since this project is still in a highly experimental state, it is not yet available as a regular Python distribution project through PyPI. The installation procedure comprises cloning the [https://github.com/C2SM/icon4py](https://github.com/C2SM/icon4py) repository and install it in a _venv_ using the following development workflow.  
+Since this project is still in a highly experimental state, it is not yet available as a regular Python distribution package through PyPI. The installation procedure involves cloning the [ICON4Py GitHub repository](https://github.com/C2SM/icon4py) and installing it in a Python virtual environment (_venv_).
 
-### System dependencies
+ICON4Py uses the `uv` tool to manage the development workflow. `uv` is a versatile tool that consolidates functionality previously distributed across different applications into subcommands.
 
-ICON4Py requires **_Python >= 3.10_** and **_boost >= 1.85.0_**, and uses the `uv` tool to manage the development workflow. `uv` is a versatile tool which bundles together functionality from different applications: it can work as a _fast_ Python package manager (like `pip`), as a dependency version exporter (like `pip-tools`), as a Python application runner (like `pipx`) or as a full project development manager (like `hatch`). 
-`uv` can be installed in different ways (check its [installation instructions](https://docs.astral.sh/uv/getting-started/installation/)), like using the recommended standalone installer:
+- The `uv pip` subcommand provides a _fast_ Python package manager, emulating [`pip`](https://pip.pypa.io/en/stable/).
+- The `uv export | lock | sync` subcommands manage dependency versions in a manner similar to the [`pip-tools`](https://pip-tools.readthedocs.io/en/stable/) command suite.
+- The `uv init | add | remove | build | publish | ...` subcommands facilitate project development workflows, akin to [`hatch`](https://hatch.pypa.io/latest/).
+- The `uv tool` subcommand serves as a runner for Python applications in isolation, similar to [`pipx`](https://pipx.pypa.io/stable/).
+- The `uv python` subcommands manage different Python installations and versions, much like [`pyenv`](https://github.com/pyenv/pyenv).
+
+`uv` can be installed in various ways (see its [installation instructions](https://docs.astral.sh/uv/getting-started/installation/)), with the recommended method being the standalone installer:
 
 ```bash
 $ curl -LsSf https://astral.sh/uv/install.sh | sh 
 ```
 
-### ICON4Py development environment
+Finally, make sure **_boost >= 1.85.0_** is installed in your system, which is required by `gt4py` to compile generated C++ code. 
 
-Once `uv` is installed in your system, it is enough to clone this repository and let `uv` handling the installation of the development environment.
+### ICON4Py Development Environment
+
+Once `uv` is installed in your system, it is enough to clone this repository and let `uv` handling the installation of the development environment. 
+
+**Important**: the `uv sync` command should always be executed from the **root folder** of the repository, to make sure it installs all the workspace dependencies and not only the dependencies of a subproject. 
 
 ```bash
 # Clone the repository
@@ -37,8 +46,11 @@ git clone git@github.com:C2SM/icon4py.git
 cd icon4py
 
 # Let uv create the development environment at `.venv`.
-# The `--extra all` option tells uv to install all optional
-# dependencies of icon4py so it is not strictly necessary
+# The `--extra all` option tells uv to install all the optional
+# dependencies of icon4py, and thus it is not strictly necessary.
+# Note that if no dependency groups are provided as an option,
+# uv uses `--group dev` by default so the development dependencies
+# are also installed. 
 uv sync --extra all
 
 # Activate the virtual environment and start writing code!
@@ -52,14 +64,14 @@ To install new packages, use the `uv pip` subcommand, which emulates the `pip` i
 The `pyproject.toml` file at the root folder contains both the definition of the `icon4py` Python distribution package and the settings of the development tools used in this project, most notably `uv`, `ruff`, `mypy` and `pytest`. It also contains _dependency groups_ (see [PEP 735](https://peps.python.org/pep-0735/) for further reference) with the development requirements listed in different groups (`build`, `docs`, `lint`, `test`, `typing`, ...) and collected together in the general `dev` group which gets installed by default by `uv`.
 
 
-## Development instructions
+## Development Instructions
 
 By following the installation instructions above, the source files are imported directly by the Python interpreter meaning that any code change is available and executed by the interpreter.
 
 To add new dependencies to the project, either core/optional run-time or development-only dependencies, it is possible to use the `uv` cli direcly or to modify by hand the appropriate tables in the corresponding `pyproject.toml` (check `uv` documentation for more information [https://docs.astral.sh/uv/concepts/projects/dependencies/](https://docs.astral.sh/uv/concepts/projects/dependencies/)).
 
 
-### Code quality checks
+### Code Quality Checks
 
 [pre-commit](https://pre-commit.com/) is used to run several linting and checking tools. It should always be executed locally before opening a pull request. When executing pre-commit locally you can either run it for the `model` or `tools` folder:
 
