@@ -10,6 +10,7 @@ import logging
 import dataclasses
 from typing import Final, Literal, Optional
 
+import numpy as np
 import gt4py.next as gtx
 from gt4py.next import backend
 
@@ -899,6 +900,10 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_initial_timestep=at_initial_timestep,
         )
+        vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
+        field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
+        field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
+        log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -908,6 +913,10 @@ class SolveNonhydro:
             at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
         )
+        vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
+        field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
+        field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
+        log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
 
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -920,6 +929,10 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
+        vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
+        field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
+        field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
+        log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
 
         if self._grid.limited_area:
             self._compute_theta_and_exner(
@@ -964,6 +977,10 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider={},
         )
+        vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
+        field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
+        field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
+        log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
 
     # flake8: noqa: C901
     def run_predictor_step(
@@ -1745,7 +1762,7 @@ class SolveNonhydro:
             self.z_raylfac,
             offset_provider={},
         )
-        log.debug(f"corrector: start stencil 10")
+        #log.debug(f"corrector: start stencil 10")
         self._compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=prognostic_states.next.w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1773,7 +1790,7 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        log.debug(f"corrector: start stencil 17")
+        #log.debug(f"corrector: start stencil 17")
         self._add_vertical_wind_derivative_to_divergence_damping(
             hmask_dd3d=self._metric_state_nonhydro.hmask_dd3d,
             scalfac_dd3d=self._metric_state_nonhydro.scalfac_dd3d,
@@ -1788,7 +1805,7 @@ class SolveNonhydro:
         )
 
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            log.debug(f"corrector: start stencil 23")
+            #log.debug(f"corrector: start stencil 23")
             self._add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_states.current.vn,
                 ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.predictor,
@@ -1813,7 +1830,7 @@ class SolveNonhydro:
             or self._config.divdamp_order == DivergenceDampingOrder.FOURTH_ORDER
         ):
             # verified for e-10
-            log.debug(f"corrector start stencil 25")
+            #log.debug(f"corrector start stencil 25")
             self._compute_graddiv2_of_vn(
                 geofac_grdiv=self._interpolation_state.geofac_grdiv,
                 z_graddiv_vn=z_fields.z_graddiv_vn,
@@ -1829,7 +1846,7 @@ class SolveNonhydro:
             self._config.divdamp_order == DivergenceDampingOrder.COMBINED
             and scal_divdamp_o2 > 1.0e-6
         ):
-            log.debug(f"corrector: start stencil 26")
+            #log.debug(f"corrector: start stencil 26")
             self._apply_2nd_order_divergence_damping(
                 z_graddiv_vn=z_fields.z_graddiv_vn,
                 vn=prognostic_states.next.vn,
@@ -1847,7 +1864,7 @@ class SolveNonhydro:
             and divdamp_fac_o2 <= 4 * self._config.divdamp_fac
         ):
             if self._grid.limited_area:
-                log.debug("corrector: start stencil 27")
+                #log.debug("corrector: start stencil 27")
                 self._apply_weighted_2nd_and_4th_order_divergence_damping(
                     scal_divdamp=self.scal_divdamp,
                     bdy_divdamp=self._bdy_divdamp,
@@ -1861,7 +1878,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             else:
-                log.debug("corrector start stencil 4th order divdamp")
+                #log.debug("corrector start stencil 4th order divdamp")
                 self._apply_4th_order_divergence_damping(
                     scal_divdamp=self.scal_divdamp,
                     z_graddiv2_vn=self.z_graddiv2_vn,
@@ -1875,7 +1892,7 @@ class SolveNonhydro:
 
         # TODO: this does not get accessed in FORTRAN
         if self._config.is_iau_active:
-            log.debug("corrector start stencil 28")
+            #log.debug("corrector start stencil 28")
             self._add_analysis_increments_to_vn(
                 diagnostic_state_nh.vn_incr,
                 prognostic_states.next.vn,
@@ -1888,7 +1905,7 @@ class SolveNonhydro:
             )
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
-        log.debug("corrector: start stencil 31")
+        #log.debug("corrector: start stencil 31")
         self._compute_avg_vn(
             e_flx_avg=self._interpolation_state.e_flx_avg,
             vn=prognostic_states.next.vn,
@@ -1900,7 +1917,7 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        log.debug("corrector: start stencil 32")
+        #log.debug("corrector: start stencil 32")
         self._compute_mass_flux(
             z_rho_e=z_fields.z_rho_e,
             z_vn_avg=self.z_vn_avg,
@@ -1918,7 +1935,7 @@ class SolveNonhydro:
         if lprep_adv:  # Preparations for tracer advection
             log.debug("corrector: doing prep advection")
             if at_first_substep:
-                log.debug("corrector: start stencil 33")
+                #log.debug("corrector: start stencil 33")
                 self._init_two_edge_kdim_fields_with_zero_wp(
                     edge_kdim_field_with_zero_wp_1=prep_adv.vn_traj,
                     edge_kdim_field_with_zero_wp_2=prep_adv.mass_flx_me,
@@ -1928,7 +1945,7 @@ class SolveNonhydro:
                     vertical_end=self._grid.num_levels,
                     offset_provider={},
                 )
-            log.debug(f"corrector: start stencil 34")
+            #log.debug(f"corrector: start stencil 34")
             self._accumulate_prep_adv_fields(
                 z_vn_avg=self.z_vn_avg,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
@@ -1943,7 +1960,7 @@ class SolveNonhydro:
             )
 
         # verified for e-9
-        log.debug(f"corrector: start stencil 41")
+        #log.debug(f"corrector: start stencil 41")
         self._compute_divergence_of_fluxes_of_rho_and_theta(
             geofac_div=self._interpolation_state.geofac_div,
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
@@ -1958,7 +1975,7 @@ class SolveNonhydro:
         )
 
         if self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
-            log.debug(f"corrector start stencil 42 44 45 45b")
+            #log.debug(f"corrector start stencil 42 44 45 45b")
             self._stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
@@ -1993,7 +2010,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         else:
-            log.debug(f"corrector start stencil 43 44 45 45b")
+            #log.debug(f"corrector start stencil 43 44 45 45b")
             self._stencils_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
@@ -2035,7 +2052,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        log.debug(f"corrector start stencil 47 48 49")
+        #log.debug(f"corrector start stencil 47 48 49")
         self._stencils_47_48_49(
             w_nnew=prognostic_states.next.w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
@@ -2060,7 +2077,7 @@ class SolveNonhydro:
 
         # TODO: this is not tested in green line so far
         if self._config.is_iau_active:
-            log.debug(f"corrector start stencil 50")
+            #log.debug(f"corrector start stencil 50")
             self._add_analysis_increments_from_data_assimilation(
                 z_rho_expl=z_fields.z_rho_expl,
                 z_exner_expl=z_fields.z_exner_expl,
@@ -2073,7 +2090,7 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
-        log.debug(f"corrector start stencil 52")
+        #log.debug(f"corrector start stencil 52")
         self._solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
@@ -2092,7 +2109,7 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
-        log.debug(f"corrector start stencil 53")
+        #log.debug(f"corrector start stencil 53")
         self._solve_tridiagonal_matrix_for_w_back_substitution(
             z_q=z_fields.z_q,
             w=prognostic_states.next.w,
@@ -2104,7 +2121,7 @@ class SolveNonhydro:
         )
 
         if self._config.rayleigh_type == constants.RayleighType.KLEMP:
-            log.debug(f"corrector start stencil 54")
+            #log.debug(f"corrector start stencil 54")
             self._apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_states.next.w_1,
@@ -2117,7 +2134,7 @@ class SolveNonhydro:
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
             )
-        log.debug(f"corrector start stencil 55")
+        #log.debug(f"corrector start stencil 55")
         self._compute_results_for_thermodynamic_variables(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
@@ -2155,7 +2172,7 @@ class SolveNonhydro:
                     vertical_end=self._grid.num_levels,
                     offset_provider={},
                 )
-        log.debug(f"corrector start stencil 58")
+        #log.debug(f"corrector start stencil 58")
         self._update_mass_volume_flux(
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
@@ -2195,7 +2212,7 @@ class SolveNonhydro:
                     vertical_end=self._grid.num_levels + 1,
                     offset_provider={},
                 )
-            log.debug(f" corrector: start stencil 65")
+            #log.debug(f" corrector: start stencil 65")
             self._update_mass_flux_weighted(
                 rho_ic=diagnostic_state_nh.rho_ic,
                 vwind_expl_wgt=self._metric_state_nonhydro.vwind_expl_wgt,

@@ -156,13 +156,10 @@ class TimeLoop:
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            field0=np.abs(prognostic_states.current.vn.ndarray)
-            field1=np.abs(prognostic_states.current.w.ndarray)
-            log.info(f" MAX VN: {field0.max():.15e} on level {np.unravel_index(np.argmax(field0), field0.shape)}, MAX W:  {field1.max():.15e} on level {np.unravel_index(np.argmax(field1), field1.shape)}")
-            #log.info(
-            #    f" MAX RHO: {prognostic_states.current.rho.ndarray.max():.15e} , MAX THETA_V: {prognostic_states.current.theta_v.ndarray.max():.15e}"
-            #)
-            # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
+            vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
+            field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
+            field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
+            log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
 
             self._next_simulation_date()
 
@@ -238,10 +235,11 @@ class TimeLoop:
             )
             #self.plot.plot_data(prognostic_states.current.vn,      10, label=f"dynstep_{dyn_substep:05d}_vn")
             #self.plot.plot_data(prognostic_states.current.theta_v, 5, label=f"dynstep_{dyn_substep:05d}_theta_v")
-            field0=np.abs(prognostic_states.current.vn.ndarray)
-            field1=np.abs(prognostic_states.current.w.ndarray)
-            log.info(f" MAX VN: {field0.max():.15e} on level {np.unravel_index(np.argmax(field0), field0.shape)}, MAX W:  {field1.max():.15e} on level {np.unravel_index(np.argmax(field1), field1.shape)}")
-            #log.info(f" MAX W:  {field1.max():.15e} on level {np.unravel_index(np.argmax(field1), field1.shape)}")
+            vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
+            field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
+            field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
+            log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
+
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
