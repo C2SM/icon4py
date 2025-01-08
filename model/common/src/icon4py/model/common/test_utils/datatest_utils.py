@@ -80,7 +80,8 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
     """
     if "torus" in experiment:
         # these magic values seem to mark a torus: they are set in all torus grid files.
-        return 0, 2
+        root = 2; level = 0
+        return root, level
 
     try:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())

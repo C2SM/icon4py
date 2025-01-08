@@ -51,7 +51,11 @@ class GlobalGridParams:
 
 
 def compute_icosahedron_num_cells(root: int, level: int):
-    return 20.0 * root**2 * 4.0**level
+    if level > 0:
+        return 20.0 * root**2 * 4.0**level
+    else:
+        # it's a torus
+        return 0
 
 
 def compute_torus_num_cells(x: int, y: int):

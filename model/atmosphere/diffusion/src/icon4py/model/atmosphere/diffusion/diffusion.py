@@ -825,9 +825,9 @@ class Diffusion:
             nrdmax=int32(  # DaCe parser peculiarity (does not work as gtx.int32)
                 self._vertical_grid.end_index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
-            interior_idx=self._cell_start_interior,
+            interior_idx=0,
             halo_idx=self._cell_end_local,
-            horizontal_start=self._horizontal_start_index_w_diffusion,
+            horizontal_start=0,
             horizontal_end=self._cell_end_halo,
             vertical_start=0,
             vertical_end=self._grid.num_levels,
