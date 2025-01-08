@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
     fused_velocity_advection_stencil_1_to_7,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.grid import base as base_grid, horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -198,7 +199,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.BaseGrid):
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
@@ -229,8 +230,14 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         istep = 1
         lvn_only = False
 
-        lateral_boundary_7 = 0
-        halo_1 = grid.num_edges
+        if isinstance(grid, icon_grid.IconGrid):
+            # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
+            edge_domain = h_grid.domain(dims.EdgeDim)
+            lateral_boundary_7 = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+            halo_1 = grid.end_index(edge_domain(h_grid.Zone.HALO))
+        else:
+            lateral_boundary_7 = 0
+            halo_1 = grid.num_edges
 
         horizontal_start = 0
         horizontal_end = grid.num_edges

@@ -13,9 +13,21 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+def _horizontal_range(grid):
+    if isinstance(grid, icon_grid.IconGrid):
+        # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        return grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)), grid.end_index(
+            edge_domain(h_grid.Zone.HALO)
+        )
+    else:
+        return 0, gtx.int32(grid.num_edges)
 
 
 def compute_horizontal_advection_term_for_vertical_velocity_numpy(
@@ -59,27 +71,26 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         inv_primal_edge_length: np.array,
         tangent_orientation: np.array,
         z_w_v: np.array,
+        z_v_grad_w: np.array,
         **kwargs,
     ) -> dict:
-        z_v_grad_w = compute_horizontal_advection_term_for_vertical_velocity_numpy(
-            grid,
-            vn_ie,
-            inv_dual_edge_length,
-            w,
-            z_vt_ie,
-            inv_primal_edge_length,
-            tangent_orientation,
-            z_w_v,
-        )
+        horizontal_start, horizontal_end = _horizontal_range(grid)
+        z_v_grad_w[horizontal_start:horizontal_end, :] = (
+            compute_horizontal_advection_term_for_vertical_velocity_numpy(
+                grid,
+                vn_ie,
+                inv_dual_edge_length,
+                w,
+                z_vt_ie,
+                inv_primal_edge_length,
+                tangent_orientation,
+                z_w_v,
+            )
+        )[horizontal_start:horizontal_end, :]
         return dict(z_v_grad_w=z_v_grad_w)
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2CDim] == -1) or np.any(
-            grid.connectivities[dims.E2VDim] == -1
-        ):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
@@ -88,6 +99,8 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         tangent_orientation = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         z_w_v = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
         z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+
+        horizontal_start, horizontal_end = _horizontal_range(grid)
 
         return dict(
             vn_ie=vn_ie,
@@ -98,8 +111,8 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
             tangent_orientation=tangent_orientation,
             z_w_v=z_w_v,
             z_v_grad_w=z_v_grad_w,
-            horizontal_start=0,
-            horizontal_end=gtx.int32(grid.num_edges),
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
             vertical_start=0,
             vertical_end=gtx.int32(grid.num_levels),
         )
