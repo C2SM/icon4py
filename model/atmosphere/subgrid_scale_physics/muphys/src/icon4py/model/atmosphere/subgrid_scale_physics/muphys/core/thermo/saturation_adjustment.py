@@ -13,6 +13,29 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.qsat_rho 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.dqsatdT_rho import _dqsatdT_rho
 
 @gtx.field_operator
+def _newton_raphson(
+    Tx: fa.CellField[ta.wpfloat],
+    rho: fa.CellField[ta.wpfloat],
+    TMELT: fa.CellField[ta.wpfloat],
+    RV: fa.CellField[ta.wpfloat],
+    qve: fa.CellField[ta.wpfloat],
+    qce: fa.CellField[ta.wpfloat],
+    cvc: fa.CellField[ta.wpfloat],
+    CVV: fa.CellField[ta.wpfloat],
+    CLW: fa.CellField[ta.wpfloat],
+    LVC: fa.CellField[ta.wpfloat],
+    ue: fa.CellField[ta.wpfloat],
+) -> fa.CellField[ta.wpfloat]:
+    qx  = _qsat_rho(Tx, rho, TMELT, RV)
+    dqx = _dqsatdT_rho(qx, Tx, TMELT)
+    qcx = qve + qce - qx
+    cv  = cvc + CVV * qx + CLW * qcx
+    ux  = cv * Tx - qcx * LVC
+    dux = cv + dqx * (LVC + (CVV - CLW) * Tx)
+    Tx  = Tx - (ux - ue) / dux
+    return Tx
+
+@gtx.field_operator
 def _saturation_adjustment(
     te:        fa.CellField[ta.wpfloat],             # Temperature
     qve:       fa.CellField[ta.wpfloat],             # Specific humidity
@@ -28,68 +51,27 @@ def _saturation_adjustment(
     TMELT:     ta.wpfloat,
     RV:        ta.wpfloat,
 ) -> tuple[fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat]]:                       # Internal energy
-    
+
     qt = qve + qce + qre + qti
     cvc = CVD * (1.0-qt) + CLW * qre + CI * qti
     cv = cvc + CVV * qve + CLW * qce
-    ue = cv * te - qce * LVC 
+    ue = cv * te - qce * LVC
     Tx_hold = ue / (cv + qce * (CVV - CLW))
     qx_hold = _qsat_rho(Tx_hold, rho, TMELT, RV)
 
     Tx = te
     # Newton-Raphson iteration: 6 times the same operations
-    qx  = _qsat_rho(Tx, rho, TMELT, RV)
-    dqx = _dqsatdT_rho(qx, Tx, TMELT)
-    qcx = qve + qce - qx
-    cv  = cvc + CVV * qx + CLW * qcx
-    ux  = cv * Tx - qcx * LVC
-    dux = cv + dqx * (LVC + (CVV - CLW) * Tx)
-    Tx  = Tx - (ux - ue) / dux
-
-    qx  = _qsat_rho(Tx, rho, TMELT, RV)
-    dqx = _dqsatdT_rho(qx, Tx, TMELT)
-    qcx = qve + qce - qx
-    cv  = cvc + CVV * qx + CLW * qcx
-    ux  = cv * Tx - qcx * LVC
-    dux = cv + dqx * (LVC + (CVV - CLW) * Tx)
-    Tx  = Tx - (ux - ue) / dux
-
-    qx  = _qsat_rho(Tx, rho, TMELT, RV)
-    dqx = _dqsatdT_rho(qx, Tx, TMELT)
-    qcx = qve + qce - qx
-    cv  = cvc + CVV * qx + CLW * qcx
-    ux  = cv * Tx - qcx * LVC
-    dux = cv + dqx * (LVC + (CVV - CLW) * Tx)
-    Tx  = Tx - (ux - ue) / dux
-
-    qx  = _qsat_rho(Tx, rho, TMELT, RV)
-    dqx = _dqsatdT_rho(qx, Tx, TMELT)
-    qcx = qve + qce - qx
-    cv  = cvc + CVV * qx + CLW * qcx
-    ux  = cv * Tx - qcx * LVC
-    dux = cv + dqx * (LVC + (CVV - CLW) * Tx)
-    Tx  = Tx - (ux - ue) / dux
-
-    qx  = _qsat_rho(Tx, rho, TMELT, RV)
-    dqx = _dqsatdT_rho(qx, Tx, TMELT)
-    qcx = qve + qce - qx
-    cv  = cvc + CVV * qx + CLW * qcx
-    ux  = cv * Tx - qcx * LVC
-    dux = cv + dqx * (LVC + (CVV - CLW) * Tx)
-    Tx  = Tx - (ux - ue) / dux
-
-    qx  = _qsat_rho(Tx, rho, TMELT, RV)
-    dqx = _dqsatdT_rho(qx, Tx, TMELT)
-    qcx = qve + qce - qx
-    cv  = cvc + CVV * qx + CLW * qcx
-    ux  = cv * Tx - qcx * LVC
-    dux = cv + dqx * (LVC + (CVV - CLW) * Tx)
-    Tx  = Tx - (ux - ue) / dux
+    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
+    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
+    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
+    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
+    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
+    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
 
     # At this point we hope Tx has converged
     qx = _qsat_rho(Tx, rho, TMELT, RV)
 
-    # Is it possible to unify the where for all three outputs?? 
+    # Is it possible to unify the where for all three outputs??
     qve = where( ( qve+qce <= qx_hold ), qve+qce, qx )
     qce = where( ( qve+qce <= qx_hold ), 0.0, maximum(qve+qce-qx, 0.0) )
     te  = where( ( qve+qce <= qx_hold ), Tx_hold, Tx )
