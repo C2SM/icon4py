@@ -705,7 +705,7 @@ if dace:
         orig_args_kwargs = list(args) + list(kwargs.values())
         mod_args_kwargs = list(args) + list(kwargs.values())
 
-        def _mod_xargs_for_dace_structure(dace_cls, orig_cls):
+        def _mod_xargs_for_dace_structure(dace_cls):
             for i, k_v in enumerate(flattened_xargs_type_value):
                 if k_v[0] is dace_cls:
                     mod_args_kwargs[i] = dace_cls.dtype._typeclass.as_ctypes()(
@@ -727,22 +727,11 @@ if dace:
                         }
                     )
 
-        modified_fuse_func_orig_annotations = modified_orig_annotations(
-            dace_annotations, fuse_func_orig_annotations
-        )
-
-        for annotation_, annotation_orig_ in zip(
-            dace_annotations.values(),
-            modified_fuse_func_orig_annotations.values(),
-            strict=True,
-        ):
+        for annotation_ in dace_annotations.values():
             if type(annotation_) is not dace.data.Structure:
                 continue
             # modify mod_args_kwargs in place
-            _mod_xargs_for_dace_structure(
-                annotation_,
-                annotation_orig_,
-            )
+            _mod_xargs_for_dace_structure(annotation_)
 
         for i, mod_arg_kwarg in enumerate(mod_args_kwargs):
             if hasattr(mod_arg_kwarg, "_fields_"):
