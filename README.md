@@ -32,7 +32,7 @@ ICON4Py uses the `uv` tool to manage the development workflow. `uv` is a versati
 $ curl -LsSf https://astral.sh/uv/install.sh | sh 
 ```
 
-Finally, make sure **_boost >= 1.85.0_** is installed in your system, which is required by `gt4py` to compile generated high-performance code. 
+Finally, make sure **_boost >= 1.85.0_** is installed in your system, which is required by `gt4py` to compile generated C++ code. 
 
 ### ICON4Py Development Environment
 
@@ -46,7 +46,7 @@ git clone git@github.com:C2SM/icon4py.git
 cd icon4py
 
 # Let uv create the development environment at `.venv`.
-# The `--extra all` option tells uv to install all optional
+# The `--extra all` option tells uv to install all the optional
 # dependencies of icon4py, and thus it is not strictly necessary.
 # Note that if no dependency groups are provided as an option,
 # uv uses `--group dev` by default so the development dependencies
