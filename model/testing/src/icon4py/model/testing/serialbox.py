@@ -83,7 +83,8 @@ class IconSavepoint:
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
         ar = self._reduce_to_dim_size(ar, dimensions)
-        return gtx.as_field(dimensions, allocator=self.backend)
+        print("DEBUG: ", self.backend)
+        return gtx.as_field(dimensions, ar, allocator=self.backend)
 
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()
