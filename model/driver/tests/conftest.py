@@ -22,6 +22,7 @@ except KeyError:
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.testing.datatest_fixtures import (
+    pytest_backend,
     damping_height,
     data_provider,
     download_ser_data,
@@ -64,6 +65,7 @@ __all__ = [
     "timeloop_date_init",
     "timeloop_date_exit",
     # imported fixtures:
+    "pytest_backend",
     "damping_height",
     "data_provider",
     "download_ser_data",
