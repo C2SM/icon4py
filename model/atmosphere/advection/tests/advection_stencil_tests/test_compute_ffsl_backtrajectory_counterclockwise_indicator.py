@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory_cou
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest):
     PROGRAM = compute_ffsl_backtrajectory_counterclockwise_indicator
     OUTPUTS = ("lvn_sys_pos",)

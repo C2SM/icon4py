@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_quartic_face_values
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 class TestComputePpmQuarticFaceValues(helpers.StencilTest):
     PROGRAM = compute_ppm_quartic_face_values
     OUTPUTS = (helpers.Output("p_face", gtslice=(slice(None), slice(2, None))),)

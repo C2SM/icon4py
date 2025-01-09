@@ -9,7 +9,7 @@ minimum_pre_commit_version: 3.8.0
 files: |
   (?x)^(
       tools/.*|
-      model/common/.*
+      model/.*
   )$
 
 repos:

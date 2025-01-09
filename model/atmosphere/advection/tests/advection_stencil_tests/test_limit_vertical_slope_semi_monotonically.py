@@ -10,7 +10,6 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-
 import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.limit_vertical_slope_semi_monotonically import (
     limit_vertical_slope_semi_monotonically,

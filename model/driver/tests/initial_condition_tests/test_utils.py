@@ -7,8 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
-from icon4py.model.testing import helpers
+
 from icon4py.model.driver.test_cases import utils
+from icon4py.model.testing import helpers
 
 
 def test_hydrostatic_adjustment_numpy():
