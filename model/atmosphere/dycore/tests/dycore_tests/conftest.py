@@ -8,7 +8,7 @@
 
 
 from icon4py.model.testing.datatest_fixtures import (  # noqa F401
-    pytest_backend,
+    datatest_backend,
     damping_height,
     data_provider,
     decomposition_info,

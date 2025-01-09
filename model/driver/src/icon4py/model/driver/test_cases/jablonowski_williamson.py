@@ -64,7 +64,7 @@ def model_initialization_jabw(
         variables (now and next).
     """
     data_provider = sb.IconSerialDataProvider(
-        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+        backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
 
     xp = data_alloc.import_array_ns(backend)

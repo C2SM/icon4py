@@ -84,7 +84,7 @@ def read_icon_grid(
     """
     if ser_type == SerializationType.SB:
         return (
-            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+            sb.IconSerialDataProvider(backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid(grid_id, grid_root, grid_level)
             .construct_icon_grid(on_gpu=(backend in data_alloc.GPU_BACKENDS))
         )
@@ -116,7 +116,7 @@ def model_initialization_serialbox(
         variables (now and next).
     """
 
-    data_provider = _serial_data_provider(path, rank)
+    data_provider = _serial_data_provider(backend, path, rank)
     diffusion_init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
     )
@@ -345,13 +345,13 @@ def read_geometry_fields(
 
 
 @functools.cache
-def _serial_data_provider(path, rank) -> sb.IconSerialDataProvider:
-    return sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
+    return sb.IconSerialDataProvider(backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
 
 
 @functools.cache
-def _grid_savepoint(path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
-    sp = _serial_data_provider(path, rank).from_savepoint_grid(grid_id, grid_root, grid_level)
+def _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
+    sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(grid_id, grid_root, grid_level)
     return sp
 
 
@@ -374,6 +374,7 @@ def read_decomp_info(
 def read_static_fields(
     grid: icon_grid.IconGrid,
     path: pathlib.Path,
+    backend: gt4py_backend.Backend,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
@@ -398,7 +399,7 @@ def read_static_fields(
 
     """
     if ser_type == SerializationType.SB:
-        data_provider = _serial_data_provider(path, rank)
+        data_provider = _serial_data_provider(backend, path, rank)
 
         diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
             data_provider.from_interpolation_savepoint()

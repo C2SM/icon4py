@@ -15,9 +15,10 @@ from . import data_handling as data, datatest_utils as dt_utils
 
 
 @pytest.fixture
-def pytest_backend(request):
+def datatest_backend(request):
     backend = request.config.getoption("--backend") if request.config.getoption("--backend") else data_alloc.DEFAULT_BACKEND
-    return backend
+    assert backend in data_alloc.BACKENDS.keys(), "backend must be one of these options: " + ", ".join([f"'{k}'" for k in data_alloc.BACKENDS.keys()])
+    return data_alloc.BACKENDS[backend]
 
 
 @pytest.fixture
@@ -84,15 +85,15 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
 
 @pytest.fixture
-def data_provider(download_ser_data, ranked_data_path, experiment, processor_props, pytest_backend):
+def data_provider(download_ser_data, ranked_data_path, experiment, processor_props, datatest_backend):
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider(data_path, processor_props, pytest_backend)
+    return dt_utils.create_icon_serial_data_provider(data_path, processor_props, datatest_backend)
 
 
 @pytest.fixture
-def data_provider_advection(download_ser_data, ranked_data_path, experiment, processor_props, pytest_backend):
+def data_provider_advection(download_ser_data, ranked_data_path, experiment, processor_props, datatest_backend):
     data_path = dt_utils.get_datapath_for_experiment_advection(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider_advection(data_path, processor_props, pytest_backend)
+    return dt_utils.create_icon_serial_data_provider_advection(data_path, processor_props, datatest_backend)
 
 
 @pytest.fixture
@@ -107,7 +108,7 @@ def is_regional(experiment_name):
 
 
 @pytest.fixture
-def icon_grid(grid_savepoint, pytest_backend):
+def icon_grid(grid_savepoint, datatest_backend):
     """
     Load the icon grid from an ICON savepoint.
 
@@ -118,7 +119,7 @@ def icon_grid(grid_savepoint, pytest_backend):
     #     backend = request.config.getoption("--backend")
     #     if backend in pytest_config.GPU_BACKENDS:
     #         on_gpu = True
-    on_gpu = True if pytest_backend in data_alloc.GPU_BACKENDS else False
+    on_gpu = True if datatest_backend in data_alloc.GPU_BACKENDS else False
     return grid_savepoint.construct_icon_grid(on_gpu=on_gpu)
 
 
