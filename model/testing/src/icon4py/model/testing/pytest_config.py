@@ -19,7 +19,7 @@ from icon4py.model.testing.datatest_utils import (
 )
 
 
-DEFAULT_BACKEND: Final = "roundtrip"
+DEFAULT_BACKEND: Final = "embedded"
 
 BACKENDS: dict[str, Callable] = {
     "embedded": None,
