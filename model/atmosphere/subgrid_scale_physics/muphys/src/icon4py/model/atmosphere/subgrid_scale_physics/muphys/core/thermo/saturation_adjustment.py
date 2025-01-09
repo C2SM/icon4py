@@ -16,15 +16,15 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.dqsatdT_r
 def _newton_raphson(
     Tx: fa.CellField[ta.wpfloat],
     rho: fa.CellField[ta.wpfloat],
-    TMELT: fa.CellField[ta.wpfloat],
-    RV: fa.CellField[ta.wpfloat],
     qve: fa.CellField[ta.wpfloat],
     qce: fa.CellField[ta.wpfloat],
     cvc: fa.CellField[ta.wpfloat],
-    CVV: fa.CellField[ta.wpfloat],
-    CLW: fa.CellField[ta.wpfloat],
-    LVC: fa.CellField[ta.wpfloat],
     ue: fa.CellField[ta.wpfloat],
+    CVV:   ta.wpfloat,
+    CLW:   ta.wpfloat,
+    LVC:   ta.wpfloat,
+    TMELT: ta.wpfloat,
+    RV:    ta.wpfloat,
 ) -> fa.CellField[ta.wpfloat]:
     qx  = _qsat_rho(Tx, rho, TMELT, RV)
     dqx = _dqsatdT_rho(qx, Tx, TMELT)
@@ -61,12 +61,12 @@ def _saturation_adjustment(
 
     Tx = te
     # Newton-Raphson iteration: 6 times the same operations
-    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
-    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
-    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
-    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
-    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
-    Tx = _newton_raphson(Tx, rho, TMELT, RV, qve, qce, cvc, CVV, CLW, LVC, ue)
+    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV)
+    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV)
+    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV)
+    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV)
+    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV)
+    Tx = _newton_raphson(Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV)
 
     # At this point we hope Tx has converged
     qx = _qsat_rho(Tx, rho, TMELT, RV)
