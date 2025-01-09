@@ -23,6 +23,7 @@ from icon4py.model.atmosphere.diffusion import (
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -282,7 +283,7 @@ def initialize(
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
-    icon4py_driver_backend: driver_config.DriverBackends,
+    icon4py_driver_backend: str,
 ) -> tuple[TimeLoop, DriverStates, DriverParams]:
     """
     Initialize the driver run.
@@ -319,7 +320,7 @@ def initialize(
     log.info(f"initializing the grid from '{file_path}'")
     icon_grid = driver_init.read_icon_grid(
         file_path,
-        backend=icon4py_driver_backend,
+        backend=config.run_config.backend,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -476,7 +477,7 @@ def initialize(
 @click.option(
     "--icon4py_driver_backend",
     "-b",
-    default=driver_config.DriverBackends.GTFN_CPU.value,
+    default=data_alloc.DEFAULT_BACKEND,
     show_default=True,
     help="Backend for all components executed in icon4py driver. Choose between GTFN_CPU or GTFN_GPU. Please see abs_path_to_icon4py/model/driver/src/icon4py/model/driver/icon4py_configuration/) ",
 )

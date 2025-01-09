@@ -22,28 +22,13 @@ from gt4py.next.program_processors.runners.gtfn import (
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import initialization_utils as driver_init
 
 
 log = logging.getLogger(__name__)
 
 n_substeps_reduced = 2
-
-
-class DriverBackends(str, enum.Enum):
-    GTFN_CPU = "gtfn_cpu"
-    GTFN_CPU_CACHED = "gtfn_cpu_cached"
-    GTFN_GPU = "gtfn_gpu"
-    GTFN_GPU_CACHED = "gtfn_gpu_cached"
-
-
-backend_map: Final[dict] = {
-    DriverBackends.GTFN_CPU: run_gtfn,
-    DriverBackends.GTFN_CPU_CACHED: run_gtfn_cached,
-    DriverBackends.GTFN_GPU: run_gtfn_gpu,
-    DriverBackends.GTFN_GPU_CACHED: run_gtfn_gpu_cached,
-}
-gpu_backends = [DriverBackends.GTFN_GPU, DriverBackends.GTFN_GPU_CACHED]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -65,18 +50,18 @@ class Icon4pyRunConfig:
 
     restart_mode: bool = False
 
-    backend_name: str = DriverBackends.GTFN_CPU.value
+    backend_name: str = data_alloc.DEFAULT_BACKEND
 
     def __post_init__(self):
-        if self.backend_name not in [member.value for member in DriverBackends]:
+        if self.backend_name not in data_alloc.BACKENDS:
             raise ValueError(
                 f"Invalid driver backend: {self.backend_name}. \n"
-                f"Available backends are {', '.join([f'{k}' for k in [member.value for member in DriverBackends]])}"
+                f"Available backends are {', '.join([f'{k}' for k in data_alloc.BACKENDS.keys()])}"
             )
 
     @property
     def backend(self):
-        return backend_map[self.backend_name]
+        return data_alloc.BACKENDS[self.backend_name]
 
 
 @dataclasses.dataclass

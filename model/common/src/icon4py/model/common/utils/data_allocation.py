@@ -9,13 +9,14 @@
 from __future__ import annotations
 
 import logging as log
-from typing import TYPE_CHECKING, Optional, TypeAlias, Union
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Final, Optional, TypeAlias, Union
 
 import gt4py._core.definitions as gt_core_defs
 import gt4py.next as gtx
 import numpy as np
 import numpy.typing as npt
-from gt4py.next import backend
+from gt4py.next import backend, gtfn_cpu, gtfn_gpu, itir_python
 
 from icon4py.model.common import dimension, type_alias as ta
 
@@ -32,6 +33,41 @@ CUDA_DEVICE_TYPES = (
     gt_core_defs.DeviceType.CUDA_MANAGED,
     gt_core_defs.DeviceType.ROCM,
 )
+
+
+DEFAULT_BACKEND: Final = "roundtrip"
+
+BACKENDS: dict[str, Callable] = {
+    "embedded": None,
+    "roundtrip": itir_python,
+    "gtfn_cpu": gtfn_cpu,
+    "gtfn_gpu": gtfn_gpu,
+}
+
+# TODO (Chia Rui): we already have CUDA_DEVICE_TYPES, can we delete GPU_BACKENDS?
+GPU_BACKENDS: list[str] = ["gtfn_gpu"]
+
+try:
+    from gt4py.next.program_processors.runners.dace import (
+        run_dace_cpu,
+        run_dace_cpu_noopt,
+        run_dace_gpu,
+        run_dace_gpu_noopt,
+    )
+
+    BACKENDS.update(
+        {
+            "dace_cpu": run_dace_cpu,
+            "dace_gpu": run_dace_gpu,
+            "dace_cpu_noopt": run_dace_cpu_noopt,
+            "dace_gpu_noopt": run_dace_gpu_noopt,
+        }
+    )
+    GPU_BACKENDS.extend(["dace_gpu", "dace_gpu_noopt"])
+
+except ImportError:
+    # dace module not installed, ignore dace backends
+    pass
 
 try:
     import cupy as xp
