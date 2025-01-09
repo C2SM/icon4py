@@ -9,7 +9,6 @@
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import as_field
 
 import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_vertically import (
@@ -61,12 +60,14 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_tracer_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_mflx_tracer_v = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
         deepatmo_divzl = data_alloc.random_field(grid, dims.KDim)
         deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
         rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         tracer_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        k = data_alloc.allocate_indices(dims.KDim, grid, is_halfdim=False,dtype=gtx.int32 )
+        k = data_alloc.allocate_indices(dims.KDim, grid, is_halfdim=False, dtype=gtx.int32)
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4
