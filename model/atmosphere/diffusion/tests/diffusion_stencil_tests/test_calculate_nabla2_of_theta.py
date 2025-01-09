@@ -13,9 +13,9 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta impor
     calculate_nabla2_of_theta,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 
 def calculate_nabla2_of_theta_numpy(grid, z_nabla2_e: np.array, geofac_div: np.array) -> np.array:

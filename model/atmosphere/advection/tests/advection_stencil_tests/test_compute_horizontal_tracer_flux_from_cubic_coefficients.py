@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 class TestComputeHorizontalTracerFluxFromCubicCoefficients(helpers.StencilTest):
     PROGRAM = compute_horizontal_tracer_flux_from_cubic_coefficients
     OUTPUTS = ("p_out_e_hybrid_2",)
