@@ -73,7 +73,7 @@ brew install mpich
 ```
 
 2. Install optional python libraries:
-   In the main folder of the repository run
+   In the main folder of the repository, run
 
 ```bash
 pip install -r requirements-dev-opt.txt
