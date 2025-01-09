@@ -101,9 +101,7 @@ __all__ = [
 
 # TODO (Chia Rui): Reuse those pytest fixtures for diffusion test instead of creating here
 @pytest.fixture
-def r04b09_diffusion_config(
-    ndyn_substeps,  # imported `ndyn_substeps` fixture
-) -> diffusion.DiffusionConfig:
+def r04b09_diffusion_config(ndyn_substeps) -> diffusion.DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
@@ -128,7 +126,7 @@ def r04b09_diffusion_config(
 
 @pytest.fixture
 def r04b09_iconrun_config(
-    ndyn_substeps,  # imported `ndyn_substeps` fixture
+    ndyn_substeps,
     timeloop_date_init,
     timeloop_date_exit,
     timeloop_diffusion_linit_init,
