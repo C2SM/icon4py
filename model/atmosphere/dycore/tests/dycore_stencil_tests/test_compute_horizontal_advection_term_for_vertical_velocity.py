@@ -20,14 +20,18 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def _horizontal_range(grid):
-    if isinstance(grid, icon_grid.IconGrid):
-        # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
-        edge_domain = h_grid.domain(dims.EdgeDim)
-        return grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)), grid.end_index(
-            edge_domain(h_grid.Zone.HALO)
-        )
-    else:
-        return 0, gtx.int32(grid.num_edges)
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    start = (
+        grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+        if hasattr(grid, "start_index")
+        else 0
+    )
+    end = (
+        grid.end_index(edge_domain(h_grid.Zone.HALO))
+        if hasattr(grid, "end_index")
+        else gtx.int32(grid.num_edges)
+    )
+    return start, end
 
 
 def compute_horizontal_advection_term_for_vertical_velocity_numpy(
