@@ -8,18 +8,18 @@
 
 import numpy as np
 
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_flat_idx_max(
-    e2c: field_alloc.NDArray,
-    z_mc: field_alloc.NDArray,
-    c_lin_e: field_alloc.NDArray,
-    z_ifc: field_alloc.NDArray,
-    k_lev: field_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    k_lev: data_alloc.NDArray,
     horizontal_lower: int,
     horizontal_upper: int,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     z_me = np.sum(z_mc[e2c] * np.expand_dims(c_lin_e, axis=-1), axis=1)
     z_ifc_e_0 = z_ifc[e2c[:, 0]]
     z_ifc_e_k_0 = np.roll(z_ifc_e_0, -1, axis=1)

@@ -36,7 +36,7 @@ from icon4py.model.common.metrics import (
     metrics_attributes as attrs,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.utils import gt4py_field_allocation as alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)
@@ -62,7 +62,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         experiment,
     ):
         self._backend = backend
-        self._xp = alloc.import_array_ns(backend)
+        self._xp = data_alloc.import_array_ns(backend)
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
         self._vertical_grid = vertical_grid
