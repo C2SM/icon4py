@@ -33,6 +33,8 @@ build_baseimage_x86_64:
     HPC_SDK_VERSION: 22.11
     HPC_SDK_NAME: "nvhpc_2022_2211_Linux_${ARCH}_cuda_11.8"
     UBUNTU_VERSION: 20.04  # 22.04 hangs on daint in some tests for unknown reasons.
+  # Daint-XC config permanently disabled: this config can be used in future for testing on Alps x86-nodes
+  when: never
 build_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_baseimage]
   variables:
