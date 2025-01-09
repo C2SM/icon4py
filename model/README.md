@@ -82,7 +82,7 @@ pip install -r requirements-dev-opt.txt
 Note that the current Python build for GHEX seems not to run on MacOS.
 
 3. Run parallel tests
-   In order to run the parallel tests you need to specify specify the `--with-mpi` option to `pytest`
+   In order to run the parallel tests you need to specify the `--with-mpi` option to `pytest`
    and _pass the exact folder location of the tests_ to `pytest`.
 
 ```bash
