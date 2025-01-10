@@ -45,7 +45,9 @@ class TestApplyHorizontalDensityIncrement(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid) -> dict:
         p_rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_contra_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_mflx_contra_v = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
         deepatmo_divzl = data_alloc.random_field(grid, dims.KDim)
         deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
         rhodz_ast2 = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)

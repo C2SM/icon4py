@@ -18,7 +18,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-
 class TestAverageHorizontalFluxSubcycling2(helpers.StencilTest):
     PROGRAM = average_horizontal_flux_subcycling_2
     OUTPUTS = ("p_out_e",)

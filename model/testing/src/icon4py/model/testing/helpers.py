@@ -8,17 +8,14 @@
 
 import hashlib
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import numpy as np
-import numpy.typing as npt
 import pytest
 from gt4py._core.definitions import is_scalar_type
-from gt4py.next import as_field, common as gt_common, constructors
+from gt4py.next import common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
-
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:

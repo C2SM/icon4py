@@ -13,9 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zer
     init_two_cell_kdim_fields_with_zero_wp,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils.data_allocation import zero_field
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils.data_allocation import zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestInitTwoCellKdimFieldsWithZeroWp(StencilTest):

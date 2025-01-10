@@ -13,9 +13,9 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbu
     calculate_diagnostics_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.type_alias import vpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.type_alias import vpfloat
 
 
 def calculate_diagnostics_for_turbulence_numpy(

@@ -8,8 +8,8 @@
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing import serialbox as sb
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import serialbox as sb
 
 
 """
