@@ -106,7 +106,7 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
     dual_area = grid_savepoint.vertex_dual_area()
     owner_mask = grid_savepoint.v_owner_mask()
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
-    geofac_rot = test_helpers.zero_field(mesh, dims.VertexDim, dims.V2EDim)
+    geofac_rot = data_alloc.zero_field(mesh, dims.VertexDim, dims.V2EDim)
     horizontal_start = icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     compute_geofac_rot(
