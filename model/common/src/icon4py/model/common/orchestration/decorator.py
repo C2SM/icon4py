@@ -105,7 +105,7 @@ def orchestrate(
             if self._orchestration:
                 # Add DaCe data types annotations for **all args and kwargs**
                 dace_annotations = to_dace_annotations(fuse_func)
-                if "dace" not in self._backend.name.lower():
+                if hasattr(self._backend, "name") and "dace" not in self._backend.name.lower():
                     raise ValueError(
                         "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
                     )
