@@ -97,11 +97,12 @@ def _test_validation(self, grid, backend, input_data):
             else (out, (slice(None),), (slice(None),))
         )
 
-        assert np.allclose(
+        np.testing.assert_allclose(
             input_data[name].asnumpy()[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
-        ), f"Validation failed for '{name}'"
+            err_msg=f"Validation failed for '{name}'",
+        )
 
 
 if pytest_benchmark:
