@@ -14,8 +14,8 @@ from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_for
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(

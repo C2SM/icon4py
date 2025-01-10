@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.advection.stencils.average_horizontal_flux_subcycl
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 class TestAverageHorizontalFluxSubcycling3(helpers.StencilTest):
     PROGRAM = average_horizontal_flux_subcycling_3
     OUTPUTS = ("p_out_e",)

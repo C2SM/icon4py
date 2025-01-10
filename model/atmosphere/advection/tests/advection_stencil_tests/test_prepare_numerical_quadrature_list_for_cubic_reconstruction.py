@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_li
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 class TestPrepareNumericalQuadratureListForCubicReconstruction(helpers.StencilTest):
     PROGRAM = prepare_numerical_quadrature_list_for_cubic_reconstruction
     OUTPUTS = (

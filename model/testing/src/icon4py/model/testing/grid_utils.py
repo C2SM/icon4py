@@ -19,8 +19,8 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import data_handling, datatest_utils as dt_utils
 
 
 REGIONAL_GRIDFILE = "grid.nc"

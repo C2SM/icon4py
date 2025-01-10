@@ -28,7 +28,7 @@ BACKENDS: dict[str, Callable] = {
     "gtfn_gpu": gtfn_gpu,
 }
 
-GPU_BACKENDS: list[str] =["gtfn_gpu"]
+GPU_BACKENDS: list[str] = ["gtfn_gpu"]
 
 try:
     from gt4py.next.program_processors.runners.dace import (

@@ -10,11 +10,11 @@ import pytest
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states, diffusion_utils
-from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
@@ -22,7 +22,6 @@ from icon4py.model.testing import (
     reference_funcs as ref_funcs,
     serialbox as sb,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .utils import (
     compare_dace_orchestration_multiple_steps,

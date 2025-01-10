@@ -15,13 +15,13 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration,
     icon4py_driver,
     serialbox_helpers as driver_sb,
 )
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 from .utils import (
     construct_diffusion_config,
