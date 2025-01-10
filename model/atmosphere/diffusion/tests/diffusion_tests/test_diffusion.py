@@ -404,7 +404,7 @@ def test_run_diffusion_single_step(
     orchestration,
 ):
     if backend is None or (orchestration and ("dace" not in backend.name.lower())):
-        pytest.skip(f"running backend = '{backend.name}': orchestration only on dace backends")
+        pytest.skip("This test is only executed for orchestration only on dace backends")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -641,7 +641,7 @@ def test_run_diffusion_initial_step(
     orchestration,
 ):
     if backend is None or (orchestration and ("dace" not in backend.name.lower())):
-        pytest.skip(f"running backend = '{backend.name}': orchestration only on dace backends")
+        pytest.skip("This test is only executed for orchestration only on dace backends")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
