@@ -13,9 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_th
     compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest):

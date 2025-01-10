@@ -14,8 +14,8 @@ import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.apply_vertical_density_increment import (
     apply_vertical_density_increment,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestApplyVerticalDensityIncrement(helpers.StencilTest):
@@ -48,7 +48,9 @@ class TestApplyVerticalDensityIncrement(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid) -> dict:
         rhodz_ast = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_contra_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        p_mflx_contra_v = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
         deepatmo_divzl = data_alloc.random_field(grid, dims.KDim)
         deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
         rhodz_ast2 = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)

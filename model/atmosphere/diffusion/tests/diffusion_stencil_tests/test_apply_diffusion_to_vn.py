@@ -12,8 +12,8 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.testing.helpers import StencilTest
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -106,8 +106,12 @@ class TestApplyDiffusionToVn(StencilTest):
         primal_normal_vert_v1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
         primal_normal_vert_v2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
 
-        primal_normal_vert_v1_new = data_alloc.as_1D_sparse_field(primal_normal_vert_v1, dims.ECVDim)
-        primal_normal_vert_v2_new = data_alloc.as_1D_sparse_field(primal_normal_vert_v2, dims.ECVDim)
+        primal_normal_vert_v1_new = data_alloc.as_1D_sparse_field(
+            primal_normal_vert_v1, dims.ECVDim
+        )
+        primal_normal_vert_v2_new = data_alloc.as_1D_sparse_field(
+            primal_normal_vert_v2, dims.ECVDim
+        )
 
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)

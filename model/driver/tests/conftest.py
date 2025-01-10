@@ -12,15 +12,18 @@ import pytest
 
 from icon4py.model.testing.helpers import backend
 
+
 # Make sure custom icon4py pytest hooks are loaded
 try:
     import sys
+
     _ = sys.modules["icon4py.model.testing.pytest_config"]
 except KeyError:
-    from icon4py.model.testing.pytest_config import *  # noqa: F401
+    from icon4py.model.testing.pytest_config import *  # noqa: F403 [undefined-local-with-import-star]
 
 
 from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.driver import icon4py_configuration as driver_config
 from icon4py.model.testing.datatest_fixtures import (
     damping_height,
     data_provider,
@@ -52,7 +55,6 @@ from icon4py.model.testing.datatest_fixtures import (
     top_height_limit_for_maximal_layer_thickness,
     vn_only,
 )
-from icon4py.model.driver import icon4py_configuration as driver_config
 
 
 __all__ = [
@@ -93,15 +95,13 @@ __all__ = [
     "stretch_factor",
     "top_height_limit_for_maximal_layer_thickness",
     "vn_only",
-    "backend"
+    "backend",
 ]
 
 
 # TODO (Chia Rui): Reuse those pytest fixtures for diffusion test instead of creating here
 @pytest.fixture
-def r04b09_diffusion_config(
-    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
-) -> diffusion.DiffusionConfig:
+def r04b09_diffusion_config(ndyn_substeps) -> diffusion.DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
@@ -126,7 +126,7 @@ def r04b09_diffusion_config(
 
 @pytest.fixture
 def r04b09_iconrun_config(
-    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
+    ndyn_substeps,
     timeloop_date_init,
     timeloop_date_exit,
     timeloop_diffusion_linit_init,
@@ -148,8 +148,8 @@ def r04b09_iconrun_config(
 
 @pytest.fixture
 def timeloop_diffusion_savepoint_init(
-    data_provider,  # noqa: F811 # imported fixtures data_provider
-    step_date_init,  # noqa: F811 # imported fixtures data_provider
+    data_provider,  # imported fixtures data_provider
+    step_date_init,  # imported fixtures data_provider
     timeloop_diffusion_linit_init,
 ):
     """
@@ -167,8 +167,8 @@ def timeloop_diffusion_savepoint_init(
 
 @pytest.fixture
 def timeloop_diffusion_savepoint_exit(
-    data_provider,  # noqa: F811 # imported fixtures data_provider`
-    step_date_exit,  # noqa: F811 # imported fixtures step_date_exit`
+    data_provider,  # imported fixtures data_provider`
+    step_date_exit,  # imported fixtures step_date_exit`
     timeloop_diffusion_linit_exit,
 ):
     """

@@ -18,6 +18,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTest):
     PROGRAM = compute_horizontal_tracer_flux_from_linear_coefficients_alt
     OUTPUTS = ("p_out_e",)
