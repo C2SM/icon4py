@@ -155,7 +155,6 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
     c2e = icon_grid.connectivities[dims.C2EDim]
     e2c = icon_grid.connectivities[dims.E2CDim]
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
-    c2e2c0 = icon_grid.connectivities[dims.C2E2CODim]
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     geofac_grg_0, geofac_grg_1 = compute_geofac_grg(
@@ -167,14 +166,18 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         c2e,
         e2c,
         c2e2c,
-        c2e2c0,
-        horizontal_start,
     )
     assert test_helpers.dallclose(
-        alloc.as_numpy(geofac_grg_0), geofac_grg_ref[0].asnumpy(), rtol=1e-7, atol=1e-16
+        alloc.as_numpy(geofac_grg_0)[horizontal_start:, :],
+        geofac_grg_ref[0].asnumpy()[horizontal_start:, :],
+        rtol=1e-11,
+        atol=1e-19,
     )
     assert test_helpers.dallclose(
-        alloc.as_numpy(geofac_grg_1), geofac_grg_ref[1].asnumpy(), rtol=1e-7, atol=1e-16
+        alloc.as_numpy(geofac_grg_1)[horizontal_start:, :],
+        geofac_grg_ref[1].asnumpy()[horizontal_start:, :],
+        rtol=1e-11,
+        atol=1e-19,
     )
 
 

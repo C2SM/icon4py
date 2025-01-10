@@ -167,14 +167,13 @@ def _compute_primal_normal_ec(
     Returns:
         primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
     """
-   
-    owned = np.stack((owner_mask,owner_mask,owner_mask)).T
+
+    owned = np.stack((owner_mask, owner_mask, owner_mask)).T
 
     inv_neighbor_index = create_inverse_neighbor_index(e2c, c2e, array_ns)
     u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
     v_component = primal_normal_cell_y[c2e, inv_neighbor_index]
     return (np.where(owned, u_component, 0.0), np.where(owned, v_component, 0.0))
-
 
 
 def _compute_geofac_grg(
@@ -185,7 +184,6 @@ def _compute_geofac_grg(
     c2e: alloc.NDArray,
     e2c: alloc.NDArray,
     c2e2c: alloc.NDArray,
-    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> tuple[alloc.NDArray, alloc.NDArray]:
     """
@@ -204,7 +202,6 @@ def _compute_geofac_grg(
     Returns:
         geofac_grg: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim + 1, 2], ta.wpfloat]
     """
-    llb = horizontal_start
     num_cells = c2e.shape[0]
     targ_local_size = c2e.shape[1] + 1
     target_shape = (num_cells, targ_local_size)
@@ -212,36 +209,20 @@ def _compute_geofac_grg(
     geofac_grg_y = array_ns.zeros(target_shape)
 
     inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
-    
+
     tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
-    geofac_grg_x[llb:, 0] = np.sum(primal_normal_ec_u * tmp, axis=1)[llb:]
-    geofac_grg_y[llb:, 0] = np.sum(primal_normal_ec_v  * tmp, axis=1)[llb:]
+    geofac_grg_x[:, 0] = np.sum(primal_normal_ec_u * tmp, axis=1)
+    geofac_grg_y[:, 0] = np.sum(primal_normal_ec_v * tmp, axis=1)
 
+    for k in range(e2c.shape[1]):
+        mask = e2c[c2e, k] == c2e2c
+        geofac_grg_x[:, 1:] = geofac_grg_x[:, 1:] + mask * (
+            primal_normal_ec_u * geofac_div * c_lin_e[c2e, k]
+        )
+        geofac_grg_y[:, 1:] = geofac_grg_y[:, 1:] + mask * (
+            primal_normal_ec_v * geofac_div * c_lin_e[c2e, k]
+        )
 
-    #tmp = geofac_div * c_lin_e[c2e, inverse_cell_neighbor]
-    #geofac_grg_x[:, 1:] = np.sum(primal_normal_ec * tmp, axis = 1)
-    #geofac_grg_y[:, 1:] = np.sum(primal_normal_ec * tmp, axis = 1)
-    #for i in range(primal_normal_ec.shape[2]):
-    for j in range(c2e.shape[1]):
-        for k in range(e2c.shape[1]): # (0,1)
-            mask = e2c[c2e, k] == c2e2c
-            #np.sum(mask[llb:, :] * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[llb:, :], axis = 1)
-
-            foo = mask[llb:, j]* (primal_normal_ec_u * geofac_div * c_lin_e[c2e, k])[llb:, j]
-            #foo1 = mask[:, j]* (primal_normal_ec[:, :, i] * geofac_div)[:, j] * c_lin_e[c2e[:, j], k]
-            geofac_grg_x[llb:, 1 + j] = geofac_grg_x[llb:, 1 + j] + foo
-
-    for j in range(c2e.shape[1]):
-        for k in range(e2c.shape[1]): # (0,1)
-            mask = e2c[c2e, k] == c2e2c
-            #np.sum(mask[llb:, :] * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[llb:, :], axis = 1)
-
-            foo = mask[llb:, j]* (primal_normal_ec_v * geofac_div * c_lin_e[c2e, k])[llb:, j]
-            #foo1 = mask[:, j]* (primal_normal_ec[:, :, i] * geofac_div)[:, j] * c_lin_e[c2e[:, j], k]
-            geofac_grg_y[llb:, 1 + j] = geofac_grg_y[llb:, 1 + j] + foo
-
-    #assert np.allclose(geofac_grg_x[llb:, 1:], geofac_grg[llb:, 1:, 0])
-   # assert np.allclose(geofac_grg_y[llb:, 1:], geofac_grg[llb:, 1:, 1])
     return geofac_grg_x, geofac_grg_y
 
 
@@ -254,15 +235,13 @@ def compute_geofac_grg(
     c2e: alloc.NDArray,
     e2c: alloc.NDArray,
     c2e2c: alloc.NDArray,
-    c2e2c0: alloc.NDArray,
-    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> tuple[alloc.NDArray, alloc.NDArray]:
-    primal_normal_ec_u, primal_normal_ec_v = functools.partial(_compute_primal_normal_ec, array_ns=array_ns)(
-        primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c
-    )
+    primal_normal_ec_u, primal_normal_ec_v = functools.partial(
+        _compute_primal_normal_ec, array_ns=array_ns
+    )(primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c)
     return functools.partial(_compute_geofac_grg, array_ns=array_ns)(
-        primal_normal_ec_u, primal_normal_ec_v, geofac_div, c_lin_e, c2e, e2c, c2e2c, horizontal_start
+        primal_normal_ec_u, primal_normal_ec_v, geofac_div, c_lin_e, c2e, e2c, c2e2c
     )
 
 
@@ -591,7 +570,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
-    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0, c2e2c0,  array_ns=array_ns)
+    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -646,14 +625,13 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     )
 
 
-
-def create_inverse_neighbor_index(source_offset, target_offset, array_ns:ModuleType):
+def create_inverse_neighbor_index(source_offset, inverse_offset, array_ns: ModuleType):
     """
-    The inverse neighbor index determines the position of an element central element e_1
+    The inverse neighbor index determines the position of an central element c_1
     in the neighbor table of its neighbors:
 
     For example: for let e_1, e_2, e_3 be the neighboring edges of a cell: c2e(c_1) will
-    map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c will have the two lines
+    map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c the
     neighborhoods of e_1, e_2, e_3 will all contain c_1 in some position.
     Then inverse neighbor index tells what position that is. It essentially says
     "I am neighbor number x \in (0,1) of my neighboring edges"
@@ -661,29 +639,31 @@ def create_inverse_neighbor_index(source_offset, target_offset, array_ns:ModuleT
 
     Args:
         source_offset:
-        target_offset:
+        inverse_offset:
 
     Returns:
         ndarray of the same shape as target_offset
 
     """
-    inv_neighbor_idx = -1 * array_ns.ones(target_offset.shape, dtype=int)
+    inv_neighbor_idx = -1 * array_ns.ones(inverse_offset.shape, dtype=int)
 
-    for jc in range(target_offset.shape[0]):
-        for i in range(target_offset.shape[1]):
-            if target_offset[jc, i] >= 0:
-                inv_neighbor_idx[jc, i] = array_ns.argwhere(source_offset[target_offset[jc, i], :] == jc)[0, 0]
+    for jc in range(inverse_offset.shape[0]):
+        for i in range(inverse_offset.shape[1]):
+            if inverse_offset[jc, i] >= 0:
+                inv_neighbor_idx[jc, i] = array_ns.argwhere(
+                    source_offset[inverse_offset[jc, i], :] == jc
+                )[0, 0]
 
     return inv_neighbor_idx
 
 
-def create_inverse_neighbor(forward_offset, backward_offset, target_neighbor, array_ns:ModuleType):
+def create_inverse_neighbor_idx(source_offset, inverse_offset, c2e2c, array_ns: ModuleType):
     """
-    The inverse neighbor index determines the position of an element central element e_1
+    The inverse neighbor index determines the position of an central element c_1
     in the neighbor table of its neighbors:
 
     For example: for let e_1, e_2, e_3 be the neighboring edges of a cell: c2e(c_1) will
-    map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c will have the two lines
+    map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c the
     neighborhoods of e_1, e_2, e_3 will all contain c_1 in some position.
     Then inverse neighbor index tells what position that is. It essentially says
     "I am neighbor number x \in (0,1) of my neighboring edges"
@@ -691,23 +671,24 @@ def create_inverse_neighbor(forward_offset, backward_offset, target_neighbor, ar
 
     Args:
         source_offset:
-        target_offset:
+        inverse_offset:
 
     Returns:
         ndarray of the same shape as target_offset
 
     """
-    inv_neighbor_idx = -1 * array_ns.ones(target_neighbor.shape, dtype=int)
+    inv_neighbor_idx = -1 * array_ns.ones(inverse_offset.shape, dtype=int)
 
-    for jc in range(backward_offset.shape[0]):
-        for i in range(backward_offset.shape[1]):
-            inv_neighbor_idx[jc, :] = array_ns.where(target_neighbor[jc, :] >= 0,
-                                                     array_ns.argwhere(forward_offset[backward_offset[jc, i], :] == target_neighbor)[0, 0], -1)
+    for jc in range(inverse_offset.shape[0]):
+        for i in range(inverse_offset.shape[1]):
+            if inverse_offset[jc, i] >= 0:
+                inv_neighbor_idx[jc, i] = array_ns.argwhere(
+                    source_offset[inverse_offset[jc, i], :] == c2e2c
+                )[0, 0]
 
     return inv_neighbor_idx
 
 
-# TODO (@halungge) this can be simplified using only
 def compute_e_flx_avg(
     c_bln_avg: np.ndarray,
     geofac_div: np.ndarray,
