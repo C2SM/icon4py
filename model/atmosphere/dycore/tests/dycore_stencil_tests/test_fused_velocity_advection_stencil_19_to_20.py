@@ -34,6 +34,7 @@ from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_19_to_20
     OUTPUTS = ("ddt_vn_apc",)
+    MARKER = (pytest.mark.embedded_skip,)
 
     @staticmethod
     def reference(

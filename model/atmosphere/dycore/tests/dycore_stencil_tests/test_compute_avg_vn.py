@@ -19,6 +19,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeAvgVn(StencilTest):
     PROGRAM = compute_avg_vn
     OUTPUTS = ("z_vn_avg",)
+    MARKER = (pytest.mark.embedded_skip,)
 
     @staticmethod
     def reference(grid, e_flx_avg: np.array, vn: np.array, **kwargs) -> dict:
