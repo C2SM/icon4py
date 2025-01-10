@@ -14,7 +14,7 @@ from gt4py.next import backend as gt4py_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import constants as phy_const, dimension as dims, utils as common_utils
+from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
@@ -24,9 +24,9 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.testing import serialbox as sb
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.test_cases import utils as testcases_utils
+from icon4py.model.testing import serialbox as sb
 
 
 log = logging.getLogger(__name__)
@@ -69,22 +69,42 @@ def model_initialization_jabw(
 
     xp = data_alloc.import_array_ns(backend)
 
-    wgtfac_c = data_alloc.as_field(data_provider.from_metrics_savepoint().wgtfac_c(), backend=backend).ndarray
-    ddqz_z_half = data_alloc.as_field(data_provider.from_metrics_savepoint().ddqz_z_half(), backend=backend).ndarray
-    theta_ref_mc = data_alloc.as_field(data_provider.from_metrics_savepoint().theta_ref_mc(), backend=backend).ndarray
-    theta_ref_ic = data_alloc.as_field(data_provider.from_metrics_savepoint().theta_ref_ic(), backend=backend).ndarray
-    exner_ref_mc = data_alloc.as_field(data_provider.from_metrics_savepoint().exner_ref_mc(), backend=backend).ndarray
-    d_exner_dz_ref_ic = data_alloc.as_field(data_provider.from_metrics_savepoint().d_exner_dz_ref_ic(), backend=backend).ndarray
-    geopot = data_alloc.as_field(data_provider.from_metrics_savepoint().geopot(), backend=backend).ndarray
+    wgtfac_c = data_alloc.as_field(
+        data_provider.from_metrics_savepoint().wgtfac_c(), backend=backend
+    ).ndarray
+    ddqz_z_half = data_alloc.as_field(
+        data_provider.from_metrics_savepoint().ddqz_z_half(), backend=backend
+    ).ndarray
+    theta_ref_mc = data_alloc.as_field(
+        data_provider.from_metrics_savepoint().theta_ref_mc(), backend=backend
+    ).ndarray
+    theta_ref_ic = data_alloc.as_field(
+        data_provider.from_metrics_savepoint().theta_ref_ic(), backend=backend
+    ).ndarray
+    exner_ref_mc = data_alloc.as_field(
+        data_provider.from_metrics_savepoint().exner_ref_mc(), backend=backend
+    ).ndarray
+    d_exner_dz_ref_ic = data_alloc.as_field(
+        data_provider.from_metrics_savepoint().d_exner_dz_ref_ic(), backend=backend
+    ).ndarray
+    geopot = data_alloc.as_field(
+        data_provider.from_metrics_savepoint().geopot(), backend=backend
+    ).ndarray
 
     cell_lat = cell_param.cell_center_lat.ndarray
     edge_lat = edge_param.edge_center[0].ndarray
     edge_lon = edge_param.edge_center[1].ndarray
     primal_normal_x = edge_param.primal_normal[0].ndarray
 
-    cell_2_edge_coeff = data_alloc.as_field(data_provider.from_interpolation_savepoint().c_lin_e(), backend=backend)
-    rbf_vec_coeff_c1 = data_alloc.as_field(data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(), backend=backend)
-    rbf_vec_coeff_c2 = data_alloc.as_field(data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(), backend=backend)
+    cell_2_edge_coeff = data_alloc.as_field(
+        data_provider.from_interpolation_savepoint().c_lin_e(), backend=backend
+    )
+    rbf_vec_coeff_c1 = data_alloc.as_field(
+        data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(), backend=backend
+    )
+    rbf_vec_coeff_c2 = data_alloc.as_field(
+        data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(), backend=backend
+    )
 
     num_cells = grid.num_cells
     num_levels = grid.num_levels

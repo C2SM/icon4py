@@ -12,10 +12,11 @@ import random
 import pytest
 
 from icon4py.model.testing.datatest_fixtures import (
+    datatest_backend,
     decomposition_info,
     experiment,
 )
-from icon4py.model.testing.helpers import backend, grid
+from icon4py.model.testing.helpers import grid
 
 
 # Make sure custom icon4py pytest hooks are loaded
@@ -31,7 +32,7 @@ __all__ = [
     "random_name",
     "test_path",
     # imported fixtures:
-    "backend",
+    "datatest_backend",
     "grid",
     "decomposition_info",
     "experiment",

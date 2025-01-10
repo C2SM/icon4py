@@ -16,9 +16,8 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
     tracer_state as tracers,
 )
-from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
 @pytest.mark.parametrize(

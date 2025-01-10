@@ -13,9 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_bac
     solve_tridiagonal_matrix_for_w_back_substitution,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):

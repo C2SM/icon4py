@@ -58,6 +58,7 @@ build = [
     "wget>=3.2",
 ]
 docs = [
+    "esbonio>=0.16.0",
     "myst-parser>=4.0.0",
     "sphinx==7.3.7",
     "sphinx-math-dollar>=1.2.1",

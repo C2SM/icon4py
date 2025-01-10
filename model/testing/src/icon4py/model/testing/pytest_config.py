@@ -10,13 +10,11 @@ import os
 
 import pytest
 
-from gt4py.next import backend as gt4py_backend
-
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def _check_backend_validity(backend_name: str) -> None:

@@ -28,7 +28,6 @@ from icon4py.model.common.states import (
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
-    icon4py_configuration as driver_config,
     serialbox_helpers as driver_sb,
 )
 from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
@@ -84,7 +83,9 @@ def read_icon_grid(
     """
     if ser_type == SerializationType.SB:
         return (
-            sb.IconSerialDataProvider(backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+            sb.IconSerialDataProvider(
+                backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+            )
             .from_savepoint_grid(grid_id, grid_root, grid_level)
             .construct_icon_grid(on_gpu=(backend in data_alloc.GPU_BACKENDS))
         )
@@ -176,20 +177,18 @@ def model_initialization_serialbox(
     )
 
     prognostic_state_next = prognostics.PrognosticState(
-        w=data_alloc.as_field(solve_nonhydro_init_savepoint.w_new(), backend=backend),
-        vn=data_alloc.as_field(solve_nonhydro_init_savepoint.vn_new(), backend=backend),
-        theta_v=data_alloc.as_field(solve_nonhydro_init_savepoint.theta_v_new(), backend=backend),
-        rho=data_alloc.as_field(solve_nonhydro_init_savepoint.rho_new(), backend=backend),
-        exner=data_alloc.as_field(solve_nonhydro_init_savepoint.exner_new(), backend=backend),
+        w=solve_nonhydro_init_savepoint.w_new(),
+        vn=solve_nonhydro_init_savepoint.vn_new(),
+        theta_v=solve_nonhydro_init_savepoint.theta_v_new(),
+        rho=solve_nonhydro_init_savepoint.rho_new(),
+        exner=solve_nonhydro_init_savepoint.exner_new(),
     )
 
     prep_adv = dycore_states.PrepAdvection(
-        vn_traj=data_alloc.as_field(solve_nonhydro_init_savepoint.vn_traj(), backend=backend),
-        mass_flx_me=data_alloc.as_field(solve_nonhydro_init_savepoint.mass_flx_me(), backend=backend),
-        mass_flx_ic=data_alloc.as_field(solve_nonhydro_init_savepoint.mass_flx_ic(), backend=backend),
-        vol_flx_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, backend=backend
-        ),
+        vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
+        mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
+        mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
+        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
     )
 
     return (
@@ -346,12 +345,16 @@ def read_geometry_fields(
 
 @functools.cache
 def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
-    return sb.IconSerialDataProvider(backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+    return sb.IconSerialDataProvider(
+        backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+    )
 
 
 @functools.cache
 def _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
-    sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(grid_id, grid_root, grid_level)
+    sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
+        grid_id, grid_root, grid_level
+    )
     return sp
 
 
@@ -418,10 +421,14 @@ def read_static_fields(
             pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
             pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
             rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+            e_bln_c_s=data_alloc.as_1D_sparse_field(
+                interpolation_savepoint.e_bln_c_s(), dims.CEDim
+            ),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
             rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+            geofac_div=data_alloc.as_1D_sparse_field(
+                interpolation_savepoint.geofac_div(), dims.CEDim
+            ),
             geofac_n2s=interpolation_savepoint.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],

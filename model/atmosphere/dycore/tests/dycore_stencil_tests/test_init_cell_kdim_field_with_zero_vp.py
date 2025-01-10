@@ -13,9 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp 
     init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def init_cell_kdim_field_with_zero_vp_numpy(field_with_zero_vp: np.array) -> np.array:
