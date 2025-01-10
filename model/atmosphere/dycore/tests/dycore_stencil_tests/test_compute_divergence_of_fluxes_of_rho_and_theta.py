@@ -9,13 +9,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(StencilTest):
