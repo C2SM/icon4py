@@ -83,7 +83,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
     edge_orientation = grid_savepoint.edge_orientation()
     area = grid_savepoint.cell_areas()
     geofac_div_ref = interpolation_savepoint.geofac_div()
-    geofac_div = test_helpers.zero_field(mesh, dims.CellDim, dims.C2EDim)
+    geofac_div = data_alloc.zero_field(mesh, dims.CellDim, dims.C2EDim)
     compute_geofac_div.with_backend(backend)(
         primal_edge_length=primal_edge_length,
         edge_orientation=edge_orientation,

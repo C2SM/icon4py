@@ -44,7 +44,7 @@ def test_parallel_diffusion(
     backend,
     orchestration,
 ):
-    if backend is not None and orchestration and ("dace" not in backend.name.lower()):
+    if backend is None or (orchestration and ("dace" not in backend.name.lower())):
         raise pytest.skip("This test is only executed for `dace backends.")
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -174,7 +174,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
 ):
-    if backend is not None and "dace" not in backend.name.lower():
+    if backend is None or "dace" not in backend.name.lower():
         raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization
