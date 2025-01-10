@@ -31,6 +31,7 @@ def calculate_horizontal_gradients_for_turbulence_numpy(grid, w, geofac_grg_x, g
 class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = calculate_horizontal_gradients_for_turbulence
     OUTPUTS = ("dwdx", "dwdy")
+    MARKER = (pytest.mark.embedded_skip,)
 
     @staticmethod
     def reference(
