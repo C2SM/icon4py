@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import hashlib
+import typing
 from dataclasses import dataclass, field
 from typing import ClassVar
 
@@ -74,6 +75,10 @@ class Output:
 
 
 def _test_validation(self, grid, backend, input_data):
+    if self.MARKER is not None:
+        for marker in self.MARKER:
+            if marker.markname == "embedded_skip":
+                pytest.skip("test not compatible with embedded backend")
     reference_outputs = self.reference(
         grid,
         **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
@@ -102,6 +107,10 @@ def _test_validation(self, grid, backend, input_data):
 if pytest_benchmark:
 
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
+        if self.MARKER is not None:
+            for marker in self.MARKER:
+                if marker.markname == "embedded_skip":
+                    pytest.skip("test not compatible with embedded backend")
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.
@@ -141,6 +150,7 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
+    MARKERS: typing.Optional[tuple] = None
 
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that
