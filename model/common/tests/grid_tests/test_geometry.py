@@ -102,7 +102,7 @@ def test_compute_inverse_edge_length(backend, grid_savepoint, grid_file, experim
     ],
 )
 # stencil from geomtery factory does not get compute in the second case, i.e. only regional experiment fields are outputted
-# hence if runnin global alone, it does verify but with teh additional of regional it does not
+# hence if running global alone, it does verify but with teh additional of regional it does not
 @pytest.mark.datatest
 def test_compute_dual_edge_length(backend, grid_savepoint, grid_file, experiment, rtol):
     grid_geometry = grid_utils.get_grid_geometry(backend, experiment, grid_file)
