@@ -12,6 +12,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
     damping_height,
     data_provider,
     data_provider_advection,
+    datatest_backend,
     decomposition_info,
     download_ser_data,
     experiment,

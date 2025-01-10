@@ -13,7 +13,7 @@ from gt4py.next import backend as gt4py_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.common import constants as phy_const, dimension as dims, utils as common_utils
+from icon4py.model.common import constants as phy_const, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, states as grid_states
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
@@ -23,9 +23,9 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.testing import serialbox as sb
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver.test_cases import utils as testcases_utils
+from icon4py.model.testing import serialbox as sb
 
 
 log = logging.getLogger(__name__)
@@ -101,7 +101,7 @@ def model_initialization_gauss3d(
     pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
     theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
     eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    
+
     mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
     mask = xp.repeat(

@@ -10,9 +10,9 @@ import logging
 import uuid
 
 import gt4py.next as gtx
-from gt4py.next import backend as gt4py_backend
 import numpy as np
 import serialbox
+from gt4py.next import backend as gt4py_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
@@ -27,14 +27,20 @@ log = logging.getLogger(__name__)
 
 
 class IconSavepoint:
-    def __init__(self, sp: serialbox.Savepoint, ser: serialbox.Serializer, size: dict, backend: gt4py_backend.Backend):
-    # def __init__(self, sp: serialbox.Savepoint, ser: serialbox.Serializer, size: dict):
+    def __init__(
+        self,
+        sp: serialbox.Savepoint,
+        ser: serialbox.Serializer,
+        size: dict,
+        backend: gt4py_backend.Backend,
+    ):
+        # def __init__(self, sp: serialbox.Savepoint, ser: serialbox.Serializer, size: dict):
         self.savepoint = sp
         self.serializer = ser
         self.sizes = size
         self.log = logging.getLogger((__name__))
         self.backend = backend
-        
+
     def optionally_registered(*dims):
         def decorator(func):
             @functools.wraps(func)
@@ -83,7 +89,6 @@ class IconSavepoint:
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
         ar = self._reduce_to_dim_size(ar, dimensions)
-        print("DEBUG: ", self.backend)
         return gtx.as_field(dimensions, ar, allocator=self.backend)
 
     def get_metadata(self, *names):
@@ -387,7 +392,8 @@ class IconGridSavepoint(IconSavepoint):
             (dim,),
             np.squeeze(
                 self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
-            ), allocator=self.backend
+            ),
+            allocator=self.backend,
         )
 
     def num(self, dim: gtx.Dimension):
@@ -584,7 +590,9 @@ class InterpolationSavepoint(IconSavepoint):
         num_cells = self.sizes[dims.CellDim]
         return gtx.as_field(
             (dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 0], allocator=self.backend
-        ), gtx.as_field((dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 1], allocator=self.backend)
+        ), gtx.as_field(
+            (dims.CellDim, dims.C2E2CODim), grg[:num_cells, :, 1], allocator=self.backend
+        )
 
     @IconSavepoint.optionally_registered()
     def zd_intcoef(self):
@@ -788,7 +796,9 @@ class MetricSavepoint(IconSavepoint):
         old_shape = data.shape
         assert old_shape[1] == sparse_size
         return gtx.as_field(
-            target_dims, data.reshape(old_shape[0] * old_shape[1], old_shape[2]), allocator=self.backend
+            target_dims,
+            data.reshape(old_shape[0] * old_shape[1], old_shape[2]),
+            allocator=self.backend,
         )
 
     @IconSavepoint.optionally_registered()
@@ -1784,7 +1794,15 @@ class IconGraupelInitSavepoint(IconSavepoint):
 
 
 class IconSerialDataProvider:
-    def __init__(self, backend: gt4py_backend.Backend, fname_prefix, path=".", do_print=False, mpi_rank=0, advection=False):
+    def __init__(
+        self,
+        backend: gt4py_backend.Backend,
+        fname_prefix,
+        path=".",
+        do_print=False,
+        mpi_rank=0,
+        advection=False,
+    ):
         self.rank = mpi_rank
         self.serializer: serialbox.Serializer = None
         self.file_path: str = path
@@ -1844,7 +1862,9 @@ class IconSerialDataProvider:
         savepoint = (
             self.serializer.savepoint["call-diffusion-init"].linit[linit].date[date].as_savepoint()
         )
-        return IconDiffusionInitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconDiffusionInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_velocity_init(
         self, istep: int, vn_only: bool, date: str, jstep: int
@@ -1857,7 +1877,9 @@ class IconSerialDataProvider:
             .jstep[jstep]
             .as_savepoint()
         )
-        return IconVelocityInitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconVelocityInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_nonhydro_init(
         self, istep: int, date: str, jstep: int
@@ -1869,15 +1891,21 @@ class IconSerialDataProvider:
             .jstep[jstep]
             .as_savepoint()
         )
-        return IconNonHydroInitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconNonHydroInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
         savepoint = self.serializer.savepoint["interpolation_state"].as_savepoint()
-        return InterpolationSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return InterpolationSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_metrics_savepoint(self) -> MetricSavepoint:
         savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
-        return MetricSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return MetricSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_least_squares_savepoint(self, size: dict) -> LeastSquaresSavepoint:
         savepoint = self.serializer.savepoint["least_squares_state"].jg[1].as_savepoint()
@@ -1895,7 +1923,9 @@ class IconSerialDataProvider:
         savepoint = (
             self.serializer.savepoint["call-diffusion-exit"].linit[linit].date[date].as_savepoint()
         )
-        return IconDiffusionExitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconDiffusionExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_velocity_exit(
         self, istep: int, vn_only: bool, date: str, jstep: int
@@ -1908,7 +1938,9 @@ class IconSerialDataProvider:
             .jstep[jstep]
             .as_savepoint()
         )
-        return IconNonhydroExitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconNonhydroExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_nonhydro_exit(
         self, istep: int, date: str, jstep: int
@@ -1920,29 +1952,41 @@ class IconSerialDataProvider:
             .jstep[jstep]
             .as_savepoint()
         )
-        return IconNonhydroExitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconNonhydroExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_nonhydro_step_exit(self, date: str, jstep: int) -> IconNHFinalExitSavepoint:
         savepoint = (
             self.serializer.savepoint["solve_nonhydro_step"].date[date].jstep[jstep].as_savepoint()
         )
-        return IconNHFinalExitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconNHFinalExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_jabw_init(self) -> IconJabwInitSavepoint:
         savepoint = self.serializer.savepoint["icon-jabw-init"].id[1].as_savepoint()
-        return IconJabwInitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconJabwInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_jabw_final(self) -> IconJabwFinalSavepoint:
         savepoint = self.serializer.savepoint["icon-jabw-final"].id[1].as_savepoint()
-        return IconJabwFinalSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconJabwFinalSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_jabw_diagnostic(self) -> IconJabwDiagnosticSavepoint:
         savepoint = self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
-        return IconJabwDiagnosticSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconJabwDiagnosticSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_weisman_klemp_graupel_init(self) -> IconGraupelInitSavepoint:
         savepoint = self.serializer.savepoint["init-graupel"].serial_rank[0].as_savepoint()
-        return IconGraupelInitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconGraupelInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelEntrySavepoint:
         savepoint = (
@@ -1951,7 +1995,9 @@ class IconSerialDataProvider:
             .date["2008-09-01T01:59:" + date + ".000"]
             .as_savepoint()
         )
-        return IconGraupelEntrySavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconGraupelEntrySavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelExitSavepoint:
         savepoint = (
@@ -1960,7 +2006,9 @@ class IconSerialDataProvider:
             .date["2008-09-01T01:59:" + date + ".000"]
             .as_savepoint()
         )
-        return IconGraupelExitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconGraupelExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_weisman_klemp_gscp_satad_entry(
         self, date: str
@@ -1971,7 +2019,9 @@ class IconSerialDataProvider:
             .date["2008-09-01T01:59:" + date + ".000"]
             .as_savepoint()
         )
-        return IconGscpSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconGscpSatadEntrySavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_weisman_klemp_gscp_satad_exit(self, date: str) -> IconGscpSatadExitSavepoint:
         savepoint = (
@@ -1980,7 +2030,9 @@ class IconSerialDataProvider:
             .date["2008-09-01T01:59:" + date + ".000"]
             .as_savepoint()
         )
-        return IconGscpSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconGscpSatadExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_weisman_klemp_interface_satad_entry(
         self, date: str
@@ -1991,7 +2043,9 @@ class IconSerialDataProvider:
             .date["2008-09-01T01:59:" + date + ".000"]
             .as_savepoint()
         )
-        return IconInterfaceSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconInterfaceSatadEntrySavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_weisman_klemp_interface_satad_exit(
         self, date: str
@@ -2002,7 +2056,9 @@ class IconSerialDataProvider:
             .date["2008-09-01T01:59:" + date + ".000"]
             .as_savepoint()
         )
-        return IconInterfaceSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconInterfaceSatadExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_weisman_klemp_interface_diag_after_satad_exit(
         self, date: str
@@ -2013,4 +2069,6 @@ class IconSerialDataProvider:
             .date["2008-09-01T01:59:" + date + ".000"]
             .as_savepoint()
         )
-        return IconInterfaceDiagSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size, backend=self.backend)
+        return IconInterfaceDiagSatadExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )

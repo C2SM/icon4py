@@ -9,9 +9,9 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.atmosphere.dycore import dycore_utils
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
 
