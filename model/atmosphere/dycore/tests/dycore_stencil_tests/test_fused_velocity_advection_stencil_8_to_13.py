@@ -33,7 +33,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         "w_concorr_c",
         "z_w_con_c",
     )
-    MARKERS = (pytest.mark.embedded_skip,)
+    MARKER = (pytest.mark.embedded_skip,)
 
     @staticmethod
     def reference(
