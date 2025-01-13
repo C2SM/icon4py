@@ -638,8 +638,8 @@ if dace:
 
         return {
             **{
-                "CellDim_sym": grid.offset_providers["C2E"].table.shape[0],
-                "EdgeDim_sym": grid.offset_providers["E2C"].table.shape[0],
+                "CellDim_sym": grid.offset_providers["C2E"].ndarray.shape[0],
+                "EdgeDim_sym": grid.offset_providers["E2C"].ndarray.shape[0],
                 "KDim_sym": grid.num_levels,
             },
             **concretize_symbols_for_dace_structure,
