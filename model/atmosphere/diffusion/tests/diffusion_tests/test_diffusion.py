@@ -405,9 +405,6 @@ def test_run_diffusion_single_step(
 ):
     if orchestration and not helpers.is_dace(backend):
         pytest.skip(f"running backend = '{backend.name}': orchestration only on dace backends")
-    if orchestration and helpers.is_dace(backend):
-        # TODO(edopao): remove once https://github.com/GridTools/gt4py/pull/1742 is merged
-        pytest.xfail("dace orchestration not supported yet in GTIR")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -507,9 +504,6 @@ def test_run_diffusion_multiple_steps(
 ):
     if not helpers.is_dace(backend):
         pytest.skip(f"running backend = '{backend.name}': orchestration only on dace backends")
-    if helpers.is_dace(backend):
-        # TODO(edopao): remove once https://github.com/GridTools/gt4py/pull/1742 is merged
-        pytest.xfail("dace orchestration not supported yet in GTIR")
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -647,9 +641,6 @@ def test_run_diffusion_initial_step(
 ):
     if orchestration and not helpers.is_dace(backend):
         pytest.skip(f"running backend = '{backend.name}': orchestration only on dace backends")
-    if orchestration and helpers.is_dace(backend):
-        # TODO(edopao): remove once https://github.com/GridTools/gt4py/pull/1742 is merged
-        pytest.xfail("dace orchestration not supported yet in GTIR")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
