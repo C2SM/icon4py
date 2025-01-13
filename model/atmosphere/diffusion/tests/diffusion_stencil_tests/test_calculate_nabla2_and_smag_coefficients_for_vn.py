@@ -22,6 +22,8 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
     PROGRAM = calculate_nabla2_and_smag_coefficients_for_vn
     OUTPUTS = ("kh_smag_e", "kh_smag_ec", "z_nabla2_e")
 
+    # TODO: add pytest.mark.miss_neighbors
+
     @staticmethod
     def reference(
         grid,
@@ -148,8 +150,6 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2C2VDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
 
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)

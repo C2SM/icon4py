@@ -34,7 +34,7 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 class TestApplyDiffusionToThetaAndExner(StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
-    MARKER = (pytest.mark.embedded_skip,)
+    MARKER = (pytest.mark.embedded_skip,) # TODO: add pytest.mark.miss_neighbors # TODO: understand why values do not verify intermittently
 
     @staticmethod
     def reference(
@@ -94,10 +94,6 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        # TODO: understand why values do not verify intermittently
-        # error message contained in truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy
-        if np.any(grid.connectivities[dims.C2E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
 
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim)
