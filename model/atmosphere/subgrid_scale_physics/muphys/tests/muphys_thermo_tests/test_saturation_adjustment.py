@@ -8,7 +8,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.saturation_adjustment import saturation_adjustment
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.saturation_adjustment2 import saturation_adjustment2
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
 
 from icon4py.model.common import dimension as dims
@@ -17,7 +17,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 class TestSaturationAdjustment(StencilTest):
-    PROGRAM = saturation_adjustment
+    PROGRAM = saturation_adjustment2
     OUTPUTS = ("te","qve","qce")
 
     @staticmethod
