@@ -18,7 +18,7 @@ ICON4Py is licensed under the terms of the BSD-3-Clause.
 
 Since this project is still in a highly experimental state, it is not yet available as a regular Python distribution package through PyPI. The installation procedure involves cloning the [ICON4Py GitHub repository](https://github.com/C2SM/icon4py) and installing it in a Python virtual environment (_venv_).
 
-ICON4Py uses the `uv` tool to manage the development workflow. `uv` is a versatile tool that consolidates functionality previously distributed across different applications into subcommands.
+ICON4Py uses the [`uv`](https://docs.astral.sh/uv/) project manager for development workflow. `uv` is a versatile tool that consolidates functionality previously distributed across different applications into subcommands.
 
 - The `uv pip` subcommand provides a _fast_ Python package manager, emulating [`pip`](https://pip.pypa.io/en/stable/).
 - The `uv export | lock | sync` subcommands manage dependency versions in a manner similar to the [`pip-tools`](https://pip-tools.readthedocs.io/en/stable/) command suite.

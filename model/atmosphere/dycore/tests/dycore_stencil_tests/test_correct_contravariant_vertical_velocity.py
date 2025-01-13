@@ -13,13 +13,13 @@ from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_vel
     correct_contravariant_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def correct_contravariant_vertical_velocity_numpy(
-    w_concorr_c: np.array, z_w_con_c: np.array
+    z_w_con_c: np.array, w_concorr_c: np.array
 ) -> np.array:
     z_w_con_c = z_w_con_c - w_concorr_c
     return z_w_con_c
@@ -31,7 +31,7 @@ class TestCorrectContravariantVerticalVelocity(StencilTest):
 
     @staticmethod
     def reference(grid, w_concorr_c: np.array, z_w_con_c: np.array, **kwargs) -> dict:
-        z_w_con_c = correct_contravariant_vertical_velocity_numpy(w_concorr_c, z_w_con_c)
+        z_w_con_c = correct_contravariant_vertical_velocity_numpy(z_w_con_c, w_concorr_c)
         return dict(z_w_con_c=z_w_con_c)
 
     @pytest.fixture

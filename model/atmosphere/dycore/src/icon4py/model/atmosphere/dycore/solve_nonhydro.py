@@ -266,9 +266,7 @@ class IntermediateFields:
             z_exner_expl=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_q=data_alloc.allocate_zero_field(
-                dims.CellDim, dims.KDim, grid=grid, backend=backend
-            ),
+            z_q=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend),
             z_contr_w_fl_l=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, is_halfdim=True, grid=grid, backend=backend
             ),

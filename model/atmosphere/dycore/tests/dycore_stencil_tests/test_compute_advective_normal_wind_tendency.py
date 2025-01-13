@@ -9,13 +9,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_advective_normal_wind_tendency_numpy(
@@ -97,7 +97,9 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
         f_e = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
         c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
         z_w_con_c_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        vn_ie = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat)
+        vn_ie = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
+        )
         ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         ddt_vn_apc = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
