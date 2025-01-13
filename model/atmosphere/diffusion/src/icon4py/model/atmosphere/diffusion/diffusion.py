@@ -463,7 +463,7 @@ class Diffusion:
 
         self._determine_horizontal_domains()
 
-        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
+        self.compile_time_connectivities = gtx.common.offset_provider_to_type(
             self._grid.offset_providers
         )
 

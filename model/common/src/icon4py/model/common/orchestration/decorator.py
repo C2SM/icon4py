@@ -320,21 +320,6 @@ def wait(comm_handle: Union[int, decomposition.ExchangeResult]):
         comm_handle.wait()
 
 
-def build_compile_time_connectivities(
-    offset_providers: dict[str, gtx.common.Connectivity],
-) -> dict[str, gtx.common.Connectivity]:
-    connectivities = {}
-    for k, v in offset_providers.items():
-        if hasattr(v, "table"):
-            connectivities[k] = gtx.otf.arguments.CompileTimeConnectivity(
-                v.max_neighbors, v.has_skip_values, v.origin_axis, v.neighbor_axis, v.table.dtype
-            )
-        else:
-            connectivities[k] = v
-
-    return connectivities
-
-
 if dace:
 
     def to_dace_annotations(fuse_func: Callable) -> dict[str, Any]:
@@ -547,9 +532,9 @@ if dace:
         return {
             # connectivity tables at runtime
             **{
-                connectivity_identifier(k): v.table
+                connectivity_identifier(k): v.ndarray
                 for k, v in offset_providers.items()
-                if hasattr(v, "table")
+                if hasattr(v, "ndarray")
             },
             # GHEX C++ ptrs
             "__context_ptr": expose_cpp_ptr(exchange_obj._context)
