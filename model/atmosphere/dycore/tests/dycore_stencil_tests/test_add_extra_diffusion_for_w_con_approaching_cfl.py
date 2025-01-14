@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_appr
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field, random_mask
+from icon4py.model.testing.helpers import StencilTest
 
 
 def add_extra_diffusion_for_w_con_approaching_cfl_numpy(

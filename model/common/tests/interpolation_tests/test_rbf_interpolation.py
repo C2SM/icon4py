@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import numpy as np
 import pytest
 
@@ -13,14 +21,13 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file):
     grid = grid_manager.grid
     offset_table = rbf.construct_rbf_matrix_offsets_tables_for_cells(grid)
     assert offset_table.shape == (grid.num_cells, rbf.RBF_STENCIL_SIZE[rbf.RBFDimension.CELL])
-    assert np.max(offset_table) == grid.num_edges -1
+    assert np.max(offset_table) == grid.num_edges - 1
     c2e = grid.connectivities[dims.C2EDim]
     c2e2c = grid.connectivities[dims.C2E2CDim]
     for i in range(offset_table.shape[0]):
         offset_table[i][:3] = c2e[c2e2c[i][0]]
         offset_table[i][3:6] = c2e[c2e2c[i][1]]
         offset_table[i][6:] = c2e[c2e2c[i][2]]
-
 
 
 @pytest.mark.parametrize(
@@ -40,7 +47,3 @@ def test_rbf_interpolation_matrix(grid_file, experiment, backend):
     edge_normal_y = geometry.get(geometry_attrs.EDGE_NORMAL_Y)
     edge_normal_z = geometry.get(geometry_attrs.EDGE_NORMAL_Z)
     pytest.fail()
-
-
-    
-

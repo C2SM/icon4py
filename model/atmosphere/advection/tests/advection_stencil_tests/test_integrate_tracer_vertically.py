@@ -9,13 +9,13 @@
 import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import as_field
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_vertically import (
     integrate_tracer_vertically,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestIntegrateTracerVertically(helpers.StencilTest):
@@ -58,14 +58,16 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        tracer_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        rhodz_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_tracer_v = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        deepatmo_divzl = helpers.random_field(grid, dims.KDim)
-        deepatmo_divzu = helpers.random_field(grid, dims.KDim)
-        rhodz_new = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        tracer_new = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        k = as_field((dims.KDim,), np.arange(grid.num_levels, dtype=gtx.int32))
+        tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_mflx_tracer_v = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+        )
+        deepatmo_divzl = data_alloc.random_field(grid, dims.KDim)
+        deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
+        rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        tracer_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        k = data_alloc.allocate_indices(dims.KDim, grid, is_halfdim=False, dtype=gtx.int32)
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4

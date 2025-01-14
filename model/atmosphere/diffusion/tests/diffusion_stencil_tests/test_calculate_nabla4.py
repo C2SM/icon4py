@@ -11,13 +11,13 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
+from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import (
     as_1D_sparse_field,
     random_field,
     zero_field,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing.helpers import StencilTest
 
 
 def calculate_nabla4_numpy(

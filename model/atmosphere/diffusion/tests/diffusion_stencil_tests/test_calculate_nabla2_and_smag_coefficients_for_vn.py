@@ -13,13 +13,9 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    as_1D_sparse_field,
-    random_field,
-    zero_field,
-)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
@@ -155,29 +151,37 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         if np.any(grid.connectivities[dims.E2C2VDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        u_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
-        v_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
+        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
+        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
         smag_offset = vpfloat("9.0")
-        diff_multfac_smag = random_field(grid, dims.KDim, dtype=vpfloat)
-        tangent_orientation = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        smag_limit = random_field(grid, dims.KDim, dtype=vpfloat)
-        inv_vert_vert_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        inv_primal_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        diff_multfac_smag = data_alloc.random_field(grid, dims.KDim, dtype=vpfloat)
+        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        smag_limit = data_alloc.random_field(grid, dims.KDim, dtype=vpfloat)
+        inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
 
-        primal_normal_vert_x = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-        primal_normal_vert_y = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-        dual_normal_vert_x = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-        dual_normal_vert_y = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_x = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
+        primal_normal_vert_y = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
+        dual_normal_vert_x = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
+        dual_normal_vert_y = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
 
-        primal_normal_vert_x_new = as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim)
-        primal_normal_vert_y_new = as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim)
-        dual_normal_vert_x_new = as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim)
-        dual_normal_vert_y_new = as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim)
+        primal_normal_vert_x_new = data_alloc.as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim)
+        primal_normal_vert_y_new = data_alloc.as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim)
+        dual_normal_vert_x_new = data_alloc.as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim)
+        dual_normal_vert_y_new = data_alloc.as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim)
 
-        z_nabla2_e = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        kh_smag_e = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        kh_smag_ec = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_nabla2_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        kh_smag_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        kh_smag_ec = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             diff_multfac_smag=diff_multfac_smag,

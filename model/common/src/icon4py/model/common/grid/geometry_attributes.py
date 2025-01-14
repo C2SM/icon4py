@@ -59,9 +59,9 @@ EDGE_NORMAL_VERTEX_U: Final[str] = "eastward_component_of_edge_normal_on_vertex"
 EDGE_NORMAL_VERTEX_V: Final[str] = "northward_component_of_edge_normal_on_vertex"
 EDGE_NORMAL_CELL_U: Final[str] = "eastward_component_of_edge_normal_on_cell"
 EDGE_NORMAL_CELL_V: Final[str] = "northward_component_of_edge_normal_on_cell"
-EDGE_CENTER_X:Final[str] = "x_coordinate_of_edge_center"
-EDGE_CENTER_Y:Final[str] = "y_coordinate_of_edge_center"
-EDGE_CENTER_Z:Final[str] = "z_coordinate_of_edge_center"
+EDGE_CENTER_X: Final[str] = "x_coordinate_of_edge_center"
+EDGE_CENTER_Y: Final[str] = "y_coordinate_of_edge_center"
+EDGE_CENTER_Z: Final[str] = "z_coordinate_of_edge_center"
 
 
 attrs: dict[str, model.FieldMetaData] = {
@@ -346,7 +346,6 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="t_grid_edges%cartesian_center%x(3)",
         dtype=ta.wpfloat,
     ),
-
 }
 
 

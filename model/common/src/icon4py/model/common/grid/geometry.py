@@ -8,6 +8,8 @@
 import functools
 from typing import Any, Callable, Literal, Mapping, Optional, Sequence, TypeAlias, TypeVar
 
+# TODO (@halungge ) test on GPU (NEP 18 ?)
+import numpy as np
 from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
 
@@ -26,8 +28,6 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     icon,
 )
-from icon4py.model.common.math.helpers import geographical_to_cartesian_on_edges
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory, model, utils as state_utils
 
 
@@ -438,15 +438,17 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(tangent_cell_wrapper)
         cartesian_edge_centers = factory.FieldOperatorProvider(
-            func=geographical_to_cartesian_on_edges.with_backend(self.backend),
-            domain=(dims.EdgeDim, ),
-            fields={attrs.EDGE_CENTER_X:attrs.EDGE_CENTER_X,
-                    attrs.EDGE_CENTER_Y:attrs.EDGE_CENTER_Y,
-                    attrs.EDGE_CENTER_Z:attrs.EDGE_CENTER_Z},
-            deps = {
-                "lat":attrs.EDGE_LAT,
+            func=math_helpers.geographical_to_cartesian_on_edges.with_backend(self.backend),
+            domain=(dims.EdgeDim,),
+            fields={
+                attrs.EDGE_CENTER_X: attrs.EDGE_CENTER_X,
+                attrs.EDGE_CENTER_Y: attrs.EDGE_CENTER_Y,
+                attrs.EDGE_CENTER_Z: attrs.EDGE_CENTER_Z,
+            },
+            deps={
+                "lat": attrs.EDGE_LAT,
                 "lon": attrs.EDGE_LON,
-            }
+            },
         )
         self.register_provider(cartesian_edge_centers)
 
@@ -545,7 +547,7 @@ def as_sparse_field(
     fields = []
     for t in data:
         buffers = list(b.ndarray for b in t)
-        field = gtx.as_field(target_dims, data=(xp.vstack(buffers).T), dtype=buffers[0].dtype)
+        field = gtx.as_field(target_dims, data=(np.vstack(buffers).T), dtype=buffers[0].dtype)
         fields.append(field)
     return fields
 
@@ -586,7 +588,7 @@ def create_auxiliary_coordinate_arrays_for_orientation(
     lat = cell_lat.ndarray[e2c_table]
     lon = cell_lon.ndarray[e2c_table]
     for i in (0, 1):
-        boundary_edges = xp.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
+        boundary_edges = np.where(e2c_table[:, i] == gm.GridFile.INVALID_INDEX)
         lat[boundary_edges, i] = edge_lat.ndarray[boundary_edges]
         lon[boundary_edges, i] = edge_lon.ndarray[boundary_edges]
 

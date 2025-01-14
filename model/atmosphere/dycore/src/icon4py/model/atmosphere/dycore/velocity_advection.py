@@ -50,9 +50,8 @@ from icon4py.model.common.grid import (
     states as grid_states,
     vertical as v_grid,
 )
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class VelocityAdvection:
@@ -122,37 +121,37 @@ class VelocityAdvection:
         )
 
     def _allocate_local_fields(self):
-        self.z_w_v = field_alloc.allocate_zero_field(
+        self.z_w_v = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
         )
-        self.z_v_grad_w = field_alloc.allocate_zero_field(
+        self.z_v_grad_w = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.z_ekinh = field_alloc.allocate_zero_field(
+        self.z_ekinh = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.z_w_concorr_mc = field_alloc.allocate_zero_field(
+        self.z_w_concorr_mc = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.z_w_con_c = field_alloc.allocate_zero_field(
+        self.z_w_con_c = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
         )
-        self.zeta = field_alloc.allocate_zero_field(
+        self.zeta = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.z_w_con_c_full = field_alloc.allocate_zero_field(
+        self.z_w_con_c_full = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.cfl_clipping = field_alloc.allocate_zero_field(
+        self.cfl_clipping = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
-        self.levmask = field_alloc.allocate_zero_field(
+        self.levmask = data_alloc.allocate_zero_field(
             dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
-        self.vcfl_dsl = field_alloc.allocate_zero_field(
+        self.vcfl_dsl = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.k_field = field_alloc.allocate_indices(
+        self.k_field = data_alloc.allocate_indices(
             dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
 
@@ -460,6 +459,7 @@ class VelocityAdvection:
         )
 
     def _update_levmask_from_cfl_clipping(self):
+        xp = data_alloc.import_array_ns(self._backend)
         self.levmask = gtx.as_field(
             domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )

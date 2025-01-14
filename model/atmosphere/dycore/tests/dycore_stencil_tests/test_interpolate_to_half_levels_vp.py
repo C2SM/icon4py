@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp impo
     interpolate_to_half_levels_vp,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def interpolate_to_half_levels_vp_numpy(

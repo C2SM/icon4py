@@ -1,5 +1,23 @@
-import icon4py.model.common.test_utils.datatest_utils as dt_utils
-from icon4py.model.common.grid import geometry_attributes as attrs
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import pytest
+import numpy as np
+from icon4py.model.common.interpolation.rbf_interpolation_1 import (
+    compute_rbf_vec_coeff,
+    _compute_z_xn1_z_xn2,
+    _compute_z_rbfmat_istencil,
+)
+from icon4py.model.testing import datatest_utils as dt_utils, helpers as test_helpers
+import icon4py.model.common.dimension as dims
+from icon4py.model.common.grid import geometry_attributes as attrs, horizontal as h_grid
+from icon4py.model.common.math.helpers import geographical_to_cartesian_on_edges, \
+    geographical_to_cartesian_on_cells
+from icon4py.model.testing.grid_utils import get_grid_geometry
 
 
 @pytest.mark.datatest
@@ -7,16 +25,25 @@ from icon4py.model.common.grid import geometry_attributes as attrs
     "experiment, rank, grid_file",
     [
         (dt_utils.REGIONAL_EXPERIMENT, 0, dt_utils.REGIONAL_EXPERIMENT),
-        #(dt_utils.REGIONAL_EXPERIMENT, 0, dt_utils.REGIONAL_EXPERIMENT),
+        # (dt_utils.REGIONAL_EXPERIMENT, 0, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
-def test_compute_rbf_vec_coeff(grid_savepoint, metrics_savepoint, backend, data_provider, icon_grid, experiment, rank, grid_file):
+def test_compute_rbf_vec_coeff(
+    grid_savepoint,
+    metrics_savepoint,
+    backend,
+    data_provider,
+    icon_grid,
+    experiment,
+    rank,
+    grid_file,
+):
     rbf_vec_coeff_c1_ref = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     lower_bound = metrics_savepoint.i_startidx_c()
     upper_bound = metrics_savepoint.i_endidx_c()
-    #z_diag_c = metrics_savepoint.z_diag_c()
+    # z_diag_c = metrics_savepoint.z_diag_c()
     z_nx1_c = metrics_savepoint.z_nx1_c().ndarray
-    lon = grid_savepoint.cell_center_lon().ndarray # these are edges
+    lon = grid_savepoint.cell_center_lon().ndarray  # these are edges
     lat = grid_savepoint.cell_center_lat().ndarray
     lon_e = grid_savepoint.edges_center_lon()
     lat_e = grid_savepoint.edges_center_lat()
@@ -30,13 +57,18 @@ def test_compute_rbf_vec_coeff(grid_savepoint, metrics_savepoint, backend, data_
     rbf_vec_dim_c = 9
     rbf_vec_kern_c = 1
     import math
+
     mean_characteristic_length = math.sqrt(mean_cell_area)
-    cartesian_center_e = (metrics_savepoint.cartesian_center_e_c_x()[:],
-                          metrics_savepoint.cartesian_center_e_c_y()[:],
-                          metrics_savepoint.cartesian_center_e_c_z()[:],)
-    primal_cart_normal = (metrics_savepoint.primal_cart_normal_c_x()[:],
-                          metrics_savepoint.primal_cart_normal_c_y()[:],
-                          metrics_savepoint.primal_cart_normal_c_z()[:],)
+    cartesian_center_e = (
+        metrics_savepoint.cartesian_center_e_c_x()[:],
+        metrics_savepoint.cartesian_center_e_c_y()[:],
+        metrics_savepoint.cartesian_center_e_c_z()[:],
+    )
+    primal_cart_normal = (
+        metrics_savepoint.primal_cart_normal_c_x()[:],
+        metrics_savepoint.primal_cart_normal_c_y()[:],
+        metrics_savepoint.primal_cart_normal_c_z()[:],
+    )
     z_rbfmat, istencil = _compute_z_rbfmat_istencil(
         c2e2c,
         c2e,
@@ -48,7 +80,7 @@ def test_compute_rbf_vec_coeff(grid_savepoint, metrics_savepoint, backend, data_
         rbf_vec_kern_c,
         lower_bound=lower_bound - 1,  # ptr_patch%cells%start_blk(i_rcstartlev,1)
         upper_bound=num_cells,
-        num_cells=num_cells
+        num_cells=num_cells,
     )
     maxdim = rbf_vec_dim_c
     grid_geometry = get_grid_geometry(backend, grid_file)
@@ -59,7 +91,7 @@ def test_compute_rbf_vec_coeff(grid_savepoint, metrics_savepoint, backend, data_
 
     cartesian_center_e = geographical_to_cartesian_on_edges(lat_e, lon_e)
     cartesian_center_c = geographical_to_cartesian_on_cells(lat, lon)
-    lower_bound = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    lower_bound = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     mean_characteristic_length = math.sqrt(mean_cell_area)
 
     lon = metrics_savepoint.lon_c().ndarray
@@ -72,7 +104,7 @@ def test_compute_rbf_vec_coeff(grid_savepoint, metrics_savepoint, backend, data_
         True,
         0,  # ptr_patch%cells%start_blk(i_rcstartlev,1)
         lon.shape[0],
-        lon.shape[0]
+        lon.shape[0],
     )
 
     rbf_vec_coeff = compute_rbf_vec_coeff(
@@ -88,8 +120,8 @@ def test_compute_rbf_vec_coeff(grid_savepoint, metrics_savepoint, backend, data_
         rbf_vec_dim_c,
         rbf_vec_kern_c,
         maxdim,
-        lower_bound, # ptr_patch%cells%start_blk(i_rcstartlev,1)
-        num_cells
+        lower_bound,  # ptr_patch%cells%start_blk(i_rcstartlev,1)
+        num_cells,
     )
 
     assert test_helpers.dallclose(np.transpose(rbf_vec_coeff), rbf_vec_coeff_c1_ref.asnumpy())

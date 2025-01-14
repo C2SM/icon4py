@@ -14,7 +14,6 @@ from gt4py.next.ffront.fbuiltins import (
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -23,7 +22,7 @@ def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
     return field * factor
 
 
-@gtx.program(backend=backend)
+@gtx.program
 def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
     _scale_k(field, factor, out=scaled_field)
 
