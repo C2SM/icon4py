@@ -112,8 +112,8 @@ if pytest_benchmark:
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
         if self.MARKER is not None:
             for marker in self.MARKER:
-                # if marker.markname == "embedded_skip":
-                #     pytest.skip("test not compatible with embedded backend")
+                if marker.markname == "embedded_skip":
+                    pytest.skip("test not compatible with embedded backend")
                 if marker.markname == "miss_neighbors":
                     pytest.xfail("Stencil does not support missing neighbors.")
         if pytestconfig.getoption(
