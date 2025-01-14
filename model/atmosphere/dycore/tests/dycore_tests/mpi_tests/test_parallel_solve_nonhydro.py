@@ -89,6 +89,7 @@ def test_run_solve_nonhydro_single_step(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
+        backend=backend,
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
@@ -99,7 +100,7 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
     recompute = sp_v.get_metadata("recompute").get("recompute")

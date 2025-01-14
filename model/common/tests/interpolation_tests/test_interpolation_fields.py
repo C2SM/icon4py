@@ -128,9 +128,9 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, 
     dual_edge_length = grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
-    c2e = icon_grid.connectivities[dims.C2EDim]
-    e2c = icon_grid.connectivities[dims.E2CDim]
-    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
+    c2e = xp.asarray(icon_grid.connectivities[dims.C2EDim])
+    e2c = xp.asarray(icon_grid.connectivities[dims.E2CDim])
+    c2e2c = xp.asarray(icon_grid.connectivities[dims.C2E2CDim])
     horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     geofac_n2s = functools.partial(compute_geofac_n2s, array_ns=xp)(
         dual_edge_length.ndarray,

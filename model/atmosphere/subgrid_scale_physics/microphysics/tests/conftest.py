@@ -10,7 +10,6 @@
 from icon4py.model.testing.datatest_fixtures import (
     damping_height,
     data_provider,
-    datatest_backend,
     download_ser_data,
     experiment,
     flat_height,
@@ -42,7 +41,6 @@ except KeyError:
 
 __all__ = [
     # imported fixtures:
-    "datatest_backend",
     "lowest_layer_thickness",
     "maximal_layer_thickness",
     "model_top_height",

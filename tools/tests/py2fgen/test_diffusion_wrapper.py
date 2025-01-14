@@ -203,8 +203,8 @@ def test_diffusion_wrapper_granule_inputs(
     )
     expected_vertical_params = v_grid.VerticalGrid(
         config=expected_vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
+        vct_a=grid_savepoint.vct_a().asnumpy(),
+        vct_b=grid_savepoint.vct_b().asnumpy(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     expected_config = utils.construct_diffusion_config(experiment, ndyn_substeps)

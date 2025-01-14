@@ -15,16 +15,6 @@ from . import data_handling as data, datatest_utils as dt_utils
 
 
 @pytest.fixture
-def datatest_backend(request):
-    backend = (
-        request.config.getoption("--backend")
-        if request.config.getoption("--backend")
-        else data_alloc.DEFAULT_BACKEND
-    )
-    return data_alloc.BACKENDS[backend]
-
-
-@pytest.fixture
 def experiment():
     return dt_utils.REGIONAL_EXPERIMENT
 
@@ -88,21 +78,17 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
 
 @pytest.fixture
-def data_provider(
-    download_ser_data, ranked_data_path, experiment, processor_props, datatest_backend
-):
+def data_provider(download_ser_data, ranked_data_path, experiment, processor_props, backend):
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider(data_path, processor_props, datatest_backend)
+    return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 
 
 @pytest.fixture
 def data_provider_advection(
-    download_ser_data, ranked_data_path, experiment, processor_props, datatest_backend
+    download_ser_data, ranked_data_path, experiment, processor_props, backend
 ):
     data_path = dt_utils.get_datapath_for_experiment_advection(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider_advection(
-        data_path, processor_props, datatest_backend
-    )
+    return dt_utils.create_icon_serial_data_provider_advection(data_path, processor_props, backend)
 
 
 @pytest.fixture
@@ -117,13 +103,13 @@ def is_regional(experiment_name):
 
 
 @pytest.fixture
-def icon_grid(grid_savepoint, datatest_backend):
+def icon_grid(grid_savepoint, backend):
     """
     Load the icon grid from an ICON savepoint.
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    on_gpu = True if datatest_backend in data_alloc.GPU_BACKENDS else False
+    on_gpu = True if data_alloc.is_cupy_device(backend) else False
     return grid_savepoint.construct_icon_grid(on_gpu=on_gpu)
 
 

@@ -97,7 +97,9 @@ def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     data = {"height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})}
-    vertical_grid = v_grid.VerticalGrid(v_grid.VerticalGridConfig(num_levels=10), vct_a, vct_b)
+    vertical_grid = v_grid.VerticalGrid(
+        v_grid.VerticalGridConfig(num_levels=10), backend, vct_a.asnumpy(), vct_b.asnumpy()
+    )
     field_source = SimpleFieldSource(
         data_=data, backend=backend, grid=grid, vertical_grid=vertical_grid
     )
@@ -106,7 +108,9 @@ def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
 
 
 @pytest.mark.datatest
-def test_field_operator_provider(cell_coordinate_source):
+def test_field_operator_provider(cell_coordinate_source, backend):
+    if data_alloc.is_cupy_device(backend):
+        pytest.skip("skipping: gpu backend is unsupported")
     field_op = math_helpers.geographical_to_cartesian_on_cells.with_backend(None)
     domain = {dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))}
     deps = {"lat": "lat", "lon": "lon"}

@@ -460,11 +460,12 @@ class GridManager:
             ),
             # TODO (@halungge) easily computed from a neighbor_sum V2C over the cell areas?
             GeometryName.DUAL_AREA.value: gtx.as_field(
-                (dims.VertexDim,), self._reader.variable(GeometryName.DUAL_AREA)
+                (dims.VertexDim,), self._reader.variable(GeometryName.DUAL_AREA), allocator=backend
             ),
             GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
                 self._reader.variable(GeometryName.EDGE_CELL_DISTANCE, transpose=True),
+                allocator=backend,
             ),
             # TODO (@halungge) recompute from coordinates? field in gridfile contains NaN on boundary edges
             GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
@@ -475,10 +476,12 @@ class GridManager:
             GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
                 (dims.CellDim, dims.C2EDim),
                 self._reader.int_variable(GeometryName.CELL_NORMAL_ORIENTATION, transpose=True),
+                allocator=backend,
             ),
             GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
                 self._reader.int_variable(GeometryName.EDGE_ORIENTATION_ON_VERTEX, transpose=True),
+                allocator=backend,
             ),
         }
 
