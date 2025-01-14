@@ -480,7 +480,6 @@ def test_run_diffusion_single_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.embedded_skip
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
