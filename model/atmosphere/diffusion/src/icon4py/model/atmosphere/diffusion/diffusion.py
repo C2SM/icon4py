@@ -925,6 +925,7 @@ class Diffusion:
             "_backend",
             "_exchange",
             "_grid",
+            "compile_time_connectivities",
             *[
                 name
                 for name in self.__dict__.keys()

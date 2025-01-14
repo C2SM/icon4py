@@ -190,14 +190,6 @@ def orchestrate(
             else:
                 return fuse_func(*args, **kwargs)
 
-        # Pytest does not clear the cache between runs in a proper way -pytest.mark.parametrize(...)-.
-        # This leads to corrupted cache and subsequent errors.
-        # To avoid this, we provide a way to clear the cache.
-        def clear_cache():
-            orchestrator_cache.clear()
-
-        wrapper.clear_cache = clear_cache
-
         return wrapper
 
     return _decorator(func) if func else _decorator
