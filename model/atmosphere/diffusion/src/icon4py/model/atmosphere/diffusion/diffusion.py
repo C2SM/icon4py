@@ -463,9 +463,9 @@ class Diffusion:
 
         self._determine_horizontal_domains()
 
-        self.compile_time_connectivities = gtx.common.offset_provider_to_type(
-            self._grid.offset_providers
-        )
+        # TODO(edopao): we should call gtx.common.offset_provider_to_type()
+        # but this requires some changes in type inference.
+        self.compile_time_connectivities = self._grid.offset_providers
 
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = data_alloc.allocate_zero_field(
