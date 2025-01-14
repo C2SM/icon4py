@@ -15,6 +15,7 @@ from icon4py.model.common.metrics import (
     metrics_attributes as attrs,
     metrics_factory,
 )
+from icon4py.model.common.metrics.metrics_factory import MetricsConfig
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -75,7 +76,9 @@ def get_metrics_factory(
             backend=backend,
             metadata=interpolation_attributes.attrs,
         )
-
+        metric_config = MetricsConfig(
+            experiment=experiment, global_experiment=dt_utils.GLOBAL_EXPERIMENT
+        )
         factory = metrics_factory.MetricsFieldsFactory(
             grid=geometry.grid,
             vertical_grid=vertical_grid,
@@ -87,7 +90,11 @@ def get_metrics_factory(
             constants=constants,
             grid_savepoint=grid_savepoint,
             metrics_savepoint=metrics_savepoint,
-            experiment=experiment,
+            damping_height=metric_config.damping_height,
+            rayleigh_type=metric_config.rayleigh_type,
+            rayleigh_coeff=metric_config.rayleigh_coeff,
+            exner_expol=metric_config.exner_expol,
+            vwind_offctr=metric_config.vwind_offctr,
         )
         metrics_factories[name] = factory
     return factory

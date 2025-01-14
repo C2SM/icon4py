@@ -11,7 +11,6 @@ import math
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next import backend as gtx_backend
-from model.testing.src.icon4py.model.testing import datatest_utils as dt_utils
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
@@ -46,6 +45,32 @@ vertical_domain = v_grid.domain(dims.KDim)
 vertical_half_domain = v_grid.domain(dims.KHalfDim)
 
 
+class MetricsConfig:
+    def __init__(self, experiment: str, global_experiment: str):
+        self._experiment = experiment
+        self._global_experiment = global_experiment
+
+    @property
+    def damping_height(self) -> float:
+        return 50000.0 if self._experiment == self._global_experiment else 12500.0
+
+    @property
+    def rayleigh_type(self) -> int:
+        return 1 if self._experiment == self._global_experiment else 2
+
+    @property
+    def rayleigh_coeff(self) -> float:
+        return 0.1 if self._experiment == self._global_experiment else 5.0
+
+    @property
+    def exner_expol(self) -> float:
+        return 0.3333333333333 if self._experiment == self._global_experiment else 0.333
+
+    @property
+    def vwind_offctr(self) -> float:
+        return 0.15 if self._experiment == self._global_experiment else 0.2
+
+
 class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
     def __init__(
         self,
@@ -59,7 +84,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         constants,
         grid_savepoint,
         metrics_savepoint,
-        experiment,
+        damping_height: float,
+        rayleigh_type: int,
+        rayleigh_coeff: float,
+        exner_expol: float,
+        vwind_offctr: float,
     ):
         self._backend = backend
         self._xp = data_alloc.import_array_ns(backend)
@@ -71,7 +100,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._constants = constants
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
-        self._experiment = experiment
         self._interpolation_source = interpolation_source
 
         vct_a = grid_savepoint.vct_a()
@@ -80,19 +108,15 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "divdamp_trans_start": 12500.0,
             "divdamp_trans_end": 17500.0,
             "divdamp_type": 3,
-            "damping_height": 50000.0
-            if self._experiment == dt_utils.GLOBAL_EXPERIMENT
-            else 12500.0,
-            "rayleigh_type": 1 if self._experiment == dt_utils.GLOBAL_EXPERIMENT else 2,
-            "rayleigh_coeff": 0.1 if self._experiment == dt_utils.GLOBAL_EXPERIMENT else 5.0,
+            "damping_height": damping_height,
+            "rayleigh_type": rayleigh_type,
+            "rayleigh_coeff": rayleigh_coeff,
+            "exner_expol": exner_expol,
+            "vwind_offctr": vwind_offctr,
             "igradp_method": 3,
             "igradp_constant": 3,
-            "exner_expol": 0.3333333333333
-            if self._experiment == dt_utils.GLOBAL_EXPERIMENT
-            else 0.333,
             "thslp_zdiffu": 0.02,
             "thhgtd_zdiffu": 125.0,
-            "vwind_offctr": 0.15 if self._experiment == dt_utils.GLOBAL_EXPERIMENT else 0.2,
             "vct_a_1": vct_a_1,
         }
         interface_model_height = metrics_savepoint.z_ifc()
