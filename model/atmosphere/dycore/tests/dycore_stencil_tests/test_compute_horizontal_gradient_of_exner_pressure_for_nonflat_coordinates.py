@@ -21,7 +21,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates
     OUTPUTS = ("z_gradh_exner",)
-    MARKER = (pytest.mark.miss_neighbors,)
+    # MARKER = (pytest.mark.miss_neighbors,)
 
     @staticmethod
     def reference(
