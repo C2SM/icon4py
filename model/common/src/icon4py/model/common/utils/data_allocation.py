@@ -109,15 +109,6 @@ def array_ns(try_cupy: bool):
     return np
 
 
-def copy_array_ns(input_array: NDArray):
-    if isinstance(input_array, np.ndarray):
-        return np
-    else:
-        import cupy as cp
-
-        return cp
-
-
 def import_array_ns(backend: backend.Backend):
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(is_cupy_device(backend))
