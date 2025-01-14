@@ -63,9 +63,9 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
-from icon4py.model.common.orchestration import decorator as orchestration
+from icon4py.model.common.orchestration import decorator as dace_orchestration
 
 
 """
@@ -364,9 +364,11 @@ class Diffusion:
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
         backend: backend.Backend,
+        orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._backend = backend
+        self._orchestration = orchestration
         self._exchange = exchange
         self.config = config
         self._params = params
@@ -461,55 +463,55 @@ class Diffusion:
 
         self._determine_horizontal_domains()
 
-        self.compile_time_connectivities = orchestration.build_compile_time_connectivities(
+        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
             self._grid.offset_providers
         )
 
     def _allocate_temporary_fields(self):
-        self.diff_multfac_vn = field_alloc.allocate_zero_field(
+        self.diff_multfac_vn = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.diff_multfac_n2w = field_alloc.allocate_zero_field(
+        self.diff_multfac_n2w = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.smag_limit = field_alloc.allocate_zero_field(
+        self.smag_limit = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.enh_smag_fac = field_alloc.allocate_zero_field(
+        self.enh_smag_fac = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.u_vert = field_alloc.allocate_zero_field(
+        self.u_vert = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.v_vert = field_alloc.allocate_zero_field(
+        self.v_vert = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.kh_smag_e = field_alloc.allocate_zero_field(
+        self.kh_smag_e = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.kh_smag_ec = field_alloc.allocate_zero_field(
+        self.kh_smag_ec = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_nabla2_e = field_alloc.allocate_zero_field(
+        self.z_nabla2_e = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_temp = field_alloc.allocate_zero_field(
+        self.z_temp = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.diff_multfac_smag = field_alloc.allocate_zero_field(
+        self.diff_multfac_smag = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
         # TODO(Magdalena): this is KHalfDim
-        self.vertical_index = field_alloc.allocate_indices(
+        self.vertical_index = data_alloc.allocate_indices(
             dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
         )
-        self.horizontal_cell_index = field_alloc.allocate_indices(
+        self.horizontal_cell_index = data_alloc.allocate_indices(
             dims.CellDim, grid=self._grid, backend=self._backend
         )
-        self.horizontal_edge_index = field_alloc.allocate_indices(
+        self.horizontal_edge_index = data_alloc.allocate_indices(
             dims.EdgeDim, grid=self._grid, backend=self._backend
         )
-        self.w_tmp = field_alloc.allocate_zero_field(
+        self.w_tmp = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
         )
 
@@ -565,10 +567,10 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = field_alloc.allocate_zero_field(
+        diff_multfac_vn = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        smag_limit = field_alloc.allocate_zero_field(
+        smag_limit = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
 
@@ -621,7 +623,7 @@ class Diffusion:
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
-    @orchestration.orchestrate
+    @dace_orchestration.orchestrate
     def _do_diffusion_step(
         self,
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
@@ -929,6 +931,6 @@ class Diffusion:
                 if isinstance(self.__dict__[name], gtx.ffront.decorator.Program)
             ],
         ]
-        return orchestration.generate_orchestration_uid(
+        return dace_orchestration.generate_orchestration_uid(
             self, members_to_disregard=members_to_disregard
         )

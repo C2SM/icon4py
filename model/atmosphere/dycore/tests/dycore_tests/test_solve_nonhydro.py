@@ -19,28 +19,25 @@ from icon4py.model.atmosphere.dycore import (
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
-from icon4py.model.common.settings import backend
-from icon4py.model.common.test_utils import (
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from . import utils
 
 
 @pytest.mark.datatest
 def test_validate_divdamp_fields_against_savepoint_values(
-    grid_savepoint,
-    savepoint_nonhydro_init,
-    icon_grid,
+    grid_savepoint, savepoint_nonhydro_init, icon_grid, backend
 ):
     config = solve_nh.NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
-    enh_divdamp_fac = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
-    scal_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
-    bdy_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    enh_divdamp_fac = data_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    scal_divdamp = data_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    bdy_divdamp = data_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
         config.divdamp_fac,
@@ -150,6 +147,7 @@ def test_nonhydro_predictor_step(
     ndyn_substeps,
     at_initial_timestep,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -537,6 +535,7 @@ def test_nonhydro_corrector_step(
     ndyn_substeps,
     at_initial_timestep,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -556,7 +555,7 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
@@ -744,6 +743,7 @@ def test_run_solve_nonhydro_single_step(
     savepoint_nonhydro_step_exit,
     at_initial_timestep,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -765,7 +765,7 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
@@ -837,7 +837,6 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
-@pytest.mark.slow_tests
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
@@ -864,6 +863,7 @@ def test_run_solve_nonhydro_multi_step(
     savepoint_nonhydro_step_exit,
     experiment,
     ndyn_substeps,
+    backend,
     at_initial_timestep,
 ):
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
@@ -884,7 +884,7 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
     linit = sp.get_metadata("linit").get("linit")

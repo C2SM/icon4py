@@ -42,7 +42,6 @@ import collections
 import enum
 import functools
 import inspect
-from functools import cached_property
 from typing import (
     Any,
     Callable,
@@ -69,9 +68,8 @@ from icon4py.model.common.grid import (
     icon as icon_grid,
     vertical as v_grid,
 )
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import model, utils as state_utils
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 DomainType = TypeVar("DomainType", h_grid.Domain, v_grid.Domain)
@@ -214,7 +212,7 @@ class CompositeSource(FieldSource):
         self._metadata = collections.ChainMap(me.metadata, *(s.metadata for s in others))
         self._providers = collections.ChainMap(me._providers, *(s._providers for s in others))
 
-    @cached_property
+    @functools.cached_property
     def metadata(self) -> MutableMapping[str, model.FieldMetaData]:
         return self._metadata
 
@@ -583,7 +581,7 @@ class NumpyFieldsProvider(FieldProvider):
         args.update(self._params)
         results = self._func(**args)
         ## TODO: can the order of return values be checked?
-        results = (results,) if isinstance(results, xp.ndarray) else results
+        results = (results,) if isinstance(results, data_alloc.NDArray) else results
         self._fields = {
             k: gtx.as_field(tuple(self._dims), results[i], allocator=backend)
             for i, k in enumerate(self.fields)
@@ -594,7 +592,7 @@ class NumpyFieldsProvider(FieldProvider):
         parameters = func_signature.parameters
         for dep_key in self._dependencies.keys():
             parameter_definition = parameters.get(dep_key)
-            checked = _check_union(parameter_definition, union=field_alloc.NDArray)
+            checked = _check_union(parameter_definition, union=data_alloc.NDArray)
             assert checked, (
                 f"Dependency '{dep_key}' in function '{_func_name(self._func)}':  does not exist or has "
                 f"wrong type ('expected ndarray') but was '{parameter_definition}'."

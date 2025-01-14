@@ -12,8 +12,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
-from icon4py.model.common.settings import backend
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from .utils import construct_diffusion_config, diff_multfac_vn_numpy, smag_limit_numpy
 
@@ -24,8 +23,8 @@ def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
 
 def test_scale_k(backend):
     grid = simple_grid.SimpleGrid()
-    field = helpers.random_field(grid, dims.KDim)
-    scaled_field = helpers.zero_field(grid, dims.KDim)
+    field = data_alloc.random_field(grid, dims.KDim)
+    scaled_field = data_alloc.zero_field(grid, dims.KDim)
     factor = 2.0
     diffusion_utils.scale_k.with_backend(backend)(field, factor, scaled_field, offset_provider={})
     assert np.allclose(factor * field.asnumpy(), scaled_field.asnumpy())
@@ -33,8 +32,8 @@ def test_scale_k(backend):
 
 def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
     grid = simple_grid.SimpleGrid()
-    diff_multfac_vn_init = helpers.zero_field(grid, dims.KDim)
-    smag_limit_init = helpers.zero_field(grid, dims.KDim)
+    diff_multfac_vn_init = data_alloc.zero_field(grid, dims.KDim)
+    smag_limit_init = data_alloc.zero_field(grid, dims.KDim)
     k4 = 1.0
     efdt_ratio = 24.0
     shape = diff_multfac_vn_init.asnumpy().shape
@@ -54,8 +53,8 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
 
 def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
     grid = simple_grid.SimpleGrid()
-    diff_multfac_vn = helpers.zero_field(grid, dims.KDim)
-    smag_limit = helpers.zero_field(grid, dims.KDim)
+    diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim)
+    smag_limit = data_alloc.zero_field(grid, dims.KDim)
     k4 = 1.0
     substeps = 5.0
     efdt_ratio = 24.0
@@ -77,8 +76,8 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
 
 def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
     grid = simple_grid.SimpleGrid()
-    diff_multfac_vn = helpers.zero_field(grid, dims.KDim)
-    smag_limit = helpers.zero_field(grid, dims.KDim)
+    diff_multfac_vn = data_alloc.zero_field(grid, dims.KDim)
+    smag_limit = data_alloc.zero_field(grid, dims.KDim)
     k4 = 0.003
     substeps = 1.0
 
@@ -98,15 +97,15 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
 
 def test_init_zero_vertex_k(backend):
     grid = simple_grid.SimpleGrid()
-    f = helpers.random_field(grid, dims.VertexDim, dims.KDim)
-    diffusion_utils.init_zero_v_k(f, offset_provider={})
+    f = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
+    diffusion_utils.init_zero_v_k.with_backend(backend)(f, offset_provider={})
     assert np.allclose(0.0, f.asnumpy())
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps
+    savepoint_diffusion_init, experiment, icon_grid, linit, ndyn_substeps, backend
 ):
     savepoint = savepoint_diffusion_init
     config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
@@ -116,8 +115,8 @@ def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
     expected_smag_limit = savepoint.smag_limit()
     exptected_smag_offset = savepoint.smag_offset()
 
-    diff_multfac_vn = helpers.zero_field(icon_grid, dims.KDim)
-    smag_limit = helpers.zero_field(icon_grid, dims.KDim)
+    diff_multfac_vn = data_alloc.zero_field(icon_grid, dims.KDim)
+    smag_limit = data_alloc.zero_field(icon_grid, dims.KDim)
     diffusion_utils.setup_fields_for_initial_step.with_backend(backend)(
         params.K4,
         config.hdiff_efdt_ratio,

@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_index_wi
     init_two_cell_kdim_fields_index_with_zero_vp,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, _shape, random_field
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
@@ -44,10 +45,14 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        field_index_with_zero_1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        field_index_with_zero_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        field_index_with_zero_1 = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        field_index_with_zero_2 = data_alloc.random_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat
+        )
+        k = data_alloc.allocate_indices(dims.KDim, grid)
 
-        k = gtx.as_field((dims.KDim,), np.arange(0, _shape(grid, dims.KDim)[0], dtype=gtx.int32))
         k1 = 1
         k2 = gtx.int32(grid.num_levels)
 

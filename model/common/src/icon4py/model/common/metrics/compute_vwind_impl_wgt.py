@@ -11,8 +11,8 @@ import numpy as np
 import icon4py.model.common.field_type_aliases as fa
 from icon4py.model.common.grid import base as grid
 from icon4py.model.common.metrics.metric_fields import compute_vwind_impl_wgt_partial
-from icon4py.model.common.settings import xp
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_vwind_impl_wgt(
@@ -29,7 +29,7 @@ def compute_vwind_impl_wgt(
     experiment: str,
     vwind_offctr: float,
     horizontal_start_cell: int,
-) -> np.ndarray:
+) -> data_alloc.NDArray:
     compute_vwind_impl_wgt_partial.with_backend(backend)(
         z_ddxn_z_half_e=z_ddxn_z_half_e,
         z_ddxt_z_half_e=z_ddxt_z_half_e,
@@ -50,8 +50,8 @@ def compute_vwind_impl_wgt(
     )
 
     vwind_impl_wgt = (
-        xp.amin(vwind_impl_wgt_k.ndarray, axis=1)
+        np.amin(vwind_impl_wgt_k.ndarray, axis=1)
         if experiment == global_exp
-        else xp.amax(vwind_impl_wgt_k.ndarray, axis=1)
+        else np.amax(vwind_impl_wgt_k.ndarray, axis=1)
     )
     return vwind_impl_wgt

@@ -10,7 +10,6 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -25,7 +24,7 @@ def _update_wind(
     return w_new_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def update_wind(
     w_now: fa.CellKField[wpfloat],
     grf_tend_w: fa.CellKField[wpfloat],
