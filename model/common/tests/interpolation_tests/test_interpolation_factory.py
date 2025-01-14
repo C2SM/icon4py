@@ -75,7 +75,7 @@ def get_interpolation_factory(
     backend, experiment, grid_file
 ) -> interpolation_factory.InterpolationFieldsFactory:
     registry_key = (
-        experiment.join(backend.name) if hasattr(backend, "name") else experiment.join("None")
+        experiment.join(backend.name) if hasattr(backend, "name") else experiment.join(str(backend))
     )
     factory = interpolation_factories.get(registry_key)
     if not factory:

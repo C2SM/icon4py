@@ -135,7 +135,7 @@ def get_grid_geometry(
     xp = data_alloc.array_ns(on_gpu)
     num_levels = get_num_levels(experiment)
     register_name = (
-        experiment.join(backend.name) if hasattr(backend, "name") else experiment.join("None")
+        experiment.join(backend.name) if hasattr(backend, "name") else experiment.join(str(backend))
     )
 
     def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
