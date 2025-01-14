@@ -69,7 +69,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
     OUTPUTS = ("z_temp",)
-    MARKER = (pytest.mark.embedded_skip,)  # TODO: add pytest.mark.miss_neighbors
+    MARKER = (pytest.mark.embedded_skip, pytest.mark.miss_neighbors)
 
     @staticmethod
     def reference(

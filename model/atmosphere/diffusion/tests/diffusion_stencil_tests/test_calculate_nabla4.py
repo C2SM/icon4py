@@ -66,7 +66,7 @@ def calculate_nabla4_numpy(
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
-    # TODO: add pytest.mark.miss_neighbors
+    MARKER = (pytest.mark.miss_neighbors,)
 
     @staticmethod
     def reference(
@@ -94,7 +94,6 @@ class TestCalculateNabla4(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-
         u_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
         v_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
 

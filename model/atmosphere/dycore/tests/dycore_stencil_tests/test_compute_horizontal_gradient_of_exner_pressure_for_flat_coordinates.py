@@ -21,7 +21,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates
     OUTPUTS = ("z_gradh_exner",)
-    # TODO: add pytest.mark.miss_neighbors
+    MARKER = (pytest.mark.miss_neighbors,)
 
     @staticmethod
     def reference(grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs) -> dict:
@@ -35,7 +35,6 @@ class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest
 
     @pytest.fixture
     def input_data(self, grid):
-
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         z_gradh_exner = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

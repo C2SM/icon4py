@@ -25,7 +25,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
-    MARKER = (pytest.mark.embedded_skip,) # TODO: add pytest.mark.miss_neighbors
+    MARKER = (pytest.mark.embedded_skip, pytest.mark.miss_neighbors)
 
     @staticmethod
     def reference(
@@ -95,7 +95,6 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-
         ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):

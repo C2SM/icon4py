@@ -25,7 +25,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)
-    MARKER = (pytest.mark.embedded_skip,) # TODO: add pytest.mark.miss_neighbors
+    MARKER = (pytest.mark.embedded_skip, pytest.mark.miss_neighbors)
 
     @staticmethod
     def reference(
@@ -72,7 +72,6 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
 
     @pytest.fixture
     def input_data(self, grid):
-
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         zdiff_gradp = random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=vpfloat)

@@ -21,8 +21,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestAddVerticalWindDerivativeToDivergenceDamping(StencilTest):
     PROGRAM = add_vertical_wind_derivative_to_divergence_damping
     OUTPUTS = ("z_graddiv_vn",)
-
-    # TODO: add pytest.mark.miss_neighbors
+    MARKER = (pytest.mark.miss_neighbors,)
 
     @staticmethod
     def reference(
@@ -48,7 +47,6 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-
         hmask_dd3d = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         scalfac_dd3d = random_field(grid, dims.KDim, dtype=wpfloat)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)

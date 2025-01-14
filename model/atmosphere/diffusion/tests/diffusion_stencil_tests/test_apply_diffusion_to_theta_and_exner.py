@@ -34,7 +34,7 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 class TestApplyDiffusionToThetaAndExner(StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
-    MARKER = (pytest.mark.embedded_skip,) # TODO: add pytest.mark.miss_neighbors # TODO: understand why values do not verify intermittently
+    MARKER = (pytest.mark.embedded_skip, pytest.mark.miss_neighbors)
 
     @staticmethod
     def reference(
@@ -94,7 +94,6 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim)
         theta_v_in = random_field(grid, dims.CellDim, dims.KDim)

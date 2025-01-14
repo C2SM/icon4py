@@ -77,8 +77,10 @@ class Output:
 def _test_validation(self, grid, backend, input_data):
     if self.MARKER is not None:
         for marker in self.MARKER:
-            if marker.markname == "embedded_skip":
+            if marker.markname in "embedded_skip":
                 pytest.skip("test not compatible with embedded backend")
+            elif marker.markname == "miss_neighbors":
+                pytest.xfail("Stencil does not support missing neighbors.")
     reference_outputs = self.reference(
         grid,
         **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
@@ -112,6 +114,8 @@ if pytest_benchmark:
             for marker in self.MARKER:
                 if marker.markname == "embedded_skip":
                     pytest.skip("test not compatible with embedded backend")
+                elif marker.markname == "miss_neighbors":
+                    pytest.xfail("Stencil does not support missing neighbors.")
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.

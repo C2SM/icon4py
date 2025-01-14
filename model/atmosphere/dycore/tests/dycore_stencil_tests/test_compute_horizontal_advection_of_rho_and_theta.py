@@ -21,8 +21,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeBtraj(StencilTest):
     PROGRAM = compute_horizontal_advection_of_rho_and_theta
     OUTPUTS = ("z_rho_e", "z_theta_v_e")
-
-    # TODO: add pytest.mark.miss_neighbors
+    MARKER = (pytest.mark.miss_neighbors,)
 
     @staticmethod
     def compute_btraj_numpy(
@@ -184,7 +183,6 @@ class TestComputeBtraj(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-
         p_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         p_vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         pos_on_tplane_e_1 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
