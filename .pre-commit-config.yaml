@@ -8,8 +8,8 @@ default_language_version:
 minimum_pre_commit_version: 3.8.0
 files: |
   (?x)^(
-      tools/.*|
-      model/.*
+      model/.*|
+      tools/.*
   )$
 
 repos:

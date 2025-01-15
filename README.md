@@ -116,7 +116,7 @@ We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) 
 
 The documentation is at a very early stage given the constant state of development. Some effort is ongoing to document the dycore and can be compiled as follows.
 
-You can install the required packages by using the provided `requirements-dev.txt` file in the root of the repository.
+You can install the required packages by using the provided `docs` dependency group, which is included in the `dev` installed by default by `uv sync` if no dependency groups are specified.
 
 Then move to the dycore docs folder and build the html documentation with the provided makefile:
 
