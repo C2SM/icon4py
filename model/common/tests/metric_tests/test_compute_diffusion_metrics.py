@@ -44,12 +44,12 @@ def test_compute_diffusion_metrics(
     zd_intcoef_dsl = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim
     ).asnumpy()
-    z_maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    z_maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    z_maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     zd_diffcoef_dsl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).asnumpy()
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim)
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
 
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     nbidx = data_alloc.constant_field(
@@ -78,7 +78,9 @@ def test_compute_diffusion_metrics(
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+    z_mc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+    )
     compute_z_mc.with_backend(backend)(
         metrics_savepoint.z_ifc(),
         z_mc,
@@ -105,7 +107,7 @@ def test_compute_diffusion_metrics(
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1]),
+        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,

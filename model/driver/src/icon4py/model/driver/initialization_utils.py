@@ -84,10 +84,14 @@ def read_icon_grid(
     if ser_type == SerializationType.SB:
         return (
             sb.IconSerialDataProvider(
-                backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+                backend=backend,
+                fname_prefix="icon_pydycore",
+                path=str(path.absolute()),
+                do_print=False,
+                mpi_rank=rank,
             )
             .from_savepoint_grid(grid_id, grid_root, grid_level)
-            .construct_icon_grid(on_gpu=(backend in data_alloc.GPU_BACKENDS))
+            .construct_icon_grid(on_gpu=data_alloc.is_cupy_device(backend))
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -328,14 +332,15 @@ def read_geometry_fields(
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
     """
     if ser_type == SerializationType.SB:
-        sp = _grid_savepoint(path, rank, grid_id, grid_root, grid_level)
+        sp = _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
-        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
+        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config)
         vertical_geometry = v_grid.VerticalGrid(
             config=vertical_grid_config,
             vct_a=vct_a,
             vct_b=vct_b,
+            backend=backend,
             _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
         )
         return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()
@@ -346,7 +351,11 @@ def read_geometry_fields(
 @functools.cache
 def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
     return sb.IconSerialDataProvider(
-        backend, "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+        backend=backend,
+        fname_prefix="icon_pydycore",
+        path=str(path.absolute()),
+        do_print=False,
+        mpi_rank=rank,
     )
 
 
@@ -361,15 +370,27 @@ def _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level) -> sb.I
 def read_decomp_info(
     path: pathlib.Path,
     procs_props: decomposition.ProcessProperties,
+    backend: gt4py_backend.Backend,
     ser_type=SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
     grid_root=GRID_ROOT,
     grid_level=GRID_LEVEL,
 ) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
-        return _grid_savepoint(
-            path, procs_props.rank, grid_id, grid_root, grid_level
-        ).construct_decomposition_info()
+        # return _grid_savepoint(
+        #     backend, path, procs_props.rank, grid_id, grid_root, grid_level
+        # ).construct_decomposition_info()
+        return (
+            sb.IconSerialDataProvider(
+                backend=backend,
+                fname_prefix="icon_pydycore",
+                path=str(path.absolute()),
+                do_print=False,
+                mpi_rank=procs_props.rank,
+            )
+            .from_savepoint_grid(grid_id, grid_root, grid_level)
+            .construct_decomposition_info()
+        )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 

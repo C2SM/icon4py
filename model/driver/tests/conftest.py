@@ -27,7 +27,6 @@ from icon4py.model.driver import icon4py_configuration as driver_config
 from icon4py.model.testing.datatest_fixtures import (
     damping_height,
     data_provider,
-    datatest_backend,
     download_ser_data,
     experiment,
     flat_height,
@@ -67,7 +66,6 @@ __all__ = [
     "timeloop_date_init",
     "timeloop_date_exit",
     # imported fixtures:
-    "datatest_backend",
     "damping_height",
     "data_provider",
     "download_ser_data",

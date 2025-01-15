@@ -60,8 +60,9 @@ def test_saturation_adjustment_in_gscp_call(
     vertical_config = v_grid.VerticalGridConfig(icon_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
+        vct_a=grid_savepoint.vct_a().asnumpy(),
+        vct_b=grid_savepoint.vct_b().asnumpy(),
+        backend=backend,
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
 
@@ -182,8 +183,9 @@ def test_saturation_adjustment_in_physics_interface_call(
     vertical_config = v_grid.VerticalGridConfig(icon_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
+        vct_a=grid_savepoint.vct_a().asnumpy(),
+        vct_b=grid_savepoint.vct_b().asnumpy(),
+        backend=backend,
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
 

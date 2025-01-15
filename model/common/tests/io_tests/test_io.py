@@ -10,7 +10,6 @@ import pathlib
 import re
 from typing import Union
 
-import gt4py.next as gtx
 import numpy as np
 import pytest
 import uxarray as ux
@@ -136,7 +135,8 @@ def test_io_monitor_create_output_path(test_path):
     vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
+        backend=None,
+        vct_a=np.linspace(12000.0, 0.0, simple_grid.num_levels + 1),
         vct_b=None,
     )
     config = IOConfig(field_groups=[], output_path=path_name)
@@ -156,7 +156,8 @@ def test_io_monitor_write_ugrid_file(test_path):
     vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
+        backend=None,
+        vct_a=np.linspace(12000.0, 0.0, simple_grid.num_levels + 1),
         vct_b=None,
     )
 
@@ -188,7 +189,8 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
+        backend=None,
+        vct_a=np.linspace(12000.0, 0.0, grid.num_levels + 1),
         vct_b=None,
     )
 
@@ -240,7 +242,8 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
+        backend=None,
+        vct_a=np.linspace(12000.0, 0.0, grid.num_levels + 1),
         vct_b=None,
     )
 
@@ -364,7 +367,8 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
     vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
+        backend=None,
+        vct_a=np.linspace(12000.0, 0.0, simple_grid.num_levels + 1),
         vct_b=None,
     )
 

@@ -321,8 +321,9 @@ def solve_nh_init(
     # datatest config, vertical parameters
     vertical_params = VerticalGrid(
         config=vertical_config,
-        vct_a=vct_a,
-        vct_b=vct_b,
+        vct_a=vct_a.asnumpy(),
+        vct_b=vct_b.asnumpy(),
+        backend=backend,
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 

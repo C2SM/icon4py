@@ -20,7 +20,7 @@ from icon4py.model.common.metrics.metric_fields import (
     _compute_z_aux2,
     compute_z_mc,
 )
-from icon4py.model.common.utils.data_allocation import flatten_first_two_dims, zero_field
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import (
     dallclose,
     is_roundtrip,
@@ -29,13 +29,19 @@ from icon4py.model.testing.helpers import (
 
 @pytest.mark.datatest
 def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
+    if data_alloc.is_cupy_device(backend):
+        pytest.skip(
+            "skipping: gpu backend is unsupported because _compute_flat_idx and _compute_z_aux2 cannot be called with_backend"
+        )
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
-    z_mc = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     z_ifc = metrics_savepoint.z_ifc()
-    k_lev = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=int))
-    z_me = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    k_lev = gtx.as_field(
+        (dims.KDim,), np.arange(icon_grid.num_levels, dtype=int), allocator=backend
+    )
+    z_me = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
     edge_domain = h_grid.domain(dims.EdgeDim)
     horizontal_start_edge = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     start_nudging = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
@@ -54,7 +60,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         out=z_me,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
-    flat_idx = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    flat_idx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
     _compute_flat_idx(
         z_me=z_me,
         z_ifc=z_ifc,
@@ -70,8 +76,10 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         },
     )
     flat_idx_np = np.amax(flat_idx.asnumpy(), axis=1)
-    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, icon_grid.num_levels])
-    z_aux2 = zero_field(icon_grid, dims.EdgeDim)
+    z_ifc_sliced = gtx.as_field(
+        (dims.CellDim,), z_ifc.asnumpy()[:, icon_grid.num_levels], allocator=backend
+    )
+    z_aux2 = data_alloc.zero_field(icon_grid, dims.EdgeDim, backend=backend)
     _compute_z_aux2(
         z_ifc=z_ifc_sliced,
         out=z_aux2,
@@ -91,9 +99,10 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         horizontal_start_1=start_nudging,
         nedges=icon_grid.num_edges,
     )
-    zdiff_gradp_full_field = flatten_first_two_dims(
+    zdiff_gradp_full_field = data_alloc.flatten_first_two_dims(
         dims.ECDim,
         dims.KDim,
         field=gtx.as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp_full_np),
+        backend=backend,
     )
     assert dallclose(zdiff_gradp_full_field.asnumpy(), zdiff_gradp_ref.asnumpy(), rtol=1.0e-5)

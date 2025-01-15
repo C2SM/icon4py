@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from gt4py.next import backend as gt4py_backend
+
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import vertical as v_grid
@@ -107,13 +109,16 @@ def _exclaim_ape_nonhydrostatic_config(ndyn: int):
 
 
 def create_vertical_params(
-    vertical_config: v_grid.VerticalGridConfig, sp: sb.IconSerialDataProvider
+    vertical_config: v_grid.VerticalGridConfig,
+    sp: sb.IconSerialDataProvider,
+    backend: gt4py_backend.Backend,
 ):
     return v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=sp.vct_a(),
-        vct_b=sp.vct_b(),
+        vct_a=sp.vct_a().asnumpy(),
+        vct_b=sp.vct_b().asnumpy(),
         _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
+        backend=backend,
     )
 
 

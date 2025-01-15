@@ -11,9 +11,9 @@ import logging
 import pathlib
 import uuid
 from typing import Callable, NamedTuple
-import numpy as np
 
 import click
+import numpy as np
 from devtools import Timer
 
 import icon4py.model.common.utils as common_utils
@@ -23,11 +23,11 @@ from icon4py.model.atmosphere.diffusion import (
 )
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
@@ -314,7 +314,13 @@ def initialize(
     config = driver_config.read_config(icon4py_driver_backend, experiment_type)
 
     decomp_info = driver_init.read_decomp_info(
-        file_path, props, serialization_type, grid_id, grid_root, grid_level
+        file_path,
+        props,
+        config.run_config.backend,
+        serialization_type,
+        grid_id,
+        grid_root,
+        grid_level,
     )
 
     log.info(f"initializing the grid from '{file_path}'")
@@ -352,6 +358,7 @@ def initialize(
     ) = driver_init.read_static_fields(
         icon_grid,
         file_path,
+        config.run_config.backend,
         rank=props.rank,
         ser_type=serialization_type,
     )
