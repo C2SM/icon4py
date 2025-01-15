@@ -174,7 +174,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
 ):
-    if backend is None or not helpers.is_dace(backend):
+    if not helpers.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization
