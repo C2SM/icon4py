@@ -68,9 +68,9 @@ class MultiLocation(metaclass=ABCMeta):
         return self.chain[item]
 
     def to_dim_list(self) -> list[Dimension]:
-        dims_initials = [key[0] for key in dims.global_dimensions.keys()]
+        dims_initials = [key[0] for key in dims.horizontal_dims.keys()]
         map_to_dim = {
-            d: list(dims.global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)
+            d: list(dims.horizontal_dims.values())[d_i] for d_i, d in enumerate(dims_initials)
         }
         return [map_to_dim[str(c)] for c in self.chain]
 

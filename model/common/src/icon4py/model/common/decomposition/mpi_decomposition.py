@@ -110,7 +110,8 @@ def get_multinode_properties(
     return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
-@dataclass(frozen=True)
+# TODO (@halungge) changed for dev/testing set back to frozen
+@dataclass(frozen=False)
 class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
 
@@ -222,7 +223,7 @@ class GHexMultiNodeExchange:
             This operation is *necessary* for the use inside FORTRAN as there fields are larger than the grid (nproma size). where it does not do anything in a purely Python setup.
             the granule context where fields otherwise have length nproma.
         """
-        assert dim in dims.global_dimensions.values()
+        assert dim in dims.horizontal_dims.values()
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
