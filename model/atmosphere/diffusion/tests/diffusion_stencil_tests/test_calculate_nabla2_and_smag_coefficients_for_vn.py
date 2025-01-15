@@ -21,7 +21,6 @@ from icon4py.model.testing.helpers import StencilTest
 class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
     PROGRAM = calculate_nabla2_and_smag_coefficients_for_vn
     OUTPUTS = ("kh_smag_e", "kh_smag_ec", "z_nabla2_e")
-    MARKER = (pytest.mark.miss_neighbors,)
 
     @staticmethod
     def reference(

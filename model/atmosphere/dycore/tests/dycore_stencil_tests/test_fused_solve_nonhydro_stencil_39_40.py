@@ -42,7 +42,7 @@ def _fused_solve_nonhydro_stencil_39_40_numpy(
 class TestFusedSolveNonhydroStencil39To40(StencilTest):
     PROGRAM = fused_solve_nonhydro_stencil_39_40
     OUTPUTS = ("w_concorr_c",)
-    MARKER = (pytest.mark.embedded_skip,)
+    MARKER = (pytest.mark.remap_error,)
 
     @staticmethod
     def reference(

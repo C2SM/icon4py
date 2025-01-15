@@ -21,7 +21,6 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeBtraj(StencilTest):
     PROGRAM = compute_horizontal_advection_of_rho_and_theta
     OUTPUTS = ("z_rho_e", "z_theta_v_e")
-    MARKER = (pytest.mark.miss_neighbors,)
 
     @staticmethod
     def compute_btraj_numpy(

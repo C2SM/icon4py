@@ -30,7 +30,7 @@ from .utils import (
 )
 
 
-@pytest.mark.embedded_skip
+@pytest.mark.remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",

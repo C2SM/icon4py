@@ -77,12 +77,14 @@ class Output:
 def _test_validation(self, grid, backend, input_data):
     if self.MARKER is not None:
         for marker in self.MARKER:
-            if marker.markname in "embedded_skip":
-                pytest.skip("test not compatible with embedded backend")
+            if backend is None and marker.markname == "remap_error":
+                pytest.skip("embedded backend currently fails in remap function.")
             elif marker.markname == "miss_neighbors":
                 pytest.xfail("Stencil does not support missing neighbors.")
+            elif backend is None and marker.markname == "as_offset_error":
+                pytest.xfail("embedded backend does not support as_offset.")
             elif backend is None and marker.markname == "levels_plus_one":
-                pytest.xfail("Embdeed backend does not support this feature yet")
+                pytest.xfail("embdeed backend does not support larger boundaries than field sizes.")
     reference_outputs = self.reference(
         grid,
         **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
@@ -114,12 +116,16 @@ if pytest_benchmark:
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
         if self.MARKER is not None:
             for marker in self.MARKER:
-                if marker.markname == "embedded_skip":
-                    pytest.skip("test not compatible with embedded backend")
+                if backend is None and marker.markname == "remap_error":
+                    pytest.skip("embedded backend currently fails in remap function.")
                 elif marker.markname == "miss_neighbors":
                     pytest.xfail("Stencil does not support missing neighbors.")
+                elif backend is None and marker.markname == "as_offset_error":
+                    pytest.xfail("embedded backend does not support as_offset.")
                 elif backend is None and marker.markname == "levels_plus_one":
-                    pytest.xfail("Embdeed backend does not support this feature yet")
+                    pytest.xfail(
+                        "embdeed backend does not support larger boundaries than field sizes."
+                    )
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.

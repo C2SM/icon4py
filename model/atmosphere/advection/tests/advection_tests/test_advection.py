@@ -36,7 +36,7 @@ from .utils import (
 # ------------------------------------
 
 
-@pytest.mark.embedded_skip
+@pytest.mark.remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "date, even_timestep, ntracer, horizontal_advection_type, horizontal_advection_limiter, vertical_advection_type, vertical_advection_limiter",

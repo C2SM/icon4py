@@ -69,7 +69,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
 class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
     PROGRAM = add_extra_diffusion_for_w_con_approaching_cfl
     OUTPUTS = ("ddt_w_adv",)
-    MARKER = (pytest.mark.embedded_skip,)
+    MARKER = (pytest.mark.remap_error,)
 
     @staticmethod
     def reference(

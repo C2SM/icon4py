@@ -42,7 +42,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         "z_w_concorr_me",
         "z_v_grad_w",
     )
-    MARKER = (pytest.mark.embedded_skip,)
+    MARKER = (pytest.mark.remap_error,)
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
