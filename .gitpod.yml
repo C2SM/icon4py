@@ -10,7 +10,7 @@ tasks:
           python -m venv .venv
           source .venv/bin/activate
           pip install --upgrade pip setuptools wheel uv
-          uv sync --extra all
+          uv sync --extra dace --extra io --extra testing
           pre-commit install --install-hooks
           deactivate
       command: |
