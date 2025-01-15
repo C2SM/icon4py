@@ -676,18 +676,18 @@ def create_inverse_neighbor_index(c2e2c0, array_ns: ModuleType = np):
 
 # TODO (@halungge) this can be simplified using only
 def compute_e_flx_avg(
-    c_bln_avg: field_alloc.NDArray,
-    geofac_div: field_alloc.NDArray,
-    owner_mask: field_alloc.NDArray,
-    primal_cart_normal: field_alloc.NDArray,
-    e2c: field_alloc.NDArray,
-    c2e: field_alloc.NDArray,
-    c2e2c: field_alloc.NDArray,
-    e2c2e: field_alloc.NDArray,
+    c_bln_avg: data_alloc.NDArray,
+    geofac_div: data_alloc.NDArray,
+    owner_mask: data_alloc.NDArray,
+    primal_cart_normal: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    c2e: data_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
+    e2c2e: data_alloc.NDArray,
     horizontal_start_p3: np.int32,
     horizontal_start_p4: np.int32,
     array_ns: ModuleType = np,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
     Compute edge flux average
 
