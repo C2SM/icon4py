@@ -61,15 +61,13 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         )
 
         if istep == 1:
-            z_w_concorr_mc = np.where(
-                (nflatlev <= k_nlev) & (k_nlev < nlev),
-                interpolate_to_cell_center_numpy(grid, z_w_concorr_me, e_bln_c_s),
-                z_w_concorr_mc,
-            )
+            z_w_concorr_mc = interpolate_to_cell_center_numpy(grid, z_w_concorr_me, e_bln_c_s)
 
             w_concorr_c = np.where(
                 (nflatlev + 1 <= k_nlev) & (k_nlev < nlev),
-                interpolate_to_half_levels_vp_numpy(grid, z_w_concorr_mc, wgtfac_c),
+                interpolate_to_half_levels_vp_numpy(
+                    grid, wgtfac_c=wgtfac_c, interpolant=z_w_concorr_mc
+                ),
                 w_concorr_c,
             )
 
@@ -93,9 +91,6 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        pytest.xfail(
-            "Verification of w_concorr_c currently not working, because numpy version is incorrect."
-        )
         z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
         e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim)
         z_ekinh = zero_field(grid, dims.CellDim, dims.KDim)
