@@ -10,7 +10,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.common.utils.data_allocation as data_alloc
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory import (
     compute_ffsl_backtrajectory,
 )
@@ -154,44 +155,44 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_vt = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         cell_idx = np.asarray(grid.connectivities[dims.E2CDim], dtype=gtx.int32)
-        cell_idx_new = helpers.numpy_to_1D_sparse_field(cell_idx, dims.ECDim)
-        cell_blk = helpers.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
-        cell_blk_new = helpers.as_1D_sparse_field(cell_blk, dims.ECDim)
+        cell_idx_new = data_alloc.numpy_to_1D_sparse_field(cell_idx, dims.ECDim)
+        cell_blk = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
+        cell_blk_new = data_alloc.as_1D_sparse_field(cell_blk, dims.ECDim)
 
-        edge_verts_1_x = helpers.random_field(grid, dims.EdgeDim)
-        edge_verts_2_x = helpers.random_field(grid, dims.EdgeDim)
-        edge_verts_1_y = helpers.random_field(grid, dims.EdgeDim)
-        edge_verts_2_y = helpers.random_field(grid, dims.EdgeDim)
-        pos_on_tplane_e_1_x = helpers.random_field(grid, dims.EdgeDim)
-        pos_on_tplane_e_2_x = helpers.random_field(grid, dims.EdgeDim)
-        pos_on_tplane_e_1_y = helpers.random_field(grid, dims.EdgeDim)
-        pos_on_tplane_e_2_y = helpers.random_field(grid, dims.EdgeDim)
-        primal_normal_cell_x = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_x_new = helpers.as_1D_sparse_field(primal_normal_cell_x, dims.ECDim)
-        dual_normal_cell_x = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_x_new = helpers.as_1D_sparse_field(dual_normal_cell_x, dims.ECDim)
-        primal_normal_cell_y = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_y_new = helpers.as_1D_sparse_field(primal_normal_cell_y, dims.ECDim)
-        dual_normal_cell_y = helpers.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_y_new = helpers.as_1D_sparse_field(dual_normal_cell_y, dims.ECDim)
-        lvn_sys_pos = helpers.constant_field(grid, True, dims.EdgeDim, dims.KDim, dtype=bool)
+        edge_verts_1_x = data_alloc.random_field(grid, dims.EdgeDim)
+        edge_verts_2_x = data_alloc.random_field(grid, dims.EdgeDim)
+        edge_verts_1_y = data_alloc.random_field(grid, dims.EdgeDim)
+        edge_verts_2_y = data_alloc.random_field(grid, dims.EdgeDim)
+        pos_on_tplane_e_1_x = data_alloc.random_field(grid, dims.EdgeDim)
+        pos_on_tplane_e_2_x = data_alloc.random_field(grid, dims.EdgeDim)
+        pos_on_tplane_e_1_y = data_alloc.random_field(grid, dims.EdgeDim)
+        pos_on_tplane_e_2_y = data_alloc.random_field(grid, dims.EdgeDim)
+        primal_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_x_new = data_alloc.as_1D_sparse_field(primal_normal_cell_x, dims.ECDim)
+        dual_normal_cell_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_x_new = data_alloc.as_1D_sparse_field(dual_normal_cell_x, dims.ECDim)
+        primal_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_y_new = data_alloc.as_1D_sparse_field(primal_normal_cell_y, dims.ECDim)
+        dual_normal_cell_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_y_new = data_alloc.as_1D_sparse_field(dual_normal_cell_y, dims.ECDim)
+        lvn_sys_pos = data_alloc.constant_field(grid, True, dims.EdgeDim, dims.KDim, dtype=bool)
         p_dt = 2.0
-        p_cell_idx = helpers.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_cell_rel_idx_dsl = helpers.constant_field(
+        p_cell_idx = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_rel_idx_dsl = data_alloc.constant_field(
             grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32
         )
-        p_cell_blk = helpers.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_coords_dreg_v_1_lon_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_lon_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_lon_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_lon_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_1_lat_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_2_lat_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_3_lat_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_coords_dreg_v_4_lat_dsl = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_cell_blk = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_coords_dreg_v_1_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_lon_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_1_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_2_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_3_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_coords_dreg_v_4_lat_dsl = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
 
         return dict(
             p_vn=p_vn,

@@ -20,7 +20,7 @@ from icon4py.model.common.decomposition import (
     halo,
 )
 from icon4py.model.common.grid import base, icon, vertical as v_grid
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
@@ -327,20 +327,20 @@ class IndexTransformation(Protocol):
 
     def __call__(
         self,
-        array: field_alloc.NDArray,
-    ) -> field_alloc.NDArray:
+        array: data_alloc.NDArray,
+    ) -> data_alloc.NDArray:
         ...
 
 
 class NoTransformation(IndexTransformation):
     """Empty implementation of the Protocol. Just return zeros."""
 
-    def __call__(self, array: field_alloc.NDArray):
+    def __call__(self, array: data_alloc.NDArray):
         return np.zeros_like(array)
 
 
 class ToZeroBasedIndexTransformation(IndexTransformation):
-    def __call__(self, array: field_alloc.NDArray):
+    def __call__(self, array: data_alloc.NDArray):
         """
         Calculate the index offset needed for usage with python.
 
@@ -420,7 +420,7 @@ class GridManager:
     def __call__(self, backend: Optional[gtx_backend.Backend], limited_area=True):
         if not self._reader:
             self.open()
-        on_gpu = field_alloc.is_cupy_device(backend)
+        on_gpu = data_alloc.is_cupy_device(backend)
         self._grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._refinement = self._read_grid_refinement_fields(backend)
         self._coordinates = self._read_coordinates(backend)
@@ -506,8 +506,8 @@ class GridManager:
     def _read_start_end_indices(
         self,
     ) -> tuple[
-        dict[dims.Dimension : field_alloc.NDArray],
-        dict[dims.Dimension : field_alloc.NDArray],
+        dict[dims.Dimension : data_alloc.NDArray],
+        dict[dims.Dimension : data_alloc.NDArray],
         dict[dims.Dimension : gtx.int32],
     ]:
         """ "
@@ -562,14 +562,14 @@ class GridManager:
         self,
         backend: gtx_backend.Backend,
         decomposition_info: Optional[decomposition.DecompositionInfo] = None,
-    ) -> tuple[dict[dims.Dimension : field_alloc.NDArray]]:
+    ) -> tuple[dict[dims.Dimension : data_alloc.NDArray]]:
         """
         Reads the refinement control fields from the grid file.
 
         Refinement control contains the classification of each entry in a field to predefined horizontal grid zones as for example the distance to the boundaries,
         see [refinement.py](refinement.py)
         """
-        xp = field_alloc.import_array_ns(backend)
+        xp = data_alloc.import_array_ns(backend)
         refinement_control_names = {
             dims.CellDim: GridRefinementName.CONTROL_CELLS,
             dims.EdgeDim: GridRefinementName.CONTROL_EDGES,
@@ -791,8 +791,8 @@ def _update_size_for_1d_sparse_dims(grid):
 
 
 def _construct_diamond_vertices(
-    e2v: field_alloc.NDArray, c2v: field_alloc.NDArray, e2c: field_alloc.NDArray
-) -> field_alloc.NDArray:
+    e2v: data_alloc.NDArray, c2v: data_alloc.NDArray, e2c: data_alloc.NDArray
+) -> data_alloc.NDArray:
     r"""
     Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
 
@@ -832,8 +832,8 @@ def _construct_diamond_vertices(
 
 
 def _construct_diamond_edges(
-    e2c: field_alloc.NDArray, c2e: field_alloc.NDArray
-) -> field_alloc.NDArray:
+    e2c: data_alloc.NDArray, c2e: data_alloc.NDArray
+) -> data_alloc.NDArray:
     r"""
     Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
 
@@ -873,8 +873,8 @@ def _construct_diamond_edges(
 
 
 def _construct_triangle_edges(
-    c2e2c: field_alloc.NDArray, c2e: field_alloc.NDArray
-) -> field_alloc.NDArray:
+    c2e2c: data_alloc.NDArray, c2e: data_alloc.NDArray
+) -> data_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
 
          ----e3----  ----e7----
@@ -903,7 +903,7 @@ def _construct_triangle_edges(
     return table
 
 
-def _construct_butterfly_cells(c2e2c: field_alloc.NDArray) -> field_alloc.NDArray:
+def _construct_butterfly_cells(c2e2c: data_alloc.NDArray) -> data_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring cells of its cell neighbors.
 
                   /  \        /  \

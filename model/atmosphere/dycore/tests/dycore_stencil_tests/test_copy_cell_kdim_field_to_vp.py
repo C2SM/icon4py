@@ -13,12 +13,13 @@ from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import 
     copy_cell_kdim_field_to_vp,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def copy_cell_kdim_field_to_vp_numpy(field: np.array) -> np.array:
-    field_copy = field
+    field_copy = field.copy()
     return field_copy
 
 

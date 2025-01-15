@@ -10,7 +10,8 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as sol
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import serialbox as sb
 
 
 def construct_interpolation_state(
@@ -26,10 +27,10 @@ def construct_interpolation_state(
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=helpers.as_1D_sparse_field(savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],

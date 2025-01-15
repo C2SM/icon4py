@@ -10,8 +10,8 @@ from abc import ABCMeta, abstractmethod
 from typing import Iterator
 
 from gt4py.next.ffront.fbuiltins import Dimension
-from icon4py.model.common import dimension as dims
 
+from icon4py.model.common import dimension as dims
 from icon4pytools.icon4pygen.bindings.codegen.render.location import LocationRenderer
 
 

@@ -19,7 +19,7 @@ import numpy as np
 from gt4py.next import Dimension
 
 from icon4py.model.common import utils
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 try:
@@ -82,7 +82,7 @@ class DecompositionInfo:
 
     @utils.chainable
     def with_dimension(
-        self, dim: Dimension, global_index: field_alloc.NDArray, owner_mask: field_alloc.NDArray
+        self, dim: Dimension, global_index: data_alloc.NDArray, owner_mask: data_alloc.NDArray
     ):
         self._global_index[dim] = global_index
         self._owner_mask[dim] = owner_mask
@@ -142,7 +142,7 @@ class DecompositionInfo:
             xp.arange(data.shape[0])
         return xp.arange(data.shape[0])
 
-    def owner_mask(self, dim: Dimension) -> field_alloc.NDArray:
+    def owner_mask(self, dim: Dimension) -> data_alloc.NDArray:
         return self._owner_mask[dim]
 
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):

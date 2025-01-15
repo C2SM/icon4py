@@ -14,14 +14,14 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
+from icon4py.model.common.utils.data_allocation import (
     flatten_first_two_dims,
     random_field,
     random_mask,
     unflatten_first_two_dims,
     zero_field,
 )
+from icon4py.model.testing.helpers import StencilTest
 
 from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
 from .test_calculate_nabla2_of_theta import calculate_nabla2_of_theta_numpy
