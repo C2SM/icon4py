@@ -752,7 +752,7 @@ def test_compute_pg_exdist_dsl(
         offset_provider={},
     )
 
-    _compute_pg_edgeidx_vertidx.with_backend(backend)(
+    _compute_pg_edgeidx_vertidx(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         z_ifc=z_ifc,
         z_aux2=z_aux2,
