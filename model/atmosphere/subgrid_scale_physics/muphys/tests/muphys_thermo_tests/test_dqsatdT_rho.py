@@ -22,14 +22,14 @@ class TestQsatRho(StencilTest):
 
     @staticmethod
     def reference(grid, qs: np.array, t: np.array, TMELT: wpfloat, **kwargs) -> dict:
-        return dict(derivative=np.full(t.shape, 0.006051855061752346))
+        return dict(derivative=np.full(t.shape, 0.00030825070286492049))
 
     @pytest.fixture
     def input_data(self, grid):
 
         return dict(
-            qs               = constant_field(grid, 1.47687e-6, dims.CellDim, dtype=wpfloat),
-            t                = constant_field(grid, 281.787, dims.CellDim, dtype=wpfloat),
+            qs               = constant_field(grid, 0.00448941, dims.CellDim, dtype=wpfloat),
+            t                = constant_field(grid, 273.909, dims.CellDim, dtype=wpfloat),
             TMELT            = thermodyn.tmelt,
             derivative       = constant_field(grid, 0., dims.CellDim, dtype=wpfloat)
         )

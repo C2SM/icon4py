@@ -20,7 +20,7 @@ def _dqsatdT_rho(
     C4LES  = 35.86
     C5LES  = C3LES * (TMELT - C4LES)
 
-    return qs * ( C5LES / (t-C4LES)*(t-C4LES) - 1.0/t )
+    return qs * ( C5LES / ( (t-C4LES)*(t-C4LES) ) - 1.0/t )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def dqsatdT_rho(

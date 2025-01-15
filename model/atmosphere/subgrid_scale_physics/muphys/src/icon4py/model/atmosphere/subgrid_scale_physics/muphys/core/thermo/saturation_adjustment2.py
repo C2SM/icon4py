@@ -31,7 +31,7 @@ def _satadj_init(
     ue = cv * te - qce * LVC                         # output variable
     Tx_hold = ue / (cv + qce * (CVV - CLW))
     Tx = te
-    return cvc, ue, Tx_hold, te                      # output variables
+    return cvc, ue, Tx_hold, Tx                      # output variables
 
 @gtx.field_operator
 def _output_calculation(
@@ -43,21 +43,21 @@ def _output_calculation(
     Tx:        fa.CellField[ta.wpfloat],             # TBD
 ) -> tuple[fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat]]:                       # Internal energy
 
-    qve = where( ( qve+qce <= qx_hold ), qve+qce, qx )
-    qce = where( ( qve+qce <= qx_hold ), 0.0, maximum(qve+qce-qx, 0.0) )
     te  = where( ( qve+qce <= qx_hold ), Tx_hold, Tx )
-    return qve, qce, te
+    qce = where( ( qve+qce <= qx_hold ), 0.0, maximum(qve+qce-qx, 0.0) )
+    qve = where( ( qve+qce <= qx_hold ), qve+qce, qx )
+    return te, qve, qce
 
 @gtx.field_operator
 def _newton_raphson(
     qx:  fa.CellField[ta.wpfloat],
     dqx: fa.CellField[ta.wpfloat],
-    Tx: fa.CellField[ta.wpfloat],
+    Tx:  fa.CellField[ta.wpfloat],
     rho: fa.CellField[ta.wpfloat],
     qve: fa.CellField[ta.wpfloat],
     qce: fa.CellField[ta.wpfloat],
     cvc: fa.CellField[ta.wpfloat],
-    ue: fa.CellField[ta.wpfloat],
+    ue:  fa.CellField[ta.wpfloat],
     CVV:   ta.wpfloat,
     CLW:   ta.wpfloat,
     LVC:   ta.wpfloat,
@@ -79,6 +79,13 @@ def saturation_adjustment2(
     qre:       fa.CellField[ta.wpfloat],             # Specific rain water
     qti:       fa.CellField[ta.wpfloat],             # Specific mass of all ice species (total-ice)
     rho:       fa.CellField[ta.wpfloat],             # Density containing dry air and water constituents
+    cvc:       fa.CellField[ta.wpfloat],             # Temporary field
+    ue:        fa.CellField[ta.wpfloat],             # Temporary field
+    Tx_hold:   fa.CellField[ta.wpfloat],             # Temporary field
+    Tx:        fa.CellField[ta.wpfloat],             # Temporary field
+    qx_hold:   fa.CellField[ta.wpfloat],             # Temporary field
+    qx:        fa.CellField[ta.wpfloat],             # Temporary field
+    dqx:       fa.CellField[ta.wpfloat],             # Temporary field
     CI:        ta.wpfloat,
     CLW:       ta.wpfloat,
     CVD:       ta.wpfloat,
@@ -86,9 +93,9 @@ def saturation_adjustment2(
     LVC:       ta.wpfloat,
     TMELT:     ta.wpfloat,
     RV:        ta.wpfloat,
-    te_out:    fa.CellField[ta.wpfloat],             # Temperature
     qve_out:   fa.CellField[ta.wpfloat],             # Specific humidity
-    qce_out:   fa.CellField[ta.wpfloat]              # Specific cloud water content
+    qce_out:   fa.CellField[ta.wpfloat],             # Specific cloud water content
+    te_out:    fa.CellField[ta.wpfloat],             # Temperature
 ):
     _satadj_init( te, qve, qce, qre, qti, CI, CLW, CVD, CVV, LVC, out=(cvc, ue, Tx_hold, Tx) )
     _qsat_rho(Tx_hold, rho, TMELT, RV, out=qx_hold)
@@ -117,4 +124,4 @@ def saturation_adjustment2(
     _qsat_rho(Tx, rho, TMELT, RV, out=qx)
 
     # final calculation of output variables
-    _output_calculation( qve, qce, qx_hold, qx, Tx_hold, Tx, out=(qve_out, qce_out, te_out) )
+    _output_calculation( qve, qce, qx_hold, qx, Tx_hold, Tx, out=(te_out, qve_out, qce_out) )
