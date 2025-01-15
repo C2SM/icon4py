@@ -625,7 +625,7 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
-@pytest.mark.parametrize("linit", [True, True])
+@pytest.mark.parametrize("linit", [True])
 @pytest.mark.parametrize("orchestration", [False, True])
 def test_run_diffusion_initial_step(
     experiment,
