@@ -48,13 +48,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_z_mc,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils as dt_utils
-from icon4py.model.testing.helpers import (
-    StencilTest,
-    dallclose,
-    is_python,
-    is_roundtrip,
-)
+from icon4py.model.testing import datatest_utils as dt_utils, helpers as testing_helpers
 
 
 cell_domain = horizontal.domain(dims.CellDim)
@@ -62,7 +56,7 @@ edge_domain = horizontal.domain(dims.EdgeDim)
 vertex_domain = horizontal.domain(dims.VertexDim)
 
 
-class TestComputeZMc(StencilTest):
+class TestComputeZMc(testing_helpers.StencilTest):
     PROGRAM = compute_z_mc
     OUTPUTS = ("z_mc",)
 
@@ -98,7 +92,7 @@ class TestComputeZMc(StencilTest):
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
-    if is_python(backend):
+    if testing_helpers.is_python(backend):
         pytest.skip("skipping: unsupported backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
@@ -133,13 +127,13 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
+    assert testing_helpers.dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
@@ -157,7 +151,7 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
+    assert testing_helpers.dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
 
 
 # TODO: convert this to a stenciltest once it is possible to have only dims.KDim in domain
@@ -181,7 +175,7 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert dallclose(scalfac_dd3d_ref.asnumpy(), scalfac_dd3d_full.asnumpy())
+    assert testing_helpers.dallclose(scalfac_dd3d_ref.asnumpy(), scalfac_dd3d_full.asnumpy())
 
 
 # TODO: convert this to a stenciltest once it is possible to have only dims.KDim in domain
@@ -211,13 +205,13 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
         offset_provider={},
     )
 
-    assert dallclose(rayleigh_w_full.asnumpy(), rayleigh_w_ref.asnumpy())
+    assert testing_helpers.dallclose(rayleigh_w_full.asnumpy(), rayleigh_w_ref.asnumpy())
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backend):
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
@@ -242,8 +236,8 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
-    assert dallclose(coeff2_dwdz_full.asnumpy(), coeff2_dwdz_ref.asnumpy())
+    assert testing_helpers.dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
+    assert testing_helpers.dallclose(coeff2_dwdz_full.asnumpy(), coeff2_dwdz_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -252,7 +246,7 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
     if data_alloc.is_cupy_device(backend):
         pytest.skip("skipping: gpu backend is unsupported")
     backend = None
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
@@ -296,8 +290,12 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert dallclose(d2dexdz2_fac1_mc_full.asnumpy(), d2dexdz2_fac1_mc_ref.asnumpy())
-    assert dallclose(d2dexdz2_fac2_mc_full.asnumpy(), d2dexdz2_fac2_mc_ref.asnumpy())
+    assert testing_helpers.dallclose(
+        d2dexdz2_fac1_mc_full.asnumpy(), d2dexdz2_fac1_mc_ref.asnumpy()
+    )
+    assert testing_helpers.dallclose(
+        d2dexdz2_fac2_mc_full.asnumpy(), d2dexdz2_fac2_mc_ref.asnumpy()
+    )
 
 
 @pytest.mark.datatest
@@ -305,7 +303,7 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
 def test_compute_ddxt_z_full_e(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     tangent_orientation = grid_savepoint.tangent_orientation()
@@ -375,7 +373,7 @@ def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    assert dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
+    assert testing_helpers.dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -383,7 +381,7 @@ def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
 def test_compute_ddqz_z_full_e(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
@@ -413,7 +411,7 @@ def test_compute_ddqz_z_full_e(
 def test_compute_ddxn_z_full(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
@@ -450,7 +448,7 @@ def test_compute_ddxn_z_full(
 def test_compute_ddxt_z_full(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     tangent_orientation = grid_savepoint.tangent_orientation()
@@ -509,7 +507,7 @@ def test_compute_ddxt_z_full(
 def test_compute_exner_exfac(
     grid_savepoint, experiment, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
 
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
@@ -535,7 +533,7 @@ def test_compute_exner_exfac(
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    assert dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
+    assert testing_helpers.dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
 
 
 @pytest.mark.datatest
@@ -543,7 +541,7 @@ def test_compute_exner_exfac(
 def test_compute_vwind_impl_wgt(
     icon_grid, experiment, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
@@ -641,13 +639,15 @@ def test_compute_vwind_impl_wgt(
         vwind_offctr=vwind_offctr,
         horizontal_start_cell=horizontal_start_cell,
     )
-    assert dallclose(vwind_impl_wgt_ref.asnumpy(), data_alloc.as_numpy(vwind_impl_wgt))
+    assert testing_helpers.dallclose(
+        vwind_impl_wgt_ref.asnumpy(), data_alloc.as_numpy(vwind_impl_wgt)
+    )
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid, backend):
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     wgtfac_e = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
@@ -663,7 +663,7 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
-    assert dallclose(wgtfac_e.asnumpy(), wgtfac_e_ref.asnumpy())
+    assert testing_helpers.dallclose(wgtfac_e.asnumpy(), wgtfac_e_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -675,7 +675,7 @@ def test_compute_pg_exdist_dsl(
         pytest.skip(
             "skipping: compute_z_aux2 and compute_flat_idx cannot be executed with specified backend"
         )
-    if is_roundtrip(backend):
+    if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     nlev = icon_grid.num_levels
@@ -786,8 +786,8 @@ def test_compute_pg_exdist_dsl(
         offset_provider={},
     )
 
-    assert dallclose(pg_exdist_ref.asnumpy(), pg_exdist_dsl.asnumpy(), rtol=1.0e-9)
-    assert dallclose(pg_edgeidx_dsl_ref.asnumpy(), pg_edgeidx_dsl.asnumpy())
+    assert testing_helpers.dallclose(pg_exdist_ref.asnumpy(), pg_exdist_dsl.asnumpy(), rtol=1.0e-9)
+    assert testing_helpers.dallclose(pg_edgeidx_dsl_ref.asnumpy(), pg_edgeidx_dsl.asnumpy())
 
 
 @pytest.mark.datatest
@@ -807,7 +807,9 @@ def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, 
         horizontal_end=horizontal_end,
         offset_provider={},
     )
-    assert dallclose(mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy())
+    assert testing_helpers.dallclose(
+        mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy()
+    )
 
 
 @pytest.mark.datatest
@@ -827,7 +829,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
         offset_provider={},
     )
 
-    assert dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
+    assert testing_helpers.dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -847,4 +849,4 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
         offset_provider={},
     )
 
-    dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
+    testing_helpers.dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
