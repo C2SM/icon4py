@@ -377,20 +377,9 @@ def read_decomp_info(
     grid_level=GRID_LEVEL,
 ) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
-        # return _grid_savepoint(
-        #     backend, path, procs_props.rank, grid_id, grid_root, grid_level
-        # ).construct_decomposition_info()
-        return (
-            sb.IconSerialDataProvider(
-                backend=backend,
-                fname_prefix="icon_pydycore",
-                path=str(path.absolute()),
-                do_print=False,
-                mpi_rank=procs_props.rank,
-            )
-            .from_savepoint_grid(grid_id, grid_root, grid_level)
-            .construct_decomposition_info()
-        )
+        return _grid_savepoint(
+            backend, path, procs_props.rank, grid_id, grid_root, grid_level
+        ).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
