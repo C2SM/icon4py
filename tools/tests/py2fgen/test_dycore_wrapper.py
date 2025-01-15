@@ -36,6 +36,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
+from icon4pytools.py2fgen.settings import backend
 from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 
 from . import utils
@@ -361,7 +362,7 @@ def test_dycore_wrapper_granule_inputs(
     )
     expected_vertical_params = v_grid.VerticalGrid(
         config=expected_vertical_config,
-        backend=None,
+        backend=backend,
         vct_a=grid_savepoint.vct_a().asnumpy(),
         vct_b=grid_savepoint.vct_b().asnumpy(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
