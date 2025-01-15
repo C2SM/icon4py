@@ -6,8 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4pytools.f2ser.parse import CodegenContext, ParsedGranule
-from icon4pytools.liskov.codegen.serialisation.interface import (
+from icon4py.tools.f2ser.parse import CodegenContext, ParsedGranule
+from icon4py.tools.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     ImportData,
     InitData,

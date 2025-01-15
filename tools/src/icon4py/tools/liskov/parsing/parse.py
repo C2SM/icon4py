@@ -13,12 +13,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Sequence, Type
 
-import icon4pytools.liskov.parsing.types as ts
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.parsing.exceptions import UnsupportedDirectiveError
-from icon4pytools.liskov.parsing.types import ParsedDirective, RawDirective
-from icon4pytools.liskov.parsing.validation import VALIDATORS
-from icon4pytools.liskov.pipeline.definition import Step
+import icon4py.tools.liskov.parsing.types as ts
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.parsing.exceptions import UnsupportedDirectiveError
+from icon4py.tools.liskov.parsing.types import ParsedDirective, RawDirective
+from icon4py.tools.liskov.parsing.validation import VALIDATORS
+from icon4py.tools.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)

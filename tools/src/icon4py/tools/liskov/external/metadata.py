@@ -11,8 +11,8 @@ from typing import Any
 
 import click
 
-from icon4pytools import __version__
-from icon4pytools.liskov.external.exceptions import MissingClickContextError
+from icon4py.tools import __version__
+from icon4py.tools.liskov.external.exceptions import MissingClickContextError
 
 
 class CodeMetadata:

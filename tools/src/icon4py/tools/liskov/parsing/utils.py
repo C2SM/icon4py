@@ -8,7 +8,7 @@
 
 from typing import Sequence, Type
 
-from icon4pytools.liskov.parsing import types as ts
+from icon4py.tools.liskov.parsing import types as ts
 
 
 def flatten_list_of_dicts(list_of_dicts: list[dict]) -> dict:

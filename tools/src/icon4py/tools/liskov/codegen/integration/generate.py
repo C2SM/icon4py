@@ -8,13 +8,13 @@
 
 from typing import Any, Sequence, TypeGuard, Union
 
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.codegen.integration.interface import (
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.codegen.integration.interface import (
     IntegrationCodeInterface,
     StartStencilData,
     UnusedDirective,
 )
-from icon4pytools.liskov.codegen.integration.template import (
+from icon4py.tools.liskov.codegen.integration.template import (
     DeclareStatement,
     DeclareStatementGenerator,
     EndCreateStatement,
@@ -46,9 +46,9 @@ from icon4pytools.liskov.codegen.integration.template import (
     StartStencilStatement,
     StartStencilStatementGenerator,
 )
-from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
-from icon4pytools.liskov.codegen.shared.types import GeneratedCode
-from icon4pytools.liskov.external.metadata import CodeMetadata
+from icon4py.tools.liskov.codegen.shared.generate import CodeGenerator
+from icon4py.tools.liskov.codegen.shared.types import GeneratedCode
+from icon4py.tools.liskov.external.metadata import CodeMetadata
 
 
 logger = setup_logger(__name__)

@@ -10,10 +10,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import icon4pytools.liskov.parsing.types as ts
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.parsing.exceptions import DirectiveSyntaxError
-from icon4pytools.liskov.pipeline.definition import Step
+import icon4py.tools.liskov.parsing.types as ts
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.parsing.exceptions import DirectiveSyntaxError
+from icon4py.tools.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)

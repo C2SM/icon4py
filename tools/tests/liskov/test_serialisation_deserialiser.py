@@ -8,17 +8,17 @@
 
 import pytest
 
-from icon4pytools.liskov.codegen.serialisation.deserialise import (
+from icon4py.tools.liskov.codegen.serialisation.deserialise import (
     InitDataFactory,
     SavepointDataFactory,
 )
-from icon4pytools.liskov.codegen.serialisation.interface import (
+from icon4py.tools.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     InitData,
     Metadata,
     SavepointData,
 )
-from icon4pytools.liskov.parsing.parse import (
+from icon4py.tools.liskov.parsing.parse import (
     Declare,
     EndCreate,
     EndProfile,

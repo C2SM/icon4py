@@ -9,20 +9,20 @@
 from pathlib import Path
 from typing import Any, Optional
 
-from icon4pytools.liskov.codegen.integration.deserialise import IntegrationCodeDeserialiser
-from icon4pytools.liskov.codegen.integration.generate import IntegrationCodeGenerator
-from icon4pytools.liskov.codegen.integration.interface import IntegrationCodeInterface
-from icon4pytools.liskov.codegen.serialisation.deserialise import SerialisationCodeDeserialiser
-from icon4pytools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
-from icon4pytools.liskov.codegen.shared.write import CodegenWriter
-from icon4pytools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
-from icon4pytools.liskov.parsing.parse import DirectivesParser
-from icon4pytools.liskov.parsing.scan import DirectivesScanner
-from icon4pytools.liskov.parsing.transform import (
+from icon4py.tools.liskov.codegen.integration.deserialise import IntegrationCodeDeserialiser
+from icon4py.tools.liskov.codegen.integration.generate import IntegrationCodeGenerator
+from icon4py.tools.liskov.codegen.integration.interface import IntegrationCodeInterface
+from icon4py.tools.liskov.codegen.serialisation.deserialise import SerialisationCodeDeserialiser
+from icon4py.tools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
+from icon4py.tools.liskov.codegen.shared.write import CodegenWriter
+from icon4py.tools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
+from icon4py.tools.liskov.parsing.parse import DirectivesParser
+from icon4py.tools.liskov.parsing.scan import DirectivesScanner
+from icon4py.tools.liskov.parsing.transform import (
     FusedStencilTransformer,
     OptionalModulesTransformer,
 )
-from icon4pytools.liskov.pipeline.definition import Step, linear_pipeline
+from icon4py.tools.liskov.pipeline.definition import Step, linear_pipeline
 
 
 DESERIALISERS = {

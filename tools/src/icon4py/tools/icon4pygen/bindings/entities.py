@@ -13,12 +13,12 @@ from gt4py.next import DimensionKind
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.type_system import type_specifications as ts
 
-from icon4pytools.common.metadata import FieldInfo, _calc_num_neighbors
-from icon4pytools.icon4pygen.bindings.codegen.render.field import FieldRenderer
-from icon4pytools.icon4pygen.bindings.codegen.render.offset import OffsetRenderer
-from icon4pytools.icon4pygen.bindings.codegen.types import FieldEntity, FieldIntent, OffsetEntity
-from icon4pytools.icon4pygen.bindings.exceptions import BindingsTypeConsistencyException
-from icon4pytools.icon4pygen.bindings.locations import (
+from icon4py.tools.common.metadata import FieldInfo, _calc_num_neighbors
+from icon4py.tools.icon4pygen.bindings.codegen.render.field import FieldRenderer
+from icon4py.tools.icon4pygen.bindings.codegen.render.offset import OffsetRenderer
+from icon4py.tools.icon4pygen.bindings.codegen.types import FieldEntity, FieldIntent, OffsetEntity
+from icon4py.tools.icon4pygen.bindings.exceptions import BindingsTypeConsistencyException
+from icon4py.tools.icon4pygen.bindings.locations import (
     BASIC_LOCATIONS,
     BasicLocation,
     Cell,

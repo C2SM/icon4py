@@ -13,14 +13,14 @@ from typing import Any, Collection, Optional
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 
-from icon4pytools.liskov.codegen.integration.exceptions import UndeclaredFieldError
-from icon4pytools.liskov.codegen.integration.interface import (
+from icon4py.tools.liskov.codegen.integration.exceptions import UndeclaredFieldError
+from icon4py.tools.liskov.codegen.integration.interface import (
     BaseStartStencilData,
     DeclareData,
     StartFusedStencilData,
     StartStencilData,
 )
-from icon4pytools.liskov.external.metadata import CodeMetadata
+from icon4py.tools.liskov.external.metadata import CodeMetadata
 
 
 def enclose_in_parentheses(string: str) -> str:

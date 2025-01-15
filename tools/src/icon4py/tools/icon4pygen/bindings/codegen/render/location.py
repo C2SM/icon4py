@@ -8,7 +8,7 @@
 
 from typing import ClassVar
 
-from icon4pytools.icon4pygen.bindings.exceptions import BindingsRenderingException
+from icon4py.tools.icon4pygen.bindings.exceptions import BindingsRenderingException
 
 
 class LocationRenderer:

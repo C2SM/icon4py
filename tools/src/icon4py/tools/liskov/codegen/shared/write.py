@@ -9,10 +9,10 @@
 from pathlib import Path
 from typing import List
 
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.codegen.shared.types import GeneratedCode
-from icon4pytools.liskov.parsing.types import DIRECTIVE_IDENT
-from icon4pytools.liskov.pipeline.definition import Step
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.codegen.shared.types import GeneratedCode
+from icon4py.tools.liskov.parsing.types import DIRECTIVE_IDENT
+from icon4py.tools.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)

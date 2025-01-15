@@ -7,4 +7,4 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 # required import for CheckForDirectiveClasses metaclass
-import icon4pytools.liskov.parsing.types as ts  # noqa: F401
+import icon4py.tools.liskov.parsing.types as ts  # noqa: F401

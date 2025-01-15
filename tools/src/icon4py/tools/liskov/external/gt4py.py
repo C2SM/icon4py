@@ -12,15 +12,15 @@ from typing import Any, ClassVar, Sequence
 
 from gt4py.next.ffront.decorator import Program
 
-from icon4pytools.common import ICON4PY_MODEL_QUALIFIED_NAME
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.common.metadata import get_stencil_info
-from icon4pytools.liskov.codegen.integration.interface import (
+from icon4py.tools.common import ICON4PY_MODEL_QUALIFIED_NAME
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.common.metadata import get_stencil_info
+from icon4py.tools.liskov.codegen.integration.interface import (
     BaseStartStencilData,
     IntegrationCodeInterface,
 )
-from icon4pytools.liskov.external.exceptions import IncompatibleFieldError, UnknownStencilError
-from icon4pytools.liskov.pipeline.definition import Step
+from icon4py.tools.liskov.external.exceptions import IncompatibleFieldError, UnknownStencilError
+from icon4py.tools.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)

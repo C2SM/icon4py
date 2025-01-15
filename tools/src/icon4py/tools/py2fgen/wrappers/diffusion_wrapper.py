@@ -42,11 +42,11 @@ from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.settings import backend, config as config_settings, device
-from icon4pytools.py2fgen.wrappers import common as wrapper_common
-from icon4pytools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
-from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.py2fgen.settings import backend, config as config_settings, device
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common
+from icon4py.tools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
+from icon4py.tools.py2fgen.wrappers.wrapper_dimension import (
     CellGlobalIndexDim,
     CellIndexDim,
     EdgeGlobalIndexDim,

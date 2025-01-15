@@ -9,7 +9,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from icon4pytools.liskov.codegen.shared.types import CodeGenInput
+from icon4py.tools.liskov.codegen.shared.types import CodeGenInput
 
 
 @dataclass

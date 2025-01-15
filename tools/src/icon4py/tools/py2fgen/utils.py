@@ -29,7 +29,7 @@ def flatten_and_get_unique_elts(list_of_lists: list[list[str]]) -> list[str]:
 
 def get_local_test_grid(grid_folder: str):
     test_folder = "testdata"
-    module_spec = importlib.util.find_spec("icon4pytools")
+    module_spec = importlib.util.find_spec("icon4py.tools")
 
     if module_spec and module_spec.origin:
         # following namespace package conventions the root is three levels down
@@ -37,7 +37,7 @@ def get_local_test_grid(grid_folder: str):
         return os.path.join(repo_root, test_folder, "grids", grid_folder)
     else:
         raise FileNotFoundError(
-            "The `icon4pytools` package could not be found. Ensure the package is installed "
+            "The `icon4py.tools` package could not be found. Ensure the package is installed "
             "and accessible. Alternatively, set the 'ICON_GRID_LOC' environment variable "
             "explicitly to specify the location."
         )

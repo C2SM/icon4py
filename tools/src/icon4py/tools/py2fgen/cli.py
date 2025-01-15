@@ -10,15 +10,15 @@ import pathlib
 
 import click
 
-from icon4pytools.common.utils import write_string
-from icon4pytools.py2fgen.generate import (
+from icon4py.tools.common.utils import write_string
+from icon4py.tools.py2fgen.generate import (
     generate_c_header,
     generate_f90_interface,
     generate_python_wrapper,
 )
-from icon4pytools.py2fgen.parsing import parse
-from icon4pytools.py2fgen.plugin import generate_and_compile_cffi_plugin
-from icon4pytools.py2fgen.settings import GT4PyBackend
+from icon4py.tools.py2fgen.parsing import parse
+from icon4py.tools.py2fgen.plugin import generate_and_compile_cffi_plugin
+from icon4py.tools.py2fgen.settings import GT4PyBackend
 
 
 def parse_comma_separated_list(ctx, param, value) -> list[str]:

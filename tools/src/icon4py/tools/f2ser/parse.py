@@ -15,7 +15,7 @@ from typing import Any, Optional
 
 from numpy.f2py.crackfortran import crackfortran
 
-from icon4pytools.f2ser.exceptions import MissingDerivedTypeError, ParsingError
+from icon4py.tools.f2ser.exceptions import MissingDerivedTypeError, ParsingError
 
 
 def crack(path: Path) -> dict:

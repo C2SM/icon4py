@@ -9,13 +9,13 @@
 from dataclasses import dataclass
 from typing import cast
 
-from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
+from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4pytools.icon4pygen.bindings.codegen.types import FieldEntity
-from icon4pytools.icon4pygen.bindings.exceptions import BindingsRenderingException
-from icon4pytools.icon4pygen.bindings.locations import ChainedLocation, CompoundLocation
+from icon4py.tools.icon4pygen.bindings.codegen.types import FieldEntity
+from icon4py.tools.icon4pygen.bindings.exceptions import BindingsRenderingException
+from icon4py.tools.icon4pygen.bindings.locations import ChainedLocation, CompoundLocation
 
 
 @dataclass(frozen=True)

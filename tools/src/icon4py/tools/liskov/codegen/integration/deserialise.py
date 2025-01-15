@@ -8,10 +8,10 @@
 
 from typing import Any, Callable, ClassVar, Optional, Protocol, Sequence, Type, cast
 
-import icon4pytools.liskov.parsing.parse
-import icon4pytools.liskov.parsing.types as ts
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.codegen.integration.interface import (
+import icon4py.tools.liskov.parsing.parse
+import icon4py.tools.liskov.parsing.types as ts
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     EndCreateData,
@@ -31,14 +31,14 @@ from icon4pytools.liskov.codegen.integration.interface import (
     StartStencilData,
     UnusedDirective,
 )
-from icon4pytools.liskov.codegen.shared.deserialise import Deserialiser
-from icon4pytools.liskov.codegen.shared.types import CodeGenInput
-from icon4pytools.liskov.parsing.exceptions import (
+from icon4py.tools.liskov.codegen.shared.deserialise import Deserialiser
+from icon4py.tools.liskov.codegen.shared.types import CodeGenInput
+from icon4py.tools.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     MissingBoundsError,
     MissingDirectiveArgumentError,
 )
-from icon4pytools.liskov.parsing.utils import (
+from icon4py.tools.liskov.parsing.utils import (
     extract_directive,
     flatten_list_of_dicts,
     string_to_bool,
@@ -118,37 +118,37 @@ class RequiredSingleUseDataFactory(DataFactoryBase):
 
 
 class EndCreateDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndCreate
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.EndCreate
     dtype: Type[EndCreateData] = EndCreateData
 
 
 class ImportsDataFactory(RequiredSingleUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.Imports
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.Imports
     dtype: Type[ImportsData] = ImportsData
 
 
 class EndIfDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndIf
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.EndIf
     dtype: Type[EndIfData] = EndIfData
 
 
 class EndProfileDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndProfile
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.EndProfile
     dtype: Type[EndProfileData] = EndProfileData
 
 
 class EndDeleteDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndDelete
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.EndDelete
     dtype: Type[EndDeleteData] = EndDeleteData
 
 
 class StartDeleteDataFactory(OptionalMultiUseDataFactory):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartDelete
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.StartDelete
     dtype: Type[StartDeleteData] = StartDeleteData
 
 
 class StartCreateDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartCreate
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.StartCreate
     dtype: Type[StartCreateData] = StartCreateData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartCreateData] | Type[UnusedDirective]:
@@ -176,7 +176,7 @@ class StartCreateDataFactory(DataFactoryBase):
 
 
 class DeclareDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.Declare
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.Declare
     dtype: Type[DeclareData] = DeclareData
 
     @staticmethod
@@ -202,7 +202,7 @@ class DeclareDataFactory(DataFactoryBase):
 
 
 class StartProfileDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartProfile
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.StartProfile
     dtype: Type[StartProfileData] = StartProfileData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[StartProfileData]:
@@ -216,7 +216,7 @@ class StartProfileDataFactory(DataFactoryBase):
 
 
 class EndStencilDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndStencil
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.EndStencil
     dtype: Type[EndStencilData] = EndStencilData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[EndStencilData]:
@@ -241,7 +241,7 @@ class EndStencilDataFactory(DataFactoryBase):
 
 
 class EndFusedStencilDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndFusedStencil
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.EndFusedStencil
     dtype: Type[EndFusedStencilData] = EndFusedStencilData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[EndFusedStencilData]:
@@ -416,17 +416,17 @@ class StartStencilDataFactoryBase(DataFactoryBase):
 
 
 class StartFusedStencilDataFactory(StartStencilDataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartFusedStencil
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.StartFusedStencil
     dtype: Type[StartFusedStencilData] = StartFusedStencilData
 
 
 class StartStencilDataFactory(StartStencilDataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartStencil
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.StartStencil
     dtype: Type[StartStencilData] = StartStencilData
 
 
 class InsertDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.Insert
+    directive_cls: Type[ts.ParsedDirective] = icon4py.tools.liskov.parsing.parse.Insert
     dtype: Type[InsertData] = InsertData
 
     def __call__(self, parsed: ts.ParsedDict) -> list[InsertData]:

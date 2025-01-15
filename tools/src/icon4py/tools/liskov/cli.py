@@ -11,9 +11,9 @@ from typing import Optional
 
 import click
 
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.external.exceptions import MissingCommandError
-from icon4pytools.liskov.pipeline.collection import (
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.external.exceptions import MissingCommandError
+from icon4py.tools.liskov.pipeline.collection import (
     parse_fortran_file,
     process_stencils,
     run_code_generation,

@@ -9,16 +9,16 @@
 import uuid
 from typing import Callable, ClassVar
 
-import icon4pytools.liskov.parsing.parse
-import icon4pytools.liskov.parsing.types as ts
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.codegen.integration.deserialise import (
+import icon4py.tools.liskov.parsing.parse
+import icon4py.tools.liskov.parsing.types as ts
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.codegen.integration.deserialise import (
     TOLERANCE_ARGS,
     DeclareDataFactory,
     _extract_stencil_name,
     pop_item_from_dict,
 )
-from icon4pytools.liskov.codegen.serialisation.interface import (
+from icon4py.tools.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     ImportData,
     InitData,
@@ -26,8 +26,8 @@ from icon4pytools.liskov.codegen.serialisation.interface import (
     SavepointData,
     SerialisationCodeInterface,
 )
-from icon4pytools.liskov.codegen.shared.deserialise import Deserialiser
-from icon4pytools.liskov.parsing.utils import extract_directive
+from icon4py.tools.liskov.codegen.shared.deserialise import Deserialiser
+from icon4py.tools.liskov.parsing.utils import extract_directive
 
 
 logger = setup_logger(__name__)
@@ -60,10 +60,10 @@ class SavepointDataFactory:
     def __call__(self, parsed: ts.ParsedDict) -> list[SavepointData]:
         """Create a list of Start and End Savepoints for each Start and End Stencil directive."""
         start_stencil = extract_directive(
-            parsed["directives"], icon4pytools.liskov.parsing.parse.StartStencil
+            parsed["directives"], icon4py.tools.liskov.parsing.parse.StartStencil
         )
         end_stencil = extract_directive(
-            parsed["directives"], icon4pytools.liskov.parsing.parse.EndStencil
+            parsed["directives"], icon4py.tools.liskov.parsing.parse.EndStencil
         )
         gpu_fields = self.get_gpu_fields(parsed)
 
@@ -209,7 +209,7 @@ class ImportDataFactory:
 
     def __call__(self, parsed: ts.ParsedDict) -> ImportData:
         imports = extract_directive(
-            parsed["directives"], icon4pytools.liskov.parsing.parse.Imports
+            parsed["directives"], icon4py.tools.liskov.parsing.parse.Imports
         )[0]
         return self.dtype(startln=imports.startln)
 

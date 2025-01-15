@@ -8,16 +8,16 @@
 
 from typing import Any
 
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.codegen.serialisation.interface import SerialisationCodeInterface
-from icon4pytools.liskov.codegen.serialisation.template import (
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.codegen.serialisation.interface import SerialisationCodeInterface
+from icon4py.tools.liskov.codegen.serialisation.template import (
     ImportStatement,
     ImportStatementGenerator,
     SavepointStatement,
     SavepointStatementGenerator,
 )
-from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
-from icon4pytools.liskov.codegen.shared.types import GeneratedCode
+from icon4py.tools.liskov.codegen.shared.generate import CodeGenerator
+from icon4py.tools.liskov.codegen.shared.types import GeneratedCode
 
 
 logger = setup_logger(__name__)

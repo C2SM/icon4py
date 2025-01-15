@@ -16,7 +16,7 @@ import numpy as np
 from cffi import FFI
 from numpy.typing import NDArray
 
-from icon4pytools.common.logger import setup_logger
+from icon4py.tools.common.logger import setup_logger
 
 
 if typing.TYPE_CHECKING:

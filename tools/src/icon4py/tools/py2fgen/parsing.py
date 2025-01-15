@@ -18,8 +18,8 @@ from gt4py.next import Dimension
 from gt4py.next.ffront.decorator import Program
 from gt4py.next.type_system.type_translation import from_type_hint
 
-from icon4pytools.py2fgen.template import CffiPlugin, Func, FuncParameter
-from icon4pytools.py2fgen.utils import parse_type_spec
+from icon4py.tools.py2fgen.template import CffiPlugin, Func, FuncParameter
+from icon4py.tools.py2fgen.utils import parse_type_spec
 
 
 class ImportStmtVisitor(ast.NodeVisitor):

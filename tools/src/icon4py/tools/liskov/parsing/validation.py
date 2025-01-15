@@ -12,16 +12,16 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Match, Optional, Protocol, Sequence, Type
 
-import icon4pytools.liskov.parsing.types as ts
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.parsing import parse
-from icon4pytools.liskov.parsing.exceptions import (
+import icon4py.tools.liskov.parsing.types as ts
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.parsing import parse
+from icon4py.tools.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     RepeatedDirectiveError,
     RequiredDirectivesError,
     UnbalancedStencilDirectiveError,
 )
-from icon4pytools.liskov.parsing.utils import print_parsed_directive, remove_directive_types
+from icon4py.tools.liskov.parsing.utils import print_parsed_directive, remove_directive_types
 
 
 logger = setup_logger(__name__)

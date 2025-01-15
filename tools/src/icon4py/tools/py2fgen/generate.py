@@ -10,9 +10,9 @@ from typing import Optional
 
 from gt4py.eve import codegen
 
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.common.utils import format_fortran_code
-from icon4pytools.py2fgen.template import (
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.common.utils import format_fortran_code
+from icon4py.tools.py2fgen.template import (
     CffiPlugin,
     CHeaderGenerator,
     F90Interface,

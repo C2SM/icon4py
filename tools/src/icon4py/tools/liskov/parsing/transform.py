@@ -8,9 +8,9 @@
 
 from typing import Any, Optional
 
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.codegen.integration.deserialise import DEFAULT_STARTSTENCIL_OPTIONAL_MODULE
-from icon4pytools.liskov.codegen.integration.interface import (
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.codegen.integration.deserialise import DEFAULT_STARTSTENCIL_OPTIONAL_MODULE
+from icon4py.tools.liskov.codegen.integration.interface import (
     EndDeleteData,
     EndFusedStencilData,
     EndStencilData,
@@ -20,8 +20,8 @@ from icon4pytools.liskov.codegen.integration.interface import (
     StartStencilData,
     UnusedDirective,
 )
-from icon4pytools.liskov.codegen.shared.types import CodeGenInput
-from icon4pytools.liskov.pipeline.definition import Step
+from icon4py.tools.liskov.codegen.shared.types import CodeGenInput
+from icon4py.tools.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)

@@ -4,7 +4,7 @@
 
 # ICON4Py
 
-This repository hosts a work-in-progress Python implementation of the ICON climate and weather model. Additionally, it includes `icon4pytools`, a collection of command-line interfaces (CLIs), and utilities required for the integration of ICON4Py code into the ICON Fortran model. ICON4Py leverages [GT4Py](https://github.com/GridTools/gt4py) to ensure efficient and performance portable implementations of these components.
+This repository hosts a work-in-progress Python implementation of the ICON climate and weather model. Additionally, it includes `icon4py.tools`, a collection of command-line interfaces (CLIs), and utilities required for the integration of ICON4Py code into the ICON Fortran model. ICON4Py leverages [GT4Py](https://github.com/GridTools/gt4py) to ensure efficient and performance portable implementations of these components.
 
 ## Project Structure
 

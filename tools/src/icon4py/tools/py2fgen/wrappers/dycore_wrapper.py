@@ -60,10 +60,10 @@ from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.settings import backend, device
-from icon4pytools.py2fgen.wrappers import common as wrapper_common
-from icon4pytools.py2fgen.wrappers.wrapper_dimension import (
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.py2fgen.settings import backend, device
+from icon4py.tools.py2fgen.wrappers import common as wrapper_common
+from icon4py.tools.py2fgen.wrappers.wrapper_dimension import (
     CellIndexDim,
     EdgeIndexDim,
     VertexIndexDim,

@@ -22,7 +22,7 @@ from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.model.common import dimension as dims
-from icon4pytools.common import icochainsize as ico
+from icon4py.tools.common import icochainsize as ico
 
 
 H_START = "horizontal_start"

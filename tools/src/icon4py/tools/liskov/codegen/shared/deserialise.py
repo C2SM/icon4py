@@ -8,11 +8,11 @@
 
 from typing import Callable, ClassVar, Type
 
-import icon4pytools.liskov.parsing.types as ts
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.liskov.codegen.integration.interface import IntegrationCodeInterface
-from icon4pytools.liskov.codegen.serialisation.interface import SerialisationCodeInterface
-from icon4pytools.liskov.pipeline.definition import Step
+import icon4py.tools.liskov.parsing.types as ts
+from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.liskov.codegen.integration.interface import IntegrationCodeInterface
+from icon4py.tools.liskov.codegen.serialisation.interface import SerialisationCodeInterface
+from icon4py.tools.liskov.pipeline.definition import Step
 
 
 logger = setup_logger(__name__)
