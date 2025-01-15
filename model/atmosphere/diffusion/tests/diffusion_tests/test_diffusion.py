@@ -641,7 +641,7 @@ def test_run_diffusion_initial_step(
     backend,
     orchestration,
 ):
-    if backend is None or (orchestration and not helpers.is_dace(backend)):
+    if orchestration and not helpers.is_dace(backend):
         pytest.skip("This test is only executed for orchestration only on dace backends")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
