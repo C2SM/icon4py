@@ -25,7 +25,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)
-    MARKER = (pytest.mark.as_offset_error,)
+    MARKER = (pytest.mark.embedded_as_offset_error, pytest.mark.gtfn_miss_neighbors)
 
     @staticmethod
     def reference(

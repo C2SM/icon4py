@@ -66,6 +66,7 @@ def calculate_nabla4_numpy(
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
+    MARKERS = (pytest.mark.gtfn_miss_neighbors,)
 
     @staticmethod
     def reference(

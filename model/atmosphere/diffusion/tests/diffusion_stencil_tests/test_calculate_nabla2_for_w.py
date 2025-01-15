@@ -29,7 +29,7 @@ def calculate_nabla2_for_w_numpy(grid, w: np.array, geofac_n2s: np.array):
 class TestCalculateNabla2ForW(StencilTest):
     PROGRAM = calculate_nabla2_for_w
     OUTPUTS = ("z_nabla2_c",)
-    MARKER = (pytest.mark.remap_error,)
+    MARKER = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(grid, w: np.array, geofac_n2s: np.array, **kwargs) -> dict:

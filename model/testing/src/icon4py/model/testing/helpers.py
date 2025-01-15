@@ -67,6 +67,21 @@ def allocate_data(backend, input_data):
     return input_data
 
 
+def _match_marker(marker, backend):
+    for m in marker:
+        match m.markname:
+            case "embedded_remap_error" if backend is None:
+                pytest.xfail("Embedded backend currently fails in remap function.")
+            case "embedded_as_offset_error" if backend is None:
+                pytest.xfail("Embedded backend does not support as_offset.")
+            case "levels_plus_one" if backend is None:
+                pytest.xfail("Embdeed backend does not support larger boundaries than field sizes.")
+            case "gtfn_miss_neighbors" if (hasattr(backend, "name") and "gtfn" in backend.name):
+                pytest.xfail("gtfn_gpu and gtfn_cpu do not support missing neighbors.")
+            case "miss_neighbors":
+                pytest.xfail("Stencil does not support missing neighbors.")
+
+
 @dataclass(frozen=True)
 class Output:
     name: str
@@ -76,15 +91,8 @@ class Output:
 
 def _test_validation(self, grid, backend, input_data):
     if self.MARKER is not None:
-        for marker in self.MARKER:
-            if backend is None and marker.markname == "remap_error":
-                pytest.skip("embedded backend currently fails in remap function.")
-            elif marker.markname == "miss_neighbors":
-                pytest.xfail("Stencil does not support missing neighbors.")
-            elif backend is None and marker.markname == "as_offset_error":
-                pytest.xfail("embedded backend does not support as_offset.")
-            elif backend is None and marker.markname == "levels_plus_one":
-                pytest.xfail("embdeed backend does not support larger boundaries than field sizes.")
+        _match_marker(self.MARKER, backend)
+
     reference_outputs = self.reference(
         grid,
         **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
@@ -115,17 +123,8 @@ if pytest_benchmark:
 
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
         if self.MARKER is not None:
-            for marker in self.MARKER:
-                if backend is None and marker.markname == "remap_error":
-                    pytest.skip("embedded backend currently fails in remap function.")
-                elif marker.markname == "miss_neighbors":
-                    pytest.xfail("Stencil does not support missing neighbors.")
-                elif backend is None and marker.markname == "as_offset_error":
-                    pytest.xfail("embedded backend does not support as_offset.")
-                elif backend is None and marker.markname == "levels_plus_one":
-                    pytest.xfail(
-                        "embdeed backend does not support larger boundaries than field sizes."
-                    )
+            _match_marker(self.MARKER, backend)
+
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.

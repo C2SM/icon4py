@@ -26,7 +26,7 @@ def compute_tangential_wind_numpy(grid, vn: np.array, rbf_vec_coeff_e: np.array)
 class TestComputeTangentialWind(StencilTest):
     PROGRAM = compute_tangential_wind
     OUTPUTS = ("vt",)
-    MARKER = (pytest.mark.remap_error,)
+    MARKER = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(grid, vn: np.array, rbf_vec_coeff_e: np.array, **kwargs) -> dict:

@@ -19,7 +19,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeGraddiv2OfVn(StencilTest):
     PROGRAM = compute_graddiv2_of_vn
     OUTPUTS = ("z_graddiv2_vn",)
-    MARKER = (pytest.mark.remap_error,)
+    MARKER = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(grid, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> dict:
