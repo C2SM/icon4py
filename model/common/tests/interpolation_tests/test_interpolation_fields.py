@@ -148,8 +148,8 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid, 
 def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
     primal_normal_cell_x = grid_savepoint.primal_normal_cell_x().asnumpy()
     primal_normal_cell_y = grid_savepoint.primal_normal_cell_y().asnumpy()
-    geofac_div = interpolation_savepoint.geofac_div()
-    c_lin_e = interpolation_savepoint.c_lin_e()
+    geofac_div = interpolation_savepoint.geofac_div().asnumpy()
+    c_lin_e = interpolation_savepoint.c_lin_e().asnumpy()
     geofac_grg_ref = interpolation_savepoint.geofac_grg()
     owner_mask = grid_savepoint.c_owner_mask()
     c2e = icon_grid.connectivities[dims.C2EDim]
@@ -160,19 +160,25 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
     geofac_grg_0, geofac_grg_1 = compute_geofac_grg(
         primal_normal_cell_x,
         primal_normal_cell_y,
-        owner_mask.asnumpy(),
-        geofac_div.asnumpy(),
-        c_lin_e.asnumpy(),
+        owner_mask,
+        geofac_div,
+        c_lin_e,
         c2e,
         e2c,
         c2e2c,
         horizontal_start,
     )
     assert test_helpers.dallclose(
-        data_alloc.as_numpy(geofac_grg_0), geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7
+        data_alloc.as_numpy(geofac_grg_0),
+        geofac_grg_ref[0].asnumpy(),
+        rtol=1e-11,
+        atol=1e-19,
     )
     assert test_helpers.dallclose(
-        data_alloc.as_numpy(geofac_grg_1), geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7
+        data_alloc.as_numpy(geofac_grg_1),
+        geofac_grg_ref[1].asnumpy(),
+        rtol=1e-11,
+        atol=1e-19,
     )
 
 
