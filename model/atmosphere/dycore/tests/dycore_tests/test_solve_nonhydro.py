@@ -260,27 +260,7 @@ def test_nonhydro_predictor_step(
         diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
-    import numpy as np
 
-    print(
-        np.abs(
-            solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lateral_boundary_level_2:, 1:]
-            - sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:]
-        ).max()
-    )
-    print(
-        np.abs(
-            (
-                (
-                    solve_nonhydro.z_th_ddz_exner_c.asnumpy()[
-                        cell_start_lateral_boundary_level_2:, 1:
-                    ]
-                    - sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:]
-                )
-                / sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:]
-            )
-        ).max()
-    )
     assert helpers.dallclose(
         solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
