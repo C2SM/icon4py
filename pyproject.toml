@@ -1,9 +1,11 @@
+# -- Build system requirements (PEP 518) --
 [build-system]
 build-backend = 'setuptools.build_meta'
 requires = ['setuptools>=61.0', 'wheel>=0.40.0']
 
+# -- Standard project description options (PEP 621) --
 [project]
-authors = [{email = 'gridtools@cscs.ch'}, {name = 'ETH Zurich'}]
+authors = [{email = "gridtools@cscs.ch", name = "ETH Zurich"}]
 classifiers = [
   'Development Status :: 3 - Alpha',
   'Intended Audience :: Science/Research',
