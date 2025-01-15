@@ -44,7 +44,7 @@ def test_parallel_diffusion(
     backend,
     orchestration,
 ):
-    if backend is None or (orchestration and not helpers.is_dace(backend)):
+    if orchestration and not helpers.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace` backends.")
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
