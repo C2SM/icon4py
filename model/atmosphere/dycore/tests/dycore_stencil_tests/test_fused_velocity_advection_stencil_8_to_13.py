@@ -13,12 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8
     fused_velocity_advection_stencil_8_to_13,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils.data_allocation import (
-    random_field,
-    zero_field
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
 from .test_correct_contravariant_vertical_velocity import (
@@ -64,15 +61,13 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         )
 
         if istep == 1:
-            z_w_concorr_mc = np.where(
-                (nflatlev <= k_nlev) & (k_nlev < nlev),
-                interpolate_to_cell_center_numpy(grid, z_w_concorr_me, e_bln_c_s),
-                z_w_concorr_mc,
-            )
+            z_w_concorr_mc = interpolate_to_cell_center_numpy(grid, z_w_concorr_me, e_bln_c_s)
 
             w_concorr_c = np.where(
                 (nflatlev + 1 <= k_nlev) & (k_nlev < nlev),
-                interpolate_to_half_levels_vp_numpy(grid, z_w_concorr_mc, wgtfac_c),
+                interpolate_to_half_levels_vp_numpy(
+                    grid, wgtfac_c=wgtfac_c, interpolant=z_w_concorr_mc
+                ),
                 w_concorr_c,
             )
 
@@ -96,9 +91,6 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        pytest.xfail(
-            "Verification of w_concorr_c currently not working, because numpy version is incorrect."
-        )
         z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
         e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim)
         z_ekinh = zero_field(grid, dims.CellDim, dims.KDim)

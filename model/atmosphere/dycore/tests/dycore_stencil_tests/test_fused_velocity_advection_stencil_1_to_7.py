@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
     fused_velocity_advection_stencil_1_to_7,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -106,7 +107,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
             z_w_concorr_me,
         )
 
-        return vt, vn_ie, z_kin_hor_e, z_w_concorr_me
+        return vt, vn_ie, z_vt_ie, z_kin_hor_e, z_w_concorr_me
 
     @classmethod
     def reference(
@@ -145,6 +146,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
             (
                 vt,
                 vn_ie,
+                z_vt_ie,
                 z_kin_hor_e,
                 z_w_concorr_me,
             ) = cls._fused_velocity_advection_stencil_1_to_6_numpy(
@@ -170,7 +172,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         condition_mask = (lateral_boundary_7 <= edge) & (edge < halo_1) & (k_nlev < nlev)
 
-        z_v_w = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
+        z_w_v = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
 
         if not lvn_only:
             z_v_grad_w = np.where(
@@ -183,7 +185,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
                     z_vt_ie,
                     inv_primal_edge_length,
                     tangent_orientation,
-                    z_v_w,
+                    z_w_v,
                 ),
                 z_v_grad_w,
             )
@@ -197,11 +199,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
-        pytest.xfail(
-            "Verification of z_v_grad_w currently not working, because numpy version incorrect."
-        )
-
+    def input_data(self, grid: base_grid.BaseGrid):
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
@@ -232,8 +230,18 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         istep = 1
         lvn_only = False
 
-        lateral_boundary_7 = 0
-        halo_1 = grid.num_edges
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
+        lateral_boundary_7 = (
+            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        halo_1 = (
+            grid.end_index(edge_domain(h_grid.Zone.HALO))
+            if hasattr(grid, "end_index")
+            else grid.num_edges
+        )
 
         horizontal_start = 0
         horizontal_end = grid.num_edges

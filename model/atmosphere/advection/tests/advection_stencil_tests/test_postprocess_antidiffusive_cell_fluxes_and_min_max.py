@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.advection.stencils.postprocess_antidiffusive_cell_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
+
 class TestPostprocessAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
     PROGRAM = postprocess_antidiffusive_cell_fluxes_and_min_max
     OUTPUTS = ("z_tracer_new_low", "z_tracer_max", "z_tracer_min")
