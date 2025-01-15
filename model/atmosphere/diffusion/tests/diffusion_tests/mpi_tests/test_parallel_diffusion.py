@@ -13,7 +13,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import datatest_utils, parallel_helpers
+from icon4py.model.testing import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
 
@@ -22,7 +22,7 @@ from .. import utils
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
-@pytest.mark.parametrize("orchestration", [True, False])
+@pytest.mark.parametrize("orchestration", [False, True])
 def test_parallel_diffusion(
     experiment,
     step_date_init,
@@ -44,7 +44,7 @@ def test_parallel_diffusion(
     backend,
     orchestration,
 ):
-    if backend is None or (orchestration and ("dace" not in backend.name.lower())):
+    if backend is None or (orchestration and not helpers.is_dace(backend)):
         raise pytest.skip("This test is only executed for `dace` backends.")
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
@@ -174,7 +174,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
 ):
-    if backend is None or "dace" not in backend.name.lower():
+    if backend is None or not helpers.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization

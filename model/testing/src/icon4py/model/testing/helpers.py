@@ -42,6 +42,10 @@ def is_python(backend) -> bool:
     return is_embedded(backend) or is_roundtrip(backend)
 
 
+def is_dace(backend) -> bool:
+    return backend.name.startswith("run_dace_") if backend else False
+
+
 def is_embedded(backend) -> bool:
     return backend is None
 
