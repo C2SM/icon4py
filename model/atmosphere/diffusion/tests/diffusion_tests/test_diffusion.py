@@ -388,7 +388,8 @@ def test_verify_diffusion_init_against_savepoint(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps, orchestration", [(2, False), (2, True)])
+@pytest.mark.parametrize("ndyn_substeps", [2])
+@pytest.mark.parametrize("orchestration", [False, True])
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -624,7 +625,8 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
-@pytest.mark.parametrize("linit, orchestration", [(True, False), (True, True)])
+@pytest.mark.parametrize("linit", [True, True])
+@pytest.mark.parametrize("orchestration", [False, True])
 def test_run_diffusion_initial_step(
     experiment,
     linit,
