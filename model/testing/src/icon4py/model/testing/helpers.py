@@ -74,16 +74,16 @@ def allocate_data(backend, input_data):
 def _match_marker(marker, backend):
     for m in marker:
         match m.markname:
-            case "embedded_remap_error" if backend is None:
+            case "embedded_remap_error" if is_embedded(backend):
                 pytest.xfail("Embedded backend currently fails in remap function.")
-            case "embedded_as_offset_error" if backend is None:
+            case "embedded_as_offset_error" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
-            case "levels_plus_one" if backend is None:
+            case "levels_plus_one" if is_embedded(backend):
                 pytest.xfail("Embdeed backend does not support larger boundaries than field sizes.")
-            case "gtfn_miss_neighbors" if (hasattr(backend, "name") and "gtfn" in backend.name):
-                pytest.xfail("gtfn_gpu and gtfn_cpu do not support missing neighbors.")
-            case "miss_neighbors":
+            case "domain_dims_mismatch" if is_embedded(backend):
                 pytest.xfail("Stencil does not support missing neighbors.")
+            case "gtfn_miss_neighbors" if backend and ("gtfn" in backend.name):
+                pytest.xfail("gtfn_gpu and gtfn_cpu do not support missing neighbors.")
 
 
 @dataclass(frozen=True)

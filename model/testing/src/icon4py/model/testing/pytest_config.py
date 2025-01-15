@@ -123,8 +123,8 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    for marker_i in item.own_markers:
-        if marker_i.name == "embedded_remap_error" and item.config.getoption("--backend"):
+    for marker in item.own_markers:
+        if "embedded" in (marker.name, item.config.getoption("--backend")):
             pytest.skip("test not compatible with embedded backend")
     for _ in item.iter_markers(name="datatest"):
         if not item.config.getoption("--datatest"):
