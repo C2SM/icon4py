@@ -69,7 +69,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
     OUTPUTS = ("z_temp",)
-    MARKER = (pytest.mark.domain_dims_mismatch,)
+    MARKERS = (pytest.mark.domain_dims_mismatch,)
 
     @staticmethod
     def reference(

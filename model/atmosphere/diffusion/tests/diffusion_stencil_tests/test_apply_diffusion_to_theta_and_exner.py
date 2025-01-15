@@ -34,7 +34,7 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 class TestApplyDiffusionToThetaAndExner(StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
-    MARKER = (pytest.mark.domain_dims_mismatch,)
+    MARKERS = (pytest.mark.domain_dims_mismatch,)
 
     @staticmethod
     def reference(

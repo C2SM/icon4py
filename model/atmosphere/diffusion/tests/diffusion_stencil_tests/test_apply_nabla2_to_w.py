@@ -36,7 +36,7 @@ def apply_nabla2_to_w_numpy(
 class TestMoApplyNabla2ToW(StencilTest):
     PROGRAM = apply_nabla2_to_w
     OUTPUTS = ("w",)
-    MARKER = (pytest.mark.embedded_remap_error,)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

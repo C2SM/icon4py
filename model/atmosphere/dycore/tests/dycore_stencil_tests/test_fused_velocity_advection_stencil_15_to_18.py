@@ -41,7 +41,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         "z_w_con_c_full",
         "ddt_w_adv",
     )
-    MARKER = (pytest.mark.embedded_remap_error,)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def _fused_velocity_advection_stencil_16_to_18(

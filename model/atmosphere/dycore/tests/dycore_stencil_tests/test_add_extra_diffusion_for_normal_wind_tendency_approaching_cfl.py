@@ -99,7 +99,7 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
 class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
     PROGRAM = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl
     OUTPUTS = ("ddt_vn_apc",)
-    MARKER = (pytest.mark.embedded_remap_error,)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @pytest.fixture
     def input_data(self, grid):

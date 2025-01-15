@@ -94,8 +94,8 @@ class Output:
 
 
 def _test_validation(self, grid, backend, input_data):
-    if self.MARKER is not None:
-        _match_marker(self.MARKER, backend)
+    if self.MARKERS is not None:
+        _match_marker(self.MARKERS, backend)
 
     reference_outputs = self.reference(
         grid,
@@ -126,8 +126,8 @@ def _test_validation(self, grid, backend, input_data):
 if pytest_benchmark:
 
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
-        if self.MARKER is not None:
-            _match_marker(self.MARKER, backend)
+        if self.MARKERS is not None:
+            _match_marker(self.MARKERS, backend)
 
         if pytestconfig.getoption(
             "--benchmark-disable"
@@ -168,7 +168,7 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKER: typing.Optional[tuple] = None
+    MARKERS: typing.Optional[tuple] = None
 
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that
