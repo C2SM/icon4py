@@ -8,8 +8,8 @@ default_language_version:
 minimum_pre_commit_version: 3.8.0
 files: |
   (?x)^(
-      tools/.*|
-      model/.*
+      model/.*|
+      tools/.*
   )$
 
 repos:
@@ -68,11 +68,12 @@ repos:
   - id: tach
     name: Check inter-package dependencies
 
+# TODO(egparedes): fix and activate mypy hook 
 # - repo: local
 #   hooks:
 #   - id: mypy
 #     name: mypy static type checker
-#     entry: bash -c 'mypy tools/src/icon4pytools model/common/src/icon4py/model/common'
+#     entry: bash -c 'mypy tools/src/icon4py/tools model/common/src/icon4py/model/common'
 #     language: system
 #     types_or: [python, pyi]
 #     pass_filenames: false

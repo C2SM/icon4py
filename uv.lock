@@ -21,7 +21,7 @@ members = [
     "icon4py-common",
     "icon4py-driver",
     "icon4py-testing",
-    "icon4pytools",
+    "icon4py-tools",
 ]
 
 [[package]]
@@ -1532,7 +1532,7 @@ dependencies = [
 all = [
     { name = "icon4py-common", extra = ["dace", "distributed", "io"] },
     { name = "icon4py-testing" },
-    { name = "icon4pytools" },
+    { name = "icon4py-tools" },
 ]
 cuda11 = [
     { name = "icon4py-common", extra = ["cuda11"] },
@@ -1547,7 +1547,7 @@ distributed = [
     { name = "icon4py-common", extra = ["distributed"] },
 ]
 fortran = [
-    { name = "icon4pytools" },
+    { name = "icon4py-tools" },
 ]
 io = [
     { name = "icon4py-common", extra = ["io"] },
@@ -1641,7 +1641,7 @@ requires-dist = [
     { name = "icon4py-common", extras = ["io"], marker = "extra == 'io'", editable = "model/common" },
     { name = "icon4py-driver", editable = "model/driver" },
     { name = "icon4py-testing", marker = "extra == 'testing'", editable = "model/testing" },
-    { name = "icon4pytools", marker = "extra == 'fortran'", editable = "tools" },
+    { name = "icon4py-tools", marker = "extra == 'fortran'", editable = "tools" },
 ]
 
 [package.metadata.requires-dev]
@@ -1918,7 +1918,7 @@ requires-dist = [
 ]
 
 [[package]]
-name = "icon4pytools"
+name = "icon4py-tools"
 version = "0.0.6"
 source = { editable = "tools" }
 dependencies = [

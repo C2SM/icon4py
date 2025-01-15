@@ -10,8 +10,8 @@ from copy import deepcopy
 
 import pytest
 
-import icon4pytools.liskov.parsing.parse as ts
-from icon4pytools.liskov.parsing.utils import (
+import icon4py.tools.liskov.parsing.parse as ts
+from icon4py.tools.liskov.parsing.utils import (
     extract_directive,
     print_parsed_directive,
     remove_directive_types,

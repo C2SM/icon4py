@@ -76,7 +76,7 @@ brew install mpich
    In the main folder of the repository, run
 
 ```bash
-pip install -r requirements-dev-opt.txt
+uv sync --extra distributed  # or `uv sync --extra all` which includes everything
 ```
 
 Note that the current Python build for GHEX seems not to run on MacOS.

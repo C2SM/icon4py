@@ -11,9 +11,9 @@ from collections import defaultdict
 import pytest
 from pytest import mark
 
-import icon4pytools.liskov.parsing.parse as ts
-from icon4pytools.liskov.parsing.exceptions import UnsupportedDirectiveError
-from icon4pytools.liskov.parsing.parse import DirectivesParser
+import icon4py.tools.liskov.parsing.parse as ts
+from icon4py.tools.liskov.parsing.exceptions import UnsupportedDirectiveError
+from icon4py.tools.liskov.parsing.parse import DirectivesParser
 
 from .conftest import insert_new_lines, scan_for_directives
 from .fortran_samples import (

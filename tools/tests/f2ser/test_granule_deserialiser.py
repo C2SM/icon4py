@@ -8,9 +8,9 @@
 
 import pytest
 
-from icon4pytools.f2ser.deserialise import ParsedGranuleDeserialiser
-from icon4pytools.f2ser.parse import CodegenContext, GranuleParser, ParsedGranule
-from icon4pytools.liskov.codegen.serialisation.interface import (
+from icon4py.tools.f2ser.deserialise import ParsedGranuleDeserialiser
+from icon4py.tools.f2ser.parse import CodegenContext, GranuleParser, ParsedGranule
+from icon4py.tools.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     SavepointData,
     SerialisationCodeInterface,

@@ -8,7 +8,7 @@
 
 import pytest
 
-from icon4pytools.liskov.codegen.integration.interface import (
+from icon4py.tools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     EndCreateData,
@@ -27,7 +27,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     StartProfileData,
     StartStencilData,
 )
-from icon4pytools.liskov.parsing.transform import (
+from icon4py.tools.liskov.parsing.transform import (
     FusedStencilTransformer,
     OptionalModulesTransformer,
 )

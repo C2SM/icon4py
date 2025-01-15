@@ -25,7 +25,7 @@ The driver code runs in parallel, in order to do this you need to install the op
 
 ```bash
 cd ICON4PY_ROOT
-pip install -r requirements-dev-opt.txt
+uv sync --extra distributed  # or `uv sync --extra all` which includes everything
 
 ```
 

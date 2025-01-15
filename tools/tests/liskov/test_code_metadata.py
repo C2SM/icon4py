@@ -12,13 +12,13 @@ from unittest import mock
 
 import pytest
 
-import icon4pytools
-from icon4pytools.liskov.external.metadata import CodeMetadata
+import icon4py.tools
+from icon4py.tools.liskov.external.metadata import CodeMetadata
 
 
 @pytest.fixture
 def module_parent():
-    import icon4pytools.liskov.external.metadata as meta
+    import icon4py.tools.liskov.external.metadata as meta
 
     return Path(meta.__file__).parent
 
@@ -32,7 +32,7 @@ def test_generated_on():
 
 def test_version(module_parent):
     metadata = CodeMetadata()
-    assert metadata.version == icon4pytools.__version__
+    assert metadata.version == icon4py.tools.__version__
 
 
 def test_click_context():

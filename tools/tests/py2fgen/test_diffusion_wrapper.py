@@ -17,7 +17,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
-from icon4pytools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
+from icon4py.tools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
 
 from . import utils
 

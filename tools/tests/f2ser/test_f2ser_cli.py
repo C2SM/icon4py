@@ -9,8 +9,8 @@
 import pytest
 from click.testing import CliRunner
 
-from icon4pytools.f2ser.cli import main
-from icon4pytools.f2ser.exceptions import MissingDerivedTypeError
+from icon4py.tools.f2ser.cli import main
+from icon4py.tools.f2ser.exceptions import MissingDerivedTypeError
 
 
 @pytest.fixture

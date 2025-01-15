@@ -10,8 +10,8 @@ import unittest
 
 import pytest
 
-import icon4pytools.liskov.parsing.parse as ts
-from icon4pytools.liskov.codegen.integration.deserialise import (
+import icon4py.tools.liskov.parsing.parse as ts
+from icon4py.tools.liskov.codegen.integration.deserialise import (
     DeclareDataFactory,
     EndCreateDataFactory,
     EndDeleteDataFactory,
@@ -27,7 +27,7 @@ from icon4pytools.liskov.codegen.integration.deserialise import (
     StartProfileDataFactory,
     StartStencilDataFactory,
 )
-from icon4pytools.liskov.codegen.integration.interface import (
+from icon4py.tools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     EndCreateData,
@@ -43,7 +43,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     StartDeleteData,
     StartProfileData,
 )
-from icon4pytools.liskov.parsing.exceptions import (
+from icon4py.tools.liskov.parsing.exceptions import (
     DirectiveSyntaxError,
     MissingBoundsError,
     MissingDirectiveArgumentError,
