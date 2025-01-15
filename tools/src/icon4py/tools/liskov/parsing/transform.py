@@ -9,7 +9,9 @@
 from typing import Any, Optional
 
 from icon4py.tools.common.logger import setup_logger
-from icon4py.tools.liskov.codegen.integration.deserialise import DEFAULT_STARTSTENCIL_OPTIONAL_MODULE
+from icon4py.tools.liskov.codegen.integration.deserialise import (
+    DEFAULT_STARTSTENCIL_OPTIONAL_MODULE,
+)
 from icon4py.tools.liskov.codegen.integration.interface import (
     EndDeleteData,
     EndFusedStencilData,
