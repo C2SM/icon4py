@@ -7,7 +7,7 @@ include:
     - nox -s test_model_stencils-3.10 -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
-    - BACKEND: [gtfn_cpu, gtfn_gpu, embedded]
+    - BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
       GRID: [simple_grid, icon_grid]
   rules:
     # exclude slow test configurations
