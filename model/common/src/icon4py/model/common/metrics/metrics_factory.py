@@ -46,13 +46,48 @@ vertical_half_domain = v_grid.domain(dims.KHalfDim)
 
 
 class MetricsConfig:
-    def __init__(self, experiment: str, global_experiment: str):
+    def __init__(self, experiment: str, global_experiment: str, regional_experiment: str):
         self._experiment = experiment
         self._global_experiment = global_experiment
+        self._regional_experiment = regional_experiment
+
+    @property
+    def lowest_layer_thickness(self) -> float:
+        if self._experiment == self._regional_experiment:
+            lowest_layer_thickness = 20.0
+        else:
+            lowest_layer_thickness = 50.0
+        return lowest_layer_thickness
+
+    @property
+    def model_top_height(self) -> float:
+        if self._experiment == self._regional_experiment:
+            model_top_height = 23000.0
+        elif self._experiment == self._global_experiment:
+            model_top_height = 75000.0
+        else:
+            model_top_height = 23500.0
+        return model_top_height
+
+    @property
+    def stretch_factor(self) -> float:
+        if self._experiment == self._regional_experiment:
+            stretch_factor = 0.65
+        elif self._experiment == self._global_experiment:
+            stretch_factor = 0.9
+        else:
+            stretch_factor = 1.0
+        return stretch_factor
 
     @property
     def damping_height(self) -> float:
-        return 50000.0 if self._experiment == self._global_experiment else 12500.0
+        if self._experiment == self._regional_experiment:
+            damping_height = 12500.0
+        elif self._experiment == self._global_experiment:
+            damping_height = 50000.0
+        else:
+            damping_height = 45000.0
+        return damping_height
 
     @property
     def rayleigh_type(self) -> int:

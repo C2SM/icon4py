@@ -31,40 +31,20 @@ def get_metrics_factory(
 ) -> metrics_factory.MetricsFieldsFactory:
     name = experiment.join(backend.name)
     factory = metrics_factories.get(name)
-    # TODO: check why these do not get retirieved within the parametrization
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
-        lowest_layer_thickness = 20.0
-    else:
-        lowest_layer_thickness = 50.0
 
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
-        model_top_height = 23000.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
-        model_top_height = 75000.0
-    else:
-        model_top_height = 23500.0
-
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
-        stretch_factor = 0.65
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
-        stretch_factor = 0.9
-    else:
-        stretch_factor = 1.0
-
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
-        damping_height = 12500.0
-    elif experiment == dt_utils.GLOBAL_EXPERIMENT:
-        damping_height = 50000.0
-    else:
-        damping_height = 45000.0
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
+        metric_config = MetricsConfig(
+            experiment=experiment,
+            global_experiment=dt_utils.GLOBAL_EXPERIMENT,
+            regional_experiment=dt_utils.REGIONAL_EXPERIMENT,
+        )
         vertical_config = v_grid.VerticalGridConfig(
             geometry.grid.num_levels,
-            lowest_layer_thickness=lowest_layer_thickness,
-            model_top_height=model_top_height,
-            stretch_factor=stretch_factor,
-            rayleigh_damping_height=damping_height,
+            lowest_layer_thickness=metric_config.lowest_layer_thickness,
+            model_top_height=metric_config.model_top_height,
+            stretch_factor=metric_config.stretch_factor,
+            rayleigh_damping_height=metric_config.damping_height,
         )
         vertical_grid = v_grid.VerticalGrid(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
@@ -75,9 +55,6 @@ def get_metrics_factory(
             geometry_source=geometry,
             backend=backend,
             metadata=interpolation_attributes.attrs,
-        )
-        metric_config = MetricsConfig(
-            experiment=experiment, global_experiment=dt_utils.GLOBAL_EXPERIMENT
         )
         factory = metrics_factory.MetricsFieldsFactory(
             grid=geometry.grid,
