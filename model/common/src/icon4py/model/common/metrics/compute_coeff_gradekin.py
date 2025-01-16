@@ -17,6 +17,7 @@ def compute_coeff_gradekin(
     inv_dual_edge_length: data_alloc.NDArray,
     horizontal_start: int,
     horizontal_end: int,
+    arrray_ns: ModuleType = np
 ) -> data_alloc.NDArray:
     """
     Compute coefficients for improved calculation of kinetic energy gradient
