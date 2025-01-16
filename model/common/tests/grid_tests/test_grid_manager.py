@@ -626,7 +626,7 @@ def test_dual_area(grid_file, grid_savepoint, backend):
     expected = grid_savepoint.vertex_dual_area()
     manager = _run_grid_manager(grid_file, backend=backend)
     geometry_fields = manager.geometry
-    assert helpers.dallclose(geometry_fields[GeometryName.DUAL_AREA].ndarray, expected.ndarray)
+    assert helpers.dallclose(geometry_fields[GeometryName.DUAL_AREA].asnumpy(), expected.asnumpy())
 
 
 @pytest.mark.datatest
