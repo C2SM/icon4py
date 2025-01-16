@@ -78,8 +78,10 @@ def _match_marker(marker, backend):
                 pytest.xfail("Embedded backend currently fails in remap function.")
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
-            case "levels_plus_one" if is_embedded(backend):
-                pytest.xfail("Embedded backend does not support larger boundaries than field sizes.")
+            case "requires_concat_where" if is_embedded(backend):
+                pytest.xfail(
+                    "Embedded backend does not support larger boundaries than field sizes."
+                )
             case "domain_dims_mismatch" if is_embedded(backend):
                 pytest.xfail("Stencil does not support missing neighbors.")
             case "gtfn_miss_neighbors" if backend and ("gtfn" in backend.name):
