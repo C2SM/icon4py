@@ -27,7 +27,7 @@ variables:
     # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
     CSCS_REBUILD_POLICY: if-not-exists
     DOCKER_BUILD_ARGS: '["UBUNTU_VERSION=$UBUNTU_VERSION", "ARCH=$ARCH", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
-build_baseimage_x86_64:
+.build_baseimage_x86_64:
   extends: [.container-builder-cscs-zen2, .build_baseimage]
   variables:
     HPC_SDK_VERSION: 22.11
@@ -50,7 +50,7 @@ build_baseimage_aarch64:
       PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
       DOCKERFILE: ci/docker/checkout.Dockerfile
       DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
-build_image_x86_64:
+.build_image_x86_64:
   extends: [.container-builder-cscs-zen2, .build_image]
   needs: [build_baseimage_x86_64]
 build_image_aarch64:
