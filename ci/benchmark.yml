@@ -4,12 +4,12 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    # force execution of tests where validation is expected to fail, because the reason for failure is wrong numpy reference
-    - nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID --runxfail
+    - nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
         GRID: [icon_grid, icon_grid_global]
+# prefix the x86_64 config with dot in order to not execute it
 .benchmark_model_stencils_x86_64:
   extends: [.benchmark_model_stencils, .test_template_x86_64]
 benchmark_model_stencils_aarch64:
