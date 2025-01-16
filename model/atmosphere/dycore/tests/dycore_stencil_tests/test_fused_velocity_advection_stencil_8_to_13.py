@@ -101,7 +101,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         z_w_con_c = zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
-        k = data_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
+        k = data_alloc.index_field(grid=grid, dim=dims.KDim, extend={dims.KDim: 1})
 
         nlev = grid.num_levels
         nflatlev = 4

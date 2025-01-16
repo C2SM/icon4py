@@ -98,7 +98,7 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        edge = data_alloc.allocate_indices(dims.EdgeDim, grid=grid, is_halfdim=False)
+        edge = data_alloc.index_field(grid=grid, dim=dims.EdgeDim)
 
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)

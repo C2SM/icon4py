@@ -694,8 +694,8 @@ class SolveNonhydro:
         self.z_graddiv2_vn = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.k_field = data_alloc.allocate_indices(
-            self._grid, dims.KDim, backend=self._backend, is_halfdim=True
+        self.k_field = data_alloc.index_field(
+            self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
         self.z_w_concorr_me = data_alloc.zero_field(
             self._grid, dims.EdgeDim, dims.KDim, backend=self._backend

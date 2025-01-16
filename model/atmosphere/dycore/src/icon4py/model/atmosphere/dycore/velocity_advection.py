@@ -151,8 +151,8 @@ class VelocityAdvection:
         self.vcfl_dsl = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.k_field = data_alloc.allocate_indices(
-            dims.KDim, self.grid, is_halfdim=True, backend=self._backend
+        self.k_field = data_alloc.index_field(
+            self.grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
 
     def _determine_local_domains(self):

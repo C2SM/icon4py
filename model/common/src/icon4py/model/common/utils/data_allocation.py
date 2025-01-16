@@ -17,7 +17,7 @@ import numpy as np
 import numpy.typing as npt
 from gt4py.next import backend
 
-from icon4py.model.common import dimension, type_alias as ta
+from icon4py.model.common import type_alias as ta
 
 
 if TYPE_CHECKING:
@@ -129,6 +129,24 @@ def random_field(
     return gtx.as_field(dims, arr, allocator=backend)
 
 
+def random_mask(
+    grid: grid_base.BaseGrid,
+    *dims: gtx.Dimension,
+    dtype: Optional[npt.DTypeLike] = None,
+    extend: Optional[dict[gtx.Dimension, int]] = None,
+) -> gtx.Field:
+    rng = np.random.default_rng()
+    shape = _shape(grid, *dims, extend=extend)
+    arr = np.full(shape, False).flatten()
+    num_true = int(arr.size * 0.5)
+    arr[:num_true] = True
+    rng.shuffle(arr)
+    arr = np.reshape(arr, newshape=shape)
+    if dtype:
+        arr = arr.astype(dtype)
+    return gtx.as_field(dims, arr)
+
+
 def zero_field(
     grid: grid_base.BaseGrid,
     *dims: gtx.Dimension,
@@ -158,37 +176,14 @@ def _shape(
     return tuple(grid.size[dim] + extend.get(dim, 0) for dim in dims)
 
 
-def _size(grid, dim: gtx.Dimension, is_half_dim: bool) -> int:
-    if dim == dimension.KDim and is_half_dim:
-        return grid.size[dim] + 1
-    return grid.size[dim]
 
-
-def random_mask(
-    grid: grid_base.BaseGrid,
-    *dims: gtx.Dimension,
-    dtype: Optional[npt.DTypeLike] = None,
-    extend: Optional[dict[gtx.Dimension, int]] = None,
-) -> gtx.Field:
-    rng = np.random.default_rng()
-    shape = _shape(grid, *dims, extend=extend)
-    arr = np.full(shape, False).flatten()
-    num_true = int(arr.size * 0.5)
-    arr[:num_true] = True
-    rng.shuffle(arr)
-    arr = np.reshape(arr, newshape=shape)
-    if dtype:
-        arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr)
-
-
-def allocate_indices(
-    dim: gtx.Dimension,
+def index_field(
     grid,
-    is_halfdim=False,
+    dim: gtx.Dimension,
+    extend: Optional[dict[gtx.Dimension, int]] = None,
     dtype=gtx.int32,
     backend: Optional[backend.Backend] = None,
 ) -> gtx.Field:
     xp = import_array_ns(backend)
-    shapex = _size(grid, dim, is_halfdim)
+    shapex = _shape(grid, dim, extend=extend)
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend)

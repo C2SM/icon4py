@@ -23,7 +23,7 @@ def test_compute_wgtfac_c(icon_grid, metrics_savepoint):  # fixture
     )
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()
-    k = data_alloc.allocate_indices(dims.KDim, grid=icon_grid, is_halfdim=True)
+    k = data_alloc.index_field(grid=icon_grid, dim=dims.KDim, extend={dims.KDim: 1})
 
     vertical_end = icon_grid.num_levels
 
