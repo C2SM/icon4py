@@ -192,7 +192,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     @property
     def _sources(self) -> factory.FieldSource:
-        return factory.CompositeSource(self, (self._geometry,))
+        return factory.CompositeSource(self, (self._geometry, self._interpolation_source))
 
     def _register_computed_fields(self):
         height = factory.ProgramFieldProvider(
