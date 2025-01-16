@@ -89,7 +89,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     CELL_AW_VERTS: dict(
         standard_name=CELL_AW_VERTS,
-        long_name="geometrical factor for cells_aw_verts",
+        long_name="coefficient for interpolation from cells to verts by area weighting",
         units="",
         dims=(dims.VertexDim, dims.V2CDim),
         icon_var_name="cells_aw_verts",
