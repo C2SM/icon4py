@@ -179,6 +179,7 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+    # TODO (Chia Rui): Bug here? It fails.
     xp = data_alloc.import_array_ns(backend)
     geofac_div = interpolation_savepoint.geofac_div()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()

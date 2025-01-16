@@ -311,15 +311,23 @@ def compute_geofac_grdiv(
     geofac_grdiv = array_ns.zeros([num_edges, 1 + 2 * e2c.shape[1]])
     index = array_ns.arange(horizontal_start, num_edges)
     for j in range(c2e.shape[1]):
+        test_owner_mask = owner_mask[e2c[horizontal_start:, 1]]
         mask = array_ns.where(
-            c2e[e2c[horizontal_start:, 1], j] == index, owner_mask[horizontal_start:], False
+            # TODO (Chia RUi): c2e[e2c[horizontal_start:, 1], j] == index, owner_mask[horizontal_start:], False
+            c2e[e2c[horizontal_start:, 1], j] == index,
+            test_owner_mask,
+            False,
         )
         geofac_grdiv[horizontal_start:, 0] = array_ns.where(
             mask, geofac_div[e2c[horizontal_start:, 1], j], geofac_grdiv[horizontal_start:, 0]
         )
     for j in range(c2e.shape[1]):
+        test_owner_mask = owner_mask[e2c[horizontal_start:, 1]]
         mask = array_ns.where(
-            c2e[e2c[horizontal_start:, 0], j] == index, owner_mask[horizontal_start:], False
+            # TODO (Chia RUi): c2e[e2c[horizontal_start:, 0], j] == index, owner_mask[horizontal_start:], False
+            c2e[e2c[horizontal_start:, 0], j] == index,
+            test_owner_mask,
+            False,
         )
         geofac_grdiv[horizontal_start:, 0] = array_ns.where(
             mask,
