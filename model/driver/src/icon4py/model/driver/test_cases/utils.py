@@ -5,7 +5,10 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from types import ModuleType
+
 import gt4py.next as gtx
+import numpy as np
 from gt4py.next import backend as gt4py_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
@@ -32,10 +35,8 @@ def hydrostatic_adjustment_ndarray(
     exner: data_alloc.NDArray,
     theta_v: data_alloc.NDArray,
     num_levels: int,
-    backend: gt4py_backend.Backend,
+    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
-    xp = data_alloc.import_array_ns(backend)
-
     # virtual temperature
     temp_v = theta_v * exner
 
@@ -53,9 +54,9 @@ def hydrostatic_adjustment_ndarray(
         )
         quadratic_c = -(fac2 * fac3 / ddqz_z_half[:, k + 1] + fac2 * d_exner_dz_ref_ic[:, k + 1])
 
-        exner[:, k] = (quadratic_b + xp.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
-            2.0 * quadratic_a
-        )
+        exner[:, k] = (
+            quadratic_b + array_ns.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)
+        ) / (2.0 * quadratic_a)
         theta_v[:, k] = temp_v[:, k] / exner[:, k]
         rho[:, k] = (
             exner[:, k] ** phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v[:, k])
@@ -114,7 +115,7 @@ def zonalwind_2_normalwind_ndarray(
     edge_lon: data_alloc.NDArray,
     primal_normal_x: data_alloc.NDArray,
     eta_v_e: data_alloc.NDArray,
-    backend: gt4py_backend.Backend,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
@@ -133,31 +134,33 @@ def zonalwind_2_normalwind_ndarray(
     """
     # TODO (Chia Rui) this function needs a test
 
-    xp = data_alloc.import_array_ns(backend)
-
-    mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
+    mask = array_ns.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
         0 : grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)),
         :,
     ] = False
-    edge_lat = xp.repeat(xp.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
-    edge_lon = xp.repeat(xp.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
-    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
-    u = xp.where(mask, jw_u0 * (xp.cos(eta_v_e) ** 1.5) * (xp.sin(2.0 * edge_lat) ** 2), 0.0)
+    edge_lat = array_ns.repeat(array_ns.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
+    edge_lon = array_ns.repeat(array_ns.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
+    primal_normal_x = array_ns.repeat(
+        array_ns.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1
+    )
+    u = array_ns.where(
+        mask, jw_u0 * (array_ns.cos(eta_v_e) ** 1.5) * (array_ns.sin(2.0 * edge_lat) ** 2), 0.0
+    )
     if jw_up > 1.0e-20:
-        u = xp.where(
+        u = array_ns.where(
             mask,
             u
             + jw_up
-            * xp.exp(
+            * array_ns.exp(
                 -(
                     (
                         10.0
-                        * xp.arccos(
-                            xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
-                            + xp.cos(lat_perturbation_center)
-                            * xp.cos(edge_lat)
-                            * xp.cos(edge_lon - lon_perturbation_center)
+                        * array_ns.arccos(
+                            array_ns.sin(lat_perturbation_center) * array_ns.sin(edge_lat)
+                            + array_ns.cos(lat_perturbation_center)
+                            * array_ns.cos(edge_lat)
+                            * array_ns.cos(edge_lon - lon_perturbation_center)
                         )
                     )
                     ** 2
@@ -237,12 +240,8 @@ def initialize_solve_nonhydro_diagnostic_state(
     exner_pr: fa.CellKField[ta.wpfloat], grid: icon_grid.IconGrid, backend: gt4py_backend.Backend
 ) -> dycore_states.DiagnosticStateNonHydro:
     ddt_vn_apc = common_utils.PredictorCorrectorPair(
-        data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
-        ),
-        data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
-        ),
+        data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend),
+        data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend),
     )
     ddt_w_adv = common_utils.PredictorCorrectorPair(
         data_alloc.allocate_zero_field(
@@ -303,9 +302,7 @@ def initialize_prep_advection(
     grid: icon_grid.IconGrid, backend: gt4py_backend.Backend
 ) -> dycore_states.PrepAdvection:
     return dycore_states.PrepAdvection(
-        vn_traj=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
-        ),
+        vn_traj=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend),
         mass_flx_me=data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=grid, backend=backend
         ),

@@ -241,7 +241,7 @@ def model_initialization_jabw(
         edge_lon,
         primal_normal_x,
         eta_v_e.ndarray,
-        backend,
+        array_ns=xp,
     )
     log.info("U2vn computation completed.")
 
@@ -256,7 +256,7 @@ def model_initialization_jabw(
         exner_ndarray,
         theta_v_ndarray,
         num_levels,
-        backend,
+        array_ns=xp,
     )
     log.info("Hydrostatic adjustment computation completed.")
 
