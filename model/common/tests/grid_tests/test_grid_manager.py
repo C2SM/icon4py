@@ -610,7 +610,7 @@ def test_edge_orientation_on_vertex(grid_file, grid_savepoint, backend):
     manager = _run_grid_manager(grid_file, backend=backend)
     geometry_fields = manager.geometry
     assert helpers.dallclose(
-        geometry_fields[GeometryName.EDGE_ORIENTATION_ON_VERTEX].ndarray, expected.ndarray
+        geometry_fields[GeometryName.EDGE_ORIENTATION_ON_VERTEX].asnumpy(), expected.asnumpy()
     )
 
 
