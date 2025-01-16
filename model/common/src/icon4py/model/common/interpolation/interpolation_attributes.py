@@ -20,7 +20,7 @@ GEOFAC_N2S: Final[str] = "geometrical_factor_for_nabla_2_scalar"
 GEOFAC_GRDIV: Final[str] = "geometrical_factor_for_gradient_of_divergence"
 GEOFAC_GRG_X: Final[str] = "geometrical_factor_for_green_gauss_gradient_x"
 GEOFAC_GRG_Y: Final[str] = "geometrical_factor_for_green_gauss_gradient_y"
-CELL_AW_VERTS: Final[str] = "geometrical_factor_for_cells_aw_verts"
+CELL_AW_VERTS: Final[str] = "cell_to_vertex_interpolation_factor_by_area_weighting"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
