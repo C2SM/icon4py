@@ -76,7 +76,7 @@ def _match_marker(marker, backend):
         match m.markname:
             case "embedded_remap_error" if is_embedded(backend):
                 pytest.xfail("Embedded backend currently fails in remap function.")
-            case "embedded_as_offset_error" if is_embedded(backend):
+            case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
             case "levels_plus_one" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support larger boundaries than field sizes.")
