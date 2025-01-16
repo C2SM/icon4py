@@ -335,12 +335,11 @@ def read_geometry_fields(
         sp = _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
-        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config)
+        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
         vertical_geometry = v_grid.VerticalGrid(
             config=vertical_grid_config,
             vct_a=vct_a,
             vct_b=vct_b,
-            backend=backend,
             _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
         )
         return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()

@@ -20,12 +20,11 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 from . import utils
 
 
-def create_vertical_params(vertical_config, grid_savepoint, backend):
+def create_vertical_params(vertical_config, grid_savepoint):
     return v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a().asnumpy(),
-        vct_b=grid_savepoint.vct_b().asnumpy(),
-        backend=backend,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
 
@@ -71,7 +70,7 @@ def test_velocity_init(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint, backend)
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -124,7 +123,7 @@ def test_verify_velocity_init_against_regular_savepoint(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint, backend)
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -219,7 +218,7 @@ def test_velocity_predictor_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint, backend)
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -393,7 +392,7 @@ def test_velocity_corrector_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint, backend)
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,

@@ -89,7 +89,6 @@ def test_run_solve_nonhydro_single_step(
         config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        backend=backend,
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 from datetime import datetime, timedelta
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -50,8 +51,7 @@ def initialized_writer(
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
     vertical_params = v_grid.VerticalGrid(
         vertical_config,
-        backend=None,
-        vct_a=heights,
+        vct_a=gtx.as_field((dims.KDim,), heights),
         vct_b=None,
     )
     horizontal = grid.config.horizontal_config

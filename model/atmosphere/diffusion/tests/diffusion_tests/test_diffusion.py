@@ -199,12 +199,11 @@ def test_diffusion_init(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        backend=backend,
     )
 
     meta = savepoint_diffusion_init.get_metadata("linit", "date")
@@ -352,12 +351,11 @@ def test_verify_diffusion_init_against_savepoint(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        backend=backend,
     )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=data_alloc.as_1D_sparse_field(
@@ -467,12 +465,11 @@ def test_run_diffusion_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        backend=backend,
     )
 
     config = construct_diffusion_config(experiment, ndyn_substeps)
@@ -680,12 +677,11 @@ def test_run_diffusion_initial_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
     vertical_grid = v_grid.VerticalGrid(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        backend=backend,
     )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
         e_bln_c_s=data_alloc.as_1D_sparse_field(

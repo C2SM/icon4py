@@ -97,9 +97,7 @@ def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
     data = {"height_coordinate": (z_ifc, {"standard_name": "height_coordinate", "units": ""})}
-    vertical_grid = v_grid.VerticalGrid(
-        v_grid.VerticalGridConfig(num_levels=10), backend, vct_a.asnumpy(), vct_b.asnumpy()
-    )
+    vertical_grid = v_grid.VerticalGrid(v_grid.VerticalGridConfig(num_levels=10), vct_a, vct_b)
     field_source = SimpleFieldSource(
         data_=data, backend=backend, grid=grid, vertical_grid=vertical_grid
     )

@@ -165,9 +165,8 @@ def test_run_timeloop_single_step(
     )
     vertical_params = v_grid.VerticalGrid(
         config=vertical_config,
-        vct_a=grid_savepoint.vct_a().asnumpy(),
-        vct_b=grid_savepoint.vct_b().asnumpy(),
-        backend=backend,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     additional_parameters = diffusion.DiffusionParams(diffusion_config)

@@ -17,7 +17,6 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
-from icon4pytools.py2fgen.settings import backend
 from icon4pytools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
 
 from . import utils
@@ -204,9 +203,8 @@ def test_diffusion_wrapper_granule_inputs(
     )
     expected_vertical_params = v_grid.VerticalGrid(
         config=expected_vertical_config,
-        backend=backend,
-        vct_a=grid_savepoint.vct_a().asnumpy(),
-        vct_b=grid_savepoint.vct_b().asnumpy(),
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     expected_config = utils.construct_diffusion_config(experiment, ndyn_substeps)
