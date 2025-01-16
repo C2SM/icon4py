@@ -109,7 +109,7 @@ def _exclaim_ape_nonhydrostatic_config(ndyn: int):
 
 def create_vertical_params(
     vertical_config: v_grid.VerticalGridConfig,
-    sp: sb.IconSerialDataProvider,
+    sp: sb.IconGridSavepoint,
 ):
     return v_grid.VerticalGrid(
         config=vertical_config,
