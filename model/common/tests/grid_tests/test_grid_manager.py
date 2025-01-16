@@ -662,7 +662,7 @@ def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
     manager = _run_grid_manager(grid_file, backend=backend)
     geometry_fields = manager.geometry
     assert helpers.dallclose(
-        geometry_fields[GeometryName.CELL_NORMAL_ORIENTATION].ndarray, expected.ndarray
+        geometry_fields[GeometryName.CELL_NORMAL_ORIENTATION].asnumpy(), expected.asnumpy()
     )
 
 
