@@ -5,12 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
-from gt4py.next import Dimension, NeighborTableOffsetProvider
 from types import ModuleType
-import numpy as np
 
-from icon4py.model.common.utils import data_allocation as data_alloc
+import gt4py.next as gtx
+import numpy as np
+from gt4py.next import Dimension, NeighborTableOffsetProvider
 
 
 def neighbortable_offset_provider_for_1d_sparse_fields(
