@@ -155,14 +155,16 @@ def model_initialization_serialbox(
     )
 
     diagnostic_state = diagnostics.DiagnosticState(
-        pressure=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        pressure_ifc=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
+        pressure=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        pressure_ifc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+        temperature=data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
         ),
-        temperature=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        virtual_temperature=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        u=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        v=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        virtual_temperature=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        u=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        v=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
     prognostic_state_next = prognostics.PrognosticState(
@@ -177,7 +179,7 @@ def model_initialization_serialbox(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
         mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        vol_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
     return (

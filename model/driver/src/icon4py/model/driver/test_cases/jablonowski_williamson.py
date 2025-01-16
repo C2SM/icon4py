@@ -192,7 +192,7 @@ def model_initialization_jabw(
     log.info("Newton iteration completed!")
 
     eta_v = gtx.as_field((dims.CellDim, dims.KDim), eta_v_numpy)
-    eta_v_e = data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid)
+    eta_v_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
     cell_2_edge_interpolation.cell_2_edge_interpolation(
         eta_v,
         cell_2_edge_coeff,
@@ -250,8 +250,8 @@ def model_initialization_jabw(
     rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_numpy)
     theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_numpy)
 
-    u = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
-    v = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
+    u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+    v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
     edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation(
         vn,
         rbf_vec_coeff_c1,
@@ -267,7 +267,7 @@ def model_initialization_jabw(
 
     log.info("U, V computation completed.")
 
-    exner_pr = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid)
+    exner_pr = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
     testcases_utils.compute_perturbed_exner(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
@@ -305,50 +305,44 @@ def model_initialization_jabw(
     )
 
     diffusion_diagnostic_state = diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
-        div_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
-        dwdx=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
-        dwdy=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
+        hdef_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+        div_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+        dwdx=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+        dwdy=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
     )
     solve_nonhydro_diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
+        theta_v_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
         exner_pr=exner_pr,
-        rho_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
-        ddt_exner_phy=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        grf_tend_rho=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        grf_tend_thv=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        grf_tend_w=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
-        mass_fl_e=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        ddt_vn_phy=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        grf_tend_vn=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+        rho_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+        ddt_exner_phy=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        grf_tend_rho=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        grf_tend_thv=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        grf_tend_w=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+        mass_fl_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
+        ddt_vn_phy=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
+        grf_tend_vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-            data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+            data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
+            data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
-            data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, is_halfdim=True),
+            data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+            data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
         ),
-        vt=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        vn_ie=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, is_halfdim=True),
-        w_concorr_c=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
-        ),
+        vt=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
+        vn_ie=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}),
+        w_concorr_c=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
-        exner_dyn_incr=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        exner_dyn_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
     prep_adv = dycore_states.PrepAdvection(
-        vn_traj=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        mass_flx_me=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
-        mass_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
+        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim),
+        mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        vol_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
     log.info("Initialization completed.")
 

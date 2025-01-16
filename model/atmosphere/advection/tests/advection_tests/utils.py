@@ -76,23 +76,26 @@ def construct_diagnostic_init_state(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
-        hfl_tracer=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=icon_grid
-        ),  # exit field
-        vfl_tracer=data_alloc.allocate_zero_field(  # TODO (dastrm): should be KHalfDim
-            dims.CellDim, dims.KDim, is_halfdim=True, grid=icon_grid
+        hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim),  # exit field
+        vfl_tracer=data_alloc.zero_field(
+            icon_grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
         ),  # exit field
     )
 
 
 def construct_diagnostic_exit_state(
-    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int
+    icon_grid,
+    savepoint: sb.AdvectionInitSavepoint,
+    ntracer: int,
 ) -> advection_states.AdvectionDiagnosticState:
-    zero_f = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
     return advection_states.AdvectionDiagnosticState(
-        airmass_now=zero_f,  # init field
-        airmass_new=zero_f,  # init field
-        grf_tend_tracer=zero_f,  # init field
+        airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        # FIXME (@halungge) check with David - Savepoint and field do not match
         hfl_tracer=savepoint.hfl_tracer(ntracer),
         vfl_tracer=savepoint.vfl_tracer(ntracer),
     )

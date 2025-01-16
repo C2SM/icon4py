@@ -182,18 +182,6 @@ def random_mask(
     return gtx.as_field(dims, arr)
 
 
-# TODO: are the following functions needed? Don't they overlap with the above ones?
-def allocate_zero_field(
-    *dims: gtx.Dimension,
-    grid,
-    is_halfdim=False,
-    dtype=ta.wpfloat,
-    backend: Optional[backend.Backend] = None,
-) -> gtx.Field:
-    dimensions = {d: range(_size(grid, d, is_halfdim)) for d in dims}
-    return gtx.zeros(dimensions, dtype=dtype, allocator=backend)
-
-
 def allocate_indices(
     dim: gtx.Dimension,
     grid,
