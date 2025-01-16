@@ -325,14 +325,14 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"exner_ref_mc": attrs.EXNER_REF_MC, "theta_ref_mc": attrs.THETA_REF_MC},
             params={
-                "t0sl_bg": self._constants.SEA_LEVEL_TEMPERATURE,
-                "del_t_bg": self._constants.DELTA_TEMPERATURE,
-                "h_scal_bg": self._constants._H_SCAL_BG,
-                "grav": self._constants.GRAV,
-                "rd": self._constants.RD,
-                "p0sl_bg": self._constants.SEAL_LEVEL_PRESSURE,
-                "rd_o_cpd": self._constants.RD_O_CPD,
-                "p0ref": self._constants.REFERENCE_PRESSURE,
+                "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
+                "del_t_bg": constants.DELTA_TEMPERATURE,
+                "h_scal_bg": constants._H_SCAL_BG,
+                "grav":constants.GRAV,
+                "rd": constants.RD,
+                "p0sl_bg": constants.SEAL_LEVEL_PRESSURE,
+                "rd_o_cpd": constants.RD_O_CPD,
+                "p0ref": constants.REFERENCE_PRESSURE,
             },
         )
         self.register_provider(compute_theta_exner_ref_mc)
