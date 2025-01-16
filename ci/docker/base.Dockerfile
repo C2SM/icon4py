@@ -1,5 +1,4 @@
-ARG UBUNTU_VERSION=22.04
-FROM ubuntu:${UBUNTU_VERSION}
+FROM ubuntu:22.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -25,7 +24,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libffi-dev \
     libhdf5-dev \
     liblzma-dev \
-    $( [ "${UBUNTU_VERSION}" = "20.04" ] && echo "python-openssl" || echo "python3-openssl" ) \
+    python3-openssl \
     libreadline-dev \
     git \
     rustc \
