@@ -483,8 +483,8 @@ def initialize(
 @click.option(
     "--icon4py_driver_backend",
     "-b",
-    show_default=True,
-    help="Backend for all components executed in icon4py driver. Choose between GTFN_CPU or GTFN_GPU. Please see abs_path_to_icon4py/model/driver/src/icon4py/model/driver/icon4py_configuration/) ",
+    required=True,
+    help="Backend for all components executed in icon4py driver. For performance and stability, it is advised to choose between gtfn_cpu or gtfn_cpu. Please see abs_path_to_icon4py/model/common/src/icon4py/model/common/model_backends.py) ",
 )
 def icon4py_driver(
     input_path,
