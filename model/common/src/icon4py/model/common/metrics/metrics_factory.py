@@ -173,11 +173,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "e_refin_ctrl": e_refin_ctrl,
                     "e_owner_mask": e_owner_mask,
                     "c_owner_mask": c_owner_mask,
-                    "c_lin_e": self._interpolation_source.get(interpolation_attributes.C_LIN_E),
-                    "c_bln_avg": self._interpolation_source.get(interpolation_attributes.C_BLN_AVG),
-                    "cells_aw_verts_field": self._interpolation_source.get(
-                        interpolation_attributes.CELL_AW_VERTS
-                    ),
                     "k_lev": k_index,
                     "e_lev": e_lev,
                 }
@@ -372,7 +367,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=mf.compute_cell_2_vertex_interpolation.with_backend(self._backend),
             deps={
                 "cell_in": "height_on_interface_levels",
-                "c_int": "cells_aw_verts_field",
+                "c_int": interpolation_attributes.CELL_AW_VERTS,
             },
             domain={
                 dims.VertexDim: (
@@ -392,7 +387,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=mf.compute_ddxt_z_half_e.with_backend(self._backend),
             deps={
                 "cell_in": "height_on_interface_levels",
-                "c_int": "cells_aw_verts_field",
+                "c_int": interpolation_attributes.CELL_AW_VERTS,
                 "inv_primal_edge_length": f"inverse_of_{geometry_attrs.EDGE_LENGTH}",
                 "tangent_orientation": geometry_attrs.TANGENT_ORIENTATION,
             },
@@ -532,7 +527,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=mf.compute_wgtfac_e.with_backend(self._backend),
             deps={
                 attrs.WGTFAC_C: attrs.WGTFAC_C,
-                "c_lin_e": "c_lin_e",
+                "c_lin_e": interpolation_attributes.C_LIN_E,
             },
             domain={
                 dims.CellDim: (
@@ -554,7 +549,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields=(attrs.FLAT_IDX_MAX,),
             deps={
                 "z_mc": attrs.Z_MC,
-                "c_lin_e": "c_lin_e",
+                "c_lin_e": interpolation_attributes.C_LIN_E,
                 "z_ifc": "height_on_interface_levels",
                 "k_lev": "k_lev",
             },
@@ -571,7 +566,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_pg_edgeidx_vertidx = factory.ProgramFieldProvider(
             func=mf.compute_pg_edgeidx_vertidx.with_backend(self._backend),
             deps={
-                "c_lin_e": "c_lin_e",
+                "c_lin_e": interpolation_attributes.C_LIN_E,
                 "z_ifc": "height_on_interface_levels",
                 "z_ifc_sliced": "z_ifc_sliced",
                 "e_owner_mask": "e_owner_mask",
@@ -615,7 +610,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "z_ifc_sliced": "z_ifc_sliced",
                 "z_mc": attrs.Z_MC,
-                "c_lin_e": "c_lin_e",
+                "c_lin_e": interpolation_attributes.C_LIN_E,
                 "e_owner_mask": "e_owner_mask",
                 "flat_idx_max": attrs.FLAT_IDX_MAX,
                 "k_lev": "k_lev",
@@ -680,7 +675,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl),
             deps={
                 "z_mc": attrs.Z_MC,
-                "c_lin_e": "c_lin_e",
+                "c_lin_e": interpolation_attributes.C_LIN_E,
                 "z_ifc": "height_on_interface_levels",
                 "flat_idx": attrs.FLAT_IDX_MAX,
                 "z_ifc_sliced": "z_ifc_sliced",
@@ -731,7 +726,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(compute_wgtfacq.compute_wgtfacq_e_dsl),
             deps={
                 "z_ifc": "height_on_interface_levels",
-                "c_lin_e": "c_lin_e",
+                "c_lin_e": interpolation_attributes.C_LIN_E,
                 "wgtfacq_c_dsl": attrs.WGTFACQ_C,
             },
             connectivities={"e2c": dims.E2CDim},
@@ -767,7 +762,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "maxslp": attrs.MAXSLP,
                 "maxhgtd": attrs.MAXHGTD,
-                "c_bln_avg": "c_bln_avg",
+                "c_bln_avg": interpolation_attributes.C_BLN_AVG,
             },
             domain={
                 dims.CellDim: (
