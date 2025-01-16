@@ -79,7 +79,7 @@ def _match_marker(marker, backend):
             case "embedded_as_offset_error" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
             case "levels_plus_one" if is_embedded(backend):
-                pytest.xfail("Embdeed backend does not support larger boundaries than field sizes.")
+                pytest.xfail("Embedded backend does not support larger boundaries than field sizes.")
             case "domain_dims_mismatch" if is_embedded(backend):
                 pytest.xfail("Stencil does not support missing neighbors.")
             case "gtfn_miss_neighbors" if backend and ("gtfn" in backend.name):
