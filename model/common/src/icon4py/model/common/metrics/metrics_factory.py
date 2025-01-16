@@ -452,7 +452,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxn_z_full)
 
         compute_vwind_impl_wgt_np = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_vwind_impl_wgt.compute_vwind_impl_wgt),
+            func=functools.partial(compute_vwind_impl_wgt.compute_vwind_impl_wgt, array_ns = self._xp),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
             fields=(attrs.VWIND_IMPL_WGT,),
