@@ -19,7 +19,7 @@ from icon4py.model.testing.datatest_utils import (
 )
 
 
-DEFAULT_BACKEND: Final = "roundtrip"
+DEFAULT_BACKEND: Final = "embedded"
 
 BACKENDS: dict[str, Callable] = {
     "embedded": None,
@@ -123,6 +123,9 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
+    for marker in item.own_markers:
+        if marker.name.startswith("embedded") and item.config.getoption("--backend") == "embedded":
+            pytest.skip("test not compatible with embedded backend")
     for _ in item.iter_markers(name="datatest"):
         if not item.config.getoption("--datatest"):
             pytest.skip("need '--datatest' option to run")

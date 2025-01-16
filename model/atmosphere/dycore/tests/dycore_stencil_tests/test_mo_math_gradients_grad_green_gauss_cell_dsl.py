@@ -21,6 +21,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
     PROGRAM = mo_math_gradients_grad_green_gauss_cell_dsl
     OUTPUTS = ("p_grad_1_u", "p_grad_1_v", "p_grad_2_u", "p_grad_2_v")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

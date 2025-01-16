@@ -105,7 +105,7 @@ def orchestrate(
             if self._orchestration:
                 # Add DaCe data types annotations for **all args and kwargs**
                 dace_annotations = to_dace_annotations(fuse_func)
-                if "dace" not in self._backend.name.lower():
+                if self._backend is None or "dace" not in self._backend.name.lower():
                     raise ValueError(
                         "DaCe Orchestration works only with DaCe backends. Change the backend to a DaCe supported one."
                     )
@@ -510,7 +510,7 @@ if dace:
             "optimizer", "automatic_simplification", value=False
         )  # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
         dace.config.Config.set("optimizer", "autooptimize", value=False)
-        device_type = backend.executor.step.translation.device_type
+        device_type = backend.executor.step.translation.device_type if backend else None
         if device_type == core_defs.DeviceType.CPU:
             device = "cpu"
             compiler_args = dace.config.Config.get("compiler", "cpu", "args")

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import hashlib
+import typing
 from dataclasses import dataclass, field
 from typing import ClassVar
 
@@ -41,6 +42,10 @@ def is_python(backend) -> bool:
     return is_embedded(backend) or is_roundtrip(backend)
 
 
+def is_dace(backend) -> bool:
+    return backend.name.startswith("run_dace_") if backend else False
+
+
 def is_embedded(backend) -> bool:
     return backend is None
 
@@ -66,6 +71,23 @@ def allocate_data(backend, input_data):
     return input_data
 
 
+def _match_marker(marker, backend):
+    for m in marker:
+        match m.markname:
+            case "embedded_remap_error" if is_embedded(backend):
+                pytest.xfail("Embedded backend currently fails in remap function.")
+            case "uses_as_offset" if is_embedded(backend):
+                pytest.xfail("Embedded backend does not support as_offset.")
+            case "requires_concat_where" if is_embedded(backend):
+                pytest.xfail(
+                    "Embedded backend does not support larger boundaries than field sizes."
+                )
+            case "domain_dims_mismatch" if is_embedded(backend):
+                pytest.xfail("Stencil does not support missing neighbors.")
+            case "gtfn_miss_neighbors" if backend and ("gtfn" in backend.name):
+                pytest.xfail("gtfn_gpu and gtfn_cpu do not support missing neighbors.")
+
+
 @dataclass(frozen=True)
 class Output:
     name: str
@@ -74,6 +96,9 @@ class Output:
 
 
 def _test_validation(self, grid, backend, input_data):
+    if self.MARKERS is not None:
+        _match_marker(self.MARKERS, backend)
+
     reference_outputs = self.reference(
         grid,
         **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
@@ -103,6 +128,9 @@ def _test_validation(self, grid, backend, input_data):
 if pytest_benchmark:
 
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
+        if self.MARKERS is not None:
+            _match_marker(self.MARKERS, backend)
+
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.
@@ -142,6 +170,7 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
+    MARKERS: typing.Optional[tuple] = None
 
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that

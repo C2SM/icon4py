@@ -110,6 +110,7 @@ def test_time_step_flags(
     assert linit == (at_initial_timestep and (jstep_init == 0))
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 1, True)])
 @pytest.mark.parametrize(
@@ -498,6 +499,7 @@ def test_nonhydro_predictor_step(
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(2, 2, True)])
 @pytest.mark.parametrize(
@@ -702,6 +704,7 @@ def test_nonhydro_corrector_step(
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
@@ -837,6 +840,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(

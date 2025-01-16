@@ -388,7 +388,8 @@ def test_verify_diffusion_init_against_savepoint(
         (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("ndyn_substeps, orchestration", [(2, [True, False])])
+@pytest.mark.parametrize("ndyn_substeps", [2])
+@pytest.mark.parametrize("orchestration", [False, True])
 def test_run_diffusion_single_step(
     savepoint_diffusion_init,
     savepoint_diffusion_exit,
@@ -403,8 +404,8 @@ def test_run_diffusion_single_step(
     backend,
     orchestration,
 ):
-    if orchestration and ("dace" not in backend.name.lower()):
-        pytest.skip(f"running backend = '{backend.name}': orchestration only on dace backends")
+    if orchestration and not helpers.is_dace(backend):
+        pytest.skip("This test is only executed for orchestration only on dace backends")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -502,8 +503,8 @@ def test_run_diffusion_multiple_steps(
     backend,
     icon_grid,
 ):
-    if "dace" not in backend.name.lower():
-        raise pytest.skip("This test is only executed for DaCe backends.")
+    if not helpers.is_dace(backend):
+        raise pytest.skip("This test is only executed for orchestration only on dace backends")
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -624,7 +625,8 @@ def test_run_diffusion_multiple_steps(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
-@pytest.mark.parametrize("linit, orchestration", [(True, [True, False])])
+@pytest.mark.parametrize("linit", [True])
+@pytest.mark.parametrize("orchestration", [False, True])
 def test_run_diffusion_initial_step(
     experiment,
     linit,
@@ -639,8 +641,8 @@ def test_run_diffusion_initial_step(
     backend,
     orchestration,
 ):
-    if orchestration and ("dace" not in backend.name.lower()):
-        pytest.skip(f"running backend = '{backend.name}': orchestration only on dace backends")
+    if orchestration and not helpers.is_dace(backend):
+        pytest.skip("This test is only executed for orchestration only on dace backends")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
