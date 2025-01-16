@@ -8,21 +8,12 @@
 
 import dataclasses
 import datetime
-import enum
 import logging
-from typing import Final
-
-from gt4py.next.program_processors.runners.gtfn import (
-    run_gtfn,
-    run_gtfn_cached,
-    run_gtfn_gpu,
-    run_gtfn_gpu_cached,
-)
 
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore import solve_nonhydro as solve_nh
+from icon4py.model.common import model_backends
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import initialization_utils as driver_init
 
 
@@ -50,18 +41,18 @@ class Icon4pyRunConfig:
 
     restart_mode: bool = False
 
-    backend_name: str = data_alloc.DEFAULT_BACKEND
+    backend_name: str = model_backends.DEFAULT_BACKEND
 
     def __post_init__(self):
-        if self.backend_name not in data_alloc.BACKENDS:
+        if self.backend_name not in model_backends.BACKENDS:
             raise ValueError(
                 f"Invalid driver backend: {self.backend_name}. \n"
-                f"Available backends are {', '.join([f'{k}' for k in data_alloc.BACKENDS.keys()])}"
+                f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS.keys()])}"
             )
 
     @property
     def backend(self):
-        return data_alloc.BACKENDS[self.backend_name]
+        return model_backends.BACKENDS[self.backend_name]
 
 
 @dataclasses.dataclass

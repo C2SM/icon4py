@@ -27,7 +27,6 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
     initialization_utils as driver_init,
@@ -484,7 +483,6 @@ def initialize(
 @click.option(
     "--icon4py_driver_backend",
     "-b",
-    default=data_alloc.DEFAULT_BACKEND,
     show_default=True,
     help="Backend for all components executed in icon4py driver. Choose between GTFN_CPU or GTFN_GPU. Please see abs_path_to_icon4py/model/driver/src/icon4py/model/driver/icon4py_configuration/) ",
 )

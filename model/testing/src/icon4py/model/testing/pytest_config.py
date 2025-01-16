@@ -10,7 +10,7 @@ import os
 
 import pytest
 
-from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.common import model_backends
 from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
@@ -18,8 +18,8 @@ from icon4py.model.testing.datatest_utils import (
 
 
 def _check_backend_validity(backend_name: str) -> None:
-    if backend_name not in data_alloc.BACKENDS:
-        available_backends = ", ".join([f"'{k}'" for k in data_alloc.BACKENDS.keys()])
+    if backend_name not in model_backends.BACKENDS:
+        available_backends = ", ".join([f"'{k}'" for k in model_backends.BACKENDS.keys()])
         raise Exception(
             "Need to select a backend. Select from: ["
             + available_backends
@@ -59,7 +59,7 @@ def pytest_addoption(parser):
         parser.addoption(
             "--backend",
             action="store",
-            default=data_alloc.DEFAULT_BACKEND,
+            default=model_backends.DEFAULT_BACKEND,
             help="GT4Py backend to use when executing stencils. Defaults to roundtrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
@@ -93,14 +93,14 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
-    selected_backend = data_alloc.BACKENDS[data_alloc.DEFAULT_BACKEND]
+    selected_backend = model_backends.BACKENDS[model_backends.DEFAULT_BACKEND]
 
     # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
         _check_backend_validity(backend_option)
 
-        selected_backend = data_alloc.BACKENDS[backend_option]
+        selected_backend = model_backends.BACKENDS[backend_option]
         metafunc.parametrize("backend", [selected_backend], ids=[f"backend={backend_option}"])
 
     # parametrise grid
