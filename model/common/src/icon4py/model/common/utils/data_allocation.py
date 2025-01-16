@@ -44,9 +44,6 @@ BACKENDS: dict[str, Callable] = {
     "gtfn_gpu": gtfn_gpu,
 }
 
-# TODO (Chia Rui): we already have CUDA_DEVICE_TYPES, can we delete GPU_BACKENDS?
-GPU_BACKENDS: list[str] = ["gtfn_gpu"]
-
 try:
     from gt4py.next.program_processors.runners.dace import (
         run_dace_cpu,
@@ -63,7 +60,6 @@ try:
             "dace_gpu_noopt": run_dace_gpu_noopt,
         }
     )
-    GPU_BACKENDS.extend(["dace_gpu", "dace_gpu_noopt"])
 
 except ImportError:
     # dace module not installed, ignore dace backends

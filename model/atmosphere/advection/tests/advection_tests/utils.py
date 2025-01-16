@@ -9,6 +9,7 @@
 import logging
 
 import gt4py.next as gtx
+from gt4py.next import backend as gt4py_backend
 import numpy as np
 
 from icon4py.model.atmosphere.advection import advection, advection_states
@@ -37,10 +38,12 @@ def construct_config(
 
 
 def construct_interpolation_state(
-    savepoint: sb.InterpolationSavepoint,
+    savepoint: sb.InterpolationSavepoint, backend: gt4py_backend.Backend
 ) -> advection_states.AdvectionInterpolationState:
     return advection_states.AdvectionInterpolationState(
-        geofac_div=data_alloc.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(
+            savepoint.geofac_div(), dims.CEDim, backend=backend
+        ),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
@@ -57,38 +60,40 @@ def construct_least_squares_state(
 
 
 def construct_metric_state(
-    icon_grid, savepoint: sb.MetricSavepoint
+    icon_grid, savepoint: sb.MetricSavepoint, backend: gt4py_backend.Backend
 ) -> advection_states.AdvectionMetricState:
-    constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim)
+    constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim, backend=backend)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
     return advection_states.AdvectionMetricState(
         deepatmo_divh=constant_f,
         deepatmo_divzl=constant_f,
         deepatmo_divzu=constant_f,
-        ddqz_z_full=gtx.as_field((dims.CellDim, dims.KDim), ddqz_z_full_np),
+        ddqz_z_full=gtx.as_field((dims.CellDim, dims.KDim), ddqz_z_full_np, allocator=backend),
     )
 
 
 def construct_diagnostic_init_state(
-    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int
+    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int, backend: gt4py_backend.Backend
 ) -> advection_states.AdvectionDiagnosticState:
     return advection_states.AdvectionDiagnosticState(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
         hfl_tracer=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=icon_grid
+            dims.EdgeDim, dims.KDim, grid=icon_grid, backend=backend
         ),  # exit field
         vfl_tracer=data_alloc.allocate_zero_field(  # TODO (dastrm): should be KHalfDim
-            dims.CellDim, dims.KDim, is_halfdim=True, grid=icon_grid
+            dims.CellDim, dims.KDim, is_halfdim=True, grid=icon_grid, backend=backend
         ),  # exit field
     )
 
 
 def construct_diagnostic_exit_state(
-    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int
+    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int, backend: gt4py_backend.Backend
 ) -> advection_states.AdvectionDiagnosticState:
-    zero_f = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
+    zero_f = data_alloc.allocate_zero_field(
+        dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+    )
     return advection_states.AdvectionDiagnosticState(
         airmass_now=zero_f,  # init field
         airmass_new=zero_f,  # init field
