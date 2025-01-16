@@ -8,7 +8,6 @@
 
 import pytest
 
-from icon4py.model.common import constants
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
 from icon4py.model.common.metrics import (
@@ -64,7 +63,6 @@ def get_metrics_factory(
             interpolation_source=interpolation_fact,
             backend=backend,
             metadata=attrs.attrs,
-            constants=constants,
             grid_savepoint=grid_savepoint,
             metrics_savepoint=metrics_savepoint,
             damping_height=metric_config.damping_height,

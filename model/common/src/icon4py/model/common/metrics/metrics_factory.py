@@ -12,7 +12,7 @@ import gt4py.next as gtx
 import numpy as np
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
@@ -116,7 +116,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
-        constants,
         grid_savepoint,
         metrics_savepoint,
         damping_height: float,
@@ -132,7 +131,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._vertical_grid = vertical_grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._constants = constants
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         self._interpolation_source = interpolation_source
@@ -279,8 +277,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "damping_height": self._config["damping_height"],
                 "rayleigh_type": self._config["rayleigh_type"],
-                "rayleigh_classic": self._constants.RayleighType.CLASSIC,
-                "rayleigh_klemp": self._constants.RayleighType.KLEMP,
+                "rayleigh_classic": constants.RayleighType.CLASSIC,
+                "rayleigh_klemp": constants.RayleighType.KLEMP,
                 "rayleigh_coeff": self._config["rayleigh_coeff"],
                 "vct_a_1": self._config["vct_a_1"],
                 "pi_const": math.pi,
@@ -328,7 +326,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
                 "h_scal_bg": constants._H_SCAL_BG,
-                "grav":constants.GRAV,
+                "grav": constants.GRAV,
                 "rd": constants.RD,
                 "p0sl_bg": constants.SEAL_LEVEL_PRESSURE,
                 "rd_o_cpd": constants.RD_O_CPD,
@@ -452,7 +450,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxn_z_full)
 
         compute_vwind_impl_wgt_np = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_vwind_impl_wgt.compute_vwind_impl_wgt, array_ns = self._xp),
+            func=functools.partial(
+                compute_vwind_impl_wgt.compute_vwind_impl_wgt, array_ns=self._xp
+            ),
             domain=(dims.CellDim,),
             connectivities={"c2e": dims.C2EDim},
             fields=(attrs.VWIND_IMPL_WGT,),
@@ -696,7 +696,6 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_start_1": self._grid.start_index(
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
                 ),
-                "nedges": self._grid.num_edges,
             },
         )
         self.register_provider(compute_zdiff_gradp_dsl_np)
@@ -818,11 +817,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "thslp_zdiffu": self._config["thslp_zdiffu"],
                 "thhgtd_zdiffu": self._config["thhgtd_zdiffu"],
-                "n_c2e2c": self._grid.connectivities[dims.C2E2CDim].shape[1],
                 "cell_nudging": self._grid.start_index(
                     h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING)
                 ),
-                "n_cells": self._grid.num_cells,
                 "nlev": self._grid.num_levels,
             },
         )

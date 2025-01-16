@@ -109,9 +109,7 @@ def test_compute_diffusion_metrics(
         maxhgtd_avg=maxhgtd_avg.asnumpy(),
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
-        n_c2e2c=c2e2c.shape[1],
         cell_nudging=cell_nudging,
-        n_cells=icon_grid.num_cells,
         nlev=nlev,
     )
     assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())

@@ -144,11 +144,11 @@ def compute_diffusion_metrics(
     maxhgtd_avg: data_alloc.NDArray,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
-    n_c2e2c: int,
     cell_nudging: int,
-    n_cells: int,
     nlev: int,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
+    n_cells = c2e2c.shape[0]
+    n_c2e2c = c2e2c.shape[1]
     z_mc_off = z_mc[c2e2c]
     nbidx = np.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
     z_vintcoeff = np.zeros(shape=(n_cells, n_c2e2c, nlev))

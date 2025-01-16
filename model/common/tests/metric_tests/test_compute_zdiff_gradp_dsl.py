@@ -31,10 +31,10 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
-    z_mc = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     z_ifc = metrics_savepoint.z_ifc()
     k_lev = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=int))
-    z_me = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    z_me = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     edge_domain = h_grid.domain(dims.EdgeDim)
     horizontal_start_edge = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     start_nudging = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
@@ -53,7 +53,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         out=z_me,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
-    flat_idx = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    flat_idx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     _compute_flat_idx(
         z_mc=z_mc,
         c_lin_e=interpolation_savepoint.c_lin_e(),
@@ -82,7 +82,6 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
-        nedges=icon_grid.num_edges,
     )
 
     assert dallclose(zdiff_gradp_full_field, zdiff_gradp_ref.asnumpy(), rtol=1.0e-5)

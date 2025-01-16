@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from types import ModuleType
+
 import numpy as np
 
 from icon4py.model.common import dimension as dims
@@ -17,7 +19,7 @@ def compute_coeff_gradekin(
     inv_dual_edge_length: data_alloc.NDArray,
     horizontal_start: int,
     horizontal_end: int,
-    arrray_ns: ModuleType = np
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute coefficients for improved calculation of kinetic energy gradient

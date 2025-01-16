@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from types import ModuleType
+
 import numpy as np
 from gt4py.next import as_field
 
@@ -23,9 +25,9 @@ def compute_zdiff_gradp_dsl(
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
-    nedges: int,
-    array_ns:ModuleType = np
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    nedges = e2c.shape[0]
     z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
     z_aux1 = array_ns.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0  # extrapol_dist
