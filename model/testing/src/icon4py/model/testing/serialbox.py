@@ -466,7 +466,7 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e = self.e2c2e()
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
-        xp = data_alloc.import_array_ns(self.backend)
+        xp = data_alloc.array_ns(on_gpu)
         grid = (
             icon.IconGrid(self._grid_id)
             .with_config(config)

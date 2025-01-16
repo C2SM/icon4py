@@ -170,9 +170,9 @@ def _compute_primal_normal_ec(
         primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
     """
     num_cells = c2e.shape[0]
-    primal_normal_ec = np.zeros([c2e.shape[0], c2e.shape[1], 2])
-    index = np.transpose(
-        np.vstack(
+    primal_normal_ec = array_ns.zeros([c2e.shape[0], c2e.shape[1], 2])
+    index = array_ns.transpose(
+        array_ns.vstack(
             (
                 array_ns.arange(num_cells),
                 array_ns.arange(num_cells),
@@ -180,7 +180,7 @@ def _compute_primal_normal_ec(
             )
         )
     )
-    owned = np.vstack((owner_mask, owner_mask, owner_mask)).T
+    owned = array_ns.vstack((owner_mask, owner_mask, owner_mask)).T
     for i in range(2):
         mask = e2c[c2e, i] == index
         primal_normal_ec[horizontal_start:, :, 0] = primal_normal_ec[
@@ -885,6 +885,7 @@ def compute_e_bln_c_s(
     edges_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
     weighting_factor: float,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
@@ -902,11 +903,11 @@ def compute_e_bln_c_s(
     """
     llb = 0
     num_cells = c2e.shape[0]
-    e_bln_c_s = np.zeros([num_cells, c2e.shape[1]])
+    e_bln_c_s = array_ns.zeros([num_cells, c2e.shape[1]])
     yloc = cells_lat[llb:]
     xloc = cells_lon[llb:]
-    ytemp = np.zeros([c2e.shape[1], num_cells])
-    xtemp = np.zeros([c2e.shape[1], num_cells])
+    ytemp = array_ns.zeros([c2e.shape[1], num_cells])
+    xtemp = array_ns.zeros([c2e.shape[1], num_cells])
 
     for i in range(ytemp.shape[0]):
         ytemp[i] = edges_lat[c2e[llb:, i]]
@@ -918,6 +919,7 @@ def compute_e_bln_c_s(
         yloc,
         xloc,
         weighting_factor,
+        array_ns=array_ns,
     )
 
     e_bln_c_s[:, 0] = wgt[0]
