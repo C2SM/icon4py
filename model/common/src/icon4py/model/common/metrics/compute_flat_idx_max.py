@@ -36,4 +36,4 @@ def compute_flat_idx_max(
             ):
                 flat_idx[je, jk] = k_lev[jk]
     flat_idx_max = np.amax(flat_idx, axis=1)
-    return flat_idx_max.astype(np.int32)
+    return flat_idx_max.astype(gtx.int32)
