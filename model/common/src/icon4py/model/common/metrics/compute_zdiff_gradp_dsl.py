@@ -26,8 +26,8 @@ def compute_zdiff_gradp_dsl(
     nedges: int,
     array_ns:ModuleType = np
 ) -> data_alloc.NDArray:
-    z_me = np.sum(z_mc[e2c] * np.expand_dims(c_lin_e, axis=-1), axis=1)
-    z_aux1 = np.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
+    z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
+    z_aux1 = array_ns.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0  # extrapol_dist
     zdiff_gradp = np.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
