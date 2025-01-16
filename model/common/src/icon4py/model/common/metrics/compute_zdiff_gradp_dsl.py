@@ -24,6 +24,7 @@ def compute_zdiff_gradp_dsl(
     horizontal_start: int,
     horizontal_start_1: int,
     nedges: int,
+    array_ns:ModuleType = np
 ) -> data_alloc.NDArray:
     z_me = np.sum(z_mc[e2c] * np.expand_dims(c_lin_e, axis=-1), axis=1)
     z_aux1 = np.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
