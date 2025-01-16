@@ -35,5 +35,5 @@ def compute_flat_idx_max(
                 and (z_me[je, jk] >= z_ifc_e_k_1[je, jk])
             ):
                 flat_idx[je, jk] = k_lev[jk]
-    flat_idx_max = np.amax(flat_idx, axis=1)
+    flat_idx_max = array_ns.amax(flat_idx, axis=1)
     return flat_idx_max.astype(gtx.int32)
