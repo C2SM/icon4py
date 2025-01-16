@@ -19,6 +19,7 @@ def compute_flat_idx_max(
     k_lev: data_alloc.NDArray,
     horizontal_lower: int,
     horizontal_upper: int,
+    array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
     z_me = np.sum(z_mc[e2c] * np.expand_dims(c_lin_e, axis=-1), axis=1)
     z_ifc_e_0 = z_ifc[e2c[:, 0]]
