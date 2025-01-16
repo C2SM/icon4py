@@ -282,7 +282,7 @@ class DummyNestedSDFG:
         sdfg = dace.SDFG("DummyNestedSDFG")
         state = sdfg.add_state()
 
-        sdfg.add_scalar(name="__return", dtype=dace.int32)
+        sdfg.add_array(name="__return", shape=[1], dtype=dace.int32)
 
         tasklet = dace.sdfg.nodes.Tasklet(
             "DummyNestedSDFG",

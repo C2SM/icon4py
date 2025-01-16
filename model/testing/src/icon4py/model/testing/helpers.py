@@ -8,7 +8,7 @@
 
 import hashlib
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import ClassVar, Optional
 
 import numpy as np
 import pytest
@@ -39,6 +39,10 @@ def is_python(backend) -> bool:
     #   - cannot run on embedded: because of slicing
     #   - roundtrip is very slow on large grid
     return is_embedded(backend) or is_roundtrip(backend)
+
+
+def is_dace(backend) -> bool:
+    return backend.name.startswith("run_dace_") if backend else False
 
 
 def is_embedded(backend) -> bool:
@@ -74,6 +78,11 @@ class Output:
 
 
 def _test_validation(self, grid, backend, input_data):
+    if self.MARKER is not None:
+        for marker in self.MARKER:
+            if marker.markname == "requires_concat_where":
+                pytest.xfail("test requires concat_where")
+
     reference_outputs = self.reference(
         grid,
         **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
@@ -108,6 +117,10 @@ if pytest_benchmark:
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
+            if self.MARKER is not None:
+                for marker in self.MARKER:
+                    if marker.markname == "requires_concat_where":
+                        pytest.xfail("test requires concat_where")
             input_data = allocate_data(backend, input_data)
             benchmark(
                 self.PROGRAM.with_backend(backend),
@@ -142,6 +155,7 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
+    MARKER: Optional[tuple] = None
 
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that

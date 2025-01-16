@@ -190,14 +190,6 @@ def orchestrate(
             else:
                 return fuse_func(*args, **kwargs)
 
-        # Pytest does not clear the cache between runs in a proper way -pytest.mark.parametrize(...)-.
-        # This leads to corrupted cache and subsequent errors.
-        # To avoid this, we provide a way to clear the cache.
-        def clear_cache():
-            orchestrator_cache.clear()
-
-        wrapper.clear_cache = clear_cache
-
         return wrapper
 
     return _decorator(func) if func else _decorator
@@ -318,21 +310,6 @@ def wait(comm_handle: Union[int, decomposition.ExchangeResult]):
         pass
     else:
         comm_handle.wait()
-
-
-def build_compile_time_connectivities(
-    offset_providers: dict[str, gtx.common.Connectivity],
-) -> dict[str, gtx.common.Connectivity]:
-    connectivities = {}
-    for k, v in offset_providers.items():
-        if hasattr(v, "table"):
-            connectivities[k] = gtx.otf.arguments.CompileTimeConnectivity(
-                v.max_neighbors, v.has_skip_values, v.origin_axis, v.neighbor_axis, v.table.dtype
-            )
-        else:
-            connectivities[k] = v
-
-    return connectivities
 
 
 if dace:
@@ -547,9 +524,9 @@ if dace:
         return {
             # connectivity tables at runtime
             **{
-                connectivity_identifier(k): v.table
+                connectivity_identifier(k): v.ndarray
                 for k, v in offset_providers.items()
-                if hasattr(v, "table")
+                if hasattr(v, "ndarray")
             },
             # GHEX C++ ptrs
             "__context_ptr": expose_cpp_ptr(exchange_obj._context)
@@ -638,8 +615,8 @@ if dace:
 
         return {
             **{
-                "CellDim_sym": grid.offset_providers["C2E"].table.shape[0],
-                "EdgeDim_sym": grid.offset_providers["E2C"].table.shape[0],
+                "CellDim_sym": grid.offset_providers["C2E"].ndarray.shape[0],
+                "EdgeDim_sym": grid.offset_providers["E2C"].ndarray.shape[0],
                 "KDim_sym": grid.num_levels,
             },
             **concretize_symbols_for_dace_structure,
