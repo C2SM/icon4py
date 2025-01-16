@@ -9,9 +9,8 @@ include:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
       GRID: [simple_grid, icon_grid]
-# prefix the x86_64 config with dot in order to not execute it
-.test_model_stencils_x86_64:
-  extends: [.test_model_stencils, .test_template_x86_64]
+# test_model_stencils_x86_64:
+#   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
@@ -24,9 +23,8 @@ test_model_stencils_aarch64:
     # TODO(edopao): Add more components once they work fine with DaCe 
     - COMPONENT: [atmosphere/diffusion, atmosphere/dycore]
       BACKEND: [dace_cpu]
-# prefix the x86_64 config with dot in order to not execute it
-.test_model_datatests_x86_64:
-  extends: [.test_model_datatests, .test_template_x86_64]
+# test_model_datatests_x86_64:
+#   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
 
@@ -39,8 +37,7 @@ test_model_datatests_aarch64:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
       GRID: [icon_grid, icon_grid_global]
-# prefix the x86_64 config with dot in order to not execute it
-.benchmark_model_stencils_x86_64:
-  extends: [.benchmark_model_stencils, .test_template_x86_64]
+# benchmark_model_stencils_x86_64:
+#   extends: [.benchmark_model_stencils, .test_template_x86_64]
 benchmark_model_stencils_aarch64:
   extends: [.benchmark_model_stencils, .test_template_aarch64]
