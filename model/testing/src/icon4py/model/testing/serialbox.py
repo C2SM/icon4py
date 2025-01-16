@@ -40,6 +40,7 @@ class IconSavepoint:
         self.sizes = size
         self.log = logging.getLogger((__name__))
         self.backend = backend
+        self.xp = data_alloc.import_array_ns(self.backend)
 
     def optionally_registered(*dims):
         def decorator(func):
@@ -341,7 +342,6 @@ class IconGridSavepoint(IconSavepoint):
             ]
         else:
             connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
-        connectivity = np.asarray(connectivity)
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
@@ -466,6 +466,7 @@ class IconGridSavepoint(IconSavepoint):
         e2c2e = self.e2c2e()
         c2e2c0 = np.column_stack((range(c2e2c.shape[0]), c2e2c))
         e2c2e0 = np.column_stack((range(e2c2e.shape[0]), e2c2e))
+        xp = data_alloc.import_array_ns(self.backend)
         grid = (
             icon.IconGrid(self._grid_id)
             .with_config(config)
@@ -475,22 +476,22 @@ class IconGridSavepoint(IconSavepoint):
             .with_start_end_indices(dims.CellDim, cell_starts, cell_ends)
             .with_connectivities(
                 {
-                    dims.C2EDim: self.c2e(),
-                    dims.E2CDim: self.e2c(),
-                    dims.C2E2CDim: c2e2c,
-                    dims.C2E2CODim: c2e2c0,
-                    dims.C2E2C2EDim: self.c2e2c2e(),
-                    dims.E2C2EDim: e2c2e,
-                    dims.E2C2EODim: e2c2e0,
+                    dims.C2EDim: xp.asarray(self.c2e()),
+                    dims.E2CDim: xp.asarray(self.e2c()),
+                    dims.C2E2CDim: xp.asarray(c2e2c),
+                    dims.C2E2CODim: xp.asarray(c2e2c0),
+                    dims.C2E2C2EDim: xp.asarray(self.c2e2c2e()),
+                    dims.E2C2EDim: xp.asarray(e2c2e),
+                    dims.E2C2EODim: xp.asarray(e2c2e0),
                 }
             )
             .with_connectivities(
                 {
-                    dims.E2VDim: self.e2v(),
-                    dims.V2EDim: self.v2e(),
-                    dims.V2CDim: self.v2c(),
-                    dims.E2C2VDim: self.e2c2v(),
-                    dims.C2VDim: self.c2v(),
+                    dims.E2VDim: xp.asarray(self.e2v()),
+                    dims.V2EDim: xp.asarray(self.v2e()),
+                    dims.V2CDim: xp.asarray(self.v2c()),
+                    dims.E2C2VDim: xp.asarray(self.e2c2v()),
+                    dims.C2VDim: xp.asarray(self.c2v()),
                 }
             )
         )

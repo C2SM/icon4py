@@ -136,9 +136,8 @@ class BaseGrid(ABC):
         ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
             dim, self.connectivities[dim].dtype
         )
-        xp = data_alloc.array_ns(self.config.on_gpu)
         return gtx.NeighborTableOffsetProvider(
-            xp.asarray(self.connectivities[dim]),
+            self.connectivities[dim],
             from_dim,
             to_dim,
             self.size[dim],
@@ -148,12 +147,13 @@ class BaseGrid(ABC):
     def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
+        xp = data_alloc.array_ns(self.config.on_gpu)
         return grid_utils.neighbortable_offset_provider_for_1d_sparse_fields(
-            self.config.on_gpu,
             self.connectivities[dim].shape,
             from_dim,
             to_dim,
             has_skip_values=self._has_skip_values(dim),
+            array_ns=xp,
         )
 
     def get_offset_provider(self, name):
