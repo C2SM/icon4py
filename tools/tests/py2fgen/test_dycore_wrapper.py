@@ -308,10 +308,14 @@ def test_dycore_wrapper_granule_inputs(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+        ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.geofac_div()
+        ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -412,7 +416,7 @@ def test_dycore_wrapper_granule_inputs(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
     )
     expected_initial_divdamp_fac = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")

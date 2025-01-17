@@ -67,7 +67,7 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
         deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
         rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         tracer_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        k = data_alloc.allocate_indices(dims.KDim, grid, is_halfdim=False, dtype=gtx.int32)
+        k = data_alloc.index_field(grid, dims.KDim)
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4
