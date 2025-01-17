@@ -152,9 +152,8 @@ def _compute_primal_normal_ec(
     owner_mask: data_alloc.NDArray,
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
-    horizontal_start: np.int32,
     array_ns: ModuleType = np,
-) -> data_alloc.NDArray:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute primal_normal_ec.
 
@@ -164,42 +163,22 @@ def _compute_primal_normal_ec(
         owner_mask: ndarray, representing a gtx.Field[gtx.Dims[CellDim], bool]
         c2e: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        horizontal_start: start index to compute from
         array_ns: module - the array interface implementation to compute on, defaults to numpy
     Returns:
         primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
     """
-    num_cells = c2e.shape[0]
-    primal_normal_ec = array_ns.zeros([c2e.shape[0], c2e.shape[1], 2])
-    index = array_ns.arange(num_cells)
-    owned = np.vstack((owner_mask, owner_mask, owner_mask)).T
-    for i in range(2):
-        mask = e2c[c2e, i] == index
-        primal_normal_ec[horizontal_start:, :, 0] = primal_normal_ec[
-            horizontal_start:, :, 0
-        ] + array_ns.where(
-            owned[horizontal_start:, :],
-            mask[horizontal_start:, :] * primal_normal_cell_x[c2e[horizontal_start:], i],
-            0.0,
-        )
-        primal_normal_ec[horizontal_start:, :, 1] = primal_normal_ec[
-            horizontal_start:, :, 1
-        ] + array_ns.where(
-            owned[horizontal_start:, :],
-            mask[horizontal_start:, :] * primal_normal_cell_y[c2e[horizontal_start:], i],
-            0.0,
-        )
+
+    owned = np.stack((owner_mask, owner_mask, owner_mask)).T
 
     inv_neighbor_index = create_inverse_neighbor_index(e2c, c2e, array_ns)
     u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
     v_component = primal_normal_cell_y[c2e, inv_neighbor_index]
-    primal_normal_ec[:, :, 0] = np.where(owned, u_component, 0.0)
-    primal_normal_ec[:, :, 1] = np.where(owned, v_component, 0.0)
-    return primal_normal_ec
+    return (np.where(owned, u_component, 0.0), np.where(owned, v_component, 0.0))
 
 
 def _compute_geofac_grg(
-    primal_normal_ec: data_alloc.NDArray,
+    primal_normal_ec_u: data_alloc.NDArray,
+    primal_normal_ec_v: data_alloc.NDArray,
     geofac_div: data_alloc.NDArray,
     c_lin_e: data_alloc.NDArray,
     c2e: data_alloc.NDArray,
@@ -212,7 +191,8 @@ def _compute_geofac_grg(
     Compute geometrical factor for Green-Gauss gradient.
 
     Args:
-        primal_normal_ec: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
+        primal_normal_ec_u: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
+        primal_normal_ec_v: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
         geofac_div: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
         c_lin_e: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         c2e: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
@@ -224,39 +204,29 @@ def _compute_geofac_grg(
         geofac_grg: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim + 1, 2], ta.wpfloat]
     """
     num_cells = c2e.shape[0]
-    geofac_grg = array_ns.zeros([num_cells, c2e.shape[1] + 1, primal_normal_ec.shape[2]])
-    index = array_ns.transpose(
-        array_ns.vstack(
-            (
-                array_ns.arange(num_cells),
-                array_ns.arange(num_cells),
-                array_ns.arange(num_cells),
-            )
+    targ_local_size = c2e.shape[1] + 1
+    target_shape = (num_cells, targ_local_size)
+    geofac_grg_x = array_ns.zeros(target_shape)
+    geofac_grg_y = array_ns.zeros(target_shape)
+
+    inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
+
+    tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
+    geofac_grg_x[horizontal_start:, 0] = np.sum(primal_normal_ec_u * tmp, axis=1)[horizontal_start:]
+    geofac_grg_y[horizontal_start:, 0] = np.sum(primal_normal_ec_v * tmp, axis=1)[horizontal_start:]
+
+    for k in range(e2c.shape[1]):
+        mask = (e2c[c2e, k] == c2e2c)[horizontal_start:, :]
+        geofac_grg_x[horizontal_start:, 1:] = (
+            geofac_grg_x[horizontal_start:, 1:]
+            + mask * (primal_normal_ec_u * geofac_div * c_lin_e[c2e, k])[horizontal_start:, :]
         )
-    )
-    for k in range(e2c.shape[1]):
-        mask = e2c[c2e, k] == index
-        for i in range(primal_normal_ec.shape[2]):
-            for j in range(c2e.shape[1]):
-                geofac_grg[horizontal_start:, 0, i] = (
-                    geofac_grg[horizontal_start:, 0, i]
-                    + mask[horizontal_start:, j]
-                    * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[
-                        horizontal_start:, j
-                    ]
-                )
-    for k in range(e2c.shape[1]):
-        mask = e2c[c2e, k] == c2e2c
-        for i in range(primal_normal_ec.shape[2]):
-            for j in range(c2e.shape[1]):
-                geofac_grg[horizontal_start:, 1 + j, i] = (
-                    geofac_grg[horizontal_start:, 1 + j, i]
-                    + mask[horizontal_start:, j]
-                    * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[
-                        horizontal_start:, j
-                    ]
-                )
-    return geofac_grg[:, :, 0], geofac_grg[:, :, 1]
+        geofac_grg_y[horizontal_start:, 1:] = (
+            geofac_grg_y[horizontal_start:, 1:]
+            + mask * (primal_normal_ec_v * geofac_div * c_lin_e[c2e, k])[horizontal_start:, :]
+        )
+
+    return geofac_grg_x, geofac_grg_y
 
 
 def compute_geofac_grg(
@@ -271,11 +241,18 @@ def compute_geofac_grg(
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
-    primal_normal_ec = functools.partial(_compute_primal_normal_ec, array_ns=array_ns)(
-        primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c, horizontal_start
-    )
+    primal_normal_ec_u, primal_normal_ec_v = functools.partial(
+        _compute_primal_normal_ec, array_ns=array_ns
+    )(primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c)
     return functools.partial(_compute_geofac_grg, array_ns=array_ns)(
-        primal_normal_ec, geofac_div, c_lin_e, c2e, e2c, c2e2c, horizontal_start
+        primal_normal_ec_u,
+        primal_normal_ec_v,
+        geofac_div,
+        c_lin_e,
+        c2e,
+        e2c,
+        c2e2c,
+        horizontal_start,
     )
 
 
@@ -606,7 +583,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
-    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0, array_ns=array_ns)
+    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -661,13 +638,13 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     )
 
 
-def create_inverse_neighbor_index(source_offset, target_offset, array_ns: ModuleType):
+def create_inverse_neighbor_index(source_offset, inverse_offset, array_ns: ModuleType):
     """
-    The inverse neighbor index determines the position of an element central element e_1
+    The inverse neighbor index determines the position of an central element c_1
     in the neighbor table of its neighbors:
 
     For example: for let e_1, e_2, e_3 be the neighboring edges of a cell: c2e(c_1) will
-    map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c will have the two lines
+    map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c the
     neighborhoods of e_1, e_2, e_3 will all contain c_1 in some position.
     Then inverse neighbor index tells what position that is. It essentially says
     "I am neighbor number x \in (0,1) of my neighboring edges"
@@ -675,20 +652,20 @@ def create_inverse_neighbor_index(source_offset, target_offset, array_ns: Module
 
     Args:
         source_offset:
-        target_offset:
+        inverse_offset:
 
     Returns:
         ndarray of the same shape as target_offset
 
     """
-    inv_neighbor_idx = -1 * array_ns.ones(target_offset.shape, dtype=int)
+    inv_neighbor_idx = -1 * array_ns.ones(inverse_offset.shape, dtype=int)
 
-    for jc in range(target_offset.shape[0]):
-        for i in range(target_offset.shape[1]):
-            if target_offset[jc, i] >= 0:
-                inv_neighbor_idx[jc, i] = np.argwhere(source_offset[target_offset[jc, i], :] == jc)[
-                    0, 0
-                ]
+    for jc in range(inverse_offset.shape[0]):
+        for i in range(inverse_offset.shape[1]):
+            if inverse_offset[jc, i] >= 0:
+                inv_neighbor_idx[jc, i] = array_ns.argwhere(
+                    source_offset[inverse_offset[jc, i], :] == jc
+                )[0, 0]
 
     return inv_neighbor_idx
 
