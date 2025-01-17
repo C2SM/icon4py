@@ -5,9 +5,9 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import dataclasses
 import datetime
+import functools
 import logging
 
 from icon4py.model.atmosphere.diffusion import diffusion
@@ -50,7 +50,7 @@ class Icon4pyRunConfig:
                 f"Available backends are {', '.join([f'{k}' for k in model_backends.BACKENDS.keys()])}"
             )
 
-    @property
+    @functools.cached_property
     def backend(self):
         return model_backends.BACKENDS[self.backend_name]
 
