@@ -88,21 +88,20 @@ def construct_diagnostic_init_state(
 
 def construct_diagnostic_exit_state(
     icon_grid,
-    savepoint: sb.AdvectionInitSavepoint,
+    savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
 ) -> advection_states.AdvectionDiagnosticState:
     return advection_states.AdvectionDiagnosticState(
         airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
         airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
         grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
-        # FIXME (@halungge) check with David - Savepoint and field do not match
         hfl_tracer=savepoint.hfl_tracer(ntracer),
         vfl_tracer=savepoint.vfl_tracer(ntracer),
     )
 
 
 def construct_prep_adv(
-    icon_grid, savepoint: sb.AdvectionInitSavepoint
+    savepoint: sb.AdvectionInitSavepoint,
 ) -> advection_states.AdvectionPrepAdvState:
     return advection_states.AdvectionPrepAdvState(
         vn_traj=savepoint.vn_traj(),

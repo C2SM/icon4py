@@ -121,9 +121,8 @@ def test_advection_run_single_step(
     )
 
     diagnostic_state = construct_diagnostic_init_state(icon_grid, advection_init_savepoint, ntracer)
-    prep_adv = construct_prep_adv(icon_grid, advection_init_savepoint)
+    prep_adv = construct_prep_adv(advection_init_savepoint)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
-
     p_tracer_new = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
 

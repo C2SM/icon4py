@@ -9,12 +9,11 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rho_and_theta import (
     compute_horizontal_advection_of_rho_and_theta,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -36,7 +35,7 @@ class TestComputeBtraj(StencilTest):
         p_dthalf: float,
         **kwargs,
     ) -> tuple[np.array, ...]:
-        lvn_pos = np.where(p_vn > wpfloat("0.0"), True, False)
+        lvn_pos = np.where(p_vn > ta.wpfloat("0.0"), True, False)
         pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
         pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
         primal_normal_cell_1 = np.expand_dims(primal_normal_cell_1, axis=-1)
@@ -185,26 +184,26 @@ class TestComputeBtraj(StencilTest):
         if np.any(grid.connectivities[dims.E2CDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        p_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        p_vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        pos_on_tplane_e_1 = random_field(grid, dims.ECDim, dtype=wpfloat)
-        pos_on_tplane_e_2 = random_field(grid, dims.ECDim, dtype=wpfloat)
-        primal_normal_cell_1 = random_field(grid, dims.ECDim, dtype=wpfloat)
-        dual_normal_cell_1 = random_field(grid, dims.ECDim, dtype=wpfloat)
-        primal_normal_cell_2 = random_field(grid, dims.ECDim, dtype=wpfloat)
-        dual_normal_cell_2 = random_field(grid, dims.ECDim, dtype=wpfloat)
-        p_dthalf = wpfloat("2.0")
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
+        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
+        primal_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
+        dual_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
+        primal_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
+        dual_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
+        p_dthalf = ta.wpfloat("2.0")
 
-        rho_ref_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        theta_ref_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        z_grad_rth_1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_grad_rth_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_grad_rth_3 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_grad_rth_4 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        z_rho_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_theta_v_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        theta_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        z_grad_rth_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_grad_rth_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_grad_rth_3 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_grad_rth_4 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_rth_pr_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_rth_pr_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             p_vn=p_vn,
