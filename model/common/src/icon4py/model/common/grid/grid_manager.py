@@ -467,11 +467,11 @@ class GridManager:
                 (dims.EdgeDim, dims.E2CDim),
                 self._reader.variable(GeometryName.EDGE_CELL_DISTANCE, transpose=True),
             ),
-            # TODO (@halungge) recompute from coordinates? field in gridfile contains NaN on boundary edges
             GeometryName.EDGE_VERTEX_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2VDim),
                 self._reader.variable(GeometryName.EDGE_VERTEX_DISTANCE, transpose=True),
             ),
+            # TODO (@halungge) recompute from coordinates? field in gridfile contains NaN on boundary edges
             GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
                 (dims.EdgeDim,),
                 self._reader.variable(GeometryName.TANGENT_ORIENTATION),

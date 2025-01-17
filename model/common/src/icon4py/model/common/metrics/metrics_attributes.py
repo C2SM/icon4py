@@ -14,11 +14,13 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
 
+# TODO: revise names with domain scientists
+
 Z_MC: Final[str] = "height"
 DDQZ_Z_HALF: Final[str] = "functional_determinant_of_metrics_on_interface_levels"
 DDQZ_Z_FULL: Final[str] = "ddqz_z_full"
 INV_DDQZ_Z_FULL: Final[str] = "inv_ddqz_z_full"
-SCALFAC_DD3D: Final[str] = "scalfac_dd3d"
+SCALFAC_DD3D: Final[str] = "scaling_factor_for_3d_divergence_damping"
 RAYLEIGH_W: Final[str] = "rayleigh_w"
 COEFF1_DWDZ: Final[str] = "coeff1_dwdz"
 COEFF2_DWDZ: Final[str] = "coeff2_dwdz"
@@ -93,7 +95,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     SCALFAC_DD3D: dict(
         standard_name=SCALFAC_DD3D,
-        long_name="scalfac_dd3d",
+        long_name="Scaling factor for 3D divergence damping terms",
         units="",
         dims=(dims.KDim),
         icon_var_name="scalfac_dd3d",

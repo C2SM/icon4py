@@ -116,8 +116,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         interpolation_source: interpolation_factory.InterpolationFieldsFactory,
         backend: gtx_backend.Backend,
         metadata: dict[str, model.FieldMetaData],
-        grid_savepoint,
-        metrics_savepoint,
+        interface_model_height: gtx.Field,
+        e_refin_ctrl: gtx.Field,
+        c_refin_ctrl: gtx.Field,
         damping_height: float,
         rayleigh_type: int,
         rayleigh_coeff: float,
@@ -135,8 +136,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._geometry = geometry_source
         self._interpolation_source = interpolation_source
 
-        vct_a = grid_savepoint.vct_a()
-        vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
+        vct_a = self._vertical_grid.vct_a
+        vct_a_1 = vct_a.asnumpy()[0]
         self._config = {
             "divdamp_trans_start": 12500.0,
             "divdamp_trans_end": 17500.0,
@@ -152,14 +153,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             "thhgtd_zdiffu": 125.0,
             "vct_a_1": vct_a_1,
         }
-        interface_model_height = metrics_savepoint.z_ifc()
         z_ifc_sliced = gtx.as_field(
             (dims.CellDim,), interface_model_height.asnumpy()[:, self._grid.num_levels]
         )
-        c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
-        e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
-        e_owner_mask = grid_savepoint.e_owner_mask()
-        c_owner_mask = grid_savepoint.c_owner_mask()
         k_index = gtx.as_field((dims.KDim,), np.arange(self._grid.num_levels + 1, dtype=gtx.int32))
         e_lev = gtx.as_field((dims.EdgeDim,), np.arange(self._grid.num_edges, dtype=gtx.int32))
 
@@ -171,8 +167,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "vct_a": vct_a,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
-                    "e_owner_mask": e_owner_mask,
-                    "c_owner_mask": c_owner_mask,
+                    "e_owner_mask": self._decomposition_info.owner_mask(dims.EdgeDim),
+                    "c_owner_mask": self._decomposition_info.owner_mask(dims.CellDim),
                     "k_lev": k_index,
                     "e_lev": e_lev,
                 }
