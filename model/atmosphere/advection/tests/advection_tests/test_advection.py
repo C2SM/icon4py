@@ -96,7 +96,7 @@ def test_advection_run_single_step(
     vertical_advection_type,
     vertical_advection_limiter,
 ):
-    # TODO (Chia Rui): The fourth set of datatest fails on GPU backend with the maximum absolute error of 0.29. Find out the cause.
+    # TODO (Chia Rui): the datatest may fail on GPU backend when there is no advection because the horizontal flux is not zero. Further check required.
     config = construct_config(
         horizontal_advection_type=horizontal_advection_type,
         horizontal_advection_limiter=horizontal_advection_limiter,

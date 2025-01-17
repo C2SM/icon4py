@@ -185,12 +185,11 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid, 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid, backend):
-    # TODO (Chia Rui): Bug here? It fails.
     xp = data_alloc.import_array_ns(backend)
     geofac_div = interpolation_savepoint.geofac_div()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
-    owner_mask = grid_savepoint.c_owner_mask()
+    owner_mask = grid_savepoint.e_owner_mask()
     c2e = icon_grid.connectivities[dims.C2EDim]
     e2c = icon_grid.connectivities[dims.E2CDim]
     e2c2e = icon_grid.connectivities[dims.E2C2EDim]
