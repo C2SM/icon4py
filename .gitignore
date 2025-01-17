@@ -12,6 +12,7 @@ testdata
 simple_mesh*.nc
 /prof
 .profile
+imgs
 
 ### Sphinx ###
 **/docs/_source/*.rst
