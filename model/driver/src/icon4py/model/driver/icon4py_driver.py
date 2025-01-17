@@ -17,7 +17,6 @@ from devtools import Timer
 from gt4py.next import gtfn_cpu
 import numpy as np
 
-from icon4py.model.common.io import plots
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import (
     diffusion,
@@ -66,12 +65,6 @@ class TimeLoop:
         self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
-
-        self.plot = plots.Plot(
-            #savepoint_path='testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data'
-            #savepoint_path='testdata/ser_icondata/mpitask1/torus_small.flat_and_zeros/ser_data'
-            savepoint_path='testdata/ser_icondata/mpitask1/torus_small.flat_and_one/ser_data'
-            )
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -156,18 +149,12 @@ class TimeLoop:
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
-            vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
-            field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
-            field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
-            log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
 
             self._next_simulation_date()
 
             # update boundary condition
 
             timer.start()
-            #self.plot.plot_data(prognostic_states.current.vn,      5, label=f"driver_{time_step:05d}_vn")
-            #self.plot.plot_data(prognostic_states.current.theta_v, 5, label=f"driver_{time_step:05d}_theta_v")
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
@@ -233,12 +220,6 @@ class TimeLoop:
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
             )
-            #self.plot.plot_data(prognostic_states.current.vn,      10, label=f"dynstep_{dyn_substep:05d}_vn")
-            #self.plot.plot_data(prognostic_states.current.theta_v, 5, label=f"dynstep_{dyn_substep:05d}_theta_v")
-            vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
-            field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
-            field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
-            log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
 
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,

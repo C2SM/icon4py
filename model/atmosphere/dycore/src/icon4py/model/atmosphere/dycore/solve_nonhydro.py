@@ -460,8 +460,10 @@ class SolveNonhydro:
         self._exchange = exchange
         self._backend = backend
 
-        self.plot = plots.Plot(
-            savepoint_path='testdata/ser_icondata/mpitask1/torus_small.flat_and_zeros/ser_data'
+        self._plot = plots.Plot(
+            savepoint_path="testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data",
+            grid_file_path="testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res250m.nc",
+            backend = self._backend,
             )
         self._ibm = ibm.ImmersedBoundaryMethod(grid)
 
@@ -900,10 +902,11 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_initial_timestep=at_initial_timestep,
         )
-        vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
-        field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
-        field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
-        log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
+
+        #--- IBM >
+        # BCs
+        self._ibm.set_boundary_conditions(prognostic_states.current)
+        #<--- IBM
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -913,10 +916,23 @@ class SolveNonhydro:
             at_initial_timestep=at_initial_timestep,
             at_first_substep=at_first_substep,
         )
+
+        #--- IBM >
+        # log messages
         vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
         field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
         field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
+        # plot
+        self._plot.plot_data(prognostic_states.current.w,  3, label=f"after_predictor_w")
+        self._plot.plot_data(prognostic_states.current.vn, 3, label=f"after_predictor_vvec_cell")
+        self._plot.plot_data(prognostic_states.current.vn, 3, label=f"after_predictor_vvec_edge")
+        #<--- IBM
+
+        #--- IBM >
+        # BCs
+        self._ibm.set_boundary_conditions(prognostic_states.current)
+        #<--- IBM
 
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -929,10 +945,18 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             at_last_substep=at_last_substep,
         )
+
+        #--- IBM >
+        # log messages
         vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
         field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
         field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
+        # plots
+        self._plot.plot_data(prognostic_states.current.w,  3, label=f"after_corrector_w")
+        self._plot.plot_data(prognostic_states.current.vn, 3, label=f"after_corrector_vvec_cell")
+        self._plot.plot_data(prognostic_states.current.vn, 3, label=f"after_corrector_vvec_edge")
+        #<--- IBM
 
         if self._grid.limited_area:
             self._compute_theta_and_exner(
@@ -977,10 +1001,6 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider={},
         )
-        vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
-        field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
-        field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
-        log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
 
     # flake8: noqa: C901
     def run_predictor_step(
@@ -999,8 +1019,6 @@ class SolveNonhydro:
         log.info(
             f"running predictor step: dtime = {dtime}, initial_timestep = {at_initial_timestep} at_first_substep = {at_first_substep}"
         )
-
-        #self._ibm.set_boundary_conditions(prognostic_states.current)
 
         if at_first_substep:
             # Recompute only vn tendency
