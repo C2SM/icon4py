@@ -9,7 +9,7 @@ import logging
 import pathlib
 
 import gt4py.next as gtx
-from gt4py.next import backend as gt4py_backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -35,7 +35,7 @@ def model_initialization_gauss3d(
     grid: icon_grid.IconGrid,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
-    backend: gt4py_backend.Backend,
+    backend: gtx_backend.Backend,
     rank=0,
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,

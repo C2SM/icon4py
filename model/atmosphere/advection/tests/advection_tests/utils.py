@@ -9,7 +9,7 @@
 import logging
 
 import gt4py.next as gtx
-from gt4py.next import backend as gt4py_backend
+from gt4py.next import backend as gtx_backend
 import numpy as np
 
 from icon4py.model.atmosphere.advection import advection, advection_states
@@ -38,7 +38,7 @@ def construct_config(
 
 
 def construct_interpolation_state(
-    savepoint: sb.InterpolationSavepoint, backend: gt4py_backend.Backend
+    savepoint: sb.InterpolationSavepoint, backend: gtx_backend.Backend
 ) -> advection_states.AdvectionInterpolationState:
     return advection_states.AdvectionInterpolationState(
         geofac_div=data_alloc.as_1D_sparse_field(
@@ -60,7 +60,7 @@ def construct_least_squares_state(
 
 
 def construct_metric_state(
-    icon_grid, savepoint: sb.MetricSavepoint, backend: gt4py_backend.Backend
+    icon_grid, savepoint: sb.MetricSavepoint, backend: gtx_backend.Backend
 ) -> advection_states.AdvectionMetricState:
     constant_f = data_alloc.constant_field(icon_grid, 1.0, dims.KDim, backend=backend)
     ddqz_z_full_np = np.reciprocal(savepoint.inv_ddqz_z_full().asnumpy())
@@ -73,7 +73,7 @@ def construct_metric_state(
 
 
 def construct_diagnostic_init_state(
-    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int, backend: gt4py_backend.Backend
+    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int, backend: gtx_backend.Backend
 ) -> advection_states.AdvectionDiagnosticState:
     return advection_states.AdvectionDiagnosticState(
         airmass_now=savepoint.airmass_now(),
@@ -89,7 +89,7 @@ def construct_diagnostic_init_state(
 
 
 def construct_diagnostic_exit_state(
-    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int, backend: gt4py_backend.Backend
+    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int, backend: gtx_backend.Backend
 ) -> advection_states.AdvectionDiagnosticState:
     zero_f = data_alloc.allocate_zero_field(
         dims.CellDim, dims.KDim, grid=icon_grid, backend=backend

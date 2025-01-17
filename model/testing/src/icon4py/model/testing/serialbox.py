@@ -12,7 +12,7 @@ import uuid
 import gt4py.next as gtx
 import numpy as np
 import serialbox
-from gt4py.next import backend as gt4py_backend
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
@@ -32,7 +32,7 @@ class IconSavepoint:
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         size: dict,
-        backend: gt4py_backend.Backend,
+        backend: gtx_backend.Backend,
     ):
         # def __init__(self, sp: serialbox.Savepoint, ser: serialbox.Serializer, size: dict):
         self.savepoint = sp
@@ -131,7 +131,7 @@ class IconGridSavepoint(IconSavepoint):
         size: dict,
         root: int,
         level: int,
-        backend: gt4py_backend.Backend,
+        backend: gtx_backend.Backend,
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
@@ -1797,7 +1797,7 @@ class IconGraupelInitSavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
-        backend: gt4py_backend.Backend,
+        backend: gtx_backend.Backend,
         fname_prefix,
         path=".",
         do_print=False,

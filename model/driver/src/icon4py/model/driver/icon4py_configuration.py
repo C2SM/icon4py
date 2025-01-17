@@ -41,7 +41,7 @@ class Icon4pyRunConfig:
 
     restart_mode: bool = False
 
-    backend_name: str = model_backends.DEFAULT_BACKEND
+    backend_name: str
 
     def __post_init__(self):
         if self.backend_name not in model_backends.BACKENDS:

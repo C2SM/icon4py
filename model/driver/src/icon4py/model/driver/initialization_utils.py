@@ -11,7 +11,7 @@ import logging
 import pathlib
 import uuid
 
-from gt4py.next import backend as gt4py_backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -61,7 +61,7 @@ class ExperimentType(str, enum.Enum):
 
 def read_icon_grid(
     path: pathlib.Path,
-    backend: gt4py_backend.Backend,
+    backend: gtx_backend.Backend,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
@@ -97,7 +97,7 @@ def read_icon_grid(
 
 
 def model_initialization_serialbox(
-    grid: icon_grid.IconGrid, path: pathlib.Path, backend: gt4py_backend.Backend, rank=0
+    grid: icon_grid.IconGrid, path: pathlib.Path, backend: gtx_backend.Backend, rank=0
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
     dycore_states.DiagnosticStateNonHydro,
@@ -210,7 +210,7 @@ def read_initial_state(
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
-    backend: gt4py_backend.Backend,
+    backend: gtx_backend.Backend,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -303,7 +303,7 @@ def read_initial_state(
 def read_geometry_fields(
     path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
-    backend: gt4py_backend.Backend,
+    backend: gtx_backend.Backend,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
@@ -368,7 +368,7 @@ def _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level) -> sb.I
 def read_decomp_info(
     path: pathlib.Path,
     procs_props: decomposition.ProcessProperties,
-    backend: gt4py_backend.Backend,
+    backend: gtx_backend.Backend,
     ser_type=SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
     grid_root=GRID_ROOT,
@@ -385,7 +385,7 @@ def read_decomp_info(
 def read_static_fields(
     grid: icon_grid.IconGrid,
     path: pathlib.Path,
-    backend: gt4py_backend.Backend,
+    backend: gtx_backend.Backend,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[

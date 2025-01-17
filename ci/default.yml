@@ -35,7 +35,7 @@ test_tools_aarch64:
   parallel:
     matrix:
     - COMPONENT: [atmosphere/advection, atmosphere/diffusion, atmosphere/dycore, atmosphere/subgrid_scale_physics/microphysics, common, driver]
-      BACKEND: [gtfn_cpu]
+      BACKEND: [gtfn_cpu, gtfn_gpu]
 test_model_datatests_x86_64:
   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
