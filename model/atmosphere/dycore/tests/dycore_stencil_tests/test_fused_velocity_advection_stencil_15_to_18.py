@@ -14,7 +14,6 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils.data_allocation import (
-    as_1D_sparse_field,
     random_field,
     random_mask,
     zero_field,
@@ -191,7 +190,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         coeff2_dwdz = random_field(grid, dims.CellDim, dims.KDim)
 
         z_v_grad_w = random_field(grid, dims.EdgeDim, dims.KDim)
-        e_bln_c_s = as_1D_sparse_field(random_field(grid, dims.CellDim, dims.C2EDim), dims.CEDim)
+        e_bln_c_s = random_field(grid, dims.CEDim)
 
         levelmask = random_mask(grid, dims.KDim)
         cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim)

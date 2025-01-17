@@ -150,14 +150,22 @@ def diffusion_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=data_alloc.as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim),
-        primal_normal_vert_y=data_alloc.as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim),
-        dual_normal_vert_x=data_alloc.as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim),
-        dual_normal_vert_y=data_alloc.as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim),
-        primal_normal_cell_x=data_alloc.as_1D_sparse_field(primal_normal_cell_x, dims.ECDim),
-        primal_normal_cell_y=data_alloc.as_1D_sparse_field(primal_normal_cell_y, dims.ECDim),
-        dual_normal_cell_x=data_alloc.as_1D_sparse_field(dual_normal_cell_x, dims.ECDim),
-        dual_normal_cell_y=data_alloc.as_1D_sparse_field(dual_normal_cell_y, dims.ECDim),
+        primal_normal_vert_x=data_alloc.flatten_first_two_dims(
+            dims.ECVDim, field=primal_normal_vert_x
+        ),
+        primal_normal_vert_y=data_alloc.flatten_first_two_dims(
+            dims.ECVDim, field=primal_normal_vert_y
+        ),
+        dual_normal_vert_x=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_x),
+        dual_normal_vert_y=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_y),
+        primal_normal_cell_x=data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=primal_normal_cell_x
+        ),
+        primal_normal_cell_y=data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=primal_normal_cell_y
+        ),
+        dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
+        dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
         edge_areas=edge_areas,
         f_e=f_e,
         edge_center_lat=edge_center_lat,
@@ -227,10 +235,10 @@ def diffusion_init(
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=e_bln_c_s),
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=data_alloc.as_1D_sparse_field(geofac_div, dims.CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=geofac_div),
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,

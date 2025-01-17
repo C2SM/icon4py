@@ -1476,10 +1476,8 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         famask_int = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        ptr_v3_lon = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
-        ptr_v3_lon_field = data_alloc.as_1D_sparse_field(ptr_v3_lon, dims.ECDim)
-        ptr_v3_lat = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
-        ptr_v3_lat_field = data_alloc.as_1D_sparse_field(ptr_v3_lat, dims.ECDim)
+        ptr_v3_lon_field = data_alloc.random_field(grid, dims.ECDim, low=0.1, high=1.0)
+        ptr_v3_lat_field = data_alloc.random_field(grid, dims.ECDim, low=0.1, high=1.0)
         tangent_orientation_dsl = data_alloc.random_field(grid, dims.EdgeDim, low=0.1, high=1.0)
         dreg_patch0_1_lon_dsl = data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
         dreg_patch0_1_lat_dsl = data_alloc.constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)

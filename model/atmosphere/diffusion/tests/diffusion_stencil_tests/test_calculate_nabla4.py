@@ -13,7 +13,6 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calcula
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import (
-    as_1D_sparse_field,
     random_field,
     zero_field,
 )
@@ -99,11 +98,8 @@ class TestCalculateNabla4(StencilTest):
         u_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
         v_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
 
-        primal_normal_vert_v1 = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-        primal_normal_vert_v2 = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-
-        primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, dims.ECVDim)
-        primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, dims.ECVDim)
+        primal_normal_vert_v1 = random_field(grid, dims.ECVDim, dtype=wpfloat)
+        primal_normal_vert_v2 = random_field(grid, dims.ECVDim, dtype=wpfloat)
 
         z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         inv_vert_vert_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
@@ -114,8 +110,8 @@ class TestCalculateNabla4(StencilTest):
         return dict(
             u_vert=u_vert,
             v_vert=v_vert,
-            primal_normal_vert_v1=primal_normal_vert_v1_new,
-            primal_normal_vert_v2=primal_normal_vert_v2_new,
+            primal_normal_vert_v1=primal_normal_vert_v1,
+            primal_normal_vert_v2=primal_normal_vert_v2,
             z_nabla2_e=z_nabla2_e,
             inv_vert_vert_length=inv_vert_vert_length,
             inv_primal_edge_length=inv_primal_edge_length,

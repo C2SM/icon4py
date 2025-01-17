@@ -98,28 +98,36 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         cell_idx = grid.connectivities[dims.E2CDim]
-        cell_idx_new = data_alloc.as_1D_sparse_field(
-            data_alloc.as_field(cell_idx, None), dims.ECDim
-        )
+        cell_idx_new = data_alloc.flatten_first_two_dims(dims.ECDim, field=cell_idx)
         cell_blk = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
-        cell_blk_new = data_alloc.as_1D_sparse_field(cell_blk, dims.ECDim)
+        cell_blk_new = data_alloc.flatten_first_two_dims(dims.ECDim, field=cell_blk)
         pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_1_new = data_alloc.as_1D_sparse_field(pos_on_tplane_e_1, dims.ECDim)
-        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_2_new = data_alloc.as_1D_sparse_field(pos_on_tplane_e_2, dims.ECDim)
-        primal_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_1_new = data_alloc.as_1D_sparse_field(primal_normal_cell_1, dims.ECDim)
-        dual_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_1_new = data_alloc.as_1D_sparse_field(dual_normal_cell_1, dims.ECDim)
-        primal_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_2_new = data_alloc.as_1D_sparse_field(primal_normal_cell_2, dims.ECDim)
-        dual_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_2_new = data_alloc.as_1D_sparse_field(dual_normal_cell_2, dims.ECDim)
-        p_cell_idx = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_cell_rel_idx_dsl = data_alloc.constant_field(
-            grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32
+        pos_on_tplane_e_1_new = data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=pos_on_tplane_e_1
         )
-        p_cell_blk = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        pos_on_tplane_e_2_new = data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=pos_on_tplane_e_2
+        )
+        primal_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_1_new = data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=primal_normal_cell_1
+        )
+        dual_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_1_new = data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=dual_normal_cell_1
+        )
+        primal_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        primal_normal_cell_2_new = data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=primal_normal_cell_2
+        )
+        dual_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        dual_normal_cell_2_new = data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=dual_normal_cell_2
+        )
+        p_cell_idx = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_rel_idx_dsl = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_blk = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_dthalf = 2.0

@@ -92,7 +92,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim)
+        e_bln_c_s = random_field(grid, dims.CEDim)
         z_ekinh = zero_field(grid, dims.CellDim, dims.KDim)
         z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim)
         z_w_concorr_mc = zero_field(grid, dims.CellDim, dims.KDim)
@@ -115,7 +115,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
-            e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+            e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             w=w,

@@ -11,26 +11,25 @@ from __future__ import annotations
 import logging as log
 from typing import TYPE_CHECKING, Optional, TypeAlias, Union
 
-import gt4py._core.definitions as gt_core_defs
+import gt4py._core.definitions as gtx_core_defs
 import numpy as np
 import numpy.typing as npt
 from gt4py import next as gtx
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import type_alias as ta
 
 
 if TYPE_CHECKING:
-    from icon4py.model.common.grid import base as grid_base
-
+    from icon4py.model.common.grid import base, base as grid_base
 
 #: Enum values from Enum values taken from DLPack reference implementation at:
 #:  https://github.com/dmlc/dlpack/blob/main/include/dlpack/dlpack.h
 #:  via GT4Py
 CUDA_DEVICE_TYPES = (
-    gt_core_defs.DeviceType.CUDA,
-    gt_core_defs.DeviceType.CUDA_MANAGED,
-    gt_core_defs.DeviceType.ROCM,
+    gtx_core_defs.DeviceType.CUDA,
+    gtx_core_defs.DeviceType.CUDA_MANAGED,
+    gtx_core_defs.DeviceType.ROCM,
 )
 
 try:
@@ -49,7 +48,7 @@ def as_numpy(array: NDArrayInterface):
         return array.asnumpy()
 
 
-def is_cupy_device(backend: backend.Backend) -> bool:
+def is_cupy_device(backend: gtx_backend.Backend) -> bool:
     if backend is not None:
         return backend.allocator.__gt_device_type__ in CUDA_DEVICE_TYPES
     else:
@@ -69,27 +68,19 @@ def array_ns(try_cupy: bool):
     return np
 
 
-def import_array_ns(backend: backend.Backend):
+def import_array_ns(backend: gtx_backend.Backend):
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(is_cupy_device(backend))
 
 
-def as_field(field: gtx.Field, backend: backend.Backend) -> gtx.Field:
+def as_field(field: gtx.Field, backend: gtx_backend.Backend) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     return gtx.as_field(field.domain, field.ndarray, allocator=backend)
 
 
-def as_1D_sparse_field(field: gtx.Field | NDArray, target_dim: gtx.Dimension) -> gtx.Field:
-    """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-
-    buffer = field.ndarray if isinstance(field, gtx.Field) else field
-    old_shape = buffer.shape
-    assert len(old_shape) == 2
-    new_shape = (old_shape[0] * old_shape[1],)
-    return gtx.as_field((target_dim,), buffer.reshape(new_shape))
-
-
-def flatten_first_two_dims(*dims: gtx.Dimension, field: gtx.Field | NDArray) -> gtx.Field:
+def flatten_first_two_dims(
+    *dims: gtx.Dimension, field: gtx.Field | NDArray, backend: Optional[gtx_backend.Backend] = None
+) -> gtx.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
     buffer = field.ndarray if isinstance(field, gtx.Field) else field
     old_shape = buffer.shape
@@ -97,14 +88,15 @@ def flatten_first_two_dims(*dims: gtx.Dimension, field: gtx.Field | NDArray) -> 
     flattened_size = old_shape[0] * old_shape[1]
     flattened_shape = (flattened_size,)
     new_shape = flattened_shape + old_shape[2:]
-    return gtx.as_field(dims, buffer.reshape(new_shape))
+    return gtx.as_field(dims, buffer.reshape(new_shape), allocator=backend)
 
 
-def unflatten_first_two_dims(field: gtx.Field) -> np.array:
+def unflatten_first_two_dims(field: gtx.Field) -> NDArray:
     """Convert a (n-1)-D flattened (Felix-style) sparse field back to a n-D sparse field."""
-    old_shape = np.asarray(field).shape
+    buffer = field.ndarray
+    old_shape = buffer.shape
     new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
-    return np.asarray(field).reshape(new_shape)
+    return buffer.reshape(new_shape)
 
 
 def random_field(
@@ -163,7 +155,7 @@ def constant_field(
 
 
 def _shape(
-    grid,
+    grid: base.BaseGrid,
     *dims: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
 ) -> tuple[int, ...]:
@@ -172,12 +164,12 @@ def _shape(
 
 
 def index_field(
-    grid,
+    grid: base.BaseGrid,
     dim: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
     dtype=gtx.int32,
-    backend: Optional[backend.Backend] = None,
+    backend: Optional[gtx_backend.Backend] = None,
 ) -> gtx.Field:
     xp = import_array_ns(backend)
-    shapex = _shape(grid, dim, extend=extend)
+    shapex = _shape(grid, dim, extend=extend)[0]
     return gtx.as_field((dim,), xp.arange(shapex, dtype=dtype), allocator=backend)

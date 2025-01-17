@@ -161,23 +161,10 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
 
-        primal_normal_vert_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
-        )
-        primal_normal_vert_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
-        )
-        dual_normal_vert_x = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
-        )
-        dual_normal_vert_y = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
-        )
-
-        primal_normal_vert_x_new = data_alloc.as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim)
-        primal_normal_vert_y_new = data_alloc.as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim)
-        dual_normal_vert_x_new = data_alloc.as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim)
-        dual_normal_vert_y_new = data_alloc.as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim)
+        primal_normal_vert_x = data_alloc.random_field(grid, dims.ECVDim, dtype=wpfloat)
+        primal_normal_vert_y = data_alloc.random_field(grid, dims.ECVDim, dtype=wpfloat)
+        dual_normal_vert_x = data_alloc.random_field(grid, dims.ECVDim, dtype=wpfloat)
+        dual_normal_vert_y = data_alloc.random_field(grid, dims.ECVDim, dtype=wpfloat)
 
         z_nabla2_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         kh_smag_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
@@ -190,10 +177,10 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
             inv_vert_vert_length=inv_vert_vert_length,
             u_vert=u_vert,
             v_vert=v_vert,
-            primal_normal_vert_x=primal_normal_vert_x_new,
-            primal_normal_vert_y=primal_normal_vert_y_new,
-            dual_normal_vert_x=dual_normal_vert_x_new,
-            dual_normal_vert_y=dual_normal_vert_y_new,
+            primal_normal_vert_x=primal_normal_vert_x,
+            primal_normal_vert_y=primal_normal_vert_y,
+            dual_normal_vert_x=dual_normal_vert_x,
+            dual_normal_vert_y=dual_normal_vert_y,
             vn=vn,
             smag_limit=smag_limit,
             kh_smag_e=kh_smag_e,

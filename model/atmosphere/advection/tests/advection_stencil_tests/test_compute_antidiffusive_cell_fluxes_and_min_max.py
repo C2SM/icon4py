@@ -81,7 +81,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid) -> dict:
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        geofac_div_new = data_alloc.as_1D_sparse_field(geofac_div, dims.CEDim)
+        geofac_div_new = data_alloc.flatten_first_two_dims(dims.CEDim, field=geofac_div)
         p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_mflx_low = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

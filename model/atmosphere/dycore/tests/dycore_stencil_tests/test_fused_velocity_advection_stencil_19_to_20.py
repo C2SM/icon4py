@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils.data_allocation import (
-    as_1D_sparse_field,
     random_field,
     random_mask,
     zero_field,
@@ -115,8 +114,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        coeff_gradekin = random_field(grid, dims.EdgeDim, dims.E2CDim)
-        coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, dims.ECDim)
+        coeff_gradekin = random_field(grid, dims.ECDim)
         z_ekinh = random_field(grid, dims.CellDim, dims.KDim)
         vt = random_field(grid, dims.EdgeDim, dims.KDim)
         f_e = random_field(grid, dims.EdgeDim)
@@ -155,7 +153,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
             vn=vn,
             geofac_rot=geofac_rot,
             z_kin_hor_e=z_kin_hor_e,
-            coeff_gradekin=coeff_gradekin_new,
+            coeff_gradekin=coeff_gradekin,
             z_ekinh=z_ekinh,
             vt=vt,
             f_e=f_e,

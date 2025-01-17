@@ -46,9 +46,7 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        geofac_div = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat), dims.CEDim
-        )
+        geofac_div = data_alloc.random_field(grid, dims.CEDim, dtype=wpfloat)
         z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         z_flxdiv_theta = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)

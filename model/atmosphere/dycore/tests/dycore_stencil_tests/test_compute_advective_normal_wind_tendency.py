@@ -89,8 +89,7 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
             pytest.xfail("Stencil does not support missing neighbors.")
 
         z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        coeff_gradekin = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=vpfloat)
-        coeff_gradekin_new = data_alloc.as_1D_sparse_field(coeff_gradekin, dims.ECDim)
+        coeff_gradekin = data_alloc.random_field(grid, dims.ECDim, dtype=vpfloat)
         z_ekinh = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         zeta = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
         vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
@@ -105,7 +104,7 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
-            coeff_gradekin=coeff_gradekin_new,
+            coeff_gradekin=coeff_gradekin,
             z_ekinh=z_ekinh,
             zeta=zeta,
             vt=vt,

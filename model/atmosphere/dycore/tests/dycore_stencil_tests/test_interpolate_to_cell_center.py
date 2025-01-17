@@ -43,12 +43,12 @@ class TestInterpolateToCellCenter(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         interpolant = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=wpfloat)
         interpolation = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             interpolant=interpolant,
-            e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+            e_bln_c_s=e_bln_c_s,
             interpolation=interpolation,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

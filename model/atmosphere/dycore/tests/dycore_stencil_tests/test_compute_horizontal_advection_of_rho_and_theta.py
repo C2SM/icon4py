@@ -14,7 +14,7 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_of_rh
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import as_1D_sparse_field, random_field
+from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -187,18 +187,12 @@ class TestComputeBtraj(StencilTest):
 
         p_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         p_vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        pos_on_tplane_e_1 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
-        pos_on_tplane_e_1_new = as_1D_sparse_field(pos_on_tplane_e_1, dims.ECDim)
-        pos_on_tplane_e_2 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
-        pos_on_tplane_e_2_new = as_1D_sparse_field(pos_on_tplane_e_2, dims.ECDim)
-        primal_normal_cell_1 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
-        primal_normal_cell_1_new = as_1D_sparse_field(primal_normal_cell_1, dims.ECDim)
-        dual_normal_cell_1 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
-        dual_normal_cell_1_new = as_1D_sparse_field(dual_normal_cell_1, dims.ECDim)
-        primal_normal_cell_2 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
-        primal_normal_cell_2_new = as_1D_sparse_field(primal_normal_cell_2, dims.ECDim)
-        dual_normal_cell_2 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
-        dual_normal_cell_2_new = as_1D_sparse_field(dual_normal_cell_2, dims.ECDim)
+        pos_on_tplane_e_1 = random_field(grid, dims.ECDim, dtype=wpfloat)
+        pos_on_tplane_e_2 = random_field(grid, dims.ECDim, dtype=wpfloat)
+        primal_normal_cell_1 = random_field(grid, dims.ECDim, dtype=wpfloat)
+        dual_normal_cell_1 = random_field(grid, dims.ECDim, dtype=wpfloat)
+        primal_normal_cell_2 = random_field(grid, dims.ECDim, dtype=wpfloat)
+        dual_normal_cell_2 = random_field(grid, dims.ECDim, dtype=wpfloat)
         p_dthalf = wpfloat("2.0")
 
         rho_ref_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
@@ -215,12 +209,12 @@ class TestComputeBtraj(StencilTest):
         return dict(
             p_vn=p_vn,
             p_vt=p_vt,
-            pos_on_tplane_e_1=pos_on_tplane_e_1_new,
-            pos_on_tplane_e_2=pos_on_tplane_e_2_new,
-            primal_normal_cell_1=primal_normal_cell_1_new,
-            dual_normal_cell_1=dual_normal_cell_1_new,
-            primal_normal_cell_2=primal_normal_cell_2_new,
-            dual_normal_cell_2=dual_normal_cell_2_new,
+            pos_on_tplane_e_1=pos_on_tplane_e_1,
+            pos_on_tplane_e_2=pos_on_tplane_e_2,
+            primal_normal_cell_1=primal_normal_cell_1,
+            dual_normal_cell_1=dual_normal_cell_1,
+            primal_normal_cell_2=primal_normal_cell_2,
+            dual_normal_cell_2=dual_normal_cell_2,
             p_dthalf=p_dthalf,
             rho_ref_me=rho_ref_me,
             theta_ref_me=theta_ref_me,

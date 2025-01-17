@@ -50,13 +50,11 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        geofac_div = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat), dims.CEDim
-        )
+        geofac_div = data_alloc.random_field(grid, dims.CEDim, dtype=wpfloat)
+
         kh_smag_ec = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        e_bln_c_s = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat), dims.CEDim
-        )
+        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=wpfloat)
+
         diff_multfac_smag = data_alloc.random_field(grid, dims.KDim, dtype=vpfloat)
 
         kh_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

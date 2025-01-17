@@ -18,10 +18,14 @@ from icon4py.model.atmosphere.diffusion import diffusion_states
 def test_verify_geofac_n2s_field_manipulation(interpolation_savepoint, icon_grid):
     geofac_n2s = interpolation_savepoint.geofac_n2s().asnumpy()
     interpolation_state = interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+        ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.geofac_div()
+        ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
