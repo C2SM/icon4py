@@ -12,9 +12,9 @@ import logging as log
 from typing import TYPE_CHECKING, Optional, TypeAlias, Union
 
 import gt4py._core.definitions as gt_core_defs
-import gt4py.next as gtx
 import numpy as np
 import numpy.typing as npt
+from gt4py import next as gtx
 from gt4py.next import backend
 
 from icon4py.model.common import type_alias as ta
@@ -79,30 +79,25 @@ def as_field(field: gtx.Field, backend: backend.Backend) -> gtx.Field:
     return gtx.as_field(field.domain, field.ndarray, allocator=backend)
 
 
-def as_1D_sparse_field(field: gtx.Field, target_dim: gtx.Dimension) -> gtx.Field:
+def as_1D_sparse_field(field: gtx.Field | NDArray, target_dim: gtx.Dimension) -> gtx.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    buffer = field.ndarray
-    return numpy_to_1D_sparse_field(buffer, target_dim)
 
-
-def numpy_to_1D_sparse_field(field: np.ndarray, dim: gtx.Dimension) -> gtx.Field:
-    """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    old_shape = field.shape
+    buffer = field.ndarray if isinstance(field, gtx.Field) else field
+    old_shape = buffer.shape
     assert len(old_shape) == 2
     new_shape = (old_shape[0] * old_shape[1],)
-    return gtx.as_field((dim,), field.reshape(new_shape))
+    return gtx.as_field((target_dim,), buffer.reshape(new_shape))
 
 
-def flatten_first_two_dims(*dims: gtx.Dimension, field: gtx.Field) -> gtx.Field:
+def flatten_first_two_dims(*dims: gtx.Dimension, field: gtx.Field | NDArray) -> gtx.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
-    buffer = field.ndarray
+    buffer = field.ndarray if isinstance(field, gtx.Field) else field
     old_shape = buffer.shape
     assert len(old_shape) >= 2
     flattened_size = old_shape[0] * old_shape[1]
     flattened_shape = (flattened_size,)
     new_shape = flattened_shape + old_shape[2:]
-    newarray = buffer.reshape(new_shape)
-    return gtx.as_field(dims, newarray)
+    return gtx.as_field(dims, buffer.reshape(new_shape))
 
 
 def unflatten_first_two_dims(field: gtx.Field) -> np.array:
@@ -174,7 +169,6 @@ def _shape(
 ) -> tuple[int, ...]:
     extend = extend or {}
     return tuple(grid.size[dim] + extend.get(dim, 0) for dim in dims)
-
 
 
 def index_field(
