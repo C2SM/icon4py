@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 
 import numpy as np
 
@@ -35,7 +36,9 @@ def test_hydrostatic_adjustment_ndarray(backend):
     theta_v = theta_v0 * xp.ones((num_cells, num_levels))
 
     # Call the function
-    r_rho, r_exner, r_theta_v = utils.hydrostatic_adjustment_ndarray(
+    r_rho, r_exner, r_theta_v = functools.partial(
+        utils.hydrostatic_adjustment_ndarray, array_ns=xp
+    )(
         wgtfac_c,
         ddqz_z_half,
         exner_ref_mc,
@@ -46,7 +49,6 @@ def test_hydrostatic_adjustment_ndarray(backend):
         exner,
         theta_v,
         num_levels,
-        backend,
     )
 
     assert r_rho.shape == (num_cells, num_levels)
@@ -58,15 +60,15 @@ def test_hydrostatic_adjustment_ndarray(backend):
         rho0 * np.ones(num_cells),
     )
     assert helpers.dallclose(
-        r_rho[:, :-1],
+        data_alloc.as_numpy(r_rho[:, :-1]),
         1.0046424441749071 * np.ones((num_cells, num_levels - 1)),
     )
     assert helpers.dallclose(
-        r_exner,
+        data_alloc.as_numpy(r_exner),
         exner0 * np.ones((num_cells, num_levels)),
     )
     assert helpers.dallclose(
-        r_theta_v,
+        data_alloc.as_numpy(r_theta_v),
         theta_v0 * np.ones((num_cells, num_levels)),
     )
 
@@ -110,10 +112,10 @@ def test_hydrostatic_adjustment_constant_thetav_ndarray(backend):
     assert r_exner.shape == (num_cells, num_levels)
 
     assert helpers.dallclose(
-        r_rho,
+        data_alloc.as_numpy(r_rho),
         1.0046424441749071 * np.ones((num_cells, num_levels)),
     )
     assert helpers.dallclose(
-        r_exner,
+        data_alloc.as_numpy(r_exner),
         exner0 * np.ones((num_cells, num_levels)),
     )

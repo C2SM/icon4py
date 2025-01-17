@@ -30,6 +30,8 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 def test_compute_diffusion_metrics(
     metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
+    if data_alloc.is_cupy_device(backend):
+        pytest.skip("GPU backend is not supported")
     if helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
 

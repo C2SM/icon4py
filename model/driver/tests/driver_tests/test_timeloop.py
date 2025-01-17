@@ -130,7 +130,7 @@ def test_run_timeloop_single_step(
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
         # it does not matter what backend is set here because the granules are set externally in this test
         config = icon4py_configuration.read_config(
-            icon4py_driver_backend=data_alloc.DEFAULT_BACKEND,
+            icon4py_driver_backend="gtfn_cpu",
             experiment_type=experiment,
         )
         diffusion_config = config.diffusion_config

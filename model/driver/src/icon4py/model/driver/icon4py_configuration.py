@@ -24,6 +24,7 @@ n_substeps_reduced = 2
 
 @dataclasses.dataclass(frozen=True)
 class Icon4pyRunConfig:
+    backend_name: str
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
@@ -40,8 +41,6 @@ class Icon4pyRunConfig:
     """
 
     restart_mode: bool = False
-
-    backend_name: str
 
     def __post_init__(self):
         if self.backend_name not in model_backends.BACKENDS:
