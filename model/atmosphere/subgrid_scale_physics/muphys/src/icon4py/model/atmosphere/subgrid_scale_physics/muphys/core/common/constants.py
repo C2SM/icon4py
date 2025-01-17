@@ -74,16 +74,29 @@ class idx:
     qx_ind = [lqv, lqc, lqr, lqs, lqi, lqg]
     qp_ind = [lqr, lqi, lqs, lqg]
 
-lrain = True  # switch for disabling rain
-lcold = True  # switch for disabling freezing processes
+    lrain = True  # switch for disabling rain
+    lcold = True  # switch for disabling freezing processes
 
-params = [
+    prefactor_r  = 14.58
+    exponent_r   =  0.111
+    offset_r     =  1.0e-12
+    prefactor_i  =  1.25
+    exponent_i   =  0.160
+    offset_i     =  1.0e-12
+    prefactor_s  = 57.80
+    exponent_s   =  0.5
+    offset_s     =  1.0e-12
+    prefactor_g  = 12.24
+    exponent_g   =  0.217
+    offset_g     =  1.0e-08
+    
+    params = [
     [14.58, 0.111, 1.0e-12],
     [1.25, 0.160, 1.0e-12],
     [57.80, 0.5 / 3.0, 1.0e-12],
     [12.24, 0.217, 1.0e-08]
-]
+    ]
 
-cloud_num = 200.00e+06  # cloud droplet number concentration (from gscp_data.f90)
+    cloud_num = 200.00e+06  # cloud droplet number concentration (from gscp_data.f90)
 
-ZERO = 0.0
+    ZERO = 0.0

@@ -1,4 +1,4 @@
-# ICON4Py - ICON inspired code in Python and GT4Py
+\1;95;0c# ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
@@ -12,26 +12,28 @@ from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.qsat_rho import _qsat_rho
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.dqsatdT_rho import _dqsatdT_rho
 
-@gtx.field_operator
+@gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, 0.0))
 def _precip(
-    prefactor: fa.CellField[ta.wpfloat],             # param[0] of fall_speed
-    offset:    fa.CellField[ta.wpfloat],             # param[1] of fall_speed
-    exponent:  fa.CellField[ta.wpfloat],             # param[2] of fall_speed
-    zeta:      fa.CellField[ta.wpfloat],             # dt/(2dz)
-    vc:        fa.CellField[ta.wpfloat],             # state dependent fall speed correction
-    flx:       fa.CellField[ta.wpfloat],             # flux into cell from above
-    vt:        fa.CellField[ta.wpfloat],             # terminal velocity
-    q:         fa.CellField[ta.wpfloat],             # specific mass of hydrometeor
-    q_kp1:     fa.CellField[ta.wpfloat],             # specific mass in next lower cell
-    rho:       fa.CellField[ta.wpfloat],             # density
-) -> tuple[fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat]]: 
+    state:     tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat], 
+    prefactor: ta.wpfloat,             # param[0] of fall_speed
+    exponent:  ta.wpfloat,             # param[1] of fall_speed
+    offset:    ta.wpfloat,             # param[1] of fall_speed
+    zeta:      ta.wpfloat,             # dt/(2dz)
+    vc:        ta.wpfloat,             # state dependent fall speed correction
+    flx:       ta.wpfloat,             # flux into cell from above
+    vt:        ta.wpfloat,             # terminal velocity
+    q:         ta.wpfloat,             # specific mass of hydrometeor
+    q_kp1:     ta.wpfloat,             # specific mass in next lower cell
+    rho:       ta.wpfloat,             # density
+) -> tuple[ta.wpfloat,ta.wpfloat,ta.wpfloat]:   # updates
+    qx, vx, vt = state
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0*flx
     flx_partial = minimum(rho_x * vc * fall_speed(rho_x, prefactor, offset, exponent), flx_eff) 
-    precip0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)   # q update
-    precip1 = (precip0 * rho * vt + flx_partial) * 0.5                       # flux
-    precip2 = vc * fall_speed(rho_x, prefactor, offset, exponent)            # vt
-    return precip0, precip1, precip2
+    update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)   # q update
+    update1 = (update0 * rho * vt + flx_partial) * 0.5                       # flux
+    update2 = vc * fall_speed(rho_x, prefactor, offset, exponent)            # vt
+    return update0, update1, update2
 
 @gtx.field_operator
 def _graupel_mask(
@@ -49,9 +51,10 @@ def _graupel_mask(
     mask = where( (maximum( q_lqc, maximum(q_lqg, maximum(q_lqi, maximum(q_lqr, q_lqs)))) > QMIN) | ((t < tfrz_het2) & (q_lqv > qsat_ice_rho(t, rho, TMELT, RV) ) ), 1.0, 0.0 )
     is_sig_present = where( maximum( q_lqg, maximum(q_lqi, q_lqs)) > QMIN, 1.0, 0.0 )
     return mask, is_sig_present
-
+ 
 @gtx.field_operator
 def _graupel_loop2(
+# TODO: arguments
         t,
         qnc,
         dvsw,
@@ -175,6 +178,39 @@ def _graupel_loop2(
     t = t + dt * ( (dqdt_lqc + dqdt_lqr) * (LVC - (CLW - CVV)*t) + (dqdt_lqi + dqdt_lqs + dqdt_lqg) * (LSC - (CI - CVV)*t ) ) / cv
 
 @gtx.field_operator
+def _graupel_loop3_if_lrain(
+# TODO: arguments
+        q_lqv_x,
+        q_lqc_x,
+        q_lqr_x,
+        q_lqs_x,
+        q_lqi_x,
+        q_lqg_x,
+        t,
+        rho,
+        dz, 
+        dvsw,
+        dt,
+        is_sig_present,
+        kmin,
+        TMELT,
+    OTHERS
+) -> [fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat]]:
+    qliq = where( kmin, q_lqc_x + q_lqr_x, 0.0 )
+    qice = where( kmin, q_lqs_x + q_lqi_x + q_lqg_x, 0.0 )
+    e_int = internal_energy( t, q_lqv_x, qliq, qice, rho, dz )
+    zeta  = dt / (2.0 * dz )
+    xrho  = sqrt( rho00 / rho )
+
+    # NP = 4    qp_ind[] = {lqr, lqi, lqs, lqg};
+    vc_lqr = where( kmin_lqr, vel_scale_factor_others( xrho ), 0.0 )
+    vc_lqi = where( kmin_lqi, vel_scale_factor_lqi( xrho, OTHERS ), 0.0 )
+    vc_lqs = where( kmin_lqs, vel_scale_factor_lqs( xrho, rho, t, q_lqs, dz, OTHERS ), 0.0 )
+    vc_lqg = where( kmin_lqg, vel_scale_factor_others( xrho ), 0.0 )
+
+    q_lqr_x, _, _ = _precip( prefactor_r, exponent_r, offset_r, zeta, vc, q_lqr_p, vt, q_lqr_x, q_lqr_x_kp1, rho )
+
+@gtx.field_operator
 def _output_calculation(
     qve:       fa.CellField[ta.wpfloat],             # Specific humidity
     qce:       fa.CellField[ta.wpfloat],             # Specific cloud water content
@@ -188,81 +224,3 @@ def _output_calculation(
     qce = where( ( qve+qce <= qx_hold ), 0.0, maximum(qve+qce-qx, 0.0) )
     qve = where( ( qve+qce <= qx_hold ), qve+qce, qx )
     return te, qve, qce
-
-@gtx.field_operator
-def _newton_raphson(
-    qx:  fa.CellField[ta.wpfloat],
-    dqx: fa.CellField[ta.wpfloat],
-    Tx:  fa.CellField[ta.wpfloat],
-    rho: fa.CellField[ta.wpfloat],
-    qve: fa.CellField[ta.wpfloat],
-    qce: fa.CellField[ta.wpfloat],
-    cvc: fa.CellField[ta.wpfloat],
-    ue:  fa.CellField[ta.wpfloat],
-    CVV:   ta.wpfloat,
-    CLW:   ta.wpfloat,
-    LVC:   ta.wpfloat,
-    TMELT: ta.wpfloat,
-    RV:    ta.wpfloat,
-) -> fa.CellField[ta.wpfloat]:
-    qcx = qve + qce - qx
-    cv  = cvc + CVV * qx + CLW * qcx
-    ux  = cv * Tx - qcx * LVC
-    dux = cv + dqx * (LVC + (CVV - CLW) * Tx)
-    Tx  = Tx - (ux - ue) / dux
-    return Tx
-
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def saturation_adjustment2(
-    te:        fa.CellField[ta.wpfloat],             # Temperature
-    qve:       fa.CellField[ta.wpfloat],             # Specific humidity
-    qce:       fa.CellField[ta.wpfloat],             # Specific cloud water content
-    qre:       fa.CellField[ta.wpfloat],             # Specific rain water
-    qti:       fa.CellField[ta.wpfloat],             # Specific mass of all ice species (total-ice)
-    rho:       fa.CellField[ta.wpfloat],             # Density containing dry air and water constituents
-    cvc:       fa.CellField[ta.wpfloat],             # Temporary field
-    ue:        fa.CellField[ta.wpfloat],             # Temporary field
-    Tx_hold:   fa.CellField[ta.wpfloat],             # Temporary field
-    Tx:        fa.CellField[ta.wpfloat],             # Temporary field
-    qx_hold:   fa.CellField[ta.wpfloat],             # Temporary field
-    qx:        fa.CellField[ta.wpfloat],             # Temporary field
-    dqx:       fa.CellField[ta.wpfloat],             # Temporary field
-    CI:        ta.wpfloat,
-    CLW:       ta.wpfloat,
-    CVD:       ta.wpfloat,
-    CVV:       ta.wpfloat,
-    LVC:       ta.wpfloat,
-    TMELT:     ta.wpfloat,
-    RV:        ta.wpfloat,
-    qve_out:   fa.CellField[ta.wpfloat],             # Specific humidity
-    qce_out:   fa.CellField[ta.wpfloat],             # Specific cloud water content
-    te_out:    fa.CellField[ta.wpfloat],             # Temperature
-):
-    _satadj_init( te, qve, qce, qre, qti, CI, CLW, CVD, CVV, LVC, out=(cvc, ue, Tx_hold, Tx) )
-    _qsat_rho(Tx_hold, rho, TMELT, RV, out=qx_hold)
-
-    # Newton-Raphson iteration
-    _qsat_rho(Tx, rho, TMELT, RV, out=qx)
-    _dqsatdT_rho(qx, Tx, TMELT, out=dqx)
-    _newton_raphson(qx, dqx, Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV, out=Tx)
-    _qsat_rho(Tx, rho, TMELT, RV, out=qx)
-    _dqsatdT_rho(qx, Tx, TMELT, out=dqx)
-    _newton_raphson(qx, dqx, Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV, out=Tx)
-    _qsat_rho(Tx, rho, TMELT, RV, out=qx)
-    _dqsatdT_rho(qx, Tx, TMELT, out=dqx)
-    _newton_raphson(qx, dqx, Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV, out=Tx)
-    _qsat_rho(Tx, rho, TMELT, RV, out=qx)
-    _dqsatdT_rho(qx, Tx, TMELT, out=dqx)
-    _newton_raphson(qx, dqx, Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV, out=Tx)
-    _qsat_rho(Tx, rho, TMELT, RV, out=qx)
-    _dqsatdT_rho(qx, Tx, TMELT, out=dqx)
-    _newton_raphson(qx, dqx, Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV, out=Tx)
-    _qsat_rho(Tx, rho, TMELT, RV, out=qx)
-    _dqsatdT_rho(qx, Tx, TMELT, out=dqx)
-    _newton_raphson(qx, dqx, Tx, rho, qve, qce, cvc, ue, CVV, CLW, LVC, TMELT, RV, out=Tx)
-
-    # final humidity calculation
-    _qsat_rho(Tx, rho, TMELT, RV, out=qx)
-
-    # final calculation of output variables
-    _output_calculation( qve, qce, qx_hold, qx, Tx_hold, Tx, out=(te_out, qve_out, qce_out) )
