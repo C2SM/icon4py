@@ -524,7 +524,7 @@ class FirstOrderUpwind(FiniteVolume):
         boundary_conditions: BoundaryConditions,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend=backend,
+        backend: Optional[gtx_backend.Backend],
     ):
         log.debug("vertical advection class init - start")
 
