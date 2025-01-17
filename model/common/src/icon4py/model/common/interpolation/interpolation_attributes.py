@@ -20,6 +20,7 @@ GEOFAC_N2S: Final[str] = "geometrical_factor_for_nabla_2_scalar"
 GEOFAC_GRDIV: Final[str] = "geometrical_factor_for_gradient_of_divergence"
 GEOFAC_GRG_X: Final[str] = "geometrical_factor_for_green_gauss_gradient_x"
 GEOFAC_GRG_Y: Final[str] = "geometrical_factor_for_green_gauss_gradient_y"
+CELL_AW_VERTS: Final[str] = "cell_to_vertex_interpolation_factor_by_area_weighting"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -84,6 +85,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.CellDim, dims.C2E2CODim),
         icon_var_name="geofac_grg",
+        dtype=ta.wpfloat,
+    ),
+    CELL_AW_VERTS: dict(
+        standard_name=CELL_AW_VERTS,
+        long_name="coefficient for interpolation from cells to verts by area weighting",
+        units="",
+        dims=(dims.VertexDim, dims.V2CDim),
+        icon_var_name="cells_aw_verts",
         dtype=ta.wpfloat,
     ),
 }

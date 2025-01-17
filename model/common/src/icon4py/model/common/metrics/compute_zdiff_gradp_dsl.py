@@ -6,23 +6,31 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import numpy as np
+from types import ModuleType
 
+import numpy as np
+from gt4py.next import as_field
+
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_zdiff_gradp_dsl(
     e2c,
-    z_me: data_alloc.NDArray,
     z_mc: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
     z_ifc: data_alloc.NDArray,
     flat_idx: data_alloc.NDArray,
-    z_aux2: data_alloc.NDArray,
+    z_ifc_sliced: data_alloc.NDArray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
-    nedges: int,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
+    nedges = e2c.shape[0]
+    z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
+    z_aux1 = array_ns.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
+    z_aux2 = z_aux1 - 5.0  # extrapol_dist
     zdiff_gradp = np.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
         np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
@@ -109,4 +117,10 @@ def compute_zdiff_gradp_dsl(
                         jk_start = jk1
                         break
 
-    return zdiff_gradp
+    zdiff_gradp_full_field = data_alloc.flatten_first_two_dims(
+        dims.ECDim,
+        dims.KDim,
+        field=as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp),
+    )
+
+    return zdiff_gradp_full_field.asnumpy()

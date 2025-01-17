@@ -298,7 +298,7 @@ def test_compute_cells_aw_verts(
         e2c=e2c,
         horizontal_start=horizontal_start_vertex,
     )
-    assert test_helpers.dallclose(cells_aw_verts, cells_aw_verts_ref, atol=1e-3)
+    assert test_helpers.dallclose(cells_aw_verts, cells_aw_verts_ref)
 
 
 @pytest.mark.datatest

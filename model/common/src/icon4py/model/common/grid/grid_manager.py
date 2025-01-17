@@ -193,6 +193,7 @@ class GeometryName(FieldName):
     EDGE_ORIENTATION_ON_VERTEX = "edge_orientation"
     # TODO (@halungge) compute from coordinates
     EDGE_CELL_DISTANCE = "edge_cell_distance"
+    EDGE_VERTEX_DISTANCE = "edge_vert_distance"
 
 
 class CoordinateName(FieldName):
@@ -465,6 +466,10 @@ class GridManager:
             GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
                 self._reader.variable(GeometryName.EDGE_CELL_DISTANCE, transpose=True),
+            ),
+            GeometryName.EDGE_VERTEX_DISTANCE.value: gtx.as_field(
+                (dims.EdgeDim, dims.E2VDim),
+                self._reader.variable(GeometryName.EDGE_VERTEX_DISTANCE, transpose=True),
             ),
             # TODO (@halungge) recompute from coordinates? field in gridfile contains NaN on boundary edges
             GeometryName.TANGENT_ORIENTATION.value: gtx.as_field(
