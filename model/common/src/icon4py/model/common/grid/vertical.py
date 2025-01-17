@@ -11,7 +11,7 @@ import functools
 import logging
 import math
 import pathlib
-from typing import Final
+from typing import Final, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -275,7 +275,7 @@ class VerticalGrid:
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int, backend: gtx_backend.Backend
+    file_path: pathlib.Path, num_levels: int, backend: Optional[gtx_backend.Backend]
 ) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
@@ -321,7 +321,7 @@ def _read_vct_a_and_vct_b_from_file(
 
 
 def _compute_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, backend: gtx_backend.Backend
+    vertical_config: VerticalGridConfig, backend: Optional[gtx_backend.Backend]
 ) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
@@ -507,7 +507,7 @@ def _compute_vct_a_and_vct_b(
 
 
 def get_vct_a_and_vct_b(
-    vertical_config: VerticalGridConfig, backend: gtx_backend.Backend
+    vertical_config: VerticalGridConfig, backend: Optional[gtx_backend.Backend]
 ) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.

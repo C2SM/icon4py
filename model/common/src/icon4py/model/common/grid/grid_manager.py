@@ -543,7 +543,7 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         decomposition_info: Optional[decomposition.DecompositionInfo] = None,
     ) -> tuple[dict[dims.Dimension : data_alloc.NDArray]]:
         """

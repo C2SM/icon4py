@@ -15,7 +15,7 @@ import gt4py._core.definitions as gt_core_defs
 import gt4py.next as gtx
 import numpy as np
 import numpy.typing as npt
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import dimension, type_alias as ta
 
@@ -54,7 +54,7 @@ def as_numpy(array: NDArrayInterface):
         return cp.asnumpy(array)
 
 
-def is_cupy_device(backend: backend.Backend) -> bool:
+def is_cupy_device(backend: Optional[gtx_backend.Backend]) -> bool:
     if backend is not None:
         return backend.allocator.__gt_device_type__ in CUDA_DEVICE_TYPES
     else:
@@ -74,18 +74,18 @@ def array_ns(try_cupy: bool):
     return np
 
 
-def import_array_ns(backend: backend.Backend):
+def import_array_ns(backend: Optional[gtx_backend.Backend]):
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(is_cupy_device(backend))
 
 
-def as_field(field: gtx.Field, backend: backend.Backend = None) -> gtx.Field:
+def as_field(field: gtx.Field, backend: Optional[gtx_backend.Backend] = None) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     return gtx.as_field(field.domain, field.ndarray, allocator=backend)
 
 
 def as_1D_sparse_field(
-    field: gtx.Field, target_dim: gtx.Dimension, backend: backend.Backend = None
+    field: gtx.Field, target_dim: gtx.Dimension, backend: Optional[gtx_backend.Backend] = None
 ) -> gtx.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
     buffer = field.ndarray
@@ -93,7 +93,7 @@ def as_1D_sparse_field(
 
 
 def numpy_to_1D_sparse_field(
-    field: NDArray, dim: gtx.Dimension, backend: backend.Backend = None
+    field: NDArray, dim: gtx.Dimension, backend: Optional[gtx_backend.Backend] = None
 ) -> gtx.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
     old_shape = field.shape
@@ -103,7 +103,7 @@ def numpy_to_1D_sparse_field(
 
 
 def flatten_first_two_dims(
-    *dims: gtx.Dimension, field: gtx.Field, backend: backend.Backend = None
+    *dims: gtx.Dimension, field: gtx.Field, backend: Optional[gtx_backend.Backend] = None
 ) -> gtx.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
     buffer = field.ndarray
@@ -204,7 +204,7 @@ def allocate_zero_field(
     grid,
     is_halfdim=False,
     dtype=ta.wpfloat,
-    backend: Optional[backend.Backend] = None,
+    backend: Optional[gtx_backend.Backend] = None,
 ) -> gtx.Field:
     dimensions = {d: range(_size(grid, d, is_halfdim)) for d in dims}
     return gtx.zeros(dimensions, dtype=dtype, allocator=backend)
@@ -215,7 +215,7 @@ def allocate_indices(
     grid,
     is_halfdim=False,
     dtype=gtx.int32,
-    backend: Optional[backend.Backend] = None,
+    backend: Optional[gtx_backend.Backend] = None,
 ) -> gtx.Field:
     xp = import_array_ns(backend)
     shapex = _size(grid, dim, is_halfdim)

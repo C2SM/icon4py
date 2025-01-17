@@ -9,6 +9,7 @@
 
 import logging
 import typing
+from typing import Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -56,7 +57,7 @@ ZERO_BASE = gm.ToZeroBasedIndexTransformation()
 managers = {}
 
 
-def _run_grid_manager(file: str, backend: gtx_backend.Backend) -> gm.GridManager:
+def _run_grid_manager(file: str, backend: Optional[gtx_backend.Backend]) -> gm.GridManager:
     if not managers.get(file):
         manager = gridtest_utils.get_grid_manager(file, num_levels=1, backend=backend)
         managers[file] = manager

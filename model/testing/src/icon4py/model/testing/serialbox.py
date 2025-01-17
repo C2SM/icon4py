@@ -8,6 +8,7 @@
 import functools
 import logging
 import uuid
+from typing import Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -32,7 +33,7 @@ class IconSavepoint:
         sp: serialbox.Savepoint,
         ser: serialbox.Serializer,
         size: dict,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
     ):
         # def __init__(self, sp: serialbox.Savepoint, ser: serialbox.Serializer, size: dict):
         self.savepoint = sp
@@ -131,7 +132,7 @@ class IconGridSavepoint(IconSavepoint):
         size: dict,
         root: int,
         level: int,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
     ):
         super().__init__(sp, ser, size, backend)
         self._grid_id = grid_id
@@ -1797,7 +1798,7 @@ class IconGraupelInitSavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(
         self,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         fname_prefix,
         path=".",
         do_print=False,

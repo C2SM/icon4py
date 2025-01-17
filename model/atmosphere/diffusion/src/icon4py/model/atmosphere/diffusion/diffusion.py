@@ -12,14 +12,14 @@ import functools
 import logging
 import math
 import sys
-from typing import Final
+from typing import Final, Optional
 
 import gt4py.next as gtx
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import int32
 
 import icon4py.model.common.states.prognostic_state as prognostics
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
@@ -363,7 +363,7 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
