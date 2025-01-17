@@ -32,8 +32,6 @@ class ImmersedBoundaryMethod:
         """
         Initialize the immersed boundary method.
         """
-        self.test_value = 13
-
         self._validate_config()
 
         self.cell_mask = self._make_cell_mask(grid)
@@ -47,7 +45,7 @@ class ImmersedBoundaryMethod:
 
     def _make_cell_mask(self, grid: icon_grid.IconGrid) -> fa.CellKField[bool]:
         cell_mask = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
-        cell_mask[2, -2] = True
+        cell_mask[2, :] = True
         return gtx.as_field((CellDim, KDim), cell_mask)
     
     def _make_edge_mask(self, grid: icon_grid.IconGrid) -> fa.EdgeKField[bool]:
@@ -71,8 +69,8 @@ class ImmersedBoundaryMethod:
 
         self._set_bcs_cells(
             mask=self.cell_mask,
-            dir_value_w=self.test_value,
-            dir_value_theta_v=self.test_value,
+            dir_value_w=0.0,
+            dir_value_theta_v=-313.0,
             w=prognostic_state.w,
             theta_v=prognostic_state.theta_v,
             out=(prognostic_state.w, prognostic_state.theta_v),
@@ -80,7 +78,7 @@ class ImmersedBoundaryMethod:
         )
         self._set_bcs_edges(
             mask=self.edge_mask,
-            dir_value_vn=self.test_value,
+            dir_value_vn=0.0,
             vn=prognostic_state.vn,
             out=(prognostic_state.vn),
             offset_provider={},
@@ -97,8 +95,8 @@ class ImmersedBoundaryMethod:
         """
         Set boundary conditions for variables defined on cell centres.
         """
-        w       = where(mask, w       + dir_value_w,       w)
-        theta_v = where(mask, theta_v + dir_value_theta_v, theta_v)
+        w       = where(mask, dir_value_w,       w)
+        #theta_v = where(mask, dir_value_theta_v, theta_v)
         return w, theta_v
 
     @gtx.field_operator
@@ -110,5 +108,5 @@ class ImmersedBoundaryMethod:
         """
         Set boundary conditions for variables defined on edges.
         """
-        vn = where(mask, vn + dir_value_vn, vn)
+        vn = where(mask, dir_value_vn, vn)
         return vn
