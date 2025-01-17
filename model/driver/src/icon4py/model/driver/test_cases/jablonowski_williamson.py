@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import functools
 import logging
 import math
 import pathlib
@@ -231,7 +232,7 @@ def model_initialization_jabw(
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
-    vn_ndarray = testcases_utils.zonalwind_2_normalwind_ndarray(
+    vn_ndarray = functools.partial(testcases_utils.zonalwind_2_normalwind_ndarray, array_ns=xp)(
         grid,
         jw_u0,
         jw_up,
@@ -241,11 +242,12 @@ def model_initialization_jabw(
         edge_lon,
         primal_normal_x,
         eta_v_e.ndarray,
-        array_ns=xp,
     )
     log.info("U2vn computation completed.")
 
-    rho_ndarray, exner_ndarray, theta_v_ndarray = testcases_utils.hydrostatic_adjustment_ndarray(
+    rho_ndarray, exner_ndarray, theta_v_ndarray = functools.partial(
+        testcases_utils.hydrostatic_adjustment_ndarray, array_ns=xp
+    )(
         wgtfac_c,
         ddqz_z_half,
         exner_ref_mc,
@@ -256,7 +258,6 @@ def model_initialization_jabw(
         exner_ndarray,
         theta_v_ndarray,
         num_levels,
-        array_ns=xp,
     )
     log.info("Hydrostatic adjustment computation completed.")
 
