@@ -141,6 +141,7 @@ def log_serialized(
 
 
 def verify_advection_fields(
+    config: advection.AdvectionConfig,
     grid: icon_grid.IconGrid,
     diagnostic_state: advection_states.AdvectionDiagnosticState,
     diagnostic_state_ref: advection_states.AdvectionDiagnosticState,

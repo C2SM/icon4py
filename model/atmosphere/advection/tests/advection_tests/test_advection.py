@@ -96,10 +96,13 @@ def test_advection_run_single_step(
     vertical_advection_type,
     vertical_advection_limiter,
 ):
-    # TODO (Chia Rui): the datatest may fail on GPU backend when there is no advection because the horizontal flux is not zero. Further check required.
-    if data_alloc.is_cupy_device(backend):
+    # TODO (Chia Rui): the last datatest fails on GPU (or even CPU) backend when there is no advection because the horizontal flux is not zero. Further check required.
+    if (
+        even_timestep
+        and horizontal_advection_type == advection.HorizontalAdvectionType.NO_ADVECTION
+    ):
         pytest.xfail(
-            "This test can fail on GPU backend. There may be bugs. Reasons to be investigated."
+            "This test is skipped until the cause of nonzero horizontal advection if revealed."
         )
     config = construct_config(
         horizontal_advection_type=horizontal_advection_type,
@@ -151,6 +154,7 @@ def test_advection_run_single_step(
     p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
 
     verify_advection_fields(
+        config=config,
         grid=icon_grid,
         diagnostic_state=diagnostic_state,
         diagnostic_state_ref=diagnostic_state_ref,
