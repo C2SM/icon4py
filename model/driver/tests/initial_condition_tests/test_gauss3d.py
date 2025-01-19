@@ -22,6 +22,7 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 def test_gauss3d_initial_condition(
     experiment,
     ranked_data_path,
+    backend,
     rank,
     data_provider,
     grid_savepoint,
@@ -41,6 +42,7 @@ def test_gauss3d_initial_condition(
         icon_grid,
         edge_geometry,
         ranked_data_path.joinpath(f"{experiment}/ser_data"),
+        backend,
         rank,
     )
 

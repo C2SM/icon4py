@@ -8,9 +8,10 @@
 
 from abc import ABC, abstractmethod
 import logging
+from typing import Optional
 
 import icon4py.model.common.grid.states as grid_states
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.advection import advection_states
 
@@ -76,7 +77,7 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self,
         grid: icon_grid.IconGrid,
         interpolation_state: advection_states.AdvectionInterpolationState,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._grid = grid
@@ -190,7 +191,7 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self,
         grid: icon_grid.IconGrid,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         horizontal_limiter: HorizontalFluxLimiter = HorizontalFluxLimiter(),
     ):
         self._grid = grid
@@ -326,7 +327,7 @@ class HorizontalAdvection(ABC):
 class NoAdvection(HorizontalAdvection):
     """Class that implements disabled horizontal advection."""
 
-    def __init__(self, grid: icon_grid.IconGrid, backend: backend.Backend):
+    def __init__(self, grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]):
         log.debug("horizontal advection class init - start")
 
         # input arguments
@@ -440,7 +441,7 @@ class SemiLagrangian(FiniteVolume):
         metric_state: advection_states.AdvectionMetricState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         log.debug("horizontal advection class init - start")

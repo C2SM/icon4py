@@ -10,9 +10,10 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 import dataclasses
 import logging
+from typing import Optional
 
 import icon4py.model.common.grid.states as grid_states
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.advection import (
     advection_states,
@@ -159,7 +160,7 @@ class NoAdvection(Advection):
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         log.debug("advection class init - start")
@@ -215,7 +216,7 @@ class GodunovSplittingAdvection(Advection):
         vertical_advection: advection_vertical.VerticalAdvection,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
         even_timestep: bool = False,
     ):
@@ -381,7 +382,7 @@ def convert_config_to_horizontal_vertical_advection(
     metric_state: advection_states.AdvectionMetricState,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
-    backend: backend.Backend,
+    backend: Optional[gtx_backend.Backend],
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
     match config.horizontal_advection_limiter:
@@ -463,7 +464,7 @@ def convert_config_to_advection(
     metric_state: advection_states.AdvectionMetricState,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
-    backend: backend.Backend,
+    backend: Optional[gtx_backend.Backend],
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     even_timestep: bool = False,
 ) -> Advection:

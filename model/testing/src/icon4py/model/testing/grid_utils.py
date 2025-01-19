@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import pathlib
+from typing import Optional
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -35,7 +36,7 @@ grid_geometries = {}
 
 
 def get_grid_manager_for_experiment(
-    experiment: str, backend: gtx_backend.Backend = None
+    experiment: str, backend: Optional[gtx_backend.Backend] = None
 ) -> gm.GridManager:
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         return _download_and_load_gridfile(
@@ -54,7 +55,7 @@ def get_grid_manager_for_experiment(
 
 
 def get_grid_manager(
-    grid_file: str, num_levels: int, backend: gtx_backend.Backend
+    grid_file: str, num_levels: int, backend: Optional[gtx_backend.Backend]
 ) -> gm.GridManager:
     return _download_and_load_gridfile(grid_file, num_levels=num_levels, backend=backend)
 
@@ -85,7 +86,7 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
 
 
 def _run_grid_manager_for_file(
-    file: str, num_levels: int, backend: gtx_backend.Backend
+    file: str, num_levels: int, backend: Optional[gtx_backend.Backend]
 ) -> gm.GridManager:
     """
     Load a grid file.
@@ -110,7 +111,7 @@ def _run_grid_manager_for_file(
 
 
 def _download_and_load_gridfile(
-    file_path: str, num_levels: int, backend: gtx_backend.Backend
+    file_path: str, num_levels: int, backend: Optional[gtx_backend.Backend]
 ) -> gm.GridManager:
     grid_file = _download_grid_file(file_path)
     gm = _run_grid_manager_for_file(str(grid_file), num_levels, backend)
@@ -129,7 +130,7 @@ def get_num_levels(experiment: str):
 
 
 def get_grid_geometry(
-    backend: gtx_backend.Backend, experiment: str, grid_file: str
+    backend: Optional[gtx_backend.Backend], experiment: str, grid_file: str
 ) -> geometry.GridGeometry:
     on_gpu = data_alloc.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)

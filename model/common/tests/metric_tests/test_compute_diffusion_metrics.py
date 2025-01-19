@@ -30,30 +30,38 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 def test_compute_diffusion_metrics(
     metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
+    if data_alloc.is_cupy_device(backend):
+        pytest.skip("GPU backend is not supported")
     if helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
 
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         pytest.skip(f"Fields not computed for {experiment}")
 
-    mask_hdiff = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=bool).asnumpy()
+    mask_hdiff = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=bool, backend=backend
+    ).asnumpy()
     zd_vertoffset_dsl = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim
+        icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim, backend=backend
     ).asnumpy()
-    z_vintcoeff = data_alloc.zero_field(icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim).asnumpy()
+    z_vintcoeff = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim, backend=backend
+    ).asnumpy()
     zd_intcoef_dsl = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim
+        icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim, backend=backend
     ).asnumpy()
-    z_maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    z_maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    zd_diffcoef_dsl = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim).asnumpy()
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim)
+    z_maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    z_maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    zd_diffcoef_dsl = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, backend=backend
+    ).asnumpy()
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
 
-    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
+    c2e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.C2E2CDim])
     nbidx = data_alloc.constant_field(
-        icon_grid, 1, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=int
+        icon_grid, 1, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=int, backend=backend
     ).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     thslp_zdiffu = 0.02
@@ -78,7 +86,9 @@ def test_compute_diffusion_metrics(
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+    z_mc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+    )
     compute_z_mc.with_backend(backend)(
         metrics_savepoint.z_ifc(),
         z_mc,
@@ -105,7 +115,7 @@ def test_compute_diffusion_metrics(
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1]),
+        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
@@ -135,11 +145,13 @@ def test_compute_diffusion_metrics(
         dims.CECDim,
         dims.KDim,
         field=gtx.as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_intcoef_dsl),
+        backend=backend,
     )
     zd_vertoffset_dsl = data_alloc.flatten_first_two_dims(
         dims.CECDim,
         dims.KDim,
         field=gtx.as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_vertoffset_dsl),
+        backend=backend,
     )
 
     assert helpers.dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())

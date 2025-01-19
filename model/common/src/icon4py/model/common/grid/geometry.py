@@ -76,7 +76,7 @@ class GridGeometry(factory.FieldSource):
         self,
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         coordinates: gm.CoordinateDict,
         extra_fields: dict[InputGeometryFieldType, gtx.Field],
         metadata: dict[str, model.FieldMetaData],

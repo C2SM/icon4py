@@ -21,8 +21,10 @@ from icon4py.model.testing.reference_funcs import (
 def test_init_enh_smag_fac(backend, grid):
     if backend is None:
         pytest.skip("test does not run on embedded backend")
-    enh_smag_fac = data_alloc.zero_field(grid, dims.KDim)
-    a_vec = data_alloc.random_field(grid, dims.KDim, low=1.0, high=10.0, extend={dims.KDim: 1})
+    enh_smag_fac = data_alloc.zero_field(grid, dims.KDim, backend=backend)
+    a_vec = data_alloc.random_field(
+        grid, dims.KDim, low=1.0, high=10.0, extend={dims.KDim: 1}, backend=backend
+    )
     fac = (0.67, 0.5, 1.3, 0.8)
     z = (0.1, 0.2, 0.3, 0.4)
 
