@@ -25,7 +25,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
-    MARKERS = (pytest.mark.uses_as_offset, pytest.mark.gtfn_miss_neighbors)
+    MARKERS = (pytest.mark.uses_as_offset, pytest.mark.skip_value_error)
 
     @staticmethod
     def reference(

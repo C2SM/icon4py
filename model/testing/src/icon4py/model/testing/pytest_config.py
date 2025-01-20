@@ -10,13 +10,13 @@ import os
 from collections.abc import Callable
 from typing import Final
 
-import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
 from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
+from icon4py.model.testing.helpers import _match_marker
 
 
 DEFAULT_BACKEND: Final = "embedded"
@@ -123,12 +123,8 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    for marker in item.own_markers:
-        if marker.name.startswith("embedded") and item.config.getoption("--backend") == "embedded":
-            pytest.skip("test not compatible with embedded backend")
-    for _ in item.iter_markers(name="datatest"):
-        if not item.config.getoption("--datatest"):
-            pytest.skip("need '--datatest' option to run")
+    _match_marker(item.own_markers, item.config.getoption("--datatest"))
+    _match_marker(item.own_markers, item.config.getoption("--backend"))
 
 
 def pytest_generate_tests(metafunc):

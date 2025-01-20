@@ -10,9 +10,6 @@ include:
     - BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
       GRID: [simple_grid, icon_grid]
   rules:
-    # exclude slow test configurations
-    - if: $BACKEND == "embedded" && $GRID == "icon_grid"
-      when: never
     - when: on_success
 test_model_stencils_x86_64:
   extends: [.test_model_stencils, .test_template_x86_64]

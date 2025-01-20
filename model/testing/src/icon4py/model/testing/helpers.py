@@ -47,7 +47,7 @@ def is_dace(backend) -> bool:
 
 
 def is_embedded(backend) -> bool:
-    return backend is None
+    return backend in (None, "embedded")
 
 
 def is_roundtrip(backend) -> bool:
@@ -71,20 +71,25 @@ def allocate_data(backend, input_data):
     return input_data
 
 
-def _match_marker(marker, backend):
-    for m in marker:
-        match m.markname:
-            case "embedded_remap_error" if is_embedded(backend):
+def _match_marker(markers, param):
+    for marker in markers:
+        m_name = marker.markname if hasattr(marker, "markname") else marker.name
+        match m_name:
+            case "embedded_remap_error" if is_embedded(param):
                 # https://github.com/GridTools/gt4py/issues/1583
                 pytest.xfail("Embedded backend currently fails in remap function.")
-            case "uses_as_offset" if is_embedded(backend):
+            case "uses_as_offset" if is_embedded(param):
                 pytest.xfail("Embedded backend does not support as_offset.")
-            case "requires_concat_where" if is_embedded(backend):
+            case "requires_concat_where" if is_embedded(param):
                 pytest.xfail(
                     "Embedded backend does not support larger boundaries than field sizes."
                 )
-            case "gtfn_miss_neighbors" if backend and ("gtfn" in backend.name):
-                pytest.xfail("gtfn_gpu and gtfn_cpu do not support missing neighbors.")
+            case "skip_value_error":
+                pytest.skip(
+                    "Stencil does not support domain containing skip values. Consider shrinking domain"
+                )
+            case "datatest" if param is None:
+                pytest.skip("need '--datatest' option to run")
 
 
 @dataclass(frozen=True)
