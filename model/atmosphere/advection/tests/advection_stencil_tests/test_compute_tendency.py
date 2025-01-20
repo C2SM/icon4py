@@ -10,11 +10,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_tendency import (
     compute_tendency,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestComputeTendency(helpers.StencilTest):
@@ -35,9 +36,9 @@ class TestComputeTendency(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_tracer_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_tracer_new = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        opt_ddt_tracer_adv = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        p_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_tracer_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        opt_ddt_tracer_adv = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         p_dtime = np.float64(5.0)
         return dict(
             p_tracer_now=p_tracer_now,

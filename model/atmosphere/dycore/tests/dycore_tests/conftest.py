@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
+from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     damping_height,
     data_provider,
     decomposition_info,

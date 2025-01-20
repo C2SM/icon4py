@@ -13,14 +13,14 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
+from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import (
     flatten_first_two_dims,
     random_field,
     random_mask,
     zero_field,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing.helpers import StencilTest
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
@@ -110,7 +110,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
             zd_vertoffset[:, :, k] = rng.integers(
                 low=0 - k,
                 high=grid.num_levels - k - 1,
-                size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
+                size=(zd_vertoffset.ndarray.shape[0], zd_vertoffset.ndarray.shape[1]),
             )
 
         zd_diffcoef = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)

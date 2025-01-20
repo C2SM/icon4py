@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_o
     compute_contravariant_correction_of_w,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_contravariant_correction_of_w_numpy(

@@ -6,7 +6,20 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
-    backend,
-    grid,
-)
+from icon4py.model.testing.helpers import backend, grid
+
+
+# Make sure custom icon4py pytest hooks are loaded
+try:
+    import sys
+
+    _ = sys.modules["icon4py.model.testing.pytest_config"]
+except KeyError:
+    from icon4py.model.testing.pytest_config import *  # noqa: F403 [undefined-local-with-import-star]
+
+
+__all__ = [
+    # imported fixtures:
+    "backend",
+    "grid",
+]

@@ -14,7 +14,7 @@ from gt4py import next as gtx
 
 import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 """
@@ -80,7 +80,7 @@ class RefinementValue:
         return self.value not in _UNORDERED[self.dim]
 
 
-def is_unordered_field(field: field_alloc.NDArray, dim: dims.Dimension) -> field_alloc.NDArray:
+def is_unordered_field(field: data_alloc.NDArray, dim: dims.Dimension) -> data_alloc.NDArray:
     assert field.dtype in (gtx.int32, gtx.int64), f"not an integer type {field.dtype}"
     return np.where(
         field == _UNORDERED[dim][0], True, np.where(field == _UNORDERED[dim][1], True, False)
@@ -88,8 +88,8 @@ def is_unordered_field(field: field_alloc.NDArray, dim: dims.Dimension) -> field
 
 
 def convert_to_unnested_refinement_values(
-    field: field_alloc.NDArray, dim: dims.Dimension
-) -> field_alloc.NDArray:
+    field: data_alloc.NDArray, dim: dims.Dimension
+) -> data_alloc.NDArray:
     """Convenience function that converts the grid refinement value from a coarser
     parent grid to the canonical values used in an unnested setup.
 

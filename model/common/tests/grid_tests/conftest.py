@@ -8,7 +8,7 @@
 
 import pytest
 
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
+from icon4py.model.testing.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
     decomposition_info,
@@ -29,7 +29,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
 )
-from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
+from icon4py.model.testing.datatest_utils import REGIONAL_EXPERIMENT
 
 
 @pytest.fixture
