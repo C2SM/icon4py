@@ -31,7 +31,7 @@ at the top-level folder of the repository, which installs all `ICON4Py` packages
 
 ### Distributed run
 
-Contains infrastructure for parallel implementation of `icon4py/model`.
+The package `decomposition` contains infrastructure for parallel implementation of `icon4py/model`.
 `icon4py` uses [GHEX](https://github.com/ghex-org/GHEX) for halo exchanges. In order to run in parallel
 optional dependencies `mpi4py` and `ghex` need to be installed, which can be done through
 
