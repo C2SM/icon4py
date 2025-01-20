@@ -9,7 +9,7 @@
 import numpy as np
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import numpy_to_1D_sparse_field
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_coeff_gradekin(
@@ -37,4 +37,4 @@ def compute_coeff_gradekin(
             edge_cell_length[e, 0] / edge_cell_length[e, 1] * inv_dual_edge_length[e]
         )
     coeff_gradekin_full = np.column_stack((coeff_gradekin_0, coeff_gradekin_1))
-    return numpy_to_1D_sparse_field(coeff_gradekin_full, dims.ECDim)
+    return data_alloc.numpy_to_1D_sparse_field(coeff_gradekin_full, dims.ECDim)

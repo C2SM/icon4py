@@ -12,7 +12,6 @@ import types
 from dataclasses import dataclass
 from typing import Any, TypeGuard
 
-import icon4py.model.common.dimension
 from gt4py import eve
 from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
@@ -21,8 +20,8 @@ from gt4py.next.ffront.fbuiltins import FieldOffset
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.model.common import dimension as dims
 
+from icon4py.model.common import dimension as dims
 from icon4pytools.common import icochainsize as ico
 
 
@@ -136,7 +135,7 @@ def _provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     A new sparse dimension may look like C2CE or V2CVEC. In this case, we need to strip the 2
     and pass the tokens after to the algorithm below
     """
-    offset = getattr(icon4py.model.common.dimension, chain)
+    offset = getattr(dims, chain)
     assert isinstance(offset, FieldOffset)
 
     # note: this seems really brittle. maybe agree on a keyword to indicate new sparse fields?
