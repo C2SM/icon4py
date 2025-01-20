@@ -75,6 +75,7 @@ def _match_marker(marker, backend):
     for m in marker:
         match m.markname:
             case "embedded_remap_error" if is_embedded(backend):
+                # https://github.com/GridTools/gt4py/issues/1583
                 pytest.xfail("Embedded backend currently fails in remap function.")
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
@@ -82,8 +83,6 @@ def _match_marker(marker, backend):
                 pytest.xfail(
                     "Embedded backend does not support larger boundaries than field sizes."
                 )
-            case "domain_dims_mismatch" if is_embedded(backend):
-                pytest.xfail("Stencil does not support missing neighbors.")
             case "gtfn_miss_neighbors" if backend and ("gtfn" in backend.name):
                 pytest.xfail("gtfn_gpu and gtfn_cpu do not support missing neighbors.")
 
