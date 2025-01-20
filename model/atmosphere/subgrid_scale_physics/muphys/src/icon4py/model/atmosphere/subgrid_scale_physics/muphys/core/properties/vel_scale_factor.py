@@ -11,14 +11,14 @@ from gt4py.next.ffront.fbuiltins import where, power, exp, maximum, minimum
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 @gtx.field_operator
-def _vel_scale_factor_lqi(
+def _vel_scale_factor_i(
     xrho:     fa.CellField[ta.wpfloat],             # sqrt(rho_00/rho)
     B_I:      ta.wpfloat,                           # 2/3
 ) -> fa.CellField[ta.wpfloat]:                      # Snow number
     return power( xrho, B_I )
 
 @gtx.field_operator
-def _vel_scale_factor_lqs(
+def _vel_scale_factor_s(
     xrho:     fa.CellField[ta.wpfloat],             # sqrt(rho_00/rho)
     rho:      fa.CellField[ta.wpfloat],             # Density of condensate
     t:        fa.CellField[ta.wpfloat],             # Temperature
