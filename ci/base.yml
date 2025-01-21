@@ -88,7 +88,7 @@ build_image_aarch64:
   extends: [.container-runner-daint-gh200, .test_template]
   needs: [build_image_aarch64]
   variables:
-    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d121/migrated_project_16_01_2025/icon4py/ci/testdata:$TEST_DATA_PATH"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
