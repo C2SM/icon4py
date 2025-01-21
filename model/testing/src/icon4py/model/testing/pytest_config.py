@@ -16,7 +16,7 @@ from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
-from icon4py.model.testing.helpers import _match_marker
+from icon4py.model.testing.helpers import match_marker
 
 
 DEFAULT_BACKEND: Final = "embedded"
@@ -123,8 +123,8 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    _match_marker(item.own_markers, item.config.getoption("--datatest"))
-    _match_marker(item.own_markers, item.config.getoption("--backend"))
+    match_marker(item.own_markers, item.config.getoption("--datatest"))
+    match_marker(item.own_markers, item.config.getoption("--backend"))
 
 
 def pytest_generate_tests(metafunc):

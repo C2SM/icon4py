@@ -71,9 +71,15 @@ def allocate_data(backend, input_data):
     return input_data
 
 
-def _match_marker(markers, param):
+def match_marker(markers: tuple, param: typing.Any):
     for marker in markers:
-        m_name = marker.markname if hasattr(marker, "markname") else marker.name
+        if hasattr(marker, "markname"):
+            m_name = marker.markname
+        elif hasattr(marker, "name"):
+            m_name = marker.name
+        else:
+            m_name = marker
+
         match m_name:
             case "embedded_remap_error" if is_embedded(param):
                 # https://github.com/GridTools/gt4py/issues/1583
@@ -101,7 +107,7 @@ class Output:
 
 def _test_validation(self, grid, backend, input_data):
     if self.MARKERS is not None:
-        _match_marker(self.MARKERS, backend)
+        match_marker(self.MARKERS, backend)
 
     reference_outputs = self.reference(
         grid,
@@ -133,7 +139,7 @@ if pytest_benchmark:
 
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
         if self.MARKERS is not None:
-            _match_marker(self.MARKERS, backend)
+            match_marker(self.MARKERS, backend)
 
         if pytestconfig.getoption(
             "--benchmark-disable"
