@@ -78,8 +78,8 @@ class Output:
 
 
 def _test_validation(self, grid, backend, input_data):
-    if self.MARKER is not None:
-        for marker in self.MARKER:
+    if self.MARKERS is not None:
+        for marker in self.MARKERS:
             if marker.markname == "requires_concat_where":
                 pytest.xfail("test requires concat_where")
 
@@ -117,8 +117,8 @@ if pytest_benchmark:
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
-            if self.MARKER is not None:
-                for marker in self.MARKER:
+            if self.MARKERS is not None:
+                for marker in self.MARKERS:
                     if marker.markname == "requires_concat_where":
                         pytest.xfail("test requires concat_where")
             input_data = allocate_data(backend, input_data)
@@ -155,7 +155,7 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKER: Optional[tuple] = None
+    MARKERS: Optional[tuple] = None
 
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that
