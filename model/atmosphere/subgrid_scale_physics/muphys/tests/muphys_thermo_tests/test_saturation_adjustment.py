@@ -8,7 +8,8 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.saturation_adjustment2 import saturation_adjustment2
+#from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.saturation_adjustment2 import saturation_adjustment2
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.saturation_adjustment import saturation_adjustment
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
 
 from icon4py.model.common import dimension as dims
@@ -17,12 +18,14 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 class TestSaturationAdjustment(StencilTest):
-    PROGRAM = saturation_adjustment2
+    PROGRAM = saturation_adjustment
+#    PROGRAM = saturation_adjustment2
     OUTPUTS = ("te_out", "qve_out","qce_out")
     print(graupel_ct.ci)
 
     @staticmethod
-    def reference(grid, te: np.array, qve: np.array, qce: np.array, qre: np.array, qti: np.array, cvc: np.array, ue: np.array, Tx_hold: np.array, Tx: np.array, rho: np.array, CI: wpfloat, CLW: wpfloat, CVD: wpfloat, CVV: wpfloat, LVC: wpfloat, TMELT: wpfloat, RV: wpfloat, **kwargs) -> dict:
+#    def reference(grid, te: np.array, qve: np.array, qce: np.array, qre: np.array, qti: np.array, cvc: np.array, ue: np.array, Tx_hold: np.array, Tx: np.array, rho: np.array, CI: wpfloat, CLW: wpfloat, CVD: wpfloat, CVV: wpfloat, LVC: wpfloat, TMELT: wpfloat, RV: wpfloat, **kwargs) -> dict:
+    def reference(grid, te: np.array, qve: np.array, qce: np.array, qre: np.array, qti: np.array, rho: np.array, CI: wpfloat, CLW: wpfloat, CVD: wpfloat, CVV: wpfloat, LVC: wpfloat, TMELT: wpfloat, RV: wpfloat, **kwargs) -> dict:
         return dict(te_out=np.full(te.shape, 273.91226488486984), qve_out=np.full(te.shape, 4.4903852062454690E-003), qce_out=np.full(te.shape, 9.5724552280369163E-007))
 
     @pytest.fixture
@@ -35,13 +38,13 @@ class TestSaturationAdjustment(StencilTest):
             qre         = constant_field(grid, 2.5939378002267028E-004, dims.CellDim, dtype=wpfloat),
             qti         = constant_field(grid, 1.0746937601645517E-005, dims.CellDim, dtype=wpfloat),
             rho         = constant_field(grid, 1.1371657035251757, dims.CellDim, dtype=wpfloat),
-            cvc         = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
-            ue          = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
-            Tx_hold     = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
-            Tx          = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
-            qx_hold     = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
-            qx          = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
-            dqx         = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
+#            cvc         = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
+#            ue          = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
+#            Tx_hold     = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
+#            Tx          = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
+#            qx_hold     = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
+#            qx          = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
+#            dqx         = constant_field(grid, 0.0, dims.CellDim, dtype=wpfloat),                     # Temporary
             CI          = graupel_ct.ci,
             CLW         = thermodyn.clw,
             CVD         = thermodyn.cvd,

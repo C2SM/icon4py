@@ -72,9 +72,9 @@ def _saturation_adjustment(
     qx = _qsat_rho(Tx, rho, TMELT, RV)
 
     # Is it possible to unify the where for all three outputs??
-    qve = where( ( qve+qce <= qx_hold ), qve+qce, qx )
-    qce = where( ( qve+qce <= qx_hold ), 0.0, maximum(qve+qce-qx, 0.0) )
     te  = where( ( qve+qce <= qx_hold ), Tx_hold, Tx )
+    qce = where( ( qve+qce <= qx_hold ), 0.0, maximum(qve+qce-qx, 0.0) )
+    qve = where( ( qve+qce <= qx_hold ), qve+qce, qx )
 
     return te, qve, qce
 
