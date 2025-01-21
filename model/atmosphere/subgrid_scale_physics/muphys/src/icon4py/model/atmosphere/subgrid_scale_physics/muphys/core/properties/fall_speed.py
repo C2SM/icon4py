@@ -12,7 +12,7 @@ from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 @gtx.field_operator
 def _fall_speed(
-    density:      fa.CellField[ta.wpfloat],             # Density of 
+    density:      fa.CellField[ta.wpfloat],             # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat, 
@@ -22,7 +22,7 @@ def _fall_speed(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fall_speed(
-    density:      fa.CellField[ta.wpfloat],             # Density of
+    density:      fa.CellField[ta.wpfloat],             # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat,              

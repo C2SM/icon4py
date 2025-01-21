@@ -50,7 +50,7 @@ def _saturation_adjustment(
     LVC:       ta.wpfloat,
     TMELT:     ta.wpfloat,
     RV:        ta.wpfloat,
-) -> tuple[fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat]]:                       # Internal energy
+) -> tuple[fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat],fa.CellField[bool]]:                       # Internal energy
 
     qt = qve + qce + qre + qti
     cvc = CVD * (1.0-qt) + CLW * qre + CI * qti
@@ -72,11 +72,12 @@ def _saturation_adjustment(
     qx = _qsat_rho(Tx, rho, TMELT, RV)
 
     # Is it possible to unify the where for all three outputs??
+    mask = ( qve+qce <= qx_hold )
     te  = where( ( qve+qce <= qx_hold ), Tx_hold, Tx )
     qce = where( ( qve+qce <= qx_hold ), 0.0, maximum(qve+qce-qx, 0.0) )
     qve = where( ( qve+qce <= qx_hold ), qve+qce, qx )
 
-    return te, qve, qce
+    return te, qve, qce, mask
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def saturation_adjustment(
@@ -95,6 +96,7 @@ def saturation_adjustment(
     RV:        ta.wpfloat,
     te_out:    fa.CellField[ta.wpfloat],             # Temperature
     qve_out:   fa.CellField[ta.wpfloat],             # Specific humidity
-    qce_out:   fa.CellField[ta.wpfloat]              # Specific cloud water content
+    qce_out:   fa.CellField[ta.wpfloat],             # Specific cloud water content
+    mask_out:  fa.CellField[bool]                    # Specific cloud water content
 ):
-    _saturation_adjustment( te, qve, qce, qre, qti, rho, CI, CLW, CVD, CVV, LVC, TMELT, RV, out=(te_out, qve_out, qce_out) )
+    _saturation_adjustment( te, qve, qce, qre, qti, rho, CI, CLW, CVD, CVV, LVC, TMELT, RV, out=(te_out, qve_out, qce_out, mask_out) )

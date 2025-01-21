@@ -1,4 +1,4 @@
-\1;95;0c# ICON4Py - ICON inspired code in Python and GT4Py
+# ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
@@ -9,8 +9,11 @@ import gt4py.next as gtx
 
 from gt4py.next.ffront.fbuiltins import where, maximum, minimum
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties.fall_speed import _fall_speed
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.qsat_rho import _qsat_rho
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.dqsatdT_rho import _dqsatdT_rho
+
+K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 
 @gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, 0.0))
 def _precip(
@@ -27,15 +30,15 @@ def _precip(
     _, flx, vt = state
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0*flx
-    flx_partial = minimum(rho_x * vc * fall_speed(rho_x, prefactor, offset, exponent), flx_eff) 
+    flx_partial = minimum(rho_x * vc * _fall_speed(rho_x, prefactor, offset, exponent), flx_eff) 
     update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)   # q update
     update1 = (update0 * rho * vt + flx_partial) * 0.5                       # flux
     rho_x   = (update0 + q_kp1) * 0.5 * rho
-    update2 = vc * fall_speed(rho_x, prefactor, offset, exponent)            # vt
+    update2 = vc * _fall_speed(rho_x, prefactor, offset, exponent)            # vt
     return update0, update1, update2
 
 @gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, 0.0))
-def _temperature_update((
+def _temperature_update(
     state:     tuple[ta.wpfloat, ta.wpfloat],
     t:         ta.wpfloat,
     t_kp1:     ta.wpfloat,
@@ -48,13 +51,19 @@ def _temperature_update((
     qice:      ta.wpfloat,
     rho:       ta.wpfloat,             # density
     dz:        ta.wpfloat,
+    CI:        ta.wpfloat,
+    CLW:       ta.wpfloat,
+    CVD:       ta.wpfloat,
+    CVV:       ta.wpfloat,
+    LSC:       ta.wpfloat,
+    LVC:       ta.wpfloat,
 ) -> tuple[ta.wpfloat,ta.wpfloat]:
     _, eflx = state
 
-    e_int   = internal_energy( t_old, qv_old, qliq_old, qice_old, rho, dz, OTHERS ) + eflx
+    e_int   = internal_energy( t_old, qv_old, qliq_old, qice_old, rho, dz, CI, CLW, CVD, CVV, LSC, LVC ) + eflx
     eflx    = dt * ( qr * ( CLW * t - CVD * t_kp1 - LVC ) + pflx * ( CI * t - CVD * t_kp1 - LSC ) )
     e_int   = e_int - eflx
-    t       = T_from_internal_energy( min_k, e_int, qv, qliq, qice, rho, dz )
+    t       = T_from_internal_energy( min_k, e_int, qv, qliq, qice, rho, dz, CI, CLW, CVD, CVV, LSC, LVC )
 
     return t, eflx
 
@@ -69,11 +78,15 @@ def _graupel_mask(
     TFRZ_HET2: ta.wpfloat,                           # TBD
     TMELT:     ta.wpfloat,                           # TBD
     RV:        ta.wpfloat,                           # TBD
-) -> [fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat]]:
+) -> [fa.CellField[bool],fa.CellField[bool],fa.CellField[bool],fa.CellField[bool],fa.CellField[bool],fa.CellField[bool]]:
 
-    mask = where( (maximum( qc, maximum(qg, maximum(qi, maximum(qr, qs)))) > QMIN) | ((t < tfrz_het2) & (qv > qsat_ice_rho(t, rho, TMELT, RV) ) ), 1.0, 0.0 )
-    is_sig_present = where( maximum( qg, maximum(qi, qs)) > QMIN, 1.0, 0.0 )
-    return mask, is_sig_present
+    mask = where( (maximum( qc, maximum(qg, maximum(qi, maximum(qr, qs)))) > QMIN) | ((t < tfrz_het2) & (qv > qsat_ice_rho(t, rho, TMELT, RV) ) ), True, False )
+    is_sig_present = where( maximum( qg, maximum(qi, qs)) > QMIN, True, False )
+    kmin_r = where( qr > QMIN, True, False )
+    kmin_i = where( qi > QMIN, True, False )
+    kmin_s = where( qs > QMIN, True, False )
+    kmin_g = where( qg > QMIN, True, False )
+    return mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g
  
 @gtx.field_operator
 def _graupel_loop2(
@@ -87,10 +100,15 @@ def _graupel_loop2(
     qnc:    fa.CellField[ta.wpfloat],
     t :     fa.CellField[ta.wpfloat],
     rho:    fa.CellField[ta.wpfloat],
-    is_sig_present: ,
-    dt      ta.wpfloat,
-    TMELT   ta.wpfloat,
-    OTHERS
+    is_sig_present: fa.CellField[bool],
+    dt:     ta.wpfloat,
+    QMIN:   ta.wpfloat,
+    TMELT:  ta.wpfloat,
+    RV:     ta.wpfloat,
+    AMS:    ta.wpfloat,
+    BMS:    ta.wpfloat,
+    TFRZ_HOM: ta.wpfloat,
+        
 ) -> [fa.CellField[ta.wpfloat],fa.CellField[ta.wpfloat]]:
 
     dvsw = qv - qsat_rho( t, rho, TMELT, RV )
@@ -98,11 +116,12 @@ def _graupel_loop2(
     dvsi = qv - qvsi
 
     n_snow = snow_number( t, rho, qs, QMIN, AMS, TMELT )
+    
     l_snow = snow_lambda( rho, qs, n_snow, QMIN, AMS, BMS )
 
     # Define conversion 'matrix'
-    sx2x_c_r = cloud_to_rain( t, qc, qr, qnc )
-    sx2x_r_v = rain_to_vapor( t, rho, qc, qr, dvsw, dt )
+    sx2x_c_r = cloud_to_rain( t, qc, qr, qnc, TFRZ_HOM )
+    sx2x_r_v = rain_to_vapor( t, rho, qc, qr, dvsw, dt, QMIN, TMELT )
     sx2x_c_i = cloud_x_ice( t, qc, qi, dt )
     sx2x_i_c = -minimum(sx2x_c_i, 0.0)
     sx2x_c_i = maximum(sx2x_c_i, 0.0)
@@ -129,7 +148,7 @@ def _graupel_loop2(
 
     sx2x_c_r = where( t >= TMELT, sx2x_c_r + sx2x_c_s + sx2x_c_g, sx2x_c_r )
 
-    dvsw0        = where( is_sig_present, qv - qsat_rho( tmelt, rho, OTHERS )  # TODO: new qsat_rho_tmelt
+    dvsw0    = where( is_sig_present, qv - qsat_rho( t, rho, TMELT, RV ) )  # TODO: new qsat_rho_tmelt
     sx2x_v_s = where( is_sig_present, vapor_x_snow( t, p, rho, qs, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt ), 0.0 )
     sx2x_s_v = where( is_sig_present, -minimum( sx2x_v_s, 0.0 ), 0.0 )
     sx2x_v_s = where( is_sig_present, maximum( sx2x_v_s, 0.0 ), 0.0 )
@@ -228,7 +247,7 @@ def _graupel_loop3_if_lrain(
     rho:    fa.CellField[ta.wpfloat],             # density
     dz:     fa.CellField[ta.wpfloat], 
     dt:     ta.wpfloat,
-    is_sig_present,
+    is_sig_present : fa.CellField[bool],
     RHO_00: ta.wpfloat,
     B_I:    ta.wpfloat,
     B_S:    ta.wpfloat,
@@ -287,25 +306,29 @@ def _output_calculation(
     return te, qve, qce
 
 # TODO : program  needs to be called with offset_provider={"Koff": K}  
-graupel_implementation(
-
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def graupel_run(
+    te:        fa.CellField[ta.wpfloat],             # Temperature
+    qve:       fa.CellField[ta.wpfloat],             # Specific humidity
+    qce:       fa.CellField[ta.wpfloat],             # Specific cloud water content
+    qre:       fa.CellField[ta.wpfloat],             # Specific rain water
+    qti:       fa.CellField[ta.wpfloat],             # Specific mass of all ice species (total-ice)
+    rho:       fa.CellField[ta.wpfloat],             # Density containing dry air and water constituents
+    QMIN:      ta.wpfloat,
+    CI:        ta.wpfloat,
+    CLW:       ta.wpfloat,
+    CVD:       ta.wpfloat,
+    CVV:       ta.wpfloat,
+    LVC:       ta.wpfloat,
+    TFRZ_HET2: ta.wpfloat,
+    TMELT:     ta.wpfloat,
+    RV:        ta.wpfloat,
+    mask_out:  fa.CellField[bool],                      # Specific cloud water content
+    is_sig_present_out:  fa.CellField[bool],                    # Specific cloud water content
+    kmin_r_out:  fa.CellField[bool],                    # Specific rainwater content
+    kmin_i_out:  fa.CellField[bool],                    # Specific cloud water content
+    kmin_s_out:  fa.CellField[bool],                    # Specific cloud water content
+    kmin_g_out:  fa.CellField[bool],                    # Specific cloud water content
 ):
-    graupel_loop2 ...
-_graupel_loop3_if_lrain(qv,
-        qc,
-        qr,
-        qs,
-        qi,
-        qg,
-        t,
-        rho,
-        dz,
-        dvsw,
-        dt,
-        is_sig_present,
-        kmin,
-        TMELT,
-    OTHERS
 
-                        
-    
+    _graupel_mask( qce, qge, qie, qre, qse, QMIN, TFRZ_HET2, TMELT, RV, out=(mask_out, is_sig_present_out, kmin_r_out, kmin_i_out, kmin_s_out, kmin_g_out) )
