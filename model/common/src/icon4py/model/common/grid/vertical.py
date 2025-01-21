@@ -549,7 +549,7 @@ def compute_SLEVE_coordinate_from_vcta_and_topography(
     vertical_config: VerticalGridConfig,
     vertical_geometry: VerticalGrid,
     backend,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
     Compute the 3D vertical coordinate field using the SLEVE coordinate
     https://doi.org/10.1175/1520-0493(2002)130%3C2459:ANTFVC%3E2.0.CO;2
@@ -561,11 +561,11 @@ def compute_SLEVE_coordinate_from_vcta_and_topography(
     """
 
     def _decay_func(
-        vct_a: field_alloc.NDArray,
+        vct_a: data_alloc.NDArray,
         model_top_height: float,
         decay_scale: float,
         decay_exponent: float,
-    ) -> field_alloc.NDArray:
+    ) -> data_alloc.NDArray:
         return np.sinh(
             (model_top_height / decay_scale) ** decay_exponent
             - (vct_a / decay_scale) ** decay_exponent
@@ -614,11 +614,11 @@ def compute_SLEVE_coordinate_from_vcta_and_topography(
 
 
 def _check_and_correct_layer_thickness(
-    vertical_coordinate: field_alloc.NDArray,
-    vct_a: field_alloc.NDArray,
+    vertical_coordinate: data_alloc.NDArray,
+    vct_a: data_alloc.NDArray,
     vertical_config: VerticalGridConfig,
     grid: icon_grid.IconGrid,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     ktop_thicklimit = np.asarray(grid.num_cells * [grid.num_levels], dtype=float)
     # Ensure that layer thicknesses are not too small; this would potentially
     # cause instabilities in vertical advection
@@ -709,8 +709,8 @@ def _check_and_correct_layer_thickness(
 
 
 def _check_flatness_of_flat_level(
-    vertical_coordinate: field_alloc.NDArray,
-    vct_a: field_alloc.NDArray,
+    vertical_coordinate: data_alloc.NDArray,
+    vct_a: data_alloc.NDArray,
     vertical_geometry: VerticalGrid,
 ) -> None:
     # Check if level nflatlev is still flat
