@@ -336,7 +336,7 @@ if __name__ == "__main__":
 
     import pickle
 
-    main_dir = "/exclaim/jcanton/repos/icon4py.worktrees/ibm_00/"
+    main_dir = os.getcwd() + "/"
     state_fname = 'testdata/prognostic_states.torus_small.pkl'
     savepoint_path = 'testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data'
     grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res250m.nc"
