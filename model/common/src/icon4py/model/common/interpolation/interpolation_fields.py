@@ -168,12 +168,12 @@ def _compute_primal_normal_ec(
         primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
     """
 
-    owned = np.stack((owner_mask, owner_mask, owner_mask)).T
+    owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
 
     inv_neighbor_index = create_inverse_neighbor_index(e2c, c2e, array_ns)
     u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
     v_component = primal_normal_cell_y[c2e, inv_neighbor_index]
-    return (np.where(owned, u_component, 0.0), np.where(owned, v_component, 0.0))
+    return (array_ns.where(owned, u_component, 0.0), array_ns.where(owned, v_component, 0.0))
 
 
 def _compute_geofac_grg(
@@ -212,8 +212,12 @@ def _compute_geofac_grg(
     inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
 
     tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
-    geofac_grg_x[horizontal_start:, 0] = np.sum(primal_normal_ec_u * tmp, axis=1)[horizontal_start:]
-    geofac_grg_y[horizontal_start:, 0] = np.sum(primal_normal_ec_v * tmp, axis=1)[horizontal_start:]
+    geofac_grg_x[horizontal_start:, 0] = array_ns.sum(primal_normal_ec_u * tmp, axis=1)[
+        horizontal_start:
+    ]
+    geofac_grg_y[horizontal_start:, 0] = array_ns.sum(primal_normal_ec_v * tmp, axis=1)[
+        horizontal_start:
+    ]
 
     for k in range(e2c.shape[1]):
         mask = (e2c[c2e, k] == c2e2c)[horizontal_start:, :]
@@ -554,7 +558,7 @@ def _force_mass_conservation_to_c_bln_avg(
         local_weight = array_ns.sum(c_bln_avg, axis=1) - 1.0
 
         c_bln_avg[horizontal_start:, :] = c_bln_avg[horizontal_start:, :] - (
-            0.25 * local_weight[horizontal_start:, np.newaxis]
+            0.25 * local_weight[horizontal_start:, array_ns.newaxis]
         )
 
         # avoid runaway condition:
@@ -832,6 +836,7 @@ def compute_cells_aw_verts(
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute cells_aw_verts.
@@ -850,7 +855,7 @@ def compute_cells_aw_verts(
     Returns:
         aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
-    cells_aw_verts = np.zeros(v2e.shape)
+    cells_aw_verts = array_ns.zeros(v2e.shape)
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
         cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
@@ -891,6 +896,7 @@ def compute_e_bln_c_s(
     edges_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
     weighting_factor: float,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
@@ -908,11 +914,11 @@ def compute_e_bln_c_s(
     """
     llb = 0
     num_cells = c2e.shape[0]
-    e_bln_c_s = np.zeros([num_cells, c2e.shape[1]])
+    e_bln_c_s = array_ns.zeros([num_cells, c2e.shape[1]])
     yloc = cells_lat[llb:]
     xloc = cells_lon[llb:]
-    ytemp = np.zeros([c2e.shape[1], num_cells])
-    xtemp = np.zeros([c2e.shape[1], num_cells])
+    ytemp = array_ns.zeros([c2e.shape[1], num_cells])
+    xtemp = array_ns.zeros([c2e.shape[1], num_cells])
 
     for i in range(ytemp.shape[0]):
         ytemp[i] = edges_lat[c2e[llb:, i]]
@@ -934,22 +940,23 @@ def compute_e_bln_c_s(
 
 def compute_pos_on_tplane_e_x_y(
     grid_sphere_radius: ta.wpfloat,
-    primal_normal_v1: np.ndarray,
-    primal_normal_v2: np.ndarray,
-    dual_normal_v1: np.ndarray,
-    dual_normal_v2: np.ndarray,
-    cells_lon: np.ndarray,
-    cells_lat: np.ndarray,
-    edges_lon: np.ndarray,
-    edges_lat: np.ndarray,
-    vertex_lon: np.ndarray,
-    vertex_lat: np.ndarray,
-    owner_mask: np.ndarray,
-    e2c: np.ndarray,
-    e2v: np.ndarray,
-    e2c2e: np.ndarray,
+    primal_normal_v1: data_alloc.NDArray,
+    primal_normal_v2: data_alloc.NDArray,
+    dual_normal_v1: data_alloc.NDArray,
+    dual_normal_v2: data_alloc.NDArray,
+    cells_lon: data_alloc.NDArray,
+    cells_lat: data_alloc.NDArray,
+    edges_lon: data_alloc.NDArray,
+    edges_lat: data_alloc.NDArray,
+    vertex_lon: data_alloc.NDArray,
+    vertex_lat: data_alloc.NDArray,
+    owner_mask: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    e2v: data_alloc.NDArray,
+    e2c2e: data_alloc.NDArray,
     horizontal_start: np.int32,
-) -> np.ndarray:
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
     """
     Compute pos_on_tplane_e_x_y.
     get geographical coordinates of edge midpoint
@@ -982,9 +989,9 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_y: //
     """
     llb = horizontal_start
-    pos_on_tplane_e = np.zeros([e2c.shape[0], 8, 2])
-    xyloc_plane_n1 = np.zeros([2, e2c.shape[0]])
-    xyloc_plane_n2 = np.zeros([2, e2c.shape[0]])
+    pos_on_tplane_e = array_ns.zeros([e2c.shape[0], 8, 2])
+    xyloc_plane_n1 = array_ns.zeros([2, e2c.shape[0]])
+    xyloc_plane_n2 = array_ns.zeros([2, e2c.shape[0]])
     xyloc_plane_n1[0, llb:], xyloc_plane_n1[1, llb:] = proj.gnomonic_proj(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 0]], cells_lat[e2c[llb:, 0]]
     )
@@ -992,8 +999,8 @@ def compute_pos_on_tplane_e_x_y(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]]
     )
 
-    xyloc_quad = np.zeros([4, 2, e2c.shape[0]])
-    xyloc_plane_quad = np.zeros([4, 2, e2c.shape[0]])
+    xyloc_quad = array_ns.zeros([4, 2, e2c.shape[0]])
+    xyloc_plane_quad = array_ns.zeros([4, 2, e2c.shape[0]])
     for ne in range(4):
         xyloc_quad[ne, 0, llb:] = edges_lon[e2c2e[llb:, ne]]
         xyloc_quad[ne, 1, llb:] = edges_lat[e2c2e[llb:, ne]]
@@ -1001,8 +1008,8 @@ def compute_pos_on_tplane_e_x_y(
             edges_lon[llb:], edges_lat[llb:], xyloc_quad[ne, 0, llb:], xyloc_quad[ne, 1, llb:]
         )
 
-    xyloc_ve = np.zeros([2, 2, e2c.shape[0]])
-    xyloc_plane_ve = np.zeros([2, 2, e2c.shape[0]])
+    xyloc_ve = array_ns.zeros([2, 2, e2c.shape[0]])
+    xyloc_plane_ve = array_ns.zeros([2, 2, e2c.shape[0]])
     for nv in range(2):
         xyloc_ve[nv, 0, llb:] = vertex_lon[e2v[llb:, nv]]
         xyloc_ve[nv, 1, llb:] = vertex_lat[e2v[llb:, nv]]
@@ -1010,7 +1017,7 @@ def compute_pos_on_tplane_e_x_y(
             edges_lon[llb:], edges_lat[llb:], xyloc_ve[nv, 0, llb:], xyloc_ve[nv, 1, llb:]
         )
 
-    pos_on_tplane_e[llb:, 0, 0] = np.where(
+    pos_on_tplane_e[llb:, 0, 0] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
@@ -1019,7 +1026,7 @@ def compute_pos_on_tplane_e_x_y(
         ),
         pos_on_tplane_e[llb:, 0, 0],
     )
-    pos_on_tplane_e[llb:, 0, 1] = np.where(
+    pos_on_tplane_e[llb:, 0, 1] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
@@ -1028,7 +1035,7 @@ def compute_pos_on_tplane_e_x_y(
         ),
         pos_on_tplane_e[llb:, 0, 1],
     )
-    pos_on_tplane_e[llb:, 1, 0] = np.where(
+    pos_on_tplane_e[llb:, 1, 0] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
@@ -1037,7 +1044,7 @@ def compute_pos_on_tplane_e_x_y(
         ),
         pos_on_tplane_e[llb:, 1, 0],
     )
-    pos_on_tplane_e[llb:, 1, 1] = np.where(
+    pos_on_tplane_e[llb:, 1, 1] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
@@ -1048,7 +1055,7 @@ def compute_pos_on_tplane_e_x_y(
     )
 
     for ne in range(4):
-        pos_on_tplane_e[llb:, 2 + ne, 0] = np.where(
+        pos_on_tplane_e[llb:, 2 + ne, 0] = array_ns.where(
             owner_mask[llb:],
             grid_sphere_radius
             * (
@@ -1057,7 +1064,7 @@ def compute_pos_on_tplane_e_x_y(
             ),
             pos_on_tplane_e[llb:, 2 + ne, 0],
         )
-        pos_on_tplane_e[llb:, 2 + ne, 1] = np.where(
+        pos_on_tplane_e[llb:, 2 + ne, 1] = array_ns.where(
             owner_mask[llb:],
             grid_sphere_radius
             * (
@@ -1068,7 +1075,7 @@ def compute_pos_on_tplane_e_x_y(
         )
 
     for nv in range(2):
-        pos_on_tplane_e[llb:, 6 + nv, 0] = np.where(
+        pos_on_tplane_e[llb:, 6 + nv, 0] = array_ns.where(
             owner_mask[llb:],
             grid_sphere_radius
             * (
@@ -1077,7 +1084,7 @@ def compute_pos_on_tplane_e_x_y(
             ),
             pos_on_tplane_e[llb:, 6 + nv, 0],
         )
-        pos_on_tplane_e[llb:, 6 + nv, 1] = np.where(
+        pos_on_tplane_e[llb:, 6 + nv, 1] = array_ns.where(
             owner_mask[llb:],
             grid_sphere_radius
             * (
@@ -1087,10 +1094,10 @@ def compute_pos_on_tplane_e_x_y(
             pos_on_tplane_e[llb:, 6 + nv, 1],
         )
 
-    pos_on_tplane_e_x = np.reshape(
-        pos_on_tplane_e[:, 0:2, 0], (np.size(pos_on_tplane_e[:, 0:2, 0]))
+    pos_on_tplane_e_x = array_ns.reshape(
+        pos_on_tplane_e[:, 0:2, 0], (array_ns.size(pos_on_tplane_e[:, 0:2, 0]))
     )
-    pos_on_tplane_e_y = np.reshape(
-        pos_on_tplane_e[:, 0:2, 1], (np.size(pos_on_tplane_e[:, 0:2, 1]))
+    pos_on_tplane_e_y = array_ns.reshape(
+        pos_on_tplane_e[:, 0:2, 1], (array_ns.size(pos_on_tplane_e[:, 0:2, 1]))
     )
     return pos_on_tplane_e_x, pos_on_tplane_e_y

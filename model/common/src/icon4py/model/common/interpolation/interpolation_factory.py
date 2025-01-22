@@ -214,7 +214,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(e_flx_avg)
 
         e_bln_c_s = factory.NumpyFieldsProvider(
-            func=functools.partial(interpolation_fields.compute_e_bln_c_s),
+            func=functools.partial(interpolation_fields.compute_e_bln_c_s, array_ns=self._xp),
             fields=(attrs.E_BLN_C_S,),
             domain=(dims.CellDim, dims.C2EDim),
             deps={
@@ -229,7 +229,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(e_bln_c_s)
 
         pos_on_tplane_e_x_y = factory.NumpyFieldsProvider(
-            func=functools.partial(interpolation_fields.compute_pos_on_tplane_e_x_y),
+            func=functools.partial(
+                interpolation_fields.compute_pos_on_tplane_e_x_y, array_ns=self._xp
+            ),
             fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
             domain=(dims.ECDim,),
             deps={
