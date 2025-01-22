@@ -11,8 +11,8 @@ include:
       GRID: [simple_grid, icon_grid]
   rules:
     - when: on_success
-test_model_stencils_x86_64:
-  extends: [.test_model_stencils, .test_template_x86_64]
+# test_model_stencils_x86_64:
+#   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
@@ -20,8 +20,8 @@ test_model_stencils_aarch64:
   stage: test
   script:
     - nox -s 'test_tools-3.10'
-test_tools_x86_64:
-  extends: [.test_tools, .test_template_x86_64]
+# test_tools_x86_64:
+#   extends: [.test_tools, .test_template_x86_64]
 test_tools_aarch64:
   extends: [.test_tools, .test_template_aarch64]
 
@@ -33,7 +33,7 @@ test_tools_aarch64:
     matrix:
     - COMPONENT: [atmosphere/advection, atmosphere/diffusion, atmosphere/dycore, atmosphere/subgrid_scale_physics/microphysics, common, driver]
       BACKEND: [embedded, gtfn_cpu]
-test_model_datatests_x86_64:
-  extends: [.test_model_datatests, .test_template_x86_64]
+# test_model_datatests_x86_64:
+#   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
