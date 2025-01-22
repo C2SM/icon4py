@@ -233,7 +233,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=FLAT_IDX_MAX,
         long_name="flat_idx_max",
         units="",
-        dims=(dims.EdgeDim),
+        dims=(dims.EdgeDim, ),
         icon_var_name="flat_idx_max",
         dtype=ta.wpfloat,
     ),
