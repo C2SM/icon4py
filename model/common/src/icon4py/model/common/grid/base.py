@@ -13,7 +13,6 @@ from abc import ABC, abstractmethod
 from typing import Callable, Dict
 
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import utils as grid_utils
@@ -62,7 +61,7 @@ class GridConfig:
 class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None
-        self.connectivities: Dict[gtx.Dimension, np.ndarray] = {}
+        self.connectivities: Dict[gtx.Dimension, data_alloc.NDArray] = {}
         self.size: Dict[gtx.Dimension, int] = {}
         self.offset_provider_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
 
