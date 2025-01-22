@@ -23,6 +23,9 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.grid.vertical import VerticalGrid
 from icon4py.model.common.interpolation import interpolation_attributes, interpolation_factory
+from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
+    compute_cell_2_vertex_interpolation,
+)
 from icon4py.model.common.metrics import (
     compute_coeff_gradekin,
     compute_diffusion_metrics,
@@ -359,8 +362,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_d2dexdz2_fac_mc)
 
-        compute_cell_2_vertex_interpolation = factory.ProgramFieldProvider(
-            func=mf.compute_cell_2_vertex_interpolation.with_backend(self._backend),
+        compute_cell_to_vertex_interpolation = factory.ProgramFieldProvider(
+            func=compute_cell_2_vertex_interpolation.with_backend(self._backend),
             deps={
                 "cell_in": "height_on_interface_levels",
                 "c_int": interpolation_attributes.CELL_AW_VERTS,
@@ -377,7 +380,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={attrs.VERT_OUT: attrs.VERT_OUT},
         )
-        self.register_provider(compute_cell_2_vertex_interpolation)
+        self.register_provider(compute_cell_to_vertex_interpolation)
 
         compute_ddxt_z_half_e = factory.ProgramFieldProvider(
             func=mf.compute_ddxt_z_half_e.with_backend(self._backend),
@@ -540,7 +543,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfac_e)
 
         compute_flat_idx_max_np = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_flat_idx_max.compute_flat_idx_max),
+            func=functools.partial(compute_flat_idx_max.compute_flat_idx_max, array_ns=self._xp),
             domain=(dims.EdgeDim,),
             fields=(attrs.FLAT_IDX_MAX,),
             deps={
@@ -668,7 +671,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_hmask_dd3d)
 
         compute_zdiff_gradp_dsl_np = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl),
+            func=functools.partial(
+                compute_zdiff_gradp_dsl.compute_zdiff_gradp_dsl, array_ns=self._xp
+            ),
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
@@ -692,7 +697,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_zdiff_gradp_dsl_np)
 
         compute_coeff_gradekin_np = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_coeff_gradekin.compute_coeff_gradekin),
+            func=functools.partial(
+                compute_coeff_gradekin.compute_coeff_gradekin, array_ns=self._xp
+            ),
             domain=(dims.EdgeDim,),
             fields=(attrs.COEFF_GRADEKIN,),
             deps={
@@ -709,7 +716,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_coeff_gradekin_np)
 
         compute_wgtfacq_c = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_wgtfacq.compute_wgtfacq_c_dsl),
+            func=functools.partial(compute_wgtfacq.compute_wgtfacq_c_dsl, array_ns=self._xp),
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.WGTFACQ_C,),
             deps={"z_ifc": "height_on_interface_levels"},
@@ -719,7 +726,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_wgtfacq_c)
 
         compute_wgtfacq_e = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_wgtfacq.compute_wgtfacq_e_dsl),
+            func=functools.partial(compute_wgtfacq.compute_wgtfacq_e_dsl, array_ns=self._xp),
             deps={
                 "z_ifc": "height_on_interface_levels",
                 "c_lin_e": interpolation_attributes.C_LIN_E,
@@ -775,7 +782,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_weighted_cell_neighbor_sum)
 
         compute_max_nbhgt = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_diffusion_metrics.compute_max_nbhgt_np),
+            func=functools.partial(
+                compute_diffusion_metrics.compute_max_nbhgt_array_ns, array_ns=self._xp
+            ),
             deps={
                 "z_mc": attrs.Z_MC,
             },
@@ -789,7 +798,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_max_nbhgt)
 
         compute_diffusion_metrics_np = factory.NumpyFieldsProvider(
-            func=functools.partial(compute_diffusion_metrics.compute_diffusion_metrics),
+            func=functools.partial(
+                compute_diffusion_metrics.compute_diffusion_metrics, array_ns=self._xp
+            ),
             deps={
                 "z_mc": attrs.Z_MC,
                 "max_nbhgt": attrs.MAX_NBHGT,

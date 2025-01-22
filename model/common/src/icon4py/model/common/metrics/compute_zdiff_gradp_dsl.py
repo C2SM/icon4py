@@ -31,9 +31,10 @@ def compute_zdiff_gradp_dsl(
     z_me = array_ns.sum(z_mc[e2c] * array_ns.expand_dims(c_lin_e, axis=-1), axis=1)
     z_aux1 = array_ns.maximum(z_ifc_sliced[e2c[:, 0]], z_ifc_sliced[e2c[:, 1]])
     z_aux2 = z_aux1 - 5.0  # extrapol_dist
-    zdiff_gradp = np.zeros_like(z_mc[e2c])
+    zdiff_gradp = array_ns.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
-        np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
+        array_ns.expand_dims(z_me, axis=1)[horizontal_start:, :, :]
+        - z_mc[e2c][horizontal_start:, :, :]
     )
     """
     First part for loop implementation with gt4py code
@@ -52,8 +53,8 @@ def compute_zdiff_gradp_dsl(
         for jk in range(int(flat_idx[je]) + 1, nlev):
             """
             Second part for loop implementation with gt4py code
-            >>> param_2 = as_field((KDim,), np.asarray([False] * nlev))
-            >>> param_3 = as_field((KDim,), np.arange(nlev))
+            >>> param_2 = as_field((KDim,), array_ns.asarray([False] * nlev))
+            >>> param_3 = as_field((KDim,), array_ns.arange(nlev))
             >>> z_ifc_off_e = as_field((KDim,), z_ifc[e2c[je, 0], :])
             >>> _compute_param.with_backend(backend)(
             >>>     z_me_jk=z_me[je, jk],
@@ -64,7 +65,7 @@ def compute_zdiff_gradp_dsl(
             >>>     out=(param_3, param_2),
             >>>     offset_provider={}
             >>> )
-            >>> zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], np.where(param_2.ndarray)[0][0]]
+            >>> zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], array_ns.where(param_2.ndarray)[0][0]]
             """
 
             param = [False] * nlev
@@ -76,7 +77,7 @@ def compute_zdiff_gradp_dsl(
                 ):
                     param[jk1] = True
 
-            zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], np.where(param)[0][0]]
+            zdiff_gradp[je, 0, jk] = z_me[je, jk] - z_mc[e2c[je, 0], array_ns.where(param)[0][0]]
 
         jk_start = int(flat_idx[je])
         for jk in range(int(flat_idx[je]) + 1, nlev):

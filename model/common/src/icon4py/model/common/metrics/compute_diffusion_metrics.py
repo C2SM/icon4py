@@ -6,17 +6,22 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+from types import ModuleType
+
 import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-def compute_max_nbhgt_np(
-    c2e2c: data_alloc.NDArray, z_mc: data_alloc.NDArray, nlev: int
+def compute_max_nbhgt_array_ns(
+    c2e2c: data_alloc.NDArray,
+    z_mc: data_alloc.NDArray,
+    nlev: int,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     z_mc_nlev = z_mc[:, nlev - 1]
-    max_nbhgt_0_1 = np.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
-    max_nbhgt = np.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
+    max_nbhgt_0_1 = array_ns.maximum(z_mc_nlev[c2e2c[:, 0]], z_mc_nlev[c2e2c[:, 1]])
+    max_nbhgt = array_ns.maximum(max_nbhgt_0_1, z_mc_nlev[c2e2c[:, 2]])
     return max_nbhgt
 
 
@@ -146,16 +151,17 @@ def compute_diffusion_metrics(
     thhgtd_zdiffu: float,
     cell_nudging: int,
     nlev: int,
+    array_ns: ModuleType = np,
 ) -> tuple[data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray, data_alloc.NDArray]:
     n_cells = c2e2c.shape[0]
     n_c2e2c = c2e2c.shape[1]
     z_mc_off = z_mc[c2e2c]
-    nbidx = np.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
-    z_vintcoeff = np.zeros(shape=(n_cells, n_c2e2c, nlev))
-    mask_hdiff = np.zeros(shape=(n_cells, nlev), dtype=bool)
-    zd_vertoffset_dsl = np.zeros(shape=(n_cells, n_c2e2c, nlev))
-    zd_intcoef_dsl = np.zeros(shape=(n_cells, n_c2e2c, nlev))
-    zd_diffcoef_dsl = np.zeros(shape=(n_cells, nlev))
+    nbidx = array_ns.ones(shape=(n_cells, n_c2e2c, nlev), dtype=int)
+    z_vintcoeff = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
+    mask_hdiff = array_ns.zeros(shape=(n_cells, nlev), dtype=bool)
+    zd_vertoffset_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_intcoef_dsl = array_ns.zeros(shape=(n_cells, n_c2e2c, nlev))
+    zd_diffcoef_dsl = array_ns.zeros(shape=(n_cells, nlev))
     k_start, k_end = _compute_k_start_end(
         z_mc=z_mc,
         max_nbhgt=max_nbhgt,
@@ -194,17 +200,23 @@ def compute_diffusion_metrics(
             )
 
             zd_intcoef_dsl[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
-            zd_vertoffset_dsl[jc, :, k_range] = nbidx[jc, :, k_range] - np.transpose([k_range] * 3)
+            zd_vertoffset_dsl[jc, :, k_range] = nbidx[jc, :, k_range] - array_ns.transpose(
+                [k_range] * 3
+            )
             mask_hdiff[jc, k_range] = True
 
-            zd_diffcoef_dsl_var = np.maximum(
+            zd_diffcoef_dsl_var = array_ns.maximum(
                 0.0,
-                np.maximum(
-                    np.sqrt(np.maximum(0.0, maxslp_avg[jc, k_range] - thslp_zdiffu)) / 250.0,
-                    2.0e-4 * np.sqrt(np.maximum(0.0, maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)),
+                array_ns.maximum(
+                    array_ns.sqrt(array_ns.maximum(0.0, maxslp_avg[jc, k_range] - thslp_zdiffu))
+                    / 250.0,
+                    2.0e-4
+                    * array_ns.sqrt(
+                        array_ns.maximum(0.0, maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)
+                    ),
                 ),
             )
-            zd_diffcoef_dsl[jc, k_range] = np.minimum(0.002, zd_diffcoef_dsl_var)
+            zd_diffcoef_dsl[jc, k_range] = array_ns.minimum(0.002, zd_diffcoef_dsl_var)
 
     # flatten first two dims:
     zd_intcoef_dsl = zd_intcoef_dsl.reshape(

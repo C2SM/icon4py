@@ -32,15 +32,16 @@ from icon4py.model.common.dimension import (
     C2E2C,
     C2E2CO,
     E2C,
-    V2C,
     C2E2CODim,
     CellDim,
     KDim,
     Koff,
-    V2CDim,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
+)
+from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
+    _compute_cell_2_vertex_interpolation,
 )
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
@@ -86,50 +87,6 @@ def compute_z_mc(
         out=z_mc,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-# TODO: this field is already in `compute_cell_2_vertex_interpolation` file
-# inquire if it is ok to move here
-@field_operator
-def _compute_cell_2_vertex_interpolation(
-    cell_in: fa.CellKField[wpfloat],
-    c_int: gtx.Field[gtx.Dims[dims.VertexDim, V2CDim], wpfloat],
-) -> fa.VertexKField[wpfloat]:
-    vert_out = neighbor_sum(c_int * cell_in(V2C), axis=V2CDim)
-    return vert_out
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_cell_2_vertex_interpolation(
-    cell_in: fa.CellKField[wpfloat],
-    c_int: gtx.Field[gtx.Dims[dims.VertexDim, V2CDim], wpfloat],
-    vert_out: fa.VertexKField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    """
-    Compute the interpolation from cell to vertex field.
-
-    Args:
-        cell_in: input cell field
-        c_int: interpolation coefficients
-        vert_out: (output) vertex field
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-    _compute_cell_2_vertex_interpolation(
-        cell_in,
-        c_int,
-        out=vert_out,
-        domain={
-            dims.VertexDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
         },
     )

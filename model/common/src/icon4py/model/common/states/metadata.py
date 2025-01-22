@@ -107,11 +107,10 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         dims=(dims.EdgeDim,),
         icon_var_name="refin_e_ctrl",
     ),
-   
     "c_refin_ctrl": dict(
         standard_name="c_refin_ctrl",
         units="",
-        dims=(dims.CellDim, ),
+        dims=(dims.CellDim,),
         dtype=ta.wpfloat,
         icon_var_name="c_refin_ctrl",
         long_name="refinement control field on cells",
@@ -119,7 +118,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
     "e_refin_ctrl": dict(
         standard_name="e_refin_ctrl",
         units="",
-        dims=(dims.EdgeDim, ),
+        dims=(dims.EdgeDim,),
         dtype=ta.wpfloat,
         icon_var_name="e_refin_ctrl",
         long_name="refinement contorl fields on edges",

@@ -30,8 +30,8 @@ def compute_coeff_gradekin(
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
     """
-    coeff_gradekin_0 = np.zeros_like(inv_dual_edge_length)
-    coeff_gradekin_1 = np.zeros_like(inv_dual_edge_length)
+    coeff_gradekin_0 = array_ns.zeros_like(inv_dual_edge_length)
+    coeff_gradekin_1 = array_ns.zeros_like(inv_dual_edge_length)
     for e in range(horizontal_start, horizontal_end):
         coeff_gradekin_0[e] = (
             edge_cell_length[e, 1] / edge_cell_length[e, 0] * inv_dual_edge_length[e]
