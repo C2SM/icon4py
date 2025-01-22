@@ -1,7 +1,0 @@
--r ../base-requirements.txt
-./atmosphere/dycore
-./atmosphere/diffusion
-./atmosphere/advection
-./atmosphere/subgrid_scale_physics/microphysics
-./common[io]
-./driver

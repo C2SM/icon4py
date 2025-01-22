@@ -5,10 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# ruff: noqa: ERA001, B008
 
 import logging
 import dataclasses
-from typing import Final, Literal, Optional
+from typing import Final, Optional
 
 import numpy as np
 import gt4py.next as gtx
@@ -20,6 +21,7 @@ from icon4py.model.atmosphere.dycore import ibm
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
 import icon4py.model.common.utils as common_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
@@ -157,7 +159,6 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.common import field_type_aliases as fa
 import enum
 
@@ -255,46 +256,44 @@ class IntermediateFields:
         backend: Optional[backend.Backend] = None,
     ):
         return IntermediateFields(
-            z_gradh_exner=field_alloc.allocate_zero_field(
+            z_gradh_exner=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_alpha=field_alloc.allocate_zero_field(
+            z_alpha=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, is_halfdim=True, grid=grid, backend=backend
             ),
-            z_beta=field_alloc.allocate_zero_field(
+            z_beta=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_w_expl=field_alloc.allocate_zero_field(
+            z_w_expl=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, is_halfdim=True, grid=grid, backend=backend
             ),
-            z_exner_expl=field_alloc.allocate_zero_field(
+            z_exner_expl=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_q=field_alloc.allocate_zero_field(
-                dims.CellDim, dims.KDim, grid=grid, backend=backend
-            ),
-            z_contr_w_fl_l=field_alloc.allocate_zero_field(
+            z_q=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend),
+            z_contr_w_fl_l=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, is_halfdim=True, grid=grid, backend=backend
             ),
-            z_rho_e=field_alloc.allocate_zero_field(
+            z_rho_e=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_theta_v_e=field_alloc.allocate_zero_field(
+            z_theta_v_e=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_graddiv_vn=field_alloc.allocate_zero_field(
+            z_graddiv_vn=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_rho_expl=field_alloc.allocate_zero_field(
+            z_rho_expl=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_dwdz_dd=field_alloc.allocate_zero_field(
+            z_dwdz_dd=data_alloc.allocate_zero_field(
                 dims.CellDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_kin_hor_e=field_alloc.allocate_zero_field(
+            z_kin_hor_e=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
-            z_vt_ie=field_alloc.allocate_zero_field(
+            z_vt_ie=data_alloc.allocate_zero_field(
                 dims.EdgeDim, dims.KDim, grid=grid, backend=backend
             ),
         )
@@ -669,85 +668,85 @@ class SolveNonhydro:
         self.p_test_run = True
 
     def _allocate_local_fields(self):
-        self.z_exner_ex_pr = field_alloc.allocate_zero_field(
+        self.z_exner_ex_pr = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, is_halfdim=True, grid=self._grid, backend=self._backend
         )
-        self.z_exner_ic = field_alloc.allocate_zero_field(
+        self.z_exner_ic = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, is_halfdim=True, grid=self._grid, backend=self._backend
         )
-        self.z_dexner_dz_c_1 = field_alloc.allocate_zero_field(
+        self.z_dexner_dz_c_1 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_theta_v_pr_ic = field_alloc.allocate_zero_field(
+        self.z_theta_v_pr_ic = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, is_halfdim=True, grid=self._grid, backend=self._backend
         )
-        self.z_th_ddz_exner_c = field_alloc.allocate_zero_field(
+        self.z_th_ddz_exner_c = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_rth_pr_1 = field_alloc.allocate_zero_field(
+        self.z_rth_pr_1 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_rth_pr_2 = field_alloc.allocate_zero_field(
+        self.z_rth_pr_2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_grad_rth_1 = field_alloc.allocate_zero_field(
+        self.z_grad_rth_1 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_grad_rth_2 = field_alloc.allocate_zero_field(
+        self.z_grad_rth_2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_grad_rth_3 = field_alloc.allocate_zero_field(
+        self.z_grad_rth_3 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_grad_rth_4 = field_alloc.allocate_zero_field(
+        self.z_grad_rth_4 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_dexner_dz_c_2 = field_alloc.allocate_zero_field(
+        self.z_dexner_dz_c_2 = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_hydro_corr = field_alloc.allocate_zero_field(
+        self.z_hydro_corr = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_vn_avg = field_alloc.allocate_zero_field(
+        self.z_vn_avg = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_theta_v_fl_e = field_alloc.allocate_zero_field(
+        self.z_theta_v_fl_e = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_flxdiv_mass = field_alloc.allocate_zero_field(
+        self.z_flxdiv_mass = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_flxdiv_theta = field_alloc.allocate_zero_field(
+        self.z_flxdiv_theta = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_rho_v = field_alloc.allocate_zero_field(
+        self.z_rho_v = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_theta_v_v = field_alloc.allocate_zero_field(
+        self.z_theta_v_v = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_graddiv2_vn = field_alloc.allocate_zero_field(
+        self.z_graddiv2_vn = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.k_field = field_alloc.allocate_indices(
+        self.k_field = data_alloc.allocate_indices(
             dims.KDim, grid=self._grid, backend=self._backend, is_halfdim=True
         )
-        self.z_w_concorr_me = field_alloc.allocate_zero_field(
+        self.z_w_concorr_me = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_hydro_corr_horizontal = field_alloc.allocate_zero_field(
+        self.z_hydro_corr_horizontal = data_alloc.allocate_zero_field(
             dims.EdgeDim, grid=self._grid, backend=self._backend
         )
-        self.z_raylfac = field_alloc.allocate_zero_field(
+        self.z_raylfac = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.enh_divdamp_fac = field_alloc.allocate_zero_field(
+        self.enh_divdamp_fac = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self._bdy_divdamp = field_alloc.allocate_zero_field(
+        self._bdy_divdamp = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.scal_divdamp = field_alloc.allocate_zero_field(
+        self.scal_divdamp = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
         self.intermediate_fields = IntermediateFields.allocate(
@@ -1062,20 +1061,20 @@ class SolveNonhydro:
         # Outputs:
         #  - z_exner_ex_pr :
         #     $$
-        #     \exnerprime{\ntilde}{\c}{\k} = (1 + \gamma) \exnerprime{\n}{\c}{\k} - \gamma \exnerprime{\n-1}{\c}{\k}, \quad \k \in [0, \nlev) \\
+        #     \exnerprime{\ntilde}{\c}{\k} = (1 + \WtimeExner) \exnerprime{\n}{\c}{\k} - \WtimeExner \exnerprime{\n-1}{\c}{\k}, \k \in [0, \nlev) \\
         #     \exnerprime{\ntilde}{\c}{\nlev} = 0
         #     $$
         #     Compute the temporal extrapolation of perturbed exner function
-        #     using the time backward scheme for horizontal momentum equations
-        #     (see the |ICONTutorial| page 74).
+        #     using the time backward scheme (see the |ICONTutorial| page 74).
+        #     This variable has nlev+1 levels even though it is defined on full levels.
         #  - exner_pr :
         #     $$
-        #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}, \qquad \k \in [0, \nlev)
+        #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}
         #     $$
-        #     Store perturbed exner function from previous time step.
+        #     Store the perturbed exner function from the previous time step.
         #
         # Inputs:
-        #  - $\gamma$ : exner_exfac
+        #  - $\WtimeExner$ : exner_exfac
         #  - $\exnerprime{\n}{\c}{\k}$ : exner - exner_ref_mc
         #  - $\exnerprime{\n-1}{\c}{\k}$ : exner_pr
         #
@@ -1097,25 +1096,24 @@ class SolveNonhydro:
             # Outputs:
             #  - z_exner_ic :
             #     $$
-            #     \exnerprime{\ntilde}{\c}{\k-1/2} = \nu \exnerprime{\ntilde}{\c}{\k} + (1 - \nu) \exnerprime{\ntilde}{\c}{\k-1}, \quad && \k \in [\max(1,\nflatlev), \nlev) \\
-            #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \beta_{\k} \exnerprime{\ntilde}{\c}{\k}
+            #     \exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
+            #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
             #     $$
-            #     Linearly interpolate the perturbation exner computed in
-            #     previous stencil to half levels. The ground level is based
-            #     on quadratic extrapolation (with hydrostatic assumption?).
+            #     Interpolate the perturbation exner from full to half levels.
+            #     The ground level is based on quadratic extrapolation (with
+            #     hydrostatic assumption?).
             #  - z_dexner_dz_c_1 :
             #     $$
-            #     \pdz{\exnerprime{\ntilde}{\c}{\k}} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
+            #     \exnerprimedz{\ntilde}{\c}{\k} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
             #     $$
-            #     And use the interpolated values to compute the vertical
-            #     derivative of perturbation exner at full levels (first order
-            #     scheme). $\nflatlev$ is the height (inclusive) above which the
-            #     grid is not affected by terrain following.
+            #     Use the interpolated values to compute the vertical derivative
+            #     of perturbation exner at full levels.
             #
             # Inputs:
-            #  - $\nu$ : wgtfac_c
-            #  - $\beta_{\k}$ : wgtfacq_c
+            #  - $\Wlev$ : wgtfac_c
+            #  - $\Wlev_{\k}$ : wgtfacq_c
             #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+            #  - $\exnerprime{\ntilde}{\c}{\k\pm1/2}$ : z_exner_ic
             #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
             #
             self._predictor_stencils_4_5_6(
@@ -1177,7 +1175,26 @@ class SolveNonhydro:
         )
 
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
+            # scidoc:
+            # Outputs:
+            #  - z_dexner_dz_c_2 :
+            #     $$
+            #     \exnerprimedzz{\ntilde}{\c}{\k} = - \frac{1}{2} \left( (\vpotempprime{\n}{\c}{\k-1/2} - \vpotempprime{\n}{\c}{\k+1/2}) \dexrefdz{\c}{\k} + \vpotempprime{\n}{\c}{\k} \ddexrefdzz{\c}{\k} \right), \quad \k \in [\nflatgradp, \nlev) \\
+            #     \ddz{\exnerref{}{}} = - \frac{g}{\cpd \vpotempref{}{}}
+            #     $$
+            #     Compute the second vertical derivative of the perturbed exner function.
+            #     This uses the hydrostatic approximation (see eqs. 13 and 7,8 in
+            #     |ICONSteepSlopePressurePaper|).
+            #     Note that the reference state of temperature (eq. 15 in
+            #     |ICONSteepSlopePressurePaper|) is used when computing
+            #     $\ddz{\vpotempref{\c}{\k}}$ in $\ddexrefdzz{\c}{\k}$.
+            #
+            # Inputs:
+            #  - $\vpotempprime{\n}{\c}{\k\pm1/2}$ : z_theta_v_pr_ic
+            #  - $\vpotempprime{\n}{\c}{\k}$ : z_rth_pr_2
+            #  - $\dexrefdz{}{}$ : d2dexdz2_fac1_mc
+            #  - $\ddexrefdzz{}{}$ : d2dexdz2_fac2_mc
+            #
             self._compute_approx_of_2nd_vertical_derivative_of_exner(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=self._metric_state_nonhydro.d2dexdz2_fac1_mc,
@@ -1300,7 +1317,20 @@ class SolveNonhydro:
                     offset_provider=self._grid.offset_providers,
                 )
 
-        # Remaining computations at edge points
+        # scidoc:
+        # Outputs:
+        #  - z_gradh_exner :
+        #     $$
+        #     \exnerprimegradh{\ntilde}{\e}{\k} = \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nflatlev)
+        #     $$
+        #     Compute the horizontal gradient (at constant height) of the
+        #     temporal extrapolation of perturbed exner function on flat levels,
+        #     unaffected by the terrain following deformation.
+        #
+        # Inputs:
+        #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+        #  - $\Cgrad$ : inverse_dual_edge_lengths
+        #
         self._compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
             z_exner_ex_pr=self.z_exner_ex_pr,
@@ -1313,9 +1343,26 @@ class SolveNonhydro:
         )
 
         if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
-            # horizontal gradient of Exner pressure, including metric correction
-            # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
-
+            # scidoc:
+            # Outputs:
+            #  - z_gradh_exner :
+            #     $$
+            #     \exnerprimegradh{\ntilde}{\e}{\k} &&= \left.\pdxn{\exnerprime{}{}{}}\right|_{s} - \left.\pdxn{h}\right|_{s}\exnerprimedz{}{}{}\\
+            #                                       &&= \Wedge \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}
+            #                                         - \pdxn{h} \sum_{\offProv{e2c}} \Whor \exnerprimedz{\ntilde}{\c}{\k},
+            #                                           \quad \k \in [\nflatlev, \nflatgradp]
+            #     $$
+            #     Compute $\exnerprimegradh{}{}{}$ on non-flat levels, affected
+            #     by the terrain following deformation, i.e. those levels for
+            #     which $\pdxn{h} \neq 0$ (eq. 14 in |ICONdycorePaper| or eq. 5
+            #     in |ICONSteepSlopePressurePaper|).
+            #
+            # Inputs:
+            #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+            #  - $\Wedge$ : inverse_dual_edge_lengths
+            #  - $\exnerprimedz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_1
+            #  - $\Whor$ : c_lin_e
+            #
             self._compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
                 inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
@@ -1330,6 +1377,32 @@ class SolveNonhydro:
                 offset_provider=self._grid.offset_providers,
             )
 
+            # scidoc:
+            # Outputs:
+            #  - z_gradh_exner :
+            #     $$
+            #     \exnerprimegradh{\ntilde}{\e}{\k} &&= \Wedge (\exnerprime{*}{\c_1}{} - \exnerprime{*}{\c_0}{}) \\
+            #                                       &&= \Wedge \Gradn_{\offProv{e2c}} \left[ \exnerprime{\ntilde}{\c}{\k^*} + \dzgradp \left( \exnerprimedz{\ntilde}{\c}{\k^*} + \dzgradp \exnerprimedzz{\ntilde}{\c}{\k^*} \right) \right],
+            #                                           \quad \k \in [\nflatgradp+1, \nlev)
+            #     $$
+            #     Compute $\exnerprimegradh{}{}{}$ when the height of
+            #     neighboring cells is in another level.
+            #     The usual centered difference approximation is used for the
+            #     gradient (eq. 6 in |ICONSteepSlopePressurePaper|), but instead
+            #     of cell center values, the exner function is reconstructed
+            #     using a second order Taylor-series expansion (eq. 8 in
+            #     |ICONSteepSlopePressurePaper|).
+            #     $k^*$ is the level index of the neighboring (horizontally, not
+            #     terrain-following) cell center and $h^*$ is its height.
+            #
+            # Inputs:
+            #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+            #  - $\exnerprimedz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_1
+            #  - $\exnerprimedzz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_2
+            #  - $\Wedge$ : inverse_dual_edge_lengths
+            #  - $\dzgradp$ : zdiff_gradp
+            #  - $\k^*$ : vertoffset_gradp
+            #
             self._compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
                 inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
@@ -1344,8 +1417,39 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
-        # compute hydrostatically approximated correction term that replaces downward extrapolation
-        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+
+            # scidoc:
+            # Outputs:
+            #  - z_hydro_corr :
+            #     $$
+            #     \exnhydrocorr{\e} = \frac{g}{\cpd} \Wedge 4 \frac{ \vpotemp{}{\c_1}{\k} - \vpotemp{}{\c_0}{\k} }{ (\vpotemp{}{\c_1}{\k} + \vpotemp{}{\c_0}{\k})^2 },
+            #     $$
+            #     with
+            #     $$
+            #     \vpotemp{}{\c_i}{\k} = \vpotemp{}{\c_i}{\k^*} + \dzgradp \frac{\vpotemp{}{\c_i}{\k^*-1/2} - \vpotemp{}{\c_i}{\k^*+1/2}}{\Dz{\k^*}}
+            #     $$
+            #     Compute the hydrostatically approximated correction term that
+            #     replaces the downward extrapolation (last term in eq. 10 in
+            #     |ICONSteepSlopePressurePaper|).
+            #     This is only computed for the bottom-most level because all
+            #     edges which have a neighboring cell center inside terrain
+            #     beyond a certain limit use the same correction term at $k^*$
+            #     level in eq. 10 in |ICONSteepSlopePressurePaper| (see also the
+            #     last paragraph on page 3724 for the discussion).
+            #     $\c_i$ are the indexes of the adjacent cell centers using
+            #     $\offProv{e2c}$;
+            #     $k^*$ is the level index of the neighboring (horizontally, not
+            #     terrain-following) cell center and $h^*$ is its height.
+            #
+            # Inputs:
+            #  - $\vpotemp{}{\c}{\k}$ : theta_v
+            #  - $\vpotemp{}{\c}{\k\pm1/2}$ : theta_v_ic
+            #  - $\frac{g}{\cpd}$ : grav_o_cpd
+            #  - $\Wedge$ : inverse_dual_edge_lengths
+            #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
+            #  - $\dzgradp$ : zdiff_gradp
+            #  - $\k^*$ : vertoffset_gradp
+            #
             self._compute_hydrostatic_correction_term(
                 theta_v=prognostic_states.current.theta_v,
                 ikoffset=self._metric_state_nonhydro.vertoffset_gradp,
@@ -1361,15 +1465,35 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
-        # TODO (Nikki) check when merging fused stencil
-        lowest_level = self._grid.num_levels - 1
-        hydro_corr_horizontal = gtx.as_field(
-            (dims.EdgeDim,),
-            self.z_hydro_corr.ndarray[:, lowest_level],
-            allocator=self._backend.allocator,
-        )
 
-        if self._config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
+            # TODO (Christoph) check when merging fused stencil
+            lowest_level = self._grid.num_levels - 1
+            hydro_corr_horizontal = gtx.as_field(
+                (dims.EdgeDim,),
+                self.z_hydro_corr.ndarray[:, lowest_level],
+                allocator=self._backend.allocator,
+            )
+
+            # scidoc:
+            # Outputs:
+            #  - z_gradh_exner :
+            #     $$
+            #     \exnerprimegradh{\ntilde}{\e}{\k} = \exnerprimegradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), \quad \e \in \IDXpg
+            #     $$
+            #     Apply the hydrostatic correction term to the horizontal
+            #     gradient (at constant height) of the temporal extrapolation of
+            #     perturbed exner function (eq. 10 in
+            #     |ICONSteepSlopePressurePaper|).
+            #     This is only applied to edges for which the adjacent cell
+            #     center (horizontally, not terrain-following) would be
+            #     underground, i.e. edges in the $\IDXpg$ set.
+            #
+            # Inputs:
+            #  - $\exnerprimegradh{\ntilde}{\e}{\k}$ : z_gradh_exner
+            #  - $\exnhydrocorr{\e}$ : hydro_corr_horizontal
+            #  - $(h_k - h_{k^*})$ : pg_exdist
+            #  - $\IDXpg$ : ipeidx_dsl
+            #
             self._apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=self._metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self._metric_state_nonhydro.pg_exdist,
@@ -1382,6 +1506,23 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        # scidoc:
+        # Outputs:
+        #  - vn :
+        #     $$
+        #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \exnerprimegradh{\ntilde}{\e}{\k} \right)
+        #     $$
+        #     Update the normal wind speed with the advection and pressure
+        #     gradient terms.
+        #
+        # Inputs:
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #  - $\Dt$ : dtime
+        #  - $\advvn{\n}{\e}{\k}$ : ddt_vn_apc_pc[self.ntl1]
+        #  - $\vpotemp{\n}{\e}{\k}$ : z_theta_v_e
+        #  - $\exnerprimegradh{\ntilde}{\e}{\k}$ : z_gradh_exner
+        #  - $\cpd$ : CPD
+        #
         self._add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_states.current.vn,
             ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc.predictor,

@@ -19,16 +19,16 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_c_lin_e(
-    edge_cell_length: field_alloc.NDArray,
-    inv_dual_edge_length: field_alloc.NDArray,
-    edge_owner_mask: field_alloc.NDArray,
+    edge_cell_length: data_alloc.NDArray,
+    inv_dual_edge_length: data_alloc.NDArray,
+    edge_owner_mask: data_alloc.NDArray,
     horizontal_start: np.int32,
     array_ns: ModuleType = np,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
     Compute E2C average inverse distance.
 
@@ -91,14 +91,14 @@ def compute_geofac_rot(
 
 
 def compute_geofac_n2s(
-    dual_edge_length: field_alloc.NDArray,
-    geofac_div: field_alloc.NDArray,
-    c2e: field_alloc.NDArray,
-    e2c: field_alloc.NDArray,
-    c2e2c: field_alloc.NDArray,
+    dual_edge_length: data_alloc.NDArray,
+    geofac_div: data_alloc.NDArray,
+    c2e: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
     horizontal_start: np.int32,
     array_ns: ModuleType = np,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
     Compute geometric factor for nabla2-scalar.
 
@@ -147,14 +147,13 @@ def compute_geofac_n2s(
 
 
 def _compute_primal_normal_ec(
-    primal_normal_cell_x: field_alloc.NDArray,
-    primal_normal_cell_y: field_alloc.NDArray,
-    owner_mask: field_alloc.NDArray,
-    c2e: field_alloc.NDArray,
-    e2c: field_alloc.NDArray,
-    horizontal_start: np.int32,
+    primal_normal_cell_x: data_alloc.NDArray,
+    primal_normal_cell_y: data_alloc.NDArray,
+    owner_mask: data_alloc.NDArray,
+    c2e: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
     array_ns: ModuleType = np,
-) -> field_alloc.NDArray:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute primal_normal_ec.
 
@@ -164,57 +163,36 @@ def _compute_primal_normal_ec(
         owner_mask: ndarray, representing a gtx.Field[gtx.Dims[CellDim], bool]
         c2e: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
-        horizontal_start: start index to compute from
         array_ns: module - the array interface implementation to compute on, defaults to numpy
     Returns:
         primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
     """
-    num_cells = c2e.shape[0]
-    primal_normal_ec = np.zeros([c2e.shape[0], c2e.shape[1], 2])
-    index = np.transpose(
-        np.vstack(
-            (
-                array_ns.arange(num_cells),
-                array_ns.arange(num_cells),
-                array_ns.arange(num_cells),
-            )
-        )
-    )
-    owned = np.vstack((owner_mask, owner_mask, owner_mask)).T
-    for i in range(2):
-        mask = e2c[c2e, i] == index
-        primal_normal_ec[horizontal_start:, :, 0] = primal_normal_ec[
-            horizontal_start:, :, 0
-        ] + array_ns.where(
-            owned[horizontal_start:, :],
-            mask[horizontal_start:, :] * primal_normal_cell_x[c2e[horizontal_start:], i],
-            0.0,
-        )
-        primal_normal_ec[horizontal_start:, :, 1] = primal_normal_ec[
-            horizontal_start:, :, 1
-        ] + array_ns.where(
-            owned[horizontal_start:, :],
-            mask[horizontal_start:, :] * primal_normal_cell_y[c2e[horizontal_start:], i],
-            0.0,
-        )
-    return primal_normal_ec
+
+    owned = np.stack((owner_mask, owner_mask, owner_mask)).T
+
+    inv_neighbor_index = create_inverse_neighbor_index(e2c, c2e, array_ns)
+    u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
+    v_component = primal_normal_cell_y[c2e, inv_neighbor_index]
+    return (np.where(owned, u_component, 0.0), np.where(owned, v_component, 0.0))
 
 
 def _compute_geofac_grg(
-    primal_normal_ec: field_alloc.NDArray,
-    geofac_div: field_alloc.NDArray,
-    c_lin_e: field_alloc.NDArray,
-    c2e: field_alloc.NDArray,
-    e2c: field_alloc.NDArray,
-    c2e2c: field_alloc.NDArray,
-    horizontal_start: np.int32,
+    primal_normal_ec_u: data_alloc.NDArray,
+    primal_normal_ec_v: data_alloc.NDArray,
+    geofac_div: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    c2e: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
-) -> tuple[field_alloc.NDArray, field_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     Compute geometrical factor for Green-Gauss gradient.
 
     Args:
-        primal_normal_ec: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
+        primal_normal_ec_u: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
+        primal_normal_ec_v: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
         geofac_div: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
         c_lin_e: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
         c2e: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
@@ -226,71 +204,68 @@ def _compute_geofac_grg(
         geofac_grg: ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim + 1, 2], ta.wpfloat]
     """
     num_cells = c2e.shape[0]
-    geofac_grg = array_ns.zeros([num_cells, c2e.shape[1] + 1, primal_normal_ec.shape[2]])
-    index = array_ns.transpose(
-        array_ns.vstack(
-            (
-                array_ns.arange(num_cells),
-                array_ns.arange(num_cells),
-                array_ns.arange(num_cells),
-            )
+    targ_local_size = c2e.shape[1] + 1
+    target_shape = (num_cells, targ_local_size)
+    geofac_grg_x = array_ns.zeros(target_shape)
+    geofac_grg_y = array_ns.zeros(target_shape)
+
+    inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
+
+    tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
+    geofac_grg_x[horizontal_start:, 0] = np.sum(primal_normal_ec_u * tmp, axis=1)[horizontal_start:]
+    geofac_grg_y[horizontal_start:, 0] = np.sum(primal_normal_ec_v * tmp, axis=1)[horizontal_start:]
+
+    for k in range(e2c.shape[1]):
+        mask = (e2c[c2e, k] == c2e2c)[horizontal_start:, :]
+        geofac_grg_x[horizontal_start:, 1:] = (
+            geofac_grg_x[horizontal_start:, 1:]
+            + mask * (primal_normal_ec_u * geofac_div * c_lin_e[c2e, k])[horizontal_start:, :]
         )
-    )
-    for k in range(e2c.shape[1]):
-        mask = e2c[c2e, k] == index
-        for i in range(primal_normal_ec.shape[2]):
-            for j in range(c2e.shape[1]):
-                geofac_grg[horizontal_start:, 0, i] = (
-                    geofac_grg[horizontal_start:, 0, i]
-                    + mask[horizontal_start:, j]
-                    * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[
-                        horizontal_start:, j
-                    ]
-                )
-    for k in range(e2c.shape[1]):
-        mask = e2c[c2e, k] == c2e2c
-        for i in range(primal_normal_ec.shape[2]):
-            for j in range(c2e.shape[1]):
-                geofac_grg[horizontal_start:, 1 + j, i] = (
-                    geofac_grg[horizontal_start:, 1 + j, i]
-                    + mask[horizontal_start:, j]
-                    * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[
-                        horizontal_start:, j
-                    ]
-                )
-    return geofac_grg[:, :, 0], geofac_grg[:, :, 1]
+        geofac_grg_y[horizontal_start:, 1:] = (
+            geofac_grg_y[horizontal_start:, 1:]
+            + mask * (primal_normal_ec_v * geofac_div * c_lin_e[c2e, k])[horizontal_start:, :]
+        )
+
+    return geofac_grg_x, geofac_grg_y
 
 
 def compute_geofac_grg(
-    primal_normal_cell_x: field_alloc.NDArray,
-    primal_normal_cell_y: field_alloc.NDArray,
-    owner_mask: field_alloc.NDArray,
-    geofac_div: field_alloc.NDArray,
-    c_lin_e: field_alloc.NDArray,
-    c2e: field_alloc.NDArray,
-    e2c: field_alloc.NDArray,
-    c2e2c: field_alloc.NDArray,
+    primal_normal_cell_x: data_alloc.NDArray,
+    primal_normal_cell_y: data_alloc.NDArray,
+    owner_mask: data_alloc.NDArray,
+    geofac_div: data_alloc.NDArray,
+    c_lin_e: data_alloc.NDArray,
+    c2e: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
-) -> tuple[field_alloc.NDArray, field_alloc.NDArray]:
-    primal_normal_ec = functools.partial(_compute_primal_normal_ec, array_ns=array_ns)(
-        primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c, horizontal_start
-    )
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
+    primal_normal_ec_u, primal_normal_ec_v = functools.partial(
+        _compute_primal_normal_ec, array_ns=array_ns
+    )(primal_normal_cell_x, primal_normal_cell_y, owner_mask, c2e, e2c)
     return functools.partial(_compute_geofac_grg, array_ns=array_ns)(
-        primal_normal_ec, geofac_div, c_lin_e, c2e, e2c, c2e2c, horizontal_start
+        primal_normal_ec_u,
+        primal_normal_ec_v,
+        geofac_div,
+        c_lin_e,
+        c2e,
+        e2c,
+        c2e2c,
+        horizontal_start,
     )
 
 
 def compute_geofac_grdiv(
-    geofac_div: field_alloc.NDArray,
-    inv_dual_edge_length: field_alloc.NDArray,
-    owner_mask: field_alloc.NDArray,
-    c2e: field_alloc.NDArray,
-    e2c: field_alloc.NDArray,
-    e2c2e: field_alloc.NDArray,
+    geofac_div: data_alloc.NDArray,
+    inv_dual_edge_length: data_alloc.NDArray,
+    owner_mask: data_alloc.NDArray,
+    c2e: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    e2c2e: data_alloc.NDArray,
     horizontal_start: np.int32,
     array_ns: ModuleType = np,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
     Compute geometrical factor for gradient of divergence (triangles only).
 
@@ -345,12 +320,12 @@ def compute_geofac_grdiv(
 
 
 def rotate_latlon(
-    lat: field_alloc.NDArray,
-    lon: field_alloc.NDArray,
-    pollat: field_alloc.NDArray,
-    pollon: field_alloc.NDArray,
+    lat: data_alloc.NDArray,
+    lon: data_alloc.NDArray,
+    pollat: data_alloc.NDArray,
+    pollon: data_alloc.NDArray,
     array_ns: ModuleType = np,
-) -> tuple[field_alloc.NDArray, field_alloc.NDArray]:
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     """
     (Compute rotation of lattitude and longitude.)
 
@@ -384,13 +359,13 @@ def rotate_latlon(
 
 
 def _weighting_factors(
-    ytemp: field_alloc.NDArray,
-    xtemp: field_alloc.NDArray,
-    yloc: field_alloc.NDArray,
-    xloc: field_alloc.NDArray,
+    ytemp: data_alloc.NDArray,
+    xtemp: data_alloc.NDArray,
+    yloc: data_alloc.NDArray,
+    xloc: data_alloc.NDArray,
     wgt_loc: ta.wpfloat,
     array_ns: ModuleType = np,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
         Compute weighting factors.
         The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
@@ -456,13 +431,13 @@ def _weighting_factors(
 
 
 def _compute_c_bln_avg(
-    c2e2c: field_alloc.NDArray,
-    lat: field_alloc.NDArray,
-    lon: field_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
+    lat: data_alloc.NDArray,
+    lon: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: np.int32,
     array_ns: ModuleType = np,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
     Compute bilinear cell average weight.
 
@@ -502,15 +477,15 @@ def _compute_c_bln_avg(
 
 
 def _force_mass_conservation_to_c_bln_avg(
-    c2e2c0: field_alloc.NDArray,
-    c_bln_avg: field_alloc.NDArray,
-    cell_areas: field_alloc.NDArray,
-    cell_owner_mask: field_alloc.NDArray,
+    c2e2c0: data_alloc.NDArray,
+    c_bln_avg: data_alloc.NDArray,
+    cell_areas: data_alloc.NDArray,
+    cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
     niter: int = 1000,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
     Iteratively enforce mass conservation to the input field c_bln_avg.
 
@@ -536,7 +511,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
     def _compute_local_weights(
         c_bln_avg, cell_areas, c2e2c0, inverse_neighbor_idx
-    ) -> field_alloc.NDArray:
+    ) -> data_alloc.NDArray:
         """
         Compute the total weight which each local point contributes to the sum.
 
@@ -551,10 +526,10 @@ def _force_mass_conservation_to_c_bln_avg(
         return weights
 
     def _compute_residual_to_mass_conservation(
-        owner_mask: field_alloc.NDArray,
-        local_weight: field_alloc.NDArray,
-        cell_area: field_alloc.NDArray,
-    ) -> field_alloc.NDArray:
+        owner_mask: data_alloc.NDArray,
+        local_weight: data_alloc.NDArray,
+        cell_area: data_alloc.NDArray,
+    ) -> data_alloc.NDArray:
         """The local_weight weighted by the area should be 1. We compute how far we are off that weight."""
         horizontal_size = local_weight.shape[0]
         assert horizontal_size == owner_mask.shape[0], "Fields do not have the same shape"
@@ -563,12 +538,12 @@ def _force_mass_conservation_to_c_bln_avg(
         return residual
 
     def _apply_correction(
-        c_bln_avg: field_alloc.NDArray,
-        residual: field_alloc.NDArray,
-        c2e2c0: field_alloc.NDArray,
+        c_bln_avg: data_alloc.NDArray,
+        residual: data_alloc.NDArray,
+        c2e2c0: data_alloc.NDArray,
         divavg_cntrwgt: float,
         horizontal_start: gtx.int32,
-    ) -> field_alloc.NDArray:
+    ) -> data_alloc.NDArray:
         """Apply correction to local weigths based on the computed residuals."""
         maxwgt_loc = divavg_cntrwgt + 0.003
         minwgt_loc = divavg_cntrwgt - 0.003
@@ -592,11 +567,11 @@ def _force_mass_conservation_to_c_bln_avg(
         return c_bln_avg
 
     def _enforce_mass_conservation(
-        c_bln_avg: field_alloc.NDArray,
-        residual: field_alloc.NDArray,
-        owner_mask: field_alloc.NDArray,
+        c_bln_avg: data_alloc.NDArray,
+        residual: data_alloc.NDArray,
+        owner_mask: data_alloc.NDArray,
         horizontal_start: gtx.int32,
-    ) -> field_alloc.NDArray:
+    ) -> data_alloc.NDArray:
         """Enforce the mass conservation condition on the local cells by forcefully subtracting the
         residual from the central field contribution."""
         c_bln_avg[horizontal_start:, 0] = array_ns.where(
@@ -608,7 +583,7 @@ def _force_mass_conservation_to_c_bln_avg(
 
     local_summed_weights = array_ns.zeros(c_bln_avg.shape[0])
     residual = array_ns.zeros(c_bln_avg.shape[0])
-    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0, array_ns=array_ns)
+    inverse_neighbor_idx = create_inverse_neighbor_index(c2e2c0, c2e2c0, array_ns=array_ns)
 
     for iteration in range(niter):
         local_summed_weights[horizontal_start:] = _compute_local_weights(
@@ -639,16 +614,16 @@ def _force_mass_conservation_to_c_bln_avg(
 
 
 def compute_mass_conserving_bilinear_cell_average_weight(
-    c2e2c0: field_alloc.NDArray,
-    lat: field_alloc.NDArray,
-    lon: field_alloc.NDArray,
-    cell_areas: field_alloc.NDArray,
-    cell_owner_mask: field_alloc.NDArray,
+    c2e2c0: data_alloc.NDArray,
+    lat: data_alloc.NDArray,
+    lon: data_alloc.NDArray,
+    cell_areas: data_alloc.NDArray,
+    cell_owner_mask: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
     horizontal_start: gtx.int32,
     horizontal_start_level_3: gtx.int32,
     array_ns: ModuleType = np,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     c_bln_avg = _compute_c_bln_avg(
         c2e2c0[:, 1:], lat, lon, divavg_cntrwgt, horizontal_start, array_ns
     )
@@ -663,13 +638,34 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     )
 
 
-def create_inverse_neighbor_index(c2e2c0, array_ns: ModuleType = np):
-    inv_neighbor_idx = -1 * array_ns.ones(c2e2c0.shape, dtype=int)
+def create_inverse_neighbor_index(source_offset, inverse_offset, array_ns: ModuleType):
+    """
+    The inverse neighbor index determines the position of an central element c_1
+    in the neighbor table of its neighbors:
 
-    for jc in range(c2e2c0.shape[0]):
-        for i in range(c2e2c0.shape[1]):
-            if c2e2c0[jc, i] >= 0:
-                inv_neighbor_idx[jc, i] = array_ns.argwhere(c2e2c0[c2e2c0[jc, i], :] == jc)[0, 0]
+    For example: for let e_1, e_2, e_3 be the neighboring edges of a cell: c2e(c_1) will
+    map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c the
+    neighborhoods of e_1, e_2, e_3 will all contain c_1 in some position.
+    Then inverse neighbor index tells what position that is. It essentially says
+    "I am neighbor number x \in (0,1) of my neighboring edges"
+
+
+    Args:
+        source_offset:
+        inverse_offset:
+
+    Returns:
+        ndarray of the same shape as target_offset
+
+    """
+    inv_neighbor_idx = -1 * array_ns.ones(inverse_offset.shape, dtype=int)
+
+    for jc in range(inverse_offset.shape[0]):
+        for i in range(inverse_offset.shape[1]):
+            if inverse_offset[jc, i] >= 0:
+                inv_neighbor_idx[jc, i] = array_ns.argwhere(
+                    source_offset[inverse_offset[jc, i], :] == jc
+                )[0, 0]
 
     return inv_neighbor_idx
 
@@ -818,15 +814,15 @@ def compute_e_flx_avg(
 
 
 def compute_cells_aw_verts(
-    dual_area: field_alloc.NDArray,
-    edge_vert_length: field_alloc.NDArray,
-    edge_cell_length: field_alloc.NDArray,
-    v2e: field_alloc.NDArray,
-    e2v: field_alloc.NDArray,
-    v2c: field_alloc.NDArray,
-    e2c: field_alloc.NDArray,
+    dual_area: data_alloc.NDArray,
+    edge_vert_length: data_alloc.NDArray,
+    edge_cell_length: data_alloc.NDArray,
+    v2e: data_alloc.NDArray,
+    e2v: data_alloc.NDArray,
+    v2c: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
     Compute cells_aw_verts.
 
@@ -879,13 +875,13 @@ def compute_cells_aw_verts(
 
 
 def compute_e_bln_c_s(
-    c2e: field_alloc.NDArray,
-    cells_lat: field_alloc.NDArray,
-    cells_lon: field_alloc.NDArray,
-    edges_lat: field_alloc.NDArray,
-    edges_lon: field_alloc.NDArray,
+    c2e: data_alloc.NDArray,
+    cells_lat: data_alloc.NDArray,
+    cells_lon: data_alloc.NDArray,
+    edges_lat: data_alloc.NDArray,
+    edges_lon: data_alloc.NDArray,
     weighting_factor: float,
-) -> field_alloc.NDArray:
+) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
 

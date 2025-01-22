@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -15,12 +14,13 @@ from icon4py.model.common.grid import (
     geometry_attributes as geometry_meta,
     vertical as v_grid,
 )
-from icon4py.model.common.test_utils import (
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils,
     helpers,
     reference_funcs as ref_funcs,
-    serialbox_utils as sb,
+    serialbox as sb,
 )
 from icon4py.model.driver import icon4py_configuration
 from icon4py.model.driver.test_cases import gauss3d
@@ -87,18 +87,18 @@ def _get_or_initialize(experiment, backend, name):
             primal_normal_y=geometry_.get(geometry_meta.EDGE_NORMAL_V),
             primal_normal_cell_x=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_U),
             primal_normal_cell_y=geometry_.get(geometry_meta.EDGE_NORMAL_CELL_V),
-            primal_normal_vert_x=helpers.as_1D_sparse_field(
+            primal_normal_vert_x=data_alloc.as_1D_sparse_field(
                 geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_U), target_dim=dims.ECVDim
             ),
-            primal_normal_vert_y=helpers.as_1D_sparse_field(
+            primal_normal_vert_y=data_alloc.as_1D_sparse_field(
                 geometry_.get(geometry_meta.EDGE_NORMAL_VERTEX_V), target_dim=dims.ECVDim
             ),
             dual_normal_cell_x=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_U),
             dual_normal_cell_y=geometry_.get(geometry_meta.EDGE_TANGENT_CELL_V),
-            dual_normal_vert_x=helpers.as_1D_sparse_field(
+            dual_normal_vert_x=data_alloc.as_1D_sparse_field(
                 geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_U), target_dim=dims.ECVDim
             ),
-            dual_normal_vert_y=helpers.as_1D_sparse_field(
+            dual_normal_vert_y=data_alloc.as_1D_sparse_field(
                 geometry_.get(geometry_meta.EDGE_TANGENT_VERTEX_V), target_dim=dims.ECVDim
             ),
         )
@@ -166,7 +166,7 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     params = diffusion.DiffusionParams(construct_diffusion_config(experiment, ndyn_substeps=5))
     assert len(params.smagorinski_factor) == len(params.smagorinski_height)
     assert len(params.smagorinski_factor) == 4
-    assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
+    assert all(p >= 0 for p in params.smagorinski_factor)
 
 
 @pytest.mark.datatest
@@ -210,10 +210,10 @@ def test_diffusion_init(
     assert meta["date"] == step_date_init
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -352,10 +352,10 @@ def test_verify_diffusion_init_against_savepoint(
         vct_b=vct_b,
     )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -379,7 +379,7 @@ def test_verify_diffusion_init_against_savepoint(
         interpolation_state,
         edge_params,
         cell_params,
-        orchestration=True,
+        orchestration=False,
         backend=backend,
     )
 
@@ -412,7 +412,7 @@ def test_run_diffusion_single_step(
     ranked_data_path,
 ):
     if orchestration and ("dace" not in backend.name.lower()):
-        raise pytest.skip("This test is only executed for `dace backends.")
+        pytest.skip(f"running backend = '{backend.name}': orchestration only on dace backends")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -420,10 +420,10 @@ def test_run_diffusion_single_step(
     dtime = savepoint_diffusion_init.get_metadata("dtime").get("dtime")
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -525,7 +525,7 @@ def test_run_diffusion_multiple_steps(
     icon_grid,
 ):
     if "dace" not in backend.name.lower():
-        raise pytest.skip("This test is only executed for `dace backends.")
+        raise pytest.skip("This test is only executed for DaCe backends.")
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -533,10 +533,10 @@ def test_run_diffusion_multiple_steps(
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -662,7 +662,7 @@ def test_run_diffusion_initial_step(
     orchestration,
 ):
     if orchestration and ("dace" not in backend.name.lower()):
-        raise pytest.skip("This test is only executed for `dace backends.")
+        pytest.skip(f"running backend = '{backend.name}': orchestration only on dace backends")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -682,10 +682,10 @@ def test_run_diffusion_initial_step(
         vct_b=vct_b,
     )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -724,16 +724,15 @@ def test_run_diffusion_initial_step(
 
     assert savepoint_diffusion_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
 
-    if linit:
-        diffusion_granule.initial_run(
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            dtime=dtime,
-        )
+    diffusion_granule.initial_run(
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        dtime=dtime,
+    )
 
-        verify_diffusion_fields(
-            config=config,
-            diagnostic_state=diagnostic_state,
-            prognostic_state=prognostic_state,
-            diffusion_savepoint=savepoint_diffusion_exit,
-        )
+    verify_diffusion_fields(
+        config=config,
+        diagnostic_state=diagnostic_state,
+        prognostic_state=prognostic_state,
+        diffusion_savepoint=savepoint_diffusion_exit,
+    )

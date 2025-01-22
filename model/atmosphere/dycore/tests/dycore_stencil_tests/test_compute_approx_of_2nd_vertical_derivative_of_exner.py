@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_der
     compute_approx_of_2nd_vertical_derivative_of_exner,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):

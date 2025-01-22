@@ -15,8 +15,8 @@ from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.model.common import dimension as dims
 
+from icon4py.model.common import dimension as dims
 from icon4pytools.common.metadata import StencilInfo
 from icon4pytools.common.utils import write_string
 

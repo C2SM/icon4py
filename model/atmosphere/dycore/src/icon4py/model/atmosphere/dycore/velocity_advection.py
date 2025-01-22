@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+# ruff: noqa: ERA001
+
 from __future__ import annotations
 
 import gt4py.next as gtx
@@ -51,7 +53,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class VelocityAdvection:
@@ -121,37 +123,37 @@ class VelocityAdvection:
         )
 
     def _allocate_local_fields(self):
-        self.z_w_v = field_alloc.allocate_zero_field(
+        self.z_w_v = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
         )
-        self.z_v_grad_w = field_alloc.allocate_zero_field(
+        self.z_v_grad_w = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.z_ekinh = field_alloc.allocate_zero_field(
+        self.z_ekinh = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.z_w_concorr_mc = field_alloc.allocate_zero_field(
+        self.z_w_concorr_mc = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.z_w_con_c = field_alloc.allocate_zero_field(
+        self.z_w_con_c = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
         )
-        self.zeta = field_alloc.allocate_zero_field(
+        self.zeta = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.z_w_con_c_full = field_alloc.allocate_zero_field(
+        self.z_w_con_c_full = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.cfl_clipping = field_alloc.allocate_zero_field(
+        self.cfl_clipping = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
-        self.levmask = field_alloc.allocate_zero_field(
+        self.levmask = data_alloc.allocate_zero_field(
             dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
         )
-        self.vcfl_dsl = field_alloc.allocate_zero_field(
+        self.vcfl_dsl = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
         )
-        self.k_field = field_alloc.allocate_indices(
+        self.k_field = data_alloc.allocate_indices(
             dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
         )
 
@@ -213,6 +215,19 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
+        # scidoc:
+        # Outputs:
+        #  - zeta :
+        #     $$
+        #     \vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}
+        #     $$
+        #     Compute the vorticity on vertices using the discrete Stokes
+        #     theorem (eq. 5 in |BonaventuraRingler2005|).
+        #
+        # Inputs:
+        #  - $\Crot$ : geofac_rot
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #
         self._mo_math_divrot_rot_vertex_ri_dsl(
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
@@ -224,6 +239,19 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
+        # scidoc:
+        # Outputs:
+        #  - vt :
+        #     $$
+        #     \vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k}
+        #     $$
+        #     Compute the tangential velocity by RBF interpolation from four neighboring
+        #     edges (diamond shape) projected along the tangential direction.
+        #
+        # Inputs:
+        #  - $\Wrbf$ : rbf_vec_coeff_e
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #
         self._compute_tangential_wind(
             vn=prognostic_state.vn,
             rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
@@ -235,6 +263,24 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
+        # scidoc:
+        # Outputs:
+        #  - vn_ie :
+        #     $$
+        #     \vn{\n}{\e}{\k-1/2} = \Wlev \vn{\n}{\e}{\k} + (1 - \Wlev) \vn{\n}{\e}{\k-1}, \quad \k \in [1, \nlev)
+        #     $$
+        #     Interpolate the normal velocity from full to half levels.
+        #  - z_kin_hor_e :
+        #     $$
+        #     \kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right), \quad \k \in [1, \nlev)
+        #     $$
+        #     Compute the horizontal kinetic energy. Exclude the first full level.
+        #
+        # Inputs:
+        #  - $\Wlev$ : wgtfac_e
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #  - $\vt{\n}{\e}{\k}$ : vt
+        #
         self._interpolate_vn_to_ie_and_compute_ekin_on_edges(
             wgtfac_e=self.metric_state.wgtfac_e,
             vn=prognostic_state.vn,
@@ -260,6 +306,40 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
+        # scidoc:
+        # Outputs:
+        #  - z_w_concorr_me :
+        #     $$
+        #     \wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \quad \k \in [\nflatlev, \nlev)
+        #     $$
+        #     Compute the contravariant correction to the vertical wind due to
+        #     terrain-following coordinate. $\pdxn{}$ and $\pdxt{}$ are the
+        #     horizontal derivatives along the normal and tangent directions
+        #     respectively (eq. 17 in |ICONdycorePaper|).
+        #  - vn_ie :
+        #     $$
+        #     \vn{\n}{\e}{-1/2} = \vn{\n}{\e}{0}
+        #     $$
+        #     Set the normal wind at model top equal to the normal wind at the
+        #     first full level.
+        #  - z_vt_ie :
+        #     $$
+        #     \vt{\n}{\e}{-1/2} = \vt{\n}{\e}{0}
+        #     $$
+        #     Set the tangential wind at model top equal to the tangential wind
+        #     at the first full level.
+        #  - z_kin_hor_e :
+        #     $$
+        #     \kinehori{\n}{\e}{0} = \frac{1}{2} \left( \vn{\n}{\e}{0}^2 + \vt{\n}{\e}{0}^2 \right)
+        #     $$
+        #     Compute the horizontal kinetic energy on the first full level.
+        #
+        # Inputs:
+        #  - $\vn{\n}{\e}{\k}$ : vn
+        #  - $\vt{\n}{\e}{\k}$ : vt
+        #  - $\pdxn{z}$ : ddxn_z_full
+        #  - $\pdxt{z}$ : ddxt_z_full
+        #
         self._fused_stencils_4_5(
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
@@ -306,6 +386,18 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
+        # scidoc:
+        # Outputs:
+        #  - z_ekinh :
+        #     $$
+        #     \kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}
+        #     $$
+        #     Interpolate the horizonal kinetic energy from edge to cell center.
+        #
+        # Inputs:
+        #  - $\Whor$ : e_bln_c_s
+        #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
+        #
         self._interpolate_to_cell_center(
             interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -317,6 +409,24 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
+        # scidoc:
+        # Outputs:
+        #  - z_w_concorr_mc :
+        #     $$
+        #     \wcc{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \wcc{\n}{\e}{\k}
+        #     $$
+        #     Interpolate the contravariant correction from edge to cell center.
+        #  - w_concorr_c :
+        #     $$
+        #     \wcc{\n}{\c}{\k-1/2} = \Wlev \wcc{\n}{\c}{\k} + (1 - \Wlev) \wcc{\n}{\c}{\k-1}, \quad \k \in [\nflatlev+1, \nlev)
+        #     $$
+        #     Interpolate the contravariant correction from full to half levels.
+        #
+        # Inputs:
+        #  - $\wcc{\n}{\e}{\k}$ : z_w_concorr_me
+        #  - $\Whor$ : e_bln_c_s
+        #  - $\Wlev$ : wgtfac_c
+        #
         self._fused_stencils_9_10(
             z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -333,6 +443,30 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
+        # scidoc:
+        # Outputs:
+        #  - z_w_con_c :
+        #     $$
+        #     (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}) =
+        #     \begin{cases}
+        #         \w{\n}{\c}{\k-1/2},                        & \k \in [0, \nflatlev+1)     \\
+        #         \w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}, & \k \in [\nflatlev+1, \nlev) \\
+        #         0,                                         & \k = \nlev
+        #     \end{cases}
+        #     $$
+        #     Subtract the contravariant correction $\wcc{}{}{}$ from the
+        #     vertical wind $\w{}{}{}$ in the terrain-following levels. This is
+        #     done for convevnience here, instead of directly in the advection
+        #     tendency update, because the result needs to be interpolated to
+        #     edge centers and full levels for later use.
+        #     The papers do not use a new symbol for this variable, and the code
+        #     ambiguosly mixes the variable names used for
+        #     $\wcc{}{}{}$ and $(\w{}{}{} - \wcc{}{}{})$.
+        #
+        # Inputs:
+        #  - $\w{\n}{\c}{\k\pm1/2}$ : w
+        #  - $\wcc{\n}{\c}{\k\pm1/2}$ : w_concorr_c
+        #
         self._fused_stencils_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
@@ -365,6 +499,19 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
+        # scidoc:
+        # Outputs:
+        #  - z_w_con_c_full :
+        #     $$
+        #     (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k}) = \frac{1}{2} [ (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2})
+        #                                                       + (\w{\n}{\c}{\k+1/2} - \wcc{\n}{\c}{\k+1/2}) ]
+        #     $$
+        #     Interpolate the vertical wind with contravariant correction from
+        #     half to full levels.
+        #
+        # Inputs:
+        #  - $(\w{\n}{\c}{\k\pm1/2} - \wcc{\n}{\c}{\k\pm1/2})$ : z_w_con_c
+        #
         self._interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -415,6 +562,35 @@ class VelocityAdvection:
 
         self.levelmask = self.levmask
 
+        # scidoc:
+        # Outputs:
+        #  - ddt_vn_apc_pc[ntnd] :
+        #     $$
+        #     \advvn{\n}{\e}{\k} &&= \pdxn{\kinehori{}{}{}} + \vt{}{}{} (\vortvert{}{}{} + \coriolis{}) + \pdz{\vn{}{}{}} (\w{}{}{} - \wcc{}{}{}) \\
+        #                        &&= \Gradn_{\offProv{e2c}} \Cgrad \kinehori{\n}{c}{\k} + \kinehori{\n}{\e}{\k} \Gradn_{\offProv{e2c}} \Cgrad     \\
+        #                        &&+ \vt{\n}{\e}{\k} (\coriolis{\e} + 1/2 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k})                             \\
+        #                        &&+ \frac{\vn{\n}{\e}{\k-1/2} - \vn{\n}{\e}{\k+1/2}}{\Dz{k}}
+        #                            \sum_{\offProv{e2c}} \Whor (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k})
+        #     $$
+        #     Compute the advective tendency of the normal wind (eq. 13 in
+        #     |ICONdycorePaper|).
+        #     The edge-normal derivative of the kinetic energy is computed by
+        #     combining the first order approximation across adiacent cell
+        #     centres (eq. 7 in |BonaventuraRingler2005|) with the edge value of
+        #     the kinetic energy (TODO: this needs explaining and a reference).
+        #
+        # Inputs:
+        #  - $\Cgrad$ : coeff_gradekin
+        #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
+        #  - $\kinehori{\n}{\c}{\k}$ : z_ekinh
+        #  - $\vt{\n}{\e}{\k}$ : vt
+        #  - $\coriolis{\e}$ : f_e
+        #  - $\vortvert{\n}{\v}{\k}$ : zeta
+        #  - $\Whor$ : c_lin_e
+        #  - $(\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k})$ : z_w_con_c_full
+        #  - $\vn{\n}{\e}{\k\pm1/2}$ : vn_ie
+        #  - $\Dz{\k}$ : ddqz_z_full_e
+        #
         self._compute_advective_normal_wind_tendency(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
@@ -459,7 +635,7 @@ class VelocityAdvection:
         )
 
     def _update_levmask_from_cfl_clipping(self):
-        xp = field_alloc.import_array_ns(self._backend)
+        xp = data_alloc.import_array_ns(self._backend)
         self.levmask = gtx.as_field(
             domain=(dims.KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )
