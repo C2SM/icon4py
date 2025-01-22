@@ -124,14 +124,6 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="e_refin_ctrl",
         long_name="refinement contorl fields on edges",
     ),
-    "tangent_orientation": dict(
-        standard_name="tangent_orientation",
-        units="",
-        dims=(dims.EdgeDim),
-        dtype=ta.wpfloat,
-        icon_var_name="tangent_orientation",
-        long_name="grid savepoint field",
-    ),
     "inv_primal_edge_length": dict(
         standard_name="inv_primal_edge_length",
         units="",
