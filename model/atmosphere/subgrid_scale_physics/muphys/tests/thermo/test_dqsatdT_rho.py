@@ -8,7 +8,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.dqsatdT_rho import dqsatdT_rho
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import dqsatdT_rho
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import thermodyn
 
 from icon4py.model.common import dimension as dims
@@ -28,8 +28,8 @@ class TestQsatRho(StencilTest):
     def input_data(self, grid):
 
         return dict(
-            qs               = constant_field(grid, 0.00448941, dims.CellDim, dtype=wpfloat),
-            t                = constant_field(grid, 273.909, dims.CellDim, dtype=wpfloat),
+            qs               = constant_field(grid, 0.00448941, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t                = constant_field(grid, 273.909, dims.CellDim, dims.KDim, dtype=wpfloat),
             TMELT            = thermodyn.tmelt,
-            derivative       = constant_field(grid, 0., dims.CellDim, dtype=wpfloat)
+            derivative       = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
