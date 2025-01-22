@@ -273,7 +273,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=MASK_PROG_HALO_C,
         long_name="mask_prog_halo_c",
         units="",
-        dims=(dims.CellDim),
+        dims=(dims.CellDim, ),
         icon_var_name="mask_prog_halo_c",
         dtype=bool,
     ),
