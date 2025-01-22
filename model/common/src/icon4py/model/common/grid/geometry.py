@@ -451,6 +451,20 @@ class GridGeometry(factory.FieldSource):
             },
         )
         self.register_provider(cartesian_edge_centers)
+        cartesian_cell_centers = factory.FieldOperatorProvider(
+            func=math_helpers.geographical_to_cartesian_on_cells.with_backend(self.backend),
+            domain=(dims.CellDim,),
+            fields={
+                attrs.CELL_CENTER_X: attrs.CELL_CENTER_X,
+                attrs.CELL_CENTER_Y: attrs.CELL_CENTER_Y,
+                attrs.CELL_CENTER_Z: attrs.CELL_CENTER_Z,
+            },
+            deps={
+                "lat": attrs.CELL_LAT,
+                "lon": attrs.CELL_LON,
+            },
+        )
+        self.register_provider(cartesian_cell_centers)
 
     def _inverse_field_provider(self, field_name: str):
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])

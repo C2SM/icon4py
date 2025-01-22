@@ -27,6 +27,11 @@ VERTEX_LAT: Final[str] = "grid_latitude_of_vertex"
 
 CELL_LON: Final[str] = "grid_longitude_of_cell_center"
 CELL_LAT: Final[str] = "grid_latitude_of_cell_center"
+CELL_CENTER_X: Final[str] = "x_component_of_cell_center"
+CELL_CENTER_Y: Final[str] = "y_component_of_cell_center"
+
+CELL_CENTER_Z: Final[str] = "z_component_of_cell_center"
+
 CELL_AREA: Final[str] = "cell_area"
 EDGE_AREA: Final[str] = "edge_area"
 DUAL_AREA: Final[str] = "dual_area"
@@ -160,6 +165,30 @@ attrs: dict[str, model.FieldMetaData] = {
         units="m2",
         dims=(dims.CellDim,),
         icon_var_name="t_grid_cells%area",
+        dtype=ta.wpfloat,
+    ),
+    CELL_CENTER_X: dict(
+        standard_name=CELL_CENTER_X,
+        long_name="x component of cell center",
+        units="",
+        dims=(dims.CellDim,),
+        icon_var_name="t_grid_cells%%cartesian_center%x(1)",
+        dtype=ta.wpfloat,
+    ),
+    CELL_CENTER_Y: dict(
+        standard_name=CELL_CENTER_Y,
+        long_name="y-component of cell center",
+        units="",
+        dims=(dims.CellDim,),
+        icon_var_name="t_grid_cells%%cartesian_center%x(2)",
+        dtype=ta.wpfloat,
+    ),
+    CELL_CENTER_Z: dict(
+        standard_name=CELL_CENTER_Z,
+        long_name="z-component of cell center",
+        units="",
+        dims=(dims.CellDim,),
+        icon_var_name="t_grid_cells%%cartesian_center%x(3)",
         dtype=ta.wpfloat,
     ),
     DUAL_AREA: dict(
