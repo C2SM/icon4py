@@ -89,7 +89,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         dims=(dims.KHalfDim,),
         dtype=ta.wpfloat,
         positive="up",
-        icon_var_name="z_ifc",
+        icon_var_name="vct_a",
     ),
     "nudging_coefficient_on_edges": dict(
         standard_name="nudging_coefficient_on_edges",
