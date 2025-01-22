@@ -289,7 +289,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=HMASK_DD3D,
         long_name="hmask_dd3d",
         units="",
-        dims=(dims.EdgeDim),
+        dims=(dims.EdgeDim,),
         icon_var_name="hmask_dd3d",
         dtype=ta.wpfloat,
     ),
