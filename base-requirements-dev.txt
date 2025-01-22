@@ -1,6 +1,6 @@
 # VCS
 -e git+https://github.com/GridTools/gt4py.git@icon4py_20241113#egg=gt4py  # use tagged release until #596 & gt4py#1738 is merged
-git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
+git+https://github.com/GridTools/serialbox@a1b9334f2330f2deb432e44a5fd7907db08b0076#egg=serialbox&subdirectory=src/serialbox-python
 
 # PyPI
 bump2version>=1.0.1

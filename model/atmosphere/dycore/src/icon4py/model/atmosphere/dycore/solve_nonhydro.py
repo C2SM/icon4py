@@ -2245,7 +2245,7 @@ class SolveNonhydro:
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.mass_flx_ic,
                     horizontal_start=self._start_cell_lateral_boundary,
-                    horizontal_end=self._end_cell_nudging,
+                    horizontal_end=self._end_cell_lateral_boundary_level_4,
                     vertical_start=0,
                     vertical_end=self._grid.num_levels + 1,
                     offset_provider={},
@@ -2261,8 +2261,8 @@ class SolveNonhydro:
                 mass_flx_ic=prep_adv.mass_flx_ic,
                 r_nsubsteps=r_nsubsteps,
                 horizontal_start=self._start_cell_lateral_boundary,
-                horizontal_end=self._end_cell_nudging,
-                vertical_start=0,
+                horizontal_end=self._end_cell_lateral_boundary_level_4,
+                vertical_start=1,
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
