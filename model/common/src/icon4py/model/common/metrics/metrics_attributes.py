@@ -193,7 +193,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=VWIND_IMPL_WGT,
         long_name="vwind_impl_wgt",
         units="",
-        dims=(dims.CellDim),
+        dims=(dims.CellDim, ),
         icon_var_name="vwind_impl_wgt",
         dtype=ta.wpfloat,
     ),
