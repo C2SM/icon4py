@@ -11,8 +11,8 @@ include:
       GRID: [simple_grid, icon_grid]
       # TODO(edopao): Add more components once they work fine with DaCe 
       COMPONENT: [atmosphere/diffusion, atmosphere/dycore]
-test_model_stencils_x86_64:
-  extends: [.test_model_stencils, .test_template_x86_64]
+# test_model_stencils_x86_64:
+#   extends: [.test_model_stencils, .test_template_x86_64]
 test_model_stencils_aarch64:
   extends: [.test_model_stencils, .test_template_aarch64]
 
@@ -25,8 +25,8 @@ test_model_stencils_aarch64:
     - BACKEND: [dace_cpu]
       # TODO(edopao): Add more components once they work fine with DaCe 
       COMPONENT: [atmosphere/diffusion, atmosphere/dycore]
-test_model_datatests_x86_64:
-  extends: [.test_model_datatests, .test_template_x86_64]
+# test_model_datatests_x86_64:
+#   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
 
@@ -40,7 +40,7 @@ test_model_datatests_aarch64:
       GRID: [icon_grid, icon_grid_global]
       # TODO(edopao): Add more components once they work fine with DaCe 
       COMPONENT: [atmosphere/diffusion, atmosphere/dycore]
-benchmark_model_stencils_x86_64:
-  extends: [.benchmark_model_stencils, .test_template_x86_64]
+# benchmark_model_stencils_x86_64:
+#   extends: [.benchmark_model_stencils, .test_template_x86_64]
 benchmark_model_stencils_aarch64:
   extends: [.benchmark_model_stencils, .test_template_aarch64]
