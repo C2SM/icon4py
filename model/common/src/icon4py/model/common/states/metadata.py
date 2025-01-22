@@ -156,12 +156,4 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="c_owner_mask",
         long_name="grid savepoint field",
     ),
-    "edge_cell_length": dict(
-        standard_name="edge_cell_length",
-        units="",
-        dims=(dims.EdgeDim, dims.E2CDim),
-        dtype=ta.wpfloat,
-        icon_var_name="edge_cell_length",
-        long_name="grid savepoint field",
-    ),
 }
