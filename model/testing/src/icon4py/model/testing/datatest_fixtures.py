@@ -178,6 +178,12 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
+def external_parameters_savepoint(data_provider):  # F811
+    """Load data from ICON external parameters savepoint."""
+    return data_provider.from_external_parameters_savepoint()
+
+
+@pytest.fixture
 def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module.
