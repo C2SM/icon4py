@@ -8,7 +8,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo.saturation_adjustment import saturation_adjustment
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import saturation_adjustment
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
 
 from icon4py.model.common import dimension as dims
@@ -29,12 +29,12 @@ class TestSaturationAdjustment(StencilTest):
     def input_data(self, grid):
 
         return dict(
-            te          = constant_field(grid, 273.90911754406039, dims.CellDim, dtype=wpfloat),
-            qve         = constant_field(grid, 4.4913424511676030E-003, dims.CellDim, dtype=wpfloat),
-            qce         = constant_field(grid, 6.0066941654987605E-013, dims.CellDim, dtype=wpfloat),
-            qre         = constant_field(grid, 2.5939378002267028E-004, dims.CellDim, dtype=wpfloat),
-            qti         = constant_field(grid, 1.0746937601645517E-005, dims.CellDim, dtype=wpfloat),
-            rho         = constant_field(grid, 1.1371657035251757, dims.CellDim, dtype=wpfloat),
+            te          = constant_field(grid, 273.90911754406039, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qve         = constant_field(grid, 4.4913424511676030E-003, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qce         = constant_field(grid, 6.0066941654987605E-013, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qre         = constant_field(grid, 2.5939378002267028E-004, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qti         = constant_field(grid, 1.0746937601645517E-005, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho         = constant_field(grid, 1.1371657035251757, dims.CellDim, dims.KDim, dtype=wpfloat),
             CI          = graupel_ct.ci,
             CLW         = thermodyn.clw,
             CVD         = thermodyn.cvd,
@@ -42,8 +42,8 @@ class TestSaturationAdjustment(StencilTest):
             LVC         = graupel_ct.lvc,
             TMELT       = thermodyn.tmelt,
             RV          = thermodyn.rv,
-            te_out      = constant_field(grid, 0., dims.CellDim, dtype=wpfloat),
-            qve_out     = constant_field(grid, 0., dims.CellDim, dtype=wpfloat),
-            qce_out     = constant_field(grid, 0., dims.CellDim, dtype=wpfloat),
-            mask_out    = constant_field(grid, True, dims.CellDim, dtype=bool),
+            te_out      = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
+            qve_out     = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
+            qce_out     = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
+            mask_out    = constant_field(grid, True, dims.CellDim, dims.KDim, dtype=bool),
         )

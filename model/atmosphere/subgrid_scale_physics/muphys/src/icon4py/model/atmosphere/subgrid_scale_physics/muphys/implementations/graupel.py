@@ -95,7 +95,7 @@ def _graupel_mask(
     TFRZ_HET2: ta.wpfloat,                           # TBD
     TMELT:     ta.wpfloat,                           # TBD
     RV:        ta.wpfloat,                           # TBD
-) -> [fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool]]:
+) -> tuple[fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool],fa.CellKField[bool]]:
 
     mask = where( (maximum( qc, maximum(qg, maximum(qi, maximum(qr, qs)))) > QMIN) | ((t < TFRZ_HET2) & (qv > _qsat_ice_rho(t, rho, TMELT, RV) ) ), True, False )
     is_sig_present = where( maximum( qg, maximum(qi, qs)) > QMIN, True, False )
