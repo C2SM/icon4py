@@ -1721,6 +1721,24 @@ class SolveNonhydro:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(dims.CellDim, prognostic_states.next.w)
 
+    def nested_orchestration_run_corrector_step(run_corrector_step):
+        def wrapper(*args, **kwargs):
+            self = args[0]
+            if self._orchestration:
+                sdfg = self.velocity_advection.run_corrector_step.__sdfg__(
+                    __self__=self.velocity_advection,
+                    diagnostic_state=kwargs['diagnostic_state_nh'],
+                    prognostic_state=kwargs['prognostic_states'].next,
+                    z_kin_hor_e=kwargs['z_fields'].z_kin_hor_e,
+                    z_vt_ie=kwargs['z_fields'].z_vt_ie,
+                    dtime=kwargs['dtime'],
+                    cell_areas=self._cell_params.area,
+                )
+                self.velocity_advection.run_corrector_step = sdfg
+            return run_corrector_step(*args, **kwargs)
+        return wrapper
+
+    @nested_orchestration_run_corrector_step
     @dace_orchestration.orchestrate
     def run_corrector_step(
         self,
@@ -1762,13 +1780,73 @@ class SolveNonhydro:
 
         log.debug(f"corrector run velocity advection")
         self.velocity_advection.run_corrector_step(
-            # self_return_SDFG=self.velocity_advection,
             diagnostic_state=diagnostic_state_nh,
             prognostic_state=prognostic_states.next,
             z_kin_hor_e=z_fields.z_kin_hor_e,
             z_vt_ie=z_fields.z_vt_ie,
             dtime=dtime,
             cell_areas=self._cell_params.area,
+            #
+            # Additional kwargs needed from the nested orchestrated function (for now just hardcoded approach and some random vals)
+            #
+            connectivity_V2E = self._grid.offset_providers['V2E'].table,
+            connectivity_V2C = self._grid.offset_providers['V2C'].table,
+            connectivity_E2EC = self._grid.offset_providers['E2EC'].table,
+            connectivity_E2C2EO = self._grid.offset_providers['E2C2EO'].table,
+            connectivity_E2V = self._grid.offset_providers['E2V'].table,
+            connectivity_C2CE = self._grid.offset_providers['C2CE'].table,
+            connectivity_C2E2CO = self._grid.offset_providers['C2E2CO'].table,
+            connectivity_E2C = self._grid.offset_providers['E2C'].table,
+            connectivity_C2E = self._grid.offset_providers['C2E'].table,
+            #
+            __g_self_vcfl_dsl = self.velocity_advection.vcfl_dsl,
+            __g_self_interpolation_state_geofac_grdiv = self.velocity_advection.interpolation_state.geofac_grdiv,
+            __g_self_interpolation_state_e_bln_c_s = self.velocity_advection.interpolation_state.e_bln_c_s,
+            __g_self_edge_params_edge_areas = self.velocity_advection.edge_params.edge_areas,
+            __g_self_interpolation_state_c_intp = self.velocity_advection.interpolation_state.c_intp,
+            __g_self_levmask = self.velocity_advection.levmask,
+            __g_self_interpolation_state_c_lin_e = self.velocity_advection.interpolation_state.c_lin_e,
+            __g_self_interpolation_state_geofac_rot = self.velocity_advection.interpolation_state.geofac_rot,
+            __g_self_edge_params_f_e = self.velocity_advection.edge_params.f_e,
+            __g_self_metric_state_ddqz_z_full_e = self.velocity_advection.metric_state.ddqz_z_full_e,
+            __g_self_interpolation_state_geofac_n2s = self.velocity_advection.interpolation_state.geofac_n2s,
+            __g_self_metric_state_coeff2_dwdz = self.velocity_advection.metric_state.coeff2_dwdz,
+            __g_self_edge_params_inverse_dual_edge_lengths = self.velocity_advection.edge_params.inverse_dual_edge_lengths,
+            __g_self_c_owner_mask = self.velocity_advection.c_owner_mask,
+            __g_self_z_w_con_c = self.velocity_advection.z_w_con_c,
+            __g_self_metric_state_coeff1_dwdz = self.velocity_advection.metric_state.coeff1_dwdz,
+            __g_self_z_w_v = self.velocity_advection.z_w_v,
+            __g_self_metric_state_coeff_gradekin = self.velocity_advection.metric_state.coeff_gradekin,
+            __g_self_cfl_clipping = self.velocity_advection.cfl_clipping,
+            __g_self_metric_state_ddqz_z_half = self.velocity_advection.metric_state.ddqz_z_half,
+            __g_self_levelmask = self.velocity_advection.levelmask,
+            __g_self_z_ekinh = self.velocity_advection.z_ekinh,
+            __g_self_z_v_grad_w = self.velocity_advection.z_v_grad_w,
+            __g_self_edge_params_inverse_primal_edge_lengths = self.velocity_advection.edge_params.inverse_primal_edge_lengths,
+            __g_self_zeta = self.velocity_advection.zeta,
+            __g_self_z_w_con_c_full = self.velocity_advection.z_w_con_c_full,
+            __g_self_edge_params_tangent_orientation = self.velocity_advection.edge_params.tangent_orientation,
+            __g_self_k_field = self.velocity_advection.k_field,
+            #
+            DiagnosticStateNonHydro_vt_stride_1_sym = 1,
+            DiagnosticStateNonHydro_w_concorr_c_stride_1_sym = 1,
+            DiagnosticStateNonHydro_vn_ie_stride_1_sym = 1,
+            DiagnosticStateNonHydro_vn_ie_stride_0_sym = 1,
+            DiagnosticStateNonHydro_ddt_w_adv_pc_corrector_stride_0_sym = 1,
+            DiagnosticStateNonHydro_w_concorr_c_stride_0_sym = 1,
+            DiagnosticStateNonHydro_ddt_vn_apc_pc_corrector_stride_0_sym = 1,
+            DiagnosticStateNonHydro_ddt_vn_apc_pc_corrector_stride_1_sym = 1,
+            DiagnosticStateNonHydro_ddt_w_adv_pc_corrector_stride_1_sym = 1,
+            DiagnosticStateNonHydro_vt_stride_0_sym = 1,
+            #
+            PrognosticState_w_stride_0_sym = 1,
+            PrognosticState_vn_stride_1_sym = 1,
+            PrognosticState_vn_stride_0_sym = 1,
+            PrognosticState_w_stride_1_sym = 1,
+            #
+            KDim_sym = self._grid.num_levels,
+            EdgeDim_sym = self._grid.offset_providers['E2C'].table.shape[0],
+            CellDim_sym = self._grid.offset_providers['C2E'].table.shape[0],
         )
 
         self._compute_z_raylfac(

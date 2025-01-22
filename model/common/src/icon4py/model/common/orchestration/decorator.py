@@ -66,6 +66,9 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 
+global_container = []
+
+
 @overload
 def orchestrate(func: Callable[P, R], *, method: bool | None = None) -> Callable[P, R]:
     ...
@@ -104,6 +107,13 @@ def orchestrate(
 
         def wrapper(*args, **kwargs):
             self = args[0]
+
+            return_SDFG = False
+            if kwargs:
+                first_key = next(iter(kwargs))
+                if first_key == "return_SDFG":
+                    return_SDFG = kwargs.pop(first_key)
+
             if self._orchestration:
                 # Add DaCe data types annotations for **all args and kwargs**
                 dace_annotations = to_dace_annotations(fuse_func)
@@ -160,6 +170,9 @@ def orchestrate(
                 sdfg = cache_item["sdfg"]
                 compiled_sdfg = cache_item["compiled_sdfg"]
 
+                if return_SDFG:
+                    return sdfg
+
                 # update the args/kwargs with runtime related values, such as
                 # concretized symbols, runtime connectivity tables, GHEX C++ pointers, and DaCe structures pointers
                 updated_args, updated_kwargs = mod_xargs_for_dace_structures(
@@ -192,6 +205,39 @@ def orchestrate(
                     return compiled_sdfg(**sdfg_args)
             else:
                 return fuse_func(*args, **kwargs)
+
+        def __sdfg__(*args, **kwargs):
+            first_key = next(iter(kwargs))
+            if first_key == "__self__":
+                self = kwargs.pop(first_key)
+                sdfg = wrapper(self, *args, return_SDFG=True, **kwargs)
+            else:
+                raise ValueError("The first argument should be `__self__`.")
+            
+            # global global_container
+            # global_container.append(sdfg)
+            
+            return sdfg
+        wrapper.__sdfg__ = __sdfg__
+
+        # def __sdfg_closure__(*args, **kwargs):
+        #     closure_dict = {}
+            
+        #     global global_container
+        #     sdfg = global_container.pop()
+            
+        #     import copy
+        #     for array_name, array in sdfg.arrays.items():
+        #         if 'connectivity' in array_name or '__g' in array_name:
+        #             closure_dict[array_name] = copy.copy(array)
+        # wrapper.__sdfg_closure__ = __sdfg_closure__
+            
+        #     return closure_dict
+
+        # def __sdfg_signature__(*args, **kwargs):
+        #     l_ = []
+        #     return (['diagnostic_state', 'prognostic_state', 'z_kin_hor_e', 'z_vt_ie', 'dtime', 'cell_areas'] + l_,[])
+        # wrapper.__sdfg_signature__ = __sdfg_signature__
 
         return wrapper
 
@@ -601,22 +647,6 @@ if dace:
                 for dim in dims.global_dimensions.values()
             },
         }
-
-    def modified_orig_annotations(
-        dace_annotations: dict[str, Any], fuse_func_orig_annotations: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Add None as annotation to the the non-annotated args/kwargs."""
-        ii = 0
-        modified_fuse_func_orig_annotations = {}
-        for i, annotation_ in enumerate(dace_annotations.values()):
-            if annotation_ is dace.compiletime:
-                modified_fuse_func_orig_annotations[list(dace_annotations.keys())[i]] = None
-            else:
-                modified_fuse_func_orig_annotations[list(dace_annotations.keys())[i]] = list(
-                    fuse_func_orig_annotations.values()
-                )[ii]
-                ii += 1
-        return modified_fuse_func_orig_annotations
 
     def dace_symbols_concretization(
         grid: icon_grid.IconGrid,

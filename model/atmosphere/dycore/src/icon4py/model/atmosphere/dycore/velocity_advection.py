@@ -577,7 +577,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        self._update_levmask_from_cfl_clipping()
+        #self._update_levmask_from_cfl_clipping()
 
         self._interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
