@@ -128,54 +128,54 @@ def _graupel_loop2(
         
 ) -> [fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
 
-    dvsw = qv - qsat_rho( t, rho, TMELT, RV )
-    qvsi = qsat_ice_rho( t, rho, TMELT, RV )
+    dvsw = qv - _qsat_rho( t, rho, TMELT, RV )
+    qvsi = _qsat_ice_rho( t, rho, TMELT, RV )
     dvsi = qv - qvsi
 
-    n_snow = snow_number( t, rho, qs, QMIN, AMS, TMELT )
+    n_snow = _snow_number( t, rho, qs, QMIN, AMS, TMELT )
     
-    l_snow = snow_lambda( rho, qs, n_snow, QMIN, AMS, BMS )
+    l_snow = _snow_lambda( rho, qs, n_snow, QMIN, AMS, BMS )
 
     # Define conversion 'matrix'
-    sx2x_c_r = cloud_to_rain( t, qc, qr, qnc, TFRZ_HOM )
-    sx2x_r_v = rain_to_vapor( t, rho, qc, qr, dvsw, dt, QMIN, TMELT )
-    sx2x_c_i = cloud_x_ice( t, qc, qi, dt )
+    sx2x_c_r = _cloud_to_rain( t, qc, qr, qnc, TFRZ_HOM )
+    sx2x_r_v = _rain_to_vapor( t, rho, qc, qr, dvsw, dt, QMIN, TMELT )
+    sx2x_c_i = _cloud_x_ice( t, qc, qi, dt )
     sx2x_i_c = -minimum(sx2x_c_i, 0.0)
     sx2x_c_i = maximum(sx2x_c_i, 0.0)
 
-    sx2x_c_s = cloud_to_snow( t, qc, qs, n_snow, l_snow )
-    sx2x_c_g = cloud_to_graupel( t, rho, qc, qg )
+    sx2x_c_s = _cloud_to_snow( t, qc, qs, n_snow, l_snow )
+    sx2x_c_g = _cloud_to_graupel( t, rho, qc, qg )
 
-    n_ice = where( t < TMELT, ice_number( t, rho, OTHERS ), 0.0 )
-    m_ice = where( t < TMELT, ice_max( qi, OTHERS ), 0.0 )
-    x_ice = where( t < TMELT, ice_sticking( t, OTHERS ), 0.0 )
+    n_ice = where( t < TMELT, _ice_number( t, rho, OTHERS ), 0.0 )
+    m_ice = where( t < TMELT, _ice_max( qi, OTHERS ), 0.0 )
+    x_ice = where( t < TMELT, _ice_sticking( t, OTHERS ), 0.0 )
 
-    eta          = where( (t < TMELT) & is_sig_present, deposition_factor( t, qvsi, OTHERS ), 0.0 )
-    sx2x_v_i = where( (t < TMELT) & is_sig_present, vapor_x_ice( qi, m_ice, eta, dvsi, rho, dt, OTHERS ), 0.0 )
+    eta          = where( (t < TMELT) & is_sig_present, _deposition_factor( t, qvsi, OTHERS ), 0.0 )
+    sx2x_v_i = where( (t < TMELT) & is_sig_present, _vapor_x_ice( qi, m_ice, eta, dvsi, rho, dt, OTHERS ), 0.0 )
     sx2x_i_v = where( (t < TMELT) & is_sig_present, -minimum( sx2x_v_i, 0.0 ) , 0.0 )
     sx2x_v_i = where( (t < TMELT) & is_sig_present, maximum( sx2x_v_i, 0.0 ) , 0.0 )
     ice_dep      = where( (t < TMELT) & is_sig_present, minimum( sx2x_v_i, dvsi/dt ) , 0.0 )
 
-    sx2x_i_s = where( (t < TMELT) & is_sig_present, deposition_auto_conversion( qi, m_ice, ice_dep, OTHERS ) + ice_to_snow( qi, n_snow, l_snow, x_ice, OTHERS), 0.0 )
-    sx2x_i_g = where( (t < TMELT) & is_sig_present, ice_to_graupel( rho, qr, qg, qi, m_ice, OTHERS ), 0.0 )
-    sx2x_s_g = where( (t < TMELT) & is_sig_present, snow_to_graupel( t, rho, qc, qs, OTHERS ), 0.0 )
-    sx2x_r_g = where( (t < TMELT) & is_sig_present, rain_to_graupel( t, rho, qc, qr, qi, qs, m_ice, dvsw, dt, OTHERS ), 0.0 )
+    sx2x_i_s = where( (t < TMELT) & is_sig_present, _deposition_auto_conversion( qi, m_ice, ice_dep, OTHERS ) + ice_to_snow( qi, n_snow, l_snow, x_ice, OTHERS), 0.0 )
+    sx2x_i_g = where( (t < TMELT) & is_sig_present, _ice_to_graupel( rho, qr, qg, qi, m_ice, OTHERS ), 0.0 )
+    sx2x_s_g = where( (t < TMELT) & is_sig_present, _snow_to_graupel( t, rho, qc, qs, OTHERS ), 0.0 )
+    sx2x_r_g = where( (t < TMELT) & is_sig_present, _rain_to_graupel( t, rho, qc, qr, qi, qs, m_ice, dvsw, dt, OTHERS ), 0.0 )
 
-    sx2x_v_i = where( t < TMELT, sx2x_v_i + ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt, OTHERS ), 0.0 )
+    sx2x_v_i = where( t < TMELT, sx2x_v_i + _ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt, OTHERS ), 0.0 )
 
     sx2x_c_r = where( t >= TMELT, sx2x_c_r + sx2x_c_s + sx2x_c_g, sx2x_c_r )
 
-    dvsw0    = where( is_sig_present, qv - qsat_rho( t, rho, TMELT, RV ) )  # TODO: new qsat_rho_tmelt
-    sx2x_v_s = where( is_sig_present, vapor_x_snow( t, p, rho, qs, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt ), 0.0 )
+    dvsw0    = where( is_sig_present, qv - _qsat_rho( t, rho, TMELT, RV ) )  # TODO: new qsat_rho_tmelt
+    sx2x_v_s = where( is_sig_present, _vapor_x_snow( t, p, rho, qs, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt ), 0.0 )
     sx2x_s_v = where( is_sig_present, -minimum( sx2x_v_s, 0.0 ), 0.0 )
     sx2x_v_s = where( is_sig_present, maximum( sx2x_v_s, 0.0 ), 0.0 )
 
-    sx2x_v_g = where( is_sig_present, vapor_x_graupel( t, p, rho, qg, dvsw, dvsi, dvsw0, dt ), 0.0 )
+    sx2x_v_g = where( is_sig_present, _vapor_x_graupel( t, p, rho, qg, dvsw, dvsi, dvsw0, dt ), 0.0 )
     sx2x_g_v = where( is_sig_present, -minimum( sx2x_v_g, 0.0 ), 0.0 )
     sx2x_v_g = where( is_sig_present, maximum( sx2x_v_g, 0.0 ), 0.0 )
 
-    sx2x_s_r = where( is_sig_present, snow_to_rain( t, p, rho, dvsw0, qs, OTHERS ), 0.0 )
-    sx2x_g_r = where( is_sig_present, graupel_to_rain( t, p, rho, dvsw0, qg, OTHERS ), 0.0 )
+    sx2x_s_r = where( is_sig_present, _snow_to_rain( t, p, rho, dvsw0, qs, OTHERS ), 0.0 )
+    sx2x_g_r = where( is_sig_present, _graupel_to_rain( t, p, rho, dvsw0, qg, OTHERS ), 0.0 )
 
     # The following transitions are not physically meaningful, would be 0.0 in other implementation
     # here they are simply never used:
