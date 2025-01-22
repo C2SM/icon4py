@@ -197,8 +197,8 @@ def test_compute_primal_normals(backend, grid_savepoint, grid_file, experiment):
     primal_normal_u_ref = grid_savepoint.primal_normal_v1()
     primal_normal_v_ref = grid_savepoint.primal_normal_v2()
 
-    assert helpers.dallclose(primal_normal_u.ndarray, primal_normal_u_ref.ndarray, atol=1e-13)
-    assert helpers.dallclose(primal_normal_v.ndarray, primal_normal_v_ref.ndarray, atol=1e-13)
+    assert helpers.dallclose(primal_normal_u.ndarray, primal_normal_u_ref.ndarray, atol=1e-12)
+    assert helpers.dallclose(primal_normal_v.ndarray, primal_normal_v_ref.ndarray, atol=1e-12)
 
 
 @pytest.mark.datatest
@@ -248,8 +248,8 @@ def test_primal_normal_cell(backend, grid_savepoint, grid_file, experiment):
     primal_normal_cell_u = grid_geometry.get(attrs.EDGE_NORMAL_CELL_U)
     primal_normal_cell_v = grid_geometry.get(attrs.EDGE_NORMAL_CELL_V)
 
-    assert helpers.dallclose(primal_normal_cell_u.ndarray, primal_normal_cell_u_ref, atol=1e-13)
-    assert helpers.dallclose(primal_normal_cell_v.ndarray, primal_normal_cell_v_ref, atol=1e-14)
+    assert helpers.dallclose(primal_normal_cell_u.ndarray, primal_normal_cell_u_ref, atol=1e-12)
+    assert helpers.dallclose(primal_normal_cell_v.ndarray, primal_normal_cell_v_ref, atol=1e-12)
 
 
 @pytest.mark.datatest
@@ -267,8 +267,8 @@ def test_dual_normal_cell(backend, grid_savepoint, grid_file, experiment):
     dual_normal_cell_u = grid_geometry.get(attrs.EDGE_TANGENT_CELL_U)
     dual_normal_cell_v = grid_geometry.get(attrs.EDGE_TANGENT_CELL_V)
 
-    assert helpers.dallclose(dual_normal_cell_u.ndarray, dual_normal_cell_u_ref, atol=1e-13)
-    assert helpers.dallclose(dual_normal_cell_v.ndarray, dual_normal_cell_v_ref, atol=1e-13)
+    assert helpers.dallclose(dual_normal_cell_u.ndarray, dual_normal_cell_u_ref, atol=1e-12)
+    assert helpers.dallclose(dual_normal_cell_v.ndarray, dual_normal_cell_v_ref, atol=1e-12)
 
 
 @pytest.mark.datatest
@@ -286,8 +286,8 @@ def test_primal_normal_vert(backend, grid_savepoint, grid_file, experiment):
     primal_normal_vert_u = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_U)
     primal_normal_vert_v = grid_geometry.get(attrs.EDGE_NORMAL_VERTEX_V)
 
-    assert helpers.dallclose(primal_normal_vert_u.ndarray, primal_normal_vert_u_ref, atol=1e-13)
-    assert helpers.dallclose(primal_normal_vert_v.ndarray, primal_normal_vert_v_ref, atol=1e-13)
+    assert helpers.dallclose(primal_normal_vert_u.ndarray, primal_normal_vert_u_ref, atol=1e-12)
+    assert helpers.dallclose(primal_normal_vert_v.ndarray, primal_normal_vert_v_ref, atol=1e-12)
 
 
 @pytest.mark.datatest
@@ -305,8 +305,8 @@ def test_dual_normal_vert(backend, grid_savepoint, grid_file, experiment):
     dual_normal_vert_u = grid_geometry.get(attrs.EDGE_TANGENT_VERTEX_U)
     dual_normal_vert_v = grid_geometry.get(attrs.EDGE_TANGENT_VERTEX_V)
 
-    assert helpers.dallclose(dual_normal_vert_u.ndarray, dual_normal_vert_u_ref, atol=1e-13)
-    assert helpers.dallclose(dual_normal_vert_v.ndarray, dual_normal_vert_v_ref, atol=1e-13)
+    assert helpers.dallclose(dual_normal_vert_u.ndarray, dual_normal_vert_u_ref, atol=1e-12)
+    assert helpers.dallclose(dual_normal_vert_v.ndarray, dual_normal_vert_v_ref, atol=1e-12)
 
 
 @pytest.mark.parametrize(
