@@ -92,7 +92,7 @@ def match_marker(markers: tuple, param: typing.Any):
                 )
             case "skip_value_error":
                 pytest.skip(
-                    "Stencil does not support domain containing skip values. Consider shrinking domain"
+                    "Stencil does not support domain containing skip values. Consider shrinking domain."
                 )
             case "datatest" if param is None:
                 pytest.skip("need '--datatest' option to run")
