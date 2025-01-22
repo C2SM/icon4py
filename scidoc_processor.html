@@ -87,12 +87,11 @@
 <h1>Scidoc processor<a class="headerlink" href="#scidoc-processor" title="Link to this heading"></a></h1>
 <p>The scidoc processor is an extension of <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html">sphinx’s autodoc
 documenter</a>
-with some additions tailored to documenting ICON4Py long methods.</p>
+with some additions tailored for ICON4Py long methods.</p>
 <section id="using-the-scidoc-processor-in-the-sphinx-documentation">
 <h2>Using the scidoc processor in the sphinx documentation<a class="headerlink" href="#using-the-scidoc-processor-in-the-sphinx-documentation" title="Link to this heading"></a></h2>
-<p>Using the processor to document a class/method/function is done in the same way as
-sphinx’s autodoc, just using the <code class="docutils literal notranslate"><span class="pre">autoscidoc</span></code> keyword instead of <code class="docutils literal notranslate"><span class="pre">autodoc</span></code>,
-and is as easy as:</p>
+<p>Analogously to sphinx’s autodoc, the process to document a class/method/function
+simply requires to apply the <code class="docutils literal notranslate"><span class="pre">autoscidoc</span></code> keyword instead of <code class="docutils literal notranslate"><span class="pre">autodoc</span></code>:</p>
 <div class="highlight-restructuredtext notranslate"><div class="highlight"><pre><span></span><span class="p">..</span> <span class="ow">autoscidoc</span><span class="p">::</span> icon4py.model.atmosphere.dycore.solve_nonhydro.SolveNonhydro.run_predictor_step
    <span class="nc">:no-index:</span>
 </pre></div>
@@ -102,18 +101,17 @@ results of which can be found at <a class="reference internal" href="dycore_nume
 </section>
 <section id="adding-scidoc-documentation-to-the-code">
 <h2>Adding scidoc documentation to the code<a class="headerlink" href="#adding-scidoc-documentation-to-the-code" title="Link to this heading"></a></h2>
-<p>The processor is designed in such a way that the source code needs just a few
+<p>The processor is designed in such a way that the source code needs only a few
 comment lines for a fully featured documentation page to be automatically
 generated.</p>
 <p>As an example from the dycore, the comment block describing the call to the
 stencil <code class="docutils literal notranslate"><span class="pre">_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates</span></code>
 results in the web page section displayed in the frame below (and part of the
 <a class="reference internal" href="dycore_numerics_nonhydro.html"><span class="doc">Dycore numerical documentation (solve nonhydro)</span></a> page).</p>
-<p>All that is required are the <strong>Outputs</strong> and <strong>Inputs</strong> sections, listing the
-variables processed by the stencil.
-A few lines can (should) be added describing the numerical operations resulting
-in the ouput variables, using the names in the namespace of the calling method
-(not of the stencil which could be a generic a+b operation).</p>
+<p>All that is required are the <strong>Outputs</strong> and <strong>Inputs</strong> sections, within which
+variables processed by the stencil are listed.
+Computation parameters should be described in a few lines where parameters
+labels have to match namespace names of the calling method.</p>
 <dl class="simple">
 <dt>The processor takes care of:</dt><dd><ul class="simple">
 <li><p>generating a title that is also a hyperlink to the stencil documentation,</p></li>

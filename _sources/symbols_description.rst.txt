@@ -7,8 +7,7 @@ This page explains some of the symbols used in the numerical documentation.
 $\sum_\offProv{v2e}$
 ----------------------
 This symbol is used to indicate summation over a set of points.
-The offset provider ($\offProv{v2e}$) is read left to right to get the indexes
-of the source data but the data itself "moves" from right to left (as in the
+The offset provider ($\offProv{v2e}$) is read left to right, however the data itself "moves" from right to left (as in the
 figure).
 In this example the source points are the six (orange) edges adjacent to the
 destination (blue) vertex.
@@ -29,8 +28,7 @@ $\Gradn_{\offProv{e2c}}$
 ------------------------
 This symbol is used to indicate the difference (horizontal gradient) between two
 points.
-The offset provider ($\offProv{e2c}$) is read left to right to get the indexes
-of the source data but the data itself "moves" from right to left (as in the
+The offset provider ($\offProv{e2c}$) is read left to right, however the data itself "moves" from right to left (as in the
 figure).
 In this example source points are the two (orange) cells
 adjacent to the destination (blue) edge.
@@ -57,5 +55,5 @@ Number of flat vertical levels, located above the terrain-following levels.
 
 $\nflatgradp$
 -------------
-Is the maximum height index at which the height of the center of an edge lies
+Maximum height index at which an edge center lies
 within two neighboring cells.
