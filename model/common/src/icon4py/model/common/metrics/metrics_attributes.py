@@ -281,7 +281,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=BDY_HALO_C,
         long_name="bdy_halo_c",
         units="",
-        dims=(dims.CellDim),
+        dims=(dims.CellDim, ),
         icon_var_name="bdy_halo_c",
         dtype=bool,
     ),
