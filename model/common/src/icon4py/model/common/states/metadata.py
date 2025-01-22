@@ -114,7 +114,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         dims=(dims.CellDim, ),
         dtype=ta.wpfloat,
         icon_var_name="c_refin_ctrl",
-        long_name="grid savepoint field",
+        long_name="refinement control field on cells",
     ),
     "e_refin_ctrl": dict(
         standard_name="e_refin_ctrl",
