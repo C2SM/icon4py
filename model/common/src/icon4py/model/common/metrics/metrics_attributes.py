@@ -105,7 +105,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=RAYLEIGH_W,
         long_name="rayleigh_w",
         units="",
-        dims=(dims.KHalfDim),
+        dims=(dims.KHalfDim, ),
         icon_var_name="rayleigh_w",
         dtype=ta.wpfloat,
     ),
