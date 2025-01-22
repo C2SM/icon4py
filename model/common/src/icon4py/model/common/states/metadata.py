@@ -107,14 +107,6 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         dims=(dims.EdgeDim,),
         icon_var_name="refin_e_ctrl",
     ),
-    "c_bln_avg": dict(
-        standard_name="c_bln_avg",
-        units="",
-        dims=(dims.CellDim, dims.C2E2CODim),
-        dtype=ta.wpfloat,
-        icon_var_name="c_bln_avg",
-        long_name="grid savepoint field",
-    ),
     "vct_a": dict(
         standard_name="vct_a",
         units="",
