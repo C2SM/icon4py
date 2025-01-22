@@ -97,7 +97,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=SCALFAC_DD3D,
         long_name="Scaling factor for 3D divergence damping terms",
         units="",
-        dims=(dims.KDim),
+        dims=(dims.KDim, ),
         icon_var_name="scalfac_dd3d",
         dtype=ta.wpfloat,
     ),
