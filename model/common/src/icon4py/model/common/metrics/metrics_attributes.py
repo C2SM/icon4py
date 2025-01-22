@@ -361,7 +361,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=MAX_NBHGT,
         long_name="max_nbhgt",
         units="",
-        dims=(dims.CellDim),
+        dims=(dims.CellDim, ),
         icon_var_name="max_nbhgt",
         dtype=ta.wpfloat,
     ),
