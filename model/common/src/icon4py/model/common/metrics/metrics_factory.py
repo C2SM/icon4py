@@ -94,7 +94,7 @@ class MetricsConfig:
 
     @property
     def rayleigh_type(self) -> int:
-        return 1 if self._experiment == self._global_experiment else 2
+        return 2
 
     @property
     def rayleigh_coeff(self) -> float:

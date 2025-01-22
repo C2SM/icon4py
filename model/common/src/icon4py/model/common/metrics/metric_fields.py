@@ -33,8 +33,6 @@ from icon4py.model.common.dimension import (
     C2E2CO,
     E2C,
     C2E2CODim,
-    CellDim,
-    KDim,
     Koff,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
@@ -47,6 +45,7 @@ from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
     average_edge_kdim_level_up,
+    broadcast_cells_to_cell_k,
     difference_k_level_up,
     grad_fd_norm,
 )
@@ -652,13 +651,6 @@ def compute_maxslp_maxhgtd(
 
 
 @field_operator
-def _exner_exfac_broadcast(
-    exner_expol: wpfloat,
-) -> fa.CellKField[wpfloat]:
-    return broadcast(exner_expol, (CellDim, KDim))
-
-
-@field_operator
 def _compute_exner_exfac(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
@@ -702,7 +694,7 @@ def compute_exner_exfac(
         vertical_end: vertical end index
 
     """
-    _exner_exfac_broadcast(exner_expol, out=exner_exfac)
+    broadcast_cells_to_cell_k(exner_expol, out=exner_exfac)
     _compute_exner_exfac(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,

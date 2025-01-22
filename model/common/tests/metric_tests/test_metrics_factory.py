@@ -144,6 +144,7 @@ def test_factory_scalfac_dd3d(grid_savepoint, metrics_savepoint, grid_file, expe
     "grid_file, experiment",
     [
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
 @pytest.mark.datatest
