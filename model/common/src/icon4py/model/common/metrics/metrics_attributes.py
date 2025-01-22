@@ -305,7 +305,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=COEFF_GRADEKIN,
         long_name="coeff_gradekin",
         units="",
-        dims=(dims.EdgeDim),
+        dims=(dims.EdgeDim,),
         icon_var_name="coeff_gradekin",
         dtype=ta.wpfloat,
     ),
