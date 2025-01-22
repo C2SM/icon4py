@@ -603,24 +603,25 @@ class InterpolationSavepoint(IconSavepoint):
         return data_alloc.as_1D_sparse_field(field[:, 0:2], dims.ECDim)
 
     def rbf_vec_coeff_e(self):
-        buffer = np.squeeze(
-            self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
-        ).transpose()
-        return gtx.as_field((dims.EdgeDim, dims.E2C2EDim), buffer)
+        return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim)
+
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
-        buffer = np.squeeze(
-            self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
-        ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer)
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
+        buffer = np.squeeze(self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)).transpose()
+        buffer = self._reduce_to_dim_size(buffer,dimensions)
+        return gtx.as_field(dimensions,  buffer)
+       
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
+        dimensions = (dims.CellDim, dims.C2E2C2EDim)
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
         ).transpose()
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer)
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)
