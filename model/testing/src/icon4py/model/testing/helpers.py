@@ -88,7 +88,7 @@ def match_marker(markers: tuple, param: typing.Any):
                 pytest.xfail("Embedded backend does not support as_offset.")
             case "requires_concat_where" if is_embedded(param):
                 pytest.xfail(
-                    "Embedded backend does not support larger boundaries than field sizes."
+                    "Stencil requires concat_where."
                 )
             case "skip_value_error":
                 pytest.skip(
