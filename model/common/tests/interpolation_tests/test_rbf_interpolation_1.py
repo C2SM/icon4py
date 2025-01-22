@@ -5,18 +5,21 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import pytest
 import numpy as np
-from icon4py.model.common.interpolation.rbf_interpolation_1 import (
-    compute_rbf_vec_coeff,
-    _compute_z_xn1_z_xn2,
-    _compute_z_rbfmat_istencil,
-)
-from icon4py.model.testing import datatest_utils as dt_utils, helpers as test_helpers
+import pytest
+
 import icon4py.model.common.dimension as dims
 from icon4py.model.common.grid import geometry_attributes as attrs, horizontal as h_grid
-from icon4py.model.common.math.helpers import geographical_to_cartesian_on_edges, \
-    geographical_to_cartesian_on_cells
+from icon4py.model.common.interpolation.rbf_interpolation_1 import (
+    _compute_z_rbfmat_istencil,
+    _compute_z_xn1_z_xn2,
+    compute_rbf_vec_coeff,
+)
+from icon4py.model.common.math.helpers import (
+    geographical_to_cartesian_on_cells,
+    geographical_to_cartesian_on_edges,
+)
+from icon4py.model.testing import datatest_utils as dt_utils, helpers as test_helpers
 from icon4py.model.testing.grid_utils import get_grid_geometry
 
 
@@ -91,7 +94,9 @@ def test_compute_rbf_vec_coeff(
 
     cartesian_center_e = geographical_to_cartesian_on_edges(lat_e, lon_e)
     cartesian_center_c = geographical_to_cartesian_on_cells(lat, lon)
-    lower_bound = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    lower_bound = icon_grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
     mean_characteristic_length = math.sqrt(mean_cell_area)
 
     lon = metrics_savepoint.lon_c().ndarray

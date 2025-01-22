@@ -330,6 +330,7 @@ def test_cartesian_centers(backend, grid_file, experiment):
     math_helpers.norm2_on_edges(x, z, y, out=norm, offset_provider={})
     assert helpers.dallclose(norm.asnumpy(), 1.0)
 
+
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [

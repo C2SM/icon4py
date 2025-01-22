@@ -15,6 +15,7 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
+# TODO @halungge the experiment argument in here needs to go away.
 def compute_vwind_impl_wgt(
     backend,
     icon_grid: grid.BaseGrid,

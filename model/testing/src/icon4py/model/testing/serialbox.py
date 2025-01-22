@@ -605,14 +605,14 @@ class InterpolationSavepoint(IconSavepoint):
     def rbf_vec_coeff_e(self):
         return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim)
 
-
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
         dimensions = (dims.CellDim, dims.C2E2C2EDim)
-        buffer = np.squeeze(self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)).transpose()
-        buffer = self._reduce_to_dim_size(buffer,dimensions)
-        return gtx.as_field(dimensions,  buffer)
-       
+        buffer = np.squeeze(
+            self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
+        ).transpose()
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        return gtx.as_field(dimensions, buffer)
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):

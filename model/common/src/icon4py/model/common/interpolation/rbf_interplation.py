@@ -90,8 +90,8 @@ def arc_length_matrix(v: np.ndarray) -> np.ndarray:
 
 
 def arc_length(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
-    v1_norm = v1 / np.sqrt(np.sum(v1, axis=-1))[:, np.newaxis]
-    v2_norm = v2 / np.sqrt(np.sum(v2, axis=-1))[:, np.newaxis]
+    v1_norm = _normalize_along_last_axis(v1)
+    v2_norm = _normalize_along_last_axis(v2)
 
     return _arc_length_of_normalized_input(v1_norm, v2_norm)
 
@@ -102,8 +102,8 @@ def _arc_length_of_normalized_input(v1_norm, v2_norm):
 
 
 def _normalize_along_last_axis(v: np.ndarray):
-    norms = np.sqrt(np.sum(v, axis=-1))
-    return v / norms[:, :, np.newaxis]
+    norms = np.sqrt(np.sum(v * 1, axis=-1))
+    return v / norms[..., np.newaxis]
 
 
 def gaussian(lengths: np.ndarray, scale: float) -> np.ndarray:
@@ -135,19 +135,18 @@ def kernel(kernel: InterpolationKernel, lengths: np.ndarray, scale: float):
 
 # TODO proper name...
 def zonal_meridional_component(
-        cell_center_lat: data_alloc.NDArray, # fa.CellField[ta.wpfloat],
-        cell_center_lon: data_alloc.NDArray, # fa.CellField[ta.wpfloat],
-        u: data_alloc.NDArray, # fa.CellField[ta.wpfloat],
-        v: data_alloc.NDArray, # fa.CellField[ta.wpfloat],
-
+    cell_center_lat: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
+    cell_center_lon: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
+    u: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
+    v: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
 ) -> data_alloc.NDArray:
-    """ compute z_nx1 and z_nx2"""
+    """compute z_nx1 and z_nx2"""
     sin_lat = np.sin(cell_center_lat)
     sin_lon = np.sin(cell_center_lon)
     cos_lat = np.cos(cell_center_lat)
     cos_lon = np.cos(cell_center_lon)
 
-    x = -1.0 *(sin_lon * u + sin_lat * sin_lon * v)
+    x = -1.0 * (sin_lon * u + sin_lat * sin_lon * v)
     y = cos_lon * u - sin_lat * sin_lon * v
     z = cos_lat * v
     cartesian_v = np.stack((x, y, z), axis=-1)
@@ -155,13 +154,9 @@ def zonal_meridional_component(
     return cartesian_v / norms[:, np.newaxis]
 
 
-    
-    
-
-
 def compute_rbf_interpolation_matrix(
-    cell_center_lat: data_alloc.NDArray, # fa.CellField[ta.wpfloat],
-    cell_center_lon: data_alloc.NDArray, # fa.CellField[ta.wpfloat],
+    cell_center_lat: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
+    cell_center_lon: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
     cell_center_x: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
     cell_center_y: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
     cell_center_z: data_alloc.NDArray,  # fa.CellField[ta.wpfloat],
@@ -174,10 +169,7 @@ def compute_rbf_interpolation_matrix(
     rbf_offset: data_alloc.NDArray,  # field_alloc.NDArray, [num_dim, RBFDimension(dim)]
     rbf_kernel: InterpolationKernel,
     scale_factor: float,
-)->tuple[data_alloc.NDArray, data_alloc.NDArray]:
-
-
-
+) -> tuple[data_alloc.NDArray, data_alloc.NDArray]:
     # compute neighbor list and create "cartesian coordinate" vectors (x,y,z) in last dimension
     # 1) get the rbf offset (neighbor list) - currently: input
     x_normal = edge_normal_x[rbf_offset]
@@ -194,12 +186,13 @@ def compute_rbf_interpolation_matrix(
 
     z_rbfmat = z_nxprod * kernel(rbf_kernel, z_dist, scale_factor)
 
-
     # 3) z_nx2, z_nx1
     ones = np.ones(cell_center_lat.shape, dtype=float)
     zeros = np.zeros(cell_center_lat.shape, dtype=float)
 
-    z_nx1 = zonal_meridional_component(cell_center_lat=cell_center_lat, cell_center_lon=cell_center_lon, u=ones, v=zeros)
+    z_nx1 = zonal_meridional_component(
+        cell_center_lat=cell_center_lat, cell_center_lon=cell_center_lon, u=ones, v=zeros
+    )
     z_nx2 = zonal_meridional_component(
         cell_center_lat=cell_center_lat, cell_center_lon=cell_center_lon, u=zeros, v=ones
     )
@@ -224,4 +217,3 @@ def compute_rbf_interpolation_matrix(
         rbf_vec_coeff_2[i, :] = sla.solve_triangular(z_diag, rhs2)
 
     return rbf_vec_coeff_1, rbf_vec_coeff_2
-

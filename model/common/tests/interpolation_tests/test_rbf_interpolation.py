@@ -35,7 +35,7 @@ def test_construct_rbf_matrix_offsets_tables_for_cells(grid_file):
         offset_table[i][6:] = c2e[c2e2c[i][2]]
 
 
-#TODO make cupy ready
+# TODO make cupy ready
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -64,13 +64,20 @@ def test_rbf_interpolation_matrix(grid_file, experiment, backend, interpolation_
     cell_center_z = geometry.get(geometry_attrs.CELL_CENTER_Z).asnumpy()
 
     rbf_vec_c1, rbf_vec_c2 = rbf.compute_rbf_interpolation_matrix(
-        cell_center_lat, cell_center_lon,
-        cell_center_x, cell_center_y, cell_center_z,
-        edge_x, edge_y, edge_z,
-        edge_normal_x, edge_normal_y, edge_normal_z,
+        cell_center_lat,
+        cell_center_lon,
+        cell_center_x,
+        cell_center_y,
+        cell_center_z,
+        edge_x,
+        edge_y,
+        edge_z,
+        edge_normal_x,
+        edge_normal_y,
+        edge_normal_z,
         offset_table,
         rbf.InterpolationKernel.GAUSSIAN,
-        1.0
+        1.0,
     )
     test_helpers.dallclose(rbf_vec_c1, rbf_vec_coeff_c1_ref)
     test_helpers.dallclose(rbf_vec_c2, rbf_vec_coeff_c2_ref)
