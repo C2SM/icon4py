@@ -13,11 +13,14 @@ from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
-    correct_contravariant_vertical_velocity,
+from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
+    add_extra_diffusion_for_w_con_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
-    copy_cell_kdim_field_to_vp,
+from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advection_of_w import (
+    add_interpolated_horizontal_advection_of_w,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
+    compute_advective_normal_wind_tendency,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_advective_vertical_wind_tendency import (
     compute_advective_vertical_wind_tendency,
@@ -25,33 +28,30 @@ from icon4py.model.atmosphere.dycore.stencils.compute_advective_vertical_wind_te
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     compute_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advection_of_w import (
-    add_interpolated_horizontal_advection_of_w,
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
+    compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
     compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
-    interpolate_to_half_levels_vp,
+from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
+from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
+    copy_cell_kdim_field_to_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
+    correct_contravariant_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     init_cell_kdim_field_with_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
-    add_extra_diffusion_for_w_con_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
-    compute_advective_normal_wind_tendency,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
-    compute_horizontal_advection_term_for_vertical_velocity,
-)
-from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
 from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical_velocity_to_full_levels import (
     interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
     interpolate_to_cell_center,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_half_levels_vp import (
+    interpolate_to_half_levels_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
@@ -73,7 +73,6 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.settings import xp
-from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
@@ -145,17 +144,15 @@ class VelocityAdvection:
         self._correct_contravariant_vertical_velocity = (
             correct_contravariant_vertical_velocity.with_backend(self._backend)
         )
-        self._copy_cell_kdim_field_to_vp = (
-            copy_cell_kdim_field_to_vp.with_backend(self._backend)
+        self._copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(self._backend)
+        self._compute_contravariant_correction = compute_contravariant_correction.with_backend(
+            self._backend
         )
-        self._compute_contravariant_correction = (
-            compute_contravariant_correction.with_backend(self._backend)
+        self._compute_horizontal_kinetic_energy = compute_horizontal_kinetic_energy.with_backend(
+            self._backend
         )
-        self._compute_horizontal_kinetic_energy = (
-            compute_horizontal_kinetic_energy.with_backend(self._backend)
-        )
-        self._init_cell_kdim_field_with_zero_vp = (
-            init_cell_kdim_field_with_zero_vp.with_backend(self._backend)
+        self._init_cell_kdim_field_with_zero_vp = init_cell_kdim_field_with_zero_vp.with_backend(
+            self._backend
         )
         self._add_extra_diffusion_for_w_con_approaching_cfl = (
             add_extra_diffusion_for_w_con_approaching_cfl.with_backend(self._backend)
@@ -239,19 +236,20 @@ class VelocityAdvection:
         self,
         vn_only: bool,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
-        prognostic_state: prognostics.PrognosticState,
         z_w_concorr_me: fa.EdgeKField[float],
         z_kin_hor_e: fa.EdgeKField[float],
         z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         ntnd: int,
         cell_areas: fa.CellField[float],
+        w_now,
+        vn_now,
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         if not vn_only:
             self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-                p_cell_in=prognostic_state.w,
+                p_cell_in=w_now,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
                 horizontal_start=self._start_vertex_lateral_boundary_level_2,
@@ -262,7 +260,7 @@ class VelocityAdvection:
             )
 
         self._mo_math_divrot_rot_vertex_ri_dsl(
-            vec_e=prognostic_state.vn,
+            vec_e=vn_now,
             geofac_rot=self.interpolation_state.geofac_rot,
             rot_vec=self.zeta,
             horizontal_start=self._start_vertex_lateral_boundary_level_2,
@@ -273,7 +271,7 @@ class VelocityAdvection:
         )
 
         self._compute_tangential_wind(
-            vn=prognostic_state.vn,
+            vn=vn_now,
             rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
             vt=diagnostic_state.vt,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
@@ -285,7 +283,7 @@ class VelocityAdvection:
 
         self._interpolate_vn_to_ie_and_compute_ekin_on_edges(
             wgtfac_e=self.metric_state.wgtfac_e,
-            vn=prognostic_state.vn,
+            vn=vn_now,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
             z_kin_hor_e=z_kin_hor_e,
@@ -309,7 +307,7 @@ class VelocityAdvection:
             )
 
         self._compute_contravariant_correction(
-            vn=prognostic_state.vn,
+            vn=vn_now,
             ddxn_z_full=self.metric_state.ddxn_z_full,
             ddxt_z_full=self.metric_state.ddxt_z_full,
             vt=diagnostic_state.vt,
@@ -322,7 +320,7 @@ class VelocityAdvection:
         )
 
         self._compute_horizontal_kinetic_energy(
-            vn=prognostic_state.vn,
+            vn=vn_now,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
             z_vt_ie=z_vt_ie,
@@ -336,7 +334,7 @@ class VelocityAdvection:
 
         self._extrapolate_at_top(
             wgtfacq_e=self.metric_state.wgtfacq_e,
-            vn=prognostic_state.vn,
+            vn=vn_now,
             vn_ie=diagnostic_state.vn_ie,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
@@ -349,7 +347,7 @@ class VelocityAdvection:
             self._compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
-                w=prognostic_state.w,
+                w=w_now,
                 z_vt_ie=z_vt_ie,
                 inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
                 tangent_orientation=self.edge_params.tangent_orientation,
@@ -396,7 +394,7 @@ class VelocityAdvection:
         )
 
         self._copy_cell_kdim_field_to_vp(
-            field=prognostic_state.w,
+            field=w_now,
             field_copy=self.z_w_con_c,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
@@ -455,7 +453,7 @@ class VelocityAdvection:
         if not vn_only:
             self._compute_advective_vertical_wind_tendency(
                 z_w_con_c=self.z_w_con_c,
-                w=prognostic_state.w,
+                w=w_now,
                 coeff1_dwdz=self.metric_state.coeff1_dwdz,
                 coeff2_dwdz=self.metric_state.coeff2_dwdz,
                 ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
@@ -485,7 +483,7 @@ class VelocityAdvection:
                 ddqz_z_half=self.metric_state.ddqz_z_half,
                 area=cell_areas,
                 geofac_n2s=self.interpolation_state.geofac_n2s,
-                w=prognostic_state.w,
+                w=w_now,
                 ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
                 scalfac_exdiff=scalfac_exdiff,
                 cfl_w_limit=cfl_w_limit,
@@ -530,7 +528,7 @@ class VelocityAdvection:
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
-            vn=prognostic_state.vn,
+            vn=vn_now,
             ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
@@ -558,18 +556,19 @@ class VelocityAdvection:
         self,
         vn_only: bool,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
-        prognostic_state: prognostics.PrognosticState,
         z_kin_hor_e: fa.EdgeKField[float],
         z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         ntnd: int,
         cell_areas: fa.CellField[float],
+        w_new,
+        vn_new,
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         if not vn_only:
             self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-                p_cell_in=prognostic_state.w,
+                p_cell_in=w_new,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
                 horizontal_start=self._start_vertex_lateral_boundary_level_2,
@@ -580,7 +579,7 @@ class VelocityAdvection:
             )
 
         self._mo_math_divrot_rot_vertex_ri_dsl(
-            vec_e=prognostic_state.vn,
+            vec_e=vn_new,
             geofac_rot=self.interpolation_state.geofac_rot,
             rot_vec=self.zeta,
             horizontal_start=self._start_vertex_lateral_boundary_level_2,
@@ -594,7 +593,7 @@ class VelocityAdvection:
             self._compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
-                w=prognostic_state.w,
+                w=w_new,
                 z_vt_ie=z_vt_ie,
                 inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
                 tangent_orientation=self.edge_params.tangent_orientation,
@@ -619,7 +618,7 @@ class VelocityAdvection:
         )
 
         self._copy_cell_kdim_field_to_vp(
-            field=prognostic_state.w,
+            field=w_new,
             field_copy=self.z_w_con_c,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
@@ -675,7 +674,7 @@ class VelocityAdvection:
 
         self._compute_advective_vertical_wind_tendency(
             z_w_con_c=self.z_w_con_c,
-            w=prognostic_state.w,
+            w=w_new,
             coeff1_dwdz=self.metric_state.coeff1_dwdz,
             coeff2_dwdz=self.metric_state.coeff2_dwdz,
             ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
@@ -705,7 +704,7 @@ class VelocityAdvection:
             ddqz_z_half=self.metric_state.ddqz_z_half,
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
-            w=prognostic_state.w,
+            w=w_new,
             ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
@@ -749,7 +748,7 @@ class VelocityAdvection:
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
-            vn=prognostic_state.vn,
+            vn=vn_new,
             ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
