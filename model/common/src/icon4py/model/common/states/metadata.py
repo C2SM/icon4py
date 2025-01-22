@@ -107,14 +107,7 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         dims=(dims.EdgeDim,),
         icon_var_name="refin_e_ctrl",
     ),
-    "vct_a": dict(
-        standard_name="vct_a",
-        units="",
-        dims=(dims.KDim),
-        dtype=ta.wpfloat,
-        icon_var_name="vct_a",
-        long_name="grid savepoint field",
-    ),
+   
     "c_refin_ctrl": dict(
         standard_name="c_refin_ctrl",
         units="",
