@@ -60,6 +60,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
         inv_dual_edge_length.asnumpy(),
         edge_owner_mask.asnumpy(),
         horizontal_start,
+        xp,
     )
     assert test_helpers.dallclose(c_lin_e, c_lin_e_ref.asnumpy())
 
@@ -203,7 +204,7 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
         e2c2e,
         horizontal_start,
     )
-    assert test_helpers.dallclose(data_alloc.as_numpy(geofac_grdiv), geofac_grdiv_ref.asnumpy())
+    assert test_helpers.dallclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -306,9 +307,7 @@ def test_compute_cells_aw_verts(
         e2c=e2c,
         horizontal_start=horizontal_start_vertex,
     )
-    assert test_helpers.dallclose(
-        data_alloc.as_numpy(cells_aw_verts), cells_aw_verts_ref.asnumpy(), atol=1e-3
-    )
+    assert test_helpers.dallclose(data_alloc.as_numpy(cells_aw_verts), cells_aw_verts_ref)
 
 
 @pytest.mark.datatest

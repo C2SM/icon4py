@@ -17,7 +17,6 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.metrics.metric_fields import (
     _compute_flat_idx,
-    _compute_z_aux2,
     compute_z_mc,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -62,7 +61,8 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     )
     flat_idx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
     _compute_flat_idx(
-        z_me=z_me,
+        z_mc=z_mc,
+        c_lin_e=interpolation_savepoint.c_lin_e(),
         z_ifc=z_ifc,
         k_lev=k_lev,
         out=flat_idx,
@@ -77,32 +77,19 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     )
     flat_idx_np = np.amax(flat_idx.asnumpy(), axis=1)
     z_ifc_sliced = gtx.as_field(
-        (dims.CellDim,), z_ifc.asnumpy()[:, icon_grid.num_levels], allocator=backend
-    )
-    z_aux2 = data_alloc.zero_field(icon_grid, dims.EdgeDim, backend=backend)
-    _compute_z_aux2(
-        z_ifc=z_ifc_sliced,
-        out=z_aux2,
-        domain={dims.EdgeDim: (start_nudging, icon_grid.num_edges)},
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
+        (dims.CellDim,), z_ifc.asnumpy()[:, icon_grid.num_levels], backend=backend
     )
 
-    zdiff_gradp_full_np = compute_zdiff_gradp_dsl(
+    zdiff_gradp_full_field = compute_zdiff_gradp_dsl(
         e2c=icon_grid.connectivities[dims.E2CDim],
-        z_me=z_me.asnumpy(),
         z_mc=z_mc.asnumpy(),
+        c_lin_e=interpolation_savepoint.c_lin_e().asnumpy(),
         z_ifc=metrics_savepoint.z_ifc().asnumpy(),
         flat_idx=flat_idx_np,
-        z_aux2=z_aux2.asnumpy(),
+        z_ifc_sliced=z_ifc_sliced.asnumpy(),
         nlev=icon_grid.num_levels,
         horizontal_start=horizontal_start_edge,
         horizontal_start_1=start_nudging,
-        nedges=icon_grid.num_edges,
     )
-    zdiff_gradp_full_field = data_alloc.flatten_first_two_dims(
-        dims.ECDim,
-        dims.KDim,
-        field=gtx.as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp_full_np),
-        backend=backend,
-    )
-    assert dallclose(zdiff_gradp_full_field.asnumpy(), zdiff_gradp_ref.asnumpy(), rtol=1.0e-5)
+
+    assert dallclose(zdiff_gradp_full_field, zdiff_gradp_ref.asnumpy(), rtol=1.0e-5)
