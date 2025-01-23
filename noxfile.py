@@ -84,8 +84,6 @@ def test_model_stencils(session: nox.Session, subpackage: ModelSubpackagePath) -
     }
     if subpackage in notest_subpackages:
         session.skip("no tests configured")
-    elif subpackage == "common":
-        session.skip("tests broken")  # TODO: Enable tests
     else:
         session.notify(
             f"test_model-{session.python}(selection='stencils', subpackage='{subpackage}')"
