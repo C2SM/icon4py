@@ -230,9 +230,9 @@ def orchestrate(
         #     for array_name, array in sdfg.arrays.items():
         #         if 'connectivity' in array_name or '__g' in array_name:
         #             closure_dict[array_name] = copy.copy(array)
-        # wrapper.__sdfg_closure__ = __sdfg_closure__
-            
+        #
         #     return closure_dict
+        # wrapper.__sdfg_closure__ = __sdfg_closure__
 
         # def __sdfg_signature__(*args, **kwargs):
         #     l_ = []
