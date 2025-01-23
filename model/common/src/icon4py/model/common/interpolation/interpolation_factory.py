@@ -226,7 +226,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edges_lon": geometry_attrs.EDGE_LON,
             },
             connectivities={"c2e": dims.C2EDim},
-            params={self._config["weighting_factor"]},
+            params={"weighting_factor": self._config["weighting_factor"]},
         )
         self.register_provider(e_bln_c_s)
 
