@@ -464,18 +464,6 @@ class GridGeometry(factory.FieldSource):
         )
         self.register_provider(tangent_cell_wrapper)
 
-        primal_cart_normal = factory.NumpyFieldsProvider(
-            func=functools.partial(stencils.compute_primal_cart_normal, array_ns=self._xp),
-            fields=(attrs.EDGE_NORMAL,),
-            domain=(dims.EdgeDim, dims.E2CDim),
-            deps={
-                "primal_cart_normal_x": attrs.EDGE_NORMAL_X,
-                "primal_cart_normal_y": attrs.EDGE_NORMAL_Y,
-                "primal_cart_normal_z": attrs.EDGE_NORMAL_Z,
-            },
-        )
-        self.register_provider(primal_cart_normal)
-
     def _inverse_field_provider(self, field_name: str):
         meta = attrs.metadata_for_inverse(attrs.attrs[field_name])
         name = meta["standard_name"]

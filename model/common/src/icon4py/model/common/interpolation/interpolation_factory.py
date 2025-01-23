@@ -194,7 +194,9 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "c_bln_avg": attrs.C_BLN_AVG,
                 "geofac_div": attrs.GEOFAC_DIV,
                 "owner_mask": "edge_owner_mask",
-                "primal_cart_normal": geometry_attrs.EDGE_NORMAL,
+                "primal_cart_normal_x": geometry_attrs.EDGE_NORMAL_X,
+                "primal_cart_normal_y": geometry_attrs.EDGE_NORMAL_Y,
+                "primal_cart_normal_z": geometry_attrs.EDGE_NORMAL_Z,
             },
             connectivities={
                 "e2c": dims.E2CDim,

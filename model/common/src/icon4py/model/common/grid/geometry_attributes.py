@@ -54,7 +54,6 @@ EDGE_TANGENT_CELL_V: Final[str] = "northward_component_of_edge_tangent_on_cell"
 EDGE_NORMAL_X: Final[str] = "x_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_Y: Final[str] = "y_component_of_edge_normal_unit_vector"
 EDGE_NORMAL_Z: Final[str] = "z_component_of_edge_normal_unit_vector"
-EDGE_NORMAL: Final[str] = "primal_cart_normal"
 EDGE_NORMAL_U: Final[str] = "eastward_component_of_edge_normal"
 EDGE_NORMAL_V: Final[str] = "northward_component_of_edge_normal"
 EDGE_DUAL_U: Final[str] = "eastward_component_of_edge_tangent"
@@ -208,14 +207,6 @@ attrs: dict[str, model.FieldMetaData] = {
         units="m",
         dims=(dims.EdgeDim,),
         icon_var_name="t_grid_edges%dual_cart_normal%x(3)",
-        dtype=ta.wpfloat,
-    ),
-    EDGE_NORMAL: dict(
-        standard_name=EDGE_NORMAL,
-        long_name=EDGE_NORMAL,
-        units="m",
-        dims=(dims.EdgeDim, dims.E2CDim),
-        icon_var_name="t_grid_edges%dual_cart_normal%x",
         dtype=ta.wpfloat,
     ),
     EDGE_NORMAL_U: dict(
