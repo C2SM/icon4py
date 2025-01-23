@@ -19,7 +19,7 @@ import icon4py.model.atmosphere.diffusion.stencils as diffusion
 import icon4py.model.atmosphere.dycore.stencils as dycore
 import icon4py.model.common.interpolation.stencils as intp
 import icon4py.model.common.type_alias as type_alias
-from icon4pytools.icon4pygen.cli import main
+from icon4py.tools.icon4pygen.cli import main
 
 from .conftest import get_stencil_module_path
 

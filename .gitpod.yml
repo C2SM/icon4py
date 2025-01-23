@@ -9,8 +9,8 @@ tasks:
           cp .gitpod/.vscode/* .vscode/
           python -m venv .venv
           source .venv/bin/activate
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements-dev.txt
+          pip install --upgrade pip setuptools wheel uv
+          uv sync --extra dace --extra io --extra testing
           pre-commit install --install-hooks
           deactivate
       command: |

@@ -12,7 +12,7 @@ import subprocess
 import pytest
 from click.testing import CliRunner
 
-from icon4pytools.py2fgen.cli import main
+from icon4py.tools.py2fgen.cli import main
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def cli_runner():
 
 @pytest.fixture
 def square_wrapper_module():
-    return "icon4pytools.py2fgen.wrappers.simple"
+    return "icon4py.tools.py2fgen.wrappers.simple"
 
 
 def compile_fortran_code(
@@ -227,7 +227,7 @@ def test_py2fgen_compilation_and_profiling(
 def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_path, test_temp_dir):
     run_test_case(
         cli_runner,
-        "icon4pytools.py2fgen.wrappers.diffusion_wrapper",
+        "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
         "diffusion_init,diffusion_run,profile_enable,profile_disable",
         "diffusion_plugin",
         "GPU",
@@ -245,7 +245,7 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
 def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, test_temp_dir):
     run_test_case(
         cli_runner,
-        "icon4pytools.py2fgen.wrappers.diffusion_wrapper",
+        "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
         "diffusion_init,diffusion_run,profile_enable,profile_disable",
         "diffusion_plugin",
         "CPU",
@@ -260,7 +260,7 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, t
 def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test_temp_dir):
     run_test_case(
         cli_runner,
-        "icon4pytools.py2fgen.wrappers.dycore_wrapper",
+        "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
         "solve_nh_init,solve_nh_run,grid_init,profile_enable,profile_disable",
         "dycore_plugin",
         "CPU",
@@ -275,7 +275,7 @@ def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test
 def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path, test_temp_dir):
     run_test_case(
         cli_runner,
-        "icon4pytools.py2fgen.wrappers.dycore_wrapper",
+        "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
         "solve_nh_init,solve_nh_run,profile_enable,profile_disable",
         "dycore_plugin",
         "GPU",
