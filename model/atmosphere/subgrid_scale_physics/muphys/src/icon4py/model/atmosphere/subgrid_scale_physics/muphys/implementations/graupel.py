@@ -9,7 +9,7 @@ import gt4py.next as gtx
 
 from gt4py.next.ffront.fbuiltins import where, maximum, minimum, power
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties.fall_speed import _fall_speed
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import _qsat_rho, _qsat_ice_rho
 
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
