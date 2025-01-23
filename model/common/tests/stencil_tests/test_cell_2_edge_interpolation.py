@@ -22,8 +22,13 @@ class TestCell2EdgeInterpolation(helpers.StencilTest):
     OUTPUTS = ("out_field",)
 
     @staticmethod
-    def reference(grid, in_field: np.array, coeff: np.array, **kwargs) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        in_field: np.ndarray,
+        coeff: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        e2c = connectivities[dims.E2CDim]
         coeff_ = np.expand_dims(coeff, axis=-1)
         out_field = np.sum(in_field[e2c] * coeff_, axis=1)
 

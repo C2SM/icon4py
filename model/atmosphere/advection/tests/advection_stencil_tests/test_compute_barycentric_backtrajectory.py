@@ -24,21 +24,21 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_vn: np.array,
-        p_vt: np.array,
-        cell_idx: np.array,
-        cell_blk: np.array,
-        pos_on_tplane_e_1: np.array,
-        pos_on_tplane_e_2: np.array,
-        primal_normal_cell_1: np.array,
-        dual_normal_cell_1: np.array,
-        primal_normal_cell_2: np.array,
-        dual_normal_cell_2: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_vn: np.ndarray,
+        p_vt: np.ndarray,
+        cell_idx: np.ndarray,
+        cell_blk: np.ndarray,
+        pos_on_tplane_e_1: np.ndarray,
+        pos_on_tplane_e_2: np.ndarray,
+        primal_normal_cell_1: np.ndarray,
+        dual_normal_cell_1: np.ndarray,
+        primal_normal_cell_2: np.ndarray,
+        dual_normal_cell_2: np.ndarray,
         p_dthalf: float,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         cell_idx = cell_idx.reshape(e2c.shape)
         cell_blk = cell_blk.reshape(e2c.shape)
         pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)

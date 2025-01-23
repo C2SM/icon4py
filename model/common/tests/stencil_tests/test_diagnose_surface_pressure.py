@@ -23,13 +23,14 @@ class TestDiagnoseSurfacePressure(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        exner: np.array,
-        virtual_temperature: np.array,
-        ddqz_z_full: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        exner: np.ndarray,
+        virtual_temperature: np.ndarray,
+        ddqz_z_full: np.ndarray,
         **kwargs,
     ) -> dict:
-        surface_pressure = np.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
+        shape = virtual_temperature.shape
+        surface_pressure = np.zeros((shape[0], shape[1] + 1), dtype=ta.wpfloat)
         surface_pressure[:, -1] = phy_const.P0REF * np.exp(
             phy_const.CPD_O_RD * np.log(exner[:, -3])
             + phy_const.GRAV_O_RD
