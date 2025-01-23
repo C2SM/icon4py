@@ -500,7 +500,7 @@ class ProgramFieldProvider(FieldProvider):
     ) -> None:
         try:
             metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
-            dtype = {k: metadata[k]["dtype"] for k in self._output.keys()}
+            dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
         except (ValueError, KeyError):
             dtype = ta.wpfloat
 
