@@ -1463,7 +1463,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/edopao/gt4py?branch=gtir-dace#9d8dc9bec16b2f6300f045443754b52c9a144b3e" }
+source = { git = "https://github.com/edopao/gt4py?branch=gtir-dace#f74340626100e2d8df3bde0af31e915f60ee2563" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
