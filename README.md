@@ -1,5 +1,6 @@
 [![Open in Gitpod](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod)](https://gitpod.io/#https://github.com/C2SM/icon4py)
 [![Nox](https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg)](https://github.com/wntrblm/nox)
+[![Open the docs](https://readthedocs.org/projects/docs/badge/?version=latest)](https://c2sm.github.io/icon4py)
 
 
 # ICON4Py
@@ -114,18 +115,17 @@ We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) 
 
 ### Documentation
 
-The documentation is at a very early stage given the constant state of development. Some effort is ongoing to document the dycore and can be compiled as follows.
+Documentation is at a very early stage given the constant state of development.
+Ongoing efforts to document the dycore can be viewed at [c2sm.github.io/icon4py](https://c2sm.github.io/icon4py).
 
-You can install the required packages by using the provided `requirements-dev.txt` file in the root of the repository.
-
-Then move to the dycore docs folder and build the html documentation with the provided makefile:
+To build the html documentation locally in icon4py starting from the most upwards directory, apply the following commands: 
 
 ```bash
 cd model/atmosphere/dycore/docs
 make html
 ```
 
-The documentation can then be accessed at `docs/_build/html/index.html`
+The local documentation can then be accessed at `docs/_build/html/index.html`
 
 ### More Information
 
