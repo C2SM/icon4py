@@ -502,7 +502,7 @@ class ProgramFieldProvider(FieldProvider):
             metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
             dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
         except (ValueError, KeyError):
-            dtype = ta.wpfloat
+            dtype = {v: ta.wpfloat for v in self._output.values()}
 
         self._fields = self._allocate(backend, grid_provider.grid, dtype=dtype)
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
