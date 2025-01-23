@@ -605,29 +605,12 @@ def test_tangent_orientation(grid_file, grid_savepoint, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
-    expected = grid_savepoint.edge_orientation()
-    manager = _run_grid_manager(grid_file, backend=backend)
-    geometry_fields = manager.geometry
-    assert helpers.dallclose(
-        geometry_fields[GeometryName.CELL_NORMAL_ORIENTATION].ndarray, expected.ndarray
-    )
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 def test_edge_orientation_on_vertex(grid_file, grid_savepoint, backend):
     expected = grid_savepoint.vertex_edge_orientation()
     manager = _run_grid_manager(grid_file, backend=backend)
     geometry_fields = manager.geometry
     assert helpers.dallclose(
-        geometry_fields[GeometryName.EDGE_ORIENTATION_ON_VERTEX].ndarray, expected.ndarray
+        geometry_fields[GeometryName.EDGE_ORIENTATION_ON_VERTEX].asnumpy(), expected.asnumpy()
     )
 
 
@@ -643,7 +626,7 @@ def test_dual_area(grid_file, grid_savepoint, backend):
     expected = grid_savepoint.vertex_dual_area()
     manager = _run_grid_manager(grid_file, backend=backend)
     geometry_fields = manager.geometry
-    assert helpers.dallclose(geometry_fields[GeometryName.DUAL_AREA].ndarray, expected.ndarray)
+    assert helpers.dallclose(geometry_fields[GeometryName.DUAL_AREA].asnumpy(), expected.asnumpy())
 
 
 @pytest.mark.datatest
@@ -661,6 +644,43 @@ def test_edge_cell_distance(grid_file, grid_savepoint, backend):
 
     assert helpers.dallclose(
         geometry_fields[GeometryName.EDGE_CELL_DISTANCE].asnumpy(),
+        expected.asnumpy(),
+        equal_nan=True,
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
+    expected = grid_savepoint.edge_orientation()
+    manager = _run_grid_manager(grid_file, backend=backend)
+    geometry_fields = manager.geometry
+    assert helpers.dallclose(
+        geometry_fields[GeometryName.CELL_NORMAL_ORIENTATION].asnumpy(), expected.asnumpy()
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_edge_vertex_distance(grid_file, grid_savepoint, backend):
+    expected = grid_savepoint.edge_vert_length()
+    manager = _run_grid_manager(grid_file, backend=backend)
+    geometry_fields = manager.geometry
+
+    assert helpers.dallclose(
+        geometry_fields[GeometryName.EDGE_VERTEX_DISTANCE].asnumpy(),
         expected.asnumpy(),
         equal_nan=True,
     )
