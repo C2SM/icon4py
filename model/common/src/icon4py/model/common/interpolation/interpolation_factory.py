@@ -186,7 +186,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(geofac_grg)
 
         cells_aw_verts = factory.NumpyFieldsProvider(
-            func=functools.partial(interpolation_fields.compute_cells_aw_verts),
+            func=functools.partial(interpolation_fields.compute_cells_aw_verts, array_ns=self._xp),
             fields=(attrs.CELL_AW_VERTS,),
             domain=(dims.VertexDim, dims.V2CDim),
             deps={

@@ -282,10 +282,8 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_cells_aw_verts(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
-):
-    cells_aw_verts_ref = interpolation_savepoint.c_intp()
+def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_grid, backend):
+    cells_aw_verts_ref = interpolation_savepoint.c_intp().ndarray
     dual_area = grid_savepoint.vertex_dual_area().ndarray
     edge_vert_length = grid_savepoint.edge_vert_length().ndarray
     edge_cell_length = grid_savepoint.edge_cell_length().ndarray

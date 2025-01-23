@@ -294,6 +294,7 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
     )
 
 
+# TODO (halungge) does this test the right thing? final assert and test name do not match...
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_ddxt_z_full_e(
@@ -326,7 +327,7 @@ def test_compute_ddxt_z_full_e(
     ddxn_z_half_e = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
-    compute_ddxn_z_half_e(
+    compute_ddxn_z_half_e.with_backend(backend)(
         z_ifc=z_ifc,
         inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
         ddxn_z_half_e=ddxn_z_half_e,
@@ -559,7 +560,7 @@ def test_compute_vwind_impl_wgt(
     )
     horizontal_end_edge = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
 
-    compute_ddxt_z_half_e(
+    compute_ddxt_z_half_e.with_backend(backend)(
         cell_in=z_ifc,
         c_int=interpolation_savepoint.c_intp(),
         inv_primal_edge_length=inv_primal_edge_length,
@@ -581,7 +582,7 @@ def test_compute_vwind_impl_wgt(
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
     vwind_offctr = 0.2 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.15
-
+    xp = data_alloc.import_array_ns(backend)
     vwind_impl_wgt = compute_vwind_impl_wgt(
         c2e=icon_grid.connectivities[dims.C2EDim],
         vct_a=grid_savepoint.vct_a().asnumpy(),
@@ -593,6 +594,7 @@ def test_compute_vwind_impl_wgt(
         nlev=icon_grid.num_levels,
         horizontal_start_cell=horizontal_start_cell,
         n_cells=icon_grid.num_cells,
+        array_ns=xp,
     )
     assert testing_helpers.dallclose(
         vwind_impl_wgt_ref.asnumpy(), data_alloc.as_numpy(vwind_impl_wgt)
@@ -645,7 +647,7 @@ def test_compute_pg_exdist_dsl(
     z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     flat_idx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
     z_ifc = metrics_savepoint.z_ifc()
-    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, nlev], alocator=backend)
+    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, nlev], allocator=backend)
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
     horizontal_start_edge = icon_grid.start_index(

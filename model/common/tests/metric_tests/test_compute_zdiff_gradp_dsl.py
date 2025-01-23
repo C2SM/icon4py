@@ -75,9 +75,10 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
             "Koff": icon_grid.get_offset_provider("Koff"),
         },
     )
-    flat_idx_np = np.amax(flat_idx.asnumpy(), axis=1)
+    xp = data_alloc.import_array_ns(backend)
+    flat_idx_np = xp.amax(flat_idx.ndarray, axis=1)
     z_ifc_sliced = gtx.as_field(
-        (dims.CellDim,), z_ifc.asnumpy()[:, icon_grid.num_levels], backend=backend
+        (dims.CellDim,), z_ifc.ndarray[:, icon_grid.num_levels], allocator=backend
     )
 
     zdiff_gradp_full_field = compute_zdiff_gradp_dsl(
