@@ -35,6 +35,8 @@ class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if grid.get_offset_provider("C2E2C2E").has_skip_values:
+            pytest.xfail("Stencil does not support missing neighbors.")
         p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         ptr_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
         ptr_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
