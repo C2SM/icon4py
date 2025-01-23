@@ -459,13 +459,13 @@ def test_compute_ddxt_z_full(
     horizontal_end_edge = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
-    cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
+    cells_aw_verts = interpolation_savepoint.c_intp()
     ddxt_z_half_e = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
     compute_ddxt_z_half_e.with_backend(backend)(
         cell_in=z_ifc,
-        c_int=gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts),
+        c_int=cells_aw_verts,
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
         ddxt_z_half_e=ddxt_z_half_e,
@@ -489,14 +489,12 @@ def test_compute_ddxt_z_full(
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert np.allclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref)
+    assert testing_helpers.dallclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref, rtol=1e-12)
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_exner_exfac(
-    grid_savepoint, experiment, interpolation_savepoint, icon_grid, metrics_savepoint, backend
-):
+def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
     if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
 
@@ -585,11 +583,11 @@ def test_compute_vwind_impl_wgt(
     xp = data_alloc.import_array_ns(backend)
     vwind_impl_wgt = compute_vwind_impl_wgt(
         c2e=icon_grid.connectivities[dims.C2EDim],
-        vct_a=grid_savepoint.vct_a().asnumpy(),
-        z_ifc=metrics_savepoint.z_ifc().asnumpy(),
-        z_ddxn_z_half_e=z_ddxn_z_half_e.asnumpy(),
-        z_ddxt_z_half_e=z_ddxt_z_half_e.asnumpy(),
-        dual_edge_length=dual_edge_length.asnumpy(),
+        vct_a=grid_savepoint.vct_a().ndarray,
+        z_ifc=metrics_savepoint.z_ifc().ndarray,
+        z_ddxn_z_half_e=z_ddxn_z_half_e.ndarray,
+        z_ddxt_z_half_e=z_ddxt_z_half_e.ndarray,
+        dual_edge_length=dual_edge_length.ndarray,
         vwind_offctr=vwind_offctr,
         nlev=icon_grid.num_levels,
         horizontal_start_cell=horizontal_start_cell,
@@ -647,7 +645,7 @@ def test_compute_pg_exdist_dsl(
     z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     flat_idx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
     z_ifc = metrics_savepoint.z_ifc()
-    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, nlev], allocator=backend)
+    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
     horizontal_start_edge = icon_grid.start_index(

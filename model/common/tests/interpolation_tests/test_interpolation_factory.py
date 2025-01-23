@@ -251,6 +251,8 @@ def test_get_mass_conserving_cell_average_weight(
 )
 @pytest.mark.datatest
 def test_cells_aw_verts(interpolation_savepoint, grid_file, experiment, backend, rtol):
+    if data_alloc.is_cupy_device(backend):
+        pytest.skip("skipping: gpu backend is unsupported")
     field_ref = interpolation_savepoint.c_intp()
     factory = get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
