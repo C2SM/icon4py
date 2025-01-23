@@ -522,7 +522,7 @@ if dace:
         return {
             # connectivity tables at runtime
             **{
-                gtir_dace_utils.connectivity_identifier(k): v.ndarray
+                gtx_dace_utils.connectivity_identifier(k): v.ndarray
                 for k, v in offset_providers.items()
                 if hasattr(v, "ndarray")
             },
