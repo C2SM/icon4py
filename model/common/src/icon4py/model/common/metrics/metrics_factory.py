@@ -100,6 +100,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         k_index = gtx.as_field((dims.KDim,), np.arange(self._grid.num_levels + 1, dtype=gtx.int32))
         e_lev = gtx.as_field((dims.EdgeDim,), np.arange(self._grid.num_edges, dtype=gtx.int32))
+        e_owner_mask = gtx.as_field(
+            (dims.EdgeDim,), self._decomposition_info.owner_mask(dims.EdgeDim)
+        )
+        c_owner_mask = gtx.as_field(
+            (dims.CellDim,), self._decomposition_info.owner_mask(dims.CellDim)
+        )
 
         self.register_provider(
             factory.PrecomputedFieldProvider(
@@ -109,8 +115,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "vct_a": vct_a,
                     "c_refin_ctrl": c_refin_ctrl,
                     "e_refin_ctrl": e_refin_ctrl,
-                    "e_owner_mask": self._decomposition_info.owner_mask(dims.EdgeDim),
-                    "c_owner_mask": self._decomposition_info.owner_mask(dims.CellDim),
+                    "e_owner_mask": e_owner_mask,
+                    "c_owner_mask": c_owner_mask,
                     "k_lev": k_index,
                     "e_lev": e_lev,
                 }

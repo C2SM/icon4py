@@ -119,4 +119,4 @@ def compute_zdiff_gradp_dsl(
     zdiff_gradp_full_field = zdiff_gradp.reshape(
         (zdiff_gradp.shape[0] * zdiff_gradp.shape[1],) + zdiff_gradp.shape[2:]
     )
-    return zdiff_gradp_full_field.asnumpy()
+    return zdiff_gradp_full_field
