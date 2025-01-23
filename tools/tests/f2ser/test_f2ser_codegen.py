@@ -8,10 +8,10 @@
 
 import pytest
 
-from icon4pytools.f2ser.deserialise import ParsedGranuleDeserialiser
-from icon4pytools.f2ser.parse import GranuleParser
-from icon4pytools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
-from icon4pytools.liskov.codegen.shared.types import GeneratedCode
+from icon4py.tools.f2ser.deserialise import ParsedGranuleDeserialiser
+from icon4py.tools.f2ser.parse import GranuleParser
+from icon4py.tools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
+from icon4py.tools.liskov.codegen.shared.types import GeneratedCode
 
 
 def test_deserialiser_diffusion_codegen(diffusion_granule, diffusion_granule_deps):

@@ -8,8 +8,8 @@
 
 import pytest
 
-from icon4pytools.f2ser.exceptions import MissingDerivedTypeError, ParsingError
-from icon4pytools.f2ser.parse import CodegenContext, GranuleParser
+from icon4py.tools.f2ser.exceptions import MissingDerivedTypeError, ParsingError
+from icon4py.tools.f2ser.parse import CodegenContext, GranuleParser
 
 
 def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
