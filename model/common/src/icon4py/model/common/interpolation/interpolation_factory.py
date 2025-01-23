@@ -48,7 +48,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
-        self._config = {"divavg_cntrwgt": 0.5}
+        self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0}
         self._register_computed_fields()
 
     def __repr__(self):
@@ -224,7 +224,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "edges_lon": geometry_attrs.EDGE_LON,
             },
             connectivities={"c2e": dims.C2EDim},
-            params={"weighting_factor": 0.0},
+            params={self._config["weighting_factor"]},
         )
         self.register_provider(e_bln_c_s)
 

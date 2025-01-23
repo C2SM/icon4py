@@ -338,7 +338,7 @@ attrs: dict[str, model.FieldMetaData] = {
         dtype=ta.wpfloat,
     ),
     EDGE_DUAL_V: dict(
-        standard_name=northward component of the dual edge (edge tangent)",
+        standard_name="northward component of the dual edge (edge tangent)",
         long_name="ptr_patch%edges%dual_normal_vert_y",
         units="",  # TODO
         dims=(dims.EdgeDim,),
