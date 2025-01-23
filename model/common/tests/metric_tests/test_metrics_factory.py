@@ -15,7 +15,6 @@ from icon4py.model.common.metrics import (
     metrics_attributes as attrs,
     metrics_factory,
 )
-from icon4py.model.common.metrics.metrics_factory import MetricsConfig
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -26,6 +25,41 @@ from icon4py.model.testing import (
 metrics_factories = {}
 
 
+def metrics_config(experiment: str) -> tuple:
+    rayleigh_coeff = 5.0
+    lowest_layer_thickness = 50.0
+    exner_expol = 0.333
+    vwind_offctr = 0.2
+    rayleigh_type = 2
+    model_top_height = 23500.0
+    stretch_factor = 1.0
+    damping_height = 45000.0
+    match experiment:
+        case dt_utils.REGIONAL_EXPERIMENT:
+            lowest_layer_thickness = 20.0
+            model_top_height = 23000.0
+            stretch_factor = 0.65
+            damping_height = 12500.0
+        case dt_utils.GLOBAL_EXPERIMENT:
+            model_top_height = 75000.0
+            stretch_factor = 0.9
+            damping_height = 50000.0
+            rayleigh_coeff = 0.1
+            exner_expol = 0.3333333333333
+            vwind_offctr = 0.15
+
+    return (
+        lowest_layer_thickness,
+        model_top_height,
+        stretch_factor,
+        damping_height,
+        rayleigh_coeff,
+        exner_expol,
+        vwind_offctr,
+        rayleigh_type,
+    )
+
+
 def get_metrics_factory(
     backend, experiment, grid_file, grid_savepoint, metrics_savepoint
 ) -> metrics_factory.MetricsFieldsFactory:
@@ -34,17 +68,23 @@ def get_metrics_factory(
 
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)
-        metric_config = MetricsConfig(
-            experiment=experiment,
-            global_experiment=dt_utils.GLOBAL_EXPERIMENT,
-            regional_experiment=dt_utils.REGIONAL_EXPERIMENT,
-        )
+        (
+            lowest_layer_thickness,
+            model_top_height,
+            stretch_factor,
+            damping_height,
+            rayleigh_coeff,
+            exner_expol,
+            vwind_offctr,
+            rayleigh_type,
+        ) = metrics_config(experiment)
+
         vertical_config = v_grid.VerticalGridConfig(
             geometry.grid.num_levels,
-            lowest_layer_thickness=metric_config.lowest_layer_thickness,
-            model_top_height=metric_config.model_top_height,
-            stretch_factor=metric_config.stretch_factor,
-            rayleigh_damping_height=metric_config.damping_height,
+            lowest_layer_thickness=lowest_layer_thickness,
+            model_top_height=model_top_height,
+            stretch_factor=stretch_factor,
+            rayleigh_damping_height=damping_height,
         )
         vertical_grid = v_grid.VerticalGrid(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
@@ -67,11 +107,11 @@ def get_metrics_factory(
             interface_model_height=metrics_savepoint.z_ifc(),
             e_refin_ctrl=grid_savepoint.refin_ctrl(dims.EdgeDim),
             c_refin_ctrl=grid_savepoint.refin_ctrl(dims.CellDim),
-            damping_height=metric_config.damping_height,
-            rayleigh_type=metric_config.rayleigh_type,
-            rayleigh_coeff=metric_config.rayleigh_coeff,
-            exner_expol=metric_config.exner_expol,
-            vwind_offctr=metric_config.vwind_offctr,
+            damping_height=damping_height,
+            rayleigh_type=rayleigh_type,
+            rayleigh_coeff=rayleigh_coeff,
+            exner_expol=exner_expol,
+            vwind_offctr=vwind_offctr,
         )
         metrics_factories[name] = factory
     return factory

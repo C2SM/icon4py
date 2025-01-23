@@ -9,9 +9,7 @@
 from types import ModuleType
 
 import numpy as np
-from gt4py.next import as_field
 
-from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -118,10 +116,7 @@ def compute_zdiff_gradp_dsl(
                         jk_start = jk1
                         break
 
-    zdiff_gradp_full_field = data_alloc.flatten_first_two_dims(
-        dims.ECDim,
-        dims.KDim,
-        field=as_field((dims.EdgeDim, dims.E2CDim, dims.KDim), zdiff_gradp),
+    zdiff_gradp_full_field = zdiff_gradp.reshape(
+        (zdiff_gradp.shape[0] * zdiff_gradp.shape[1],) + zdiff_gradp.shape[2:]
     )
-
     return zdiff_gradp_full_field.asnumpy()
