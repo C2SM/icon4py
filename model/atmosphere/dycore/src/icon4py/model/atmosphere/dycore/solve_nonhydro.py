@@ -869,7 +869,6 @@ class SolveNonhydro:
             f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {lprep_adv}"
         )
 
-        # # TODO: abishekg7 move this to tests
         if self.p_test_run:
             self._init_test_fields(
                 self.intermediate_fields.z_rho_e,

@@ -24,6 +24,7 @@ GEOFAC_GRG_Y: Final[str] = "geometrical_factor_for_green_gauss_gradient_y"
 E_FLX_AVG: Final[str] = "e_flux_average"
 POS_ON_TPLANE_E_X: Final[str] = "pos_on_tplane_e_x"
 POS_ON_TPLANE_E_Y: Final[str] = "pos_on_tplane_e_y"
+CELL_AW_VERTS: Final[str] = "cell_to_vertex_interpolation_factor_by_area_weighting"
 
 attrs: dict[str, model.FieldMetaData] = {
     C_LIN_E: dict(
@@ -120,6 +121,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO check or confirm
         dims=(dims.ECDim,),
         icon_var_name="pos_on_tplane_e_y",
+        dtype=ta.wpfloat,
+    ),
+    CELL_AW_VERTS: dict(
+        standard_name=CELL_AW_VERTS,
+        long_name="coefficient for interpolation from cells to verts by area weighting",
+        units="",
+        dims=(dims.VertexDim, dims.V2CDim),
+        icon_var_name="cells_aw_verts",
         dtype=ta.wpfloat,
     ),
 }
