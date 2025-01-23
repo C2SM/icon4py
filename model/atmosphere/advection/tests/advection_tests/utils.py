@@ -40,7 +40,7 @@ def construct_interpolation_state(
     savepoint: sb.InterpolationSavepoint,
 ) -> advection_states.AdvectionInterpolationState:
     return advection_states.AdvectionInterpolationState(
-        geofac_div=data_alloc.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.geofac_div()),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
@@ -76,30 +76,32 @@ def construct_diagnostic_init_state(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
-        hfl_tracer=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=icon_grid
-        ),  # exit field
-        vfl_tracer=data_alloc.allocate_zero_field(  # TODO (dastrm): should be KHalfDim
-            dims.CellDim, dims.KDim, is_halfdim=True, grid=icon_grid
+        hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim),  # exit field
+        vfl_tracer=data_alloc.zero_field(
+            icon_grid,
+            dims.CellDim,
+            dims.KDim,
+            extend={dims.KDim: 1},
         ),  # exit field
     )
 
 
 def construct_diagnostic_exit_state(
-    icon_grid, savepoint: sb.AdvectionInitSavepoint, ntracer: int
+    icon_grid,
+    savepoint: sb.AdvectionExitSavepoint,
+    ntracer: int,
 ) -> advection_states.AdvectionDiagnosticState:
-    zero_f = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
     return advection_states.AdvectionDiagnosticState(
-        airmass_now=zero_f,  # init field
-        airmass_new=zero_f,  # init field
-        grf_tend_tracer=zero_f,  # init field
+        airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
         hfl_tracer=savepoint.hfl_tracer(ntracer),
         vfl_tracer=savepoint.vfl_tracer(ntracer),
     )
 
 
 def construct_prep_adv(
-    icon_grid, savepoint: sb.AdvectionInitSavepoint
+    savepoint: sb.AdvectionInitSavepoint,
 ) -> advection_states.AdvectionPrepAdvState:
     return advection_states.AdvectionPrepAdvState(
         vn_traj=savepoint.vn_traj(),

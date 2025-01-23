@@ -155,14 +155,16 @@ def model_initialization_serialbox(
     )
 
     diagnostic_state = diagnostics.DiagnosticState(
-        pressure=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        pressure_ifc=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
+        pressure=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        pressure_ifc=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}),
+        temperature=data_alloc.zero_field(
+            grid,
+            dims.CellDim,
+            dims.KDim,
         ),
-        temperature=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        virtual_temperature=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        u=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        v=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        virtual_temperature=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        u=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
+        v=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
     prognostic_state_next = prognostics.PrognosticState(
@@ -177,7 +179,7 @@ def model_initialization_serialbox(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
         mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        vol_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim),
     )
 
     return (
@@ -386,13 +388,13 @@ def read_static_fields(
             pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
             pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
             rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=data_alloc.as_1D_sparse_field(
-                interpolation_savepoint.e_bln_c_s(), dims.CEDim
+            e_bln_c_s=data_alloc.flatten_first_two_dims(
+                dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
             ),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
             rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=data_alloc.as_1D_sparse_field(
-                interpolation_savepoint.geofac_div(), dims.CEDim
+            geofac_div=data_alloc.flatten_first_two_dims(
+                dims.CEDim, field=interpolation_savepoint.geofac_div()
             ),
             geofac_n2s=interpolation_savepoint.geofac_n2s(),
             geofac_grg_x=grg[0],
