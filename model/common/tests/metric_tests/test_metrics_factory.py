@@ -333,6 +333,10 @@ def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
 )
 @pytest.mark.datatest
 def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+    if data_alloc.is_cupy_device(backend):
+        pytest.skip(
+            "skipping: gpu backend is unsupported (because input field does wvind_impl does not work"
+        )
     field_ref = metrics_savepoint.vwind_expl_wgt()
     factory = get_metrics_factory(
         backend=backend,

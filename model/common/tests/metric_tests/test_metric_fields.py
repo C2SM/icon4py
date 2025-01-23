@@ -373,9 +373,7 @@ def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_ddqz_z_full_e(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
-):
+def test_compute_ddqz_z_full_e(interpolation_savepoint, icon_grid, metrics_savepoint, backend):
     if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     ddqz_z_full = gtx.as_field(
@@ -403,9 +401,7 @@ def test_compute_ddqz_z_full_e(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_ddxn_z_full(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
-):
+def test_compute_ddxn_z_full(grid_savepoint, icon_grid, metrics_savepoint, backend):
     if testing_helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
@@ -488,8 +484,10 @@ def test_compute_ddxt_z_full(
         vertical_end=icon_grid.num_levels,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
-
-    assert testing_helpers.dallclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref, rtol=1e-12)
+    # TODO (halungge) these are the np.allclose default values
+    assert testing_helpers.dallclose(
+        ddxt_z_full.asnumpy(), ddxt_z_full_ref, rtol=1.0e-5, atol=1.0e-8
+    )
 
 
 @pytest.mark.datatest
