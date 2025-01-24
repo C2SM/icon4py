@@ -11,6 +11,7 @@ import pytest
 
 import icon4py.model.common.type_alias as types
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     compute_cell_2_vertex_interpolation,
 )
@@ -38,7 +39,7 @@ class TestComputeCells2VertsInterpolation(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         cell_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=types.wpfloat)
         c_int = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)
         vert_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=types.wpfloat)

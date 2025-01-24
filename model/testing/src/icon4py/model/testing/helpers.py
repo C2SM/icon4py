@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar
 
 import gt4py.next as gtx
+import gt4py.next.backend as gtx_backend
 import numpy as np
 import pytest
 from gt4py._core.definitions import is_scalar_type
@@ -18,6 +19,7 @@ from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
 
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -27,14 +29,19 @@ except ModuleNotFoundError:
     pytest_benchmark = None
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def backend(request):
     return request.param
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def grid(request):
     return request.param
+
+
+@pytest.fixture(scope="session")
+def connectivities_as_numpy(grid) -> dict[gtx.Dimension, np.ndarray]:
+    return {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
 
 
 def is_python(backend) -> bool:
@@ -76,8 +83,14 @@ class Output:
     gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
 
 
-def _test_validation(self, grid, backend, input_data):
-    connectivities = {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
+def _test_validation(
+    self,
+    grid: base.BaseGrid,
+    backend: gtx_backend.Backend,
+    connectivities_as_numpy: dict,
+    input_data: dict,
+):
+    connectivities = connectivities_as_numpy
     reference_outputs = self.reference(
         connectivities,
         **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
