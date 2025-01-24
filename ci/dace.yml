@@ -22,7 +22,7 @@ test_model_stencils_aarch64:
     - nox -s "test_model_datatest-3.10(subpackage='$COMPONENT')" -- --backend=$BACKEND
   parallel:
     matrix:
-    - BACKEND: [dace_cpu]
+    - BACKEND: [dace_cpu, dace_gpu]
       # TODO(edopao): Add more components once they work fine with DaCe 
       COMPONENT: [atmosphere/diffusion, atmosphere/dycore]
 # test_model_datatests_x86_64:
