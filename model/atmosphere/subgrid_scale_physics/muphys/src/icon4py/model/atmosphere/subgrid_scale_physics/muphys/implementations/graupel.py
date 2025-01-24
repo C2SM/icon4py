@@ -9,8 +9,9 @@ import gt4py.next as gtx
 
 from gt4py.next.ffront.fbuiltins import where, maximum, minimum, power
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda, _ice_number, _ice_mass, _ice_sticking
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import _qsat_rho, _qsat_ice_rho
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import _cloud_to_rain, _rain_to_vapor, _cloud_x_ice, _cloud_to_snow, _cloud_to_graupel
 
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 
@@ -124,8 +125,10 @@ def _graupel_loop2(
     RV:     ta.wpfloat,
     AMS:    ta.wpfloat,
     BMS:    ta.wpfloat,
+    M0_ICE: ta.wpfloat,
     TFRZ_HOM: ta.wpfloat,
-        
+    V0S:    ta.wpfloat,
+    V1S:    ta.wpfloat,
 ) -> [fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
 
     dvsw = qv - _qsat_rho( t, rho, TMELT, RV )
@@ -139,16 +142,16 @@ def _graupel_loop2(
     # Define conversion 'matrix'
     sx2x_c_r = _cloud_to_rain( t, qc, qr, qnc, TFRZ_HOM )
     sx2x_r_v = _rain_to_vapor( t, rho, qc, qr, dvsw, dt, QMIN, TMELT )
-    sx2x_c_i = _cloud_x_ice( t, qc, qi, dt )
+    sx2x_c_i = _cloud_x_ice( t, qc, qi, dt, TFRZ_HOM, QMIN, TMELT )
     sx2x_i_c = -minimum(sx2x_c_i, 0.0)
     sx2x_c_i = maximum(sx2x_c_i, 0.0)
 
-    sx2x_c_s = _cloud_to_snow( t, qc, qs, n_snow, l_snow )
-    sx2x_c_g = _cloud_to_graupel( t, rho, qc, qg )
+    sx2x_c_s = _cloud_to_snow( t, qc, qs, n_snow, l_snow, V1S, V0S, TFRZ_HOM, QMIN )
+    sx2x_c_g = _cloud_to_graupel( t, rho, qc, qg, TFRZ_HOM, QMIN )
 
-    n_ice = where( t < TMELT, _ice_number( t, rho, OTHERS ), 0.0 )
-    m_ice = where( t < TMELT, _ice_max( qi, OTHERS ), 0.0 )
-    x_ice = where( t < TMELT, _ice_sticking( t, OTHERS ), 0.0 )
+    n_ice = where( t < TMELT, _ice_number( t, rho, TMELT ), 0.0 )
+    m_ice = where( t < TMELT, _ice_mass( qi, n_ice, M0_ICE ), 0.0 )
+    x_ice = where( t < TMELT, _ice_sticking( t, TMELT ), 0.0 )
 
     eta          = where( (t < TMELT) & is_sig_present, _deposition_factor( t, qvsi, OTHERS ), 0.0 )
     sx2x_v_i = where( (t < TMELT) & is_sig_present, _vapor_x_ice( qi, m_ice, eta, dvsi, rho, dt, OTHERS ), 0.0 )
