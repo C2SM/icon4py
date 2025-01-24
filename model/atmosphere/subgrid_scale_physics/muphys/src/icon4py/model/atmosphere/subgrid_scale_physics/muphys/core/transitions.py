@@ -250,8 +250,9 @@ def _rain_to_graupel(
     B2        = 1.625              # TBD
     QS_CRIT   = 1.0e-7             # TBD
 
-    result = where( (qr > QMIN) & (t < TFRZ_RAIN) & (t > TFRZ_HOM) & (dvsw+qc <= 0.0), (exp(C2*(TFRZ_RAIN-t))-C3) * (A1 * power((qr * rho), B1)), 0. )
-    result = where( (qr > QMIN) & (t < TFRZ_RAIN) & (t <= TFRZ_HOM), qr/dt, 0. )
+    mask   = (qr > QMIN) & (t < TFRZ_RAIN)
+    result = where( mask & (dvsw+qc <= 0.0), (exp(C2*(TFRZ_RAIN-t))-C3) * (A1 * power((qr * rho), B1)), 0. )
+    result = where( mask & (t <= TFRZ_HOM), qr/dt, 0. )
 
     return where( (minimum(qi,qr) > QMIN) & (qs > QS_CRIT), result + A2*(qi/mi)*power((rho*qr), B2), result)
 

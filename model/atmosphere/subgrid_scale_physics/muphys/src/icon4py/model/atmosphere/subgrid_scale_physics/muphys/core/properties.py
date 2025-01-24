@@ -69,11 +69,14 @@ def deposition_factor(
 
 @gtx.field_operator
 def _fall_speed_scalar(
-    density:      ta.wpfloat,                            # Density of species
+    density:      gtx.Field[[], ta.wpfloat],                            # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat, 
-) -> ta.wpfloat:                          # Fall speed
+    QMIN:         ta.wpfloat,
+    V0S:          ta.wpfloat,    
+    V1S:          ta.wpfloat,
+) -> gtx.Field[[], ta.wpfloat]:                          # Fall speed
 
     return prefactor * power((density+offset), exponent)
 
@@ -83,19 +86,25 @@ def _fall_speed(
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat, 
+    QMIN:         ta.wpfloat,
+    V0S:          ta.wpfloat,    
+    V1S:          ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:                          # Fall speed
 
     return prefactor * power((density+offset), exponent)
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fall_speed_scalar(
-    density:      ta.wpfloat,                            # Density of species
+    density:      gtx.Field[[], ta.wpfloat],                            # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat,              
-    fall_speed:   ta.wpfloat,                            # output
+    QMIN:         ta.wpfloat,
+    V0S:          ta.wpfloat,    
+    V1S:          ta.wpfloat,
+    fall_speed:   gtx.Field[[], ta.wpfloat],                            # output
 ):
-    _fall_speed_scalar(density, prefactor, offset, exponent, out=fall_speed)
+    _fall_speed_scalar(density, prefactor, offset, exponent, QMIN, V0S, V1S, out=fall_speed)
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fall_speed(
@@ -103,9 +112,12 @@ def fall_speed(
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat,              
+    QMIN:         ta.wpfloat,
+    V0S:          ta.wpfloat,    
+    V1S:          ta.wpfloat,
     fall_speed:   fa.CellKField[ta.wpfloat],             # output
 ):
-    _fall_speed(density, prefactor, offset, exponent, out=fall_speed)
+    _fall_speed(density, prefactor, offset, exponent, QMIN, V0S, V1S, out=fall_speed)
 
 @gtx.field_operator
 def _ice_deposition_nucleation(
@@ -120,9 +132,9 @@ def _ice_deposition_nucleation(
     TFRZ_HET1: ta.wpfloat,
     TFRZ_HET2: ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:                       # Rate of vapor deposition for new ice
-    return where( qi <= QMIN & ((t < TFRZ_HET2) & (dvsi > 0.0)) | (t <= TFRZ_HET1 & qc > QMIN), minimum(M0_ICE * ni, maximum(0.0, dvsi)) / dt, 0.0 )
+    return where( ( (qi <= QMIN) & ((t < TFRZ_HET2) & (dvsi > 0.0)) ) | ( (t <= TFRZ_HET1) & (qc > QMIN) ), minimum(M0_ICE * ni, maximum(0.0, dvsi)) / dt, 0.0 )
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def ice_deposition_nucleation(
     t:         fa.CellKField[ta.wpfloat],             # Temperature
     qc:        fa.CellKField[ta.wpfloat],             # Specific humidity of cloud
@@ -147,7 +159,7 @@ def _ice_mass(
     MI_MAX = 1.0e-9
     return maximum(M0_ICE*ni, minimum(qi/ni, MI_MAX))
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def ice_mass(
     qi:        fa.CellKField[ta.wpfloat],             # Specific humidity of ice
     ni:        fa.CellKField[ta.wpfloat],             # Ice crystal number
@@ -167,7 +179,7 @@ def _ice_number(
     NIMAX  = 250.e+3                                 # Maximal number of ice crystals
     return minimum(NIMAX, A_COOP * exp( B_COOP * (TMELT - t) ) ) / rho
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def ice_number(
     t:         fa.CellKField[ta.wpfloat],             # Ambient temperature
     rho:       fa.CellKField[ta.wpfloat],             # Ambient density
@@ -187,9 +199,9 @@ def _ice_sticking(
     EFF_FAC   = 3.5e-3       # Scaling factor [1/K] for cloud ice sticking efficiency
     TCRIT     = TMELT - 85.0 # Temperature at which cloud ice autoconversion starts
 
-    return maximum( minimum( exp( A_FREEZ * (t - TMELT), B_MAX_EXP ), EFF_MIN ), EFF_FAC * (t - TCRIT) )
+    return maximum( maximum( minimum( exp( A_FREEZ * (t-TMELT) ), B_MAX_EXP ), EFF_MIN ), EFF_FAC * (t-TCRIT) )
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def ice_sticking(
     t:        fa.CellKField[ta.wpfloat],             # Temperature
     TMELT:    ta.wpfloat,
@@ -213,7 +225,7 @@ def _snow_lambda(
 
     return where( qs > QMIN, power( (A2*ns / ((qs + QSMIN) * rho)), BX ), LMD_0 )
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def snow_lambda(
     rho:        fa.CellKField[ta.wpfloat],           # Ambient density
     qs:         fa.CellKField[ta.wpfloat],           # Snow specific mass
@@ -258,9 +270,9 @@ def _snow_number(
     bet  = XB1 + tc * ( XB2  + tc * XB3 )
     n0s  = N0S3 * power( ( ( qs + QSMIN ) * rho / AMS), ( 4.0 - 3.0 * bet ) ) / ( alf * alf * alf )
     y    = exp( N0S2 * tc )
-    return where( qs > QMIN, minimum( minimum( N0S6 * y, N0S7), maximum( maximum( N0S4 * y, N0S5 ), N0S ) ), 0.0 )
+    return where( qs > QMIN, minimum( minimum( N0S6 * y, N0S7), maximum( maximum( N0S4 * y, N0S5 ), n0s ) ), 0.0 )
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def snow_number(
     t:        fa.CellKField[ta.wpfloat],             # Temperature
     rho:      fa.CellKField[ta.wpfloat],             # Ambient air density
@@ -290,7 +302,7 @@ def _vel_scale_factor_s(
     AMS:      ta.wpfloat,                           #
     TMELT:    ta.wpfloat,                           #
 ) -> fa.CellKField[ta.wpfloat]:                      # Scale factor
-    return xrho * power( snow_number( t, rho, qx, QMIN, AMS, TMELT ),  B_S )
+    return xrho * power( _snow_number( t, rho, qx, QMIN, AMS, TMELT ),  B_S )
 
 @gtx.field_operator
 def _vel_scale_factor_others(
@@ -298,16 +310,16 @@ def _vel_scale_factor_others(
 ) -> fa.CellKField[ta.wpfloat]:                      # Scale factor
     return xrho
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def vel_scale_factor_lqi(
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def vel_scale_factor_i(
     xrho:     fa.CellKField[ta.wpfloat],             # sqrt(rho_00/rho)
     B_I:      ta.wpfloat,                           # 2/3
     scale_factor: fa.CellKField[ta.wpfloat]          # output
 ):
-    _vel_scale_factor_lqi( xrho, B_I, out=scale_factor )
+    _vel_scale_factor_i( xrho, B_I, out=scale_factor )
 
-@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def vel_scale_factor_lqs(
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def vel_scale_factor_s(
     xrho:     fa.CellKField[ta.wpfloat],             # sqrt(rho_00/rho)
     rho:      fa.CellKField[ta.wpfloat],             # Density of condensate
     t:        fa.CellKField[ta.wpfloat],             # Temperature
@@ -318,4 +330,4 @@ def vel_scale_factor_lqs(
     TMELT:    ta.wpfloat,                           #
     scale_factor: fa.CellKField[ta.wpfloat]          # output
 ):
-    _vel_scale_factor_lqs( xrho, rho, t, qx, B_S, QMIN, AMS, TMELT, out=scale_factor )
+    _vel_scale_factor_s( xrho, rho, t, qx, B_S, QMIN, AMS, TMELT, out=scale_factor )

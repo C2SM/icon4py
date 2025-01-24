@@ -66,7 +66,7 @@ def _temperature_update(
 #   inlined in order to avoid scan_operator -> field_operator
     qtot    = qliq_old + qice_old + qv_old
     cv      = CVD * ( 1.0 - qtot ) + CVV * qv_old + CLW * qliq_old + CI * qice_old
-    e_int   = rho * dz * ( cv * t - qliq * LVC - qice * LSC )
+    e_int   = rho * dz * ( cv * t - qliq * LVC - qice * LSC ) + eflx
 
     eflx    = dt * ( qr * ( CLW * t - CVD * t_kp1 - LVC ) + pflx * ( CI * t - CVD * t_kp1 - LSC ) )
     e_int   = e_int - eflx
