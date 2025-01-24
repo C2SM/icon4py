@@ -130,16 +130,9 @@ class TestApplyDiffusionToVn(StencilTest):
         start_2nd_nudge_line_idx_e = 6
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
-            if hasattr(grid, "start_index")
-            else 0
-        )
-        horizontal_end = (
-            grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-            if hasattr(grid, "end_index")
-            else grid.num_edges
-        )
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
         return dict(
             u_vert=u_vert,

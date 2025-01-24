@@ -53,7 +53,7 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         w: np.ndarray,
         diff_multfac_n2w: np.ndarray,
         cell_area: np.ndarray,

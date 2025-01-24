@@ -25,11 +25,11 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        kh_smag_ec: np.array,
-        vn: np.array,
-        e_bln_c_s: np.array,
-        geofac_div: np.array,
-        diff_multfac_smag: np.array,
+        kh_smag_ec: np.ndarray,
+        vn: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        geofac_div: np.ndarray,
+        diff_multfac_smag: np.ndarray,
         **kwargs,
     ) -> dict:
         c2e = connectivities[dims.C2EDim]

@@ -24,15 +24,14 @@ def calculate_nabla2_for_z_numpy(
     kh_smag_e: np.ndarray,
     inv_dual_edge_length: np.ndarray,
     theta_v: np.ndarray,
-    z_nabla2_e: np.ndarray,
     **kwargs,
 ) -> np.ndarray:
-    z_nabla2_e_cp = z_nabla2_e.copy()
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
     theta_v_e2c = theta_v[connectivities[dims.E2CDim]]
     theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
+    z_nabla2_e_cp = np.zeros_like(kh_smag_e)
     z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
 
     # restriction of execution domain
@@ -51,11 +50,10 @@ class TestCalculateNabla2ForZ(StencilTest):
         kh_smag_e: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         theta_v: np.ndarray,
-        z_nabla2_e: np.ndarray,
         **kwargs,
     ) -> dict:
         z_nabla2_e = calculate_nabla2_for_z_numpy(
-            connectivities, kh_smag_e, inv_dual_edge_length, theta_v, z_nabla2_e, **kwargs
+            connectivities, kh_smag_e, inv_dual_edge_length, theta_v, **kwargs
         )
         return dict(z_nabla2_e=z_nabla2_e)
 
@@ -67,11 +65,7 @@ class TestCalculateNabla2ForZ(StencilTest):
         z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-            if hasattr(grid, "start_index")
-            else 0
-        )
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
         return dict(
             kh_smag_e=kh_smag_e,
