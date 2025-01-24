@@ -501,7 +501,6 @@ class SimpleGrid(BaseGrid):
         return gtx.int32(0)
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
-
         def _match_grid_size(domain: h_grid.Domain) -> int:
             dimension = domain.dim
             match dimension:

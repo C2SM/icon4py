@@ -35,7 +35,12 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
 
     @staticmethod
     def reference(
-        connectivities: dict[gtx.Dimension, np.ndarray], wgtfac_c: np.ndarray, div: np.ndarray, kh_c: np.ndarray, div_ic:np.ndarray, hdef_ic:np.ndarray
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfac_c: np.ndarray,
+        div: np.ndarray,
+        kh_c: np.ndarray,
+        div_ic: np.ndarray,
+        hdef_ic: np.ndarray,
     ) -> dict:
         div_ic, hdef_ic = calculate_diagnostics_for_turbulence_numpy(
             wgtfac_c, div, kh_c, div_ic, hdef_ic
