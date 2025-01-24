@@ -277,7 +277,7 @@ def compute_geofac_grdiv(
     Args:
         geofac_div:  ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
         inv_dual_edge_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
-        owner_mask:  ndarray, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        owner_mask:  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
         c2e:  ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         e2c2e: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
@@ -941,6 +941,7 @@ def compute_e_bln_c_s(
         yloc,
         xloc,
         weighting_factor,
+        array_ns=array_ns,
     )
 
     e_bln_c_s[:, 0] = wgt[0]

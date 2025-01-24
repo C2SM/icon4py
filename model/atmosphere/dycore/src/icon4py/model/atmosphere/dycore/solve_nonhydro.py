@@ -12,7 +12,7 @@ import dataclasses
 from typing import Final, Optional
 
 import gt4py.next as gtx
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.atmosphere.dycore.solve_nonhydro_stencils as nhsolve_stencils
 import icon4py.model.common.grid.states as grid_states
@@ -249,7 +249,7 @@ class IntermediateFields:
     def allocate(
         cls,
         grid: grid_def.BaseGrid,
-        backend: Optional[backend.Backend] = None,
+        backend: Optional[gtx_backend.Backend] = None,
     ):
         return IntermediateFields(
             z_gradh_exner=data_alloc.allocate_zero_field(
@@ -449,7 +449,7 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange

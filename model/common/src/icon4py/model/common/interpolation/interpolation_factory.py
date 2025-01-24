@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+from typing import Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -37,7 +38,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         metadata: dict[str, model.FieldMetaData],
     ):
         self._backend = backend
@@ -260,7 +261,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(pos_on_tplane_e_x_y)
 
         cells_aw_verts = factory.NumpyFieldsProvider(
-            func=functools.partial(interpolation_fields.compute_cells_aw_verts),
+            func=functools.partial(interpolation_fields.compute_cells_aw_verts, array_ns=self._xp),
             fields=(attrs.CELL_AW_VERTS,),
             domain=(dims.VertexDim, dims.V2CDim),
             deps={

@@ -8,6 +8,7 @@
 import enum
 import logging
 import pathlib
+from types import ModuleType
 from typing import Literal, Optional, Protocol, TypeAlias, Union
 
 import gt4py.next as gtx
@@ -461,11 +462,12 @@ class GridManager:
             ),
             # TODO (@halungge) easily computed from a neighbor_sum V2C over the cell areas?
             GeometryName.DUAL_AREA.value: gtx.as_field(
-                (dims.VertexDim,), self._reader.variable(GeometryName.DUAL_AREA)
+                (dims.VertexDim,), self._reader.variable(GeometryName.DUAL_AREA), allocator=backend
             ),
             GeometryName.EDGE_CELL_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2CDim),
                 self._reader.variable(GeometryName.EDGE_CELL_DISTANCE, transpose=True),
+                allocator=backend,
             ),
             GeometryName.EDGE_VERTEX_DISTANCE.value: gtx.as_field(
                 (dims.EdgeDim, dims.E2VDim),
@@ -480,10 +482,12 @@ class GridManager:
             GeometryName.CELL_NORMAL_ORIENTATION.value: gtx.as_field(
                 (dims.CellDim, dims.C2EDim),
                 self._reader.int_variable(GeometryName.CELL_NORMAL_ORIENTATION, transpose=True),
+                allocator=backend,
             ),
             GeometryName.EDGE_ORIENTATION_ON_VERTEX.value: gtx.as_field(
                 (dims.VertexDim, dims.V2EDim),
                 self._reader.int_variable(GeometryName.EDGE_ORIENTATION_ON_VERTEX, transpose=True),
+                allocator=backend,
             ),
         }
 
@@ -544,7 +548,7 @@ class GridManager:
 
     def _read_grid_refinement_fields(
         self,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         decomposition_info: Optional[decomposition.DecompositionInfo] = None,
     ) -> tuple[dict[dims.Dimension : data_alloc.NDArray]]:
         """
@@ -607,8 +611,11 @@ class GridManager:
             dims.E2V: self._get_index_field(ConnectivityName.E2V),
             dims.C2V: self._get_index_field(ConnectivityName.C2V),
         }
-        grid.with_connectivities({o.target[1]: c for o, c in global_connectivities.items()})
-        _add_derived_connectivities(grid)
+        xp = data_alloc.array_ns(on_gpu)
+        grid.with_connectivities(
+            {o.target[1]: xp.asarray(c) for o, c in global_connectivities.items()}
+        )
+        _add_derived_connectivities(grid, array_ns=xp)
         _update_size_for_1d_sparse_dims(grid)
         start, end, _ = self._read_start_end_indices()
         for dim in dims.global_dimensions.values():
@@ -657,27 +664,28 @@ class GridManager:
         return grid
 
 
-def _add_derived_connectivities(grid: icon.IconGrid) -> icon.IconGrid:
+def _add_derived_connectivities(grid: icon.IconGrid, array_ns: ModuleType = np) -> icon.IconGrid:
     e2c2v = _construct_diamond_vertices(
         grid.connectivities[dims.E2VDim],
         grid.connectivities[dims.C2VDim],
         grid.connectivities[dims.E2CDim],
+        array_ns=array_ns,
     )
     e2c2e = _construct_diamond_edges(
-        grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim]
+        grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim], array_ns=array_ns
     )
-    e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
+    e2c2e0 = array_ns.column_stack((array_ns.asarray(range(e2c2e.shape[0])), e2c2e))
 
     c2e2c2e = _construct_triangle_edges(
-        grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim]
+        grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim], array_ns=array_ns
     )
-    c2e2c0 = np.column_stack(
+    c2e2c0 = array_ns.column_stack(
         (
-            np.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
+            array_ns.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
             (grid.connectivities[dims.C2E2CDim]),
         )
     )
-    c2e2c2e2c = _construct_butterfly_cells(grid.connectivities[dims.C2E2CDim])
+    c2e2c2e2c = _construct_butterfly_cells(grid.connectivities[dims.C2E2CDim], array_ns=array_ns)
 
     grid.with_connectivities(
         {
@@ -704,7 +712,10 @@ def _update_size_for_1d_sparse_dims(grid):
 
 
 def _construct_diamond_vertices(
-    e2v: data_alloc.NDArray, c2v: data_alloc.NDArray, e2c: data_alloc.NDArray
+    e2v: data_alloc.NDArray,
+    c2v: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     r"""
     Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
@@ -733,19 +744,19 @@ def _construct_diamond_vertices(
 
     Returns: ndarray containing the connectivity table for edge-to-vertex on the diamond
     """
-    dummy_c2v = _patch_with_dummy_lastline(c2v)
+    dummy_c2v = _patch_with_dummy_lastline(c2v, array_ns=array_ns)
     expanded = dummy_c2v[e2c, :]
     sh = expanded.shape
     flat = expanded.reshape(sh[0], sh[1] * sh[2])
-    far_indices = np.zeros_like(e2v)
+    far_indices = array_ns.zeros_like(e2v)
     # TODO (magdalena) vectorize speed this up?
     for i in range(sh[0]):
-        far_indices[i, :] = flat[i, ~np.isin(flat[i, :], e2v[i, :])][:2]
-    return np.hstack((e2v, far_indices))
+        far_indices[i, :] = flat[i, ~array_ns.isin(flat[i, :], e2v[i, :])][:2]
+    return array_ns.hstack((e2v, far_indices))
 
 
 def _construct_diamond_edges(
-    e2c: data_alloc.NDArray, c2e: data_alloc.NDArray
+    e2c: data_alloc.NDArray, c2e: data_alloc.NDArray, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
     r"""
     Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
@@ -772,21 +783,23 @@ def _construct_diamond_edges(
     Returns: ndarray containing the connectivity table for central edge-to- boundary edges
              on the diamond
     """
-    dummy_c2e = _patch_with_dummy_lastline(c2e)
+    dummy_c2e = _patch_with_dummy_lastline(c2e, array_ns=array_ns)
     expanded = dummy_c2e[e2c[:, :], :]
     sh = expanded.shape
     flattened = expanded.reshape(sh[0], sh[1] * sh[2])
 
     diamond_sides = 4
-    e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=gtx.int32)
+    e2c2e = GridFile.INVALID_INDEX * array_ns.ones((sh[0], diamond_sides), dtype=gtx.int32)
     for i in range(sh[0]):
-        var = flattened[i, (~np.isin(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
+        var = flattened[
+            i, (~array_ns.isin(flattened[i, :], array_ns.asarray([i, GridFile.INVALID_INDEX])))
+        ]
         e2c2e[i, : var.shape[0]] = var
     return e2c2e
 
 
 def _construct_triangle_edges(
-    c2e2c: data_alloc.NDArray, c2e: data_alloc.NDArray
+    c2e2c: data_alloc.NDArray, c2e: data_alloc.NDArray, array_ns: ModuleType = np
 ) -> data_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
 
@@ -811,12 +824,14 @@ def _construct_triangle_edges(
         ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
             edges of its cell neighbors
     """
-    dummy_c2e = _patch_with_dummy_lastline(c2e)
-    table = np.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
+    dummy_c2e = _patch_with_dummy_lastline(c2e, array_ns=array_ns)
+    table = array_ns.reshape(dummy_c2e[c2e2c, :], (c2e2c.shape[0], 9))
     return table
 
 
-def _construct_butterfly_cells(c2e2c: data_alloc.NDArray) -> data_alloc.NDArray:
+def _construct_butterfly_cells(
+    c2e2c: data_alloc.NDArray, array_ns: ModuleType = np
+) -> data_alloc.NDArray:
     r"""Compute the connectivity from a central cell to all neighboring cells of its cell neighbors.
 
                   /  \        /  \
@@ -842,12 +857,12 @@ def _construct_butterfly_cells(c2e2c: data_alloc.NDArray) -> data_alloc.NDArray:
     Returns:
         ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring cells of its cell neighbors
     """
-    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c)
-    c2e2c2e2c = np.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
+    dummy_c2e2c = _patch_with_dummy_lastline(c2e2c, array_ns=array_ns)
+    c2e2c2e2c = array_ns.reshape(dummy_c2e2c[c2e2c, :], (c2e2c.shape[0], 9))
     return c2e2c2e2c
 
 
-def _patch_with_dummy_lastline(ar):
+def _patch_with_dummy_lastline(ar, array_ns: ModuleType = np):
     """
     Patch an array for easy access with another offset containing invalid indices (-1).
 
@@ -860,9 +875,9 @@ def _patch_with_dummy_lastline(ar):
     Returns: same array with an additional line containing only GridFile.INVALID_INDEX
 
     """
-    patched_ar = np.append(
+    patched_ar = array_ns.append(
         ar,
-        GridFile.INVALID_INDEX * np.ones((1, ar.shape[1]), dtype=gtx.int32),
+        GridFile.INVALID_INDEX * array_ns.ones((1, ar.shape[1]), dtype=gtx.int32),
         axis=0,
     )
     return patched_ar

@@ -23,8 +23,13 @@ class TestComputeCells2VertsInterpolation(helpers.StencilTest):
     OUTPUTS = ("vert_out",)
 
     @staticmethod
-    def reference(grid, cell_in: np.array, c_int: np.array, **kwargs) -> dict:
-        v2c = grid.connectivities[dims.V2CDim]
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        cell_in: np.ndarray,
+        c_int: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        v2c = connectivities[dims.V2CDim]
         c_int = np.expand_dims(c_int, axis=-1)
         out_field = np.sum(cell_in[v2c] * c_int, axis=1)
 

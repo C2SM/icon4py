@@ -6,12 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-from typing import Final
+from typing import Final, Optional
 
 import gt4py.next as gtx
 import numpy as np
 from gt4py.eve.utils import FrozenNamespace
-from gt4py.next import backend, broadcast
+from gt4py.next import backend as gtx_backend, broadcast
 from gt4py.next.ffront.fbuiltins import (
     abs,
     exp,
@@ -226,7 +226,7 @@ class SaturationAdjustment:
         grid: icon_grid.IconGrid,
         vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
     ):
         self._backend = backend
         self.config = config

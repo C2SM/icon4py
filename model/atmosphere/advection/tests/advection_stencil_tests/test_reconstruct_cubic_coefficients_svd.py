@@ -36,36 +36,36 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         p_cc: np.array,
-        lsq_pseudoinv_1: np.array,
-        lsq_pseudoinv_2: np.array,
-        lsq_pseudoinv_3: np.array,
-        lsq_pseudoinv_4: np.array,
-        lsq_pseudoinv_5: np.array,
-        lsq_pseudoinv_6: np.array,
-        lsq_pseudoinv_7: np.array,
-        lsq_pseudoinv_8: np.array,
-        lsq_pseudoinv_9: np.array,
-        lsq_moments_1: np.array,
-        lsq_moments_2: np.array,
-        lsq_moments_3: np.array,
-        lsq_moments_4: np.array,
-        lsq_moments_5: np.array,
-        lsq_moments_6: np.array,
-        lsq_moments_7: np.array,
-        lsq_moments_8: np.array,
-        lsq_moments_9: np.array,
-        p_coeff_1_dsl: np.array,
-        p_coeff_2_dsl: np.array,
-        p_coeff_3_dsl: np.array,
-        p_coeff_4_dsl: np.array,
-        p_coeff_5_dsl: np.array,
-        p_coeff_6_dsl: np.array,
-        p_coeff_7_dsl: np.array,
-        p_coeff_8_dsl: np.array,
-        p_coeff_9_dsl: np.array,
-        p_coeff_10_dsl: np.array,
+        lsq_pseudoinv_1: np.ndarray,
+        lsq_pseudoinv_2: np.ndarray,
+        lsq_pseudoinv_3: np.ndarray,
+        lsq_pseudoinv_4: np.ndarray,
+        lsq_pseudoinv_5: np.ndarray,
+        lsq_pseudoinv_6: np.ndarray,
+        lsq_pseudoinv_7: np.ndarray,
+        lsq_pseudoinv_8: np.ndarray,
+        lsq_pseudoinv_9: np.ndarray,
+        lsq_moments_1: np.ndarray,
+        lsq_moments_2: np.ndarray,
+        lsq_moments_3: np.ndarray,
+        lsq_moments_4: np.ndarray,
+        lsq_moments_5: np.ndarray,
+        lsq_moments_6: np.ndarray,
+        lsq_moments_7: np.ndarray,
+        lsq_moments_8: np.ndarray,
+        lsq_moments_9: np.ndarray,
+        p_coeff_1_dsl: np.ndarray,
+        p_coeff_2_dsl: np.ndarray,
+        p_coeff_3_dsl: np.ndarray,
+        p_coeff_4_dsl: np.ndarray,
+        p_coeff_5_dsl: np.ndarray,
+        p_coeff_6_dsl: np.ndarray,
+        p_coeff_7_dsl: np.ndarray,
+        p_coeff_8_dsl: np.ndarray,
+        p_coeff_9_dsl: np.ndarray,
+        p_coeff_10_dsl: np.ndarray,
         **kwargs,
     ) -> dict:
         p_coeff_1_dsl_cp = p_coeff_1_dsl.copy()
@@ -79,7 +79,7 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
         p_coeff_9_dsl_cp = p_coeff_9_dsl.copy()
         p_coeff_10_dsl_cp = p_coeff_10_dsl.copy()
 
-        c2e2c2e2c = grid.connectivities[dims.C2E2C2E2CDim]
+        c2e2c2e2c = connectivities[dims.C2E2C2E2CDim]
         lsq_moments_1 = np.expand_dims(lsq_moments_1, axis=-1)
         lsq_moments_2 = np.expand_dims(lsq_moments_2, axis=-1)
         lsq_moments_3 = np.expand_dims(lsq_moments_3, axis=-1)
