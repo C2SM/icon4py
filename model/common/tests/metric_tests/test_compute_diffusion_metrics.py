@@ -30,19 +30,21 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 def test_compute_diffusion_metrics(
     metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
+    if data_alloc.is_cupy_device(backend):
+        pytest.skip("GPU backend is not supported")
     if helpers.is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
 
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         pytest.skip(f"Fields not computed for {experiment}")
 
-    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim)
+    maxslp_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    maxhgtd_avg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    maxslp = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    maxhgtd = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
+    max_nbhgt = data_alloc.zero_field(icon_grid, dims.CellDim, backend=backend)
 
-    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
+    c2e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.C2E2CDim])
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125.0
@@ -66,7 +68,9 @@ def test_compute_diffusion_metrics(
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+    z_mc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+    )
     compute_z_mc.with_backend(backend)(
         metrics_savepoint.z_ifc(),
         z_mc,
@@ -93,7 +97,7 @@ def test_compute_diffusion_metrics(
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1]),
+        z_mc_nlev=gtx.as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1], allocator=backend),
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,

@@ -23,9 +23,13 @@ class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_e_in: np.array,
+        ptr_coeff_1: np.array,
+        ptr_coeff_2: np.array,
+        **kwargs,
     ) -> dict:
-        c2e2c2e = grid.connectivities[dims.C2E2C2EDim]
+        c2e2c2e = connectivities[dims.C2E2C2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
         p_u_out = np.sum(p_e_in[c2e2c2e] * ptr_coeff_1, axis=1)

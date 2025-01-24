@@ -24,15 +24,15 @@ class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        e_flx_avg: np.array,
-        vn: np.array,
-        geofac_grdiv: np.array,
-        rbf_vec_coeff_e: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        e_flx_avg: np.ndarray,
+        vn: np.ndarray,
+        geofac_grdiv: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
         **kwargs,
     ) -> dict:
-        e2c2eO = grid.connectivities[dims.E2C2EODim]
-        e2c2e = grid.connectivities[dims.E2C2EDim]
+        e2c2eO = connectivities[dims.E2C2EODim]
+        e2c2e = connectivities[dims.E2C2EDim]
         e_flx_avg = np.expand_dims(e_flx_avg, axis=-1)
         z_vn_avg = np.sum(
             np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * e_flx_avg, 0), axis=1

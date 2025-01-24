@@ -28,13 +28,19 @@ from icon4py.model.testing.helpers import (
 
 @pytest.mark.datatest
 def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
+    if data_alloc.is_cupy_device(backend):
+        pytest.skip(
+            "skipping: gpu backend is unsupported because _compute_flat_idx and _compute_z_aux2 cannot be called with_backend"
+        )
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
-    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     z_ifc = metrics_savepoint.z_ifc()
-    k_lev = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=int))
-    z_me = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    k_lev = gtx.as_field(
+        (dims.KDim,), np.arange(icon_grid.num_levels, dtype=int), allocator=backend
+    )
+    z_me = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
     edge_domain = h_grid.domain(dims.EdgeDim)
     horizontal_start_edge = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     start_nudging = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
@@ -53,7 +59,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         out=z_me,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
-    flat_idx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    flat_idx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
     _compute_flat_idx(
         z_mc=z_mc,
         c_lin_e=interpolation_savepoint.c_lin_e(),
@@ -69,8 +75,11 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
             "Koff": icon_grid.get_offset_provider("Koff"),
         },
     )
-    flat_idx_np = np.amax(flat_idx.asnumpy(), axis=1)
-    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, icon_grid.num_levels])
+    xp = data_alloc.import_array_ns(backend)
+    flat_idx_np = xp.amax(flat_idx.ndarray, axis=1)
+    z_ifc_sliced = gtx.as_field(
+        (dims.CellDim,), z_ifc.ndarray[:, icon_grid.num_levels], allocator=backend
+    )
 
     zdiff_gradp_full_field = compute_zdiff_gradp_dsl(
         e2c=icon_grid.connectivities[dims.E2CDim],
