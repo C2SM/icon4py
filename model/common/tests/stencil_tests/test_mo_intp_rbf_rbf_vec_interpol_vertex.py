@@ -29,7 +29,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
         ptr_coeff_1: np.ndarray,
         ptr_coeff_2: np.ndarray,
         **kwargs,
-    ) -> tuple[np.array]:
+    ) -> dict[str, np.ndarray]:
         v2e = connectivities[dims.V2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
@@ -41,6 +41,8 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if grid.get_offset_provider("V2E").has_skip_values:
+            pytest.xfail("Stencil does not support missing neighbors.")
         p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ptr_coeff_1 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
         ptr_coeff_2 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
