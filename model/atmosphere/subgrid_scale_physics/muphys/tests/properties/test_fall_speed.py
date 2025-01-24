@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 class TestFallSpeed(StencilTest):
     PROGRAM = fall_speed_scalar
-    OUTPUTS = ("fall_speed",)
+    OUTPUTS = ("fall_speed")
 
     @staticmethod
     def reference(grid, density: wpfloat, prefactor: wpfloat, offset: wpfloat, exponent: wpfloat, QMIN: wpfloat, V0S: wpfloat, V1S: wpfloat,  **kwargs) -> dict:
