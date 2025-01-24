@@ -358,7 +358,7 @@ class FieldOperatorProvider(FieldProvider):
 
     def _allocate(
         self,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid: GridProvider,
         dtype: state_utils.ScalarType = ta.wpfloat,
     ) -> dict[str, state_utils.FieldType]:
@@ -417,7 +417,7 @@ class ProgramFieldProvider(FieldProvider):
 
     def _allocate(
         self,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid: base_grid.BaseGrid,  # TODO @halungge: change to vertical grid
         dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
@@ -485,7 +485,7 @@ class ProgramFieldProvider(FieldProvider):
         self,
         field_name: str,
         factory: FieldSource,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid_provider: GridProvider,
     ):
         if any([f is None for f in self.fields.values()]):
@@ -495,7 +495,7 @@ class ProgramFieldProvider(FieldProvider):
     def _compute(
         self,
         factory: FieldSource,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid_provider: GridProvider,
     ) -> None:
         try:
@@ -561,7 +561,7 @@ class NumpyFieldsProvider(FieldProvider):
         self,
         field_name: str,
         factory: FieldSource,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid: GridProvider,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
@@ -571,7 +571,7 @@ class NumpyFieldsProvider(FieldProvider):
     def _compute(
         self,
         factory: FieldSource,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid_provider: GridProvider,
     ) -> None:
         self._validate_dependencies()

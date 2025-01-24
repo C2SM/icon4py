@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -36,7 +37,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         z_kin_hor_e,
         e_bln_c_s,
         z_w_concorr_me,
@@ -56,18 +57,18 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
         z_ekinh = np.where(
             k_nlev < nlev,
-            interpolate_to_cell_center_numpy(grid, z_kin_hor_e, e_bln_c_s),
+            interpolate_to_cell_center_numpy(connectivities, z_kin_hor_e, e_bln_c_s),
             z_ekinh,
         )
 
         if istep == 1:
-            z_w_concorr_mc = interpolate_to_cell_center_numpy(grid, z_w_concorr_me, e_bln_c_s)
+            z_w_concorr_mc = interpolate_to_cell_center_numpy(
+                connectivities, z_w_concorr_me, e_bln_c_s
+            )
 
             w_concorr_c = np.where(
                 (nflatlev + 1 <= k_nlev) & (k_nlev < nlev),
-                interpolate_to_half_levels_vp_numpy(
-                    grid, wgtfac_c=wgtfac_c, interpolant=z_w_concorr_mc
-                ),
+                interpolate_to_half_levels_vp_numpy(wgtfac_c=wgtfac_c, interpolant=z_w_concorr_mc),
                 w_concorr_c,
             )
 

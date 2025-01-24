@@ -19,11 +19,11 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def apply_nabla2_to_w_in_upper_damping_layer_numpy(
-    w: np.array,
-    diff_multfac_n2w: np.array,
-    cell_area: np.array,
-    z_nabla2_c: np.array,
-):
+    w: np.ndarray,
+    diff_multfac_n2w: np.ndarray,
+    cell_area: np.ndarray,
+    z_nabla2_c: np.ndarray,
+) -> np.ndarray:
     cell_area = np.expand_dims(cell_area, axis=-1)
     w = w + diff_multfac_n2w * cell_area * z_nabla2_c
     return w
@@ -54,10 +54,10 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
     @staticmethod
     def reference(
         grid,
-        w: np.array,
-        diff_multfac_n2w: np.array,
-        cell_area: np.array,
-        z_nabla2_c: np.array,
+        w: np.ndarray,
+        diff_multfac_n2w: np.ndarray,
+        cell_area: np.ndarray,
+        z_nabla2_c: np.ndarray,
         **kwargs,
     ) -> dict:
         w = apply_nabla2_to_w_in_upper_damping_layer_numpy(
