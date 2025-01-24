@@ -8,8 +8,6 @@
 
 import os
 
-import pytest
-
 from icon4py.model.common import model_backends
 from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
