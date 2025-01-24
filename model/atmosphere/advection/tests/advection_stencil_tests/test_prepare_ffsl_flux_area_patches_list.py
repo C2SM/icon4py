@@ -872,7 +872,7 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
     @classmethod
     def reference(
         cls,
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         famask_int,
         p_vn,
         ptr_v3_lon,
@@ -888,7 +888,7 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
         dreg_patch0_4_lat_dsl,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         ptr_v3_lon = helpers.reshape(ptr_v3_lon, e2c.shape)
         ptr_v3_lon_e = np.expand_dims(ptr_v3_lon, axis=-1)
         ptr_v3_lat = helpers.reshape(ptr_v3_lat, e2c.shape)

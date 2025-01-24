@@ -87,10 +87,14 @@ def test_parallel_diffusion(
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(
+            interpolation_savepoint.e_bln_c_s(), dims.CEDim, backend=backend
+        ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(
+            interpolation_savepoint.geofac_div(), dims.CEDim, backend=backend
+        ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -104,7 +108,9 @@ def test_parallel_diffusion(
         config=config,
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
-            vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
+            vertical_config,
+            grid_savepoint.vct_a(),
+            grid_savepoint.vct_b(),
         ),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -209,10 +215,14 @@ def test_parallel_diffusion_multiple_steps(
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(
+            interpolation_savepoint.e_bln_c_s(), dims.CEDim, backend=backend
+        ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(
+            interpolation_savepoint.geofac_div(), dims.CEDim, backend=backend
+        ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -243,7 +253,9 @@ def test_parallel_diffusion_multiple_steps(
         config=config,
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
-            vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
+            vertical_config,
+            grid_savepoint.vct_a(),
+            grid_savepoint.vct_b(),
         ),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -293,7 +305,9 @@ def test_parallel_diffusion_multiple_steps(
         config=config,
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
-            vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
+            vertical_config,
+            grid_savepoint.vct_a(),
+            grid_savepoint.vct_b(),
         ),
         metric_state=metric_state,
         interpolation_state=interpolation_state,

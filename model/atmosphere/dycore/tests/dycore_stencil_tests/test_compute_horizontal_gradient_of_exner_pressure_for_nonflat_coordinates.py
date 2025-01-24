@@ -25,15 +25,15 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
 
     @staticmethod
     def reference(
-        grid,
-        inv_dual_edge_length: np.array,
-        z_exner_ex_pr: np.array,
-        ddxn_z_full: np.array,
-        c_lin_e: np.array,
-        z_dexner_dz_c_1: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        inv_dual_edge_length: np.ndarray,
+        z_exner_ex_pr: np.ndarray,
+        ddxn_z_full: np.ndarray,
+        c_lin_e: np.ndarray,
+        z_dexner_dz_c_1: np.ndarray,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
         c_lin_e = np.expand_dims(c_lin_e, axis=-1)
 

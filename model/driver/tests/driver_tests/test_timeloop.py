@@ -129,7 +129,11 @@ def test_run_timeloop_single_step(
     backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
-        config = icon4py_configuration.read_config(experiment)
+        # it does not matter what backend is set here because the granules are set externally in this test
+        config = icon4py_configuration.read_config(
+            icon4py_driver_backend="gtfn_cpu",
+            experiment_type=experiment,
+        )
         diffusion_config = config.diffusion_config
         nonhydro_config = config.solve_nonhydro_config
         icon4pyrun_config = config.run_config
@@ -263,7 +267,9 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+        ),
     )
 
     current_index, next_index = (2, 1) if not linit else (1, 2)

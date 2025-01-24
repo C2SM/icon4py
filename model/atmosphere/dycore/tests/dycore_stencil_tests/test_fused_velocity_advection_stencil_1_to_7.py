@@ -46,7 +46,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
-        grid,
+        connectivities,
         vn,
         rbf_vec_coeff_e,
         wgtfac_e,
@@ -69,21 +69,21 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition1 = k_nlev < nlev
         vt = np.where(
             condition1,
-            compute_tangential_wind_numpy(grid, vn, rbf_vec_coeff_e),
+            compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
             vt,
         )
 
         condition2 = (1 <= k_nlev) & (k_nlev < nlev)
         vn_ie[:, :-1], z_kin_hor_e = np.where(
             condition2,
-            interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(grid, wgtfac_e, vn, vt),
+            interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(wgtfac_e, vn, vt),
             (vn_ie[:, :nlev], z_kin_hor_e),
         )
 
         if not lvn_only:
             z_vt_ie = np.where(
                 condition2,
-                interpolate_vt_to_interface_edges_numpy(grid, wgtfac_e, vt),
+                interpolate_vt_to_interface_edges_numpy(wgtfac_e, vt),
                 z_vt_ie,
             )
 
@@ -97,7 +97,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition4 = k == nlev
         vn_ie = np.where(
             condition4,
-            extrapolate_at_top_numpy(grid, wgtfacq_e, vn),
+            extrapolate_at_top_numpy(wgtfacq_e, vn),
             vn_ie,
         )
 

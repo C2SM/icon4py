@@ -21,16 +21,16 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def calculate_nabla4_numpy(
-    grid,
-    u_vert: np.array,
-    v_vert: np.array,
-    primal_normal_vert_v1: np.array,
-    primal_normal_vert_v2: np.array,
-    z_nabla2_e: np.array,
-    inv_vert_vert_length: np.array,
-    inv_primal_edge_length: np.array,
-) -> np.array:
-    e2c2v = grid.connectivities[dims.E2C2VDim]
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    u_vert: np.ndarray,
+    v_vert: np.ndarray,
+    primal_normal_vert_v1: np.ndarray,
+    primal_normal_vert_v2: np.ndarray,
+    z_nabla2_e: np.ndarray,
+    inv_vert_vert_length: np.ndarray,
+    inv_primal_edge_length: np.ndarray,
+) -> np.ndarray:
+    e2c2v = connectivities[dims.E2C2VDim]
     u_vert_e2c2v = u_vert[e2c2v]
     v_vert_e2c2v = v_vert[e2c2v]
 
@@ -70,18 +70,18 @@ class TestCalculateNabla4(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        u_vert: np.array,
-        v_vert: np.array,
-        primal_normal_vert_v1: np.array,
-        primal_normal_vert_v2: np.array,
-        z_nabla2_e: np.array,
-        inv_vert_vert_length: np.array,
-        inv_primal_edge_length: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        u_vert: np.ndarray,
+        v_vert: np.ndarray,
+        primal_normal_vert_v1: np.ndarray,
+        primal_normal_vert_v2: np.ndarray,
+        z_nabla2_e: np.ndarray,
+        inv_vert_vert_length: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
         **kwargs,
     ) -> dict:
         z_nabla4_e2 = calculate_nabla4_numpy(
-            grid,
+            connectivities,
             u_vert,
             v_vert,
             primal_normal_vert_v1,

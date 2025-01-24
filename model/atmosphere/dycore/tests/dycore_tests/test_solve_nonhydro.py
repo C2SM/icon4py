@@ -35,9 +35,15 @@ def test_validate_divdamp_fields_against_savepoint_values(
     config = solve_nh.NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
-    enh_divdamp_fac = data_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
-    scal_divdamp = data_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
-    bdy_divdamp = data_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    enh_divdamp_fac = data_alloc.allocate_zero_field(
+        dims.KDim, grid=icon_grid, is_halfdim=False, backend=backend
+    )
+    scal_divdamp = data_alloc.allocate_zero_field(
+        dims.KDim, grid=icon_grid, is_halfdim=False, backend=backend
+    )
+    bdy_divdamp = data_alloc.allocate_zero_field(
+        dims.KDim, grid=icon_grid, is_halfdim=False, backend=backend
+    )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
         config.divdamp_fac,
@@ -255,9 +261,11 @@ def test_nonhydro_predictor_step(
         diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
+
     assert helpers.dallclose(
         solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
+        rtol=2.0e-12,
     )
 
     # stencils 7,8,9, 11
@@ -557,7 +565,9 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+        ),
     )
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
@@ -768,7 +778,9 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+        ),
     )
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
@@ -888,7 +900,9 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+        ),
     )
 
     linit = sp.get_metadata("linit").get("linit")

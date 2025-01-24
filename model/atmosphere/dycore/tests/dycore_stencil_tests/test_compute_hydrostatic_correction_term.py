@@ -29,16 +29,16 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        theta_v: np.array,
-        ikoffset: np.array,
-        zdiff_gradp: np.array,
-        theta_v_ic: np.array,
-        inv_ddqz_z_full: np.array,
-        inv_dual_edge_length: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        theta_v: np.ndarray,
+        ikoffset: np.ndarray,
+        zdiff_gradp: np.ndarray,
+        theta_v_ic: np.ndarray,
+        inv_ddqz_z_full: np.ndarray,
+        inv_dual_edge_length: np.ndarray,
         grav_o_cpd: float,
         **kwargs,
-    ) -> tuple[np.array]:
+    ) -> tuple[np.ndarray]:
         def _apply_index_field(shape, to_index, neighbor_table, offset_field):
             indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
             for iprimary in range(shape[0]):
@@ -54,7 +54,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
                         ]
             return indexed, indexed_p1
 
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         full_shape = e2c.shape + zdiff_gradp.shape[1:]
         zdiff_gradp = zdiff_gradp.reshape(full_shape)
         ikoffset = ikoffset.reshape(full_shape)

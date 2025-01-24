@@ -14,6 +14,7 @@ from typing import Final, Literal, TypeAlias
 
 import nox
 
+
 # -- Parameter sets --
 ModelSubpackagePath: TypeAlias = Literal[
     "atmosphere/advection",
@@ -82,9 +83,7 @@ def test_model_stencils(session: nox.Session, subpackage: ModelSubpackagePath) -
         "driver",
     }
     if subpackage in notest_subpackages:
-        session.skip(f"no tests configured")
-    elif subpackage == "common":
-        session.skip(f"tests broken")  # TODO: Enable tests
+        session.skip("no tests configured")
     else:
         session.notify(
             f"test_model-{session.python}(selection='stencils', subpackage='{subpackage}')"
@@ -144,7 +143,7 @@ def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
     
     match selection:
         case "datatest":
-            pytest_args.append("--datatest")
+            pytest_args.extend(["-k", "not stencil_test", "--datatest"])
         case "stencils":
             pytest_args.extend(["-k", "stencil_tests"])
         case "basic":
