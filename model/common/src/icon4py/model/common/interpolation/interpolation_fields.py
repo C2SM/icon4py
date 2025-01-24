@@ -710,7 +710,7 @@ def compute_e_flx_avg(
         e_flx_avg: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
     primal_cart_normal = compute_primal_cart_normal(
-        primal_cart_normal_x, primal_cart_normal_y, primal_cart_normal_z, array_ns
+        primal_cart_normal_x, primal_cart_normal_y, primal_cart_normal_z, array_ns=array_ns
     )
 
     llb = 0
