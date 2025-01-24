@@ -18,7 +18,7 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-def interpolate_contravariant_vertical_velocity_to_full_levels_numpy(grid, z_w_con_c: np.array):
+def interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c: np.ndarray):
     z_w_con_c_full = 0.5 * (z_w_con_c[:, :-1] + z_w_con_c[:, 1:])
     return z_w_con_c_full
 
@@ -28,10 +28,8 @@ class TestInterpolateContravariantVerticalVelocityToFullLevels(StencilTest):
     OUTPUTS = ("z_w_con_c_full",)
 
     @staticmethod
-    def reference(grid, z_w_con_c: np.array, **kwargs) -> dict:
-        z_w_con_c_full = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(
-            grid, z_w_con_c
-        )
+    def reference(grid, z_w_con_c: np.ndarray, **kwargs) -> dict:
+        z_w_con_c_full = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
         return dict(z_w_con_c_full=z_w_con_c_full)
 
     @pytest.fixture

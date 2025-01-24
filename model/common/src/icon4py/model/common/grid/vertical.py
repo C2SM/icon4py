@@ -11,14 +11,14 @@ import functools
 import logging
 import math
 import pathlib
-from typing import Final
+from typing import Final, Optional
 
 import gt4py.next as gtx
 import numpy as np
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.common.states.metadata as data
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
-from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
@@ -132,7 +132,7 @@ class VerticalGrid:
             "_vct_b",
             vct_b,
         )
-        vct_a_array = self._vct_a.ndarray
+        vct_a_array = self._vct_a.asnumpy()
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
@@ -247,16 +247,14 @@ class VerticalGrid:
 
     @classmethod
     def _determine_start_level_of_moist_physics(
-        cls, vct_a: data_alloc.NDArray, top_moist_threshold: float, nshift_total: int = 0
+        cls, vct_a: np.ndarray, top_moist_threshold: float, nshift_total: int = 0
     ) -> gtx.int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
         return gtx.int32(np.min(np.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
-    def _determine_damping_height_index(
-        cls, vct_a: data_alloc.NDArray, damping_height: float
-    ) -> gtx.int32:
+    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float) -> gtx.int32:
         assert damping_height >= 0.0, "Damping height must be positive."
         return (
             0
@@ -266,7 +264,7 @@ class VerticalGrid:
 
     @classmethod
     def _determine_end_index_of_flat_layers(
-        cls, vct_a: data_alloc.NDArray, flat_height: float
+        cls, vct_a: np.ndarray, flat_height: float
     ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
@@ -277,7 +275,7 @@ class VerticalGrid:
 
 
 def _read_vct_a_and_vct_b_from_file(
-    file_path: pathlib.Path, num_levels: int
+    file_path: pathlib.Path, num_levels: int, backend: Optional[gtx_backend.Backend]
 ) -> tuple[fa.KField, fa.KField]:
     """
     Read vct_a and vct_b from a file.
@@ -293,6 +291,7 @@ def _read_vct_a_and_vct_b_from_file(
     Args:
         file_path: Path to the vertical grid file
         num_levels: number of cell levels
+        backend: GT4Py backend
     Returns:  one dimensional vct_a and vct_b arrays.
     """
     num_levels_plus_one = num_levels + 1
@@ -316,10 +315,14 @@ def _read_vct_a_and_vct_b_from_file(
         ) from err
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
-    return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
+    return gtx.as_field((dims.KDim,), vct_a, allocator=backend), gtx.as_field(
+        (dims.KDim,), vct_b, allocator=backend
+    )
 
 
-def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField, fa.KField]:
+def _compute_vct_a_and_vct_b(
+    vertical_config: VerticalGridConfig, backend: Optional[gtx_backend.Backend]
+) -> tuple[fa.KField, fa.KField]:
     """
     Compute vct_a and vct_b.
 
@@ -357,6 +360,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
 
     Args:
         vertical_config: Vertical grid configuration
+        backend: GT4Py backend
     Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
     """
     num_levels_plus_one = vertical_config.num_levels + 1
@@ -497,26 +501,33 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KF
             f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
         )
 
-    return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
+    return gtx.as_field((dims.KDim,), vct_a, allocator=backend), gtx.as_field(
+        (dims.KDim,), vct_b, allocator=backend
+    )
 
 
-def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[fa.KField, fa.KField]:
+def get_vct_a_and_vct_b(
+    vertical_config: VerticalGridConfig, backend: Optional[gtx_backend.Backend]
+) -> tuple[fa.KField, fa.KField]:
     """
     get vct_a and vct_b.
     vct_a is an array that contains the height of grid interfaces (or half levels) from model surface to model top, before terrain-following coordinates are applied.
     vct_b is an array that is used to initialize vertical wind speed above surface by a prescribed vertical profile when the surface vertical wind is given.
-    It is also used to modify the initial vertical wind speed above surface according to a prescribed vertical profile by linearly merging the surface vertica wind with the existing vertical wind.
+    It is also used to modify the initial vertical wind speed above surface according to a prescribed vertical profile by linearly merging the surface vertical wind with the existing vertical wind.
     See init_w and adjust_w in mo_nh_init_utils.f90.
 
     When file_name is given in vertical_config, it will read both vct_a and vct_b from that file. Otherwise, they are analytically derived based on vertical configuration.
 
     Args:
         vertical_config: Vertical grid configuration
+        backend: GT4Py backend
     Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
     """
 
     return (
-        _read_vct_a_and_vct_b_from_file(vertical_config.file_path, vertical_config.num_levels)
+        _read_vct_a_and_vct_b_from_file(
+            vertical_config.file_path, vertical_config.num_levels, backend
+        )
         if vertical_config.file_path
-        else _compute_vct_a_and_vct_b(vertical_config)
+        else _compute_vct_a_and_vct_b(vertical_config, backend)
     )

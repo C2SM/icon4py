@@ -13,7 +13,6 @@ from abc import ABC, abstractmethod
 from typing import Callable, Dict
 
 import gt4py.next as gtx
-import numpy as np
 
 from icon4py.model.common import dimension as dims, utils
 from icon4py.model.common.grid import utils as grid_utils
@@ -62,7 +61,7 @@ class GridConfig:
 class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None
-        self.connectivities: Dict[gtx.Dimension, np.ndarray] = {}
+        self.connectivities: Dict[gtx.Dimension, data_alloc.NDArray] = {}
         self.size: Dict[gtx.Dimension, int] = {}
         self.offset_provider_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
 
@@ -146,12 +145,14 @@ class BaseGrid(ABC):
     def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
+        xp = data_alloc.array_ns(self.config.on_gpu)
         return grid_utils.neighbortable_offset_provider_for_1d_sparse_fields(
             dim,
             self.connectivities[dim].shape,
             from_dim,
             to_dim,
             has_skip_values=self._has_skip_values(dim),
+            array_ns=xp,
         )
 
     def get_offset_provider(self, name):

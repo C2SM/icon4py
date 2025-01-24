@@ -168,12 +168,12 @@ def _compute_primal_normal_ec(
         primal_normal_ec: numpy array, representing a gtx.Field[gtx.Dims[CellDim, C2EDim, 2], ta.wpfloat]
     """
 
-    owned = np.stack((owner_mask, owner_mask, owner_mask)).T
+    owned = array_ns.stack((owner_mask, owner_mask, owner_mask)).T
 
     inv_neighbor_index = create_inverse_neighbor_index(e2c, c2e, array_ns)
     u_component = primal_normal_cell_x[c2e, inv_neighbor_index]
     v_component = primal_normal_cell_y[c2e, inv_neighbor_index]
-    return (np.where(owned, u_component, 0.0), np.where(owned, v_component, 0.0))
+    return (array_ns.where(owned, u_component, 0.0), array_ns.where(owned, v_component, 0.0))
 
 
 def _compute_geofac_grg(
@@ -272,7 +272,7 @@ def compute_geofac_grdiv(
     Args:
         geofac_div:  ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], ta.wpfloat]
         inv_dual_edge_length: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], ta.wpfloat]
-        owner_mask:  ndarray, representing a gtx.Field[gtx.Dims[CellDim], bool]
+        owner_mask:  ndarray, representing a gtx.Field[gtx.Dims[EdgeDim], bool]
         c2e:  ndarray, representing a gtx.Field[gtx.Dims[CellDim, C2EDim], gtx.int32]
         e2c: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], gtx.int32]
         e2c2e: ndarray, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EDim], gtx.int32]
@@ -822,13 +822,14 @@ def compute_cells_aw_verts(
     v2c: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     horizontal_start: gtx.int32,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute cells_aw_verts.
 
     Args:
         dual_area: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], ta.wpfloat]
-        edge_vert_length: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2CDim], ta.wpfloat]
+        edge_vert_length: \\ numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2VDim], ta.wpfloat]
         edge_cell_length: //
         owner_mask: numpy array, representing a gtx.Field[gtx.Dims[VertexDim], bool]
         v2e: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, V2EDim], gtx.int32]
@@ -840,19 +841,23 @@ def compute_cells_aw_verts(
     Returns:
         aw_verts: numpy array, representing a gtx.Field[gtx.Dims[VertexDim, 6], ta.wpfloat]
     """
-    cells_aw_verts = np.zeros(v2e.shape)
+    cells_aw_verts = array_ns.zeros(v2e.shape)
     for jv in range(horizontal_start, cells_aw_verts.shape[0]):
         cells_aw_verts[jv, :] = 0.0
         for je in range(v2e.shape[1]):
             # INVALID_INDEX
-            if je > gm.GridFile.INVALID_INDEX and (je > 0 and v2e[jv, je] == v2e[jv, je - 1]):
+            if v2e[jv, je] == gm.GridFile.INVALID_INDEX or (
+                je > 0 and v2e[jv, je] == v2e[jv, je - 1]
+            ):
                 continue
             ile = v2e[jv, je]
             idx_ve = 0 if e2v[ile, 0] == jv else 1
             cell_offset_idx_0 = e2c[ile, 0]
             cell_offset_idx_1 = e2c[ile, 1]
             for jc in range(v2e.shape[1]):
-                if jc > gm.GridFile.INVALID_INDEX and (jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]):
+                if v2c[jv, jc] == gm.GridFile.INVALID_INDEX or (
+                    jc > 0 and v2c[jv, jc] == v2c[jv, jc - 1]
+                ):
                     continue
                 if cell_offset_idx_0 == v2c[jv, jc]:
                     cells_aw_verts[jv, jc] = (
@@ -881,6 +886,7 @@ def compute_e_bln_c_s(
     edges_lat: data_alloc.NDArray,
     edges_lon: data_alloc.NDArray,
     weighting_factor: float,
+    array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
     Compute e_bln_c_s.
@@ -898,11 +904,11 @@ def compute_e_bln_c_s(
     """
     llb = 0
     num_cells = c2e.shape[0]
-    e_bln_c_s = np.zeros([num_cells, c2e.shape[1]])
+    e_bln_c_s = array_ns.zeros([num_cells, c2e.shape[1]])
     yloc = cells_lat[llb:]
     xloc = cells_lon[llb:]
-    ytemp = np.zeros([c2e.shape[1], num_cells])
-    xtemp = np.zeros([c2e.shape[1], num_cells])
+    ytemp = array_ns.zeros([c2e.shape[1], num_cells])
+    xtemp = array_ns.zeros([c2e.shape[1], num_cells])
 
     for i in range(ytemp.shape[0]):
         ytemp[i] = edges_lat[c2e[llb:, i]]
@@ -914,6 +920,7 @@ def compute_e_bln_c_s(
         yloc,
         xloc,
         weighting_factor,
+        array_ns=array_ns,
     )
 
     e_bln_c_s[:, 0] = wgt[0]

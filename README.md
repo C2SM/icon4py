@@ -1,10 +1,11 @@
 [![Open in Gitpod](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod)](https://gitpod.io/#https://github.com/C2SM/icon4py)
 [![Nox](https://img.shields.io/badge/%F0%9F%A6%8A-Nox-D85E00.svg)](https://github.com/wntrblm/nox)
+[![Open the docs](https://readthedocs.org/projects/docs/badge/?version=latest)](https://c2sm.github.io/icon4py)
 
 
 # ICON4Py
 
-This repository hosts a work-in-progress Python implementation of the ICON climate and weather model. Additionally, it includes `icon4pytools`, a collection of command-line interfaces (CLIs), and utilities required for the integration of ICON4Py code into the ICON Fortran model. ICON4Py leverages [GT4Py](https://github.com/GridTools/gt4py) to ensure efficient and performance portable implementations of these components.
+This repository hosts a work-in-progress Python implementation of the ICON climate and weather model. Additionally, it includes `icon4py.tools`, a collection of command-line interfaces (CLIs), and utilities required for the integration of ICON4Py code into the ICON Fortran model. ICON4Py leverages [GT4Py](https://github.com/GridTools/gt4py) to ensure efficient and performance portable implementations of these components.
 
 ## Project Structure
 
@@ -114,18 +115,19 @@ We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) 
 
 ### Documentation
 
-The documentation is at a very early stage given the constant state of development. Some effort is ongoing to document the dycore and can be compiled as follows.
+Documentation is at a very early stage given the constant state of development.
+Ongoing efforts to document the dycore can be viewed at [c2sm.github.io/icon4py](https://c2sm.github.io/icon4py).
 
-You can install the required packages by using the provided `requirements-dev.txt` file in the root of the repository.
+You can install the required packages by using the provided `docs` dependency group, which is included in the `dev` installed by default by `uv sync` if no dependency groups are specified.
 
-Then move to the dycore docs folder and build the html documentation with the provided makefile:
+To build the html documentation in your local repository copy starting from the most upwards directory, apply the following commands: 
 
 ```bash
 cd model/atmosphere/dycore/docs
 make html
 ```
 
-The documentation can then be accessed at `docs/_build/html/index.html`
+The local documentation could then be accessed at `docs/_build/html/index.html`
 
 ### More Information
 

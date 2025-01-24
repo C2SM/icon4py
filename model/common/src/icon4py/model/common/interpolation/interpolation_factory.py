@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+from typing import Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
@@ -28,6 +29,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
+vertex_domain = h_grid.domain(dims.VertexDim)
 
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
@@ -36,7 +38,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         metadata: dict[str, model.FieldMetaData],
     ):
         self._backend = backend
@@ -181,8 +183,30 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 )
             },
         )
-
         self.register_provider(geofac_grg)
+
+        cells_aw_verts = factory.NumpyFieldsProvider(
+            func=functools.partial(interpolation_fields.compute_cells_aw_verts, array_ns=self._xp),
+            fields=(attrs.CELL_AW_VERTS,),
+            domain=(dims.VertexDim, dims.V2CDim),
+            deps={
+                "dual_area": geometry_attrs.DUAL_AREA,
+                "edge_vert_length": geometry_attrs.EDGE_VERTEX_DISTANCE,
+                "edge_cell_length": geometry_attrs.EDGE_CELL_DISTANCE,
+            },
+            connectivities={
+                "v2e": dims.V2EDim,
+                "e2v": dims.E2VDim,
+                "v2c": dims.V2CDim,
+                "e2c": dims.E2CDim,
+            },
+            params={
+                "horizontal_start": self.grid.start_index(
+                    vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                )
+            },
+        )
+        self.register_provider(cells_aw_verts)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:

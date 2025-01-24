@@ -76,7 +76,7 @@ class GridGeometry(factory.FieldSource):
         self,
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         coordinates: gm.CoordinateDict,
         extra_fields: dict[InputGeometryFieldType, gtx.Field],
         metadata: dict[str, model.FieldMetaData],
@@ -132,6 +132,7 @@ class GridGeometry(factory.FieldSource):
             {
                 # TODO (@magdalena) rescaled by grid_length_rescale_factor (mo_grid_tools.f90)
                 attrs.EDGE_CELL_DISTANCE: extra_fields[gm.GeometryName.EDGE_CELL_DISTANCE],
+                attrs.EDGE_VERTEX_DISTANCE: extra_fields[gm.GeometryName.EDGE_VERTEX_DISTANCE],
                 attrs.CELL_AREA: extra_fields[gm.GeometryName.CELL_AREA],
                 attrs.DUAL_AREA: extra_fields[gm.GeometryName.DUAL_AREA],
                 attrs.TANGENT_ORIENTATION: extra_fields[gm.GeometryName.TANGENT_ORIENTATION],
