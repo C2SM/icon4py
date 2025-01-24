@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
     apply_diffusion_to_theta_and_exner,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils.data_allocation import (
     as_numpy,
     flatten_first_two_dims,
@@ -53,7 +53,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         exner,
         rd_o_cvd,
         **kwargs,
-    ):
+    ) -> dict:
         z_nabla2_e = np.zeros_like(kh_smag_e)
         z_nabla2_e = calculate_nabla2_for_z_numpy(
             connectivities, kh_smag_e, inv_dual_edge_length, theta_v_in, z_nabla2_e, **kwargs
@@ -79,7 +79,7 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid):
         # TODO [halungge]: understand why values do not verify intermittently
         # error message contained in truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy
         pytest.xfail("fix start index issue")

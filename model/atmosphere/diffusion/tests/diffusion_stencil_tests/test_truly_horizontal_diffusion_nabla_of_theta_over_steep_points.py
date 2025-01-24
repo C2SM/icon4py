@@ -97,7 +97,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         return dict(z_temp=z_temp)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid) -> dict:
         if np.any(grid.connectivities[dims.C2E2CDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 

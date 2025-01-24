@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
@@ -48,7 +49,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
         return dict(div=div, kh_c=kh_c)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         geofac_div = data_alloc.as_1D_sparse_field(
             data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat), dims.CEDim

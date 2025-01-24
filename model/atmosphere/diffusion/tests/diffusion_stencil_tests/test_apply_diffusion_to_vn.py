@@ -12,7 +12,7 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -31,23 +31,23 @@ class TestApplyDiffusionToVn(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        u_vert,
-        v_vert,
-        primal_normal_vert_v1,
-        primal_normal_vert_v2,
-        z_nabla2_e,
-        inv_vert_vert_length,
-        inv_primal_edge_length,
-        area_edge,
-        kh_smag_e,
-        diff_multfac_vn,
-        nudgecoeff_e,
-        vn,
-        edge,
-        nudgezone_diff,
-        fac_bdydiff_v,
-        start_2nd_nudge_line_idx_e,
-        limited_area,
+        u_vert: np.ndarray,
+        v_vert: np.ndarray,
+        primal_normal_vert_v1: np.ndarray,
+        primal_normal_vert_v2: np.ndarray,
+        z_nabla2_e: np.ndarray,
+        inv_vert_vert_length: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        area_edge: np.ndarray,
+        kh_smag_e: np.ndarray,
+        diff_multfac_vn: np.ndarray,
+        nudgecoeff_e: np.ndarray,
+        vn: np.ndarray,
+        edge: np.ndarray,
+        nudgezone_diff: np.ndarray,
+        fac_bdydiff_v: np.ndarray,
+        start_2nd_nudge_line_idx_e: np.int32,
+        limited_area: bool,
         **kwargs,
     ):
         vn_cp = vn.copy()
@@ -97,7 +97,7 @@ class TestApplyDiffusionToVn(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         edge = data_alloc.allocate_indices(dims.EdgeDim, grid=grid, is_halfdim=False)
 
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
