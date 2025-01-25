@@ -19,7 +19,6 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
-from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -709,8 +708,14 @@ def compute_e_flx_avg(
     Returns:
         e_flx_avg: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
-    primal_cart_normal = compute_primal_cart_normal(
-        primal_cart_normal_x, primal_cart_normal_y, primal_cart_normal_z, array_ns=array_ns
+    primal_cart_normal = array_ns.transpose(
+        array_ns.stack(
+            (
+                primal_cart_normal_x,
+                primal_cart_normal_y,
+                primal_cart_normal_z,
+            )
+        )
     )
 
     llb = 0
