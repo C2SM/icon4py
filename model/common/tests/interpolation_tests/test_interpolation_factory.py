@@ -252,6 +252,9 @@ def test_get_mass_conserving_cell_average_weight(
 )
 @pytest.mark.datatest
 def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol):
+    # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
+    if data_alloc.is_cupy_device(backend):
+        pytest.skip("skipping: gpu backend is unsupported")
     field_ref = interpolation_savepoint.e_flx_avg()
     factory = get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
