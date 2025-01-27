@@ -17,9 +17,9 @@ def _deposition_auto_conversion(
     ice_dep:      fa.CellKField[ta.wpfloat],             # Rate of ice deposition (some to snow)
     QMIN:         ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:                          # Conversion rate
-    M0_S     = 3.0e-9                                   # Initial mass of snow crystals
-    B_DEP    = 0.66666666666667                         # Exponent
-    XCRIT    = 1.0                                      # Critical threshold parameter
+    M0_S     = 3.0e-9                                    # Initial mass of snow crystals
+    B_DEP    = 0.666666666666666667                      # Exponent
+    XCRIT    = 1.0                                       # Critical threshold parameter
     
     return where( (qi > QMIN), maximum(0.0, ice_dep) * B_DEP / (power((M0_S/m_ice), B_DEP) - XCRIT), 0.0)
 
@@ -38,7 +38,6 @@ def deposition_auto_conversion(
 def _deposition_factor(
     t:            fa.CellKField[ta.wpfloat],             # Temperature
     qvsi:         fa.CellKField[ta.wpfloat],             # Saturation (ice) specific vapor mass
-    ice_dep:      fa.CellKField[ta.wpfloat],             # Rate of ice deposition (some to snow)
     QMIN:         ta.wpfloat,
     ALS:          ta.wpfloat,
     RD:           ta.wpfloat, 
@@ -57,7 +56,6 @@ def _deposition_factor(
 def deposition_factor(
     t:            fa.CellKField[ta.wpfloat],             # Temperature
     qvsi:         fa.CellKField[ta.wpfloat],             # Saturation (ice) specific vapor mass
-    ice_dep:      fa.CellKField[ta.wpfloat],             # Rate of ice deposition (some to snow) 
     QMIN:         ta.wpfloat,
     ALS:          ta.wpfloat,
     RD:	      	  ta.wpfloat,
@@ -65,7 +63,7 @@ def deposition_factor(
     TMELT:        ta.wpfloat,
     deposition_factor: fa.CellKField[ta.wpfloat],        # output
 ):
-    _deposition_factor(t, qvsi, ice_dep, QMIN, ALS, RD, RV, TMELT, out=deposition_factor)
+    _deposition_factor(t, qvsi, QMIN, ALS, RD, RV, TMELT, out=deposition_factor)
 
 @gtx.field_operator
 def _fall_speed_scalar(
@@ -270,7 +268,9 @@ def _snow_number(
     bet  = XB1 + tc * ( XB2  + tc * XB3 )
     n0s  = N0S3 * power( ( ( qs + QSMIN ) * rho / AMS), ( 4.0 - 3.0 * bet ) ) / ( alf * alf * alf )
     y    = exp( N0S2 * tc )
-    return where( qs > QMIN, minimum( minimum( N0S6 * y, N0S7), maximum( maximum( N0S4 * y, N0S5 ), n0s ) ), 0.0 )
+    n0smn= maximum( N0S4 * y, N0S5 )
+    n0smx= minimum( N0S6 * y, N0S7 )
+    return where( qs > QMIN, minimum( n0smx, maximum( n0smn, n0s ) ) , N0S0  )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def snow_number(
@@ -285,23 +285,23 @@ def snow_number(
     _snow_number( t, rho, qs, QMIN, AMS, TMELT, out=snow_number )
 
 @gtx.field_operator
-def _vel_scale_factor_i(
+def _vel_scale_factor_ice(
     xrho:     fa.CellKField[ta.wpfloat],             # sqrt(rho_00/rho)
-    B_I:      ta.wpfloat,                           # 2/3
 ) -> fa.CellKField[ta.wpfloat]:                      # Snow number
+    B_I = 0.66666666666666667
     return power( xrho, B_I )
 
 @gtx.field_operator
-def _vel_scale_factor_s(
+def _vel_scale_factor_snow(
     xrho:     fa.CellKField[ta.wpfloat],             # sqrt(rho_00/rho)
     rho:      fa.CellKField[ta.wpfloat],             # Density of condensate
     t:        fa.CellKField[ta.wpfloat],             # Temperature
     qx:       fa.CellKField[ta.wpfloat],             # Specific mass
-    B_S:      ta.wpfloat,                           # 
     QMIN:     ta.wpfloat,                           #
     AMS:      ta.wpfloat,                           #
     TMELT:    ta.wpfloat,                           #
 ) -> fa.CellKField[ta.wpfloat]:                      # Scale factor
+    B_S = 0.16666666666666667
     return xrho * power( _snow_number( t, rho, qx, QMIN, AMS, TMELT ),  B_S )
 
 @gtx.field_operator
@@ -311,23 +311,21 @@ def _vel_scale_factor_others(
     return xrho
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def vel_scale_factor_i(
+def vel_scale_factor_ice(
     xrho:     fa.CellKField[ta.wpfloat],             # sqrt(rho_00/rho)
-    B_I:      ta.wpfloat,                           # 2/3
     scale_factor: fa.CellKField[ta.wpfloat]          # output
 ):
-    _vel_scale_factor_i( xrho, B_I, out=scale_factor )
+    _vel_scale_factor_ice( xrho, out=scale_factor )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
-def vel_scale_factor_s(
+def vel_scale_factor_snow(
     xrho:     fa.CellKField[ta.wpfloat],             # sqrt(rho_00/rho)
     rho:      fa.CellKField[ta.wpfloat],             # Density of condensate
     t:        fa.CellKField[ta.wpfloat],             # Temperature
     qx:       fa.CellKField[ta.wpfloat],             # Specific mass
-    B_S:      ta.wpfloat,                           #
     QMIN:     ta.wpfloat,                           #
     AMS:      ta.wpfloat,                           #
     TMELT:    ta.wpfloat,                           #
     scale_factor: fa.CellKField[ta.wpfloat]          # output
 ):
-    _vel_scale_factor_s( xrho, rho, t, qx, B_S, QMIN, AMS, TMELT, out=scale_factor )
+    _vel_scale_factor_snow( xrho, rho, t, qx, QMIN, AMS, TMELT, out=scale_factor )
