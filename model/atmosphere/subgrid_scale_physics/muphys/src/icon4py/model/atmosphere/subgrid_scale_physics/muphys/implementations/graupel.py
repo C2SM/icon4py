@@ -287,8 +287,8 @@ def _graupel_loop3_if_lrain(
 
     # NP = 4    qp_ind[] = {lqr, lqi, lqs, lqg};
     vc_r = where( kmin_r, vel_scale_factor_others( xrho ), 0.0 )
-    vc_i = where( kmin_i, vel_scale_factor_i( xrho, B_I ), 0.0 )
-    vc_s = where( kmin_s, vel_scale_factor_s( xrho, rho, t, q_s, B_S, QMIN, AMS, TMELT ), 0.0 )
+    vc_i = where( kmin_i, vel_scale_factor_ice( xrho, B_I ), 0.0 )
+    vc_s = where( kmin_s, vel_scale_factor_snow( xrho, rho, t, q_s, B_S, QMIN, AMS, TMELT ), 0.0 )
     vc_g = where( kmin_g, vel_scale_factor_others( xrho ), 0.0 )
 
     q_kp1    = qr(Koff[1])
