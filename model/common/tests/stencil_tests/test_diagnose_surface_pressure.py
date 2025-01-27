@@ -47,12 +47,13 @@ class TestDiagnoseSurfacePressure(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
+        low = 1.0e-2
         exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
         virtual_temperature = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
         )
         ddqz_z_full = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
         )
         surface_pressure = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend={dims.KDim: 1}

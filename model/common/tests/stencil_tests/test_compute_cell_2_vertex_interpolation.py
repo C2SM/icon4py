@@ -40,6 +40,9 @@ class TestComputeCells2VertsInterpolation(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
+        if grid.get_offset_provider("E2C").has_skip_values:
+            pytest.xfail("Stencil does not support missing neighbors.")
+
         cell_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=types.wpfloat)
         c_int = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)
         vert_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=types.wpfloat)
