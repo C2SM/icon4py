@@ -13,13 +13,13 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import (
     flatten_first_two_dims,
     random_field,
     zero_field,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest):
@@ -28,13 +28,13 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
 
     @staticmethod
     def reference(
-        grid,
-        inv_dual_edge_length: np.array,
-        z_exner_ex_pr: np.array,
-        zdiff_gradp: np.array,
-        ikoffset: np.array,
-        z_dexner_dz_c_1: np.array,
-        z_dexner_dz_c_2: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        inv_dual_edge_length: np.ndarray,
+        z_exner_ex_pr: np.ndarray,
+        zdiff_gradp: np.ndarray,
+        ikoffset: np.ndarray,
+        z_dexner_dz_c_1: np.ndarray,
+        z_dexner_dz_c_2: np.ndarray,
         **kwargs,
     ) -> dict:
         def _apply_index_field(shape, to_index, neighbor_table, offset_field):
@@ -48,7 +48,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
                         ]
             return indexed
 
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         full_shape = e2c.shape + zdiff_gradp.shape[1:]
         zdiff_gradp = zdiff_gradp.reshape(full_shape)
         ikoffset = ikoffset.reshape(full_shape)

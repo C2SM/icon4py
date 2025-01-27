@@ -13,19 +13,18 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils import data_allocation as data_alloc
-
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import helpers
 
 
-class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
+class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
     PROGRAM = temporary_fields_for_turbulence_diagnostics
     OUTPUTS = ("div", "kh_c")
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         kh_smag_ec: np.array,
         vn: np.array,
         e_bln_c_s: np.array,
@@ -33,8 +32,8 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
         diff_multfac_smag: np.array,
         **kwargs,
     ) -> dict:
-        c2e = grid.connectivities[dims.C2EDim]
-        c2ce = grid.get_offset_provider("C2CE").ndarray
+        c2e = connectivities[dims.C2EDim]
+        c2ce = helpers.as_1d_connectivity(c2e)
 
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)

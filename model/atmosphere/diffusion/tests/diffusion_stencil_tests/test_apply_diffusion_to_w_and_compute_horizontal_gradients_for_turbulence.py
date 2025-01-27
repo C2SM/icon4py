@@ -16,7 +16,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
-
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
 from .test_apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer_numpy,
@@ -33,7 +32,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         area,
         geofac_n2s,
         geofac_grg_x,
@@ -57,16 +56,18 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             dwdx, dwdy = np.where(
                 0 < reshaped_k,
                 calculate_horizontal_gradients_for_turbulence_numpy(
-                    grid, w_old, geofac_grg_x, geofac_grg_y
+                    connectivities, w_old, geofac_grg_x, geofac_grg_y
                 ),
                 (dwdx, dwdy),
             )
 
-        z_nabla2_c = calculate_nabla2_for_w_numpy(grid, w_old, geofac_n2s)
+        z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w_old, geofac_n2s)
 
         w = np.where(
             (interior_idx <= reshaped_cell) & (reshaped_cell < halo_idx),
-            apply_nabla2_to_w_numpy(grid, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
+            apply_nabla2_to_w_numpy(
+                connectivities, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w
+            ),
             w_old,
         )
 

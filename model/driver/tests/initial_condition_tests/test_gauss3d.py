@@ -8,8 +8,8 @@
 
 import pytest
 
-from icon4py.model.testing import datatest_utils as dt_utils, helpers
 from icon4py.model.driver.test_cases import gauss3d
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
 @pytest.mark.datatest
@@ -22,6 +22,7 @@ from icon4py.model.driver.test_cases import gauss3d
 def test_gauss3d_initial_condition(
     experiment,
     ranked_data_path,
+    backend,
     rank,
     data_provider,
     grid_savepoint,
@@ -41,6 +42,7 @@ def test_gauss3d_initial_condition(
         icon_grid,
         edge_geometry,
         ranked_data_path.joinpath(f"{experiment}/ser_data"),
+        backend,
         rank,
     )
 

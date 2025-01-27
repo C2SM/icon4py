@@ -13,9 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilTest):
@@ -24,15 +24,15 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
 
     @staticmethod
     def reference(
-        grid,
-        inv_dual_edge_length: np.array,
-        z_exner_ex_pr: np.array,
-        ddxn_z_full: np.array,
-        c_lin_e: np.array,
-        z_dexner_dz_c_1: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        inv_dual_edge_length: np.ndarray,
+        z_exner_ex_pr: np.ndarray,
+        ddxn_z_full: np.ndarray,
+        c_lin_e: np.ndarray,
+        z_dexner_dz_c_1: np.ndarray,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
         c_lin_e = np.expand_dims(c_lin_e, axis=-1)
 

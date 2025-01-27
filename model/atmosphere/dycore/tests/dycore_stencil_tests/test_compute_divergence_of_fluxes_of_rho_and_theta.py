@@ -9,31 +9,29 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-import icon4py.model.common.utils.data_allocation as data_alloc
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.testing import helpers
 
 
-class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(StencilTest):
+class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(helpers.StencilTest):
     PROGRAM = compute_divergence_of_fluxes_of_rho_and_theta
     OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.array,
         mass_fl_e: np.array,
         z_theta_v_fl_e: np.array,
         **kwargs,
     ) -> tuple[np.array]:
-        c2e = grid.connectivities[dims.C2EDim]
+        c2e = connectivities[dims.C2EDim]
+        c2ce = helpers.as_1d_connectivity(c2e)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
-        c2ce = grid.get_offset_provider("C2CE").ndarray
-
         z_flxdiv_mass = np.sum(
             geofac_div[c2ce] * mass_fl_e[c2e],
             axis=1,
@@ -47,12 +45,12 @@ class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         geofac_div = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat), dims.CEDim
+            data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=ta.wpfloat), dims.CEDim
         )
-        z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_flxdiv_theta = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        z_flxdiv_mass = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_theta_v_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        z_flxdiv_theta = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        mass_fl_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        z_flxdiv_mass = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             geofac_div=geofac_div,

@@ -13,15 +13,18 @@ from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_o
     compute_contravariant_correction_of_w,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def compute_contravariant_correction_of_w_numpy(
-    grid, e_bln_c_s: np.array, z_w_concorr_me: np.array, wgtfac_c: np.array
-) -> np.array:
-    c2e = grid.connectivities[dims.C2EDim]
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    e_bln_c_s: np.ndarray,
+    z_w_concorr_me: np.ndarray,
+    wgtfac_c: np.ndarray,
+) -> np.ndarray:
+    c2e = connectivities[dims.C2EDim]
     c2e_shape = c2e.shape
     c2ce_table = np.arange(c2e_shape[0] * c2e_shape[1]).reshape(c2e_shape)
 
@@ -40,14 +43,14 @@ class TestComputeContravariantCorrectionOfW(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         e_bln_c_s: np.array,
         z_w_concorr_me: np.array,
         wgtfac_c: np.array,
         **kwargs,
     ) -> dict:
         w_concorr_c = compute_contravariant_correction_of_w_numpy(
-            grid, e_bln_c_s, z_w_concorr_me, wgtfac_c
+            connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c
         )
         return dict(w_concorr_c=w_concorr_c)
 

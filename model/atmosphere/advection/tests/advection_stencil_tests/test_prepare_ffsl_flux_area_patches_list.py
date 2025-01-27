@@ -10,8 +10,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
 import icon4py.model.common.utils.data_allocation as data_alloc
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.prepare_ffsl_flux_area_patches_list import (
     prepare_ffsl_flux_area_patches_list,
 )
@@ -872,7 +872,7 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
     @classmethod
     def reference(
         cls,
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         famask_int,
         p_vn,
         ptr_v3_lon,
@@ -888,7 +888,7 @@ class TestPrepareFfslFluxAreaPatchesList(helpers.StencilTest):
         dreg_patch0_4_lat_dsl,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         ptr_v3_lon = helpers.reshape(ptr_v3_lon, e2c.shape)
         ptr_v3_lon_e = np.expand_dims(ptr_v3_lon, axis=-1)
         ptr_v3_lat = helpers.reshape(ptr_v3_lat, e2c.shape)

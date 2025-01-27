@@ -19,26 +19,25 @@ from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
-
 class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest):
     PROGRAM = compute_horizontal_tracer_flux_from_linear_coefficients
     OUTPUTS = ("p_out_e",)
 
     @staticmethod
     def reference(
-        grid,
-        z_lsq_coeff_1: np.array,
-        z_lsq_coeff_2: np.array,
-        z_lsq_coeff_3: np.array,
-        distv_bary_1: np.array,
-        distv_bary_2: np.array,
-        p_mass_flx_e: np.array,
-        cell_rel_idx_dsl: np.array,
-        p_out_e: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_lsq_coeff_1: np.ndarray,
+        z_lsq_coeff_2: np.ndarray,
+        z_lsq_coeff_3: np.ndarray,
+        distv_bary_1: np.ndarray,
+        distv_bary_2: np.ndarray,
+        p_mass_flx_e: np.ndarray,
+        cell_rel_idx_dsl: np.ndarray,
+        p_out_e: np.ndarray,
         **kwargs,
     ) -> dict:
         p_out_e_cp = p_out_e.copy()
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
         z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
         z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]

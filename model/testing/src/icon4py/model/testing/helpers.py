@@ -8,18 +8,17 @@
 
 import hashlib
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar
 
+import gt4py.next as gtx
 import numpy as np
-import numpy.typing as npt
 import pytest
 from gt4py._core.definitions import is_scalar_type
-from gt4py.next import as_field, common as gt_common, constructors
+from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
 
 from icon4py.model.common.utils import data_allocation as data_alloc
-
 
 
 try:
@@ -78,9 +77,10 @@ class Output:
 
 
 def _test_validation(self, grid, backend, input_data):
+    connectivities = {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
     reference_outputs = self.reference(
-        grid,
-        **{k: v.asnumpy() if isinstance(v, gt_common.Field) else v for k, v in input_data.items()},
+        connectivities,
+        **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
     )
 
     input_data = allocate_data(backend, input_data)
@@ -96,11 +96,12 @@ def _test_validation(self, grid, backend, input_data):
             else (out, (slice(None),), (slice(None),))
         )
 
-        assert np.allclose(
+        np.testing.assert_allclose(
             input_data[name].asnumpy()[gtslice],
             reference_outputs[name][refslice],
             equal_nan=True,
-        ), f"Validation failed for '{name}'"
+            err_msg=f"Validation failed for '{name}'",
+        )
 
 
 if pytest_benchmark:
@@ -155,5 +156,10 @@ class StencilTest:
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
 
 
-def reshape(arr: np.array, shape: tuple[int, ...]):
+def reshape(arr: np.ndarray, shape: tuple[int, ...]):
     return np.reshape(arr, shape)
+
+
+def as_1d_connectivity(connectivity: np.ndarray) -> np.ndarray:
+    old_shape = connectivity.shape
+    return np.arange(old_shape[0] * old_shape[1], dtype=gtx.int32).reshape(old_shape)

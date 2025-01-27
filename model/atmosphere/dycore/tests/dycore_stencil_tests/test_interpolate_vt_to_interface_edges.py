@@ -13,14 +13,14 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges 
     interpolate_vt_to_interface_edges,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def interpolate_vt_to_interface_edges_numpy(
-    grid, wgtfac_e: np.array, vt: np.array, **kwargs
-) -> np.array:
+    wgtfac_e: np.ndarray, vt: np.ndarray, **kwargs
+) -> np.ndarray:
     vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
     z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
     z_vt_ie[:, 0] = 0
@@ -34,9 +34,9 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
     @staticmethod
     def reference(
         grid,
-        wgtfac_e: np.array,
-        vt: np.array,
-        z_vt_ie: np.array,
+        wgtfac_e: np.ndarray,
+        vt: np.ndarray,
+        z_vt_ie: np.ndarray,
         horizontal_start: gtx.int32,
         horizontal_end: gtx.int32,
         vertical_start: gtx.int32,
@@ -44,7 +44,7 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
     ) -> dict:
         subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
         z_vt_ie = z_vt_ie.copy()
-        z_vt_ie[subset] = interpolate_vt_to_interface_edges_numpy(grid, wgtfac_e, vt)[subset]
+        z_vt_ie[subset] = interpolate_vt_to_interface_edges_numpy(wgtfac_e, vt)[subset]
         return dict(z_vt_ie=z_vt_ie)
 
     @pytest.fixture

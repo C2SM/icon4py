@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -13,9 +14,9 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coeff
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
@@ -24,23 +25,23 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        diff_multfac_smag: np.array,
-        tangent_orientation: np.array,
-        inv_primal_edge_length: np.array,
-        inv_vert_vert_length: np.array,
-        u_vert: np.array,
-        v_vert: np.array,
-        primal_normal_vert_x: np.array,
-        primal_normal_vert_y: np.array,
-        dual_normal_vert_x: np.array,
-        dual_normal_vert_y: np.array,
-        vn: np.array,
-        smag_limit: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        diff_multfac_smag: np.ndarray,
+        tangent_orientation: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        inv_vert_vert_length: np.ndarray,
+        u_vert: np.ndarray,
+        v_vert: np.ndarray,
+        primal_normal_vert_x: np.ndarray,
+        primal_normal_vert_y: np.ndarray,
+        dual_normal_vert_x: np.ndarray,
+        dual_normal_vert_y: np.ndarray,
+        vn: np.ndarray,
+        smag_limit: np.ndarray,
         smag_offset,
         **kwargs,
-    ) -> tuple[np.array]:
-        e2c2v = grid.connectivities[dims.E2C2VDim]
+    ) -> dict:
+        e2c2v = connectivities[dims.E2C2VDim]
         primal_normal_vert_x = primal_normal_vert_x.reshape(e2c2v.shape)
         primal_normal_vert_y = primal_normal_vert_y.reshape(e2c2v.shape)
         dual_normal_vert_x = dual_normal_vert_x.reshape(e2c2v.shape)
@@ -161,10 +162,18 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
 
-        primal_normal_vert_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-        primal_normal_vert_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-        dual_normal_vert_x = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-        dual_normal_vert_y = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_x = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
+        primal_normal_vert_y = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
+        dual_normal_vert_x = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
+        dual_normal_vert_y = data_alloc.random_field(
+            grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat
+        )
 
         primal_normal_vert_x_new = data_alloc.as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim)
         primal_normal_vert_y_new = data_alloc.as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim)

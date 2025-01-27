@@ -13,25 +13,30 @@ from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advect
     add_interpolated_horizontal_advection_of_w,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.utils.data_allocation import as_1D_sparse_field, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import as_1D_sparse_field, random_field
+from icon4py.model.testing import helpers
 
 
 def add_interpolated_horizontal_advection_of_w_numpy(
-    grid, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
-) -> np.array:
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    e_bln_c_s: np.ndarray,
+    z_v_grad_w: np.ndarray,
+    ddt_w_adv: np.ndarray,
+    **kwargs,
+) -> np.ndarray:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    c2ce = grid.get_offset_provider("C2CE").ndarray
+    c2e = connectivities[dims.C2EDim]
+    c2ce = helpers.as_1d_connectivity(c2e)
 
     ddt_w_adv = ddt_w_adv + np.sum(
-        z_v_grad_w[grid.connectivities[dims.C2EDim]] * e_bln_c_s[c2ce],
+        z_v_grad_w[c2e] * e_bln_c_s[c2ce],
         axis=1,
     )
     return ddt_w_adv
 
 
-class TestAddInterpolatedHorizontalAdvectionOfW(StencilTest):
+class TestAddInterpolatedHorizontalAdvectionOfW(helpers.StencilTest):
     PROGRAM = add_interpolated_horizontal_advection_of_w
     OUTPUTS = ("ddt_w_adv",)
 

@@ -13,9 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.fused_solve_nonhydro_stencil_39_40
     fused_solve_nonhydro_stencil_39_40,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
 from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
@@ -24,13 +24,22 @@ from .test_compute_contravariant_correction_of_w_for_lower_boundary import (
 
 
 def _fused_solve_nonhydro_stencil_39_40_numpy(
-    grid, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    e_bln_c_s,
+    z_w_concorr_me,
+    wgtfac_c,
+    wgtfacq_c,
+    vert_idx,
+    nlev,
+    nflatlev,
 ):
     w_concorr_c = np.where(
         (nflatlev < vert_idx) & (vert_idx < nlev),
-        compute_contravariant_correction_of_w_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfac_c),
+        compute_contravariant_correction_of_w_numpy(
+            connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c
+        ),
         compute_contravariant_correction_of_w_for_lower_boundary_numpy(
-            grid, e_bln_c_s, z_w_concorr_me, wgtfacq_c
+            connectivities, e_bln_c_s, z_w_concorr_me, wgtfacq_c
         ),
     )
 
@@ -45,18 +54,18 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        e_bln_c_s: np.array,
-        z_w_concorr_me: np.array,
-        wgtfac_c: np.array,
-        wgtfacq_c: np.array,
-        vert_idx: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        e_bln_c_s: np.ndarray,
+        z_w_concorr_me: np.ndarray,
+        wgtfac_c: np.ndarray,
+        wgtfacq_c: np.ndarray,
+        vert_idx: np.ndarray,
         nlev: int,
         nflatlev: int,
         **kwargs,
     ) -> dict:
         w_concorr_c_result = _fused_solve_nonhydro_stencil_39_40_numpy(
-            grid, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
+            connectivities, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
         )
         return dict(w_concorr_c=w_concorr_c_result)
 

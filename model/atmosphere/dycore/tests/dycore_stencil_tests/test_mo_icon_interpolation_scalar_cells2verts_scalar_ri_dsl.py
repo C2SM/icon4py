@@ -13,15 +13,15 @@ from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
-    grid, p_cell_in: np.array, c_intp: np.array
-) -> np.array:
-    v2c = grid.connectivities[dims.V2CDim]
+    connectivities: dict[gtx.Dimension, np.ndarray], p_cell_in: np.ndarray, c_intp: np.ndarray
+) -> np.ndarray:
+    v2c = connectivities[dims.V2CDim]
     c_intp = np.expand_dims(c_intp, axis=-1)
     p_vert_out = np.sum(np.where((v2c != -1)[:, :, np.newaxis], p_cell_in[v2c] * c_intp, 0), axis=1)
     return p_vert_out
@@ -32,9 +32,14 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
     OUTPUTS = ("p_vert_out",)
 
     @staticmethod
-    def reference(grid, p_cell_in: np.array, c_intp: np.array, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cell_in: np.array,
+        c_intp: np.array,
+        **kwargs,
+    ) -> dict:
         p_vert_out = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
-            grid, p_cell_in, c_intp
+            connectivities, p_cell_in, c_intp
         )
         return dict(
             p_vert_out=p_vert_out,

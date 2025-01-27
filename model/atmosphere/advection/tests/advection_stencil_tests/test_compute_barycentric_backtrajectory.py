@@ -10,8 +10,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
 import icon4py.model.common.utils.data_allocation as data_alloc
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_barycentric_backtrajectory import (
     compute_barycentric_backtrajectory,
 )
@@ -24,21 +24,21 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_vn: np.array,
-        p_vt: np.array,
-        cell_idx: np.array,
-        cell_blk: np.array,
-        pos_on_tplane_e_1: np.array,
-        pos_on_tplane_e_2: np.array,
-        primal_normal_cell_1: np.array,
-        dual_normal_cell_1: np.array,
-        primal_normal_cell_2: np.array,
-        dual_normal_cell_2: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_vn: np.ndarray,
+        p_vt: np.ndarray,
+        cell_idx: np.ndarray,
+        cell_blk: np.ndarray,
+        pos_on_tplane_e_1: np.ndarray,
+        pos_on_tplane_e_2: np.ndarray,
+        primal_normal_cell_1: np.ndarray,
+        dual_normal_cell_1: np.ndarray,
+        primal_normal_cell_2: np.ndarray,
+        dual_normal_cell_2: np.ndarray,
         p_dthalf: float,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         cell_idx = cell_idx.reshape(e2c.shape)
         cell_blk = cell_blk.reshape(e2c.shape)
         pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
@@ -97,7 +97,7 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_idx = np.asarray(grid.connectivities[dims.E2CDim], dtype=gtx.int32)
+        cell_idx = grid.connectivities[dims.E2CDim]
         cell_idx_new = data_alloc.numpy_to_1D_sparse_field(cell_idx, dims.ECDim)
         cell_blk = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
         cell_blk_new = data_alloc.as_1D_sparse_field(cell_blk, dims.ECDim)

@@ -10,8 +10,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
 import icon4py.model.common.utils.data_allocation as data_alloc
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_antidiffusive_cell_fluxes_and_min_max import (
     compute_antidiffusive_cell_fluxes_and_min_max,
 )
@@ -30,7 +30,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.ndarray,
         p_rhodz_now: np.ndarray,
         p_rhodz_new: np.ndarray,
@@ -40,7 +40,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
         p_dtime: float,
         **kwargs,
     ) -> dict:
-        c2e = grid.connectivities[dims.C2EDim]
+        c2e = connectivities[dims.C2EDim]
         z_anti_c2e = z_anti[c2e]
 
         geofac_div = helpers.reshape(geofac_div, c2e.shape)

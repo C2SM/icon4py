@@ -10,8 +10,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.testing.helpers as helpers
 import icon4py.model.common.utils.data_allocation as data_alloc
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_barycentric_backtrajectory_alt import (
     compute_barycentric_backtrajectory_alt,
 )
@@ -24,19 +24,19 @@ class TestComputeBarycentricBacktrajectoryAlt(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_vn: np.array,
-        p_vt: np.array,
-        pos_on_tplane_e_1: np.array,
-        pos_on_tplane_e_2: np.array,
-        primal_normal_cell_1: np.array,
-        dual_normal_cell_1: np.array,
-        primal_normal_cell_2: np.array,
-        dual_normal_cell_2: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_vn: np.ndarray,
+        p_vt: np.ndarray,
+        pos_on_tplane_e_1: np.ndarray,
+        pos_on_tplane_e_2: np.ndarray,
+        primal_normal_cell_1: np.ndarray,
+        dual_normal_cell_1: np.ndarray,
+        primal_normal_cell_2: np.ndarray,
+        dual_normal_cell_2: np.ndarray,
         p_dthalf: float,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
         pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
         primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)

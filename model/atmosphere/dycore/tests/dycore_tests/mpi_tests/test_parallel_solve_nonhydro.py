@@ -13,8 +13,8 @@ from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as nh
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.testing import helpers, parallel_helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import helpers, parallel_helpers
 
 from .. import utils
 
@@ -94,18 +94,16 @@ def test_run_solve_nonhydro_single_step(
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
+    # clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")  # noqa: ERA001 [commented-out-code]
     prep_adv = dycore_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
-    nnow = 0
-    nnew = 1
     recompute = sp_v.get_metadata("recompute").get("recompute")
-    linit = sp_v.get_metadata("linit").get("linit")
+    # linit = sp_v.get_metadata("linit").get("linit")  # noqa: ERA001 [commented-out-code]
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
@@ -140,7 +138,6 @@ def test_run_solve_nonhydro_single_step(
     edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     prognostic_states = utils.create_prognostic_states(sp)
-
 
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
