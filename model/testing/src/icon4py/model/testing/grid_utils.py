@@ -151,7 +151,7 @@ def get_grid_geometry(
         return decomposition_info
 
     def construct_grid_geometry(grid_file: str):
-        gm = _run_grid_manager_for_file(grid_file, backend=backend, num_levels=num_levels)
+        gm = _download_and_load_gridfile(grid_file, num_levels=num_levels, backend=backend)
         grid = gm.grid
         decomposition_info = construct_decomposition_info(grid)
         geometry_source = geometry.GridGeometry(
@@ -160,7 +160,5 @@ def get_grid_geometry(
         return geometry_source
 
     if not grid_geometries.get(register_name):
-        grid_geometries[register_name] = construct_grid_geometry(
-            str(resolve_full_grid_file_name(grid_file))
-        )
+        grid_geometries[register_name] = construct_grid_geometry(grid_file)
     return grid_geometries[register_name]
