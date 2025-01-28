@@ -14,12 +14,16 @@ from icon4py.model.common.states import model
 
 C_LIN_E: Final[str] = "interpolation_coefficient_from_cell_to_edge"
 C_BLN_AVG: Final[str] = "bilinear_cell_average_weight"
+E_BLN_C_S: Final[str] = "bilinear_edge_cell_weight"
 GEOFAC_DIV: Final[str] = "geometrical_factor_for_divergence"
 GEOFAC_ROT: Final[str] = "geometrical_factor_for_curl"
 GEOFAC_N2S: Final[str] = "geometrical_factor_for_nabla_2_scalar"
 GEOFAC_GRDIV: Final[str] = "geometrical_factor_for_gradient_of_divergence"
 GEOFAC_GRG_X: Final[str] = "geometrical_factor_for_green_gauss_gradient_x"
 GEOFAC_GRG_Y: Final[str] = "geometrical_factor_for_green_gauss_gradient_y"
+E_FLX_AVG: Final[str] = "e_flux_average"
+POS_ON_TPLANE_E_X: Final[str] = "pos_on_tplane_e_x"
+POS_ON_TPLANE_E_Y: Final[str] = "pos_on_tplane_e_y"
 CELL_AW_VERTS: Final[str] = "cell_to_vertex_interpolation_factor_by_area_weighting"
 
 attrs: dict[str, model.FieldMetaData] = {
@@ -37,6 +41,14 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.EdgeDim, dims.E2CDim),
         icon_var_name="c_lin_e",
+        dtype=ta.wpfloat,
+    ),
+    E_BLN_C_S: dict(
+        standard_name=E_BLN_C_S,
+        long_name="mass conserving bilinear edge cell weight",
+        units="",  # TODO check or confirm
+        dims=(dims.CellDim, dims.C2EDim),
+        icon_var_name="e_bln_c_s",
         dtype=ta.wpfloat,
     ),
     GEOFAC_DIV: dict(
@@ -85,6 +97,30 @@ attrs: dict[str, model.FieldMetaData] = {
         units="",  # TODO (@halungge) check or confirm
         dims=(dims.CellDim, dims.C2E2CODim),
         icon_var_name="geofac_grg",
+        dtype=ta.wpfloat,
+    ),
+    E_FLX_AVG: dict(
+        standard_name=E_FLX_AVG,
+        long_name="e flux average",
+        units="",  # TODO check or confirm
+        dims=(dims.EdgeDim, dims.E2C2EODim),
+        icon_var_name="e_flx_avg",
+        dtype=ta.wpfloat,
+    ),
+    POS_ON_TPLANE_E_X: dict(
+        standard_name=POS_ON_TPLANE_E_X,
+        long_name="position on tplane x",
+        units="",  # TODO check or confirm
+        dims=(dims.ECDim,),
+        icon_var_name="pos_on_tplane_e_x",
+        dtype=ta.wpfloat,
+    ),
+    POS_ON_TPLANE_E_Y: dict(
+        standard_name=POS_ON_TPLANE_E_Y,
+        long_name="position on tplane y",
+        units="",  # TODO check or confirm
+        dims=(dims.ECDim,),
+        icon_var_name="pos_on_tplane_e_y",
         dtype=ta.wpfloat,
     ),
     CELL_AW_VERTS: dict(
