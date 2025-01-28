@@ -86,8 +86,11 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    match_marker(item.own_markers, item.config.getoption("--datatest"))
-    match_marker(item.own_markers, item.config.getoption("--backend"))
+    match_marker(
+        item.own_markers,
+        item.config.getoption("--backend"),
+        is_datatest=item.config.getoption("--datatest"),
+    )
 
 
 def pytest_generate_tests(metafunc):

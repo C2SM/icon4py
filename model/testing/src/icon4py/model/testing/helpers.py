@@ -50,7 +50,7 @@ def is_dace(backend) -> bool:
 
 
 def is_embedded(backend) -> bool:
-    return backend in (None, "embedded")
+    return backend is None
 
 
 def is_roundtrip(backend) -> bool:
@@ -74,28 +74,24 @@ def allocate_data(backend, input_data):
     return input_data
 
 
-def match_marker(markers: tuple, param: typing.Any):
+def match_marker(
+    markers: tuple[pytest.Mark | pytest.MarkDecorator, ...], backend: str, is_datatest: bool = False
+):
+    backend = None if backend == "embedded" else backend
     for marker in markers:
-        if hasattr(marker, "markname"):
-            m_name = marker.markname
-        elif hasattr(marker, "name"):
-            m_name = marker.name
-        else:
-            m_name = marker
-
-        match m_name:
-            case "embedded_remap_error" if is_embedded(param):
+        match marker.name:
+            case "embedded_remap_error" if is_embedded(backend):
                 # https://github.com/GridTools/gt4py/issues/1583
                 pytest.xfail("Embedded backend currently fails in remap function.")
-            case "uses_as_offset" if is_embedded(param):
+            case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
-            case "requires_concat_where" if is_embedded(param):
+            case "requires_concat_where" if is_embedded(backend):
                 pytest.xfail("Stencil requires concat_where.")
             case "skip_value_error":
                 pytest.skip(
                     "Stencil does not support domain containing skip values. Consider shrinking domain."
                 )
-            case "datatest" if param is None:
+            case "datatest" if is_datatest:
                 pytest.skip("need '--datatest' option to run")
 
 
