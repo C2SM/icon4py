@@ -57,6 +57,10 @@ def is_roundtrip(backend) -> bool:
     return backend.name == "roundtrip" if backend else False
 
 
+def extract_backend_name(backend) -> str:
+    return backend.name if hasattr(backend, "name") else "embedded"
+
+
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
     return hashlib.md5(np.asarray(buffer, order="C")).hexdigest()[-digest_length:]
 
@@ -91,7 +95,7 @@ def match_marker(
                 pytest.skip(
                     "Stencil does not support domain containing skip values. Consider shrinking domain."
                 )
-            case "datatest" if is_datatest:
+            case "datatest" if not is_datatest:
                 pytest.skip("need '--datatest' option to run")
 
 

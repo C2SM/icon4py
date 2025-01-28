@@ -135,9 +135,8 @@ def get_grid_geometry(
     on_gpu = data_alloc.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
     num_levels = get_num_levels(experiment)
-    register_name = experiment.join(
-        backend.name if not helpers.is_embedded(backend) else str(backend)
-    )
+    backend_name = helpers.extract_backend_name(backend)
+    register_name = experiment.join(backend_name)
 
     def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):

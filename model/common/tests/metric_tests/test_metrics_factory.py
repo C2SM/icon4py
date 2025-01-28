@@ -64,7 +64,8 @@ def metrics_config(experiment: str) -> tuple:
 def get_metrics_factory(
     backend, experiment, grid_file, grid_savepoint, metrics_savepoint
 ) -> metrics_factory.MetricsFieldsFactory:
-    name = experiment.join(backend.name) if not test_helpers.is_embedded(backend) else str(backend)
+    backend_name = test_helpers.extract_backend_name(backend)
+    name = experiment.join(backend_name)
     factory = metrics_factories.get(name)
 
     if not factory:
