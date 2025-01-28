@@ -643,7 +643,6 @@ def _check_union(
 ) -> bool:
     members = get_args(union)
     # fix for unions with only one member, which implicitly are not Union but fallback to the type
-    # fix for unions with only one member, which implicitly are not Union but fallback to the type
     if not members:
         members = (union,)
     annotation = parameter_definition.annotation
