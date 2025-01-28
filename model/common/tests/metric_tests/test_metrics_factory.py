@@ -139,7 +139,7 @@ def test_factory_inv_ddqz_z(grid_savepoint, metrics_savepoint, grid_file, experi
     field = factory.get(attrs.INV_DDQZ_Z_FULL)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
-
+@pytest.mark.requires_concat_where
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -525,6 +525,7 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
