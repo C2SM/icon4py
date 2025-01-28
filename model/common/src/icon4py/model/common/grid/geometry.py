@@ -29,6 +29,7 @@ from icon4py.model.common.grid import (
     icon,
 )
 from icon4py.model.common.states import factory, model, utils as state_utils
+from icon4py.model.common.utils import data_allocation as alloc
 
 
 InputGeometryFieldType: TypeAlias = Literal[attrs.CELL_AREA, attrs.TANGENT_ORIENTATION]
@@ -94,6 +95,7 @@ class GridGeometry(factory.FieldSource):
         """
         self._providers = {}
         self._backend = backend
+        self._xp = alloc.import_array_ns(backend)
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
         self._decomposition_info = decomposition_info
@@ -257,7 +259,7 @@ class GridGeometry(factory.FieldSource):
         self.register_provider(coriolis_params)
 
         # normals:
-        # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal
+        # 1. edges%primal_cart_normal (cartesian coordinates for primal_normal)
         tangent_normal_coordinates = factory.ProgramFieldProvider(
             func=stencils.compute_cartesian_coordinates_of_edge_tangent_and_normal,
             deps={
@@ -283,6 +285,7 @@ class GridGeometry(factory.FieldSource):
             },
         )
         self.register_provider(tangent_normal_coordinates)
+
         # 2. primal_normals: gridfile%zonal_normal_primal_edge - edges%primal_normal%v1, gridfile%meridional_normal_primal_edge - edges%primal_normal%v2,
         normal_uv = factory.ProgramFieldProvider(
             func=math_helpers.compute_zonal_and_meridional_components_on_edges,
@@ -305,6 +308,28 @@ class GridGeometry(factory.FieldSource):
             },
         )
         self.register_provider(normal_uv)
+
+        dual_uv = factory.ProgramFieldProvider(
+            func=math_helpers.compute_zonal_and_meridional_components_on_edges,
+            deps={
+                "lat": attrs.EDGE_LAT,
+                "lon": attrs.EDGE_LON,
+                "x": attrs.EDGE_TANGENT_X,
+                "y": attrs.EDGE_TANGENT_Y,
+                "z": attrs.EDGE_TANGENT_Z,
+            },
+            fields={
+                "u": attrs.EDGE_DUAL_U,
+                "v": attrs.EDGE_DUAL_V,
+            },
+            domain={
+                dims.EdgeDim: (
+                    self._edge_domain(h_grid.Zone.LOCAL),
+                    self._edge_domain(h_grid.Zone.END),
+                )
+            },
+        )
+        self.register_provider(dual_uv)
 
         # 3. primal_normal_vert, primal_normal_cell
         normal_vert = factory.ProgramFieldProvider(
