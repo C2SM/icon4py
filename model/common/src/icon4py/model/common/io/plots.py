@@ -6,6 +6,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
 import matplotlib as mpl
+import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -272,16 +273,26 @@ class Plot:
         if type(data) is not np.ndarray:
             data = data.ndarray
 
-        #cmin = data.min()
-        #cmax = data.max()
+        cmin = data.min()
+        cmax = data.max()
+        nlevels = 5
+        if cmin < 0 and cmax > 0:
+            cmap = "seismic"
+            norm = colors.TwoSlopeNorm(vmin=cmin, vcenter=0, vmax=cmax)
+            #levels = np.r_[np.linspace(cmin,0,nlevels//2)[0:-1], np.linspace(0,cmax,nlevels//2)]
+            #cbarticks=[levels[i] for i in [0,nlevels//2-1,nlevels-2]]
+        else:
+            cmap = "YlOrRd"
+            norm = colors.Normalize()
+
 
         match data.shape[0]:
             case self.grid.num_cells:
-                plot_lev = lambda data, i: axs[i].tripcolor(tri, data[:, -1-i], edgecolor='none', shading='flat', cmap='viridis') #, vmin=cmin, vmax=cmax)
+                plot_lev = lambda data, i: axs[i].tripcolor(tri, data[:, -1-i], edgecolor='none', shading='flat', cmap=cmap, norm=norm)
             case self.grid.num_edges:
-                plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=8**2, cmap='viridis') #, vmin=cmin, vmax=cmax)
+                plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=8**2, cmap=cmap, norm=norm)
             case self.grid.num_vertices:
-                plot_lev = lambda data, i: axs[i].scatter(tri.x, tri.y, c=data[:, -1-i], s=8**2, cmap='viridis') #, vmin=cmin, vmax=cmax)
+                plot_lev = lambda data, i: axs[i].scatter(tri.x, tri.y, c=data[:, -1-i], s=8**2, cmap=cmap, norm=norm)
 
         fig = plt.figure(1, figsize=(14,min(13,4*nlev))); plt.clf()
         axs = fig.subplots(nrows=min(nax_per_col, nlev), ncols=max(1,int(np.ceil(nlev/nax_per_col))), sharex=True, sharey=True)
@@ -300,7 +311,7 @@ class Plot:
             if "vvec_cell" in file_name:
                 axs[i].quiver(tri.cell_x, tri.cell_y, u[:, -1-i], v[:, -1-i])
             elif "vvec_edge" in file_name:
-                axs[i].quiver(tri.edge_x, tri.edge_y, vn[:, -1-i]*self.primal_normal[0], vn[:, -1-i]*self.primal_normal[1])
+                axs[i].quiver(tri.edge_x, tri.edge_y, vn[:, -1-i]*self.primal_normal[0],  vn[:, -1-i]*self.primal_normal[1])
                 axs[i].quiver(tri.edge_x, tri.edge_y, vt[:, -1-i]*self.primal_tangent[0], vt[:, -1-i]*self.primal_tangent[1])
             axs[i].set_aspect('equal')
             #axs[i].set_xlim(X_LIMS)
@@ -350,10 +361,10 @@ if __name__ == "__main__":
         backend = gtx.gtfn_cpu,
         )
 
-    #plot.plot_data(prognostic_states.current.vn, 5, label=f"vn")
-    #plot.plot_data(prognostic_states.current.w,  5, label=f"w")
-    #axs = plot.plot_data(prognostic_states.current.vn, 1, label=f"vvec_cell")
-    axs = plot.plot_data(prognostic_states.current.vn, 1, label=f"vvec_edge")
+    #plot.plot_data(prognostic_states.current.vn, 2, label=f"vn")
+    plot.plot_data(prognostic_states.current.w,  2, label=f"w")
+    axs = plot.plot_data(prognostic_states.current.vn, 2, label=f"vvec_cell")
+    axs = plot.plot_data(prognostic_states.current.vn, 2, label=f"vvec_edge")
     #plot.plot_grid(axs[0])
 
     ## --> check grid file
