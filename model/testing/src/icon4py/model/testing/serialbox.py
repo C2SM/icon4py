@@ -1153,6 +1153,59 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def w_concorr_c(self):
         return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
 
+    def init_vn_19_20(self):
+        return self._get_field("init_vn_19_20", dims.EdgeDim, dims.KDim)
+
+    def init_geofac_rot_19_20(self):
+        return self._get_field("init_geofac_rot_19_20",dims.VertexDim, dims.V2EDim)
+
+    def init_z_kin_hor_e_19_20(self):
+        return self._get_field("init_z_kin_hor_e_19_20", dims.EdgeDim, dims.KDim)
+
+    def init_coeff_gradekin_19_20(self):
+        field = self._get_field("init_coeff_gradekin_19_20", dims.EdgeDim, dims.E2CDim)
+        return data_alloc.as_1D_sparse_field(field, dims.ECDim)
+
+    def init_z_ekinh_19_20(self):
+        return self._get_field("init_z_ekinh_19_20", dims.CellDim, dims.KDim)
+
+    def init_vt_19_20(self):
+        return self._get_field("init_vt_19_20", dims.EdgeDim, dims.KDim)
+
+    def init_f_e_19_20(self):
+        return self._get_field("init_f_e_19_20", dims.EdgeDim)
+
+    def init_c_lin_e_19_20(self):
+        return self._get_field("init_c_lin_e_19_20", dims.EdgeDim, dims.E2CDim)
+
+    def init_z_w_con_c_full_19_20(self):
+        return self._get_field("init_z_w_con_c_full_19_20", dims.CellDim, dims.KDim)
+
+    def init_vn_ie_19_20(self):
+        return self._get_field("init_vn_ie_19_20", dims.EdgeDim, dims.KDim)
+
+    def init_ddqz_z_full_e_19_20(self):
+        return self._get_field("init_ddqz_z_full_e_19_20", dims.EdgeDim, dims.KDim)
+
+    def init_levelmask_19_20(self):
+        return self._get_field("init_levelmask_19_20", dims.KDim)
+
+    def init_area_edge_19_20(self):
+        return self._get_field("init_area_edge_19_20", dims.EdgeDim)
+
+    def init_tangent_orientation_19_20(self):
+        return self._get_field("init_tangent_orientation_19_20", dims.EdgeDim)
+
+    def init_inv_primal_edge_length_19_20(self):
+        return self._get_field("init_inv_primal_edge_length_19_20", dims.EdgeDim)
+
+    def init_geofac_grdiv_19_20(self):
+        return self._get_field("init_geofac_grdiv_19_20", dims.EdgeDim, dims.E2C2EODim)
+
+    def init_ddt_vn_apc_19_20(self):
+        return self._get_field("init_ddt_vn_apc_19_20", dims.EdgeDim, dims.KDim)
+
+
 
 class IconDiffusionExitSavepoint(IconSavepoint):
     def vn(self):
@@ -1351,6 +1404,9 @@ class IconNonhydroExitSavepoint(IconSavepoint):
 
     def exner_dyn_incr(self):
         return self._get_field("x_exner_dyn_incr", dims.CellDim, dims.KDim)
+
+    def x_ddt_vn_apc_19_20(self):
+        return self._get_field("x_ddt_vn_apc_19_20", dims.EdgeDim, dims.KDim)
 
 
 # TODO (magdalena) rename?
