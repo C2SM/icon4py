@@ -129,11 +129,11 @@ class AdvectionConfig:
 
 class Advection(ABC):
     """
-    Class that runs one three-dimensional advection step.
+    Runs one three-dimensional advection step.
 
     Missing advection-specific features:
-        -tracer loops: currently the run method only advects one type of tracer at once
-        -optional tendency output: depending on the physics package, additional output is needed (opt_ddt_tracer_adv)
+        -tracer loops: currently the `run` method only advects one type of tracer at once
+        -optional tendency output: depending on the physics package, opt_ddt_tracer_adv might be needed
         -maximum advection height: tracer-specific control over which levels are used for advection
     """
 
