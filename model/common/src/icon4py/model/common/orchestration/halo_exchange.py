@@ -211,7 +211,7 @@ def add_halo_tasklet(
             h_{unique_id} = communication_object->exchange({", ".join([f'(*pattern)({"" if wait else "*"}{descr_unique_names[i]})' for i in range(len(global_buffers))])});
             { 'h_'+str(unique_id)+'.wait();' if wait else ''}
 
-            __out[0] = 1234; // Dummy return;
+            __out = 1234; // Dummy return;
             """
 
     tasklet.code = dace.properties.CodeBlock(code=code, language=dace.dtypes.Language.CPP)
@@ -288,7 +288,7 @@ class DummyNestedSDFG:
             "DummyNestedSDFG",
             inputs=None,
             outputs=None,
-            code="__out[0] = 1;",
+            code="__out = 1;",
             language=dace.dtypes.Language.CPP,
             side_effects=False,
         )
