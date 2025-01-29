@@ -31,7 +31,7 @@ class TestVelScaleFactorSnow(StencilTest):
             xrho            = constant_field(grid, 1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho             = constant_field(grid, 0.882961, dims.CellDim, dims.KDim, dtype=wpfloat),
             t               = constant_field(grid, 257.101, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qx              = constant_field(grid, 5.78761e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs              = constant_field(grid, 5.78761e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
             QMIN            = graupel_ct.qmin,
             AMS             = graupel_ct.ams,
             TMELT           = thermodyn.tmelt,

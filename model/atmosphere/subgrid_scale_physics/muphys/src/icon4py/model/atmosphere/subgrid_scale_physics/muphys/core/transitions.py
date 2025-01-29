@@ -81,8 +81,8 @@ def _cloud_to_snow(
     qs:       fa.CellKField[ta.wpfloat],             # Snow specific mass
     ns:       fa.CellKField[ta.wpfloat],             # Snow number
     lam:      fa.CellKField[ta.wpfloat],             # Snow slope parameter (lambda)
-    V1S:      ta.wpfloat,
     V0S:      ta.wpfloat,
+    V1S:      ta.wpfloat,
     TFRZ_HOM: ta.wpfloat,
     QMIN:     ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:                     # Return: Riming snow rate
@@ -137,7 +137,7 @@ def cloud_x_ice(
 @gtx.field_operator
 def _graupel_to_rain(
     t:       fa.CellKField[ta.wpfloat],             # Ambient temperature
-    p:       fa.CellKField[ta.wpfloat],             # Ambient pressue
+    p:       fa.CellKField[ta.wpfloat],             # Ambient pressure
     rho:     fa.CellKField[ta.wpfloat],             # Ambient density
     dvsw0:   fa.CellKField[ta.wpfloat],             # qv-qsat_water(T0)
     qg:      fa.CellKField[ta.wpfloat],             # Graupel specific mass

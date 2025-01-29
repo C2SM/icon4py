@@ -7,11 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 
-from gt4py.next.ffront.fbuiltins import where, maximum, minimum, power
+from gt4py.next.ffront.fbuiltins import where, maximum, minimum, power, sqrt
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda, _ice_number, _ice_mass, _ice_sticking
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda, _ice_number, _ice_mass, _ice_sticking, _deposition_factor, _deposition_auto_conversion, _ice_deposition_nucleation, _vel_scale_factor_default, _vel_scale_factor_ice, _vel_scale_factor_snow
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import _qsat_rho, _qsat_ice_rho
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import _cloud_to_rain, _rain_to_vapor, _cloud_x_ice, _cloud_to_snow, _cloud_to_graupel
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import _cloud_to_rain, _rain_to_vapor, _cloud_x_ice, _cloud_to_snow, _cloud_to_graupel, _vapor_x_ice, _ice_to_snow, _ice_to_graupel, _rain_to_graupel, _snow_to_graupel, _vapor_x_snow, _vapor_x_graupel, _snow_to_rain, _graupel_to_rain
 
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 
@@ -109,27 +109,39 @@ def _graupel_mask(
 @gtx.field_operator
 def _graupel_loop2(
 # TODO: arguments
-    qv:     fa.CellKField[ta.wpfloat],             # Q vapor content
-    qc:     fa.CellKField[ta.wpfloat],             # Q cloud content
-    qr:     fa.CellKField[ta.wpfloat],             # Q rain content
-    qs:     fa.CellKField[ta.wpfloat],             # Q snow content
-    qi:     fa.CellKField[ta.wpfloat],             # Q ice content
-    qg:     fa.CellKField[ta.wpfloat],             # Q graupel content
-    qnc:    fa.CellKField[ta.wpfloat],
-    t :     fa.CellKField[ta.wpfloat],
-    rho:    fa.CellKField[ta.wpfloat],
+    qv:             fa.CellKField[ta.wpfloat],             # Q vapor content
+    qc:             fa.CellKField[ta.wpfloat],             # Q cloud content
+    qr:             fa.CellKField[ta.wpfloat],             # Q rain content
+    qs:             fa.CellKField[ta.wpfloat],             # Q snow content
+    qi:             fa.CellKField[ta.wpfloat],             # Q ice content
+    qg:             fa.CellKField[ta.wpfloat],             # Q graupel content
+    qnc:            fa.CellKField[ta.wpfloat],
+    t:              fa.CellKField[ta.wpfloat],
+    p:              fa.CellKField[ta.wpfloat],
+    rho:            fa.CellKField[ta.wpfloat],
     is_sig_present: fa.CellKField[bool],
-    dt:     ta.wpfloat,
-    QMIN:   ta.wpfloat,
-    TMELT:  ta.wpfloat,
-    RV:     ta.wpfloat,
-    AMS:    ta.wpfloat,
-    BMS:    ta.wpfloat,
-    M0_ICE: ta.wpfloat,
-    TFRZ_HOM: ta.wpfloat,
-    V0S:    ta.wpfloat,
-    V1S:    ta.wpfloat,
-) -> [fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
+    dt:             ta.wpfloat,
+    CI:             ta.wpfloat,
+    CLW:            ta.wpfloat,
+    CVD:            ta.wpfloat,
+    CVV:            ta.wpfloat,
+    QMIN:           ta.wpfloat,
+    LSC:            ta.wpfloat,
+    LVC:            ta.wpfloat,
+    TMELT:          ta.wpfloat,
+    RD:             ta.wpfloat,
+    RV:             ta.wpfloat,
+    ALS:            ta.wpfloat,
+    AMS:            ta.wpfloat,
+    BMS:            ta.wpfloat,
+    M0_ICE:         ta.wpfloat,
+    TFRZ_HET1:      ta.wpfloat,
+    TFRZ_HET2:      ta.wpfloat,
+    TFRZ_HOM:       ta.wpfloat,
+    TX:             ta.wpfloat,
+    V0S:            ta.wpfloat,
+    V1S:            ta.wpfloat,
+) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
 
     dvsw = qv - _qsat_rho( t, rho, TMELT, RV )
     qvsi = _qsat_ice_rho( t, rho, TMELT, RV )
@@ -146,39 +158,39 @@ def _graupel_loop2(
     sx2x_i_c = -minimum(sx2x_c_i, 0.0)
     sx2x_c_i = maximum(sx2x_c_i, 0.0)
 
-    sx2x_c_s = _cloud_to_snow( t, qc, qs, n_snow, l_snow, V1S, V0S, TFRZ_HOM, QMIN )
+    sx2x_c_s = _cloud_to_snow( t, qc, qs, n_snow, l_snow, V0S, V1S, TFRZ_HOM, QMIN )
     sx2x_c_g = _cloud_to_graupel( t, rho, qc, qg, TFRZ_HOM, QMIN )
 
     n_ice = where( t < TMELT, _ice_number( t, rho, TMELT ), 0.0 )
     m_ice = where( t < TMELT, _ice_mass( qi, n_ice, M0_ICE ), 0.0 )
     x_ice = where( t < TMELT, _ice_sticking( t, TMELT ), 0.0 )
 
-    eta          = where( (t < TMELT) & is_sig_present, _deposition_factor( t, qvsi, OTHERS ), 0.0 )
-    sx2x_v_i = where( (t < TMELT) & is_sig_present, _vapor_x_ice( qi, m_ice, eta, dvsi, rho, dt, OTHERS ), 0.0 )
+    eta          = where( (t < TMELT) & is_sig_present, _deposition_factor( t, qvsi, QMIN, ALS, RD, RV, TMELT ), 0.0 )
+    sx2x_v_i = where( (t < TMELT) & is_sig_present, _vapor_x_ice( qi, m_ice, eta, dvsi, rho, dt, QMIN ), 0.0 )
     sx2x_i_v = where( (t < TMELT) & is_sig_present, -minimum( sx2x_v_i, 0.0 ) , 0.0 )
     sx2x_v_i = where( (t < TMELT) & is_sig_present, maximum( sx2x_v_i, 0.0 ) , 0.0 )
     ice_dep      = where( (t < TMELT) & is_sig_present, minimum( sx2x_v_i, dvsi/dt ) , 0.0 )
 
-    sx2x_i_s = where( (t < TMELT) & is_sig_present, _deposition_auto_conversion( qi, m_ice, ice_dep, OTHERS ) + ice_to_snow( qi, n_snow, l_snow, x_ice, OTHERS), 0.0 )
-    sx2x_i_g = where( (t < TMELT) & is_sig_present, _ice_to_graupel( rho, qr, qg, qi, m_ice, OTHERS ), 0.0 )
-    sx2x_s_g = where( (t < TMELT) & is_sig_present, _snow_to_graupel( t, rho, qc, qs, OTHERS ), 0.0 )
-    sx2x_r_g = where( (t < TMELT) & is_sig_present, _rain_to_graupel( t, rho, qc, qr, qi, qs, m_ice, dvsw, dt, OTHERS ), 0.0 )
+    sx2x_i_s = where( (t < TMELT) & is_sig_present, _deposition_auto_conversion( qi, m_ice, ice_dep, QMIN ) + _ice_to_snow( qi, n_snow, l_snow, x_ice, QMIN, V0S, V1S ), 0.0 )
+    sx2x_i_g = where( (t < TMELT) & is_sig_present, _ice_to_graupel( rho, qr, qg, qi, m_ice, QMIN ), 0.0 )
+    sx2x_s_g = where( (t < TMELT) & is_sig_present, _snow_to_graupel( t, rho, qc, qs, QMIN, TFRZ_HOM ), 0.0 )
+    sx2x_r_g = where( (t < TMELT) & is_sig_present, _rain_to_graupel( t, rho, qc, qr, qi, qs, m_ice, dvsw, dt, QMIN, TFRZ_HOM, TMELT ), 0.0 )
 
-    sx2x_v_i = where( t < TMELT, sx2x_v_i + _ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt, OTHERS ), 0.0 )
+    sx2x_v_i = where( t < TMELT, sx2x_v_i + _ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt, QMIN, M0_ICE, TFRZ_HET1, TFRZ_HET2 ), 0.0 )
 
     sx2x_c_r = where( t >= TMELT, sx2x_c_r + sx2x_c_s + sx2x_c_g, sx2x_c_r )
 
-    dvsw0    = where( is_sig_present, qv - _qsat_rho( t, rho, TMELT, RV ) )  # TODO: new qsat_rho_tmelt
-    sx2x_v_s = where( is_sig_present, _vapor_x_snow( t, p, rho, qs, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt ), 0.0 )
+    dvsw0    = where( is_sig_present, qv - _qsat_rho( t, rho, TMELT, RV ), 0.0 )  # TODO: new qsat_rho_tmelt, TODO: use dvsw ??
+    sx2x_v_s = where( is_sig_present, _vapor_x_snow( t, p, rho, qs, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt, QMIN, TX, TMELT, V0S, V1S ), 0.0 )
     sx2x_s_v = where( is_sig_present, -minimum( sx2x_v_s, 0.0 ), 0.0 )
     sx2x_v_s = where( is_sig_present, maximum( sx2x_v_s, 0.0 ), 0.0 )
 
-    sx2x_v_g = where( is_sig_present, _vapor_x_graupel( t, p, rho, qg, dvsw, dvsi, dvsw0, dt ), 0.0 )
+    sx2x_v_g = where( is_sig_present, _vapor_x_graupel( t, p, rho, qg, dvsw, dvsi, dvsw0, dt, QMIN, TX, TMELT ), 0.0 )
     sx2x_g_v = where( is_sig_present, -minimum( sx2x_v_g, 0.0 ), 0.0 )
     sx2x_v_g = where( is_sig_present, maximum( sx2x_v_g, 0.0 ), 0.0 )
 
-    sx2x_s_r = where( is_sig_present, _snow_to_rain( t, p, rho, dvsw0, qs, OTHERS ), 0.0 )
-    sx2x_g_r = where( is_sig_present, _graupel_to_rain( t, p, rho, dvsw0, qg, OTHERS ), 0.0 )
+    sx2x_s_r = where( is_sig_present, _snow_to_rain( t, p, rho, dvsw0, qs, QMIN, TX, TMELT ), 0.0 )
+    sx2x_g_r = where( is_sig_present, _graupel_to_rain( t, p, rho, dvsw0, qg, QMIN, TX, TMELT ), 0.0 )
 
     # The following transitions are not physically meaningful, would be 0.0 in other implementation
     # here they are simply never used:
@@ -234,12 +246,17 @@ def _graupel_loop2(
     sink_g = where( (sink_g > stot) & (qg > QMIN), sx2x_g_v + sx2x_g_r, sink_g) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
 
     # water content updates:
-    qv  = maximum( 0.0, qv + ( sx2x_v_s + sx2x_v_i + sx2x_v_g - sink_v ) * dt ) # Missing: sx2x_v_c + sx2x_v_r
-    qc  = maximum( 0.0, qc + ( sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g - sink_c ) * dt ) # Missing: sx2x_c_v
-    qr  = maximum( 0.0, qr + ( sx2x_r_v + sx2x_r_g - sink_r ) * dt ) # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
-    qs  = maximum( 0.0, qs + ( sx2x_s_v + sx2x_s_r + sx2x_s_g - sink_s ) * dt ) # Missing: sx2x_s_c + sx2x_s_i
-    qi  = maximum( 0.0, qi + ( sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g - sink_i ) * dt ) # Missing: sx2x_i_r
-    qg  = maximum( 0.0, qg + ( sx2x_g_v + sx2x_g_r - sink_g ) * dt ) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
+    qv     = maximum( 0.0, qv + ( sx2x_v_s + sx2x_v_i + sx2x_v_g - sink_v ) * dt ) # Missing: sx2x_v_c + sx2x_v_r
+    dqdt_c = sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g - sink_c                    # Missing: sx2x_c_v
+    qc     = maximum( 0.0, qc + dqdt_c * dt )
+    dqdt_r = sx2x_r_v + sx2x_r_g - sink_r                                          # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
+    qr     = maximum( 0.0, qr + dqdt_r * dt )
+    dqdt_s = sx2x_s_v + sx2x_s_r + sx2x_s_g - sink_s                               # Missing: sx2x_s_c + sx2x_s_i
+    qs     = maximum( 0.0, qs + dqdt_s * dt )
+    dqdt_i = sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g - sink_i                    # Missing: sx2x_i_r
+    qi     = maximum( 0.0, qi + dqdt_i * dt )
+    dqdt_g = sx2x_g_v + sx2x_g_r - sink_g                                          # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
+    qg     = maximum( 0.0, qg + dqdt_g * dt ) 
 
     qice = qs + qi + qg
     qliq = qc + qr
@@ -253,10 +270,10 @@ def _graupel_loop2(
 @gtx.field_operator
 def _graupel_loop3_if_lrain(
 # TODO: arguments
-    kmin_r: fa.CellKField[ta.int],                 # rain minimum level
-    kmin_i: fa.CellKField[ta.int],                 # ice minimum level
-    kmin_s: fa.CellKField[ta.int],                 # snow minimum level
-    kmin_g: fa.CellKField[ta.int],                 # graupel minimum level
+    kmin_r: fa.CellKField[bool],                   # rain minimum level
+    kmin_i: fa.CellKField[bool],                   # ice minimum level
+    kmin_s: fa.CellKField[bool],                   # snow minimum level
+    kmin_g: fa.CellKField[bool],                   # graupel minimum level
     qv:     fa.CellKField[ta.wpfloat],             # Q vapor content
     qc:     fa.CellKField[ta.wpfloat],             # Q cloud content
     qr:     fa.CellKField[ta.wpfloat],             # Q rain content
@@ -269,8 +286,6 @@ def _graupel_loop3_if_lrain(
     dt:     ta.wpfloat,
     is_sig_present : fa.CellKField[bool],
     RHO_00: ta.wpfloat,
-    B_I:    ta.wpfloat,
-    B_S:    ta.wpfloat,
     QMIN:   ta.wpfloat,
     AMS:    ta.wpfloat,
     TMELT:  ta.wpfloat,
@@ -286,10 +301,10 @@ def _graupel_loop3_if_lrain(
     xrho  = sqrt( RHO_00 / rho )
 
     # NP = 4    qp_ind[] = {lqr, lqi, lqs, lqg};
-    vc_r = where( kmin_r, vel_scale_factor_others( xrho ), 0.0 )
-    vc_i = where( kmin_i, vel_scale_factor_ice( xrho, B_I ), 0.0 )
-    vc_s = where( kmin_s, vel_scale_factor_snow( xrho, rho, t, q_s, B_S, QMIN, AMS, TMELT ), 0.0 )
-    vc_g = where( kmin_g, vel_scale_factor_others( xrho ), 0.0 )
+    vc_r = where( kmin_r, _vel_scale_factor_default( xrho ), 0.0 )
+    vc_i = where( kmin_i, _vel_scale_factor_ice( xrho ), 0.0 )
+    vc_s = where( kmin_s, _vel_scale_factor_snow( xrho, rho, t, qs, QMIN, AMS, TMELT ), 0.0 )
+    vc_g = where( kmin_g, _vel_scale_factor_default( xrho ), 0.0 )
 
     q_kp1    = qr(Koff[1])
     qr, pr, _ = _precip( prefactor_r, exponent_r, offset_r, zeta, vc_r, qr, q_kp1, rho )
@@ -344,8 +359,8 @@ def graupel_run(
     TFRZ_HET2: ta.wpfloat,
     TMELT:     ta.wpfloat,
     RV:        ta.wpfloat,
-    mask_out:  fa.CellKField[bool],                      # Specific cloud water content
-    is_sig_present_out:  fa.CellKField[bool],                    # Specific cloud water content
+    mask_out:  fa.CellKField[bool],                      # Temporary mask for > QMIN points
+    is_sig_present_out:  fa.CellKField[bool],            # Temporary mask S, I, or G > QMIN
     kmin_r_out:  fa.CellKField[bool],                    # Specific rainwater content
     kmin_i_out:  fa.CellKField[bool],                    # Specific cloud water content
     kmin_s_out:  fa.CellKField[bool],                    # Specific cloud water content

@@ -296,16 +296,16 @@ def _vel_scale_factor_snow(
     xrho:     fa.CellKField[ta.wpfloat],             # sqrt(rho_00/rho)
     rho:      fa.CellKField[ta.wpfloat],             # Density of condensate
     t:        fa.CellKField[ta.wpfloat],             # Temperature
-    qx:       fa.CellKField[ta.wpfloat],             # Specific mass
+    qs:       fa.CellKField[ta.wpfloat],             # Specific mass
     QMIN:     ta.wpfloat,                           #
     AMS:      ta.wpfloat,                           #
     TMELT:    ta.wpfloat,                           #
 ) -> fa.CellKField[ta.wpfloat]:                      # Scale factor
-    B_S = 0.16666666666666667
-    return xrho * power( _snow_number( t, rho, qx, QMIN, AMS, TMELT ),  B_S )
+    B_S = -0.16666666666666667
+    return xrho * power( _snow_number( t, rho, qs, QMIN, AMS, TMELT ),  B_S )
 
 @gtx.field_operator
-def _vel_scale_factor_others(
+def _vel_scale_factor_default(
     xrho:     fa.CellKField[ta.wpfloat],             # sqrt(rho_00/rho)
 ) -> fa.CellKField[ta.wpfloat]:                      # Scale factor
     return xrho
@@ -322,10 +322,10 @@ def vel_scale_factor_snow(
     xrho:     fa.CellKField[ta.wpfloat],             # sqrt(rho_00/rho)
     rho:      fa.CellKField[ta.wpfloat],             # Density of condensate
     t:        fa.CellKField[ta.wpfloat],             # Temperature
-    qx:       fa.CellKField[ta.wpfloat],             # Specific mass
+    qs:       fa.CellKField[ta.wpfloat],             # Specific mass
     QMIN:     ta.wpfloat,                           #
     AMS:      ta.wpfloat,                           #
     TMELT:    ta.wpfloat,                           #
     scale_factor: fa.CellKField[ta.wpfloat]          # output
 ):
-    _vel_scale_factor_snow( xrho, rho, t, qx, QMIN, AMS, TMELT, out=scale_factor )
+    _vel_scale_factor_snow( xrho, rho, t, qs, QMIN, AMS, TMELT, out=scale_factor )
