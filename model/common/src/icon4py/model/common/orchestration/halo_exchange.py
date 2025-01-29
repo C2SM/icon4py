@@ -115,7 +115,7 @@ def add_halo_tasklet(
         )
 
     # Dummy return: preserve same interface with non-DaCe version
-    sdfg.add_scalar(name="__return", dtype=dace.int32)
+    sdfg.add_array(name="__return", shape=[1], dtype=dace.int32)
     ret = state.add_write("__return")
     state.add_edge(tasklet, "__out", ret, None, dace.memlet.Memlet(data="__return", subset="0"))
     out_connectors["__out"] = dace.int32
@@ -211,7 +211,7 @@ def add_halo_tasklet(
             h_{unique_id} = communication_object->exchange({", ".join([f'(*pattern)({"" if wait else "*"}{descr_unique_names[i]})' for i in range(len(global_buffers))])});
             { 'h_'+str(unique_id)+'.wait();' if wait else ''}
 
-            __out = 1234; // Dummy return;
+            __out[0] = 1234; // Dummy return;
             """
 
     tasklet.code = dace.properties.CodeBlock(code=code, language=dace.dtypes.Language.CPP)
@@ -287,8 +287,9 @@ class DummyNestedSDFG:
         tasklet = dace.sdfg.nodes.Tasklet(
             "DummyNestedSDFG",
             inputs=None,
-            outputs={"__out"},
-            code="__out = 1",
+            outputs=None,
+            code="__out[0] = 1;",
+            language=dace.dtypes.Language.CPP,
             side_effects=False,
         )
         state.add_node(tasklet)
@@ -296,10 +297,11 @@ class DummyNestedSDFG:
         state.add_edge(
             tasklet,
             "__out",
-            state.add_access("__return"),
+            state.add_write("__return"),
             None,
             dace.memlet.Memlet(data="__return", subset="0"),
         )
+        tasklet.out_connectors = {"__out": dace.int32}
 
         return sdfg
 
