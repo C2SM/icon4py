@@ -287,9 +287,8 @@ class DummyNestedSDFG:
         tasklet = dace.sdfg.nodes.Tasklet(
             "DummyNestedSDFG",
             inputs=None,
-            outputs=None,
-            code="__out = 1;",
-            language=dace.dtypes.Language.CPP,
+            outputs={"__out"},
+            code="__out = 1",
             side_effects=False,
         )
         state.add_node(tasklet)
@@ -297,11 +296,10 @@ class DummyNestedSDFG:
         state.add_edge(
             tasklet,
             "__out",
-            state.add_write("__return"),
+            state.add_access("__return"),
             None,
             dace.memlet.Memlet(data="__return", subset="0"),
         )
-        tasklet.out_connectors = {"__out": dace.int32}
 
         return sdfg
 
