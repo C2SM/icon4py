@@ -49,48 +49,48 @@ log = logging.getLogger(__name__)
 
 class HorizontalAdvectionType(Enum):
     """
-    Horizontal operator scheme for advection.
+    Horizontal operator scheme for advection (originally ihadv_tracer).
     """
 
     #: no horizontal advection
-    NO_ADVECTION = auto()
+    NO_ADVECTION = 0
     #: 2nd order MIURA with linear reconstruction
-    LINEAR_2ND_ORDER = auto()
+    LINEAR_2ND_ORDER = 2
 
 
 class HorizontalAdvectionLimiter(Enum):
     """
-    Limiter for horizontal advection operator.
+    Limiter for horizontal advection operator (originally itype_hlimit).
     """
 
     #: no horizontal limiter
-    NO_LIMITER = auto()
+    NO_LIMITER = 0
     #: positive definite horizontal limiter
-    POSITIVE_DEFINITE = auto()
+    POSITIVE_DEFINITE = 4
 
 
 class VerticalAdvectionType(Enum):
     """
-    Vertical operator scheme for advection.
+    Vertical operator scheme for advection (originally ivadv_tracer).
     """
 
     #: no vertical advection
-    NO_ADVECTION = auto()
+    NO_ADVECTION = 0
     #: 1st order upwind
-    UPWIND_1ST_ORDER = auto()
+    UPWIND_1ST_ORDER = 1
     #: 3rd order PPM
-    PPM_3RD_ORDER = auto()
+    PPM_3RD_ORDER = 3
 
 
 class VerticalAdvectionLimiter(Enum):
     """
-    Limiter for vertical advection operator.
+    Limiter for vertical advection operator (originally itype_vlimit).
     """
 
     #: no vertical limiter
-    NO_LIMITER = auto()
+    NO_LIMITER = 0
     #: semi-monotonic vertical limiter
-    SEMI_MONOTONIC = auto()
+    SEMI_MONOTONIC = 1
 
 
 @dataclasses.dataclass(frozen=True)
@@ -129,7 +129,14 @@ class AdvectionConfig:
 
 
 class Advection(ABC):
-    """Class that runs one three-dimensional advection step."""
+    """
+    Runs one three-dimensional advection step.
+
+    Missing advection-specific features:
+        -tracer loops: currently the `run` method only advects one type of tracer at once
+        -optional tendency output: depending on the physics package, opt_ddt_tracer_adv might be needed
+        -maximum advection height: tracer-specific control over which levels are used for advection
+    """
 
     @abstractmethod
     def run(
