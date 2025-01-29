@@ -349,22 +349,23 @@ def graupel_run(
     qve:       fa.CellKField[ta.wpfloat],             # Specific humidity
     qce:       fa.CellKField[ta.wpfloat],             # Specific cloud water content
     qre:       fa.CellKField[ta.wpfloat],             # Specific rain water
-    qti:       fa.CellKField[ta.wpfloat],             # Specific mass of all ice species (total-ice)
-    QMIN:      ta.wpfloat,
-    CI:        ta.wpfloat,
-    CLW:       ta.wpfloat,
-    CVD:       ta.wpfloat,
-    CVV:       ta.wpfloat,
-    LVC:       ta.wpfloat,
-    TFRZ_HET2: ta.wpfloat,
-    TMELT:     ta.wpfloat,
-    RV:        ta.wpfloat,
-    mask_out:  fa.CellKField[bool],                      # Temporary mask for > QMIN points
-    is_sig_present_out:  fa.CellKField[bool],            # Temporary mask S, I, or G > QMIN
-    kmin_r_out:  fa.CellKField[bool],                    # Specific rainwater content
-    kmin_i_out:  fa.CellKField[bool],                    # Specific cloud water content
-    kmin_s_out:  fa.CellKField[bool],                    # Specific cloud water content
-    kmin_g_out:  fa.CellKField[bool],                    # Specific cloud water content
+#    qti:       fa.CellKField[ta.wpfloat],             # Specific mass of all ice species (total-ice)
+#    QMIN:      ta.wpfloat,
+#    CI:        ta.wpfloat,
+#    CLW:       ta.wpfloat,
+#    CVD:       ta.wpfloat,
+#    CVV:       ta.wpfloat,
+#    LVC:       ta.wpfloat,
+#    TFRZ_HET2: ta.wpfloat,
+#    TMELT:     ta.wpfloat,
+#    RV:        ta.wpfloat,
+#    mask_out:  fa.CellKField[bool],                      # Temporary mask for > QMIN points
+#    is_sig_present_out:  fa.CellKField[bool],            # Temporary mask S, I, or G > QMIN
+#    kmin_r_out:  fa.CellKField[bool],                    # Specific rainwater content
+#    kmin_i_out:  fa.CellKField[bool],                    # Specific cloud water content
+#    kmin_s_out:  fa.CellKField[bool],                    # Specific cloud water content
+#    kmin_g_out:  fa.CellKField[bool],                    # Specific cloud water content
 ):
 
-    _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse, QMIN, TFRZ_HET2, TMELT, RV, out=(mask_out, is_sig_present_out, kmin_r_out, kmin_i_out, kmin_s_out, kmin_g_out) )
+    pass
+#    _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse, QMIN, TFRZ_HET4, TMELT, RV, out=(mask_out, is_sig_present_out, kmin_r_out, kmin_i_out, kmin_s_out, kmin_g_out) )

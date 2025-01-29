@@ -4,6 +4,8 @@ import netCDF4
 import numpy as np
 import argparse
 import pdb
+import gt4py.next as gtx
+
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import graupel_run
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
@@ -11,6 +13,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
+
+K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
+
 
 def set_lib_path(lib_dir):
     sys.path.append(lib_dir)
@@ -152,6 +157,9 @@ data = Data(args)
 #         total_ice=data.qg + data.qs + data.qi,
 #         rho=data.rho,
 #     )
+
+graupel_run( data.t, data.rho, data.qve, data.qvc, data.qvr, offset_provider={"Koff": K})
+
 
 # grpl.run(
 #     ncells=data.ncells,
