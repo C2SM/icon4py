@@ -1188,7 +1188,7 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self._get_field("init_ddqz_z_full_e_19_20", dims.EdgeDim, dims.KDim)
 
     def init_levelmask_19_20(self):
-        return self._get_field("init_levelmask_19_20", dims.KDim)
+        return self._get_field("init_levelmask_19_20", dims.KDim, dtype=bool)
 
     def init_area_edge_19_20(self):
         return self._get_field("init_area_edge_19_20", dims.EdgeDim)

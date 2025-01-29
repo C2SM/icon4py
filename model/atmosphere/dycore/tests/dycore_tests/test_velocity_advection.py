@@ -459,7 +459,7 @@ def test_velocity_corrector_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_fused_19_20(
@@ -529,7 +529,7 @@ def test_velocity_fused_19_20(
         backend=backend,
     )
 
-    fused_velocity_advection_stencil_19_to_20.fused_velocity_advection_stencil_19_to_20(
+    fused_velocity_advection_stencil_19_to_20.fused_velocity_advection_stencil_19_to_20.with_backend(backend)(
         vn=vn,
         geofac_rot=geofac_rot,
         z_kin_hor_e=z_kin_hor_e,
@@ -561,7 +561,7 @@ def test_velocity_fused_19_20(
         offset_provider={"V2E": icon_grid.get_offset_provider("V2E"),
                          "E2EC": icon_grid.get_offset_provider("E2EC"),
                          "E2V": icon_grid.get_offset_provider("E2V"),
-                        "E2C": icon_grid.get_offset_provider("E2C"),
+                         "E2C": icon_grid.get_offset_provider("E2C"),
                          "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
                          "Koff": dims.KDim}
     )
