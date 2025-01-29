@@ -58,7 +58,7 @@ def is_roundtrip(backend) -> bool:
 
 
 def extract_backend_name(backend) -> str:
-    return backend.name if hasattr(backend, "name") else "embedded"
+    return "embedded" if backend is None else backend.name
 
 
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
