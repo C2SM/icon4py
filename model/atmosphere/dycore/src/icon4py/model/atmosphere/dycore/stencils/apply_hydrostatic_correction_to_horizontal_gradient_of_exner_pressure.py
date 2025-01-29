@@ -21,7 +21,31 @@ def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     z_hydro_corr: gtx.Field[gtx.Dims[dims.EdgeDim], vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_22."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_22.
+
+    # scidoc:
+    # Outputs:
+    #  - z_gradh_exner :
+    #     $$
+    #     \exnerprimegradh{\ntilde}{\e}{\k} = \exnerprimegradh{\ntilde}{\e}{\k} + \exnhydrocorr{\e} (h_k - h_{k^*}), \quad \e \in \IDXpg
+    #     $$
+    #     Apply the hydrostatic correction term to the horizontal
+    #     gradient (at constant height) of the temporal extrapolation of
+    #     perturbed exner function (eq. 10 in
+    #     |ICONSteepSlopePressurePaper|).
+    #     This is only applied to edges for which the adjacent cell
+    #     center (horizontally, not terrain-following) would be
+    #     underground, i.e. edges in the $\IDXpg$ set.
+    #
+    # Inputs:
+    #  - $\exnerprimegradh{\ntilde}{\e}{\k}$ : z_gradh_exner
+    #  - $\exnhydrocorr{\e}$ : hydro_corr_horizontal
+    #  - $(h_k - h_{k^*})$ : pg_exdist
+    #  - $\IDXpg$ : ipeidx_dsl
+    #
+    
+    """
     z_gradh_exner_vp = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
     return z_gradh_exner_vp
 

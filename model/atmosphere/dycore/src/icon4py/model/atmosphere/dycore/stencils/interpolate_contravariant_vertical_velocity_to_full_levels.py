@@ -18,7 +18,24 @@ from icon4py.model.common.type_alias import vpfloat
 def _interpolate_contravariant_vertical_velocity_to_full_levels(
     z_w_con_c: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
-    """Formerly know as _mo_velocity_advection_stencil_15."""
+    """
+    Formerly know as _mo_velocity_advection_stencil_15.
+
+    # scidoc:
+    # Outputs:
+    #  - z_w_con_c_full :
+    #     $$
+    #     (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k}) = \frac{1}{2} [ (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2})
+    #                                                       + (\w{\n}{\c}{\k+1/2} - \wcc{\n}{\c}{\k+1/2}) ]
+    #     $$
+    #     Interpolate the vertical wind with contravariant correction from
+    #     half to full levels.
+    #
+    # Inputs:
+    #  - $(\w{\n}{\c}{\k\pm1/2} - \wcc{\n}{\c}{\k\pm1/2})$ : z_w_con_c
+    #
+    
+    """
     z_w_con_c_full_vp = vpfloat("0.5") * (z_w_con_c + z_w_con_c(Koff[1]))
     return z_w_con_c_full_vp
 

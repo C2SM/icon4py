@@ -26,7 +26,43 @@ def _compute_hydrostatic_correction_term(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
 ) -> fa.EdgeKField[vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_21."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_21.
+
+    # scidoc:
+    # Outputs:
+    #  - z_hydro_corr :
+    #     $$
+    #     \exnhydrocorr{\e} = \frac{g}{\cpd} \Wedge 4 \frac{ \vpotemp{}{\c_1}{\k} - \vpotemp{}{\c_0}{\k} }{ (\vpotemp{}{\c_1}{\k} + \vpotemp{}{\c_0}{\k})^2 },
+    #     $$
+    #     with
+    #     $$
+    #     \vpotemp{}{\c_i}{\k} = \vpotemp{}{\c_i}{\k^*} + \dzgradp \frac{\vpotemp{}{\c_i}{\k^*-1/2} - \vpotemp{}{\c_i}{\k^*+1/2}}{\Dz{\k^*}}
+    #     $$
+    #     Compute the hydrostatically approximated correction term that
+    #     replaces the downward extrapolation (last term in eq. 10 in
+    #     |ICONSteepSlopePressurePaper|).
+    #     This is only computed for the bottom-most level because all
+    #     edges which have a neighboring cell center inside terrain
+    #     beyond a certain limit use the same correction term at $k^*$
+    #     level in eq. 10 in |ICONSteepSlopePressurePaper| (see also the
+    #     last paragraph on page 3724 for the discussion).
+    #     $\c_i$ are the indexes of the adjacent cell centers using
+    #     $\offProv{e2c}$;
+    #     $k^*$ is the level index of the neighboring (horizontally, not
+    #     terrain-following) cell center and $h^*$ is its height.
+    #
+    # Inputs:
+    #  - $\vpotemp{}{\c}{\k}$ : theta_v
+    #  - $\vpotemp{}{\c}{\k\pm1/2}$ : theta_v_ic
+    #  - $\frac{g}{\cpd}$ : grav_o_cpd
+    #  - $\Wedge$ : inverse_dual_edge_lengths
+    #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
+    #  - $\dzgradp$ : zdiff_gradp
+    #  - $\k^*$ : vertoffset_gradp
+    #
+
+    """
     zdiff_gradp_wp = astype(zdiff_gradp, wpfloat)
 
     theta_v_0 = theta_v(E2C[0])(as_offset(Koff, ikoffset(E2EC[0])))

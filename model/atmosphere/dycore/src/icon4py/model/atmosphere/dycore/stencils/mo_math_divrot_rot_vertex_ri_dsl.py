@@ -20,6 +20,21 @@ def _mo_math_divrot_rot_vertex_ri_dsl(
     vec_e: fa.EdgeKField[wpfloat],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, V2EDim], wpfloat],
 ) -> fa.VertexKField[vpfloat]:
+    """
+    # scidoc:
+    # Outputs:
+    #  - zeta :
+    #     $$
+    #     \vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}
+    #     $$
+    #     Compute the vorticity on vertices using the discrete Stokes
+    #     theorem (eq. 5 in |BonaventuraRingler2005|).
+    #
+    # Inputs:
+    #  - $\Crot$ : geofac_rot
+    #  - $\vn{\n}{\e}{\k}$ : vn
+    #
+        """
     rot_vec_wp = neighbor_sum(vec_e(V2E) * geofac_rot, axis=V2EDim)
     return astype(rot_vec_wp, vpfloat)
 

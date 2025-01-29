@@ -20,7 +20,26 @@ def _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_18."""
+    """
+    # scidoc:
+    # Outputs:
+    #  - z_gradh_exner :
+    #     $$
+    #     \exnerprimegradh{\ntilde}{\e}{\k} = \Cgrad \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}, \quad \k \in [0, \nflatlev)
+    #     $$
+    #     Compute the horizontal gradient (at constant height) of the
+    #     temporal extrapolation of perturbed exner function on flat levels,
+    #     unaffected by the terrain following deformation.
+    #
+    # Inputs:
+    #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+    #  - $\Cgrad$ : inverse_dual_edge_lengths
+    #
+    
+
+    Formerly known as _mo_solve_nonhydro_stencil_18.
+
+    """
     z_gradh_exner_wp = inv_dual_edge_length * astype(
         z_exner_ex_pr(E2C[1]) - z_exner_ex_pr(E2C[0]), wpfloat
     )

@@ -25,7 +25,36 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_20."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_20.
+
+    # scidoc:
+        # Outputs:
+        #  - z_gradh_exner :
+        #     $$
+        #     \exnerprimegradh{\ntilde}{\e}{\k} &&= \Wedge (\exnerprime{*}{\c_1}{} - \exnerprime{*}{\c_0}{}) \\
+        #                                       &&= \Wedge \Gradn_{\offProv{e2c}} \left[ \exnerprime{\ntilde}{\c}{\k^*} + \dzgradp \left( \exnerprimedz{\ntilde}{\c}{\k^*} + \dzgradp \exnerprimedzz{\ntilde}{\c}{\k^*} \right) \right],
+        #                                           \quad \k \in [\nflatgradp+1, \nlev)
+        #     $$
+        #     Compute $\exnerprimegradh{}{}{}$ when the height of
+        #     neighboring cells is in another level.
+        #     The usual centered difference approximation is used for the
+        #     gradient (eq. 6 in |ICONSteepSlopePressurePaper|), but instead
+        #     of cell center values, the exner function is reconstructed
+        #     using a second order Taylor-series expansion (eq. 8 in
+        #     |ICONSteepSlopePressurePaper|).
+        #     $k^*$ is the level index of the neighboring (horizontally, not
+        #     terrain-following) cell center and $h^*$ is its height.
+        #
+        # Inputs:
+        #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+        #  - $\exnerprimedz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_1
+        #  - $\exnerprimedzz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_2
+        #  - $\Wedge$ : inverse_dual_edge_lengths
+        #  - $\dzgradp$ : zdiff_gradp
+        #  - $\k^*$ : vertoffset_gradp
+        #
+    """
     z_exner_ex_pr_0 = z_exner_ex_pr(E2C[0])(as_offset(Koff, ikoffset(E2EC[0])))
     z_exner_ex_pr_1 = z_exner_ex_pr(E2C[1])(as_offset(Koff, ikoffset(E2EC[1])))
 

@@ -20,7 +20,25 @@ def _interpolate_to_cell_center(
     interpolant: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
 ) -> fa.CellKField[vpfloat]:
-    """Formerly known as mo_velocity_advection_stencil_08 or mo_velocity_advection_stencil_09."""
+    """
+    Formerly known as mo_velocity_advection_stencil_08 or mo_velocity_advection_stencil_09.
+
+    # scidoc:
+    # Outputs:
+    #  - z_ekinh :
+    #     $$
+    #     \kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}
+    #     $$
+    #     Interpolate the horizonal kinetic energy from edge to cell center.
+    #
+    # Inputs:
+    #  - $\Whor$ : e_bln_c_s
+    #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
+    #
+    
+    """
+
+
     interpolant_wp = astype(interpolant, wpfloat)
     interpolation_wp = neighbor_sum(e_bln_c_s(C2CE) * interpolant_wp(C2E), axis=C2EDim)
     return astype(interpolation_wp, vpfloat)

@@ -18,7 +18,35 @@ def _correct_contravariant_vertical_velocity(
     z_w_con_c: fa.CellKField[vpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
-    """Formerly known as _mo_velocity_advection_stencil_13."""
+    """
+    Formerly known as _mo_velocity_advection_stencil_13.
+
+    # scidoc:
+    # Outputs:
+    #  - z_w_con_c :
+    #     $$
+    #     (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}) =
+    #     \begin{cases}
+    #         \w{\n}{\c}{\k-1/2},                        & \k \in [0, \nflatlev+1)     \\
+    #         \w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}, & \k \in [\nflatlev+1, \nlev) \\
+    #         0,                                         & \k = \nlev
+    #     \end{cases}
+    #     $$
+    #     Subtract the contravariant correction $\wcc{}{}{}$ from the
+    #     vertical wind $\w{}{}{}$ in the terrain-following levels. This is
+    #     done for convevnience here, instead of directly in the advection
+    #     tendency update, because the result needs to be interpolated to
+    #     edge centers and full levels for later use.
+    #     The papers do not use a new symbol for this variable, and the code
+    #     ambiguosly mixes the variable names used for
+    #     $\wcc{}{}{}$ and $(\w{}{}{} - \wcc{}{}{})$.
+    #
+    # Inputs:
+    #  - $\w{\n}{\c}{\k\pm1/2}$ : w
+    #  - $\wcc{\n}{\c}{\k\pm1/2}$ : w_concorr_c
+    #
+    
+    """
     z_w_con_c_vp = z_w_con_c - w_concorr_c
     return z_w_con_c_vp
 

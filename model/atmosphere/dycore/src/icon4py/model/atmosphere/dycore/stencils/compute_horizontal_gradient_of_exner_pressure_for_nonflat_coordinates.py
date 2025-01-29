@@ -45,6 +45,29 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
+    """
+    # scidoc:
+    # Outputs:
+    #  - z_gradh_exner :
+    #     $$
+    #     \exnerprimegradh{\ntilde}{\e}{\k} &&= \left.\pdxn{\exnerprime{}{}{}}\right|_{s} - \left.\pdxn{h}\right|_{s}\exnerprimedz{}{}{}\\
+    #                                       &&= \Wedge \Gradn_{\offProv{e2c}} \exnerprime{\ntilde}{\c}{\k}
+    #                                         - \pdxn{h} \sum_{\offProv{e2c}} \Whor \exnerprimedz{\ntilde}{\c}{\k},
+    #                                           \quad \k \in [\nflatlev, \nflatgradp]
+    #     $$
+    #     Compute $\exnerprimegradh{}{}{}$ on non-flat levels, affected
+    #     by the terrain following deformation, i.e. those levels for
+    #     which $\pdxn{h} \neq 0$ (eq. 14 in |ICONdycorePaper| or eq. 5
+    #     in |ICONSteepSlopePressurePaper|).
+    #
+    # Inputs:
+    #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
+    #  - $\Wedge$ : inverse_dual_edge_lengths
+    #  - $\exnerprimedz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_1
+    #  - $\Whor$ : c_lin_e
+    #
+
+    """
     _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
         inv_dual_edge_length,
         z_exner_ex_pr,

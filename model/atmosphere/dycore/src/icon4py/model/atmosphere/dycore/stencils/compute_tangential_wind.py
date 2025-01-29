@@ -20,7 +20,24 @@ def _compute_tangential_wind(
     vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
 ) -> fa.EdgeKField[vpfloat]:
-    """Formerly knowan as _mo_velocity_advection_stencil_01."""
+    """
+    Formerly knowan as _mo_velocity_advection_stencil_01.
+
+    # scidoc:
+    # Outputs:
+    #  - vt :
+    #     $$
+    #     \vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k}
+    #     $$
+    #     Compute the tangential velocity by RBF interpolation from four neighboring
+    #     edges (diamond shape) projected along the tangential direction.
+    #
+    # Inputs:
+    #  - $\Wrbf$ : rbf_vec_coeff_e
+    #  - $\vn{\n}{\e}{\k}$ : vn
+    #
+    
+    """
     vt_wp = neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=E2C2EDim)
     return astype(vt_wp, vpfloat)
 
