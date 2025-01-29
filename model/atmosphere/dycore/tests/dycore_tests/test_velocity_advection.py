@@ -8,6 +8,7 @@
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
+from icon4py.model.atmosphere.dycore.stencils import fused_velocity_advection_stencisl_1o_7
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
