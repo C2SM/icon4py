@@ -30,7 +30,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.ndarray,
         p_rhodz_now: np.ndarray,
         p_rhodz_new: np.ndarray,
@@ -40,7 +40,7 @@ class TestComputeAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
         p_dtime: float,
         **kwargs,
     ) -> dict:
-        c2e = grid.connectivities[dims.C2EDim]
+        c2e = connectivities[dims.C2EDim]
         z_anti_c2e = z_anti[c2e]
 
         geofac_div = helpers.reshape(geofac_div, c2e.shape)

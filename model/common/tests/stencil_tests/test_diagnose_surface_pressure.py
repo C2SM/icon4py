@@ -23,13 +23,14 @@ class TestDiagnoseSurfacePressure(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        exner: np.array,
-        virtual_temperature: np.array,
-        ddqz_z_full: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        exner: np.ndarray,
+        virtual_temperature: np.ndarray,
+        ddqz_z_full: np.ndarray,
         **kwargs,
     ) -> dict:
-        surface_pressure = np.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
+        shape = virtual_temperature.shape
+        surface_pressure = np.zeros((shape[0], shape[1] + 1), dtype=ta.wpfloat)
         surface_pressure[:, -1] = phy_const.P0REF * np.exp(
             phy_const.CPD_O_RD * np.log(exner[:, -3])
             + phy_const.GRAV_O_RD
@@ -45,12 +46,13 @@ class TestDiagnoseSurfacePressure(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
+        low = 1.0e-2
+        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat)
         virtual_temperature = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
         )
         ddqz_z_full = data_alloc.random_field(
-            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+            grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
         )
         surface_pressure = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend={dims.KDim: 1}

@@ -16,14 +16,15 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
-def extrapolate_at_top_numpy(grid, wgtfacq_e: np.array, vn: np.array) -> np.array:
+def extrapolate_at_top_numpy(wgtfacq_e: np.array, vn: np.array) -> np.array:
     vn_k_minus_1 = vn[:, -1]
     vn_k_minus_2 = vn[:, -2]
     vn_k_minus_3 = vn[:, -3]
     wgtfacq_e_k_minus_1 = wgtfacq_e[:, -1]
     wgtfacq_e_k_minus_2 = wgtfacq_e[:, -2]
     wgtfacq_e_k_minus_3 = wgtfacq_e[:, -3]
-    vn_ie = np.zeros((grid.num_edges, grid.num_levels + 1), dtype=vpfloat)
+    shape = vn.shape
+    vn_ie = np.zeros((shape[0], shape[1] + 1), dtype=vpfloat)
     vn_ie[:, -1] = (
         wgtfacq_e_k_minus_1 * vn_k_minus_1
         + wgtfacq_e_k_minus_2 * vn_k_minus_2
@@ -37,8 +38,13 @@ class TestExtrapolateAtTop(StencilTest):
     OUTPUTS = ("vn_ie",)
 
     @staticmethod
-    def reference(grid, wgtfacq_e: np.array, vn: np.array, **kwargs) -> dict:
-        vn_ie = extrapolate_at_top_numpy(grid, wgtfacq_e, vn)
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfacq_e: np.ndarray,
+        vn: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        vn_ie = extrapolate_at_top_numpy(wgtfacq_e, vn)
         return dict(vn_ie=vn_ie)
 
     @pytest.fixture

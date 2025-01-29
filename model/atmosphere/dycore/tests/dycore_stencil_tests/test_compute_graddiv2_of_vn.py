@@ -21,8 +21,13 @@ class TestComputeGraddiv2OfVn(StencilTest):
     OUTPUTS = ("z_graddiv2_vn",)
 
     @staticmethod
-    def reference(grid, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> dict:
-        e2c2eO = grid.connectivities[dims.E2C2EODim]
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        geofac_grdiv: np.ndarray,
+        z_graddiv_vn: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        e2c2eO = connectivities[dims.E2C2EODim]
         geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
         z_graddiv2_vn = np.sum(
             np.where((e2c2eO != -1)[:, :, np.newaxis], z_graddiv_vn[e2c2eO] * geofac_grdiv, 0),

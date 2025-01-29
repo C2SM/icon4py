@@ -22,8 +22,13 @@ class TestCell2EdgeInterpolation(helpers.StencilTest):
     OUTPUTS = ("out_field",)
 
     @staticmethod
-    def reference(grid, in_field: np.array, coeff: np.array, **kwargs) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        in_field: np.ndarray,
+        coeff: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        e2c = connectivities[dims.E2CDim]
         coeff_ = np.expand_dims(coeff, axis=-1)
         out_field = np.sum(in_field[e2c] * coeff_, axis=1)
 
@@ -33,6 +38,8 @@ class TestCell2EdgeInterpolation(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if grid.get_offset_provider("E2C").has_skip_values:
+            pytest.xfail("Stencil does not support missing neighbors.")
         in_field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
         coeff = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
         out_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
