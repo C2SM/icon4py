@@ -15,23 +15,27 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import 
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing import helpers
 
 
 def interpolate_to_cell_center_numpy(
-    grid, interpolant: np.array, e_bln_c_s: np.array, **kwargs
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    interpolant: np.ndarray,
+    e_bln_c_s: np.ndarray,
+    **kwargs,
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    c2ce = grid.get_offset_provider("C2CE").table
+    c2e = connectivities[dims.C2EDim]
+    c2ce = helpers.as_1d_connectivity(c2e)
 
     interpolation = np.sum(
-        interpolant[grid.connectivities[dims.C2EDim]] * e_bln_c_s[c2ce],
+        interpolant[c2e] * e_bln_c_s[c2ce],
         axis=1,
     )
     return interpolation
 
 
-class TestInterpolateToCellCenter(StencilTest):
+class TestInterpolateToCellCenter(helpers.StencilTest):
     PROGRAM = interpolate_to_cell_center
     OUTPUTS = ("interpolation",)
 

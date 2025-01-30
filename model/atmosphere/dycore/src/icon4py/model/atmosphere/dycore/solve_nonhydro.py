@@ -13,7 +13,7 @@ from typing import Final, Optional
 
 import numpy as np
 import gt4py.next as gtx
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common.io import plots
 from icon4py.model.atmosphere.dycore import ibm
@@ -253,7 +253,7 @@ class IntermediateFields:
     def allocate(
         cls,
         grid: grid_def.BaseGrid,
-        backend: Optional[backend.Backend] = None,
+        backend: Optional[gtx_backend.Backend] = None,
     ):
         return IntermediateFields(
             z_gradh_exner=data_alloc.allocate_zero_field(
@@ -453,7 +453,7 @@ class SolveNonhydro:
         edge_geometry: grid_states.EdgeParams,
         cell_geometry: grid_states.CellParams,
         owner_mask: fa.CellField[bool],
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         self._exchange = exchange
@@ -880,7 +880,6 @@ class SolveNonhydro:
             f"running timestep: dtime = {dtime}, initial_timestep = {at_initial_timestep}, first_substep = {at_first_substep}, last_substep = {at_last_substep}, prep_adv = {lprep_adv}"
         )
 
-        # # TODO: abishekg7 move this to tests
         if self.p_test_run:
             self._init_test_fields(
                 self.intermediate_fields.z_rho_e,

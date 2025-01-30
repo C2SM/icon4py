@@ -24,18 +24,18 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-    grid,
-    mask: np.array,
-    zd_vertoffset: np.array,
-    zd_diffcoef: np.array,
-    geofac_n2s_c: np.array,
-    geofac_n2s_nbh: np.array,
-    vcoef: np.array,
-    theta_v: np.array,
-    z_temp: np.array,
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    mask: np.ndarray,
+    zd_vertoffset: np.ndarray,
+    zd_diffcoef: np.ndarray,
+    geofac_n2s_c: np.ndarray,
+    geofac_n2s_nbh: np.ndarray,
+    vcoef: np.ndarray,
+    theta_v: np.ndarray,
+    z_temp: np.ndarray,
     **kwargs,
-) -> np.array:
-    c2e2c = grid.connectivities[dims.C2E2CDim]
+) -> np.ndarray:
+    c2e2c = connectivities[dims.C2E2CDim]
     shape = c2e2c.shape + vcoef.shape[1:]
     vcoef = vcoef.reshape(shape)
     zd_vertoffset = zd_vertoffset.reshape(shape)
@@ -72,19 +72,19 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        mask: np.array,
-        zd_vertoffset: np.array,
-        zd_diffcoef: np.array,
-        geofac_n2s_c: np.array,
-        geofac_n2s_nbh: np.array,
-        vcoef: np.array,
-        theta_v: np.array,
-        z_temp: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        mask: np.ndarray,
+        zd_vertoffset: np.ndarray,
+        zd_diffcoef: np.ndarray,
+        geofac_n2s_c: np.ndarray,
+        geofac_n2s_nbh: np.ndarray,
+        vcoef: np.ndarray,
+        theta_v: np.ndarray,
+        z_temp: np.ndarray,
         **kwargs,
     ) -> dict:
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
-            grid,
+            connectivities,
             mask,
             zd_vertoffset,
             zd_diffcoef,

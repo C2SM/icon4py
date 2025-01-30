@@ -9,8 +9,10 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 import gt4py.next as gtx
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -65,7 +67,7 @@ class VelocityAdvection:
         vertical_params: v_grid.VerticalGrid,
         edge_params: grid_states.EdgeParams,
         owner_mask: fa.CellField[bool],
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
     ):
         self.grid: icon_grid.IconGrid = grid
         self._backend = backend

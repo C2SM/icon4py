@@ -28,6 +28,7 @@ jobs:
           uv sync --extra all
       - name: Build documentation
         run: |
+          source .venv/bin/activate
           cd model/atmosphere/dycore/docs
           make html
       - name: Deploy to GitHub Pages
