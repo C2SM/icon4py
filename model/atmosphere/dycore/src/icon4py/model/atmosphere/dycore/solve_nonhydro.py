@@ -1232,7 +1232,6 @@ class SolveNonhydro:
                 offset_provider=self._grid.offset_providers,
             )
 
-
             self._compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
                 inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
@@ -1283,7 +1282,6 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
-
 
         self._add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_states.current.vn,

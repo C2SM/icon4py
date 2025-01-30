@@ -23,7 +23,7 @@ def _mo_math_divrot_rot_vertex_ri_dsl(
     """
     # scidoc:
     # Outputs:
-    #  - zeta :
+    #  - rot_vec :
     #     $$
     #     \vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}
     #     $$
@@ -32,9 +32,10 @@ def _mo_math_divrot_rot_vertex_ri_dsl(
     #
     # Inputs:
     #  - $\Crot$ : geofac_rot
-    #  - $\vn{\n}{\e}{\k}$ : vn
+    #  - $\vn{\n}{\e}{\k}$ : vec_e
     #
-        """
+
+    """
     rot_vec_wp = neighbor_sum(vec_e(V2E) * geofac_rot, axis=V2EDim)
     return astype(rot_vec_wp, vpfloat)
 

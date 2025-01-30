@@ -25,40 +25,22 @@ def _compute_contravariant_correction(
     Formerly known as _mo_solve_nonhydro_stencil_35 or mo_velocity_advection_stencil_04.
 
     # scidoc:
-        # Outputs:
-        #  - z_w_concorr_me :
-        #     $$
-        #     \wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \quad \k \in [\nflatlev, \nlev)
-        #     $$
-        #     Compute the contravariant correction to the vertical wind due to
-        #     terrain-following coordinate. $\pdxn{}$ and $\pdxt{}$ are the
-        #     horizontal derivatives along the normal and tangent directions
-        #     respectively (eq. 17 in |ICONdycorePaper|).
-        #  - vn_ie :
-        #     $$
-        #     \vn{\n}{\e}{-1/2} = \vn{\n}{\e}{0}
-        #     $$
-        #     Set the normal wind at model top equal to the normal wind at the
-        #     first full level.
-        #  - z_vt_ie :
-        #     $$
-        #     \vt{\n}{\e}{-1/2} = \vt{\n}{\e}{0}
-        #     $$
-        #     Set the tangential wind at model top equal to the tangential wind
-        #     at the first full level.
-        #  - z_kin_hor_e :
-        #     $$
-        #     \kinehori{\n}{\e}{0} = \frac{1}{2} \left( \vn{\n}{\e}{0}^2 + \vt{\n}{\e}{0}^2 \right)
-        #     $$
-        #     Compute the horizontal kinetic energy on the first full level.
-        #
-        # Inputs:
-        #  - $\vn{\n}{\e}{\k}$ : vn
-        #  - $\vt{\n}{\e}{\k}$ : vt
-        #  - $\pdxn{z}$ : ddxn_z_full
-        #  - $\pdxt{z}$ : ddxt_z_full
-        #
-        
+    # Outputs:
+    #  - z_w_concorr_me :
+    #     $$
+    #     \wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \quad \k \in [\nflatlev, \nlev)
+    #     $$
+    #     Compute the contravariant correction to the vertical wind due to
+    #     terrain-following coordinate. $\pdxn{}$ and $\pdxt{}$ are the
+    #     horizontal derivatives along the normal and tangent directions
+    #     respectively (eq. 17 in |ICONdycorePaper|).
+    #
+    # Inputs:
+    #  - $\vn{\n}{\e}{\k}$ : vn
+    #  - $\pdxn{z}$ : ddxn_z_full
+    #  - $\pdxt{z}$ : ddxt_z_full
+    #
+
     """
     ddxn_z_full_wp = astype(ddxn_z_full, wpfloat)
 

@@ -21,31 +21,23 @@ def _interpolate_to_surface(
 ) -> fa.CellKField[vpfloat]:
     """
     Formerly known as _mo_solve_nonhydro_stencil_04.
+
     # scidoc:
-        # Outputs:
-        #  - z_exner_ic :
-        #     $$
-        #     \exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
-        #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
-        #     $$
-        #     Interpolate the perturbation exner from full to half levels.
-        #     The ground level is based on quadratic extrapolation (with
-        #     hydrostatic assumption?).
-        #  - z_dexner_dz_c_1 :
-        #     $$
-        #     \exnerprimedz{\ntilde}{\c}{\k} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
-        #     $$
-        #     Use the interpolated values to compute the vertical derivative
-        #     of perturbation exner at full levels.
-        #
-        # Inputs:
-        #  - $\Wlev$ : wgtfac_c
-        #  - $\Wlev_{\k}$ : wgtfacq_c
-        #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
-        #  - $\exnerprime{\ntilde}{\c}{\k\pm1/2}$ : z_exner_ic
-        #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
-        #
-        
+    # Outputs:
+    #  - interpolation_to_surface :
+    #     $$
+    #     \exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
+    #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
+    #     $$
+    #     Interpolate the perturbation exner from full to half levels.
+    #     The ground level is based on quadratic extrapolation (with
+    #     hydrostatic assumption?).
+    # Inputs:
+    #  - $\Wlev$ : wgtfac_c
+    #  - $\Wlev_{\k}$ : wgtfacq_c
+    #  - $\exnerprime{\ntilde}{\c}{\k}$ : interpolant
+    #
+    
     """
     interpolation_to_surface = (
         wgtfacq_c(Koff[-1]) * interpolant(Koff[-1])

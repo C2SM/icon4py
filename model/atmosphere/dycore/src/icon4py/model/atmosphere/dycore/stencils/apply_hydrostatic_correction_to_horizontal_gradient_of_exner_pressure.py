@@ -40,11 +40,11 @@ def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     #
     # Inputs:
     #  - $\exnerprimegradh{\ntilde}{\e}{\k}$ : z_gradh_exner
-    #  - $\exnhydrocorr{\e}$ : hydro_corr_horizontal
+    #  - $\exnhydrocorr{\e}$ : z_hydro_corr
     #  - $(h_k - h_{k^*})$ : pg_exdist
     #  - $\IDXpg$ : ipeidx_dsl
     #
-    
+
     """
     z_gradh_exner_vp = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
     return z_gradh_exner_vp

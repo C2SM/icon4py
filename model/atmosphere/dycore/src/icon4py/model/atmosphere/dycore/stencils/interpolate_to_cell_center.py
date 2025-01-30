@@ -25,7 +25,7 @@ def _interpolate_to_cell_center(
 
     # scidoc:
     # Outputs:
-    #  - z_ekinh :
+    #  - interpolation :
     #     $$
     #     \kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}
     #     $$
@@ -33,11 +33,10 @@ def _interpolate_to_cell_center(
     #
     # Inputs:
     #  - $\Whor$ : e_bln_c_s
-    #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
+    #  - $\kinehori{\n}{\e}{\k}$ : interpolant
     #
-    
-    """
 
+    """
 
     interpolant_wp = astype(interpolant, wpfloat)
     interpolation_wp = neighbor_sum(e_bln_c_s(C2CE) * interpolant_wp(C2E), axis=C2EDim)

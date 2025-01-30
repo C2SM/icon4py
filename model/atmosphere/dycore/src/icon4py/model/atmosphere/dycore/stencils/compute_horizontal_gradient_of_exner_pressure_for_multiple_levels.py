@@ -52,7 +52,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
         #  - $\exnerprimedzz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_2
         #  - $\Wedge$ : inverse_dual_edge_lengths
         #  - $\dzgradp$ : zdiff_gradp
-        #  - $\k^*$ : vertoffset_gradp
+        #  - $\k^*$ : ikoffset
         #
     """
     z_exner_ex_pr_0 = z_exner_ex_pr(E2C[0])(as_offset(Koff, ikoffset(E2EC[0])))

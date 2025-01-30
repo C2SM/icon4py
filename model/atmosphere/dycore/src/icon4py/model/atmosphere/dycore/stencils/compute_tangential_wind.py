@@ -36,7 +36,7 @@ def _compute_tangential_wind(
     #  - $\Wrbf$ : rbf_vec_coeff_e
     #  - $\vn{\n}{\e}{\k}$ : vn
     #
-    
+
     """
     vt_wp = neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=E2C2EDim)
     return astype(vt_wp, vpfloat)

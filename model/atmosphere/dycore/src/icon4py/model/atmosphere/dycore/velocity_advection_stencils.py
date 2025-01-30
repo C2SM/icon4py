@@ -146,29 +146,6 @@ def _fused_stencils_9_10(
     nflatlev_startindex: gtx.int32,
     nlev: gtx.int32,
 ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
-    """
-    # scidoc:
-    # Outputs:
-    #  - z_w_concorr_mc :
-    #     $$
-    #     \wcc{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \wcc{\n}{\e}{\k}
-    #     $$
-    #     Interpolate the contravariant correction from edge to cell center.
-    #  - w_concorr_c :
-    #     $$
-    #     \wcc{\n}{\c}{\k-1/2} = \Wlev \wcc{\n}{\c}{\k} + (1 - \Wlev) \wcc{\n}{\c}{\k-1}, \quad \k \in [\nflatlev+1, \nlev)
-    #     $$
-    #     Interpolate the contravariant correction from full to half levels.
-    #
-    # Inputs:
-    #  - $\wcc{\n}{\e}{\k}$ : z_w_concorr_me
-    #  - $\Whor$ : e_bln_c_s
-    #  - $\Wlev$ : wgtfac_c
-    #
-
-    """
-
-
     local_z_w_concorr_mc = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
         _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),

@@ -34,7 +34,7 @@ def _interpolate_contravariant_vertical_velocity_to_full_levels(
     # Inputs:
     #  - $(\w{\n}{\c}{\k\pm1/2} - \wcc{\n}{\c}{\k\pm1/2})$ : z_w_con_c
     #
-    
+
     """
     z_w_con_c_full_vp = vpfloat("0.5") * (z_w_con_c + z_w_con_c(Koff[1]))
     return z_w_con_c_full_vp

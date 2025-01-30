@@ -419,7 +419,6 @@ class VelocityAdvection:
 
         self.levelmask = self.levmask
 
-
         self._compute_advective_normal_wind_tendency(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,

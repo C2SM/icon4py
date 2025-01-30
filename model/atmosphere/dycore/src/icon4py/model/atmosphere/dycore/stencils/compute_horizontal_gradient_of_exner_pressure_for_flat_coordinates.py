@@ -35,7 +35,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     #  - $\exnerprime{\ntilde}{\c}{\k}$ : z_exner_ex_pr
     #  - $\Cgrad$ : inverse_dual_edge_lengths
     #
-    
+
 
     Formerly known as _mo_solve_nonhydro_stencil_18.
 

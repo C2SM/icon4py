@@ -56,7 +56,7 @@ def _compute_hydrostatic_correction_term(
     #  - $\vpotemp{}{\c}{\k}$ : theta_v
     #  - $\vpotemp{}{\c}{\k\pm1/2}$ : theta_v_ic
     #  - $\frac{g}{\cpd}$ : grav_o_cpd
-    #  - $\Wedge$ : inverse_dual_edge_lengths
+    #  - $\Wedge$ : inv_dual_edge_lengths
     #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
     #  - $\dzgradp$ : zdiff_gradp
     #  - $\k^*$ : vertoffset_gradp
