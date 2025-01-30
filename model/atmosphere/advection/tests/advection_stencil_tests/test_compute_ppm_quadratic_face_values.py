@@ -26,7 +26,12 @@ class TestComputePpmQuadraticFaceValues(helpers.StencilTest):
     OUTPUTS = (helpers.Output("p_face", refslice=outslice, gtslice=outslice),)
 
     @staticmethod
-    def reference(grid, p_cc: np.array, p_cellhgt_mc_now: np.array, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cc: np.ndarray,
+        p_cellhgt_mc_now: np.ndarray,
+        **kwargs,
+    ) -> dict:
         p_face = p_cc.copy()
         p_face[:, 1:] = p_cc[:, 1:] * (
             1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])

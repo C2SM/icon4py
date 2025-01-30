@@ -24,10 +24,10 @@ class TestAverageHorizontalFluxSubcycling3(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_tracer_mflx_1_dsl: np.array,
-        z_tracer_mflx_2_dsl: np.array,
-        z_tracer_mflx_3_dsl: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_tracer_mflx_1_dsl: np.ndarray,
+        z_tracer_mflx_2_dsl: np.ndarray,
+        z_tracer_mflx_3_dsl: np.ndarray,
         **kwargs,
     ) -> dict:
         p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / float(3)

@@ -24,7 +24,11 @@ class TestComputePpm4gpuParabolaCoefficients(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, z_face_up: np.ndarray, z_face_low: np.ndarray, p_cc: np.ndarray, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_face_up: np.ndarray,
+        z_face_low: np.ndarray,
+        p_cc: np.ndarray,
+        **kwargs,
     ) -> dict:
         z_delta_q = 0.5 * (z_face_up - z_face_low)
         z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)

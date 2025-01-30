@@ -25,12 +25,12 @@ class TestIntegrateTracerHorizontally(helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        p_mflx_tracer_h: np.array,
-        deepatmo_divh: np.array,
-        tracer_now: np.array,
-        rhodz_now: np.array,
-        rhodz_new: np.array,
-        geofac_div: np.array,
+        p_mflx_tracer_h: np.ndarray,
+        deepatmo_divh: np.ndarray,
+        tracer_now: np.ndarray,
+        rhodz_now: np.ndarray,
+        rhodz_new: np.ndarray,
+        geofac_div: np.ndarray,
         p_dtime,
         **kwargs,
     ) -> dict:

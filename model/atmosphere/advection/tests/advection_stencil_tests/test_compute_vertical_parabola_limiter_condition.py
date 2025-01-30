@@ -23,7 +23,12 @@ class TestComputeVerticalParabolaLimiterCondition(helpers.StencilTest):
     OUTPUTS = ("l_limit",)
 
     @staticmethod
-    def reference(grid, p_face: np.array, p_cc: np.array, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_face: np.ndarray,
+        p_cc: np.ndarray,
+        **kwargs,
+    ) -> dict:
         z_delta = p_face[:, :-1] - p_face[:, 1:]
         z_a6i = 6.0 * (p_cc - 0.5 * (p_face[:, :-1] + p_face[:, 1:]))
         l_limit = np.where(np.abs(z_delta) < -1 * z_a6i, 1, 0)

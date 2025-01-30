@@ -23,7 +23,13 @@ class TestLimitVerticalParabolaSemiMonotonically(helpers.StencilTest):
     OUTPUTS = ("p_face_up", "p_face_low")
 
     @staticmethod
-    def reference(grid, l_limit: np.array, p_face: np.array, p_cc: np.array, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        l_limit: np.ndarray,
+        p_face: np.ndarray,
+        p_cc: np.ndarray,
+        **kwargs,
+    ) -> dict:
         q_face_up, q_face_low = np.where(
             l_limit != 0,
             np.where(
