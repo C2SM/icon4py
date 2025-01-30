@@ -39,6 +39,10 @@ MODEL_TESTS_SUBSETS: Final[Sequence[str]] = [
         nox.param(arg, id=arg, tags=[arg]) for arg in ModelTestsSubset.__args__
 ]
 # -- nox sessions --
+#: This should just be `pytest.ExitCode.NO_TESTS_COLLECTED` but `pytest`
+#: is not guaranteed to be available in the venv where `nox` is running.
+NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
+
 # Model benchmark sessions
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
@@ -67,7 +71,8 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
         session.run(
             *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
-            *session.posargs
+            *session.posargs,
+            success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
         )
 
 # @nox.session(python=["3.10", "3.11"])
