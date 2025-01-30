@@ -80,7 +80,7 @@ def allocate_data(backend, input_data):
 
 def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
-    backend: str | None,
+    backend: gtx_backend.Backend | None,
     is_datatest: bool = False,
 ):
     for marker in markers:
