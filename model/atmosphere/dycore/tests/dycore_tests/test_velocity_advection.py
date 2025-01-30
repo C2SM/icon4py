@@ -8,7 +8,7 @@
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
-from icon4py.model.atmosphere.dycore.stencils import fused_velocity_advection_stencisl_1o_7
+from icon4py.model.atmosphere.dycore.stencils import fused_velocity_advection_stencil_1o_7
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -19,7 +19,8 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 from . import utils
-
+import gt4py.next as gtx
+import numpy as np
 
 def create_vertical_params(vertical_config, grid_savepoint):
     return v_grid.VerticalGrid(
@@ -451,3 +452,134 @@ def test_velocity_corrector_step(
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
     )
+
+@pytest.mark.dataset
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+    ],
+)
+def test_velocity_fussed_1_7(
+    step_date_init,
+    step_date_exit,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    icon_grid,
+    grid_savepoint,
+    savepoint_velocity_init,
+    savepoint_velocity_exit,
+    interpolation_savepoint,
+    metrics_savepoint,
+    backend,
+
+):
+    vn=savepoint_velocity_init.init_vn_1_7()
+    rbf_vec_coeff_e=savepoint_velocity_init.init_rbf_vec_coeff_e_1_7()
+    wgtfac_e=savepoint_velocity_init.init_wgtfac_e_1_7()
+    ddxn_z_full=savepoint_velocity_init.init_ddxn_z_full_1_7()
+    ddxt_z_full=savepoint_velocity_init.init_ddxt_z_full_1_7()
+    z_w_concorr_me=savepoint_velocity_init.init_z_w_concorr_me_1_7()
+    wgtfacq_e=savepoint_velocity_init.init_wgtfacq_1_7()
+    nflatlev=savepoint_velocity_init.init_nflatlev_1_7()
+    c_intp=savepoint_velocity_init.init_c_intp_1_7()
+    w=savepoint_velocity_init.init_w_1_7()
+    inv_dual_edge_length=savepoint_velocity_init.init_inv_dual_edge_length_1_7()
+    inv_primal_edge_length=savepoint_velocity_init.init_inv_primal_edge_length_1_7()
+    tangent_orientation=savepoint_velocity_init.init_tangent_orientation_1_7()
+    z_vt_ie=savepoint_velocity_init.init_z_vt_ie_1_7()
+    vt=savepoint_velocity_init.init_vt_1_7()
+    vn_ie=savepoint_velocity_init.init_vn_ie_1_7()
+    z_kin_hor_e=savepoint_velocity_init.init_z_kin_hor_e_1_7()
+    z_v_grad_w=savepoint_velocity_init.init_z_v_grad_w_1_7()
+    k = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=gtx.int32))
+
+    vt_ref = savepoint_velocity_exit.x_vt_1_7()
+    vn_ie_ref = savepoint_velocity_exit.x_vn_ie_1_7()
+    z_kin_hor_e_ref = savepoint_velocity_exit.x_z_kin_hor_e_1_7()
+    z_w_concorr_me_ref = savepoint_velocity_exit.x_z_w_concorr_me_1_7()
+    z_v_grad_w_ref = savepoint_velocity_exit.x_z_v_grad_w_1_7()
+
+    istep = 1
+    lvn_only = False
+    edge = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=gtx.int32)
+    for e in range(icon_grid.num_edges):
+        edge[e] = e
+    edge_domain = h_grid.domain(dims.EdgeDim)
+
+    lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+
+    halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+    horizontal_start = 0
+    horizontal_end = icon_grid.num_edges
+    vertical_start = 0
+    vertical_end = icon_grid.num_levels + 1
+
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+
+    velocity_advection = advection.VelocityAdvection(
+        grid=icon_grid,
+        metric_state=metric_state_nonhydro,
+        interpolation_state=interpolation_state,
+        vertical_params=vertical_params,
+        edge_params=grid_savepoint.construct_edge_geometry(),
+        owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
+    )
+
+
+fused_velocity_advection_stencil_1o_7.fused_velocity_advection_stencil_1_to_7.with_backend(backend)(
+        vn=vn,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        wgtfac_e=wgtfac_e,
+        ddxn_z_full=ddxn_z_full,
+        ddxt_z_full=ddxt_z_full,
+        z_w_concorr_me=z_w_concorr_me,
+        wgtfacq_e=wgtfacq_e,
+        nflatlev=nflatlev,
+        c_intp=c_intp,
+        w=w,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_primal_edge_length=inv_primal_edge_length,
+        tangent_orientation=tangent_orientation,
+        z_vt_ie=z_vt_ie,
+        vt=vt,
+        vn_ie=vn_ie,
+        z_kin_hor_e=z_kin_hor_e,
+        z_v_grad_w=z_v_grad_w,
+        k=k,
+        istep=istep,
+        nlev=icon_grid.num_levels,
+        lvn_only=lvn_only,
+        edge=edge,
+        lateral_boundary_7=lateral_boundary_7,
+        halo_1=halo_1,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
+        offset_provider={"E2C":icon_grid.get_offset_provider("E2C"),
+                         "E2V": icon_grid.get_offset_provider("E2V"),
+                         "V2C": icon_grid.get_offset_provider("V2C"),
+                         "E2C2E": icon_grid.get_offset_provider("E2C2E"),
+                         "Koff": dims.KDim}
+)
+
+assert helpers.dallclose(vt_ref.asnumpy(), vt.asnumpy())
+assert helpers.dallclose(vn_ie.asnumpy(), vn_ie.asnumpy())
+assert helpers.dallclose(z_kin_hor_e.asnumpy(), z_kin_hor_e.asnumpy())
+assert helpers.dallclose(z_w_concorr_me.asnumpy(), z_w_concorr_me.asnumpy())
+assert helpers.dallclose(z_v_grad_w.asnumpy(), z_v_grad_w.asnumpy())

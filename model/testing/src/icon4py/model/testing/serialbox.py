@@ -1153,6 +1153,66 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def w_concorr_c(self):
         return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
 
+    def init_vn_1_7(self):
+        return self._get_field("init_vn_1_7", dims.EdgeDim, dims.KDim)
+
+    def init_rbf_vec_coeff_e_1_7(self):
+        return self._get_field("init_rbf_vec_coeff_e_1_7", dims.EdgeDim, dims.E2C2EDim)
+
+    def init_wgtfac_e_1_7(self):
+        return self._get_field("init_wgtfac_e_1_7", dims.EdgeDim, dims.KDim)
+
+    def init_ddxn_z_full_1_7(self):
+        field = self._get_field("init_ddxn_z_full_1_7", dims.EdgeDim, dims.KDim)
+        return data_alloc.as_1D_sparse_field(field, dims.ECDim)
+
+    def init_ddxt_z_full_1_7(self):
+        return self._get_field("init_ddxt_z_full_1_7", dims.EdgeDim, dims.KDim)
+
+    def init_z_w_concorr_me_1_7(self):
+        return self._get_field("init_z_w_concorr_me_1_7", dims.EdgeDim, dims.KDim)
+
+    def init_wgtfacq_1_7(self):
+        return self._get_field("init_wgtfacq_1_7", dims.EdgeDim, dims.KDim)
+
+    # should not be here
+    def init_nflatlev_1_7(self):
+        return self._get_field("init_nflatlev_1_7", dims.EdgeDim, dims.E2CDim)
+
+    def init_c_intp_1_7(self):
+        return self._get_field("init_c_intp_1_7", dims.VertexDim, dims.V2CDim)
+
+    def init_w_1_7(self):
+        return self._get_field("init_w_1_7", dims.CellDim, dims.KDim)
+
+    def init_inv_dual_edge_length_1_7(self):
+        return self._get_field("init_inv_dual_edge_length_1_7", dims.EdgeDim)
+
+    def init_inv_primal_edge_length_1_7(self):
+        return self._get_field("init_inv_primal_edge_length_1_7", dims.EdgeDim)
+
+    def init_tangent_orientation_1_7(self):
+        return self._get_field("init_tangent_orientation_1_7", dims.EdgeDim)
+
+    def init_z_vt_ie_1_7(self):
+        return self._get_field("init_z_vt_ie_1_70", dims.EdgeDim, dims.KDim)
+
+    def init_vt_1_7(self):
+        return self._get_field("init_vt_1_7", dims.EdgeDim, dims.KDim)
+
+    def init_vn_ie_1_7(self):
+        return self._get_field("init_geofac_grdiv_19_20", dims.EdgeDim, dims.KDim)
+
+    def init_z_kin_hor_e_1_7(self):
+        return self._get_field("init_z_kin_hor_e_1_7", dims.EdgeDim, dims.KDim)
+
+    def init_z_v_grad_w_1_7(self):
+        return self._get_field("init_z_v_grad_w_1_7", dims.EdgeDim, dims.KDim)
+
+
+
+
+
 
 class IconDiffusionExitSavepoint(IconSavepoint):
     def vn(self):
