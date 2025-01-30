@@ -34,7 +34,7 @@ from .test_update_theta_and_exner import update_theta_and_exner_numpy
 class TestApplyDiffusionToThetaAndExner(StencilTest):
     PROGRAM = apply_diffusion_to_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
-    MARKERS = (pytest.mark.embedded_remap_error, pytest.mark.uses_as_offset)
+    MARKERS = (pytest.mark.embedded_remap_error, pytest.mark.uses_as_offset, pytest.mark.skip_value_error)
 
     @staticmethod
     def reference(
@@ -80,10 +80,6 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        # TODO [halungge]: understand why values do not verify intermittently
-        # error message contained in truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy
-        # TODO [nfarabullini]: set this as another marker
-        pytest.xfail("fix start index issue")
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim)
         theta_v_in = random_field(grid, dims.CellDim, dims.KDim)
