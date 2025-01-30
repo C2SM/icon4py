@@ -1,7 +1,7 @@
 import logging, os
 
 import gt4py.next as gtx
-from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.testing import serialbox as sb
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import edge_2_cell_vector_rbf_interpolation
 from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
