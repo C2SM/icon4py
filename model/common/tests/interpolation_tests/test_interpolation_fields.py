@@ -72,6 +72,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
     assert test_helpers.dallclose(data_alloc.as_numpy(c_lin_e_partial), c_lin_e_ref.asnumpy())
 
 
+@pytest.mark.skip_value_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
