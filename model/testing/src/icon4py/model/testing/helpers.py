@@ -49,7 +49,7 @@ def is_dace(backend: gtx_backend.Backend | None) -> bool:
     return backend.name.startswith("run_dace_") if backend else False
 
 
-def is_embedded(backend: None) -> bool:
+def is_embedded(backend: gtx_backend.Backend | None) -> bool:
     return backend is None
 
 
