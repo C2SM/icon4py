@@ -13,7 +13,7 @@ from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
-from icon4py.model.testing.helpers import match_marker
+from icon4py.model.testing.helpers import apply_markers
 
 
 def _check_backend_validity(backend_name: str) -> None:
@@ -86,7 +86,7 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    match_marker(
+    apply_markers(
         item.own_markers,
         model_backends.BACKENDS[item.config.getoption("--backend")],
         is_datatest=item.config.getoption("--datatest"),
