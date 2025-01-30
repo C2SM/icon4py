@@ -57,3 +57,11 @@ def test_zone_and_domain_index(dim, caplog):
             assert domain() <= h_grid._BOUNDS[dim][1]
         except AssertionError:
             log.info(f"dim={dim}: zone={zone:16}: invalid")
+
+
+@pytest.mark.parametrize("zone", zones())
+def test_halo_zones(zone):
+    if zone in (h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2):
+        assert zone.is_halo()
+    else:
+        assert not zone.is_halo()

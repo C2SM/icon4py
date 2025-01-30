@@ -17,6 +17,3 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.testing.helpers import (  # noqa : F401  # fixtures from test_utils
-    backend,
-)

@@ -27,9 +27,9 @@ class TestComputeVerticalTracerFluxUpwind(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_cc: np.array,
-        p_mflx_contra_v: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cc: np.ndarray,
+        p_mflx_contra_v: np.ndarray,
         **kwargs,
     ) -> dict:
         p_upflux = p_cc.copy()

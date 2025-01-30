@@ -13,6 +13,7 @@ from icon4py.model.common import constants as phy_const, dimension as dims, type
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
     diagnose_surface_pressure,
 )
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
@@ -45,9 +46,9 @@ class TestDiagnoseSurfacePressure(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         low = 1.0e-2
-        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat)
+        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
         virtual_temperature = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
         )

@@ -24,14 +24,14 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        tracer_now: np.array,
-        rhodz_now: np.array,
-        p_mflx_tracer_v: np.array,
-        deepatmo_divzl: np.array,
-        deepatmo_divzu: np.array,
-        rhodz_new: np.array,
-        k: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        tracer_now: np.ndarray,
+        rhodz_now: np.ndarray,
+        p_mflx_tracer_v: np.ndarray,
+        deepatmo_divzl: np.ndarray,
+        deepatmo_divzu: np.ndarray,
+        rhodz_new: np.ndarray,
+        k: np.ndarray,
         ivadv_tracer: gtx.int32,
         iadv_slev_jt: gtx.int32,
         p_dtime: float,

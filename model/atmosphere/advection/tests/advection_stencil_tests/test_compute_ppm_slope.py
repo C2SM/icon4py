@@ -28,7 +28,12 @@ class TestComputePpmSlope(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_cc: np.array, p_cellhgt_mc_now: np.array, k: np.array, elev: gtx.int32, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cc: np.ndarray,
+        p_cellhgt_mc_now: np.ndarray,
+        k: np.ndarray,
+        elev: gtx.int32,
+        **kwargs,
     ) -> dict:
         zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
             p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]

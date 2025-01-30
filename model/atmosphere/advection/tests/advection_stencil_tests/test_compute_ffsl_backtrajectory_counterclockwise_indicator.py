@@ -24,7 +24,11 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest
 
     @staticmethod
     def reference(
-        grid, p_vn: np.array, tangent_orientation: np.array, lcounterclock: bool, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_vn: np.ndarray,
+        tangent_orientation: np.ndarray,
+        lcounterclock: bool,
+        **kwargs,
     ) -> dict:
         tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 

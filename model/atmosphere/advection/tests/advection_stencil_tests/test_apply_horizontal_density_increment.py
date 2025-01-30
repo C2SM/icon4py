@@ -30,11 +30,11 @@ class TestApplyHorizontalDensityIncrement(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_rhodz_new: np.array,
-        p_mflx_contra_v: np.array,
-        deepatmo_divzl: np.array,
-        deepatmo_divzu: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_rhodz_new: np.ndarray,
+        p_mflx_contra_v: np.ndarray,
+        deepatmo_divzl: np.ndarray,
+        deepatmo_divzu: np.ndarray,
         p_dtime: float,
         **kwargs,
     ) -> dict:

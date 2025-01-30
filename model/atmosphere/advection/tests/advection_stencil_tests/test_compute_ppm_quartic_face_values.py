@@ -24,7 +24,11 @@ class TestComputePpmQuarticFaceValues(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_cc: np.array, p_cellhgt_mc_now: np.array, z_slope: np.array, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cc: np.ndarray,
+        p_cellhgt_mc_now: np.ndarray,
+        z_slope: np.ndarray,
+        **kwargs,
     ) -> dict:
         p_cellhgt_mc_now_k_minus_1 = p_cellhgt_mc_now[:, 1:-2]
         p_cellhgt_mc_now_k_minus_2 = p_cellhgt_mc_now[:, 0:-3]

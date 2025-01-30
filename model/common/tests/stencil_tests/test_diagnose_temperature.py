@@ -13,6 +13,7 @@ from icon4py.model.common import constants as phy_const, dimension as dims, type
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
     diagnose_virtual_temperature_and_temperature,
 )
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
@@ -23,7 +24,7 @@ class TestDiagnoseTemperature(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         qv: np.array,
         qc: np.array,
         qi: np.array,
@@ -43,7 +44,7 @@ class TestDiagnoseTemperature(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         theta_v = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, high=1.0, dtype=ta.wpfloat
         )

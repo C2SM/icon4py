@@ -91,16 +91,8 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
         z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-            if hasattr(grid, "start_index")
-            else 0
-        )
-        horizontal_end = (
-            grid.end_index(edge_domain(h_grid.Zone.HALO))
-            if hasattr(grid, "end_index")
-            else gtx.int32(grid.num_edges)
-        )
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         return dict(
             vn_ie=vn_ie,

@@ -24,11 +24,11 @@ class TestComputePpmAllFaceValues(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_cc: np.array,
-        p_cellhgt_mc_now: np.array,
-        p_face_in: np.array,
-        k: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cc: np.ndarray,
+        p_cellhgt_mc_now: np.ndarray,
+        p_face_in: np.ndarray,
+        k: np.ndarray,
         slev: gtx.int32,
         elev: gtx.int32,
         slevp1: gtx.int32,

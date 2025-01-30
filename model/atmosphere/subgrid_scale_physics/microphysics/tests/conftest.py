@@ -27,8 +27,10 @@ from icon4py.model.testing.datatest_fixtures import (
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
 )
-from icon4py.model.testing.helpers import backend, grid
+from icon4py.model.testing.helpers import connectivities_as_numpy
 
+
+# ruff: noqa: F405
 
 # Make sure custom icon4py pytest hooks are loaded
 try:
@@ -61,4 +63,5 @@ __all__ = [
     "ranked_data_path",
     "backend",
     "grid",
+    "connectivities_as_numpy",
 ]

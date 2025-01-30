@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence
     temporary_fields_for_turbulence_diagnostics,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
@@ -25,11 +26,11 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        kh_smag_ec: np.array,
-        vn: np.array,
-        e_bln_c_s: np.array,
-        geofac_div: np.array,
-        diff_multfac_smag: np.array,
+        kh_smag_ec: np.ndarray,
+        vn: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        geofac_div: np.ndarray,
+        diff_multfac_smag: np.ndarray,
         **kwargs,
     ) -> dict:
         c2e = connectivities[dims.C2EDim]
@@ -48,7 +49,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
         return dict(div=div, kh_c=kh_c)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         geofac_div = data_alloc.as_1D_sparse_field(
             data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat), dims.CEDim

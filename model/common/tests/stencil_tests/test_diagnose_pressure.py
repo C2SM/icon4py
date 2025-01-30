@@ -13,6 +13,7 @@ from icon4py.model.common import constants as phy_const, dimension as dims, type
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
     diagnose_pressure,
 )
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
@@ -23,7 +24,7 @@ class TestDiagnosePressure(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         surface_pressure: np.array,
         temperature: np.array,
         ddqz_z_full: np.array,
@@ -48,7 +49,7 @@ class TestDiagnosePressure(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         if helpers.is_roundtrip:
             pytest.xfail("This stencil currently does not work properly with roundtrip backend.")
 

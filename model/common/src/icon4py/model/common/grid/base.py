@@ -15,7 +15,7 @@ from typing import Callable, Dict
 import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims, utils
-from icon4py.model.common.grid import utils as grid_utils
+from icon4py.model.common.grid import horizontal as h_grid, utils as grid_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -164,3 +164,11 @@ class BaseGrid(ABC):
 
     def update_size_connectivities(self, new_sizes):
         self.size.update(new_sizes)
+
+    @abstractmethod
+    def start_index(self, domain: h_grid.Domain) -> gtx.int32:
+        ...
+
+    @abstractmethod
+    def end_index(self, domain: h_grid.Domain) -> gtx.int32:
+        ...

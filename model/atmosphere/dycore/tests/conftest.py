@@ -6,9 +6,10 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from icon4py.model.testing.helpers import backend, grid
+from icon4py.model.testing.helpers import connectivities_as_numpy
 
 
+# ruff: noqa: F405
 # Make sure custom icon4py pytest hooks are loaded
 try:
     import sys
@@ -20,6 +21,7 @@ except KeyError:
 
 __all__ = [
     # imported fixtures:
-    "backend",
+    "connectivities_as_numpy",
     "grid",
+    "backend",
 ]

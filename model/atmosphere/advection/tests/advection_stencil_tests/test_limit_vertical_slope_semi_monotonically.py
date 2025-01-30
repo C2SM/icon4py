@@ -24,7 +24,12 @@ class TestLimitVerticalSlopeSemiMonotonically(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_cc: np.array, z_slope: np.array, k: np.array, elev: gtx.int32, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cc: np.ndarray,
+        z_slope: np.ndarray,
+        k: np.ndarray,
+        elev: gtx.int32,
+        **kwargs,
     ) -> dict:
         p_cc_min_last = np.minimum(p_cc[:, :-2], p_cc[:, 1:-1])
         p_cc_min = np.where(k[1:-1] == elev, p_cc_min_last, np.minimum(p_cc_min_last, p_cc[:, 2:]))
