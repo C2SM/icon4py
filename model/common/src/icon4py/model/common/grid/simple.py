@@ -498,22 +498,23 @@ class SimpleGrid(BaseGrid):
         )
 
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
-        return gtx.int32(0)
+        num = self._match_grid_size(domain) if domain.zone.is_halo() else gtx.int32(0)
+        return num
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
-        def _match_grid_size(domain: h_grid.Domain) -> int:
-            dimension = domain.dim
-            match dimension:
-                case dims.VertexDim:
-                    return self.num_vertices
-                case dims.CellDim:
-                    return self.num_cells
-                case dims.EdgeDim:
-                    return self.num_edges
-                case _:
-                    raise exceptions.IconGridError(
-                        f" {domain} : Not a valid horizontal Domain implementation {type(domain)}"
-                    )
-
-        num = gtx.int32(0) if domain.zone.is_halo() else _match_grid_size(domain)
+        num = self._match_grid_size(domain)
         return gtx.int32(num)
+
+    def _match_grid_size(self, domain: h_grid.Domain) -> int:
+        dimension = domain.dim
+        match dimension:
+            case dims.VertexDim:
+                return self.num_vertices
+            case dims.CellDim:
+                return self.num_cells
+            case dims.EdgeDim:
+                return self.num_edges
+            case _:
+                raise exceptions.IconGridError(
+                    f" {domain} : Not a valid horizontal Domain implementation {type(domain)}"
+                )

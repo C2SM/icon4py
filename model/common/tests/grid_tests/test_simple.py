@@ -25,13 +25,13 @@ def domain_generator():
 @pytest.mark.parametrize("domain", domain_generator())
 def test_start_index(domain):
     simple_grid = simple.SimpleGrid()
-    assert simple_grid.start_index(domain) == 0
+    if domain.zone in (h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2):
+        assert simple_grid.start_index(domain) == simple_grid.size[domain.dim]
+    else:
+        assert simple_grid.start_index(domain) == 0
 
 
 @pytest.mark.parametrize("domain", domain_generator())
 def test_end_index(domain):
     simple_grid = simple.SimpleGrid()
-    if domain.zone in (h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2):
-        assert simple_grid.end_index(domain) == 0
-    else:
-        assert simple_grid.end_index(domain) == simple_grid.size[domain.dim]
+    assert simple_grid.end_index(domain) == simple_grid.size[domain.dim]

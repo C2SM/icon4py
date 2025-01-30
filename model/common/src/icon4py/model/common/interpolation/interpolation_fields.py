@@ -638,7 +638,9 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     )
 
 
-def create_inverse_neighbor_index(source_offset, inverse_offset, array_ns: ModuleType):
+def create_inverse_neighbor_index(
+    source_offset, inverse_offset, array_ns: ModuleType
+) -> data_alloc.NDArray:
     """
     The inverse neighbor index determines the position of an central element c_1
     in the neighbor table of its neighbors:
@@ -647,7 +649,7 @@ def create_inverse_neighbor_index(source_offset, inverse_offset, array_ns: Modul
     map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c the
     neighborhoods of e_1, e_2, e_3 will all contain c_1 in some position.
     Then inverse neighbor index tells what position that is. It essentially says
-    "I am neighbor number x \in (0,1) of my neighboring edges"
+    "I am neighbor number x \\in (0,1) of my neighboring edges"
 
 
     Args:
