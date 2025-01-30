@@ -1205,6 +1205,45 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def init_ddt_vn_apc_19_20(self):
         return self._get_field("init_ddt_vn_apc_19_20", dims.EdgeDim, dims.KDim)
 
+    def init_z_w_con_c_15_18(self):
+        return self._get_field("init_z_w_con_c_15_18", dims.CellDim, dims.KDim)
+
+    def init_w_15_18(self):
+        return self._get_field("init_w_15_18", dims.CellDim, dims.KDim)
+
+    def init_coeff1_dwdz_15_18(self):
+        return self._get_field("init_coeff1_dwdz_15_18", dims.CellDim, dims.KDim)
+
+    def init_coeff2_dwdz_15_18(self):
+        return self._get_field("init_coeff2_dwdz_15_18", dims.CellDim, dims.KDim)
+
+    def init_ddt_w_adv_15_18(self):
+        return self._get_field("init_ddt_w_adv_15_18", dims.CellDim, dims.KDim)
+
+    def init_e_bln_c_s_15_18(self):
+        return self._get_field("init_e_bln_c_s_15_18", dims.CEDim)
+
+    def init_z_v_grad_w_15_18(self):
+        return self._get_field("init_z_v_grad_w_15_18", dims.EdgeDim, dims.KDim)
+
+    def init_levelmask_15_18(self):
+        return self._get_field("init_levelmask_15_18", dims.KDim, dtype=bool)
+
+    def init_cfl_clipping_15_18(self):
+        return self._get_field("init_cfl_clipping_15_18", dims.CellDim, dims.KDim, dtype=bool)
+
+    def init_owner_mask_15_18(self):
+        return self._get_field("init_owner_mask_15_18", dims.CellDim, dtype=bool)
+
+    def init_ddqz_z_half_15_18(self):
+        return self._get_field("init_ddqz_z_half_15_18", dims.CellDim, dims.KDim)
+
+    def init_area_15_18(self):
+        return self._get_field("init_area_15_18", dims.CellDim)
+
+    def init_geofac_n2s_15_18(self):
+        return self._get_field("init_geofac_n2s_15_18", dims.CellDim, dims.C2E2CODim)
+
 
 
 class IconDiffusionExitSavepoint(IconSavepoint):
@@ -1407,6 +1446,12 @@ class IconNonhydroExitSavepoint(IconSavepoint):
 
     def x_ddt_vn_apc_19_20(self):
         return self._get_field("x_ddt_vn_apc_19_20", dims.EdgeDim, dims.KDim)
+
+    def x_z_w_con_c_full_15_18(self):
+        return self._get_field("x_z_w_con_c_full_15_18", dims.CellDim, dims.KDim)
+
+    def x_ddt_w_adv_15_18(self):
+        return self._get_field("x_ddt_w_adv_15_18", dims.CellDim, dims.KDim)
 
 
 # TODO (magdalena) rename?
