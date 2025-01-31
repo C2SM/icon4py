@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import T_from_internal_energy
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
@@ -21,7 +20,7 @@ class TestTFromInternalEnergy(StencilTest):
     OUTPUTS = ("temperature",)
 
     @staticmethod
-    def reference(grid, u: np.array, qv: np.array, qliq: np.array, qice: np.array, rho: np.array, dz: np.array, CI: wpfloat, CLW: wpfloat, CVD: wpfloat, CVV: wpfloat, LSC: wpfloat, LVC: wpfloat, **kwargs) -> dict:
+    def reference(grid, u: np.array, qv: np.array, qliq: np.array, qice: np.array, rho: np.array, dz: np.array, **kwargs) -> dict:
         return dict(temperature=np.full(u.shape, 255.75599999999997))
 
     @pytest.fixture
@@ -34,11 +33,5 @@ class TestTFromInternalEnergy(StencilTest):
             qice             = constant_field(grid, 1.09462e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho              = constant_field(grid, 0.83444, dims.CellDim, dims.KDim, dtype=wpfloat),
             dz               = constant_field(grid, 249.569, dims.CellDim, dims.KDim, dtype=wpfloat),
-            CI               = graupel_ct.ci,
-            CLW              = thermodyn.clw,
-            CVD              = thermodyn.cvd,
-            CVV              = thermodyn.cvv,
-            LSC              = graupel_ct.lsc,
-            LVC              = graupel_ct.lvc,
             temperature      = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )

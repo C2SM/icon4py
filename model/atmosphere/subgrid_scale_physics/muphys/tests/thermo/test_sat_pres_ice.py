@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import sat_pres_ice
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import thermodyn
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
@@ -21,7 +20,7 @@ class TestSatPresIce(StencilTest):
     OUTPUTS = ("pressure",)
 
     @staticmethod
-    def reference(grid, t: np.array, TMELT: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, **kwargs) -> dict:
         return dict(pressure=np.full(t.shape, 1216.7746246067475))
 
     @pytest.fixture
@@ -29,6 +28,5 @@ class TestSatPresIce(StencilTest):
 
         return dict(
             t                = constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
-            TMELT            = thermodyn.tmelt,
             pressure         = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )

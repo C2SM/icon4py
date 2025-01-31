@@ -9,7 +9,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import qsat_rho
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import thermodyn
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
@@ -21,7 +20,7 @@ class TestQsatRho(StencilTest):
     OUTPUTS = ("pressure",)
 
     @staticmethod
-    def reference(grid, t: np.array, rho: np.array, TMELT: wpfloat, RV: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, rho: np.array, **kwargs) -> dict:
         return dict(pressure=np.full(t.shape, 0.0069027592942577506))
 
     @pytest.fixture
@@ -30,7 +29,5 @@ class TestQsatRho(StencilTest):
         return dict(
             t                = constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho              = constant_field(grid, 1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
-            TMELT            = thermodyn.tmelt,
-            RV               = thermodyn.rv,
             pressure         = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
