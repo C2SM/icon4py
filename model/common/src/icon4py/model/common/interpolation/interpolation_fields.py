@@ -19,6 +19,7 @@ import icon4py.model.common.type_alias as ta
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import C2E, V2E
 from icon4py.model.common.grid import grid_manager as gm
+from icon4py.model.common.grid.geometry_stencils import compute_primal_cart_normal
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -212,8 +213,12 @@ def _compute_geofac_grg(
     inverse_neighbor = create_inverse_neighbor_index(e2c, c2e, array_ns)
 
     tmp = geofac_div * c_lin_e[c2e, inverse_neighbor]
-    geofac_grg_x[horizontal_start:, 0] = np.sum(primal_normal_ec_u * tmp, axis=1)[horizontal_start:]
-    geofac_grg_y[horizontal_start:, 0] = np.sum(primal_normal_ec_v * tmp, axis=1)[horizontal_start:]
+    geofac_grg_x[horizontal_start:, 0] = array_ns.sum(primal_normal_ec_u * tmp, axis=1)[
+        horizontal_start:
+    ]
+    geofac_grg_y[horizontal_start:, 0] = array_ns.sum(primal_normal_ec_v * tmp, axis=1)[
+        horizontal_start:
+    ]
 
     for k in range(e2c.shape[1]):
         mask = (e2c[c2e, k] == c2e2c)[horizontal_start:, :]
@@ -554,7 +559,7 @@ def _force_mass_conservation_to_c_bln_avg(
         local_weight = array_ns.sum(c_bln_avg, axis=1) - 1.0
 
         c_bln_avg[horizontal_start:, :] = c_bln_avg[horizontal_start:, :] - (
-            0.25 * local_weight[horizontal_start:, np.newaxis]
+            0.25 * local_weight[horizontal_start:, array_ns.newaxis]
         )
 
         # avoid runaway condition:
@@ -672,17 +677,20 @@ def create_inverse_neighbor_index(source_offset, inverse_offset, array_ns: Modul
 
 # TODO (@halungge) this can be simplified using only
 def compute_e_flx_avg(
-    c_bln_avg: np.ndarray,
-    geofac_div: np.ndarray,
-    owner_mask: np.ndarray,
-    primal_cart_normal: np.ndarray,
-    e2c: np.ndarray,
-    c2e: np.ndarray,
-    c2e2c: np.ndarray,
-    e2c2e: np.ndarray,
+    c_bln_avg: data_alloc.NDArray,
+    geofac_div: data_alloc.NDArray,
+    owner_mask: data_alloc.NDArray,
+    primal_cart_normal_x: data_alloc.NDArray,
+    primal_cart_normal_y: data_alloc.NDArray,
+    primal_cart_normal_z: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    c2e: data_alloc.NDArray,
+    c2e2c: data_alloc.NDArray,
+    e2c2e: data_alloc.NDArray,
     horizontal_start_p3: np.int32,
     horizontal_start_p4: np.int32,
-) -> np.ndarray:
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
     """
     Compute edge flux average
 
@@ -701,72 +709,84 @@ def compute_e_flx_avg(
     Returns:
         e_flx_avg: numpy array, representing a gtx.Field[gtx.Dims[EdgeDim, E2C2EODim], ta.wpfloat]
     """
+    primal_cart_normal = compute_primal_cart_normal(
+        primal_cart_normal_x,
+        primal_cart_normal_y,
+        primal_cart_normal_z,
+        array_ns=array_ns,
+    )
+
     llb = 0
-    e_flx_avg = np.zeros([e2c.shape[0], 5])
-    index = np.arange(llb, c2e.shape[0])
-    inv_neighbor_id = -np.ones([c2e.shape[0] - llb, 3], dtype=int)
+    e_flx_avg = array_ns.zeros([e2c.shape[0], 5])
+    index = array_ns.arange(llb, c2e.shape[0])
+    inv_neighbor_id = -array_ns.ones([c2e.shape[0] - llb, 3], dtype=int)
     for i in range(c2e2c.shape[1]):
         for j in range(c2e2c.shape[1]):
-            inv_neighbor_id[:, j] = np.where(
-                np.logical_and(c2e2c[c2e2c[llb:, j], i] == index, c2e2c[llb:, j] >= 0),
+            inv_neighbor_id[:, j] = array_ns.where(
+                array_ns.logical_and(c2e2c[c2e2c[llb:, j], i] == index, c2e2c[llb:, j] >= 0),
                 i,
                 inv_neighbor_id[:, j],
             )
 
     llb = horizontal_start_p3
-    index = np.arange(llb, e2c.shape[0])
+    index = array_ns.arange(llb, e2c.shape[0])
     for j in range(c2e.shape[1]):
         for i in range(2):
-            e_flx_avg[llb:, i + 1] = np.where(
+            e_flx_avg[llb:, i + 1] = array_ns.where(
                 owner_mask[llb:],
-                np.where(
+                array_ns.where(
                     c2e[e2c[llb:, 0], j] == index,
                     c_bln_avg[e2c[llb:, 1], inv_neighbor_id[e2c[llb:, 0], j] + 1]
-                    * geofac_div[e2c[llb:, 0], np.mod(i + j + 1, 3)]
+                    * geofac_div[e2c[llb:, 0], array_ns.mod(i + j + 1, 3)]
                     / geofac_div[e2c[llb:, 1], inv_neighbor_id[e2c[llb:, 0], j]],
                     e_flx_avg[llb:, i + 1],
                 ),
                 e_flx_avg[llb:, i + 1],
             )
-            e_flx_avg[llb:, i + 3] = np.where(
+            e_flx_avg[llb:, i + 3] = array_ns.where(
                 owner_mask[llb:],
-                np.where(
+                array_ns.where(
                     c2e[e2c[llb:, 0], j] == index,
                     c_bln_avg[e2c[llb:, 0], 1 + j]
-                    * geofac_div[e2c[llb:, 1], np.mod(inv_neighbor_id[e2c[llb:, 0], j] + i + 1, 3)]
+                    * geofac_div[
+                        e2c[llb:, 1], array_ns.mod(inv_neighbor_id[e2c[llb:, 0], j] + i + 1, 3)
+                    ]
                     / geofac_div[e2c[llb:, 0], j],
                     e_flx_avg[llb:, i + 3],
                 ),
                 e_flx_avg[llb:, i + 3],
             )
 
-    iie = -np.ones([e2c.shape[0], 4], dtype=int)
-    iie[:, 0] = np.where(e2c[e2c2e[:, 0], 0] == e2c[:, 0], 2, -1)
-    iie[:, 0] = np.where(
-        np.logical_and(e2c[e2c2e[:, 0], 1] == e2c[:, 0], iie[:, 0] != 2), 4, iie[:, 0]
+    iie = -array_ns.ones([e2c.shape[0], 4], dtype=int)
+    iie[:, 0] = array_ns.where(e2c[e2c2e[:, 0], 0] == e2c[:, 0], 2, -1)
+    iie[:, 0] = array_ns.where(
+        array_ns.logical_and(e2c[e2c2e[:, 0], 1] == e2c[:, 0], iie[:, 0] != 2), 4, iie[:, 0]
     )
 
-    iie[:, 1] = np.where(e2c[e2c2e[:, 1], 0] == e2c[:, 0], 1, -1)
-    iie[:, 1] = np.where(
-        np.logical_and(e2c[e2c2e[:, 1], 1] == e2c[:, 0], iie[:, 1] != 1), 3, iie[:, 1]
+    iie[:, 1] = array_ns.where(e2c[e2c2e[:, 1], 0] == e2c[:, 0], 1, -1)
+    iie[:, 1] = array_ns.where(
+        array_ns.logical_and(e2c[e2c2e[:, 1], 1] == e2c[:, 0], iie[:, 1] != 1), 3, iie[:, 1]
     )
 
-    iie[:, 2] = np.where(e2c[e2c2e[:, 2], 0] == e2c[:, 1], 2, -1)
-    iie[:, 2] = np.where(
-        np.logical_and(e2c[e2c2e[:, 2], 1] == e2c[:, 1], iie[:, 2] != 2), 4, iie[:, 2]
+    iie[:, 2] = array_ns.where(e2c[e2c2e[:, 2], 0] == e2c[:, 1], 2, -1)
+    iie[:, 2] = array_ns.where(
+        array_ns.logical_and(e2c[e2c2e[:, 2], 1] == e2c[:, 1], iie[:, 2] != 2), 4, iie[:, 2]
     )
 
-    iie[:, 3] = np.where(e2c[e2c2e[:, 3], 0] == e2c[:, 1], 1, -1)
-    iie[:, 3] = np.where(
-        np.logical_and(e2c[e2c2e[:, 3], 1] == e2c[:, 1], iie[:, 3] != 1), 3, iie[:, 3]
+    iie[:, 3] = array_ns.where(e2c[e2c2e[:, 3], 0] == e2c[:, 1], 1, -1)
+    iie[:, 3] = array_ns.where(
+        array_ns.logical_and(e2c[e2c2e[:, 3], 1] == e2c[:, 1], iie[:, 3] != 1), 3, iie[:, 3]
     )
 
     llb = horizontal_start_p4
-    index = np.arange(llb, e2c.shape[0])
+    index = array_ns.arange(llb, e2c.shape[0])
     for i in range(c2e.shape[1]):
-        e_flx_avg[llb:, 0] = np.where(
+        # INVALID_INDEX
+        if i <= gm.GridFile.INVALID_INDEX:
+            continue
+        e_flx_avg[llb:, 0] = array_ns.where(
             owner_mask[llb:],
-            np.where(
+            array_ns.where(
                 c2e[e2c[llb:, 0], i] == index,
                 0.5
                 * (
@@ -775,9 +795,9 @@ def compute_e_flx_avg(
                         + geofac_div[e2c[llb:, 1], inv_neighbor_id[e2c[llb:, 0], i]]
                         * c_bln_avg[e2c[llb:, 0], i + 1]
                         - e_flx_avg[e2c2e[llb:, 0], iie[llb:, 0]]
-                        * geofac_div[e2c[llb:, 0], np.mod(i + 1, 3)]
+                        * geofac_div[e2c[llb:, 0], array_ns.mod(i + 1, 3)]
                         - e_flx_avg[e2c2e[llb:, 1], iie[llb:, 1]]
-                        * geofac_div[e2c[llb:, 0], np.mod(i + 2, 3)]
+                        * geofac_div[e2c[llb:, 0], array_ns.mod(i + 2, 3)]
                     )
                     / geofac_div[e2c[llb:, 0], i]
                     + (
@@ -786,9 +806,13 @@ def compute_e_flx_avg(
                         + geofac_div[e2c[llb:, 0], i]
                         * c_bln_avg[e2c[llb:, 1], inv_neighbor_id[e2c[llb:, 0], i] + 1]
                         - e_flx_avg[e2c2e[llb:, 2], iie[llb:, 2]]
-                        * geofac_div[e2c[llb:, 1], np.mod(inv_neighbor_id[e2c[llb:, 0], i] + 1, 3)]
+                        * geofac_div[
+                            e2c[llb:, 1], array_ns.mod(inv_neighbor_id[e2c[llb:, 0], i] + 1, 3)
+                        ]
                         - e_flx_avg[e2c2e[llb:, 3], iie[llb:, 3]]
-                        * geofac_div[e2c[llb:, 1], np.mod(inv_neighbor_id[e2c[llb:, 0], i] + 2, 3)]
+                        * geofac_div[
+                            e2c[llb:, 1], array_ns.mod(inv_neighbor_id[e2c[llb:, 0], i] + 2, 3)
+                        ]
                     )
                     / geofac_div[e2c[llb:, 1], inv_neighbor_id[e2c[llb:, 0], i]]
                 ),
@@ -801,12 +825,12 @@ def compute_e_flx_avg(
     for i in range(4):
         checksum = (
             checksum
-            + np.sum(primal_cart_normal * primal_cart_normal[e2c2e[:, i], :], axis=1)
+            + array_ns.sum(primal_cart_normal * primal_cart_normal[e2c2e[:, i], :], axis=1)
             * e_flx_avg[:, 1 + i]
         )
 
     for i in range(5):
-        e_flx_avg[llb:, i] = np.where(
+        e_flx_avg[llb:, i] = array_ns.where(
             owner_mask[llb:], e_flx_avg[llb:, i] / checksum[llb:], e_flx_avg[llb:, i]
         )
 
@@ -931,22 +955,23 @@ def compute_e_bln_c_s(
 
 def compute_pos_on_tplane_e_x_y(
     grid_sphere_radius: ta.wpfloat,
-    primal_normal_v1: np.ndarray,
-    primal_normal_v2: np.ndarray,
-    dual_normal_v1: np.ndarray,
-    dual_normal_v2: np.ndarray,
-    cells_lon: np.ndarray,
-    cells_lat: np.ndarray,
-    edges_lon: np.ndarray,
-    edges_lat: np.ndarray,
-    vertex_lon: np.ndarray,
-    vertex_lat: np.ndarray,
-    owner_mask: np.ndarray,
-    e2c: np.ndarray,
-    e2v: np.ndarray,
-    e2c2e: np.ndarray,
+    primal_normal_v1: data_alloc.NDArray,
+    primal_normal_v2: data_alloc.NDArray,
+    dual_normal_v1: data_alloc.NDArray,
+    dual_normal_v2: data_alloc.NDArray,
+    cells_lon: data_alloc.NDArray,
+    cells_lat: data_alloc.NDArray,
+    edges_lon: data_alloc.NDArray,
+    edges_lat: data_alloc.NDArray,
+    vertex_lon: data_alloc.NDArray,
+    vertex_lat: data_alloc.NDArray,
+    owner_mask: data_alloc.NDArray,
+    e2c: data_alloc.NDArray,
+    e2v: data_alloc.NDArray,
+    e2c2e: data_alloc.NDArray,
     horizontal_start: np.int32,
-) -> np.ndarray:
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
     """
     Compute pos_on_tplane_e_x_y.
     get geographical coordinates of edge midpoint
@@ -979,9 +1004,9 @@ def compute_pos_on_tplane_e_x_y(
         pos_on_tplane_e_y: //
     """
     llb = horizontal_start
-    pos_on_tplane_e = np.zeros([e2c.shape[0], 8, 2])
-    xyloc_plane_n1 = np.zeros([2, e2c.shape[0]])
-    xyloc_plane_n2 = np.zeros([2, e2c.shape[0]])
+    pos_on_tplane_e = array_ns.zeros([e2c.shape[0], 8, 2])
+    xyloc_plane_n1 = array_ns.zeros([2, e2c.shape[0]])
+    xyloc_plane_n2 = array_ns.zeros([2, e2c.shape[0]])
     xyloc_plane_n1[0, llb:], xyloc_plane_n1[1, llb:] = proj.gnomonic_proj(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 0]], cells_lat[e2c[llb:, 0]]
     )
@@ -989,8 +1014,8 @@ def compute_pos_on_tplane_e_x_y(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]]
     )
 
-    xyloc_quad = np.zeros([4, 2, e2c.shape[0]])
-    xyloc_plane_quad = np.zeros([4, 2, e2c.shape[0]])
+    xyloc_quad = array_ns.zeros([4, 2, e2c.shape[0]])
+    xyloc_plane_quad = array_ns.zeros([4, 2, e2c.shape[0]])
     for ne in range(4):
         xyloc_quad[ne, 0, llb:] = edges_lon[e2c2e[llb:, ne]]
         xyloc_quad[ne, 1, llb:] = edges_lat[e2c2e[llb:, ne]]
@@ -998,8 +1023,8 @@ def compute_pos_on_tplane_e_x_y(
             edges_lon[llb:], edges_lat[llb:], xyloc_quad[ne, 0, llb:], xyloc_quad[ne, 1, llb:]
         )
 
-    xyloc_ve = np.zeros([2, 2, e2c.shape[0]])
-    xyloc_plane_ve = np.zeros([2, 2, e2c.shape[0]])
+    xyloc_ve = array_ns.zeros([2, 2, e2c.shape[0]])
+    xyloc_plane_ve = array_ns.zeros([2, 2, e2c.shape[0]])
     for nv in range(2):
         xyloc_ve[nv, 0, llb:] = vertex_lon[e2v[llb:, nv]]
         xyloc_ve[nv, 1, llb:] = vertex_lat[e2v[llb:, nv]]
@@ -1007,7 +1032,7 @@ def compute_pos_on_tplane_e_x_y(
             edges_lon[llb:], edges_lat[llb:], xyloc_ve[nv, 0, llb:], xyloc_ve[nv, 1, llb:]
         )
 
-    pos_on_tplane_e[llb:, 0, 0] = np.where(
+    pos_on_tplane_e[llb:, 0, 0] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
@@ -1016,7 +1041,7 @@ def compute_pos_on_tplane_e_x_y(
         ),
         pos_on_tplane_e[llb:, 0, 0],
     )
-    pos_on_tplane_e[llb:, 0, 1] = np.where(
+    pos_on_tplane_e[llb:, 0, 1] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
@@ -1025,7 +1050,7 @@ def compute_pos_on_tplane_e_x_y(
         ),
         pos_on_tplane_e[llb:, 0, 1],
     )
-    pos_on_tplane_e[llb:, 1, 0] = np.where(
+    pos_on_tplane_e[llb:, 1, 0] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
@@ -1034,7 +1059,7 @@ def compute_pos_on_tplane_e_x_y(
         ),
         pos_on_tplane_e[llb:, 1, 0],
     )
-    pos_on_tplane_e[llb:, 1, 1] = np.where(
+    pos_on_tplane_e[llb:, 1, 1] = array_ns.where(
         owner_mask[llb:],
         grid_sphere_radius
         * (
@@ -1045,7 +1070,7 @@ def compute_pos_on_tplane_e_x_y(
     )
 
     for ne in range(4):
-        pos_on_tplane_e[llb:, 2 + ne, 0] = np.where(
+        pos_on_tplane_e[llb:, 2 + ne, 0] = array_ns.where(
             owner_mask[llb:],
             grid_sphere_radius
             * (
@@ -1054,7 +1079,7 @@ def compute_pos_on_tplane_e_x_y(
             ),
             pos_on_tplane_e[llb:, 2 + ne, 0],
         )
-        pos_on_tplane_e[llb:, 2 + ne, 1] = np.where(
+        pos_on_tplane_e[llb:, 2 + ne, 1] = array_ns.where(
             owner_mask[llb:],
             grid_sphere_radius
             * (
@@ -1065,7 +1090,7 @@ def compute_pos_on_tplane_e_x_y(
         )
 
     for nv in range(2):
-        pos_on_tplane_e[llb:, 6 + nv, 0] = np.where(
+        pos_on_tplane_e[llb:, 6 + nv, 0] = array_ns.where(
             owner_mask[llb:],
             grid_sphere_radius
             * (
@@ -1074,7 +1099,7 @@ def compute_pos_on_tplane_e_x_y(
             ),
             pos_on_tplane_e[llb:, 6 + nv, 0],
         )
-        pos_on_tplane_e[llb:, 6 + nv, 1] = np.where(
+        pos_on_tplane_e[llb:, 6 + nv, 1] = array_ns.where(
             owner_mask[llb:],
             grid_sphere_radius
             * (
@@ -1084,10 +1109,10 @@ def compute_pos_on_tplane_e_x_y(
             pos_on_tplane_e[llb:, 6 + nv, 1],
         )
 
-    pos_on_tplane_e_x = np.reshape(
-        pos_on_tplane_e[:, 0:2, 0], (np.size(pos_on_tplane_e[:, 0:2, 0]))
+    pos_on_tplane_e_x = array_ns.reshape(
+        pos_on_tplane_e[:, 0:2, 0], (array_ns.size(pos_on_tplane_e[:, 0:2, 0]))
     )
-    pos_on_tplane_e_y = np.reshape(
-        pos_on_tplane_e[:, 0:2, 1], (np.size(pos_on_tplane_e[:, 0:2, 1]))
+    pos_on_tplane_e_y = array_ns.reshape(
+        pos_on_tplane_e[:, 0:2, 1], (array_ns.size(pos_on_tplane_e[:, 0:2, 1]))
     )
     return pos_on_tplane_e_x, pos_on_tplane_e_y

@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
-import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -256,9 +255,6 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
     primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().asnumpy()
     primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().asnumpy()
     primal_cart_normal_z = grid_savepoint.primal_cart_normal_z().asnumpy()
-    primal_cart_normal = np.transpose(
-        np.stack((primal_cart_normal_x, primal_cart_normal_y, primal_cart_normal_z))
-    )
     e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.E2CDim])
     c2e = data_alloc.as_numpy(icon_grid.connectivities[dims.C2EDim])
     c2e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.C2E2CDim])
@@ -269,7 +265,9 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
         c_bln_avg,
         geofac_div,
         owner_mask,
-        primal_cart_normal,
+        primal_cart_normal_x,
+        primal_cart_normal_y,
+        primal_cart_normal_z,
         e2c,
         c2e,
         c2e2c,
