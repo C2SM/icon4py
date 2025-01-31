@@ -424,6 +424,8 @@ def test_run_diffusion_single_step(
         pytest.skip("Orchestration test requires a dace backend.")
     if orchestration and data_alloc.is_cupy_device(backend):
         pytest.xfail("DaCe GPU compilation fails.")
+    if helpers.is_embedded(backend):
+        pytest.xfail("Embedded backend currently fails in remap function.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -673,6 +675,8 @@ def test_run_diffusion_initial_step(
         pytest.skip("Orchestration test requires a dace backend.")
     if orchestration and data_alloc.is_cupy_device(backend):
         pytest.xfail("DaCe GPU compilation fails.")
+    if helpers.is_embedded(backend):
+        pytest.xfail("Embedded backend currently fails in remap function.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
