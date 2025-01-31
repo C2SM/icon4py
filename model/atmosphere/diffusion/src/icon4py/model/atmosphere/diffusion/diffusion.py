@@ -463,9 +463,9 @@ class Diffusion:
 
         self._determine_horizontal_domains()
 
-        self.compile_time_connectivities = dace_orchestration.build_compile_time_connectivities(
-            self._grid.offset_providers
-        )
+        # TODO(edopao): we should call gtx.common.offset_provider_to_type()
+        # but this requires some changes in type inference.
+        self.compile_time_connectivities = self._grid.offset_providers
 
     def _allocate_temporary_fields(self):
         self.diff_multfac_vn = data_alloc.allocate_zero_field(
@@ -926,6 +926,7 @@ class Diffusion:
             "_backend",
             "_exchange",
             "_grid",
+            "compile_time_connectivities",
             *[
                 name
                 for name in self.__dict__.keys()
