@@ -12,8 +12,14 @@ import types
 from dataclasses import dataclass
 from typing import Any, TypeGuard
 
-from gt4py import eve
-from gt4py.next.common import Connectivity, Dimension, DimensionKind
+from gt4py import eve, next as gtx
+from gt4py.next.common import (
+    _DEFAULT_SKIP_VALUE,
+    Connectivity,
+    Dimension,
+    DimensionKind,
+    NeighborConnectivityType,
+)
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
 from gt4py.next.ffront.fbuiltins import FieldOffset
@@ -35,7 +41,7 @@ SPECIAL_DOMAIN_MARKERS = [H_START, H_END, V_START, V_END]
 
 @dataclass(frozen=True)
 class StencilInfo:
-    fendef: itir.FencilDefinition
+    program: itir.Program
     fields: dict[str, FieldInfo]
     connectivity_chains: list[eve.concepts.SymbolRef]
     offset_provider: dict
@@ -114,7 +120,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     return fields
 
 
-def _provide_offset(offset: str, is_global: bool = False) -> DummyConnectivity | Dimension:
+def _provide_offset(offset: str, is_global: bool = False) -> NeighborConnectivityType | Dimension:
     if offset == dims.Koff.value:
         assert len(dims.Koff.target) == 1
         assert dims.Koff.source == dims.Koff.target[0]
@@ -123,8 +129,8 @@ def _provide_offset(offset: str, is_global: bool = False) -> DummyConnectivity |
         return _provide_neighbor_table(offset, is_global)
 
 
-def _provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
-    """Build an offset provider based on connectivity chain string.
+def _provide_neighbor_table(chain: str, is_global: bool) -> NeighborConnectivityType:
+    """Build a NeighborConnectivityType based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
     C (cell), E (Edge), V (Vertex) and be separated by a '2' e.g. 'E2V'. If the origin is to
@@ -153,11 +159,12 @@ def _provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     }
     location_chain: list[Dimension] = [map_to_dim.get(c) for c in chain if c not in ("2", "O")]  # type: ignore[misc] # type specified
 
-    return DummyConnectivity(
+    return NeighborConnectivityType(
+        offset.target,
+        codomain=offset.source,
+        skip_value=_DEFAULT_SKIP_VALUE if skip_values else None,
+        dtype=gtx.IndexType,  # type: ignore[attr-defined]  # need to do an explicit export for mypy
         max_neighbors=_calc_num_neighbors(location_chain, include_center),
-        has_skip_values=skip_values,
-        origin_axis=offset.target[0],
-        neighbor_axis=offset.source,
     )
 
 
@@ -186,7 +193,7 @@ def _scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     )
 
     all_offset_labels = (
-        fvprog.itir.pre_walk_values()
+        fvprog.gtir.pre_walk_values()
         .if_isinstance(itir.OffsetLiteral)
         .getattr("value")
         .if_isinstance(str)
@@ -205,7 +212,7 @@ def get_stencil_info(
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = _get_fvprog(fencil_def)
     offsets = _scan_for_offsets(fvprog)
-    fendef = fvprog.itir
+    program = fvprog.gtir
 
     fields = _get_field_infos(fvprog)
 
@@ -215,7 +222,7 @@ def get_stencil_info(
         offset_provider[offset] = _provide_offset(offset, is_global)
         if offset != dims.Koff.value:
             connectivity_chains.append(offset)
-    return StencilInfo(fendef, fields, connectivity_chains, offset_provider)
+    return StencilInfo(program, fields, connectivity_chains, offset_provider)
 
 
 def _calc_num_neighbors(dim_list: list[Dimension], includes_center: bool) -> int:

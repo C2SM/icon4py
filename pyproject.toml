@@ -112,8 +112,7 @@ explicit = true
 
 [tool.uv.sources]
 # ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
-# TODO(egparedes): use GT4Py tagged release until #596 & gt4py#1738 are merged
-gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_20241113_cache_fix" }
+gt4py = { git = "https://github.com/havogt/gt4py", branch = "improve_fieldop_fusion_for_icon4py" } # TODO
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
