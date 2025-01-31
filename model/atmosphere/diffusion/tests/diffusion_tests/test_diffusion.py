@@ -422,6 +422,8 @@ def test_run_diffusion_single_step(
 ):
     if orchestration and not helpers.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
+    if helpers.is_embedded(backend):
+        pytest.xfail("Embedded backend currently fails in remap function.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -667,6 +669,8 @@ def test_run_diffusion_initial_step(
 ):
     if orchestration and not helpers.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
+    if helpers.is_embedded(backend):
+        pytest.xfail("Embedded backend currently fails in remap function.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
