@@ -9,7 +9,7 @@
 import hashlib
 import typing
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import gt4py.next as gtx
 import numpy as np

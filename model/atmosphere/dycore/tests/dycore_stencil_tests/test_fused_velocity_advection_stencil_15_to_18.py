@@ -118,7 +118,10 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         "z_w_con_c_full",
         "ddt_w_adv",
     )
-    MARKERS = (pytest.mark.requires_concat_where,pytest.mark.embedded_remap_error,)
+    MARKERS = (
+        pytest.mark.requires_concat_where,
+        pytest.mark.embedded_remap_error,
+    )
 
     @staticmethod
     def reference(
