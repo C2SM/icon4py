@@ -524,7 +524,7 @@ def test_run_diffusion_multiple_steps(
     icon_grid,
 ):
     if not helpers.is_dace(backend):
-        raise pytest.skip("This test is only executed for orchestration on dace backends")
+        raise pytest.skip("This test is only executed for dace backends")
     ######################################################################
     # Diffusion initialization
     ######################################################################
