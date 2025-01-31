@@ -29,6 +29,7 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

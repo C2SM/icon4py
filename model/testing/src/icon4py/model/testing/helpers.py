@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import hashlib
+import typing
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
@@ -14,7 +15,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 from gt4py._core.definitions import is_scalar_type
-from gt4py.next import constructors
+from gt4py.next import backend as gtx_backend, constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
 
@@ -37,23 +38,27 @@ def grid(request):
     return request.param
 
 
-def is_python(backend) -> bool:
+def is_python(backend: gtx_backend.Backend | None) -> bool:
     # want to exclude python backends:
     #   - cannot run on embedded: because of slicing
     #   - roundtrip is very slow on large grid
     return is_embedded(backend) or is_roundtrip(backend)
 
 
-def is_dace(backend) -> bool:
+def is_dace(backend: gtx_backend.Backend | None) -> bool:
     return backend.name.startswith("run_dace_") if backend else False
 
 
-def is_embedded(backend) -> bool:
+def is_embedded(backend: gtx_backend.Backend | None) -> bool:
     return backend is None
 
 
-def is_roundtrip(backend) -> bool:
+def is_roundtrip(backend: gtx_backend.Backend | None) -> bool:
     return backend.name == "roundtrip" if backend else False
+
+
+def extract_backend_name(backend: gtx_backend.Backend | None) -> str:
+    return "embedded" if backend is None else backend.name
 
 
 def fingerprint_buffer(buffer: Buffer, *, digest_length: int = 8) -> str:
@@ -73,6 +78,28 @@ def allocate_data(backend, input_data):
     return input_data
 
 
+def apply_markers(
+    markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
+    backend: gtx_backend.Backend | None,
+    is_datatest: bool = False,
+):
+    for marker in markers:
+        match marker.name:
+            case "embedded_remap_error" if is_embedded(backend):
+                # https://github.com/GridTools/gt4py/issues/1583
+                pytest.xfail("Embedded backend currently fails in remap function.")
+            case "uses_as_offset" if is_embedded(backend):
+                pytest.xfail("Embedded backend does not support as_offset.")
+            case "requires_concat_where" if is_embedded(backend):
+                pytest.xfail("Stencil requires concat_where.")
+            case "skip_value_error":
+                pytest.skip(
+                    "Stencil does not support domain containing skip values. Consider shrinking domain."
+                )
+            case "datatest" if not is_datatest:
+                pytest.skip("need '--datatest' option to run")
+
+
 @dataclass(frozen=True)
 class Output:
     name: str
@@ -82,9 +109,7 @@ class Output:
 
 def _test_validation(self, grid, backend, input_data):
     if self.MARKERS is not None:
-        for marker in self.MARKERS:
-            if marker.markname == "requires_concat_where":
-                pytest.xfail("test requires concat_where")
+        apply_markers(self.MARKERS, backend)
 
     connectivities = {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
     reference_outputs = self.reference(
@@ -116,6 +141,9 @@ def _test_validation(self, grid, backend, input_data):
 if pytest_benchmark:
 
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
+        if self.MARKERS is not None:
+            apply_markers(self.MARKERS, backend)
+
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.
@@ -159,7 +187,7 @@ class StencilTest:
 
     PROGRAM: ClassVar[Program]
     OUTPUTS: ClassVar[tuple[str | Output, ...]]
-    MARKERS: Optional[tuple] = None
+    MARKERS: typing.Optional[tuple] = None
 
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that
