@@ -69,6 +69,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
 class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
     PROGRAM = truly_horizontal_diffusion_nabla_of_theta_over_steep_points
     OUTPUTS = ("z_temp",)
+    MARKERS = (pytest.mark.skip_value_error, pytest.mark.uses_as_offset)
 
     @staticmethod
     def reference(
@@ -98,9 +99,6 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.C2E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         mask = random_mask(grid, dims.CellDim, dims.KDim)
 
         zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=gtx.int32)

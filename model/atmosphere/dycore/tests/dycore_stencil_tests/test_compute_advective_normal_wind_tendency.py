@@ -52,6 +52,7 @@ def compute_advective_normal_wind_tendency_numpy(
 class TestComputeAdvectiveNormalWindTendency(StencilTest):
     PROGRAM = compute_advective_normal_wind_tendency
     OUTPUTS = ("ddt_vn_apc",)
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
@@ -85,9 +86,6 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         coeff_gradekin = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=vpfloat)
         coeff_gradekin_new = data_alloc.as_1D_sparse_field(coeff_gradekin, dims.ECDim)

@@ -619,6 +619,8 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
     assert testing_helpers.dallclose(wgtfac_e.asnumpy(), wgtfac_e_ref.asnumpy())
 
 
+@pytest.mark.embedded_remap_error
+@pytest.mark.skip_value_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_pg_exdist_dsl(

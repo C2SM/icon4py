@@ -113,6 +113,7 @@ def sten_16_numpy(
 class TestComputeBtraj(helpers.StencilTest):
     PROGRAM = compute_horizontal_advection_of_rho_and_theta
     OUTPUTS = ("z_rho_e", "z_theta_v_e")
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
@@ -175,9 +176,6 @@ class TestComputeBtraj(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         p_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         p_vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         pos_on_tplane_e_1 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)

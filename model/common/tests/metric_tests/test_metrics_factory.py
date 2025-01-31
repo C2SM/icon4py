@@ -64,7 +64,8 @@ def metrics_config(experiment: str) -> tuple:
 def get_metrics_factory(
     backend, experiment, grid_file, grid_savepoint, metrics_savepoint
 ) -> metrics_factory.MetricsFieldsFactory:
-    name = experiment.join(backend.name)
+    backend_name = test_helpers.extract_backend_name(backend)
+    name = experiment.join(backend_name)
     factory = metrics_factories.get(name)
 
     if not factory:
@@ -139,6 +140,7 @@ def test_factory_inv_ddqz_z(grid_savepoint, metrics_savepoint, grid_file, experi
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
 
 
+@pytest.mark.requires_concat_where
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
@@ -524,6 +526,7 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-9)
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
