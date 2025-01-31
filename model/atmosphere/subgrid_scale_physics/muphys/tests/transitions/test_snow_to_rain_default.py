@@ -21,7 +21,7 @@ class TestSnowToRainDefault(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, p: np.array, rho: np.array, dvsw0: np.array, qs: np.array, QMIN: wpfloat, TX: wpfloat, TMELT: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, p: np.array, rho: np.array, dvsw0: np.array, qs: np.array, **kwargs) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
@@ -33,9 +33,6 @@ class TestSnowToRainDefault(StencilTest):
             rho              = constant_field(grid, 1.04892, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw0            = constant_field(grid, -0.00258631, dims.CellDim, dims.KDim, dtype=wpfloat),
             qs               = constant_field(grid, 1.47687e-6, dims.CellDim, dims.KDim, dtype=wpfloat),
-            QMIN             = graupel_ct.qmin,
-            TX               = graupel_ct.tx,
-            TMELT            = thermodyn.tmelt,
             conversion_rate  = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

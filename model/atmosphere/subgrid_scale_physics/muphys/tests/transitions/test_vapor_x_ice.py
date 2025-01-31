@@ -21,7 +21,7 @@ class TestVaporXIceDefault(StencilTest):
     OUTPUTS = ("vapor_deposition_rate",)
 
     @staticmethod
-    def reference(grid, qi: np.array, mi: np.array, eta: np.array, dvsi: np.array, rho: np.array, dt: wpfloat, QMIN: wpfloat, **kwargs) -> dict:
+    def reference(grid, qi: np.array, mi: np.array, eta: np.array, dvsi: np.array, rho: np.array, dt: wpfloat, **kwargs) -> dict:
         return dict(vapor_deposition_rate=np.full(qi.shape, 2.2106162342610385e-09))
 
     @pytest.fixture
@@ -34,6 +34,5 @@ class TestVaporXIceDefault(StencilTest):
             dvsi             = constant_field(grid, 0.000120375, dims.CellDim, dims.KDim, dtype=wpfloat),
             rho              = constant_field(grid, 1.19691, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt               = 30.0,
-            QMIN             = graupel_ct.qmin,
             vapor_deposition_rate = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )

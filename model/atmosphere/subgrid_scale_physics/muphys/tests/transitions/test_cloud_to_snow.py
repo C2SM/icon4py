@@ -21,7 +21,7 @@ class TestCloudToSnow(StencilTest):
     OUTPUTS = ("riming_snow_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, qc: np.array, qs: np.array, ns: np.array, lam: np.array, V0S: wpfloat, V1S: wpfloat, TFRZ_HOM: wpfloat, QMIN: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, qc: np.array, qs: np.array, ns: np.array, lam: np.array, **kwargs) -> dict:
         return dict(riming_snow_rate=np.full(t.shape, 9.5431874564438999e-10))
 
     @pytest.fixture
@@ -33,10 +33,6 @@ class TestCloudToSnow(StencilTest):
             qs               = constant_field(grid, 7.47365e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
             ns               = constant_field(grid, 3.37707e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
             lam              = constant_field(grid, 8989.78, dims.CellDim, dims.KDim, dtype=wpfloat),
-            V0S              = graupel_ct.v0s,
-            V1S              = graupel_ct.v1s,
-            TFRZ_HOM         = graupel_ct.tfrz_hom,
-            QMIN             = graupel_ct.qmin,
             riming_snow_rate = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

@@ -18,20 +18,20 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 class TestFallSpeed(StencilTest):
-    PROGRAM = fall_speed
+    PROGRAM = fall_speed_scalar
     OUTPUTS = ("fall_speed",)
 
     @staticmethod
-    def reference(grid, density: np.array, prefactor: wpfloat, offset: wpfloat, exponent: wpfloat, **kwargs) -> dict:
-        return dict(fall_speed=np.full(density.shape, 0.67882452435647411))
+    def reference(grid, density: wpfloat, prefactor: wpfloat, offset: wpfloat, exponent: wpfloat, **kwargs) -> dict:
+        return dict(fall_speed=np.asarray(0.67882452435647411))
 
     @pytest.fixture
     def input_data(self, grid):
 
         return dict(
-            density         = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            density         = gtx.as_field([], np.asarray(0.0) ),
             prefactor       = idx.prefactor_r,
             offset          = idx.offset_r,
             exponent        = idx.exponent_r,
-            fall_speed      = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
+            fall_speed      = gtx.as_field([], np.asarray(0.0) ),
         )

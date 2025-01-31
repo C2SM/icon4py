@@ -21,7 +21,7 @@ class TestVaporXGraupel(StencilTest):
     OUTPUTS = ("exchange_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, p: np.array, rho: np.array, qg: np.array, dvsw: np.array, dvsi: np.array, dvsw0: np.array, dt: wpfloat, QMIN: wpfloat, TX: wpfloat, TMELT: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, p: np.array, rho: np.array, qg: np.array, dvsw: np.array, dvsi: np.array, dvsw0: np.array, dt: wpfloat, **kwargs) -> dict:
         return dict(exchange_rate=np.full(t.shape, -6.8498666666666675e-13))
 
     @pytest.fixture
@@ -36,9 +36,6 @@ class TestVaporXGraupel(StencilTest):
             dvsi             = constant_field(grid, -0.00261576, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw0            = constant_field(grid, -0.00076851, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt               = 30.0,
-            QMIN             = graupel_ct.qmin,
-            TX               = graupel_ct.tx,
-            TMELT            = thermodyn.tmelt,
             exchange_rate    = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

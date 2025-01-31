@@ -19,7 +19,7 @@ class TestGraupelToRainDefault(StencilTest):
     OUTPUTS = ("rain_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, p: np.array, rho: np.array, dvsw0: np.array, qg: np.array, QMIN: wpfloat, TX: wpfloat, TMELT: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, p: np.array, rho: np.array, dvsw0: np.array, qg: np.array, **kwargs) -> dict:
         return dict(rain_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
@@ -30,9 +30,6 @@ class TestGraupelToRainDefault(StencilTest):
             rho     = constant_field(grid, 1.22804, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw0   = constant_field(grid, -0.00167867, dims.CellDim, dims.KDim, dtype=wpfloat),
             qg      = constant_field(grid, 1.53968e-17, dims.CellDim, dims.KDim, dtype=wpfloat),
-            QMIN    = graupel_ct.qmin,
-            TX      = graupel_ct.tx,
-            TMELT   = thermodyn.tmelt,
             rain_rate = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

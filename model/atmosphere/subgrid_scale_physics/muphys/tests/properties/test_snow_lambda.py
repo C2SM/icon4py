@@ -10,7 +10,7 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import snow_lambda
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn, idx
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
@@ -21,7 +21,7 @@ class TestSnowLambda(StencilTest):
     OUTPUTS = ("riming_snow_rate",)
 
     @staticmethod
-    def reference(grid, rho: np.array, qs: np.array, ns: np.array, QMIN: wpfloat, AMS: wpfloat, BMS: wpfloat, **kwargs) -> dict:
+    def reference(grid, rho: np.array, qs: np.array, ns: np.array, **kwargs) -> dict:
         return dict(riming_snow_rate=np.full(rho.shape, 1.0e+10 ))
 
     @pytest.fixture
@@ -31,8 +31,5 @@ class TestSnowLambda(StencilTest):
             rho             = constant_field(grid, 1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
             qs              = constant_field(grid, graupel_ct.qmin, dims.CellDim, dims.KDim, dtype=wpfloat),
             ns              = constant_field(grid, 1.76669e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            QMIN            = graupel_ct.qmin,
-            AMS             = graupel_ct.ams,
-            BMS             = graupel_ct.bms,
             riming_snow_rate= constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -19,7 +19,7 @@ class TestCloudToRain(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, qc: np.array, qr: np.array, nc: np.array, TFRZ_HOM: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, qc: np.array, qr: np.array, nc: np.array, **kwargs) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0045484481075162512))
 
     @pytest.fixture
@@ -29,7 +29,6 @@ class TestCloudToRain(StencilTest):
             qc                  = constant_field(grid, 5.52921e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
             qr                  = constant_field(grid, 2.01511e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
             nc                  = constant_field(grid, 100.0, dims.CellDim, dims.KDim, dtype=wpfloat),
-            TFRZ_HOM            = graupel_ct.tfrz_hom,
             conversion_rate     = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

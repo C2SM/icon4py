@@ -20,7 +20,7 @@ class TestCloudToGraupelDefault(StencilTest):
     OUTPUTS = ("riming_graupel_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, rho: np.array, qc: np.array, qg: np.array, TFRZ_HOM: wpfloat, QMIN: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, rho: np.array, qc: np.array, qg: np.array, **kwargs) -> dict:
         return dict(riming_graupel_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
@@ -30,8 +30,6 @@ class TestCloudToGraupelDefault(StencilTest):
             rho                 = constant_field(grid, 1.24783, dims.CellDim, dims.KDim, dtype=wpfloat),
             qc                  = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
             qg                  = constant_field(grid, 1.03636e-25, dims.CellDim, dims.KDim, dtype=wpfloat),
-            TFRZ_HOM            = graupel_ct.tfrz_hom,
-            QMIN                = graupel_ct.qmin,
             riming_graupel_rate = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

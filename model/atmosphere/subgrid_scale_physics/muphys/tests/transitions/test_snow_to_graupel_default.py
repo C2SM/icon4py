@@ -21,7 +21,7 @@ class TestSnowToGraupelDefault(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, rho: np.array, qc: np.array, qs: np.array, QMIN: wpfloat, TFRZ_HOM: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, rho: np.array, qc: np.array, qs: np.array, **kwargs) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
@@ -32,8 +32,6 @@ class TestSnowToGraupelDefault(StencilTest):
             rho              = constant_field(grid, 0.93171, dims.CellDim, dims.KDim, dtype=wpfloat),
             qc               = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
             qs               = constant_field(grid, 4.34854e-5, dims.CellDim, dims.KDim, dtype=wpfloat),
-            QMIN             = graupel_ct.qmin,
-            TFRZ_HOM         = graupel_ct.tfrz_hom,
             conversion_rate  = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

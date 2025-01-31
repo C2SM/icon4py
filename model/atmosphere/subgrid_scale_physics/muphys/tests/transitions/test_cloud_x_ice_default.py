@@ -21,7 +21,7 @@ class TestCloudXIceDefault(StencilTest):
     OUTPUTS = ("freezing_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, qc: np.array, qi: np.array, dt: wpfloat, TFRZ_HOM: wpfloat, QMIN: wpfloat, TMELT: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, qc: np.array, qi: np.array, dt: wpfloat, **kwargs) -> dict:
         return dict(freezing_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
@@ -32,8 +32,5 @@ class TestCloudXIceDefault(StencilTest):
             qc            = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
             qi            = constant_field(grid, 4.50245e-7, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt            = 30.0,
-            TFRZ_HOM      = graupel_ct.tfrz_hom,
-            QMIN          = graupel_ct.qmin,
-            TMELT         = thermodyn.tmelt,
             freezing_rate = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )

@@ -21,7 +21,7 @@ class TestVaporXSnow(StencilTest):
     OUTPUTS = ("vapor_deposition_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, p: np.array, rho: np.array, qs: np.array, ns: np.array, lam: np.array, eta: np.array, ice_dep: np.array, dvsw: np.array, dvsi: np.array, dvsw0: np.array, dt: wpfloat, QMIN: wpfloat, TX: wpfloat, TMELT: wpfloat, V0S: wpfloat, V1S: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, p: np.array, rho: np.array, qs: np.array, ns: np.array, lam: np.array, eta: np.array, ice_dep: np.array, dvsw: np.array, dvsi: np.array, dvsw0: np.array, dt: wpfloat, **kwargs) -> dict:
         return dict(vapor_deposition_rate=np.full(t.shape, -8.6584296264775935e-13))
 
     @pytest.fixture
@@ -40,11 +40,6 @@ class TestVaporXSnow(StencilTest):
             dvsi             = constant_field(grid, -0.00229367, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw0            = constant_field(grid, -0.000110022, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt               = 30.0,
-            QMIN             = graupel_ct.qmin,
-            TX               = graupel_ct.tx,
-            TMELT            = thermodyn.tmelt,
-            V0S              = graupel_ct.v0s,
-            V1S              = graupel_ct.v1s,
             vapor_deposition_rate = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 

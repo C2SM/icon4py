@@ -22,7 +22,7 @@ class TestIceSticking(StencilTest):
     OUTPUTS = ("ice_sticking",)
 
     @staticmethod
-    def reference(grid, t: np.array, TMELT: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, **kwargs) -> dict:
         return dict(ice_sticking=np.full(t.shape, 0.8697930232044021))
 
     @pytest.fixture
@@ -30,6 +30,5 @@ class TestIceSticking(StencilTest):
 
         return dict(
             t            = constant_field(grid, 271.6, dims.CellDim, dims.KDim, dtype=wpfloat),
-            TMELT        = thermodyn.tmelt,
             ice_sticking = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

@@ -21,7 +21,7 @@ class TestIceToGraupel(StencilTest):
     OUTPUTS = ("aggregation",)
 
     @staticmethod
-    def reference(grid, rho: np.array, qr: np.array, qg: np.array, qi: np.array, sticking_eff: np.array, QMIN: wpfloat, **kwargs) -> dict:
+    def reference(grid, rho: np.array, qr: np.array, qg: np.array, qi: np.array, sticking_eff: np.array, **kwargs) -> dict:
         return dict(aggregation=np.full(rho.shape, 7.1049436957697864e-19))
 
     @pytest.fixture
@@ -33,6 +33,5 @@ class TestIceToGraupel(StencilTest):
             qg           = constant_field(grid, 1.19022e-18, dims.CellDim, dims.KDim, dtype=wpfloat),
             qi           = constant_field(grid, 1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
             sticking_eff = constant_field(grid, 1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
-            QMIN         = graupel_ct.qmin,
             aggregation  = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )

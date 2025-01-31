@@ -21,7 +21,7 @@ class TestIceToSnowDefault(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, qi: np.array, ns: np.array, lam: np.array, sticking_eff: np.array, QMIN: wpfloat, V0S: wpfloat, V1S: wpfloat,  **kwargs) -> dict:
+    def reference(grid, qi: np.array, ns: np.array, lam: np.array, sticking_eff: np.array, **kwargs) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 0.0))
 
     @pytest.fixture
@@ -32,8 +32,5 @@ class TestIceToSnowDefault(StencilTest):
             ns              = constant_field(grid, 2.23336e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
             lam             = constant_field(grid, 61911.1, dims.CellDim, dims.KDim, dtype=wpfloat),
             sticking_eff    = constant_field(grid, 0.241568, dims.CellDim, dims.KDim, dtype=wpfloat),
-            QMIN            = graupel_ct.qmin,
-            V0S             = graupel_ct.v0s,
-            V1S             = graupel_ct.v1s,
             conversion_rate = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )

@@ -10,7 +10,6 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import ice_mass
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn, idx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
@@ -21,7 +20,7 @@ class TestIceNumber(StencilTest):
     OUTPUTS = ("ice_mass",)
 
     @staticmethod
-    def reference(grid, qi: np.array, ni: np.array, M0_ICE: wpfloat, **kwargs) -> dict:
+    def reference(grid, qi: np.array, ni: np.array, **kwargs) -> dict:
         return dict(ice_mass=np.full(qi.shape, 1.0e-12))
 
     @pytest.fixture
@@ -30,6 +29,5 @@ class TestIceNumber(StencilTest):
         return dict(
             qi              = constant_field(grid, 2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
             ni              = constant_field(grid, 5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
-            M0_ICE          = graupel_ct.m0_ice,
             ice_mass        = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

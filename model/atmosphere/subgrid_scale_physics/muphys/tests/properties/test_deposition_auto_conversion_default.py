@@ -10,7 +10,6 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import deposition_auto_conversion
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn, idx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
@@ -22,7 +21,7 @@ class TestDepositionAutoConversionDefault(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, qi: np.array, m_ice: np.array, ice_dep: np.array, QMIN: wpfloat, **kwargs) -> dict:
+    def reference(grid, qi: np.array, m_ice: np.array, ice_dep: np.array, **kwargs) -> dict:
         return dict(conversion_rate=np.full(qi.shape, 0.0))
 
     @pytest.fixture
@@ -32,6 +31,5 @@ class TestDepositionAutoConversionDefault(StencilTest):
             qi              = constant_field(grid, 2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
             m_ice           = constant_field(grid, 1.0e-12, dims.CellDim, dims.KDim, dtype=wpfloat),
             ice_dep         = constant_field(grid, -2.06276e-05, dims.CellDim, dims.KDim, dtype=wpfloat),
-            QMIN            = graupel_ct.qmin,
             conversion_rate = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

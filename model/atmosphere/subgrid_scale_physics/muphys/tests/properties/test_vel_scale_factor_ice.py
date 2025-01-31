@@ -10,7 +10,6 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import vel_scale_factor_ice
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn, idx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field

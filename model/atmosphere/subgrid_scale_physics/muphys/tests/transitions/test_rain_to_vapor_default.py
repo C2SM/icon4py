@@ -19,7 +19,7 @@ class TestRainToVaporDefault(StencilTest):
     OUTPUTS = ("conversion_rate",)
 
     @staticmethod
-    def reference(grid, t: np.array, rho: np.array, qc: np.array, qr: np.array, dvsw: np.array, dt: wpfloat, QMIN: wpfloat, TMELT: wpfloat, **kwargs) -> dict:
+    def reference(grid, t: np.array, rho: np.array, qc: np.array, qr: np.array, dvsw: np.array, dt: wpfloat, **kwargs) -> dict:
         return dict(conversion_rate=np.full(t.shape, 0.0))
 
     @pytest.fixture
@@ -31,7 +31,5 @@ class TestRainToVaporDefault(StencilTest):
             qr      = constant_field(grid, 3.01332e-11, dims.CellDim, dims.KDim, dtype=wpfloat),
             dvsw    = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt      = 30.0,
-            QMIN    = graupel_ct.qmin,
-            TMELT   = thermodyn.tmelt,
             conversion_rate = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
