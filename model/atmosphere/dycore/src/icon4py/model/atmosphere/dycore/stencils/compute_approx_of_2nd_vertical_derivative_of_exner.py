@@ -21,7 +21,32 @@ def _compute_approx_of_2nd_vertical_derivative_of_exner(
     d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
     z_rth_pr_2: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_12."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_12.
+
+    # scidoc:
+    # Outputs:
+    #  - z_dexner_dz_c_2 :
+    #     $$
+    #     \exnerprimedzz{\ntilde}{\c}{\k} = - \frac{1}{2} \left( (\vpotempprime{\n}{\c}{\k-1/2} - \vpotempprime{\n}{\c}{\k+1/2}) \dexrefdz{\c}{\k} + \vpotempprime{\n}{\c}{\k} \ddexrefdzz{\c}{\k} \right), \quad \k \in [\nflatgradp, \nlev) \\
+    #     \ddz{\exnerref{}{}} = - \frac{g}{\cpd \vpotempref{}{}}
+    #     $$
+    #     Compute the second vertical derivative of the perturbed exner function.
+    #     This uses the hydrostatic approximation (see eqs. 13 and 7,8 in
+    #     |ICONSteepSlopePressurePaper|).
+    #     Note that the reference state of temperature (eq. 15 in
+    #     |ICONSteepSlopePressurePaper|) is used when computing
+    #     $\ddz{\vpotempref{\c}{\k}}$ in $\ddexrefdzz{\c}{\k}$.
+    #
+    # Inputs:
+    #  - $\vpotempprime{\n}{\c}{\k\pm1/2}$ : z_theta_v_pr_ic
+    #  - $\vpotempprime{\n}{\c}{\k}$ : z_rth_pr_2
+    #  - $\dexrefdz{}{}$ : d2dexdz2_fac1_mc
+    #  - $\ddexrefdzz{}{}$ : d2dexdz2_fac2_mc
+    #
+    
+
+    """
     z_dexner_dz_c_2_vp = -vpfloat("0.5") * (
         (z_theta_v_pr_ic - z_theta_v_pr_ic(Koff[1])) * d2dexdz2_fac1_mc
         + z_rth_pr_2 * d2dexdz2_fac2_mc
