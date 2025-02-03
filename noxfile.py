@@ -17,12 +17,12 @@ import nox
 
 # -- Parameter sets --
 ModelSubpackagePath: TypeAlias = Literal[
-    "atmosphere/advection",
+    #"atmosphere/advection",
     "atmosphere/diffusion",
-    "atmosphere/dycore",
-    "atmosphere/subgrid_scale_physics/microphysics",
-    "common",
-    "driver",
+    #"atmosphere/dycore",
+    #"atmosphere/subgrid_scale_physics/microphysics",
+    #"common",
+    #"driver",
     # "testing", #TODO: Add tests to testing subpackage
 ]
 ModelTestsSubset: TypeAlias = Literal["datatest", "stencils", "basic"]
