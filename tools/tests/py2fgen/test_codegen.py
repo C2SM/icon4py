@@ -356,7 +356,6 @@ def bar_wrapper(one, two, n_Cell, n_K):
 
     return 0
     '''
-    print(interface)
     assert compare_ignore_whitespace(interface, expected)
 
 
