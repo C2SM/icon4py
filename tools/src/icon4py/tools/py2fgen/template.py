@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import inspect
 from types import ModuleType
 from typing import Any, Sequence
 
@@ -20,7 +19,6 @@ from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_ISO_C_TYPE,
     BUILTIN_TO_NUMPY_TYPE,
 )
-from icon4py.tools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4py.tools.py2fgen.settings import GT4PyBackend
 from icon4py.tools.py2fgen.utils import flatten_and_get_unique_elts
 from icon4py.tools.py2fgen.wrappers import wrapper_dimension
@@ -100,9 +98,6 @@ class PythonWrapper(CffiPlugin):
     profile: bool
     limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
-    cffi_unpack: str = inspect.getsource(unpack)
-    cffi_unpack_gpu: str = inspect.getsource(unpack_gpu)
-    int_to_bool: str = inspect.getsource(int_array_to_bool_array)
     gt4py_backend: str = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
@@ -235,14 +230,11 @@ class PythonWrapperGenerator(TemplatedGenerator):
 # imports for generated wrapper code
 import logging
 {% if _this_node.profile %}import time{% endif %}
-import math
 from {{ plugin_name }} import ffi
-import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
-from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
 from icon4py.tools.py2fgen.settings import config
-xp = config.array_ns
+from icon4py.tools.py2fgen import wrapper_utils
 from icon4py.model.common import dimension as dims
 
 # logger setup
@@ -252,20 +244,10 @@ logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else 
                     datefmt='%Y-%m-%d %H:%M:%S')
 {% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
 
-import numpy as np
-
 # embedded function imports
 {% for func in _this_node.functions -%}
 from {{ module_name }} import {{ func.name }}
 {% endfor %}
-
-{% if _this_node.backend == 'GPU' %}
-{{ cffi_unpack_gpu }}
-{% else %}
-{{ cffi_unpack }}
-{% endif %}
-
-{{ int_to_bool }}
 
 {% for func in _this_node.functions %}
 
@@ -299,11 +281,11 @@ def {{ func.name }}_wrapper(
         {%- if arg.name in _this_node.uninitialised_arrays -%}
         {{ arg.name }} = xp.ones((1,) * {{ arg.size_args_len }}, dtype={{arg.np_type}}, order="F")
         {%- else -%}
-        {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+        {{ arg.name }} = wrapper_utils.unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}(ffi, {{ arg.name }}, {{ ", ".join(arg.size_args) }})
         {%- endif -%}
 
         {%- if arg.d_type.name == "BOOL" %}
-        {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
+        {{ arg.name }} = wrapper_utils.int_array_to_bool_array({{ arg.name }})
         {%- endif %}
 
         {%- if _this_node.debug_mode %}
