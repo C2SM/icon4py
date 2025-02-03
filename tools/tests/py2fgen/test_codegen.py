@@ -230,6 +230,7 @@ def test_python_wrapper(dummy_plugin):
     expected = '''
 # imports for generated wrapper code
 import logging
+
 import math
 from libtest_plugin import ffi
 import numpy as np
@@ -237,6 +238,7 @@ import cupy as cp
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
 from icon4py.tools.py2fgen.settings import config
+
 xp = config.array_ns
 from icon4py.model.common import dimension as dims
 
@@ -251,7 +253,8 @@ import numpy as np
 from libtest import foo
 from libtest import bar
 
-def unpack_gpu(ptr, *sizes: int):
+
+def unpack_gpu(ptr, *sizes: int):  # type: ignore[no-untyped-def] # CData type not public?
     """
     Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations that require in-place modification of GPU data,
@@ -296,6 +299,7 @@ def unpack_gpu(ptr, *sizes: int):
     arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
     return arr
 
+
 def int_array_to_bool_array(int_array: NDArray) -> NDArray:
     """
     Converts a NumPy array of integers to a boolean array.
@@ -310,13 +314,17 @@ def int_array_to_bool_array(int_array: NDArray) -> NDArray:
     bool_array = int_array != 0
     return bool_array
 
+
 @ffi.def_extern()
 def foo_wrapper(one, two, n_Cell, n_K):
     try:
+
         # Unpack pointers into Ndarrays
+
         two = unpack_gpu(two, n_Cell, n_K)
 
         # Allocate GT4Py Fields
+
         two = np_as_located_field(dims.CellDim, dims.KDim)(two)
 
         foo(one, two)
@@ -327,13 +335,17 @@ def foo_wrapper(one, two, n_Cell, n_K):
 
     return 0
 
+
 @ffi.def_extern()
 def bar_wrapper(one, two, n_Cell, n_K):
     try:
+
         # Unpack pointers into Ndarrays
+
         one = unpack_gpu(one, n_Cell, n_K)
 
         # Allocate GT4Py Fields
+
         one = np_as_located_field(dims.CellDim, dims.KDim)(one)
 
         bar(one, two)
@@ -344,6 +356,7 @@ def bar_wrapper(one, two, n_Cell, n_K):
 
     return 0
     '''
+    print(interface)
     assert compare_ignore_whitespace(interface, expected)
 
 
