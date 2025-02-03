@@ -76,18 +76,14 @@ bar = Func(
 
 
 def test_cheader_generation_for_single_function():
-    plugin = CffiPlugin(
-        module_name="libtest", plugin_name="libtest_plugin", functions=[foo], imports=["import foo"]
-    )
+    plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[foo])
 
     header = CHeaderGenerator.apply(plugin)
     assert header == "extern int foo_wrapper(int one, double* two, int n_Cell, int n_K);"
 
 
 def test_cheader_for_pointer_args():
-    plugin = CffiPlugin(
-        module_name="libtest", plugin_name="libtest_plugin", functions=[bar], imports=["import bar"]
-    )
+    plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[bar])
 
     header = CHeaderGenerator.apply(plugin)
     assert header == "extern int bar_wrapper(float* one, int two, int n_Cell, int n_K);"
@@ -104,7 +100,6 @@ def dummy_plugin():
         module_name="libtest",
         plugin_name="libtest_plugin",
         functions=[foo, bar],
-        imports=["import foo_module_x\nimport bar_module_y"],
     )
 
 
@@ -246,17 +241,11 @@ xp = config.array_ns
 from icon4py.model.common import dimension as dims
 
 # logger setup
-log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-logging.basicConfig(level=logging.ERROR,
-                    format=log_format,
-                    datefmt='%Y-%m-%d %H:%M:%S')
+log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+logging.basicConfig(level=logging.ERROR, format=log_format, datefmt="%Y-%m-%d %H:%M:%S")
 logging.info(cp.show_config())
 
 import numpy as np
-
-# embedded module imports
-import foo_module_x
-import bar_module_y
 
 # embedded function imports
 from libtest import foo
@@ -322,7 +311,7 @@ def int_array_to_bool_array(int_array: NDArray) -> NDArray:
     return bool_array
 
 @ffi.def_extern()
-def foo_wrapper(one, two, n_Cell: gtx.int32, n_K: gtx.int32):
+def foo_wrapper(one, two, n_Cell, n_K):
     try:
         # Unpack pointers into Ndarrays
         two = unpack_gpu(two, n_Cell, n_K)
@@ -339,7 +328,7 @@ def foo_wrapper(one, two, n_Cell: gtx.int32, n_K: gtx.int32):
     return 0
 
 @ffi.def_extern()
-def bar_wrapper(one, two, n_Cell: gtx.int32, n_K: gtx.int32):
+def bar_wrapper(one, two, n_Cell, n_K):
     try:
         # Unpack pointers into Ndarrays
         one = unpack_gpu(one, n_Cell, n_K)

@@ -6,9 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import ast
-
-from icon4py.tools.py2fgen.parsing import ImportStmtVisitor, parse
+from icon4py.tools.py2fgen.parsing import parse
 from icon4py.tools.py2fgen.template import CffiPlugin
 
 
@@ -26,11 +24,3 @@ def test_parse_functions_on_wrapper():
     functions = ["diffusion_init", "diffusion_run"]
     plugin = parse(module_path, functions, "diffusion_plugin")
     assert isinstance(plugin, CffiPlugin)
-
-
-def test_import_visitor():
-    tree = ast.parse(source)
-    extractor = ImportStmtVisitor()
-    extractor.visit(tree)
-    expected_imports = ["import foo", "import bar"]
-    assert extractor.import_statements == expected_imports

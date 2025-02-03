@@ -30,11 +30,11 @@ from icon4py.tools.py2fgen.wrappers import wrapper_dimension
 
 
 UNINITIALISED_ARRAYS = [
-    "mask_hdiff",
+    "mask_hdiff",  # optional diffusion init fields
     "zd_diffcoef",
     "zd_vertoffset",
     "zd_intcoef",
-    "hdef_ic",
+    "hdef_ic",  # optional diffusion output fields
     "div_ic",
     "dwdx",
     "dwdy",
@@ -90,7 +90,6 @@ class Func(Node):
 class CffiPlugin(Node):
     module_name: str
     plugin_name: str
-    imports: list[str]
     functions: list[Func]
 
 
@@ -253,11 +252,6 @@ logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else 
 
 import numpy as np
 
-# embedded module imports
-{% for stmt in imports -%}
-{{ stmt }}
-{% endfor %}
-
 # embedded function imports
 {% for func in _this_node.functions -%}
 from {{ module_name }} import {{ func.name }}
@@ -279,7 +273,7 @@ def {{ func.name }}_wrapper(
 {{ arg.name }}{% if not loop.last or func.global_size_args %}, {% endif %}
 {%- endfor %}
 {%- for arg in func.global_size_args -%}
-{{ arg }}: gtx.int32{{ ", " if not loop.last else "" }}
+{{ arg }}{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
     try:
