@@ -188,7 +188,11 @@ class Plot:
             grid_file_path: str = "",
             backend: gtx.backend.Backend = gtx.gtfn_cpu,
         ):
-        data_provider = sb.IconSerialDataProvider("icon_pydycore", savepoint_path)
+        data_provider = sb.IconSerialDataProvider(
+            backend=backend,
+            fname_prefix="icon_pydycore",
+            path=savepoint_path
+            )
         self.grid_savepoint = data_provider.from_savepoint_grid('aa', 0, 2)
         self.grid = self.grid_savepoint.construct_icon_grid(on_gpu=False)
         self.interpolation_savepoint = data_provider.from_interpolation_savepoint()
@@ -290,9 +294,9 @@ class Plot:
             case self.grid.num_cells:
                 plot_lev = lambda data, i: axs[i].tripcolor(tri, data[:, -1-i], edgecolor='none', shading='flat', cmap=cmap, norm=norm)
             case self.grid.num_edges:
-                plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=8**2, cmap=cmap, norm=norm)
+                plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=4**2, cmap=cmap, norm=norm)
             case self.grid.num_vertices:
-                plot_lev = lambda data, i: axs[i].scatter(tri.x, tri.y, c=data[:, -1-i], s=8**2, cmap=cmap, norm=norm)
+                plot_lev = lambda data, i: axs[i].scatter(tri.x, tri.y, c=data[:, -1-i], s=4**2, cmap=cmap, norm=norm)
 
         fig = plt.figure(1, figsize=(14,min(13,4*nlev))); plt.clf()
         axs = fig.subplots(nrows=min(nax_per_col, nlev), ncols=max(1,int(np.ceil(nlev/nax_per_col))), sharex=True, sharey=True)
@@ -311,8 +315,11 @@ class Plot:
             if "vvec_cell" in file_name:
                 axs[i].quiver(tri.cell_x, tri.cell_y, u[:, -1-i], v[:, -1-i])
             elif "vvec_edge" in file_name:
-                axs[i].quiver(tri.edge_x, tri.edge_y, vn[:, -1-i]*self.primal_normal[0],  vn[:, -1-i]*self.primal_normal[1])
-                axs[i].quiver(tri.edge_x, tri.edge_y, vt[:, -1-i]*self.primal_tangent[0], vt[:, -1-i]*self.primal_tangent[1])
+                #axs[i].quiver(tri.edge_x, tri.edge_y, vn[:, -1-i]*self.primal_normal[0],  vn[:, -1-i]*self.primal_normal[1])
+                #axs[i].quiver(tri.edge_x, tri.edge_y, vt[:, -1-i]*self.primal_tangent[0], vt[:, -1-i]*self.primal_tangent[1])
+                u = vn[:, -1-i]*self.primal_normal[0] + vt[:, -1-i]*self.primal_tangent[0]
+                v = vn[:, -1-i]*self.primal_normal[1] + vt[:, -1-i]*self.primal_tangent[1]
+                axs[i].quiver(tri.edge_x, tri.edge_y, u, v)
             axs[i].set_aspect('equal')
             #axs[i].set_xlim(X_LIMS)
             #axs[i].set_ylim(Y_LIMS)
