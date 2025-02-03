@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import inspect
+from types import ModuleType
 from typing import Any, Sequence
 
 from gt4py.eve import Node, datamodels
@@ -59,7 +60,7 @@ class FuncParameter(Node):
     size_args_len: int = datamodels.field(init=False)
     np_type: str = datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.size_args = dims_to_size_strings(self.dimensions)
         self.size_args_len = len(self.size_args)
         self.is_array = True if len(self.dimensions) >= 1 else False
@@ -109,7 +110,7 @@ class PythonWrapper(CffiPlugin):
         self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 
 
-def get_uninitialised_arrays(limited_area: bool):
+def get_uninitialised_arrays(limited_area: bool) -> list[str]:
     return UNINITIALISED_ARRAYS if not limited_area else []
 
 
@@ -119,7 +120,7 @@ def build_array_size_args() -> dict[str, str]:
     from icon4py.tools.py2fgen.wrappers import wrapper_dimension
 
     # Function to process the dimensions
-    def process_dimensions(module):
+    def process_dimensions(module: ModuleType) -> None:
         for var_name, var in vars(module).items():
             if isinstance(var, Dimension):
                 dim_name = var_name.replace(
@@ -228,6 +229,7 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
+    # TODO(havogt): put np_as_located_field logic into unpack
     PythonWrapper = as_jinja(
         """\
 # imports for generated wrapper code
@@ -397,7 +399,7 @@ class CHeaderGenerator(TemplatedGenerator):
         "extern int {{ name }}_wrapper({%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%});"
     )
 
-    def visit_FuncParameter(self, param: FuncParameter):
+    def visit_FuncParameter(self, param: FuncParameter) -> str:
         return self.generic_visit(
             param, rendered_type=to_c_type(param.d_type), pointer=render_c_pointer(param)
         )
@@ -483,7 +485,7 @@ end module
 """
     )
 
-    def visit_F90FunctionDeclaration(self, func: F90FunctionDeclaration, **kwargs):
+    def visit_F90FunctionDeclaration(self, func: F90FunctionDeclaration, **kwargs: Any) -> str:
         arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
         if func.global_size_args:
             arg_names += ",&\n" + ", &\n".join(func.global_size_args)
@@ -504,7 +506,7 @@ end function {{name}}_wrapper
     """
     )
 
-    def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs):
+    def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs: Any) -> str:
         if len(func.args) < 1:
             arg_names, param_names_with_size_args = "", ""
         else:
@@ -557,7 +559,7 @@ end subroutine {{name}}
     """
     )
 
-    def visit_FuncParameter(self, param: FuncParameter, **kwargs):
+    def visit_FuncParameter(self, param: FuncParameter, **kwargs: Any) -> str:
         return self.generic_visit(
             param,
             value=as_f90_value(param),

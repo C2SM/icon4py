@@ -27,7 +27,7 @@ ffi = FFI()  # needed for unpack and unpack_gpu functions
 logger = setup_logger(__name__)
 
 
-def unpack(ptr, *sizes: int) -> NDArray:
+def unpack(ptr, *sizes: int) -> NDArray:  # type: ignore[no-untyped-def] # CData type not public?
     """
     Converts a C pointer into a NumPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations requiring in-place modification of CPU data, enabling
@@ -62,7 +62,7 @@ def unpack(ptr, *sizes: int) -> NDArray:
     return arr
 
 
-def unpack_gpu(ptr, *sizes: int):
+def unpack_gpu(ptr, *sizes: int):  # type: ignore[no-untyped-def] # CData type not public?
     """
     Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations that require in-place modification of GPU data,
