@@ -3,6 +3,8 @@ include:
 
 .benchmark_model_stencils:
   stage: benchmark
+  variables:
+    CODSPEED_RUNNER_VERSION: 3.2.1
   script:
     - nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID
   parallel:

@@ -28,6 +28,7 @@ dependencies = [
     "icon4py-atmosphere-microphysics>=0.0.6",
     "icon4py-common>=0.0.6",
     "icon4py-driver>=0.0.6",
+    "pytest-codspeed>=3.1.2",
 ]
 description = 'ICON model in Python.'
 license = {text = "BSD-3 License"}

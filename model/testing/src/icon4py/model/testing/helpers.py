@@ -107,17 +107,17 @@ def _test_validation(self, grid, backend, input_data):
 if pytest_benchmark:
 
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
-        if pytestconfig.getoption(
-            "--benchmark-disable"
-        ):  # skipping as otherwise program calls are duplicated in tests.
-            pytest.skip("Test skipped due to 'benchmark-disable' option.")
-        else:
-            input_data = allocate_data(backend, input_data)
-            benchmark(
-                self.PROGRAM.with_backend(backend),
-                **input_data,
-                offset_provider=grid.offset_providers,
-            )
+        # if pytestconfig.getoption(
+        #     "--benchmark-disable"
+        # ):  # skipping as otherwise program calls are duplicated in tests.
+        #     pytest.skip("Test skipped due to 'benchmark-disable' option.")
+        # else:
+        input_data = allocate_data(backend, input_data)
+        benchmark(
+            self.PROGRAM.with_backend(backend),
+            **input_data,
+            offset_provider=grid.offset_providers,
+        )
 
 else:
 
