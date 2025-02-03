@@ -158,7 +158,7 @@ data = Data(args)
 #         rho=data.rho,
 #     )
 
-graupel_run( data.t, data.rho, data.qve, data.qvc, data.qvr, offset_provider={"Koff": K})
+graupel_run( data.t, data.rho, data.qv, data.qc, data.qg, data.qi, data.qr, data.qs, out1=data.prr_gsp, out2=data.pri_gsp, offset_provider={"Koff": K})
 
 
 # grpl.run(
@@ -171,10 +171,10 @@ graupel_run( data.t, data.rho, data.qve, data.qvc, data.qvr, offset_provider={"K
 #     p=data.p,
 #     qv=data.qv,
 #     qc=data.qc,
+#     qg=data.qg,
 #     qi=data.qi,
 #     qr=data.qr,
 #     qs=data.qs,
-#     qg=data.qg,
 #     qnc=args.qnc,
 #     prr_gsp=data.prr_gsp,
 #     pri_gsp=data.pri_gsp,
