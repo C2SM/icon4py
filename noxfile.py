@@ -46,7 +46,7 @@ def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> No
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
     with session.chdir(f"model/{subpackage}"):
-        session.run(*"pytest -sv --benchmark-only".split(), *session.posargs)
+        session.run(*"pytest -sv --codspeed".split(), *session.posargs)
 
 
 # Model test sessions

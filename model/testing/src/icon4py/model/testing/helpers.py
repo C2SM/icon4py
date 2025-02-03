@@ -146,7 +146,7 @@ if pytest_benchmark:
 
         if pytestconfig.getoption(
             "--benchmark-disable"
-        ):  # skipping as otherwise program calls are duplicated in tests.
+        ) and not pytestconfig.getoption("--codspeed"):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
             input_data = allocate_data(backend, input_data)
