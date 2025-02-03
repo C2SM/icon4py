@@ -76,7 +76,7 @@ def _temperature_update(
 
     return t, eflx, pflx
 
-#@gtx.field_operator
+@gtx.field_operator
 def _graupel_mask(
     t:      fa.CellKField[ta.wpfloat],             # Temperature
     rho:    fa.CellKField[ta.wpfloat],             # Density
