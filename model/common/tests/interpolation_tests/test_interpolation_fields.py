@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
 
-import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
@@ -73,6 +72,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
     assert test_helpers.dallclose(data_alloc.as_numpy(c_lin_e_partial), c_lin_e_ref.asnumpy())
 
 
+@pytest.mark.skip_value_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -83,7 +83,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
     edge_orientation = grid_savepoint.edge_orientation()
     area = grid_savepoint.cell_areas()
     geofac_div_ref = interpolation_savepoint.geofac_div()
-    geofac_div = test_helpers.zero_field(mesh, dims.CellDim, dims.C2EDim, backend=backend)
+    geofac_div = data_alloc.zero_field(mesh, dims.CellDim, dims.C2EDim)
     compute_geofac_div.with_backend(backend)(
         primal_edge_length=primal_edge_length,
         edge_orientation=edge_orientation,
@@ -106,7 +106,7 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
     dual_area = grid_savepoint.vertex_dual_area()
     owner_mask = grid_savepoint.v_owner_mask()
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
-    geofac_rot = test_helpers.zero_field(mesh, dims.VertexDim, dims.V2EDim)
+    geofac_rot = data_alloc.zero_field(mesh, dims.VertexDim, dims.V2EDim)
     horizontal_start = icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     compute_geofac_rot(
@@ -256,9 +256,6 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
     primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().asnumpy()
     primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().asnumpy()
     primal_cart_normal_z = grid_savepoint.primal_cart_normal_z().asnumpy()
-    primal_cart_normal = np.transpose(
-        np.stack((primal_cart_normal_x, primal_cart_normal_y, primal_cart_normal_z))
-    )
     e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.E2CDim])
     c2e = data_alloc.as_numpy(icon_grid.connectivities[dims.C2EDim])
     c2e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.C2E2CDim])
@@ -269,7 +266,9 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
         c_bln_avg,
         geofac_div,
         owner_mask,
-        primal_cart_normal,
+        primal_cart_normal_x,
+        primal_cart_normal_y,
+        primal_cart_normal_z,
         e2c,
         c2e,
         c2e2c,

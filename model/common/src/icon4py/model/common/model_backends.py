@@ -12,7 +12,7 @@ from typing import Final
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
 
-DEFAULT_BACKEND: Final = "roundtrip"
+DEFAULT_BACKEND: Final = "embedded"
 
 BACKENDS: dict[str, Callable] = {
     "embedded": None,

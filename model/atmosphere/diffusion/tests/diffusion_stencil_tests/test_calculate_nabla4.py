@@ -11,7 +11,6 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import (
     as_1D_sparse_field,
@@ -67,6 +66,7 @@ def calculate_nabla4_numpy(
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
@@ -93,10 +93,7 @@ class TestCalculateNabla4(StencilTest):
         return dict(z_nabla4_e2=z_nabla4_e2)
 
     @pytest.fixture
-    def input_data(self, grid: base.BaseGrid) -> dict:
-        if np.any(grid.connectivities[dims.E2C2VDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
+    def input_data(self, grid):
         u_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
         v_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
 

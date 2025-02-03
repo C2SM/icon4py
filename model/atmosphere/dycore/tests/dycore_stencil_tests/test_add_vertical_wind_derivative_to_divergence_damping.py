@@ -20,6 +20,7 @@ from icon4py.model.testing import helpers
 class TestAddVerticalWindDerivativeToDivergenceDamping(helpers.StencilTest):
     PROGRAM = add_vertical_wind_derivative_to_divergence_damping
     OUTPUTS = ("z_graddiv_vn",)
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
@@ -46,9 +47,6 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(data_alloc.as_numpy(grid.connectivities[dims.E2CDim]) == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         hmask_dd3d = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
         scalfac_dd3d = data_alloc.random_field(grid, dims.KDim, dtype=ta.wpfloat)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)

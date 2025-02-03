@@ -25,6 +25,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
+    MARKERS = (pytest.mark.uses_as_offset, pytest.mark.skip_value_error)
 
     @staticmethod
     def reference(
@@ -94,9 +95,6 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):

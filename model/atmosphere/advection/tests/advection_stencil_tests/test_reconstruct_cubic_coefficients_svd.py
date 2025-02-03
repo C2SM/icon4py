@@ -33,6 +33,7 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
         "p_coeff_9_dsl",
         "p_coeff_10_dsl",
     )
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
