@@ -53,7 +53,6 @@ class FuncParameter(Node):
     name: str
     d_type: ScalarKind
     dimensions: Sequence[Dimension]
-    py_type_hint: str
     size_args: list[str] = datamodels.field(init=False)
     is_array: bool = datamodels.field(init=False)
     gtdims: list[str] = datamodels.field(init=False)
@@ -80,7 +79,6 @@ class FuncParameter(Node):
 class Func(Node):
     name: str
     args: Sequence[FuncParameter]
-    is_gt4py_program: bool
     global_size_args: Sequence[str] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
@@ -106,11 +104,9 @@ class PythonWrapper(CffiPlugin):
     cffi_unpack_gpu: str = inspect.getsource(unpack_gpu)
     int_to_bool: str = inspect.getsource(int_array_to_bool_array)
     gt4py_backend: str = datamodels.field(init=False)
-    is_gt4py_program_present: bool = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.gt4py_backend = GT4PyBackend[self.backend].value
-        self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
         self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 
 
@@ -248,16 +244,6 @@ from icon4py.tools.py2fgen.settings import config
 xp = config.array_ns
 from icon4py.model.common import dimension as dims
 
-{% if _this_node.is_gt4py_program_present %}
-# necessary imports when embedding a gt4py program directly
-from gt4py.next import itir_python as run_roundtrip
-from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
-from icon4py.model.common.grid.simple import SimpleGrid
-
-# We need a grid to pass offset providers to the embedded gt4py program (granules load their own grid at runtime)
-grid = SimpleGrid()
-{% endif %}
-
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else -%}ERROR{%- endif -%},
@@ -290,7 +276,7 @@ from {{ module_name }} import {{ func.name }}
 {{ cffi_decorator }}
 def {{ func.name }}_wrapper(
 {%- for arg in func.args -%}
-{{ arg.name }}: {{ arg.py_type_hint | replace("KHalfDim","KDim") }}{% if not loop.last or func.global_size_args %}, {% endif %}
+{{ arg.name }}{% if not loop.last or func.global_size_args %}, {% endif %}
 {%- endfor %}
 {%- for arg in func.global_size_args -%}
 {{ arg }}: gtx.int32{{ ", " if not loop.last else "" }}
@@ -368,14 +354,10 @@ def {{ func.name }}_wrapper(
         func_start_time = time.perf_counter()
         {% endif %}
 
-        {{ func.name }}
-        {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
+        {{ func.name }}(
         {%- for arg in func.args -%}
-        {{ arg.name }}{{ ", " if not loop.last or func.is_gt4py_program else "" }}
+        {{ arg.name }}{{ ", " if not loop.last else "" }}
         {%- endfor -%}
-        {%- if func.is_gt4py_program -%}
-        offset_provider=grid.offset_providers
-        {%- endif -%}
         )
 
         {% if _this_node.profile %}
@@ -474,14 +456,12 @@ class F90Interface(Node):
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         functions = self.cffi_plugin.functions
         self.function_declaration = [
-            F90FunctionDeclaration(name=f.name, args=f.args, is_gt4py_program=f.is_gt4py_program)
-            for f in functions
+            F90FunctionDeclaration(name=f.name, args=f.args) for f in functions
         ]
         self.function_definition = [
             F90FunctionDefinition(
                 name=f.name,
                 args=f.args,
-                is_gt4py_program=f.is_gt4py_program,
                 limited_area=self.limited_area,
             )
             for f in functions

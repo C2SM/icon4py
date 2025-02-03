@@ -127,7 +127,6 @@ def compile_and_run_fortran(
     "run_backend, extra_flags",
     [
         ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
-        ("CPU", ""),
     ],
 )
 def test_py2fgen_compilation_and_execution_square_cpu(
@@ -139,7 +138,7 @@ def test_py2fgen_compilation_and_execution_square_cpu(
     run_test_case(
         cli_runner,
         square_wrapper_module,
-        "square,square_from_function",
+        "square_from_function",
         "square_plugin",
         run_backend,
         samples_path,

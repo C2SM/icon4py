@@ -30,18 +30,14 @@ field_2d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,
     dimensions=[dims.CellDim, dims.KDim],
-    py_type_hint="Field[dims.CellDim, dims.KDim], float64]",
 )
 field_1d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,
     dimensions=[dims.KDim],
-    py_type_hint="Field[dims.KDim], float64]",
 )
 
-simple_type = FuncParameter(
-    name="name", d_type=ScalarKind.FLOAT32, dimensions=[], py_type_hint="gtx.int32"
-)
+simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[])
 
 
 @pytest.mark.parametrize(
@@ -54,15 +50,13 @@ def test_as_target(param, expected):
 foo = Func(
     name="foo",
     args=[
-        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="gtx.int32"),
+        FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[]),
         FuncParameter(
             name="two",
             d_type=ScalarKind.FLOAT64,
             dimensions=[dims.CellDim, dims.KDim],
-            py_type_hint="Field[dims.CellDim, dims.KDim], float64]",
         ),
     ],
-    is_gt4py_program=False,
 )
 
 bar = Func(
@@ -75,11 +69,9 @@ bar = Func(
                 dims.CellDim,
                 dims.KDim,
             ],
-            py_type_hint="Field[dims.CellDim, dims.KDim], float64]",
         ),
-        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="gtx.int32"),
+        FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[]),
     ],
-    is_gt4py_program=False,
 )
 
 
@@ -330,7 +322,7 @@ def int_array_to_bool_array(int_array: NDArray) -> NDArray:
     return bool_array
 
 @ffi.def_extern()
-def foo_wrapper(one: gtx.int32, two: Field[dims.CellDim, dims.KDim], float64], n_Cell: gtx.int32, n_K: gtx.int32):
+def foo_wrapper(one, two, n_Cell: gtx.int32, n_K: gtx.int32):
     try:
         # Unpack pointers into Ndarrays
         two = unpack_gpu(two, n_Cell, n_K)
@@ -347,7 +339,7 @@ def foo_wrapper(one: gtx.int32, two: Field[dims.CellDim, dims.KDim], float64], n
     return 0
 
 @ffi.def_extern()
-def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: gtx.int32, n_Cell: gtx.int32, n_K: gtx.int32):
+def bar_wrapper(one, two, n_Cell: gtx.int32, n_K: gtx.int32):
     try:
         # Unpack pointers into Ndarrays
         one = unpack_gpu(one, n_Cell, n_K)

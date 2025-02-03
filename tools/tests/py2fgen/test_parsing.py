@@ -8,9 +8,7 @@
 
 import ast
 
-import pytest
-
-from icon4py.tools.py2fgen.parsing import ImportStmtVisitor, TypeHintVisitor, parse
+from icon4py.tools.py2fgen.parsing import ImportStmtVisitor, parse
 from icon4py.tools.py2fgen.template import CffiPlugin
 
 
@@ -36,18 +34,3 @@ def test_import_visitor():
     extractor.visit(tree)
     expected_imports = ["import foo", "import bar"]
     assert extractor.import_statements == expected_imports
-
-
-def test_type_hint_visitor():
-    tree = ast.parse(source)
-    visitor = TypeHintVisitor()
-    visitor.visit(tree)
-    expected_type_hints = {"x": "gtx.Field[gtx.Dims[EdgeDim, KDim], float64]", "y": "int"}
-    assert visitor.type_hints == expected_type_hints
-
-
-def test_function_missing_type_hints():
-    tree = ast.parse(source.replace(": int", ""))
-    visitor = TypeHintVisitor()
-    with pytest.raises(TypeError):
-        visitor.visit(tree)
