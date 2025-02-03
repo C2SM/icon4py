@@ -33,7 +33,7 @@ def get_args():
     parser.add_argument("input_file", help="input data file")
     parser.add_argument("itime", help="time-index", nargs="?", default=0)
     parser.add_argument("dt", help="timestep", nargs="?", default=30.0)
-    parser.add_argument("qnc", help="TODO:qnc-descripion", nargs="?", default=100.0)
+    parser.add_argument("qnc", help="Water number concentration", nargs="?", default=100.0)
     parser.add_argument(
         "-ldir",
         metavar="lib_dir",
@@ -76,7 +76,7 @@ class Data:
         self.prs_gsp = np.zeros(self.ncells, np.float64)
         self.prg_gsp = np.zeros(self.ncells, np.float64)
         self.pre_gsp = np.zeros(self.ncells, np.float64)
-        self.pflx = np.zeros((self.nlev, self.ncells), np.float64)
+        self.pflx = np.zeros((self.ncells,self.nlev), np.float64)
         # allocate dz:
         self.dz = np.zeros(self.ncells * self.nlev, np.float64)
         # calc dz:
@@ -158,8 +158,20 @@ data = Data(args)
 #         rho=data.rho,
 #     )
 
-graupel_run( data.t, data.rho, data.qv, data.qc, data.qg, data.qi, data.qr, data.qs, out1=data.prr_gsp, out2=data.pri_gsp, offset_provider={"Koff": K})
-
+graupel_run( dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz[0,:,:])),
+             te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.t[0,:,:])),
+             p   = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.p[0,:,:])),
+             rho = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.rho[0,:,:])),
+             qve = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qv[0,:,:])),
+             qce = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qc[0,:,:])),
+             qre = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qr[0,:,:])),
+             qse = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qs[0,:,:])),
+             qie = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qi[0,:,:])),
+             qge = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qg[0,:,:])),
+             dt  = args.dt,
+             qnc = args.qnc,
+             out1 = gtx.as_field((dims.CellDim, dims.KDim,), data.pflx),
+             offset_provider={"Koff": K})
 
 # grpl.run(
 #     ncells=data.ncells,
@@ -198,6 +210,7 @@ graupel_run( data.t, data.rho, data.qv, data.qc, data.qg, data.qi, data.qr, data
 
 # grpl.finalize()
 
+'''
 write_fields(
     args.output_file,
     data.ncells,
@@ -216,3 +229,4 @@ write_fields(
     pflx=data.pflx,
     pre_gsp=data.pre_gsp,
 )
+'''

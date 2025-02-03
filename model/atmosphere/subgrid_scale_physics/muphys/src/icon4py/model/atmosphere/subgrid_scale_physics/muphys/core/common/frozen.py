@@ -78,4 +78,5 @@ idx = FrozenNamespace(
     prefactor_g  = 12.24,
     exponent_g   =  0.217,
     offset_g     =  1.0e-08,
+    lrain        = True
 ) 

@@ -37,18 +37,18 @@ def _cloud_to_rain(
     t:        fa.CellKField[ta.wpfloat],             # Temperature
     qc:       fa.CellKField[ta.wpfloat],             # Cloud specific mass
     qr:       fa.CellKField[ta.wpfloat],             # Rain water specific mass
-    nc:       fa.CellKField[ta.wpfloat],             # Cloud water number concentration
+    nc:       ta.wpfloat,                            # Cloud water number concentration
 ) -> fa.CellKField[ta.wpfloat]:                      # Return: Riming graupel rate
-    QMIN_AC       = 1.0e-6                          # threshold for auto conversion
-    TAU_MAX       = 0.90e0                            # maximum allowed value of tau
-    TAU_MIN       = 1.0e-30                         # minimum allowed value of tau
-    A_PHI         = 6.0e2                           # constant in phi-function for autoconversion
-    B_PHI         = 0.68e0                          # exponent in phi-function for autoconversion
-    C_PHI         = 5.0e-5                          # exponent in phi-function for accretion
-    AC_KERNEL     = 5.25e0                          # kernel coeff for SB2001 accretion
-    X3            = 2.0e0                           # gamma exponent for cloud distribution
-    X2            = 2.6e-10                         # separating mass between cloud and rain
-    X1            = 9.44e9                          # kernel coeff for SB2001 autoconversion
+    QMIN_AC       = 1.0e-6                           # threshold for auto conversion
+    TAU_MAX       = 0.90e0                           # maximum allowed value of tau
+    TAU_MIN       = 1.0e-30                          # minimum allowed value of tau
+    A_PHI         = 6.0e2                            # constant in phi-function for autoconversion
+    B_PHI         = 0.68e0                           # exponent in phi-function for autoconversion
+    C_PHI         = 5.0e-5                           # exponent in phi-function for accretion
+    AC_KERNEL     = 5.25e0                           # kernel coeff for SB2001 accretion
+    X3            = 2.0e0                            # gamma exponent for cloud distribution
+    X2            = 2.6e-10                          # separating mass between cloud and rain
+    X1            = 9.44e9                           # kernel coeff for SB2001 autoconversion
     AU_KERNEL     = X1/(20.0*X2) * (X3+2.0) * (X3+4.0) / ((X3+1.0)*(X3+1.0))
 
     # TO-DO: put as much of this into the WHERE statement as possible
@@ -64,7 +64,7 @@ def cloud_to_rain(
     t:        fa.CellKField[ta.wpfloat],             # Temperature
     qc:       fa.CellKField[ta.wpfloat],             # Cloud specific mass 
     qr:       fa.CellKField[ta.wpfloat],             # Rain water specific mass
-    nc:       fa.CellKField[ta.wpfloat],             # Cloud water number concentration
+    nc:       ta.wpfloat,                            # Cloud water number concentration
     conversion_rate:  fa.CellKField[ta.wpfloat],     # output
 ):
     _cloud_to_rain(t, qc, qr, nc, out=conversion_rate)

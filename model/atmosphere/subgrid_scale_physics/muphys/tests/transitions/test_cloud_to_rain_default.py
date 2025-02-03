@@ -28,7 +28,7 @@ class TestCloudToRainDefault(StencilTest):
             t                   = constant_field(grid, 281.787, dims.CellDim, dims.KDim, dtype=wpfloat),
             qc                  = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
             qr                  = constant_field(grid, 52312e-7, dims.CellDim, dims.KDim, dtype=wpfloat),
-            nc                  = constant_field(grid, 100.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            nc                  = 100.0,
             conversion_rate     = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )
 
