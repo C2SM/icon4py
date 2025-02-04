@@ -47,6 +47,7 @@ def _temperature_update(
     t:         ta.wpfloat,
     t_kp1:     ta.wpfloat,
     ei_old:    ta.wpfloat,
+    p_sig:     ta.wpfloat,
     qv:        ta.wpfloat,
     qliq:      ta.wpfloat,
     qice:      ta.wpfloat,
@@ -59,7 +60,7 @@ def _temperature_update(
 
     e_int   = ei_old + eflx
 
-    eflx    = dt * ( pr * ( t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc ) + pflx * ( g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc ) )
+    eflx    = dt * ( pr * ( t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc ) + (pflx + p_sig) * ( g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc ) )
     e_int   = e_int - eflx
 
     pflx    = pflx + pr  # pflx[oned_vec_index] = pflx[oned_vec_index] + q[lqr].p[iv];
@@ -249,7 +250,7 @@ def _graupel_loop3_if_lrain(
     rho:    fa.CellKField[ta.wpfloat],             # density
     dz:     fa.CellKField[ta.wpfloat],
     dt:     ta.wpfloat,
-) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
+) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
 
     # Store current fields for later temperature update
     qliq    = qc + qr
@@ -270,19 +271,18 @@ def _graupel_loop3_if_lrain(
     q_kp1    = qi(Koff[1])
     qi, pi, _ = _precip( idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, qi, q_kp1, rho )
     q_kp1    = qs(Koff[1])
-    qs, ps, _ = _precip( idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_r, qs, q_kp1, rho )
+    qs, ps, _ = _precip( idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, qs, q_kp1, rho )
     q_kp1    = qg(Koff[1])
     qg, pg, _ = _precip( idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, qg, q_kp1, rho )
-
-    pflx      = ps + pi + pg   # pflx[oned_vec_index] = q[lqs].p[iv] + q[lqi].p[iv] + q[lqg].p[iv];
 
     qliq    = qc + qr
     qice    = qs + qi + qg
     t_kp1   = t(Koff[1])
-    t, _, _ = _temperature_update( t, t_kp1, ei_old, qv, qliq, qice, pr, rho, dz, dt )
+    p_sig   = ps + pi + pg
+    t, _, pflx = _temperature_update( t, t_kp1, ei_old, p_sig, qv, qliq, qice, pr, rho, dz, dt )
 
     # TODO: here we have to return a single layer for pre_gsp
-    return qr, qi, qs, qg, t
+    return qr, qi, qs, qg, t, pflx
 
 @gtx.field_operator
 def _output_calculation(
@@ -316,7 +316,7 @@ def _graupel_run(
 ) -> fa.CellKField[ta.wpfloat]:
     mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse )
     qv, qc, qr, qs, qi, qg, t = _graupel_loop2( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
-    qr, qi, qs, qg, t = _graupel_loop3_if_lrain( kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+    qr, qi, qs, qg, t, pflx = _graupel_loop3_if_lrain( kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
 
 # TODO : program  needs to be called with offset_provider={"Koff": K}
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -342,5 +342,4 @@ def graupel_run(
 #    kmin_s_out:  fa.CellKField[bool],                    # Specific cloud water content
 #    kmin_g_out:  fa.CellKField[bool],                    # Specific cloud water content
 ):
-
     _graupel_run(dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc, out=out1 )
