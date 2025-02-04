@@ -461,7 +461,7 @@ class SolveNonhydro:
 
         self._plot = plots.Plot(
             savepoint_path="testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data",
-            grid_file_path="testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res250m.nc",
+            grid_file_path="testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res250m.nc",
             backend = self._backend,
             )
         self._ibm = ibm.ImmersedBoundaryMethod(grid)

@@ -24,8 +24,10 @@ pil_logger.setLevel(logging.INFO)
 log = logging.getLogger(__name__)
 
 # Parameters
-DOMAIN_LENGTH = 1000.0 # TODO: get from grid file
-DOMAIN_HEIGHT = 1154.70053837925 # TODO: get from grid file
+#DOMAIN_LENGTH = 1000.0 # TODO: get from grid file
+#DOMAIN_HEIGHT = 1154.70053837925 # TODO: get from grid file
+DOMAIN_LENGTH = 2000.0 # TODO: get from grid file
+DOMAIN_HEIGHT = 2078.46096908265 # TODO: get from grid file
 X_BOUNDARY_RAD = np.pi
 Y_BOUNDARY_RAD = 15/2*np.pi/180 # Hardcoded in the grid generation script (could get from vertex lat)
 PLOT_X_LIMS = (-X_BOUNDARY_RAD*1.02, X_BOUNDARY_RAD*1.02)
