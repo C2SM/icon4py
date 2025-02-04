@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_vertically imp
     integrate_tracer_vertically,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -35,7 +37,7 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
         ivadv_tracer: gtx.int32,
         iadv_slev_jt: gtx.int32,
         p_dtime: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         if ivadv_tracer != 0:
             tracer_new = np.where(
@@ -57,7 +59,7 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
         return dict(tracer_new=tracer_new)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_tracer_v = data_alloc.random_field(

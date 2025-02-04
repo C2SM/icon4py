@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -25,15 +27,15 @@ class TestDiagnoseTemperature(helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        qv: np.array,
-        qc: np.array,
-        qi: np.array,
-        qr: np.array,
-        qs: np.array,
-        qg: np.array,
-        theta_v: np.array,
-        exner: np.array,
-        **kwargs,
+        qv: np.ndarray,
+        qc: np.ndarray,
+        qi: np.ndarray,
+        qr: np.ndarray,
+        qs: np.ndarray,
+        qg: np.ndarray,
+        theta_v: np.ndarray,
+        exner: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         qsum = qc + qi + qr + qs + qg
         virtual_temperature = theta_v * exner

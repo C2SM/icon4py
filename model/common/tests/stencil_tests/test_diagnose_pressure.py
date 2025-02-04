@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -25,10 +27,10 @@ class TestDiagnosePressure(helpers.StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        surface_pressure: np.array,
-        temperature: np.array,
-        ddqz_z_full: np.array,
-        **kwargs,
+        surface_pressure: np.ndarray,
+        temperature: np.ndarray,
+        ddqz_z_full: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         pressure_ifc = np.zeros_like(temperature)
         pressure = np.zeros_like(temperature)

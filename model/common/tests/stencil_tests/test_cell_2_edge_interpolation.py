@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -27,7 +29,7 @@ class TestCell2EdgeInterpolation(helpers.StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         in_field: np.ndarray,
         coeff: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         e2c = connectivities[dims.E2CDim]
         coeff_ = np.expand_dims(coeff, axis=-1)

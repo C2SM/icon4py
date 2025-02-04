@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -28,7 +30,7 @@ class TestComputeCells2VertsInterpolation(helpers.StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         cell_in: np.ndarray,
         c_int: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         v2c = connectivities[dims.V2CDim]
         c_int = np.expand_dims(c_int, axis=-1)

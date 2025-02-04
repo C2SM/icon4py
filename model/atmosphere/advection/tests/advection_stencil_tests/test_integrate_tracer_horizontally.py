@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -16,6 +17,7 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_horizontally i
     integrate_tracer_horizontally,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 
 
 class TestIntegrateTracerHorizontally(helpers.StencilTest):
@@ -31,8 +33,8 @@ class TestIntegrateTracerHorizontally(helpers.StencilTest):
         rhodz_now: np.ndarray,
         rhodz_new: np.ndarray,
         geofac_div: np.ndarray,
-        p_dtime,
-        **kwargs,
+        p_dtime: float,
+        **kwargs: Any,
     ) -> dict:
         geofac_div = helpers.reshape(geofac_div, connectivities[dims.C2EDim].shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
@@ -45,7 +47,7 @@ class TestIntegrateTracerHorizontally(helpers.StencilTest):
         return dict(tracer_new_hor=tracer_new_hor)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         deepatmo_divh = data_alloc.random_field(grid, dims.KDim)
         tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

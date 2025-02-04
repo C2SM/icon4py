@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -63,7 +65,7 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
         z_nabla4_e2: np.ndarray,
         diff_multfac_vn: np.ndarray,
         vn: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         vn = apply_nabla2_and_nabla4_global_to_vn_numpy(
             area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn

@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -28,7 +30,7 @@ class TestDiagnoseSurfacePressure(helpers.StencilTest):
         exner: np.ndarray,
         virtual_temperature: np.ndarray,
         ddqz_z_full: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         shape = virtual_temperature.shape
         surface_pressure = np.zeros((shape[0], shape[1] + 1), dtype=ta.wpfloat)
