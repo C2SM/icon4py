@@ -116,9 +116,9 @@ def compile_and_run_fortran(
             env.update(env_vars)
         fortran_result = run_fortran_executable(plugin_name, env)
         if expected_error_code == 0:
-            assert "passed" in fortran_result.stdout
+            assert "passed" in fortran_result.stdout, fortran_result.stderr
         else:
-            assert "failed" in fortran_result.stdout
+            assert "failed" in fortran_result.stdout, fortran_result.stderr
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
 

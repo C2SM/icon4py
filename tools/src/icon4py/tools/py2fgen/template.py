@@ -6,13 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from types import ModuleType
 from typing import Any, Sequence
 
+import gt4py.next as gtx
 from gt4py.eve import Node, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
-from gt4py.next import Dimension
-from gt4py.next.type_system.type_specifications import ScalarKind
+from gt4py.next.type_system import type_specifications as ts
 
 from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
@@ -21,7 +20,6 @@ from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
 )
 from icon4py.tools.py2fgen.settings import GT4PyBackend
 from icon4py.tools.py2fgen.utils import flatten_and_get_unique_elts
-from icon4py.tools.py2fgen.wrappers import wrapper_dimension
 
 
 # these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
@@ -40,7 +38,6 @@ UNINITIALISED_ARRAYS = [
 ]
 
 CFFI_DECORATOR = "@ffi.def_extern()"
-PROGRAM_DECORATOR = "@program"
 
 
 class DimensionType(Node):
@@ -50,8 +47,8 @@ class DimensionType(Node):
 
 class FuncParameter(Node):
     name: str
-    d_type: ScalarKind
-    dimensions: Sequence[Dimension]
+    d_type: ts.ScalarKind
+    dimensions: Sequence[gtx.Dimension]
     size_args: list[str] = datamodels.field(init=False)
     is_array: bool = datamodels.field(init=False)
     gtdims: list[str] = datamodels.field(init=False)
@@ -62,16 +59,7 @@ class FuncParameter(Node):
         self.size_args = dims_to_size_strings(self.dimensions)
         self.size_args_len = len(self.size_args)
         self.is_array = True if len(self.dimensions) >= 1 else False
-        # We need some fields to have nlevp1 levels on the fortran wrapper side, which we make
-        # happen by using KHalfDim as a type hint. However, this is not yet supported on the icon4py
-        # side. So before generating the python wrapper code, we replace occurrences of KHalfDim with KDim
-        self.gtdims = [
-            dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
-        ]
-        self.gtdims = [
-            "dims." + gtdim if gtdim not in dir(wrapper_dimension) else gtdim
-            for gtdim in self.gtdims
-        ]
+        self.gtdims = [dim.value for dim in self.dimensions]
         self.np_type = to_np_type(self.d_type)
 
 
@@ -99,49 +87,33 @@ class PythonWrapper(CffiPlugin):
     limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
     gt4py_backend: str = datamodels.field(init=False)
+    used_dimensions: set[gtx.Dimension] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.gt4py_backend = GT4PyBackend[self.backend].value
         self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
+
+        self.used_dimensions = set()
+        for func in self.functions:
+            for arg in func.args:
+                self.used_dimensions.update(arg.dimensions)
 
 
 def get_uninitialised_arrays(limited_area: bool) -> list[str]:
     return UNINITIALISED_ARRAYS if not limited_area else []
 
 
-def build_array_size_args() -> dict[str, str]:
-    array_size_args = {}
-    from icon4py.model.common import dimension
-    from icon4py.tools.py2fgen.wrappers import wrapper_dimension
-
-    # Function to process the dimensions
-    def process_dimensions(module: ModuleType) -> None:
-        for var_name, var in vars(module).items():
-            if isinstance(var, Dimension):
-                dim_name = var_name.replace(
-                    "Dim", ""
-                )  # Assumes we keep suffixing each Dimension with Dim
-                size_name = f"n_{dim_name}"
-                array_size_args[dim_name] = size_name
-
-    # Process dimensions in both modules
-    process_dimensions(dimension)
-    process_dimensions(wrapper_dimension)
-
-    return array_size_args
-
-
-def to_c_type(scalar_type: ScalarKind) -> str:
+def to_c_type(scalar_type: ts.ScalarKind) -> str:
     """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
 
 
-def to_np_type(scalar_type: ScalarKind) -> str:
+def to_np_type(scalar_type: ts.ScalarKind) -> str:
     """Convert a scalar type to its corresponding numpy type."""
     return BUILTIN_TO_NUMPY_TYPE[scalar_type]
 
 
-def to_iso_c_type(scalar_type: ScalarKind) -> str:
+def to_iso_c_type(scalar_type: ts.ScalarKind) -> str:
     """Convert a scalar type to its corresponding ISO C type."""
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
@@ -184,7 +156,7 @@ def render_fortran_array_dimensions(param: FuncParameter, assumed_size_array: bo
     return ""
 
 
-def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
+def dims_to_size_strings(dimensions: Sequence[gtx.Dimension]) -> list[str]:
     """Convert Python array dimension values to Fortran array access strings.
 
     These already should be in Row-major order as defined in the Python function
@@ -197,14 +169,7 @@ def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
     Returns:
         A list of Fortran array size strings.
     """
-    array_size_args = build_array_size_args()
-    size_strings = []
-    for dim in dimensions:
-        if dim.value in array_size_args:
-            size_strings.append(array_size_args[dim.value])
-        else:
-            raise ValueError(f"Dimension '{dim.value}' not found in ARRAY_SIZE_ARGS")
-    return size_strings
+    return [f"n_{dim.value}" for dim in dimensions]
 
 
 def render_fortran_array_sizes(param: FuncParameter) -> str:
@@ -232,10 +197,9 @@ import logging
 {% if _this_node.profile %}import time{% endif %}
 from {{ plugin_name }} import ffi
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
+import gt4py.next as gtx
 from gt4py.next.iterator.embedded import np_as_located_field
-from icon4py.tools.py2fgen.settings import config
 from icon4py.tools.py2fgen import wrapper_utils
-from icon4py.model.common import dimension as dims
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
@@ -247,6 +211,10 @@ logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else 
 # embedded function imports
 {% for func in _this_node.functions -%}
 from {{ module_name }} import {{ func.name }}
+{% endfor %}
+
+{% for dim in _this_node.used_dimensions -%}
+{{ dim.value }} = gtx.Dimension("{{ dim.value }}", kind=gtx.DimensionKind.{{ dim.kind.upper() }})
 {% endfor %}
 
 {% for func in _this_node.functions %}
