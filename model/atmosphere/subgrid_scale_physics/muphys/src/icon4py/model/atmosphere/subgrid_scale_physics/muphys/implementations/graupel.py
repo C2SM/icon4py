@@ -236,7 +236,6 @@ def _graupel_loop2(
 
 @gtx.field_operator
 def _graupel_loop3_if_lrain(
-    vert:      fa.KField[gtx.int32],               # Vertical indices
     kmin_r: fa.CellKField[bool],                   # rain minimum level
     kmin_i: fa.CellKField[bool],                   # ice minimum level
     kmin_s: fa.CellKField[bool],                   # snow minimum level
@@ -268,7 +267,7 @@ def _graupel_loop3_if_lrain(
     vc_g = where( kmin_g, _vel_scale_factor_default( xrho ), 0.0 )
 
     q_kp1    = qr(Koff[1])
-    qr, pr, _ = where( vert < 2, _precip( idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, qr, q_kp1, rho ), (0.0, 0.0, 0.0) )
+    qr, pr, _ = _precip( idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, qr, q_kp1, rho )
     q_kp1    = qi(Koff[1])
     qi, pi, _ = _precip( idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, qi, q_kp1, rho )
     q_kp1    = qs(Koff[1])
@@ -314,11 +313,10 @@ def _graupel_run(
     qie:       fa.CellKField[ta.wpfloat],             # Specific ice water content
     dt:        ta.wpfloat,
     qnc:       ta.wpfloat,
-    vert:      fa.KField[gtx.int32],                  # Vertical indices
 ) -> fa.CellKField[ta.wpfloat]:
     mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse )
     qv, qc, qr, qs, qi, qg, t = _graupel_loop2( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
-    qr, qi, qs, qg, t, pflx = _graupel_loop3_if_lrain( vert, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+    qr, qi, qs, qg, t, pflx = _graupel_loop3_if_lrain( kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
     return t
 
 # TODO : program  needs to be called with offset_provider={"Koff": K}
@@ -336,7 +334,6 @@ def graupel_run(
     qge:       fa.CellKField[ta.wpfloat],             # Specific graupel water content
     dt:        ta.wpfloat,                            # Time step
     qnc:       ta.wpfloat,                            #
-    vert:      fa.KField[gtx.int32],                  # Vertical indices
     out1:      fa.CellKField[ta.wpfloat],             # output 1
 #    qti:       fa.CellKField[ta.wpfloat],             # Specific mass of all ice species (total-ice)
 #    mask_out:  fa.CellKField[bool],                      # Temporary mask for > QMIN points
@@ -346,4 +343,4 @@ def graupel_run(
 #    kmin_s_out:  fa.CellKField[bool],                    # Specific cloud water content
 #    kmin_g_out:  fa.CellKField[bool],                    # Specific cloud water content
 ):
-    _graupel_run(dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc, vert, out=out1 )
+    _graupel_run(dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc, out=out1 )

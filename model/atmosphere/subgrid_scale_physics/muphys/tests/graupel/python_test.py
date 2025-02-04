@@ -11,12 +11,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graup
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
-vert = data_allocation.allocate_indices(dims.KDim, grid=icon_grid, is_halfdim=True, backend=backend)
+# vert = data_alloc.allocate_indices(dims.KDim, grid=icon_grid, is_halfdim=True, backend=backend)
 
 def set_lib_path(lib_dir):
     sys.path.append(lib_dir)
@@ -171,7 +169,6 @@ graupel_run( dz  = gtx.as_field((dims.CellDim, dims.KDim,), data.dz),
              qge = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qg[0,:,:])),
              dt  = args.dt,
              qnc = args.qnc,
-             vert= vert,
              out1 = gtx.as_field((dims.CellDim, dims.KDim,), data.pflx),
              offset_provider={"Koff": K})
 
