@@ -91,7 +91,7 @@ def apply_markers(
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
             case "requires_concat_where" if is_embedded(backend):
-                pytest.xfail("Stencil requires concat_where.")
+                pytest.skip("Stencil requires concat_where.")
             case "skip_value_error":
                 pytest.skip(
                     "Stencil does not support domain containing skip values. Consider shrinking domain."
