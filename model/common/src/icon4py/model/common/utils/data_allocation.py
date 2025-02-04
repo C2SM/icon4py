@@ -50,7 +50,7 @@ def as_numpy(array: NDArrayInterface, copy=False) -> np.ndarray:
     else:
         import cupy as cp
 
-        out = np.empty(array.ndarray.shape, dtype=array.ndarray.dtype)
+        out = np.empty(buffer.shape, dtype=buffer.dtype)
         return cp.asnumpy(array, out=out)
 
 
