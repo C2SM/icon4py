@@ -7,8 +7,8 @@ include:
     CODSPEED_RUNNER_VERSION: 3.2.0
   script:
     - echo "INSTALLING CODSPEED"
-    - export CODSPEED_API_TOKEN=${CODSPEED_API_TOKEN}
-    - echo $CODSPEED_API_TOKEN
+    - export CODSPEED_TOKEN=$CODSPEED_TOKEN
+    - echo $CODSPEED_TOKEN
     - curl -fsSL https://github.com/CodSpeedHQ/runner/releases/download/v$CODSPEED_RUNNER_VERSION/codspeed-runner-installer.sh | bash -s
     - source $HOME/.cargo/env
     - which codspeed
