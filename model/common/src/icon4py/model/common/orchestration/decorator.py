@@ -179,8 +179,6 @@ def orchestrate(
                 }
 
                 sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
-                if func_is_method:
-                    del sdfg_args[self_name]
 
                 with dace.config.temporary_config():
                     configure_dace_temp_env(default_build_folder, self._backend)
