@@ -129,6 +129,10 @@ def _test_validation(self, grid, backend, input_data):
             if isinstance(out, Output)
             else (out, (slice(None),), (slice(None),))
         )
+        # TODO: this condition below is to account for 0-dimensional fields
+        if len(input_data[name].asnumpy().shape) == 0 and len(reference_outputs[name].shape) == 0:
+            gtslice = None
+            refslice = None
 
         np.testing.assert_allclose(
             input_data[name].asnumpy()[gtslice],
