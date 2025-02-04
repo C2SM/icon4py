@@ -170,7 +170,7 @@ def test_py2fgen_python_error_propagation_to_fortran(
 @pytest.mark.parametrize(
     "function_name, plugin_name, test_name, run_backend, extra_flags",
     [
-        ("square", "square_plugin", "test_square", "GPU", ("-acc", "-Minfo=acc")),
+        ("square_from_function", "square_plugin", "test_square", "GPU", ("-acc", "-Minfo=acc")),
     ],
 )
 def test_py2fgen_compilation_and_execution_gpu(
