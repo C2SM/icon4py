@@ -11,13 +11,14 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_surface import interpolate_to_surface
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def interpolate_to_surface_numpy(
-    grid, interpolant: np.array, wgtfacq_c: np.array, interpolation_to_surface: np.array
-) -> np.array:
+    interpolant: np.ndarray, wgtfacq_c: np.ndarray, interpolation_to_surface: np.ndarray
+) -> np.ndarray:
     interpolation_to_surface[:, 3:] = (
         np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(interpolant, shift=1, axis=1)
         + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(interpolant, shift=2, axis=1)
@@ -33,13 +34,12 @@ class TestInterpolateToSurface(StencilTest):
     @staticmethod
     def reference(
         grid,
-        interpolant: np.array,
-        wgtfacq_c: np.array,
-        interpolation_to_surface: np.array,
+        interpolant: np.ndarray,
+        wgtfacq_c: np.ndarray,
+        interpolation_to_surface: np.ndarray,
         **kwargs,
     ) -> dict:
         interpolation_to_surface = interpolate_to_surface_numpy(
-            grid=grid,
             wgtfacq_c=wgtfacq_c,
             interpolant=interpolant,
             interpolation_to_surface=interpolation_to_surface,

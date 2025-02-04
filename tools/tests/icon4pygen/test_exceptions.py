@@ -10,16 +10,16 @@ import gt4py.next as gtx
 import pytest
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Dimension
-from icon4py.model.common import dimension as dims
 
-from icon4pytools.common.metadata import get_stencil_info
-from icon4pytools.icon4pygen.bindings.codegen.render.location import LocationRenderer
-from icon4pytools.icon4pygen.bindings.entities import Offset, chain_from_str
-from icon4pytools.icon4pygen.bindings.exceptions import (
+from icon4py.model.common import dimension as dims
+from icon4py.tools.common.metadata import get_stencil_info
+from icon4py.tools.icon4pygen.bindings.codegen.render.location import LocationRenderer
+from icon4py.tools.icon4pygen.bindings.entities import Offset, chain_from_str
+from icon4py.tools.icon4pygen.bindings.exceptions import (
     BindingsRenderingException,
     BindingsTypeConsistencyException,
 )
-from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
+from icon4py.tools.icon4pygen.bindings.workflow import PyBindGen
 
 
 def test_invalid_offset():

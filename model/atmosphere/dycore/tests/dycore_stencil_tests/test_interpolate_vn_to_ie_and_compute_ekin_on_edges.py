@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_e
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(
@@ -35,7 +36,7 @@ def interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(
 
 
 def interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(
-    grid, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
+    wgtfac_e: np.ndarray, vn: np.ndarray, vt: np.ndarray, **kwargs
 ) -> tuple:
     vn_ie = interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(wgtfac_e, vn)
     z_kin_hor_e = interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(vn, vt)
@@ -66,7 +67,7 @@ class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
         vn_ie, z_kin_hor_e = vn_ie.copy(), z_kin_hor_e.copy()
         vn_ie[subset], z_kin_hor_e[subset] = (
             x[subset]
-            for x in interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(grid, wgtfac_e, vn, vt)
+            for x in interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(wgtfac_e, vn, vt)
         )
 
         return dict(

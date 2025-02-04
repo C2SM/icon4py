@@ -14,7 +14,8 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     compute_cell_2_vertex_interpolation,
 )
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import helpers
 
 
 class TestComputeCells2VertsInterpolation(helpers.StencilTest):
@@ -22,8 +23,13 @@ class TestComputeCells2VertsInterpolation(helpers.StencilTest):
     OUTPUTS = ("vert_out",)
 
     @staticmethod
-    def reference(grid, cell_in: np.array, c_int: np.array, **kwargs) -> dict:
-        v2c = grid.connectivities[dims.V2CDim]
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        cell_in: np.ndarray,
+        c_int: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        v2c = connectivities[dims.V2CDim]
         c_int = np.expand_dims(c_int, axis=-1)
         out_field = np.sum(cell_in[v2c] * c_int, axis=1)
 
@@ -33,9 +39,11 @@ class TestComputeCells2VertsInterpolation(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        cell_in = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=types.wpfloat)
-        c_int = helpers.random_field(grid, dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)
-        vert_out = helpers.zero_field(grid, dims.VertexDim, dims.KDim, dtype=types.wpfloat)
+        if grid.get_offset_provider("V2C").has_skip_values:
+            pytest.xfail("Stencil does not support missing neighbors.")
+        cell_in = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=types.wpfloat)
+        c_int = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim, dtype=types.wpfloat)
+        vert_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=types.wpfloat)
 
         return dict(
             cell_in=cell_in,

@@ -10,12 +10,13 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_from_linear_coefficients_alt import (
     compute_horizontal_tracer_flux_from_linear_coefficients_alt,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTest):
@@ -24,7 +25,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTe
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         z_lsq_coeff_1: np.array,
         z_lsq_coeff_2: np.array,
         z_lsq_coeff_3: np.array,
@@ -36,7 +37,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTe
         **kwargs,
     ) -> dict:
         p_out_e_cp = p_out_e.copy()
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
         z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
         z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
@@ -57,14 +58,14 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficientsAlt(helpers.StencilTe
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        z_lsq_coeff_1 = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_lsq_coeff_2 = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_lsq_coeff_3 = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        distv_bary_1 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        distv_bary_2 = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_mass_flx_e = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        p_out_e = helpers.zero_field(grid, dims.EdgeDim, dims.KDim)
+        z_lsq_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_3 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         horizontal_start = (

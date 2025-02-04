@@ -11,12 +11,13 @@ from unittest import mock
 import gt4py.next as gtx
 import numpy as np
 import pytest
+
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-
-from icon4pytools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.tools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
 
 from . import utils
 
@@ -169,10 +170,10 @@ def test_diffusion_wrapper_granule_inputs(
     expected_edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     expected_interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],

@@ -13,18 +13,18 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def update_theta_and_exner_numpy(
-    mesh,
-    z_temp: np.array,
-    area: np.array,
-    theta_v: np.array,
-    exner: np.array,
+    z_temp: np.ndarray,
+    area: np.ndarray,
+    theta_v: np.ndarray,
+    exner: np.ndarray,
     rd_o_cvd: float,
-) -> tuple[np.array]:
+) -> tuple[np.ndarray, np.ndarray]:
     area = np.expand_dims(area, axis=-1)
     z_theta = theta_v
     theta_v = theta_v + (area * z_temp)
@@ -39,14 +39,14 @@ class TestUpdateThetaAndExner(StencilTest):
     @staticmethod
     def reference(
         grid,
-        z_temp: np.array,
-        area: np.array,
-        theta_v: np.array,
-        exner: np.array,
+        z_temp: np.ndarray,
+        area: np.ndarray,
+        theta_v: np.ndarray,
+        exner: np.ndarray,
         rd_o_cvd: float,
         **kwargs,
-    ) -> tuple[np.array]:
-        theta_v, exner = update_theta_and_exner_numpy(grid, z_temp, area, theta_v, exner, rd_o_cvd)
+    ) -> dict:
+        theta_v, exner = update_theta_and_exner_numpy(z_temp, area, theta_v, exner, rd_o_cvd)
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture

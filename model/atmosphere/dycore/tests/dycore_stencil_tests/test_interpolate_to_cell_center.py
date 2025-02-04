@@ -9,33 +9,33 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
     interpolate_to_cell_center,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    as_1D_sparse_field,
-    random_field,
-    zero_field,
-)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing import helpers
 
 
 def interpolate_to_cell_center_numpy(
-    grid, interpolant: np.array, e_bln_c_s: np.array, **kwargs
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    interpolant: np.ndarray,
+    e_bln_c_s: np.ndarray,
+    **kwargs,
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    c2ce = grid.get_offset_provider("C2CE").table
+    c2e = connectivities[dims.C2EDim]
+    c2ce = helpers.as_1d_connectivity(c2e)
 
     interpolation = np.sum(
-        interpolant[grid.connectivities[dims.C2EDim]] * e_bln_c_s[c2ce],
+        interpolant[c2e] * e_bln_c_s[c2ce],
         axis=1,
     )
     return interpolation
 
 
-class TestInterpolateToCellCenter(StencilTest):
+class TestInterpolateToCellCenter(helpers.StencilTest):
     PROGRAM = interpolate_to_cell_center
     OUTPUTS = ("interpolation",)
 
@@ -46,13 +46,13 @@ class TestInterpolateToCellCenter(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        interpolant = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
-        interpolation = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        interpolant = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
+        interpolation = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             interpolant=interpolant,
-            e_bln_c_s=as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+            e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
             interpolation=interpolation,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

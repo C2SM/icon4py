@@ -7,9 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import enum
-import functools
 import logging
 import pathlib
+import uuid
+
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.atmosphere.dycore import dycore_states
@@ -23,21 +25,18 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.test_utils import (
-    datatest_utils as dt_utils,
-    helpers,
-    serialbox_utils as sb,
-)
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.driver import (
     serialbox_helpers as driver_sb,
 )
 from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
+from icon4py.model.testing import serialbox as sb
 
 
+# TODO(egparedes): Read these hardcoded constants from grid file
 GRID_LEVEL = 4
 GRID_ROOT = 2
-GLOBAL_GRID_ID = dt_utils.GRID_IDS[dt_utils.GLOBAL_EXPERIMENT]
+GLOBAL_GRID_ID = uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba")
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = "The requested experiment type is not implemented."
@@ -62,6 +61,7 @@ class ExperimentType(str, enum.Enum):
 
 def read_icon_grid(
     path: pathlib.Path,
+    backend: gtx_backend.Backend,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
@@ -82,16 +82,22 @@ def read_icon_grid(
     """
     if ser_type == SerializationType.SB:
         return (
-            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+            sb.IconSerialDataProvider(
+                backend=backend,
+                fname_prefix="icon_pydycore",
+                path=str(path.absolute()),
+                do_print=False,
+                mpi_rank=rank,
+            )
             .from_savepoint_grid(grid_id, grid_root, grid_level)
-            .construct_icon_grid(on_gpu=False)
+            .construct_icon_grid(on_gpu=data_alloc.is_cupy_device(backend))
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
 def model_initialization_serialbox(
-    grid: icon_grid.IconGrid, path: pathlib.Path, rank=0
+    grid: icon_grid.IconGrid, path: pathlib.Path, backend: gtx_backend.Backend, rank=0
 ) -> tuple[
     diffusion_states.DiffusionDiagnosticState,
     dycore_states.DiagnosticStateNonHydro,
@@ -114,7 +120,7 @@ def model_initialization_serialbox(
         variables (now and next).
     """
 
-    data_provider = _serial_data_provider(path, rank)
+    data_provider = _serial_data_provider(backend, path, rank)
     diffusion_init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
     )
@@ -157,14 +163,20 @@ def model_initialization_serialbox(
     )
 
     diagnostic_state = diagnostics.DiagnosticState(
-        pressure=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        pressure_ifc=field_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True
+        pressure=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
         ),
-        temperature=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        virtual_temperature=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        u=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
-        v=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        pressure_ifc=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        ),
+        temperature=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ),
+        virtual_temperature=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ),
+        u=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend),
+        v=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend),
     )
 
     prognostic_state_next = prognostics.PrognosticState(
@@ -179,7 +191,7 @@ def model_initialization_serialbox(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
         mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
     )
 
     return (
@@ -198,6 +210,7 @@ def read_initial_state(
     cell_param: grid_states.CellParams,
     edge_param: grid_states.EdgeParams,
     path: pathlib.Path,
+    backend: gtx_backend.Backend,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -217,6 +230,7 @@ def read_initial_state(
         cell_param: cell properties
         edge_param: edge properties
         path: path to the serialized input data
+        backend: GT4Py backend
         rank: mpi rank of the current compute node
         experiment_type: (optional) defaults to ANY=any, type of initial condition to be read
 
@@ -234,7 +248,12 @@ def read_initial_state(
             prognostic_state_now,
             prognostic_state_next,
         ) = jablonowski_williamson.model_initialization_jabw(
-            grid, cell_param, edge_param, path, rank
+            grid=grid,
+            cell_param=cell_param,
+            edge_param=edge_param,
+            path=path,
+            backend=backend,
+            rank=rank,
         )
     elif experiment_type == ExperimentType.GAUSS3D:
         (
@@ -245,7 +264,13 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = gauss3d.model_initialization_gauss3d(grid, edge_param, path, rank)
+        ) = gauss3d.model_initialization_gauss3d(
+            grid=grid,
+            edge_param=edge_param,
+            path=path,
+            backend=backend,
+            rank=rank,
+        )
     elif experiment_type == ExperimentType.ANY:
         (
             diffusion_diagnostic_state,
@@ -255,7 +280,12 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = model_initialization_serialbox(grid, path, rank)
+        ) = model_initialization_serialbox(
+            grid=grid,
+            path=path,
+            backend=backend,
+            rank=rank,
+        )
     else:
         raise NotImplementedError(INITIALIZATION_ERROR_MSG)
 
@@ -273,6 +303,7 @@ def read_initial_state(
 def read_geometry_fields(
     path: pathlib.Path,
     vertical_grid_config: v_grid.VerticalGridConfig,
+    backend: gtx_backend.Backend,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
@@ -300,10 +331,10 @@ def read_geometry_fields(
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
     """
     if ser_type == SerializationType.SB:
-        sp = _grid_savepoint(path, rank, grid_id, grid_root, grid_level)
+        sp = _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
-        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config)
+        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config, backend)
         vertical_geometry = v_grid.VerticalGrid(
             config=vertical_grid_config,
             vct_a=vct_a,
@@ -315,20 +346,29 @@ def read_geometry_fields(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-@functools.cache
-def _serial_data_provider(path, rank) -> sb.IconSerialDataProvider:
-    return sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+# TODO (Chia RUu): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
+def _serial_data_provider(backend, path, rank) -> sb.IconSerialDataProvider:
+    return sb.IconSerialDataProvider(
+        backend=backend,
+        fname_prefix="icon_pydycore",
+        path=str(path.absolute()),
+        do_print=False,
+        mpi_rank=rank,
+    )
 
 
-@functools.cache
-def _grid_savepoint(path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
-    sp = _serial_data_provider(path, rank).from_savepoint_grid(grid_id, grid_root, grid_level)
+# TODO (Chia RUu): cannot be cached (@functools.cache) after adding backend. TypeError: unhashable type: 'CompiledbFactory'
+def _grid_savepoint(backend, path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
+    sp = _serial_data_provider(backend, path, rank).from_savepoint_grid(
+        grid_id, grid_root, grid_level
+    )
     return sp
 
 
 def read_decomp_info(
     path: pathlib.Path,
     procs_props: decomposition.ProcessProperties,
+    backend: gtx_backend.Backend,
     ser_type=SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
     grid_root=GRID_ROOT,
@@ -336,7 +376,7 @@ def read_decomp_info(
 ) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
         return _grid_savepoint(
-            path, procs_props.rank, grid_id, grid_root, grid_level
+            backend, path, procs_props.rank, grid_id, grid_root, grid_level
         ).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -345,6 +385,7 @@ def read_decomp_info(
 def read_static_fields(
     grid: icon_grid.IconGrid,
     path: pathlib.Path,
+    backend: gtx_backend.Backend,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
@@ -369,7 +410,7 @@ def read_static_fields(
 
     """
     if ser_type == SerializationType.SB:
-        data_provider = _serial_data_provider(path, rank)
+        data_provider = _serial_data_provider(backend, path, rank)
 
         diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
             data_provider.from_interpolation_savepoint()
@@ -388,10 +429,14 @@ def read_static_fields(
             pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
             pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
             rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+            e_bln_c_s=data_alloc.as_1D_sparse_field(
+                interpolation_savepoint.e_bln_c_s(), dims.CEDim
+            ),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
             rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+            geofac_div=data_alloc.as_1D_sparse_field(
+                interpolation_savepoint.geofac_div(), dims.CEDim
+            ),
             geofac_n2s=interpolation_savepoint.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],
@@ -454,6 +499,7 @@ def read_static_fields(
 def configure_logging(
     run_path: str,
     experiment_name: str,
+    enable_output: bool = True,
     processor_procs: decomposition.ProcessProperties = None,
 ) -> None:
     """
@@ -472,8 +518,9 @@ def configure_logging(
     run_dir.mkdir(exist_ok=True)
     logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
     logfile.touch(exist_ok=True)
+    logging_level = logging.DEBUG if enable_output else logging.CRITICAL
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging_level,
         format="%(asctime)s %(filename)-20s (%(lineno)-4d) : %(funcName)-20s:  %(levelname)-8s %(message)s",
         filemode="w",
         filename=logfile,
@@ -485,5 +532,5 @@ def configure_logging(
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.DEBUG)
+    console_handler.setLevel(logging_level)
     logging.getLogger("").addHandler(console_handler)

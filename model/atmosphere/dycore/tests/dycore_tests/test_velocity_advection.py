@@ -15,7 +15,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 from . import utils
 
@@ -141,6 +141,7 @@ def test_verify_velocity_init_against_regular_savepoint(
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 @pytest.mark.parametrize(
@@ -312,6 +313,7 @@ def test_velocity_predictor_step(
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(

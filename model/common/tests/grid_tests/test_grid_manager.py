@@ -9,6 +9,7 @@
 
 import logging
 import typing
+from typing import Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -23,7 +24,8 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.grid.grid_manager import GeometryName
-from icon4py.model.common.test_utils import (
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
     helpers,
@@ -55,7 +57,7 @@ ZERO_BASE = gm.ToZeroBasedIndexTransformation()
 managers = {}
 
 
-def _run_grid_manager(file: str, backend: gtx_backend.Backend) -> gm.GridManager:
+def _run_grid_manager(file: str, backend: Optional[gtx_backend.Backend]) -> gm.GridManager:
     if not managers.get(file):
         manager = gridtest_utils.get_grid_manager(file, num_levels=1, backend=backend)
         managers[file] = manager
@@ -154,7 +156,7 @@ def test_grid_manager_eval_v2e(caplog, grid_savepoint, experiment, grid_file, ba
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(seralized_v2e)
-    v2e_table = grid.get_offset_provider("V2E").table
+    v2e_table = data_alloc.as_numpy(grid.get_offset_provider("V2E").table)
     assert has_invalid_index(v2e_table)
     reset_invalid_index(seralized_v2e)
     assert np.allclose(v2e_table, seralized_v2e)
@@ -193,15 +195,16 @@ def test_grid_manager_eval_v2c(caplog, grid_savepoint, experiment, grid_file, ba
     caplog.set_level(logging.DEBUG)
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_v2c = grid_savepoint.v2c()
+    v2c_table = data_alloc.as_numpy(grid.get_offset_provider("V2C").table)
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
     # hence in the grid file there are "missing values"
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(serialized_v2c)
-    assert has_invalid_index(grid.get_offset_provider("V2C").table)
+    assert has_invalid_index(v2c_table)
     reset_invalid_index(serialized_v2c)
 
-    assert np.allclose(grid.get_offset_provider("V2C").table, serialized_v2c)
+    assert np.allclose(v2c_table, serialized_v2c)
 
 
 def reset_invalid_index(index_array: np.ndarray):
@@ -246,11 +249,12 @@ def test_grid_manager_eval_e2v(caplog, grid_savepoint, grid_file, experiment, ba
     grid = _run_grid_manager(grid_file, backend).grid
 
     serialized_e2v = grid_savepoint.e2v()
+    e2v_table = data_alloc.as_numpy(grid.get_offset_provider("E2V").table)
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
     # hence this connectivity has no "missing values" in the grid file
     assert not has_invalid_index(serialized_e2v)
-    assert not has_invalid_index(grid.get_offset_provider("E2V").table)
-    assert np.allclose(grid.get_offset_provider("E2V").table, serialized_e2v)
+    assert not has_invalid_index(e2v_table)
+    assert np.allclose(e2v_table, serialized_e2v)
 
 
 def has_invalid_index(ar: np.ndarray):
@@ -297,7 +301,7 @@ def test_grid_manager_eval_e2c(caplog, grid_savepoint, grid_file, experiment, ba
 
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_e2c = grid_savepoint.e2c()
-    e2c_table = grid.get_offset_provider("E2C").table
+    e2c_table = data_alloc.as_numpy(grid.get_offset_provider("E2C").table)
     assert_invalid_indices(serialized_e2c, grid_file)
     assert_invalid_indices(e2c_table, grid_file)
     assert np.allclose(e2c_table, serialized_e2c)
@@ -318,12 +322,13 @@ def test_grid_manager_eval_c2e(caplog, grid_savepoint, grid_file, experiment, ba
     grid = _run_grid_manager(grid_file, backend).grid
 
     serialized_c2e = grid_savepoint.c2e()
+    c2e_table = data_alloc.as_numpy(grid.get_offset_provider("C2E").table)
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
     # first place
     # hence there are no "missing values" in the grid file
     assert not has_invalid_index(serialized_c2e)
-    assert not has_invalid_index(grid.get_offset_provider("C2E").table)
-    assert np.allclose(grid.get_offset_provider("C2E").table, serialized_c2e)
+    assert not has_invalid_index(c2e_table)
+    assert np.allclose(c2e_table, serialized_c2e)
 
 
 # c2e2c: exists in  serial, simple_mesh, grid
@@ -340,7 +345,7 @@ def test_grid_manager_eval_c2e2c(caplog, grid_savepoint, grid_file, experiment, 
     caplog.set_level(logging.DEBUG)
     grid = _run_grid_manager(grid_file, backend).grid
     assert np.allclose(
-        grid.get_offset_provider("C2E2C").table,
+        data_alloc.as_numpy(grid.get_offset_provider("C2E2C").table),
         grid_savepoint.c2e2c(),
     )
 
@@ -359,7 +364,7 @@ def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file, experiment,
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
-        grid.get_offset_provider("C2E2CO").table,
+        data_alloc.as_numpy(grid.get_offset_provider("C2E2CO").table),
         serialized_grid.get_offset_provider("C2E2CO").table,
     )
 
@@ -382,8 +387,8 @@ def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, 
     serialized_e2c2eO = serialized_grid.get_offset_provider("E2C2EO").table
     assert_invalid_indices(serialized_e2c2e, grid_file)
 
-    e2c2e_table = grid.get_offset_provider("E2C2E").table
-    e2c2eO_table = grid.get_offset_provider("E2C2EO").table
+    e2c2e_table = data_alloc.as_numpy(grid.get_offset_provider("E2C2E").table)
+    e2c2eO_table = data_alloc.as_numpy(grid.get_offset_provider("E2C2EO").table)
 
     assert_invalid_indices(e2c2e_table, grid_file)
     # ICON calculates diamond edges only from rl_start = 2 (lateral_boundary(dims.EdgeDim) + 1 for
@@ -411,7 +416,7 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
     serialized_ref = grid_savepoint.e2c2v()
     # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
     #   (lateral_boundary(dims.EdgeDim) + 1) to end(dims.EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
-    table = grid.get_offset_provider("E2C2V").table
+    table = data_alloc.as_numpy(grid.get_offset_provider("E2C2V").table)
     start_index = grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
@@ -432,7 +437,7 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
 def test_grid_manager_eval_c2v(caplog, grid_savepoint, grid_file, backend):
     caplog.set_level(logging.DEBUG)
     grid = _run_grid_manager(grid_file, backend).grid
-    c2v = grid.get_offset_provider("C2V").table
+    c2v = data_alloc.as_numpy(grid.get_offset_provider("C2V").table)
     assert np.allclose(c2v, grid_savepoint.c2v())
 
 
@@ -605,29 +610,12 @@ def test_tangent_orientation(grid_file, grid_savepoint, backend):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
-    expected = grid_savepoint.edge_orientation()
-    manager = _run_grid_manager(grid_file, backend=backend)
-    geometry_fields = manager.geometry
-    assert helpers.dallclose(
-        geometry_fields[GeometryName.CELL_NORMAL_ORIENTATION].ndarray, expected.ndarray
-    )
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "grid_file, experiment",
-    [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
-        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
-    ],
-)
 def test_edge_orientation_on_vertex(grid_file, grid_savepoint, backend):
     expected = grid_savepoint.vertex_edge_orientation()
     manager = _run_grid_manager(grid_file, backend=backend)
     geometry_fields = manager.geometry
     assert helpers.dallclose(
-        geometry_fields[GeometryName.EDGE_ORIENTATION_ON_VERTEX].ndarray, expected.ndarray
+        geometry_fields[GeometryName.EDGE_ORIENTATION_ON_VERTEX].asnumpy(), expected.asnumpy()
     )
 
 
@@ -643,7 +631,7 @@ def test_dual_area(grid_file, grid_savepoint, backend):
     expected = grid_savepoint.vertex_dual_area()
     manager = _run_grid_manager(grid_file, backend=backend)
     geometry_fields = manager.geometry
-    assert helpers.dallclose(geometry_fields[GeometryName.DUAL_AREA].ndarray, expected.ndarray)
+    assert helpers.dallclose(geometry_fields[GeometryName.DUAL_AREA].asnumpy(), expected.asnumpy())
 
 
 @pytest.mark.datatest
@@ -661,6 +649,43 @@ def test_edge_cell_distance(grid_file, grid_savepoint, backend):
 
     assert helpers.dallclose(
         geometry_fields[GeometryName.EDGE_CELL_DISTANCE].asnumpy(),
+        expected.asnumpy(),
+        equal_nan=True,
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_cell_normal_orientation(grid_file, grid_savepoint, backend):
+    expected = grid_savepoint.edge_orientation()
+    manager = _run_grid_manager(grid_file, backend=backend)
+    geometry_fields = manager.geometry
+    assert helpers.dallclose(
+        geometry_fields[GeometryName.CELL_NORMAL_ORIENTATION].asnumpy(), expected.asnumpy()
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_edge_vertex_distance(grid_file, grid_savepoint, backend):
+    expected = grid_savepoint.edge_vert_length()
+    manager = _run_grid_manager(grid_file, backend=backend)
+    geometry_fields = manager.geometry
+
+    assert helpers.dallclose(
+        geometry_fields[GeometryName.EDGE_VERTEX_DISTANCE].asnumpy(),
         expected.asnumpy(),
         equal_nan=True,
     )

@@ -13,12 +13,12 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn i
     apply_nabla2_and_nabla4_to_vn,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def apply_nabla2_and_nabla4_to_vn_numpy(
-    grid,
     area_edge,
     kh_smag_e,
     z_nabla2_e,
@@ -82,7 +82,6 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
         **kwargs,
     ):
         vn = apply_nabla2_and_nabla4_to_vn_numpy(
-            grid,
             area_edge,
             kh_smag_e,
             z_nabla2_e,

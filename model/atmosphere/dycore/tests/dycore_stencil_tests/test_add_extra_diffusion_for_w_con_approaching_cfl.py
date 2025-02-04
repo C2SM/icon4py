@@ -13,25 +13,26 @@ from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_appr
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field, random_mask
+from icon4py.model.testing.helpers import StencilTest
 
 
 def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
-    grid,
-    levmask: np.array,
-    cfl_clipping: np.array,
-    owner_mask: np.array,
-    z_w_con_c: np.array,
-    ddqz_z_half: np.array,
-    area: np.array,
-    geofac_n2s: np.array,
-    w: np.array,
-    ddt_w_adv: np.array,
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    levmask: np.ndarray,
+    cfl_clipping: np.ndarray,
+    owner_mask: np.ndarray,
+    z_w_con_c: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    area: np.ndarray,
+    geofac_n2s: np.ndarray,
+    w: np.ndarray,
+    ddt_w_adv: np.ndarray,
     scalfac_exdiff: float,
     cfl_w_limit: float,
     dtime: float,
-) -> np.array:
+) -> np.ndarray:
     levmask = np.expand_dims(levmask, axis=0)
     owner_mask = np.expand_dims(owner_mask, axis=-1)
     area = np.expand_dims(area, axis=-1)
@@ -47,6 +48,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
         0,
     )
 
+    c2e2cO = connectivities[dims.C2E2CODim]
     ddt_w_adv = np.where(
         (levmask == 1) & (cfl_clipping == 1) & (owner_mask == 1),
         ddt_w_adv
@@ -54,8 +56,8 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
         * area
         * np.sum(
             np.where(
-                (grid.connectivities[dims.C2E2CODim] != -1)[:, :, np.newaxis],
-                w[grid.connectivities[dims.C2E2CODim]] * geofac_n2s,
+                (c2e2cO != -1)[:, :, np.newaxis],
+                w[c2e2cO] * geofac_n2s,
                 0,
             ),
             axis=1,
@@ -68,26 +70,27 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
 class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
     PROGRAM = add_extra_diffusion_for_w_con_approaching_cfl
     OUTPUTS = ("ddt_w_adv",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid,
-        levmask: np.array,
-        cfl_clipping: np.array,
-        owner_mask: np.array,
-        z_w_con_c: np.array,
-        ddqz_z_half: np.array,
-        area: np.array,
-        geofac_n2s: np.array,
-        w: np.array,
-        ddt_w_adv: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        levmask: np.ndarray,
+        cfl_clipping: np.ndarray,
+        owner_mask: np.ndarray,
+        z_w_con_c: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        area: np.ndarray,
+        geofac_n2s: np.ndarray,
+        w: np.ndarray,
+        ddt_w_adv: np.ndarray,
         scalfac_exdiff: wpfloat,
         cfl_w_limit: wpfloat,
         dtime: wpfloat,
         **kwargs,
     ):
         ddt_w_adv = add_extra_diffusion_for_w_con_approaching_cfl_numpy(
-            grid,
+            connectivities,
             levmask,
             cfl_clipping,
             owner_mask,

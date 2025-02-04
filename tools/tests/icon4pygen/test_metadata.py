@@ -9,9 +9,9 @@
 import gt4py.next as gtx
 import pytest
 from gt4py.next.ffront.decorator import field_operator, program
-from icon4py.model.common import dimension as dims
 
-from icon4pytools.common.metadata import _get_field_infos, _provide_neighbor_table
+from icon4py.model.common import dimension as dims
+from icon4py.tools.common.metadata import _get_field_infos, _provide_neighbor_table
 
 
 chain_false_skipvalues = [

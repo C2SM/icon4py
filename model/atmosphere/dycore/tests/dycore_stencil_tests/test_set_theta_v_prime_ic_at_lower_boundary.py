@@ -13,8 +13,9 @@ from icon4py.model.atmosphere.dycore.stencils.set_theta_v_prime_ic_at_lower_boun
     set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 from .test_interpolate_to_surface import interpolate_to_surface_numpy
 
@@ -26,15 +27,14 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
     @staticmethod
     def reference(
         grid,
-        wgtfacq_c: np.array,
-        z_rth_pr: np.array,
-        theta_ref_ic: np.array,
-        z_theta_v_pr_ic: np.array,
-        theta_v_ic: np.array,
+        wgtfacq_c: np.ndarray,
+        z_rth_pr: np.ndarray,
+        theta_ref_ic: np.ndarray,
+        z_theta_v_pr_ic: np.ndarray,
+        theta_v_ic: np.ndarray,
         **kwargs,
     ) -> dict:
         z_theta_v_pr_ic = interpolate_to_surface_numpy(
-            grid=grid,
             wgtfacq_c=wgtfacq_c,
             interpolant=z_rth_pr,
             interpolation_to_surface=z_theta_v_pr_ic,

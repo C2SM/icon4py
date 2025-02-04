@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 from cffi import FFI
 
-from icon4pytools.py2fgen.plugin import generate_and_compile_cffi_plugin, unpack
+from icon4py.tools.py2fgen.plugin import generate_and_compile_cffi_plugin, unpack
 
 
 @pytest.fixture

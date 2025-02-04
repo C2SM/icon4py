@@ -13,17 +13,17 @@ from icon4py.model.atmosphere.dycore.stencils.compute_maximum_cfl_and_clip_contr
     compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
+from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import (
     random_field,
     random_mask,
     zero_field,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
-    mesh, ddqz_z_half: np.array, z_w_con_c: np.array, cfl_w_limit, dtime
+    ddqz_z_half: np.ndarray, z_w_con_c: np.ndarray, cfl_w_limit: float, dtime: float
 ) -> tuple:
     num_rows, num_cols = z_w_con_c.shape
     cfl_clipping = np.where(
@@ -58,7 +58,7 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
             vcfl,
             z_w_con_c,
         ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
-            grid, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
+            ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
         )
 
         return dict(

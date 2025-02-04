@@ -10,7 +10,8 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.common.utils.data_allocation as data_alloc
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.compute_positive_definite_horizontal_multiplicative_flux_factor import (
     compute_positive_definite_horizontal_multiplicative_flux_factor,
 )
@@ -23,7 +24,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.ndarray,
         p_cc: np.ndarray,
         p_rhodz_now: np.ndarray,
@@ -32,19 +33,20 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
         dbl_eps,
         **kwargs,
     ) -> dict:
-        geofac_div = helpers.reshape(geofac_div, grid.connectivities[dims.C2EDim].shape)
+        c2e = connectivities[dims.C2EDim]
+        geofac_div = helpers.reshape(geofac_div, c2e.shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         p_m_0 = np.maximum(
             0.0,
-            p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 0]] * geofac_div[:, 0] * p_dtime,
+            p_mflx_tracer_h[c2e[:, 0]] * geofac_div[:, 0] * p_dtime,
         )
         p_m_1 = np.maximum(
             0.0,
-            p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 1]] * geofac_div[:, 1] * p_dtime,
+            p_mflx_tracer_h[c2e[:, 1]] * geofac_div[:, 1] * p_dtime,
         )
         p_m_2 = np.maximum(
             0.0,
-            p_mflx_tracer_h[grid.connectivities[dims.C2EDim][:, 2]] * geofac_div[:, 2] * p_dtime,
+            p_mflx_tracer_h[c2e[:, 2]] * geofac_div[:, 2] * p_dtime,
         )
 
         p_m = p_m_0 + p_m_1 + p_m_2
@@ -54,12 +56,12 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        geofac_div = helpers.random_field(grid, dims.CellDim, dims.C2EDim)
-        geofac_div_new = helpers.as_1D_sparse_field(geofac_div, dims.CEDim)
-        p_cc = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_rhodz_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        p_mflx_tracer_h = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        r_m = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
+        geofac_div_new = data_alloc.as_1D_sparse_field(geofac_div, dims.CEDim)
+        p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        r_m = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         p_dtime = np.float64(5)
         dbl_eps = np.float64(1e-9)
         return dict(

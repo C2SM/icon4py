@@ -13,8 +13,9 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
@@ -23,9 +24,13 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array, **kwargs
-    ) -> tuple[np.array]:
-        v2e = grid.connectivities[dims.V2EDim]
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_e_in: np.ndarray,
+        ptr_coeff_1: np.ndarray,
+        ptr_coeff_2: np.ndarray,
+        **kwargs,
+    ) -> dict[str, np.ndarray]:
+        v2e = connectivities[dims.V2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         p_u_out = np.sum(p_e_in[v2e] * ptr_coeff_1, axis=1)
 
@@ -36,11 +41,13 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_e_in = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ptr_coeff_1 = random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
-        ptr_coeff_2 = random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
-        p_v_out = zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
-        p_u_out = zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
+        if grid.get_offset_provider("V2E").has_skip_values:
+            pytest.xfail("Stencil does not support missing neighbors.")
+        p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        ptr_coeff_1 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
+        ptr_coeff_2 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
+        p_v_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
+        p_u_out = data_alloc.zero_field(grid, dims.VertexDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             p_e_in=p_e_in,

@@ -14,13 +14,13 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
+from icon4py.model.common.utils.data_allocation import (
     as_1D_sparse_field,
     random_field,
     random_mask,
     zero_field,
 )
+from icon4py.model.testing.helpers import StencilTest
 
 from .test_add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy,
@@ -34,10 +34,11 @@ from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_19_to_20
     OUTPUTS = ("ddt_vn_apc",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         vn,
         geofac_rot,
         z_kin_hor_e,
@@ -65,12 +66,10 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         **kwargs,
     ):
         ddt_vn_apc_cp = ddt_vn_apc.copy()
-        zeta = mo_math_divrot_rot_vertex_ri_dsl_numpy(grid, vn, geofac_rot)
-
-        coeff_gradekin = np.reshape(coeff_gradekin, (grid.num_edges, 2))
+        zeta = mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vn, geofac_rot)
 
         ddt_vn_apc = compute_advective_normal_wind_tendency_numpy(
-            grid,
+            connectivities,
             z_kin_hor_e,
             coeff_gradekin,
             z_ekinh,
@@ -86,7 +85,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         condition = (np.maximum(2, nrdmax - 2) <= k) & (k < nlev - 3)
 
         ddt_vn_apc_extra_diffu = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
-            grid,
+            connectivities,
             levelmask,
             c_lin_e,
             z_w_con_c_full,

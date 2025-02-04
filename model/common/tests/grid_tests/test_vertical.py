@@ -13,7 +13,7 @@ import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, grid_utils, helpers
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils, helpers
 
 
 NUM_LEVELS = grid_utils.MCH_CH_R04B09_LEVELS
@@ -277,6 +277,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     stretch_factor,
     damping_height,
     htop_moist_proc,
+    backend,
 ):
     vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(dims.KDim),
@@ -289,7 +290,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
         rayleigh_damping_height=damping_height,
         htop_moist_proc=htop_moist_proc,
     )
-    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config, backend)
 
-    assert helpers.dallclose(vct_a.ndarray, grid_savepoint.vct_a().ndarray)
-    assert helpers.dallclose(vct_b.ndarray, grid_savepoint.vct_b().ndarray)
+    assert helpers.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
+    assert helpers.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())

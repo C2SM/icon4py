@@ -13,25 +13,27 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates
     OUTPUTS = ("z_gradh_exner",)
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
-        grid,
-        inv_dual_edge_length: np.array,
-        z_exner_ex_pr: np.array,
-        ddxn_z_full: np.array,
-        c_lin_e: np.array,
-        z_dexner_dz_c_1: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        inv_dual_edge_length: np.ndarray,
+        z_exner_ex_pr: np.ndarray,
+        ddxn_z_full: np.ndarray,
+        c_lin_e: np.ndarray,
+        z_dexner_dz_c_1: np.ndarray,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
         c_lin_e = np.expand_dims(c_lin_e, axis=-1)
 
@@ -45,9 +47,6 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

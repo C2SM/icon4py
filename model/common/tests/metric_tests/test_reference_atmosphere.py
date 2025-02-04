@@ -8,8 +8,8 @@
 import gt4py.next as gtx
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
 import icon4py.model.common.type_alias as ta
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
@@ -21,7 +21,8 @@ from icon4py.model.common.metrics.reference_atmosphere import (
     compute_reference_atmosphere_cell_fields,
     compute_reference_atmosphere_edge_fields,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils as dt_utils
 
 
 # TODO (@halungge) some tests need to run on a compiled backend: embedded does not work with the
@@ -40,10 +41,18 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
     z_ifc = metrics_savepoint.z_ifc()
 
-    exner_ref_mc = helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-    rho_ref_mc = helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-    theta_ref_mc = helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-    z_mc = helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+    exner_ref_mc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    rho_ref_mc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    theta_ref_mc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    z_mc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
     start = 0
     horizontal_end = icon_grid.num_cells
     vertical_end = icon_grid.num_levels
@@ -92,14 +101,14 @@ def test_compute_reference_atmsophere_on_half_level_mass_points(
     theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
     z_ifc = metrics_savepoint.z_ifc()
 
-    exner_ref_ic = helpers.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+    exner_ref_ic = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat, backend=backend
     )
-    rho_ref_ic = helpers.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+    rho_ref_ic = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat, backend=backend
     )
-    theta_ref_ic = helpers.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat
+    theta_ref_ic = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat, backend=backend
     )
     start = 0
     horizontal_end = icon_grid.num_cells
@@ -135,8 +144,8 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
         pytest.skip("skipping: slow backend")
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
-    d_exner_dz_ref_ic = helpers.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
+    d_exner_dz_ref_ic = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
     compute_d_exner_dz_ref_ic.with_backend(backend)(
         theta_ref_ic=theta_ref_ic,
@@ -163,8 +172,12 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     c_lin_e = interpolation_savepoint.c_lin_e()
 
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-    z_me = helpers.zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+    z_mc = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
+    z_me = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat, backend=backend
+    )
     horizontal_start = icon_grid.start_index(
         horizontal.domain(dims.EdgeDim)(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )

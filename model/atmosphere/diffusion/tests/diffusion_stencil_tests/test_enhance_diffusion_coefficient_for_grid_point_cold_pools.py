@@ -15,8 +15,9 @@ from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_f
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
@@ -24,8 +25,13 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
     OUTPUTS = ("kh_smag_e",)
 
     @staticmethod
-    def reference(grid, kh_smag_e: np.array, enh_diffu_3d: np.array, **kwargs) -> np.array:
-        e2c = grid.connectivities[dims.E2CDim]
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        kh_smag_e: np.ndarray,
+        enh_diffu_3d: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        e2c = connectivities[dims.E2CDim]
         kh_smag_e = np.maximum(
             kh_smag_e,
             np.max(

@@ -6,11 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import functools
+from typing import Optional
 
 import gt4py.next as gtx
 from gt4py.next import backend as gtx_backend
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
     geometry,
@@ -23,11 +24,12 @@ from icon4py.model.common.interpolation import (
     interpolation_fields,
 )
 from icon4py.model.common.states import factory, model
-from icon4py.model.common.utils import gt4py_field_allocation as alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 cell_domain = h_grid.domain(dims.CellDim)
 edge_domain = h_grid.domain(dims.EdgeDim)
+vertex_domain = h_grid.domain(dims.VertexDim)
 
 
 class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
@@ -36,11 +38,11 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         grid: icon.IconGrid,
         decomposition_info: definitions.DecompositionInfo,
         geometry_source: geometry.GridGeometry,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         metadata: dict[str, model.FieldMetaData],
     ):
         self._backend = backend
-        self._xp = alloc.import_array_ns(backend)
+        self._xp = data_alloc.import_array_ns(backend)
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
         self._grid = grid
         self._decomposition_info = decomposition_info
@@ -48,7 +50,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
         self._providers: dict[str, factory.FieldProvider] = {}
         self._geometry = geometry_source
         # TODO @halungge: Dummy config dict -  to be replaced by real configuration
-        self._config = {"divavg_cntrwgt": 0.5}
+        self._config = {"divavg_cntrwgt": 0.5, "weighting_factor": 0.0}
         self._register_computed_fields()
 
     def __repr__(self):
@@ -71,6 +73,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(geofac_div)
+
         geofac_rot = factory.FieldOperatorProvider(
             # needs to be computed on fieldview-embedded backend
             func=interpolation_fields.compute_geofac_rot.with_backend(None),
@@ -163,6 +166,7 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
         )
         self.register_provider(c_lin_e)
+
         geofac_grg = factory.NumpyFieldsProvider(
             func=functools.partial(interpolation_fields.compute_geofac_grg, array_ns=self._xp),
             fields=(attrs.GEOFAC_GRG_X, attrs.GEOFAC_GRG_Y),
@@ -181,8 +185,103 @@ class InterpolationFieldsFactory(factory.FieldSource, factory.GridProvider):
                 )
             },
         )
-
         self.register_provider(geofac_grg)
+
+        e_flx_avg = factory.NumpyFieldsProvider(
+            func=functools.partial(interpolation_fields.compute_e_flx_avg, array_ns=self._xp),
+            fields=(attrs.E_FLX_AVG,),
+            domain=(dims.EdgeDim, dims.E2C2EODim),
+            deps={
+                "c_bln_avg": attrs.C_BLN_AVG,
+                "geofac_div": attrs.GEOFAC_DIV,
+                "owner_mask": "edge_owner_mask",
+                "primal_cart_normal_x": geometry_attrs.EDGE_NORMAL_X,
+                "primal_cart_normal_y": geometry_attrs.EDGE_NORMAL_Y,
+                "primal_cart_normal_z": geometry_attrs.EDGE_NORMAL_Z,
+            },
+            connectivities={
+                "e2c": dims.E2CDim,
+                "c2e": dims.C2EDim,
+                "c2e2c": dims.C2E2CDim,
+                "e2c2e": dims.E2C2EDim,
+            },
+            params={
+                "horizontal_start_p3": self.grid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
+                ),
+                "horizontal_start_p4": self.grid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
+                ),
+            },
+        )
+        self.register_provider(e_flx_avg)
+
+        e_bln_c_s = factory.NumpyFieldsProvider(
+            func=functools.partial(interpolation_fields.compute_e_bln_c_s, array_ns=self._xp),
+            fields=(attrs.E_BLN_C_S,),
+            domain=(dims.CellDim, dims.C2EDim),
+            deps={
+                "cells_lat": geometry_attrs.CELL_LAT,
+                "cells_lon": geometry_attrs.CELL_LON,
+                "edges_lat": geometry_attrs.EDGE_LAT,
+                "edges_lon": geometry_attrs.EDGE_LON,
+            },
+            connectivities={"c2e": dims.C2EDim},
+            params={"weighting_factor": self._config["weighting_factor"]},
+        )
+        self.register_provider(e_bln_c_s)
+
+        pos_on_tplane_e_x_y = factory.NumpyFieldsProvider(
+            func=functools.partial(
+                interpolation_fields.compute_pos_on_tplane_e_x_y, array_ns=self._xp
+            ),
+            fields=(attrs.POS_ON_TPLANE_E_X, attrs.POS_ON_TPLANE_E_Y),
+            domain=(dims.ECDim,),
+            deps={
+                "primal_normal_v1": geometry_attrs.EDGE_NORMAL_U,
+                "primal_normal_v2": geometry_attrs.EDGE_NORMAL_V,
+                "dual_normal_v1": geometry_attrs.EDGE_DUAL_U,
+                "dual_normal_v2": geometry_attrs.EDGE_DUAL_V,
+                "cells_lon": geometry_attrs.CELL_LON,
+                "cells_lat": geometry_attrs.CELL_LAT,
+                "edges_lon": geometry_attrs.EDGE_LON,
+                "edges_lat": geometry_attrs.EDGE_LAT,
+                "vertex_lon": geometry_attrs.VERTEX_LON,
+                "vertex_lat": geometry_attrs.VERTEX_LAT,
+                "owner_mask": "edge_owner_mask",
+            },
+            connectivities={"e2c": dims.E2CDim, "e2v": dims.E2VDim, "e2c2e": dims.E2C2EDim},
+            params={
+                "grid_sphere_radius": constants.EARTH_RADIUS,
+                "horizontal_start": self.grid.start_index(
+                    edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                ),
+            },
+        )
+        self.register_provider(pos_on_tplane_e_x_y)
+
+        cells_aw_verts = factory.NumpyFieldsProvider(
+            func=functools.partial(interpolation_fields.compute_cells_aw_verts, array_ns=self._xp),
+            fields=(attrs.CELL_AW_VERTS,),
+            domain=(dims.VertexDim, dims.V2CDim),
+            deps={
+                "dual_area": geometry_attrs.DUAL_AREA,
+                "edge_vert_length": geometry_attrs.EDGE_VERTEX_DISTANCE,
+                "edge_cell_length": geometry_attrs.EDGE_CELL_DISTANCE,
+            },
+            connectivities={
+                "v2e": dims.V2EDim,
+                "e2v": dims.E2VDim,
+                "v2c": dims.V2CDim,
+                "e2c": dims.E2CDim,
+            },
+            params={
+                "horizontal_start": self.grid.start_index(
+                    vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                )
+            },
+        )
+        self.register_provider(cells_aw_verts)
 
     @property
     def metadata(self) -> dict[str, model.FieldMetaData]:

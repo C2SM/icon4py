@@ -13,12 +13,18 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
     calculate_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 
-def calculate_horizontal_gradients_for_turbulence_numpy(grid, w, geofac_grg_x, geofac_grg_y):
-    c2e2cO = grid.connectivities[dims.C2E2CODim]
+def calculate_horizontal_gradients_for_turbulence_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    w: np.ndarray,
+    geofac_grg_x: np.ndarray,
+    geofac_grg_y: np.ndarray,
+) -> tuple[: np.ndarray, : np.ndarray]:
+    c2e2cO = connectivities[dims.C2E2CODim]
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
     dwdx = np.sum(np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * w[c2e2cO], 0.0), axis=1)
 
@@ -30,13 +36,18 @@ def calculate_horizontal_gradients_for_turbulence_numpy(grid, w, geofac_grg_x, g
 class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = calculate_horizontal_gradients_for_turbulence
     OUTPUTS = ("dwdx", "dwdy")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid, w: np.array, geofac_grg_x: np.array, geofac_grg_y: np.array, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        w: np.ndarray,
+        geofac_grg_x: np.ndarray,
+        geofac_grg_y: np.ndarray,
+        **kwargs,
     ) -> dict:
         dwdx, dwdy = calculate_horizontal_gradients_for_turbulence_numpy(
-            grid, w, geofac_grg_x, geofac_grg_y
+            connectivities, w, geofac_grg_x, geofac_grg_y
         )
         return dict(dwdx=dwdx, dwdy=dwdy)
 

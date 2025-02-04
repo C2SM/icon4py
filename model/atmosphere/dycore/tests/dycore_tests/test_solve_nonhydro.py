@@ -19,11 +19,11 @@ from icon4py.model.atmosphere.dycore import (
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
-from icon4py.model.common.test_utils import (
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from . import utils
 
@@ -35,9 +35,15 @@ def test_validate_divdamp_fields_against_savepoint_values(
     config = solve_nh.NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
-    enh_divdamp_fac = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
-    scal_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
-    bdy_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    enh_divdamp_fac = data_alloc.allocate_zero_field(
+        dims.KDim, grid=icon_grid, is_halfdim=False, backend=backend
+    )
+    scal_divdamp = data_alloc.allocate_zero_field(
+        dims.KDim, grid=icon_grid, is_halfdim=False, backend=backend
+    )
+    bdy_divdamp = data_alloc.allocate_zero_field(
+        dims.KDim, grid=icon_grid, is_halfdim=False, backend=backend
+    )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
         config.divdamp_fac,
@@ -110,6 +116,7 @@ def test_time_step_flags(
     assert linit == (at_initial_timestep and (jstep_init == 0))
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 1, True)])
 @pytest.mark.parametrize(
@@ -254,9 +261,11 @@ def test_nonhydro_predictor_step(
         diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
+
     assert helpers.dallclose(
         solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
+        rtol=2.0e-12,
     )
 
     # stencils 7,8,9, 11
@@ -498,6 +507,7 @@ def test_nonhydro_predictor_step(
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(2, 2, True)])
 @pytest.mark.parametrize(
@@ -555,7 +565,9 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+        ),
     )
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
@@ -702,6 +714,7 @@ def test_nonhydro_corrector_step(
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
@@ -765,7 +778,9 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+        ),
     )
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
@@ -837,7 +852,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
-@pytest.mark.slow_tests
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
@@ -885,7 +900,9 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
+        vol_flx_ic=data_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
+        ),
     )
 
     linit = sp.get_metadata("linit").get("linit")

@@ -14,22 +14,23 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def calculate_nabla2_for_z_numpy(
-    grid,
-    kh_smag_e: np.array,
-    inv_dual_edge_length: np.array,
-    theta_v: np.array,
-    z_nabla2_e: np.array,
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    kh_smag_e: np.ndarray,
+    inv_dual_edge_length: np.ndarray,
+    theta_v: np.ndarray,
+    z_nabla2_e: np.ndarray,
     **kwargs,
-) -> np.array:
+) -> np.ndarray:
     z_nabla2_e_cp = z_nabla2_e.copy()
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    theta_v_e2c = theta_v[grid.connectivities[dims.E2CDim]]
+    theta_v_e2c = theta_v[connectivities[dims.E2CDim]]
     theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
     z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
@@ -46,15 +47,15 @@ class TestCalculateNabla2ForZ(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        kh_smag_e: np.array,
-        inv_dual_edge_length: np.array,
-        theta_v: np.array,
-        z_nabla2_e: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        kh_smag_e: np.ndarray,
+        inv_dual_edge_length: np.ndarray,
+        theta_v: np.ndarray,
+        z_nabla2_e: np.ndarray,
         **kwargs,
     ) -> dict:
         z_nabla2_e = calculate_nabla2_for_z_numpy(
-            grid, kh_smag_e, inv_dual_edge_length, theta_v, z_nabla2_e, **kwargs
+            connectivities, kh_smag_e, inv_dual_edge_length, theta_v, z_nabla2_e, **kwargs
         )
         return dict(z_nabla2_e=z_nabla2_e)
 

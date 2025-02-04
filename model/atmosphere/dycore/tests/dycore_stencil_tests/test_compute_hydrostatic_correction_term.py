@@ -13,31 +13,32 @@ from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_ter
     compute_hydrostatic_correction_term,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
+from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import (
     flatten_first_two_dims,
     random_field,
     zero_field,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
+    MARKERS = (pytest.mark.uses_as_offset, pytest.mark.skip_value_error)
 
     @staticmethod
     def reference(
-        grid,
-        theta_v: np.array,
-        ikoffset: np.array,
-        zdiff_gradp: np.array,
-        theta_v_ic: np.array,
-        inv_ddqz_z_full: np.array,
-        inv_dual_edge_length: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        theta_v: np.ndarray,
+        ikoffset: np.ndarray,
+        zdiff_gradp: np.ndarray,
+        theta_v_ic: np.ndarray,
+        inv_ddqz_z_full: np.ndarray,
+        inv_dual_edge_length: np.ndarray,
         grav_o_cpd: float,
         **kwargs,
-    ) -> tuple[np.array]:
+    ) -> tuple[np.ndarray]:
         def _apply_index_field(shape, to_index, neighbor_table, offset_field):
             indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
             for iprimary in range(shape[0]):
@@ -53,7 +54,7 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
                         ]
             return indexed, indexed_p1
 
-        e2c = grid.connectivities[dims.E2CDim]
+        e2c = connectivities[dims.E2CDim]
         full_shape = e2c.shape + zdiff_gradp.shape[1:]
         zdiff_gradp = zdiff_gradp.reshape(full_shape)
         ikoffset = ikoffset.reshape(full_shape)
@@ -94,9 +95,6 @@ class TestComputeHydrostaticCorrectionTerm(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):

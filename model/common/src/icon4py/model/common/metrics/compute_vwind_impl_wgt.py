@@ -5,53 +5,53 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from types import ModuleType
 
 import numpy as np
 
-import icon4py.model.common.field_type_aliases as fa
-from icon4py.model.common.grid import base as grid
-from icon4py.model.common.metrics.metric_fields import compute_vwind_impl_wgt_partial
-from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_vwind_impl_wgt(
-    backend,
-    icon_grid: grid.BaseGrid,
-    vct_a: fa.KField[wpfloat],
-    z_ifc: fa.CellKField[wpfloat],
-    z_ddxn_z_half_e: fa.EdgeField[wpfloat],
-    z_ddxt_z_half_e: fa.EdgeField[wpfloat],
-    dual_edge_length: fa.EdgeField[wpfloat],
-    vwind_impl_wgt_full: fa.CellField[wpfloat],
-    vwind_impl_wgt_k: fa.CellField[wpfloat],
-    global_exp: str,
-    experiment: str,
+    c2e: data_alloc.NDArray,
+    vct_a: data_alloc.NDArray,
+    z_ifc: data_alloc.NDArray,
+    z_ddxn_z_half_e: data_alloc.NDArray,
+    z_ddxt_z_half_e: data_alloc.NDArray,
+    dual_edge_length: data_alloc.NDArray,
     vwind_offctr: float,
+    nlev: int,
     horizontal_start_cell: int,
-) -> field_alloc.NDArray:
-    compute_vwind_impl_wgt_partial.with_backend(backend)(
-        z_ddxn_z_half_e=z_ddxn_z_half_e,
-        z_ddxt_z_half_e=z_ddxt_z_half_e,
-        dual_edge_length=dual_edge_length,
-        vct_a=vct_a,
-        z_ifc=z_ifc,
-        vwind_impl_wgt=vwind_impl_wgt_full,
-        vwind_impl_wgt_k=vwind_impl_wgt_k,
-        vwind_offctr=vwind_offctr,
-        horizontal_start=horizontal_start_cell,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=max(10, icon_grid.num_levels - 8),
-        vertical_end=icon_grid.num_levels,
-        offset_provider={
-            "C2E": icon_grid.get_offset_provider("C2E"),
-            "Koff": icon_grid.get_offset_provider("Koff"),
-        },
-    )
+    n_cells: int,
+    array_ns: ModuleType = np,
+) -> data_alloc.NDArray:
+    init_val = 0.5 + vwind_offctr
+    vwind_impl_wgt = array_ns.full(z_ifc.shape[0], init_val)
+    for je in range(horizontal_start_cell, n_cells):
+        zn_off_0 = z_ddxn_z_half_e[c2e[je, 0], nlev]
+        zn_off_1 = z_ddxn_z_half_e[c2e[je, 1], nlev]
+        zn_off_2 = z_ddxn_z_half_e[c2e[je, 2], nlev]
+        zt_off_0 = z_ddxt_z_half_e[c2e[je, 0], nlev]
+        zt_off_1 = z_ddxt_z_half_e[c2e[je, 1], nlev]
+        zt_off_2 = z_ddxt_z_half_e[c2e[je, 2], nlev]
+        z_maxslope = max(
+            abs(zn_off_0), abs(zt_off_0), abs(zn_off_1), abs(zt_off_1), abs(zn_off_2), abs(zt_off_2)
+        )
+        z_diff = max(
+            abs(zn_off_0 * dual_edge_length[c2e[je, 0]]),
+            abs(zn_off_1 * dual_edge_length[c2e[je, 1]]),
+            abs(zn_off_2 * dual_edge_length[c2e[je, 2]]),
+        )
 
-    vwind_impl_wgt = (
-        np.amin(vwind_impl_wgt_k.ndarray, axis=1)
-        if experiment == global_exp
-        else np.amax(vwind_impl_wgt_k.ndarray, axis=1)
-    )
+        z_offctr = max(
+            vwind_offctr, 0.425 * z_maxslope ** (0.75), min(0.25, 0.00025 * (z_diff - 250.0))
+        )
+        z_offctr = min(max(vwind_offctr, 0.75), z_offctr)
+        vwind_impl_wgt[je] = 0.5 + z_offctr
+
+    for jk in range(max(9, nlev - 9), nlev):
+        for je in range(horizontal_start_cell, n_cells):
+            z_diff_2 = (z_ifc[je, jk] - z_ifc[je, jk + 1]) / (vct_a[jk] - vct_a[jk + 1])
+            if z_diff_2 < 0.6:
+                vwind_impl_wgt[je] = max(vwind_impl_wgt[je], 1.2 - z_diff_2)
     return vwind_impl_wgt

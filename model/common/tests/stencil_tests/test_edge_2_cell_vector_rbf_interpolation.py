@@ -13,7 +13,8 @@ from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import helpers
 
 
 class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
@@ -22,9 +23,13 @@ class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_e_in: np.array, ptr_coeff_1: np.array, ptr_coeff_2: np.array, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_e_in: np.array,
+        ptr_coeff_1: np.array,
+        ptr_coeff_2: np.array,
+        **kwargs,
     ) -> dict:
-        c2e2c2e = grid.connectivities[dims.C2E2C2EDim]
+        c2e2c2e = connectivities[dims.C2E2C2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
         ptr_coeff_2 = np.expand_dims(ptr_coeff_2, axis=-1)
         p_u_out = np.sum(p_e_in[c2e2c2e] * ptr_coeff_1, axis=1)
@@ -34,11 +39,13 @@ class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_e_in = helpers.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
-        ptr_coeff_1 = helpers.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
-        ptr_coeff_2 = helpers.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
-        p_v_out = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        p_u_out = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        if grid.get_offset_provider("C2E2C2E").has_skip_values:
+            pytest.xfail("Stencil does not support missing neighbors.")
+        p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        ptr_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
+        ptr_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
+        p_v_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        p_u_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             p_e_in=p_e_in,

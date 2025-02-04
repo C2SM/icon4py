@@ -12,7 +12,8 @@ from icon4py.model.atmosphere.diffusion import diffusion as diffusion_, diffusio
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils, helpers, parallel_helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils, helpers, parallel_helpers
 
 from .. import utils
 
@@ -20,8 +21,8 @@ from .. import utils
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [datatest_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
-@pytest.mark.parametrize("linit", [([True, False])])
-@pytest.mark.parametrize("orchestration", [([True, False])])
+@pytest.mark.parametrize("linit", [True, False])
+@pytest.mark.parametrize("orchestration", [False, True])
 def test_parallel_diffusion(
     experiment,
     step_date_init,
@@ -43,8 +44,8 @@ def test_parallel_diffusion(
     backend,
     orchestration,
 ):
-    if orchestration and ("dace" not in backend.name.lower()):
-        raise pytest.skip("This test is only executed for `dace backends.")
+    if orchestration and not helpers.is_dace(backend):
+        raise pytest.skip("This test is only executed for `dace` backends.")
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
@@ -86,10 +87,14 @@ def test_parallel_diffusion(
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(
+            interpolation_savepoint.e_bln_c_s(), dims.CEDim, backend=backend
+        ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(
+            interpolation_savepoint.geofac_div(), dims.CEDim, backend=backend
+        ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -103,7 +108,9 @@ def test_parallel_diffusion(
         config=config,
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
-            vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
+            vertical_config,
+            grid_savepoint.vct_a(),
+            grid_savepoint.vct_b(),
         ),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -173,7 +180,7 @@ def test_parallel_diffusion_multiple_steps(
     caplog,
     backend,
 ):
-    if "dace" not in backend.name.lower():
+    if not helpers.is_dace(backend):
         raise pytest.skip("This test is only executed for `dace backends.")
     ######################################################################
     # Diffusion initialization
@@ -208,10 +215,14 @@ def test_parallel_diffusion_multiple_steps(
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.as_1D_sparse_field(
+            interpolation_savepoint.e_bln_c_s(), dims.CEDim, backend=backend
+        ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.as_1D_sparse_field(
+            interpolation_savepoint.geofac_div(), dims.CEDim, backend=backend
+        ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -242,7 +253,9 @@ def test_parallel_diffusion_multiple_steps(
         config=config,
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
-            vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
+            vertical_config,
+            grid_savepoint.vct_a(),
+            grid_savepoint.vct_b(),
         ),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -292,7 +305,9 @@ def test_parallel_diffusion_multiple_steps(
         config=config,
         params=diffusion_params,
         vertical_grid=v_grid.VerticalGrid(
-            vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
+            vertical_config,
+            grid_savepoint.vct_a(),
+            grid_savepoint.vct_b(),
         ),
         metric_state=metric_state,
         interpolation_state=interpolation_state,

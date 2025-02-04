@@ -12,14 +12,14 @@ import functools
 import logging
 import math
 import sys
-from typing import Final
+from typing import Final, Optional
 
 import gt4py.next as gtx
 import icon4py.model.common.grid.states as grid_states
 from gt4py.next import int32
 
 import icon4py.model.common.states.prognostic_state as prognostics
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
@@ -63,7 +63,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 from icon4py.model.common.orchestration import decorator as dace_orchestration
 
@@ -363,7 +363,7 @@ class Diffusion:
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: grid_states.EdgeParams,
         cell_params: grid_states.CellParams,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         orchestration: bool = False,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
@@ -468,50 +468,50 @@ class Diffusion:
         )
 
     def _allocate_temporary_fields(self):
-        self.diff_multfac_vn = field_alloc.allocate_zero_field(
+        self.diff_multfac_vn = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.diff_multfac_n2w = field_alloc.allocate_zero_field(
+        self.diff_multfac_n2w = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.smag_limit = field_alloc.allocate_zero_field(
+        self.smag_limit = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.enh_smag_fac = field_alloc.allocate_zero_field(
+        self.enh_smag_fac = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.u_vert = field_alloc.allocate_zero_field(
+        self.u_vert = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.v_vert = field_alloc.allocate_zero_field(
+        self.v_vert = data_alloc.allocate_zero_field(
             dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.kh_smag_e = field_alloc.allocate_zero_field(
+        self.kh_smag_e = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.kh_smag_ec = field_alloc.allocate_zero_field(
+        self.kh_smag_ec = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_nabla2_e = field_alloc.allocate_zero_field(
+        self.z_nabla2_e = data_alloc.allocate_zero_field(
             dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.z_temp = field_alloc.allocate_zero_field(
+        self.z_temp = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
         )
-        self.diff_multfac_smag = field_alloc.allocate_zero_field(
+        self.diff_multfac_smag = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
         # TODO(Magdalena): this is KHalfDim
-        self.vertical_index = field_alloc.allocate_indices(
+        self.vertical_index = data_alloc.allocate_indices(
             dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
         )
-        self.horizontal_cell_index = field_alloc.allocate_indices(
+        self.horizontal_cell_index = data_alloc.allocate_indices(
             dims.CellDim, grid=self._grid, backend=self._backend
         )
-        self.horizontal_edge_index = field_alloc.allocate_indices(
+        self.horizontal_edge_index = data_alloc.allocate_indices(
             dims.EdgeDim, grid=self._grid, backend=self._backend
         )
-        self.w_tmp = field_alloc.allocate_zero_field(
+        self.w_tmp = data_alloc.allocate_zero_field(
             dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
         )
 
@@ -567,10 +567,10 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = field_alloc.allocate_zero_field(
+        diff_multfac_vn = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
-        smag_limit = field_alloc.allocate_zero_field(
+        smag_limit = data_alloc.allocate_zero_field(
             dims.KDim, grid=self._grid, backend=self._backend
         )
 
@@ -837,56 +837,35 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
 
-        log.debug(
-            "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
-        )
+        if self.config.apply_to_temperature:
+            log.debug(
+                "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
+            )
 
-        self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_connectivities(
-            self.compile_time_connectivities
-        )(
-            theta_v=prognostic_state.theta_v,
-            theta_ref_mc=self._metric_state.theta_ref_mc,
-            thresh_tdiff=self.thresh_tdiff,
-            smallest_vpfloat=constants.DBL_EPS,
-            kh_smag_e=self.kh_smag_e,
-            horizontal_start=self._edge_start_nudging,
-            horizontal_end=self._edge_end_halo,
-            vertical_start=(self._grid.num_levels - 2),
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
-        )
-        log.debug(
-            "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
-        )
-
-        log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-        self.calculate_nabla2_for_theta.with_connectivities(self.compile_time_connectivities)(
-            kh_smag_e=self.kh_smag_e,
-            inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
-            theta_v=prognostic_state.theta_v,
-            geofac_div=self._interpolation_state.geofac_div,
-            z_temp=self.z_temp,
-            horizontal_start=self._cell_start_nudging,
-            horizontal_end=self._cell_end_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider=self._grid.offset_providers,
-        )
-        log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
-        log.debug(
-            "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
-        )
-        if self.config.apply_zdiffusion_t:
-            self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_connectivities(
+            self.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_connectivities(
                 self.compile_time_connectivities
             )(
-                mask=self._metric_state.mask_hdiff,
-                zd_vertoffset=self._metric_state.zd_vertoffset,
-                zd_diffcoef=self._metric_state.zd_diffcoef,
-                geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
-                geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
-                vcoef=self._metric_state.zd_intcoef,
                 theta_v=prognostic_state.theta_v,
+                theta_ref_mc=self._metric_state.theta_ref_mc,
+                thresh_tdiff=self.thresh_tdiff,
+                smallest_vpfloat=constants.DBL_EPS,
+                kh_smag_e=self.kh_smag_e,
+                horizontal_start=self._edge_start_nudging,
+                horizontal_end=self._edge_end_halo,
+                vertical_start=(self._grid.num_levels - 2),
+                vertical_end=self._grid.num_levels,
+                offset_provider=self._grid.offset_providers,
+            )
+            log.debug(
+                "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
+            )
+
+            log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
+            self.calculate_nabla2_for_theta.with_connectivities(self.compile_time_connectivities)(
+                kh_smag_e=self.kh_smag_e,
+                inv_dual_edge_length=self._edge_params.inverse_dual_edge_lengths,
+                theta_v=prognostic_state.theta_v,
+                geofac_div=self._interpolation_state.geofac_div,
                 z_temp=self.z_temp,
                 horizontal_start=self._cell_start_nudging,
                 horizontal_end=self._cell_end_local,
@@ -894,24 +873,46 @@ class Diffusion:
                 vertical_end=self._grid.num_levels,
                 offset_provider=self._grid.offset_providers,
             )
-
+            log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
             log.debug(
-                "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+                "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
             )
-        log.debug("running stencil 16 (update_theta_and_exner): start")
-        self.update_theta_and_exner.with_connectivities(self.compile_time_connectivities)(
-            z_temp=self.z_temp,
-            area=self._cell_params.area,
-            theta_v=prognostic_state.theta_v,
-            exner=prognostic_state.exner,
-            rd_o_cvd=self.rd_o_cvd,
-            horizontal_start=self._cell_start_nudging,
-            horizontal_end=self._cell_end_local,
-            vertical_start=0,
-            vertical_end=self._grid.num_levels,
-            offset_provider={},
-        )
-        log.debug("running stencil 16 (update_theta_and_exner): end")
+            if self.config.apply_zdiffusion_t:
+                self.truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_connectivities(
+                    self.compile_time_connectivities
+                )(
+                    mask=self._metric_state.mask_hdiff,
+                    zd_vertoffset=self._metric_state.zd_vertoffset,
+                    zd_diffcoef=self._metric_state.zd_diffcoef,
+                    geofac_n2s_c=self._interpolation_state.geofac_n2s_c,
+                    geofac_n2s_nbh=self._interpolation_state.geofac_n2s_nbh,
+                    vcoef=self._metric_state.zd_intcoef,
+                    theta_v=prognostic_state.theta_v,
+                    z_temp=self.z_temp,
+                    horizontal_start=self._cell_start_nudging,
+                    horizontal_end=self._cell_end_local,
+                    vertical_start=0,
+                    vertical_end=self._grid.num_levels,
+                    offset_provider=self._grid.offset_providers,
+                )
+
+                log.debug(
+                    "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+                )
+            log.debug("running stencil 16 (update_theta_and_exner): start")
+            self.update_theta_and_exner.with_connectivities(self.compile_time_connectivities)(
+                z_temp=self.z_temp,
+                area=self._cell_params.area,
+                theta_v=prognostic_state.theta_v,
+                exner=prognostic_state.exner,
+                rd_o_cvd=self.rd_o_cvd,
+                horizontal_start=self._cell_start_nudging,
+                horizontal_end=self._cell_end_local,
+                vertical_start=0,
+                vertical_end=self._grid.num_levels,
+                offset_provider={},
+            )
+            log.debug("running stencil 16 (update_theta_and_exner): end")
 
         self.halo_exchange_wait(
             handle_edge_comm

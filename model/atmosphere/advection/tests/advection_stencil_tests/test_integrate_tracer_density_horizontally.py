@@ -10,11 +10,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.test_utils.helpers as helpers
+import icon4py.model.testing.helpers as helpers
 from icon4py.model.atmosphere.advection.stencils.integrate_tracer_density_horizontally import (
     integrate_tracer_density_horizontally,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
@@ -28,18 +29,18 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_mass_flx_e: np.array,
-        geofac_div: np.array,
-        z_rhofluxdiv_c: np.array,
-        z_tracer_mflx: np.array,
-        z_rho_now: np.array,
-        z_tracer_now: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_mass_flx_e: np.ndarray,
+        geofac_div: np.ndarray,
+        z_rhofluxdiv_c: np.ndarray,
+        z_tracer_mflx: np.ndarray,
+        z_rho_now: np.ndarray,
+        z_tracer_now: np.ndarray,
         z_dtsub: float,
         nsub: gtx.int32,
         **kwargs,
     ) -> dict:
-        c2e = grid.connectivities[dims.C2EDim]
+        c2e = connectivities[dims.C2EDim]
         p_mass_flx_e_c2e = p_mass_flx_e[c2e]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         z_tracer_mflx_c2e = z_tracer_mflx[c2e]
@@ -60,16 +61,16 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        p_mass_flx_e = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        geofac_div = helpers.random_field(grid, dims.CellDim, dims.C2EDim)
-        z_rhofluxdiv_c = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_mflx = helpers.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_rho_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_now = helpers.random_field(grid, dims.CellDim, dims.KDim)
-        z_rhofluxdiv_c_out = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        z_fluxdiv_c_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        z_rho_new_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
-        z_tracer_new_dsl = helpers.zero_field(grid, dims.CellDim, dims.KDim)
+        p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
+        z_rhofluxdiv_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_mflx = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_rho_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_rhofluxdiv_c_out = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_fluxdiv_c_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_rho_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         z_dtsub = 0.5
         nsub = 1
         return dict(
