@@ -116,7 +116,7 @@ def compile_and_run_fortran(
             env.update(env_vars)
         fortran_result = run_fortran_executable(plugin_name, env)
         if expected_error_code == 0:
-            assert "passed" in fortran_result.stdout
+            assert "passed" in fortran_result.stdout, fortran_result.stderr
         else:
             assert "failed" in fortran_result.stdout
     except subprocess.CalledProcessError as e:
@@ -170,7 +170,13 @@ def test_py2fgen_python_error_propagation_to_fortran(
 @pytest.mark.parametrize(
     "function_name, plugin_name, test_name, run_backend, extra_flags",
     [
-        ("square_from_function", "square_plugin", "test_square", "GPU", ("-acc", "-Minfo=acc")),
+        (
+            "square_from_function",
+            "square_plugin",
+            "test_square",
+            "GPU",
+            ("-acc", "-Minfo=acc", "-DUSE_SQUARE_FROM_FUNCTION"),
+        ),
     ],
 )
 def test_py2fgen_compilation_and_execution_gpu(
