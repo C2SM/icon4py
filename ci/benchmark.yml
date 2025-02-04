@@ -3,8 +3,13 @@ include:
 
 .benchmark_model_stencils:
   stage: benchmark
+  variables:
+    CODSPEED_RUNNER_VERSION: 3.2.0
+  before_script:
+    - curl -fsSL https://github.com/CodSpeedHQ/runner/releases/download/v$CODSPEED_RUNNER_VERSION/codspeed-runner-installer.sh | bash -s -- --quiet
+    - source $HOME/.cargo/env
   script:
-    - nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID
+    - codspeed run -- nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
