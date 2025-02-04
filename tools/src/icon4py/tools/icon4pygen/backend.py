@@ -10,7 +10,7 @@ import warnings
 from pathlib import Path
 from typing import Any, Iterable, List
 
-from gt4py.next.common import Connectivity, Dimension, DimensionKind
+from gt4py.next.common import DimensionKind, OffsetProvider
 from gt4py.next.iterator import ir as itir
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from gt4py.next.type_system import type_specifications as ts
@@ -39,13 +39,13 @@ def transform_and_configure_fencil(
 
     for stmt in program.body:
         assert isinstance(stmt, itir.SetAt)
-        if not len(stmt.domain.args) == 2:
+        domain = stmt.domain
+        assert isinstance(domain, itir.FunCall)
+        if not len(domain.args) == 2:
             raise TypeError(f"Output domain of '{program.id}' must be 2-dimensional.")
-        assert isinstance(stmt.domain.args[0], itir.FunCall) and isinstance(
-            stmt.domain.args[1], itir.FunCall
-        )
-        horizontal_axis = stmt.domain.args[0].args[0]
-        vertical_axis = stmt.domain.args[1].args[0]
+        assert isinstance(domain.args[0], itir.FunCall) and isinstance(domain.args[1], itir.FunCall)
+        horizontal_axis = domain.args[0].args[0]
+        vertical_axis = domain.args[1].args[0]
         assert isinstance(horizontal_axis, itir.AxisLiteral) and isinstance(
             vertical_axis, itir.AxisLiteral
         )
@@ -86,7 +86,7 @@ def transform_and_configure_fencil(
         params=fencil_params,
         declarations=program.declarations,
         body=program.body,
-        implicit_domain=program.implicit_domain
+        implicit_domain=program.implicit_domain,
     )
 
 
@@ -119,7 +119,7 @@ def check_for_domain_bounds(program: itir.Program) -> None:
 
 def generate_gtheader(
     program: itir.Program,
-    offset_provider: dict[str, Connectivity | Dimension],
+    offset_provider: OffsetProvider,
     imperative: bool,
     temporaries: bool,
     **kwargs: Any,
