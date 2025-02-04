@@ -13,9 +13,10 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
-
+vert = data_allocation.allocate_indices(dims.KDim, grid=icon_grid, is_halfdim=True, backend=backend)
 
 def set_lib_path(lib_dir):
     sys.path.append(lib_dir)
@@ -78,7 +79,7 @@ class Data:
         self.pre_gsp = np.zeros(self.ncells, np.float64)
         self.pflx = np.zeros((self.ncells,self.nlev), np.float64)
         # allocate dz:
-        self.dz = np.zeros(self.ncells * self.nlev, np.float64)
+        self.dz = np.zeros((self.ncells, self.nlev), np.float64)
         # calc dz:
 #        py_graupel.calc_dz(z=self.z, dz=self.dz, ncells=self.ncells, nlev=self.nlev)
 
@@ -158,7 +159,7 @@ data = Data(args)
 #         rho=data.rho,
 #     )
 
-graupel_run( dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz[0,:,:])),
+graupel_run( dz  = gtx.as_field((dims.CellDim, dims.KDim,), data.dz),
              te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.t[0,:,:])),
              p   = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.p[0,:,:])),
              rho = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.rho[0,:,:])),
@@ -170,6 +171,7 @@ graupel_run( dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz
              qge = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qg[0,:,:])),
              dt  = args.dt,
              qnc = args.qnc,
+             vert= vert,
              out1 = gtx.as_field((dims.CellDim, dims.KDim,), data.pflx),
              offset_provider={"Koff": K})
 
