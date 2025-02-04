@@ -1352,6 +1352,15 @@ class IconNonhydroExitSavepoint(IconSavepoint):
     def exner_dyn_incr(self):
         return self._get_field("x_exner_dyn_incr", dims.CellDim, dims.KDim)
 
+    def x_ddt_vn_apc_19_20(self):
+        return self._get_field("x_ddt_vn_apc_19_20", dims.EdgeDim, dims.KDim)
+
+    def x_z_w_con_c_full_15_18(self):
+        return self._get_field("x_z_w_con_c_full_15_18", dims.CellDim, dims.KDim)
+
+    def x_ddt_w_adv_15_18(self):
+        return self._get_field("x_ddt_w_adv_15_18", dims.CellDim, dims.KDim)
+
 
 # TODO (magdalena) rename?
 class IconNHFinalExitSavepoint(IconSavepoint):
