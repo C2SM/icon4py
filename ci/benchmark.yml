@@ -5,14 +5,15 @@ include:
   stage: benchmark
   variables:
     CODSPEED_RUNNER_VERSION: 3.2.0
-  before_script:
+  script:
+    - echo "INSTALLING CODSPEED"
     - curl -fsSL https://github.com/CodSpeedHQ/runner/releases/download/v$CODSPEED_RUNNER_VERSION/codspeed-runner-installer.sh | bash -s
     - source $HOME/.cargo/env
     - which codspeed
     - ls -l $HOME/.cargo/bin
     - export PATH=$HOME/.cargo/bin:$PATH
+    - echo "CHECK PATH FOR CODSPEED"
     - echo $PATH
-  script:
     - codspeed run -- nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
