@@ -21,7 +21,7 @@ from icon4py.tools.py2fgen.plugin import generate_and_compile_cffi_plugin
 from icon4py.tools.py2fgen.settings import GT4PyBackend
 
 
-def parse_comma_separated_list(ctx, param, value) -> list[str]:
+def parse_comma_separated_list(ctx: click.Context, param: click.Parameter, value: str) -> list[str]:
     # Splits the input string by commas and strips any leading/trailing whitespace from the strings
     return [item.strip() for item in value.split(",")]
 
