@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import inspect
+from types import ModuleType
 from typing import Any, Sequence
 
 from gt4py.eve import Node, datamodels
@@ -19,7 +19,6 @@ from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_ISO_C_TYPE,
     BUILTIN_TO_NUMPY_TYPE,
 )
-from icon4py.tools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4py.tools.py2fgen.settings import GT4PyBackend
 from icon4py.tools.py2fgen.utils import flatten_and_get_unique_elts
 from icon4py.tools.py2fgen.wrappers import wrapper_dimension
@@ -30,11 +29,11 @@ from icon4py.tools.py2fgen.wrappers import wrapper_dimension
 
 
 UNINITIALISED_ARRAYS = [
-    "mask_hdiff",
+    "mask_hdiff",  # optional diffusion init fields
     "zd_diffcoef",
     "zd_vertoffset",
     "zd_intcoef",
-    "hdef_ic",
+    "hdef_ic",  # optional diffusion output fields
     "div_ic",
     "dwdx",
     "dwdy",
@@ -53,14 +52,13 @@ class FuncParameter(Node):
     name: str
     d_type: ScalarKind
     dimensions: Sequence[Dimension]
-    py_type_hint: str
     size_args: list[str] = datamodels.field(init=False)
     is_array: bool = datamodels.field(init=False)
     gtdims: list[str] = datamodels.field(init=False)
     size_args_len: int = datamodels.field(init=False)
     np_type: str = datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.size_args = dims_to_size_strings(self.dimensions)
         self.size_args_len = len(self.size_args)
         self.is_array = True if len(self.dimensions) >= 1 else False
@@ -80,7 +78,6 @@ class FuncParameter(Node):
 class Func(Node):
     name: str
     args: Sequence[FuncParameter]
-    is_gt4py_program: bool
     global_size_args: Sequence[str] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
@@ -92,7 +89,6 @@ class Func(Node):
 class CffiPlugin(Node):
     module_name: str
     plugin_name: str
-    imports: list[str]
     functions: list[Func]
 
 
@@ -102,19 +98,14 @@ class PythonWrapper(CffiPlugin):
     profile: bool
     limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
-    cffi_unpack: str = inspect.getsource(unpack)
-    cffi_unpack_gpu: str = inspect.getsource(unpack_gpu)
-    int_to_bool: str = inspect.getsource(int_array_to_bool_array)
     gt4py_backend: str = datamodels.field(init=False)
-    is_gt4py_program_present: bool = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.gt4py_backend = GT4PyBackend[self.backend].value
-        self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
         self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 
 
-def get_uninitialised_arrays(limited_area: bool):
+def get_uninitialised_arrays(limited_area: bool) -> list[str]:
     return UNINITIALISED_ARRAYS if not limited_area else []
 
 
@@ -124,7 +115,7 @@ def build_array_size_args() -> dict[str, str]:
     from icon4py.tools.py2fgen.wrappers import wrapper_dimension
 
     # Function to process the dimensions
-    def process_dimensions(module):
+    def process_dimensions(module: ModuleType) -> None:
         for var_name, var in vars(module).items():
             if isinstance(var, Dimension):
                 dim_name = var_name.replace(
@@ -233,30 +224,18 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
+    # TODO(havogt): put np_as_located_field logic into unpack
     PythonWrapper = as_jinja(
         """\
 # imports for generated wrapper code
 import logging
 {% if _this_node.profile %}import time{% endif %}
-import math
 from {{ plugin_name }} import ffi
-import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
-from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
 from icon4py.tools.py2fgen.settings import config
-xp = config.array_ns
+from icon4py.tools.py2fgen import wrapper_utils
 from icon4py.model.common import dimension as dims
-
-{% if _this_node.is_gt4py_program_present %}
-# necessary imports when embedding a gt4py program directly
-from gt4py.next import itir_python as run_roundtrip
-from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
-from icon4py.model.common.grid.simple import SimpleGrid
-
-# We need a grid to pass offset providers to the embedded gt4py program (granules load their own grid at runtime)
-grid = SimpleGrid()
-{% endif %}
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
@@ -265,35 +244,20 @@ logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else 
                     datefmt='%Y-%m-%d %H:%M:%S')
 {% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
 
-import numpy as np
-
-# embedded module imports
-{% for stmt in imports -%}
-{{ stmt }}
-{% endfor %}
-
 # embedded function imports
 {% for func in _this_node.functions -%}
 from {{ module_name }} import {{ func.name }}
 {% endfor %}
-
-{% if _this_node.backend == 'GPU' %}
-{{ cffi_unpack_gpu }}
-{% else %}
-{{ cffi_unpack }}
-{% endif %}
-
-{{ int_to_bool }}
 
 {% for func in _this_node.functions %}
 
 {{ cffi_decorator }}
 def {{ func.name }}_wrapper(
 {%- for arg in func.args -%}
-{{ arg.name }}: {{ arg.py_type_hint | replace("KHalfDim","KDim") }}{% if not loop.last or func.global_size_args %}, {% endif %}
+{{ arg.name }}{% if not loop.last or func.global_size_args %}, {% endif %}
 {%- endfor %}
 {%- for arg in func.global_size_args -%}
-{{ arg }}: gtx.int32{{ ", " if not loop.last else "" }}
+{{ arg }}{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
     try:
@@ -317,11 +281,11 @@ def {{ func.name }}_wrapper(
         {%- if arg.name in _this_node.uninitialised_arrays -%}
         {{ arg.name }} = xp.ones((1,) * {{ arg.size_args_len }}, dtype={{arg.np_type}}, order="F")
         {%- else -%}
-        {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+        {{ arg.name }} = wrapper_utils.unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}(ffi, {{ arg.name }}, {{ ", ".join(arg.size_args) }})
         {%- endif -%}
 
         {%- if arg.d_type.name == "BOOL" %}
-        {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
+        {{ arg.name }} = wrapper_utils.int_array_to_bool_array({{ arg.name }})
         {%- endif %}
 
         {%- if _this_node.debug_mode %}
@@ -368,14 +332,10 @@ def {{ func.name }}_wrapper(
         func_start_time = time.perf_counter()
         {% endif %}
 
-        {{ func.name }}
-        {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
+        {{ func.name }}(
         {%- for arg in func.args -%}
-        {{ arg.name }}{{ ", " if not loop.last or func.is_gt4py_program else "" }}
+        {{ arg.name }}{{ ", " if not loop.last else "" }}
         {%- endfor -%}
-        {%- if func.is_gt4py_program -%}
-        offset_provider=grid.offset_providers
-        {%- endif -%}
         )
 
         {% if _this_node.profile %}
@@ -421,7 +381,7 @@ class CHeaderGenerator(TemplatedGenerator):
         "extern int {{ name }}_wrapper({%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%});"
     )
 
-    def visit_FuncParameter(self, param: FuncParameter):
+    def visit_FuncParameter(self, param: FuncParameter) -> str:
         return self.generic_visit(
             param, rendered_type=to_c_type(param.d_type), pointer=render_c_pointer(param)
         )
@@ -474,14 +434,12 @@ class F90Interface(Node):
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         functions = self.cffi_plugin.functions
         self.function_declaration = [
-            F90FunctionDeclaration(name=f.name, args=f.args, is_gt4py_program=f.is_gt4py_program)
-            for f in functions
+            F90FunctionDeclaration(name=f.name, args=f.args) for f in functions
         ]
         self.function_definition = [
             F90FunctionDefinition(
                 name=f.name,
                 args=f.args,
-                is_gt4py_program=f.is_gt4py_program,
                 limited_area=self.limited_area,
             )
             for f in functions
@@ -509,7 +467,7 @@ end module
 """
     )
 
-    def visit_F90FunctionDeclaration(self, func: F90FunctionDeclaration, **kwargs):
+    def visit_F90FunctionDeclaration(self, func: F90FunctionDeclaration, **kwargs: Any) -> str:
         arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
         if func.global_size_args:
             arg_names += ",&\n" + ", &\n".join(func.global_size_args)
@@ -530,7 +488,7 @@ end function {{name}}_wrapper
     """
     )
 
-    def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs):
+    def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs: Any) -> str:
         if len(func.args) < 1:
             arg_names, param_names_with_size_args = "", ""
         else:
@@ -583,7 +541,7 @@ end subroutine {{name}}
     """
     )
 
-    def visit_FuncParameter(self, param: FuncParameter, **kwargs):
+    def visit_FuncParameter(self, param: FuncParameter, **kwargs: Any) -> str:
         return self.generic_visit(
             param,
             value=as_f90_value(param),
