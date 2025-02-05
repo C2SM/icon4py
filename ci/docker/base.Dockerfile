@@ -29,8 +29,23 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     git \
     rustc \
     htop \
-    gdb libbabeltrace1 libboost-regex1.74.0 libc6-dbg libdebuginfod-common libdebuginfod1 libdw1 libelf1 libpython3.10 libsource-highlight-common libsource-highlight4v5 valgrind && \
+    gdb libbabeltrace1 libboost-regex1.74.0 libc6-dbg libdebuginfod-common libdebuginfod1 libdw1 libelf1 libpython3.10 libsource-highlight-common libsource-highlight4v5 && \
     rm -rf /var/lib/apt/lists/*
+
+# Install Valgrind 3.21 from source
+RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
+    automake \
+    autoconf \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/* && \
+    wget https://sourceware.org/pub/valgrind/valgrind-3.21.0.tar.bz2 && \
+    tar -xjf valgrind-3.21.0.tar.bz2 && \
+    cd valgrind-3.21.0 && \
+    ./configure --prefix=/usr/local && \
+    make -j$(nproc) && \
+    make install && \
+    cd .. && rm -rf valgrind-3.21.0 valgrind-3.21.0.tar.bz2
 
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=24.11
