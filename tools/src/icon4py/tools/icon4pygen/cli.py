@@ -63,6 +63,7 @@ class ModuleType(click.ParamType):
     is_flag=True,
     type=bool,
     help="Whether to use the temporaries in generated gridtools code.",
+    default=True  # TODO(tehrengruber): delete completely
 )
 def main(
     fencil: str,
