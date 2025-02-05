@@ -90,7 +90,7 @@ def apply_markers(
                 pytest.xfail("Embedded backend currently fails in remap function.")
             case "uses_as_offset" if is_embedded(backend):
                 pytest.xfail("Embedded backend does not support as_offset.")
-            case "requires_concat_where" if is_embedded(backend):
+            case "requires_concat_where" if is_dace(backend) or is_embedded(backend):
                 pytest.skip("Stencil requires concat_where.")
             case "skip_value_error":
                 pytest.skip(
