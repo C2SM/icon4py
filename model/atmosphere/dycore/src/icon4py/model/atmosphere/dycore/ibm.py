@@ -18,6 +18,7 @@ Immersed boundary method module
 """
 
 log = logging.getLogger(__name__)
+DEBUG = True
 
 
 class ImmersedBoundaryMethod:
@@ -37,6 +38,10 @@ class ImmersedBoundaryMethod:
         self.cell_mask = self._make_cell_mask(grid)
         self.edge_mask = self._make_edge_mask(grid)
 
+        self._dir_value_w = 0.0
+        self._dir_value_theta_v = -313
+        self._dir_value_vn = 0.0
+
         log.info("IBM initialized")
 
     def _validate_config(self):
@@ -44,7 +49,7 @@ class ImmersedBoundaryMethod:
         pass
 
     def _make_cell_mask(self, grid: icon_grid.IconGrid) -> fa.CellKField[bool]:
-        cell_mask = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
+        cell_mask = np.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
         cell_mask[[5,16], -2:] = True
         return gtx.as_field((CellDim, KDim), cell_mask)
     
@@ -67,10 +72,14 @@ class ImmersedBoundaryMethod:
         """
         log.info("IBM set BCs...")
 
+        if DEBUG:
+            vn0 = prognostic_state.vn.ndarray.copy()
+            w0  = prognostic_state.w.ndarray.copy()
+
         self._set_bcs_cells(
             mask=self.cell_mask,
-            dir_value_w=0.0,
-            dir_value_theta_v=-313.0,
+            dir_value_w=self._dir_value_w,
+            dir_value_theta_v=self._dir_value_theta_v,
             w=prognostic_state.w,
             theta_v=prognostic_state.theta_v,
             out=(prognostic_state.w, prognostic_state.theta_v),
@@ -78,11 +87,17 @@ class ImmersedBoundaryMethod:
         )
         self._set_bcs_edges(
             mask=self.edge_mask,
-            dir_value_vn=0.0,
+            dir_value_vn=self._dir_value_vn,
             vn=prognostic_state.vn,
             out=(prognostic_state.vn),
             offset_provider={},
         )
+
+        if DEBUG:
+            vn1 = prognostic_state.vn.ndarray
+            w1  = prognostic_state.w.ndarray
+            log.info(f"IBM max delta vn: {np.abs(vn1 - vn0).max()}")
+            log.info(f"IBM max delta w : {np.abs(w1  - w0 ).max()}")
 
     @gtx.field_operator
     def _set_bcs_cells(
@@ -110,3 +125,21 @@ class ImmersedBoundaryMethod:
         """
         vn = where(mask, dir_value_vn, vn)
         return vn
+
+    def check_boundary_conditions(
+        self,
+        prognostic_state: prognostic_state.PrognosticState,
+    ):
+        """
+        Set boundary conditions on prognostic variables.
+        """
+        edge_mask = self.edge_mask.ndarray
+        cell_mask = self.cell_mask.ndarray
+        vn = prognostic_state.vn.ndarray
+        w  = prognostic_state.w.ndarray
+
+        err_vn = np.abs(vn[edge_mask] - self._dir_value_vn)
+        err_w  = np.abs(w [cell_mask] - self._dir_value_w )
+
+        log.info(f"IBM error on vn: min {err_vn.min():10.3e} max {err_vn.max():10.3e}")
+        log.info(f"IBM error on w : min {err_w .min():10.3e} max {err_w .max():10.3e}")
