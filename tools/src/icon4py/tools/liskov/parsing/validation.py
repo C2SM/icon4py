@@ -158,7 +158,7 @@ class DirectiveSemanticsValidator:
         def _identify_unbalanced_directives(
             directives: Sequence[ts.ParsedDirective],
             directive_types: tuple[Type[ts.ParsedDirective], ...],
-        ):
+        ) -> None:
             directive_counts: dict[str, int] = defaultdict(int)
             for directive in directives:
                 if isinstance(directive, directive_types):

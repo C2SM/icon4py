@@ -175,7 +175,7 @@ class EndStencilStatement(EndBasicStencilStatement):
     noprofile: Optional[bool]
     noaccenddata: Optional[bool]
 
-    def __post_init__(self, *args, **kwargs) -> None:
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
         self.name = self.stencil_data.name
