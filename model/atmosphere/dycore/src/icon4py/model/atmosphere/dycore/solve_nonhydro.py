@@ -916,20 +916,22 @@ class SolveNonhydro:
         )
 
         #--- IBM >
+        # check
+        self._ibm.check_boundary_conditions(prognostic_states.next)
         # log messages
         vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
         field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
         field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
         # plot
-        self._plot.plot_data(prognostic_states.current.w,  4, label=f"after_predictor_w")
-        #self._plot.plot_data(prognostic_states.current.vn, 4, label=f"after_predictor_vvec_cell")
-        self._plot.plot_data(prognostic_states.current.vn, 4, label=f"after_predictor_vvec_edge")
+        self._plot.plot_data(prognostic_states.next.w,  4, label=f"after_predictor_w")
+        #self._plot.plot_data(prognostic_states.next.vn, 4, label=f"after_predictor_vvec_cell")
+        self._plot.plot_data(prognostic_states.next.vn, 4, label=f"after_predictor_vvec_edge")
         #<--- IBM
 
         #--- IBM >
         # BCs
-        self._ibm.set_boundary_conditions(prognostic_states.current)
+        self._ibm.set_boundary_conditions(prognostic_states.next)
         #<--- IBM
 
         self.run_corrector_step(
@@ -945,15 +947,17 @@ class SolveNonhydro:
         )
 
         #--- IBM >
+        # check
+        self._ibm.check_boundary_conditions(prognostic_states.next)
         # log messages
         vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
         field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
         field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         log.info(f" ***MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
         # plots
-        self._plot.plot_data(prognostic_states.current.w,  4, label=f"after_corrector_w")
-        #self._plot.plot_data(prognostic_states.current.vn, 4, label=f"after_corrector_vvec_cell")
-        self._plot.plot_data(prognostic_states.current.vn, 4, label=f"after_corrector_vvec_edge")
+        self._plot.plot_data(prognostic_states.next.w,  4, label=f"after_corrector_w")
+        #self._plot.plot_data(prognostic_states.next.vn, 4, label=f"after_corrector_vvec_cell")
+        self._plot.plot_data(prognostic_states.next.vn, 4, label=f"after_corrector_vvec_edge")
         #<--- IBM
 
         if self._grid.limited_area:
