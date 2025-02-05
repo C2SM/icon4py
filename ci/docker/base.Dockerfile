@@ -29,7 +29,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     git \
     rustc \
     htop \
-    gdb libbabeltrace1 libboost-regex1.74.0 libc6-dbg libdebuginfod-common libdebuginfod1 libdw1 libelf1 libpython3.10 libsource-highlight-common libsource-highlight4v5 && \
+    gdb libbabeltrace1 libboost-regex1.74.0 libc6-dbg libdebuginfod-common libdebuginfod1 libdw1 libelf1 libpython3.10 libsource-highlight-common libsource-highlight4v5 valgrind-dbg valgrind-mpi kcachegrind alleyoop valkyrie && \
     rm -rf /var/lib/apt/lists/*
 
 # Install NVIDIA HPC SDK for nvfortran
