@@ -332,7 +332,7 @@ wheels = [
 
 [[package]]
 name = "cartopy"
-version = "0.24.0"
+version = "0.22.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
@@ -342,20 +342,18 @@ dependencies = [
     { name = "pyshp" },
     { name = "shapely" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fe/a3/d1f52ff4e002db16a2b834103ddee302e6d61bde2011f805b6cb9ab0b940/cartopy-0.24.0.tar.gz", hash = "sha256:e044e0e0fa76bb7afde937bec541743dcbf6b6f23b933a21ebddcd20cfffb755", size = 10741118 }
+sdist = { url = "https://files.pythonhosted.org/packages/c8/99/e2ad8a60df598de02904867ec83bc9d785b6534a503aecc9426889aa807e/Cartopy-0.22.0.tar.gz", hash = "sha256:b300f90120931d43f11ef87c064ea1dacec1b59a4940aa76ebf82cf09548bb49", size = 10938577 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2b/07/166adf6ee3760698f0a88c3f8217bd93ebb0fae5dccfc187679947488605/Cartopy-0.24.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:dd15007ce08d5cf5b33eedfcd1327e2b58e4a4a70f5a07021eb6eaf78efa4fc4", size = 10982200 },
-    { url = "https://files.pythonhosted.org/packages/78/dd/a4ff39ffc6cc24a604b1cbdb36fb9336ac272ee6dac214c28d9e162ed9be/Cartopy-0.24.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:8cecfa7e3d739608f6d8db0db706a4242c0836f2f766770bfef7cbd78328b370", size = 10971755 },
-    { url = "https://files.pythonhosted.org/packages/0e/ec/bed67833b258966163f8fc8d1f4f02112012762a6229dcafd85e74f0bf73/Cartopy-0.24.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b0418bfcfc7a8c9bc27cf988c85ea0a3b8fb36e2a99c4c9da9b2b6c34f8411cb", size = 11658619 },
-    { url = "https://files.pythonhosted.org/packages/48/10/a4b3864978938dfc8482d8a0ee2f5841632416b8710da3715b13024623a7/Cartopy-0.24.0-cp310-cp310-win_amd64.whl", hash = "sha256:08729a798fe6e4c34e9db7d65f29ef05100aaaf851de635e21cc526b73c8524e", size = 10960202 },
-    { url = "https://files.pythonhosted.org/packages/0a/16/f5d40e8de352db540425bb46547413068a615b0814e73d9a2487977c8ed9/Cartopy-0.24.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:87a0ddbe015c0888dabe248cc75582c6f2770a047d5655a52aa7750629c62c39", size = 10982478 },
-    { url = "https://files.pythonhosted.org/packages/9c/ec/b4a4e3a6b6560e16ec684fa11ab3029be5a84dd4af1c33bc9caa19d0740e/Cartopy-0.24.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:2eb3397883325c230c3463503bb9e5cf6553755f5eadd1b6b57c1b0c45572ea1", size = 10971921 },
-    { url = "https://files.pythonhosted.org/packages/af/cf/d484cc84477868fb8c5a1d2a481e4dce12df85e1765bd9d5582280860815/Cartopy-0.24.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:166aefbfd3523d9edc621d2fc97b01346bd56d1f497d892d92ad9e9845b055f4", size = 11718331 },
-    { url = "https://files.pythonhosted.org/packages/6f/90/f0085493aa047ad4f0284b2a37f309fbf78b1481ddc67dcb36f3c75fcfb9/Cartopy-0.24.0-cp311-cp311-win_amd64.whl", hash = "sha256:e89ffc4288722ed2997420b1a9ba461bc6dcd758d6569635da9f2937eb398971", size = 10960530 },
-    { url = "https://files.pythonhosted.org/packages/ea/ad/7ee03ab9995d634844ad563627aa98c8a42ad5f2e7056f09dc2ba724a704/Cartopy-0.24.0-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:7eaaf2500f8f319be36141628dfbca0ef613a2bffef2e976848a3f497a7669e9", size = 10983945 },
-    { url = "https://files.pythonhosted.org/packages/cf/5d/343c2622c156115afb368594b902226efd317e01ea9e27312de353895d91/Cartopy-0.24.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:1b007afde692aaab5920355dcdcca2ae9075eff11235366b3c06dd31d2b50865", size = 10972381 },
-    { url = "https://files.pythonhosted.org/packages/7a/3a/59b76f0b8e4064a1eed5e61f4e9bee864d74805f8f73b01cfe71cf4aa429/Cartopy-0.24.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:17f152c317afb6ef7757b466690437385ea32125049cb76826101ad76220f847", size = 11715212 },
-    { url = "https://files.pythonhosted.org/packages/22/93/71d23c86d53472e7c826bcad9ebf55b857463e5564283a8496ef3cba6343/Cartopy-0.24.0-cp312-cp312-win_amd64.whl", hash = "sha256:a938eb73cab5f70c808613930a965627c3d89ebb4fae21fb88c147f24757de30", size = 10959868 },
+    { url = "https://files.pythonhosted.org/packages/0c/7a/6ba8148829fbb66785a52d70f81e3f8b93ba87e3f5100b6a4616fd897478/Cartopy-0.22.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:b17ad0b056b9a632b12954864c685febb0e1d8a4a45423b83eec119a603fcb8a", size = 11181875 },
+    { url = "https://files.pythonhosted.org/packages/3e/17/bee8931d043bce88fdb487c093f0b1af2d4e459bbd15d3d09ac8e2cd3696/Cartopy-0.22.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:bf7ca13a01782810e8b6a9758ed29755b6ce81b5c53721e19cb6636a43b0f575", size = 11166667 },
+    { url = "https://files.pythonhosted.org/packages/ce/bc/e847102ceb46570a8990bca322e26e9dc6fe4aef6de91e7a1eaafcff16f2/Cartopy-0.22.0-cp310-cp310-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:604c21046dfbe0c9551b28802901d240a7ce25fcaf0c30db0f230cebf93ae2a5", size = 11814369 },
+    { url = "https://files.pythonhosted.org/packages/e2/4e/ba1a6046d52888cd38e3ebdb4e2eb2e366907be7a44e8e9014f63e4786bf/Cartopy-0.22.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4c37d4e2227cb41c971d2bd2555ce081f765d4eaae852def1c059c1d85c8e645", size = 11842712 },
+    { url = "https://files.pythonhosted.org/packages/41/f4/edfba7b0768930486d4f434183a500de75826aba82e6ffd4884ae2b410b9/Cartopy-0.22.0-cp310-cp310-win_amd64.whl", hash = "sha256:3f9c391bd3ba588de397854556dda175edf59f614bbb6dce18c4981154d97d92", size = 11154551 },
+    { url = "https://files.pythonhosted.org/packages/57/07/76f8555523d6c8e7a3128a11bbdd789e464b208a8e6cdc12a886e2ee8868/Cartopy-0.22.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:3d9d24ef50991269b57a42bdd4f1156426065fbeb41777c7e28d937e2c4a2ae6", size = 11182251 },
+    { url = "https://files.pythonhosted.org/packages/23/39/a823a995c59a437b8d6fac668160b9978b0cfb0c02a6f6b2240794632fd5/Cartopy-0.22.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:472e6713aad729f6fd38bd301666febd23dd3b744b0530cd80e02e242e3f1c74", size = 11166984 },
+    { url = "https://files.pythonhosted.org/packages/83/5d/b8f526fc740a833ba1f43a47910c45a32a79b321bf246b464449a3f5e643/Cartopy-0.22.0-cp311-cp311-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:319b8244f6d06f600be89ad5eaa85c2524e23b240decd203188da26ff14a346b", size = 11878724 },
+    { url = "https://files.pythonhosted.org/packages/c5/c7/597ab1395cbd3499354dccc10827d22522ebc05070462b543175c062c8fb/Cartopy-0.22.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a401109b88a6bfec1c13dce9b09dc59993c3af426b1879e1e0ee3afd1c293076", size = 11912774 },
+    { url = "https://files.pythonhosted.org/packages/bb/50/ab5495dcc22587179134cd37e6534212babeda78e86bda311c37c773f086/Cartopy-0.22.0-cp311-cp311-win_amd64.whl", hash = "sha256:8ecebbe13d8488c2ec32e7c40222b9f10ba48e386be30c8ec60c867c122399f9", size = 11155387 },
 ]
 
 [[package]]
@@ -1627,7 +1625,7 @@ typing = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cartopy", specifier = "==0.24.0" },
+    { name = "cartopy", specifier = "==0.22.0" },
     { name = "icon4py", extras = ["dace", "distributed", "fortran", "io", "testing"], marker = "extra == 'all'" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
     { name = "icon4py-atmosphere-diffusion", editable = "model/atmosphere/diffusion" },
