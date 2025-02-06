@@ -28,7 +28,8 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libreadline-dev \
     git \
     rustc \
-    htop && \
+    htop \
+    gdb libbabeltrace1 libc6-dbg libdebuginfod-common libdebuginfod1 libdw1 libelf1 libpython3.10 libsource-highlight-common libsource-highlight4v5 && \
     rm -rf /var/lib/apt/lists/*
 
 # Install NVIDIA HPC SDK for nvfortran
