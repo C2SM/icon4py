@@ -8,7 +8,10 @@ include:
   script:
     - curl -fsSL https://github.com/CodSpeedHQ/runner/releases/download/v$CODSPEED_RUNNER_VERSION/codspeed-runner-installer.sh | bash -s
     - source $HOME/.cargo/env
-    - env -u GITLAB_CI BUILDKITE=true BUILDKITE_AGENT_NAME=7b10eca7600b-1 BUILDKITE_BRANCH=codspeed BUILDKITE_BUILD_NUMBER=$CI_JOB_ID BUILDKITE_COMMIT=$CI_COMMIT_SHA BUILDKITE_ORGANIZATION_SLUG=C2SM BUILDKITE_PIPELINE_SLUG="my-test-run" BUILDKITE_PULL_REQUEST_BASE_BRANCH=main BUILDKITE_PULL_REQUEST=657 BUILDKITE_REPO=git@github.com:C2SM/icon4py.git CODSPEED_LOG=debug codspeed run -- pytest -sv --benchmark-only --backend=gtfn_cpu --grid=icon_grid
+    - python3 -m venv venv
+    - source venv/bin/activate
+    - pip install serialbox
+    # - env -u GITLAB_CI BUILDKITE=true BUILDKITE_AGENT_NAME=7b10eca7600b-1 BUILDKITE_BRANCH=codspeed BUILDKITE_BUILD_NUMBER=$CI_JOB_ID BUILDKITE_COMMIT=$CI_COMMIT_SHA BUILDKITE_ORGANIZATION_SLUG=C2SM BUILDKITE_PIPELINE_SLUG="my-test-run" BUILDKITE_PULL_REQUEST_BASE_BRANCH=main BUILDKITE_PULL_REQUEST=657 BUILDKITE_REPO=git@github.com:C2SM/icon4py.git CODSPEED_LOG=debug codspeed run -- nox -s benchmark_model-3.10 --reuse-existing-virtualenvs --no-install -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
