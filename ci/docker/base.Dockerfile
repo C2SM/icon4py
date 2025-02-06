@@ -57,7 +57,8 @@ ENV CUDA_PATH=${HPC_SDK_PATH}/cuda \
 
 ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
     MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
-    LD_LIBRARY_PATH=${CUDA_PATH}/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
+    LD_LIBRARY_PATH=${HPC_SDK_PATH}/comm_libs/mpi/lib:${CUDA_PATH}/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH} \
+    CPATH=${HPC_SDK_PATH}/comm_libs/mpi/include:${CPATH}
 
 # Install Boost
 RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz && \
