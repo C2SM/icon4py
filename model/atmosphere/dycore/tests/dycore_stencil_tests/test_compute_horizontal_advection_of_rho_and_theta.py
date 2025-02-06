@@ -35,7 +35,7 @@ class TestComputeBtraj(StencilTest):
         p_dthalf: float,
         **kwargs,
     ) -> tuple[np.array, ...]:
-        lvn_pos = np.where(p_vn > ta.wpfloat("0.0"), True, False)
+        lvn_pos = np.where(p_vn > 0.0, True, False)
         pos_on_tplane_e_1 = np.expand_dims(pos_on_tplane_e_1, axis=-1)
         pos_on_tplane_e_2 = np.expand_dims(pos_on_tplane_e_2, axis=-1)
         primal_normal_cell_1 = np.expand_dims(primal_normal_cell_1, axis=-1)
@@ -192,7 +192,7 @@ class TestComputeBtraj(StencilTest):
         dual_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
         primal_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
         dual_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim, dtype=ta.wpfloat)
-        p_dthalf = ta.wpfloat("2.0")
+        p_dthalf = 2.0
 
         rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         theta_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)

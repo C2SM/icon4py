@@ -12,13 +12,12 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
     calculate_nabla2_and_smag_coefficients_for_vn,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing import helpers
 
 
-class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
+class TestCalculateNabla2AndSmagCoefficientsForVn(helpers.StencilTest):
     PROGRAM = calculate_nabla2_and_smag_coefficients_for_vn
     OUTPUTS = ("kh_smag_e", "kh_smag_ec", "z_nabla2_e")
 
@@ -151,24 +150,24 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(StencilTest):
         if np.any(grid.connectivities[dims.E2C2VDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
-        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
-        smag_offset = vpfloat("9.0")
-        diff_multfac_smag = data_alloc.random_field(grid, dims.KDim, dtype=vpfloat)
-        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        smag_limit = data_alloc.random_field(grid, dims.KDim, dtype=vpfloat)
-        inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        smag_offset = ta.vpfloat("9.0")
+        diff_multfac_smag = data_alloc.random_field(grid, dims.KDim, dtype=ta.vpfloat)
+        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        smag_limit = data_alloc.random_field(grid, dims.KDim, dtype=ta.vpfloat)
+        inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
 
-        primal_normal_vert_x = data_alloc.random_field(grid, dims.ECVDim, dtype=wpfloat)
-        primal_normal_vert_y = data_alloc.random_field(grid, dims.ECVDim, dtype=wpfloat)
-        dual_normal_vert_x = data_alloc.random_field(grid, dims.ECVDim, dtype=wpfloat)
-        dual_normal_vert_y = data_alloc.random_field(grid, dims.ECVDim, dtype=wpfloat)
+        primal_normal_vert_x = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
+        primal_normal_vert_y = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
+        dual_normal_vert_x = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
+        dual_normal_vert_y = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
 
-        z_nabla2_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        kh_smag_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        kh_smag_ec = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_nabla2_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        kh_smag_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        kh_smag_ec = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             diff_multfac_smag=diff_multfac_smag,

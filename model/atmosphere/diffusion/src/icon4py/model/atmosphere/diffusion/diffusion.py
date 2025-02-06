@@ -493,13 +493,13 @@ class Diffusion:
         self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         # TODO(Magdalena): this is KHalfDim
         self.vertical_index = data_alloc.index_field(
-            grid=self._grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+            self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
         self.horizontal_cell_index = data_alloc.index_field(
-            grid=self._grid, dim=dims.CellDim, backend=self._backend
+            self._grid, dims.CellDim, backend=self._backend
         )
         self.horizontal_edge_index = data_alloc.index_field(
-            grid=self._grid, dim=dims.EdgeDim, backend=self._backend
+            self._grid, dims.EdgeDim, backend=self._backend
         )
         self.w_tmp = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
