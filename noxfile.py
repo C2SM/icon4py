@@ -125,7 +125,6 @@ def _install_session_venv(
         "uv",
         "sync",
         "--no-dev",
-        "--verbose",
         *(f"--extra={e}" for e in extras),
         *(f"--group={g}" for g in groups),
         env={"UV_PROJECT_ENVIRONMENT": session.virtualenv.location},

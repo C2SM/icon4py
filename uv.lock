@@ -238,34 +238,34 @@ wheels = [
 
 [[package]]
 name = "bottleneck"
-version = "1.4.0"
+version = "1.3.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6c/12/88a08fad308482554e1fe010ea5d605e423bf1ad496dbe0bd96f7c6ad16b/bottleneck-1.4.0.tar.gz", hash = "sha256:beb36df519b8709e7d357c0c9639b03b885ca6355bbf5e53752c685de51605b8", size = 103490 }
+sdist = { url = "https://files.pythonhosted.org/packages/f0/56/732cc7285ad7767ab248631b823fff2e6b9175a5bff86637627fa3fc6315/Bottleneck-1.3.8.tar.gz", hash = "sha256:6780d896969ba7f53c8995ba90c87c548beb3db435dc90c60b9a10ed1ab4d868", size = 103252 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/66/d0ea6d29b2563b0b1b5efa5704ada7bf1a374cdc231ad51974fc1daf0b8b/Bottleneck-1.4.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:2110af22aa8c2779faba8aa021d6b559df04449bdf21d510eacd7910934189fe", size = 98546 },
-    { url = "https://files.pythonhosted.org/packages/19/03/b0bbd9abfa79e4b39f84b74696e2c34cc57a90fc2171938ec59123d66027/Bottleneck-1.4.0-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:381cbd1e52338fcdf9ff01c962e6aa187b2d8b3b369d42e779b6d33ac61f8d35", size = 360851 },
-    { url = "https://files.pythonhosted.org/packages/31/ca/52730df3ae53dddc38ef234863e104c45c71efd94670abb1b673b8f4224b/Bottleneck-1.4.0-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4a91e40bbb8452e77772614d882be2c34b3b514d9f15460f703293525a6e173d", size = 356158 },
-    { url = "https://files.pythonhosted.org/packages/1a/0d/4e24d986faa495c301d161f9a532e859111e9058af72abb07ac1129885f4/Bottleneck-1.4.0-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:59604949aea476f5075b965129eaa3c2d90891fd43b0dfaf2ad7621bb5db14a5", size = 403774 },
-    { url = "https://files.pythonhosted.org/packages/ad/30/5bc91213b68067262521762b659675059f28d2c97fb9c8e6b9c61ca8a1a0/Bottleneck-1.4.0-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:c2c92545e1bc8e859d8d137aefa3b24843bd374b17c9814dafa3bbcea9fc4ec0", size = 399536 },
-    { url = "https://files.pythonhosted.org/packages/bd/08/3842d1134f88a980110fa0c2bf7cae00651adace9302572d177956f7ac47/Bottleneck-1.4.0-cp310-cp310-win32.whl", hash = "sha256:f63e79bfa2f82a7432c8b147ed321d01ca7769bc17cc04644286a4ce58d30549", size = 106878 },
-    { url = "https://files.pythonhosted.org/packages/2b/df/343308a85e2e57d3e5fee15e6307b4a7f0d62cff2ef6c64968cb423d710a/Bottleneck-1.4.0-cp310-cp310-win_amd64.whl", hash = "sha256:d69907d8d679cb5091a3f479c46bf1076f149f6311ff3298bac5089b86a2fab1", size = 111619 },
-    { url = "https://files.pythonhosted.org/packages/b6/1e/7559e379b8ee31dbc867b2a1ae544fb8ea4c9d7c96c4f544bb6d2b961fc7/Bottleneck-1.4.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:67347b0f01f32a232a6269c37afc1c079e08f6455fa12e91f4a1cd12eb0d11a5", size = 98550 },
-    { url = "https://files.pythonhosted.org/packages/0b/39/29d4bc3a558a664fd060d9f8fe8f8594bae18db0ccd464be21464b912671/Bottleneck-1.4.0-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:1490348b3bbc0225523dc2c00c6bb3e66168c537d62797bd29783c0826c09838", size = 365060 },
-    { url = "https://files.pythonhosted.org/packages/a5/47/2048a6d640157edca20f064696bf4bb700f7db3a653df566eca04a05d578/Bottleneck-1.4.0-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a704165552496cbcc8bcc5921bb679fd6fa66bb1e758888de091b1223231c9f0", size = 360323 },
-    { url = "https://files.pythonhosted.org/packages/cb/ba/0840f3f51716759dd1669f4698c974bd37a51646a77266509d6679e63557/Bottleneck-1.4.0-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:ffb4e4edf7997069719b9269926cc00a2a12c6e015422d1ebc2f621c4541396a", size = 408309 },
-    { url = "https://files.pythonhosted.org/packages/d2/a1/0d4eea0374413213d27ca559f7ebbc80cd946e07a0da24515a3c32f476b8/Bottleneck-1.4.0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:5d6bf45ed58d5e7414c0011ef2da75474fe597a51970df83596b0bcb79c14c5e", size = 403782 },
-    { url = "https://files.pythonhosted.org/packages/4d/33/45ad5bdccfbc9edd07aae124843dcb4f8b65cd9cd65b544458c1d79645b4/Bottleneck-1.4.0-cp311-cp311-win32.whl", hash = "sha256:ed209f8f3cb9954773764b0fa2510a7a9247ad245593187ac90bd0747771bc5c", size = 106878 },
-    { url = "https://files.pythonhosted.org/packages/76/ab/3e95d162d356c853b7c0c084871900d5bdce5e9ad5479396d9641c2dee99/Bottleneck-1.4.0-cp311-cp311-win_amd64.whl", hash = "sha256:d53f1a72b12cfd76b56934c33bc0cb7c1a295f23a2d3ffba8c764514c9b5e0ff", size = 111620 },
-    { url = "https://files.pythonhosted.org/packages/d2/e3/ea55ba080e15dd152216ecfb4b601a9eafd3a86fd7b7c2e09dc0211a5e70/Bottleneck-1.4.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:e720ff24370324c84a82b1a18195274715c23181748b2b9e3dacad24198ca06f", size = 98672 },
-    { url = "https://files.pythonhosted.org/packages/7e/7f/9904c9c11c9eddf75c54b950d58ad19a602544cfe5c4a80b519a3809f4c2/Bottleneck-1.4.0-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:44305c70c2a1539b0ae968e033f301ad868a6146b47e3cccd73fdfe3fc07c4ee", size = 365629 },
-    { url = "https://files.pythonhosted.org/packages/f5/69/9dd1b0e248030fb22e27cb31203a9a8f52fbdd1c24b4f89f3a26b5f6f002/Bottleneck-1.4.0-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1b4dac5d2a871b7bd296c2b92426daa27d5b07aa84ef2557db097d29135da4eb", size = 361977 },
-    { url = "https://files.pythonhosted.org/packages/c7/e2/93d2f3a54618378a6d8ab05e4b03703c1dd47014a43f6f928ed2d78e2506/Bottleneck-1.4.0-cp312-cp312-musllinux_1_1_i686.whl", hash = "sha256:fbcdd01db9e27741fb16a02b720cf02389d4b0b99cefe3c834c7df88c2d7412d", size = 407876 },
-    { url = "https://files.pythonhosted.org/packages/85/3f/932de0f3335c3eb7289fa0faf42d40e29b5c84d3ce4da75b652a3c422d44/Bottleneck-1.4.0-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:14b3334a39308fbb05dacd35ac100842aa9e9bc70afbdcebe43e46179d183fd0", size = 403897 },
-    { url = "https://files.pythonhosted.org/packages/cc/0b/15f8c014d297f634f753c8203c7f46545e8707e1075d22fabe432bb22912/Bottleneck-1.4.0-cp312-cp312-win32.whl", hash = "sha256:520d7a83cd48b3f58e5df1a258acb547f8a5386a8c21ca9e1058d83a0d622fdf", size = 107058 },
-    { url = "https://files.pythonhosted.org/packages/e1/96/b100d19b55acc2b3cf41c52f31804533534de6e9da445ba11d83fa262d5d/Bottleneck-1.4.0-cp312-cp312-win_amd64.whl", hash = "sha256:b1339b9ad3ee217253f246cde5c3789eb527cf9dd31ff0a1f5a8bf7fc89eadad", size = 111760 },
+    { url = "https://files.pythonhosted.org/packages/63/7b/f1458dd143bd00347e7b28a57d57751579b985260be5411957cdee939e60/Bottleneck-1.3.8-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:865c8ed5b798c0198b0b80553e09cc0d890c4f5feb3d81d31661517ca7819fa3", size = 115946 },
+    { url = "https://files.pythonhosted.org/packages/3a/00/bf8d80521c37cbf65169f9c881068bdf6c32a2264742c865fae5a3f2bbd9/Bottleneck-1.3.8-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:d073a31e259d40b25e29dbba80f73abf38afe98fd730c79dad7edd9a0ad6cff5", size = 359420 },
+    { url = "https://files.pythonhosted.org/packages/cf/e9/b3f4f7f1aa3a3feb89b614f26ecbcf428f3fb481730e7024cf5c1b328162/Bottleneck-1.3.8-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b806b277ab47495032822f55f43b8d336e4b7e73f8506ed34d3ea3da6d644abc", size = 354097 },
+    { url = "https://files.pythonhosted.org/packages/3d/f1/4f50b044c6f15eb6e81574c1857096c8e1b3deff3f12b732a6788ce6c7f4/Bottleneck-1.3.8-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:770b517609916adeb39d3b1a386a29bc316da03dd61e7ee6e8a38325b80cc327", size = 404202 },
+    { url = "https://files.pythonhosted.org/packages/e7/9d/36958c5ca77cb5cf671a50bf75e7c8b35e5b5cf21c7f3c55467e55e92124/Bottleneck-1.3.8-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:2948502b0394ee419945b55b092585222a505c61d41a874c741be49f2cac056f", size = 396297 },
+    { url = "https://files.pythonhosted.org/packages/d3/45/afe48605a21de5daebefac2ef5c8a50b39cc881da6624087c55115ffb0d5/Bottleneck-1.3.8-cp310-cp310-win32.whl", hash = "sha256:271b6333522beb8aee32e640ba49a2064491d2c10317baa58a5996be3dd443e4", size = 104854 },
+    { url = "https://files.pythonhosted.org/packages/c3/3c/e0295e52d1f94c7bbc258f8014b654cc5255eb275a4cfcc17641ec8e4616/Bottleneck-1.3.8-cp310-cp310-win_amd64.whl", hash = "sha256:d41000ea7ca196b5fd39d6fccd34bf0704c8831731cedd2da2dcae3c6ac49c42", size = 110119 },
+    { url = "https://files.pythonhosted.org/packages/5d/13/c8abebadc53a40ac283539526abad2f750cae502a0bca10831d15cfe5a0d/Bottleneck-1.3.8-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:d0a7f454394cd3642498b6e077e70f4a6b9fd46a8eb908c83ac737fdc9f9a98c", size = 115943 },
+    { url = "https://files.pythonhosted.org/packages/e1/98/361c5fa4f5f8510b2512053da8bcfe961d3fe1b16c06912832a50df5ef27/Bottleneck-1.3.8-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:2c4ea8b9024dcb4e83b5c118a3c8faa863ace2ad572849da548a74a8ee4e8f2a", size = 363885 },
+    { url = "https://files.pythonhosted.org/packages/8c/93/7c0742925ffdc924b1fb9104e2072fa14451bf312b66f7e044550867668b/Bottleneck-1.3.8-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f40724b6e965ff5b88b333d4a10097b1629e60c0db21bb3d08c24d7b1a904a16", size = 358654 },
+    { url = "https://files.pythonhosted.org/packages/64/9e/63c688eb01f2684093deddb3cfc472183d2d8e4f3197e5fee81809afddeb/Bottleneck-1.3.8-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:4bd7183b8dcca89d0e65abe4507c19667dd31dacfbcc8ed705bad642f26a46e1", size = 408621 },
+    { url = "https://files.pythonhosted.org/packages/4e/2b/db9f1ee1a80e72de9118d50db0437b6fdbcb79fb4091d6a290b729211328/Bottleneck-1.3.8-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:20aa31a7d9d747c499ace1610a6e1f7aba6e3d4a9923e0312f6b4b6d68a59af3", size = 400751 },
+    { url = "https://files.pythonhosted.org/packages/fe/b3/9016c2c8ee9c0d5cfc25d7736a1b1ebb6b368ebb54124c94b14426963376/Bottleneck-1.3.8-cp311-cp311-win32.whl", hash = "sha256:350520105d9449e6565b3f0c4ce1f80a0b3e4d63695ebbf29db41f62e13f6461", size = 104848 },
+    { url = "https://files.pythonhosted.org/packages/a7/ef/f5ee62f290f61842b34413ae82042825556ee1078e195d0e34c674fdc72e/Bottleneck-1.3.8-cp311-cp311-win_amd64.whl", hash = "sha256:167a278902775defde7dfded6e98e3707dfe54971ffd9aec25c43bc74e4e381a", size = 110124 },
+    { url = "https://files.pythonhosted.org/packages/8d/05/3357d07238434db3aa4a5f0528bd57b15674665cf1913f4e4f52c9ed597d/Bottleneck-1.3.8-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:c6e93ed45c6c83392f73d0333b310b38772df7eb78c120c1447245691bdedaf4", size = 116586 },
+    { url = "https://files.pythonhosted.org/packages/ab/8b/8afb54a1b0a35d0562954d3f5f95ee85f4117a4fc13dabd2ef260f6fc5e3/Bottleneck-1.3.8-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:d3400f47dda0196b5af50b0b0678e33cc8c42e52e55ae0a63cdfed60725659bc", size = 364424 },
+    { url = "https://files.pythonhosted.org/packages/e8/f6/dbefd2f642aa404ffb972361584241c135f54f30fb77f91b0f3b53f8a04d/Bottleneck-1.3.8-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fba5fd1805c71b2eeea50bea93d59be449c4af23ebd8da5f75fd74fd0331e314", size = 360335 },
+    { url = "https://files.pythonhosted.org/packages/cb/61/49da8b3bcdabf7fdf00501d4e92579d496e931093e8e58a2e99428b8dee3/Bottleneck-1.3.8-cp312-cp312-musllinux_1_1_i686.whl", hash = "sha256:60139c5c3d2a9c1454a04af5ee981a9f56548d27fa36f264069b149a6e9b01ed", size = 409099 },
+    { url = "https://files.pythonhosted.org/packages/29/8e/f73aac77c7c12f59ca468220c788fb61935f6909998dd11c96e40a3c84ae/Bottleneck-1.3.8-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:99fab17fa26c811ccad63e208314726e718ae6605314329eca09641954550523", size = 401903 },
+    { url = "https://files.pythonhosted.org/packages/80/d3/62c5b6e710e4b2144b82e1b850af6f825477c7ed8fd9a3c8577f1d8d3dc6/Bottleneck-1.3.8-cp312-cp312-win32.whl", hash = "sha256:d3ae2bb5d4168912e438e377cc1301fa01df949ba59cd86317b3e00404fd4a97", size = 105452 },
+    { url = "https://files.pythonhosted.org/packages/d5/8e/23b327711460bad01b451b8365d13c43cc030789071fcdbe1a36e990b530/Bottleneck-1.3.8-cp312-cp312-win_amd64.whl", hash = "sha256:bcba1d5d5328c50f94852ab521fcb26f35d9e0ccd928d120d56455d1a5bb743f", size = 110597 },
 ]
 
 [[package]]
@@ -1619,7 +1619,7 @@ typing = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bottleneck", specifier = "==1.4.0" },
+    { name = "bottleneck", specifier = "==1.3.8" },
     { name = "cartopy", specifier = "==0.22.0" },
     { name = "icon4py", extras = ["dace", "distributed", "fortran", "io", "testing"], marker = "extra == 'all'" },
     { name = "icon4py-atmosphere-advection", editable = "model/atmosphere/advection" },
