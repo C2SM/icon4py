@@ -10,9 +10,10 @@ from abc import ABC, abstractmethod
 from enum import Enum, auto
 import dataclasses
 import logging
+from typing import Optional
 
 import icon4py.model.common.grid.states as grid_states
-from gt4py.next import backend
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.atmosphere.advection import (
     advection_states,
@@ -48,48 +49,48 @@ log = logging.getLogger(__name__)
 
 class HorizontalAdvectionType(Enum):
     """
-    Horizontal operator scheme for advection.
+    Horizontal operator scheme for advection (originally ihadv_tracer).
     """
 
     #: no horizontal advection
-    NO_ADVECTION = auto()
+    NO_ADVECTION = 0
     #: 2nd order MIURA with linear reconstruction
-    LINEAR_2ND_ORDER = auto()
+    LINEAR_2ND_ORDER = 2
 
 
 class HorizontalAdvectionLimiter(Enum):
     """
-    Limiter for horizontal advection operator.
+    Limiter for horizontal advection operator (originally itype_hlimit).
     """
 
     #: no horizontal limiter
-    NO_LIMITER = auto()
+    NO_LIMITER = 0
     #: positive definite horizontal limiter
-    POSITIVE_DEFINITE = auto()
+    POSITIVE_DEFINITE = 4
 
 
 class VerticalAdvectionType(Enum):
     """
-    Vertical operator scheme for advection.
+    Vertical operator scheme for advection (originally ivadv_tracer).
     """
 
     #: no vertical advection
-    NO_ADVECTION = auto()
+    NO_ADVECTION = 0
     #: 1st order upwind
-    UPWIND_1ST_ORDER = auto()
+    UPWIND_1ST_ORDER = 1
     #: 3rd order PPM
-    PPM_3RD_ORDER = auto()
+    PPM_3RD_ORDER = 3
 
 
 class VerticalAdvectionLimiter(Enum):
     """
-    Limiter for vertical advection operator.
+    Limiter for vertical advection operator (originally itype_vlimit).
     """
 
     #: no vertical limiter
-    NO_LIMITER = auto()
+    NO_LIMITER = 0
     #: semi-monotonic vertical limiter
-    SEMI_MONOTONIC = auto()
+    SEMI_MONOTONIC = 1
 
 
 @dataclasses.dataclass(frozen=True)
@@ -128,7 +129,14 @@ class AdvectionConfig:
 
 
 class Advection(ABC):
-    """Class that runs one three-dimensional advection step."""
+    """
+    Runs one three-dimensional advection step.
+
+    Missing advection-specific features:
+        -tracer loops: currently the `run` method only advects one type of tracer at once
+        -optional tendency output: depending on the physics package, opt_ddt_tracer_adv might be needed
+        -maximum advection height: tracer-specific control over which levels are used for advection
+    """
 
     @abstractmethod
     def run(
@@ -159,7 +167,7 @@ class NoAdvection(Advection):
     def __init__(
         self,
         grid: icon_grid.IconGrid,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         log.debug("advection class init - start")
@@ -215,7 +223,7 @@ class GodunovSplittingAdvection(Advection):
         vertical_advection: advection_vertical.VerticalAdvection,
         grid: icon_grid.IconGrid,
         metric_state: advection_states.AdvectionMetricState,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
         even_timestep: bool = False,
     ):
@@ -381,7 +389,7 @@ def convert_config_to_horizontal_vertical_advection(
     metric_state: advection_states.AdvectionMetricState,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
-    backend: backend.Backend,
+    backend: Optional[gtx_backend.Backend],
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
 ) -> tuple[advection_horizontal.HorizontalAdvection, advection_vertical.VerticalAdvection]:
     match config.horizontal_advection_limiter:
@@ -463,7 +471,7 @@ def convert_config_to_advection(
     metric_state: advection_states.AdvectionMetricState,
     edge_params: grid_states.EdgeParams,
     cell_params: grid_states.CellParams,
-    backend: backend.Backend,
+    backend: Optional[gtx_backend.Backend],
     exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     even_timestep: bool = False,
 ) -> Advection:

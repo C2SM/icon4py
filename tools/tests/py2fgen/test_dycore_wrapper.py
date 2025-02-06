@@ -36,7 +36,7 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4pytools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
+from icon4py.tools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
 
 from . import utils
 

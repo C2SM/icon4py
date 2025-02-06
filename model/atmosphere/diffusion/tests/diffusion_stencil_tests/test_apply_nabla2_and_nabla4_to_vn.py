@@ -19,7 +19,6 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def apply_nabla2_and_nabla4_to_vn_numpy(
-    grid,
     area_edge,
     kh_smag_e,
     z_nabla2_e,
@@ -83,7 +82,6 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
         **kwargs,
     ):
         vn = apply_nabla2_and_nabla4_to_vn_numpy(
-            grid,
             area_edge,
             kh_smag_e,
             z_nabla2_e,

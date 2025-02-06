@@ -30,94 +30,94 @@ from .test_interpolate_contravariant_vertical_velocity_to_full_levels import (
 )
 
 
+def _fused_velocity_advection_stencil_16_to_18(
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    z_w_con_c,
+    w,
+    coeff1_dwdz,
+    coeff2_dwdz,
+    ddt_w_adv,
+    e_bln_c_s,
+    z_v_grad_w,
+    levelmask,
+    cfl_clipping,
+    owner_mask,
+    ddqz_z_half,
+    area,
+    geofac_n2s,
+    cell,
+    k,
+    scalfac_exdiff,
+    cfl_w_limit,
+    dtime,
+    cell_lower_bound,
+    cell_upper_bound,
+    nlev,
+    nrdmax,
+    extra_diffu,
+):
+    cell = cell[:, np.newaxis]
+
+    condition1 = (cell_lower_bound <= cell) & (cell < cell_upper_bound) & (k >= 1)
+
+    ddt_w_adv = np.where(
+        condition1,
+        compute_advective_vertical_wind_tendency_numpy(
+            z_w_con_c[:, :-1], w, coeff1_dwdz, coeff2_dwdz
+        ),
+        ddt_w_adv,
+    )
+
+    ddt_w_adv = np.where(
+        condition1,
+        add_interpolated_horizontal_advection_of_w_numpy(
+            connectivities, e_bln_c_s, z_v_grad_w, ddt_w_adv
+        ),
+        ddt_w_adv,
+    )
+
+    condition2 = (
+        (cell_lower_bound <= cell)
+        & (cell < cell_upper_bound)
+        & (np.maximum(2, nrdmax - 2) <= k)
+        & (k < nlev - 3)
+    )
+
+    if extra_diffu:
+        ddt_w_adv = np.where(
+            condition2,
+            add_extra_diffusion_for_w_con_approaching_cfl_numpy(
+                connectivities,
+                levelmask,
+                cfl_clipping,
+                owner_mask,
+                z_w_con_c[:, :-1],
+                ddqz_z_half,
+                area,
+                geofac_n2s,
+                w[:, :-1],
+                ddt_w_adv,
+                scalfac_exdiff,
+                cfl_w_limit,
+                dtime,
+            ),
+            ddt_w_adv,
+        )
+
+    return ddt_w_adv
+
+
 class TestFusedVelocityAdvectionStencil15To18(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_15_to_18
     OUTPUTS = (
         "z_w_con_c_full",
         "ddt_w_adv",
     )
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
-    def _fused_velocity_advection_stencil_16_to_18(
-        grid,
-        z_w_con_c,
-        w,
-        coeff1_dwdz,
-        coeff2_dwdz,
-        ddt_w_adv,
-        e_bln_c_s,
-        z_v_grad_w,
-        levelmask,
-        cfl_clipping,
-        owner_mask,
-        ddqz_z_half,
-        area,
-        geofac_n2s,
-        cell,
-        k,
-        scalfac_exdiff,
-        cfl_w_limit,
-        dtime,
-        cell_lower_bound,
-        cell_upper_bound,
-        nlev,
-        nrdmax,
-        extra_diffu,
-    ):
-        cell = cell[:, np.newaxis]
-
-        condition1 = (cell_lower_bound <= cell) & (cell < cell_upper_bound) & (k >= 1)
-
-        ddt_w_adv = np.where(
-            condition1,
-            compute_advective_vertical_wind_tendency_numpy(
-                z_w_con_c[:, :-1], w, coeff1_dwdz, coeff2_dwdz
-            ),
-            ddt_w_adv,
-        )
-
-        ddt_w_adv = np.where(
-            condition1,
-            add_interpolated_horizontal_advection_of_w_numpy(
-                grid, e_bln_c_s, z_v_grad_w, ddt_w_adv
-            ),
-            ddt_w_adv,
-        )
-
-        condition2 = (
-            (cell_lower_bound <= cell)
-            & (cell < cell_upper_bound)
-            & (np.maximum(2, nrdmax - 2) <= k)
-            & (k < nlev - 3)
-        )
-
-        if extra_diffu:
-            ddt_w_adv = np.where(
-                condition2,
-                add_extra_diffusion_for_w_con_approaching_cfl_numpy(
-                    grid,
-                    levelmask,
-                    cfl_clipping,
-                    owner_mask,
-                    z_w_con_c[:, :-1],
-                    ddqz_z_half,
-                    area,
-                    geofac_n2s,
-                    w[:, :-1],
-                    ddt_w_adv,
-                    scalfac_exdiff,
-                    cfl_w_limit,
-                    dtime,
-                ),
-                ddt_w_adv,
-            )
-
-        return ddt_w_adv
-
-    @classmethod
     def reference(
-        cls,
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         z_w_con_c,
         w,
         coeff1_dwdz,
@@ -144,13 +144,11 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         extra_diffu,
         **kwargs,
     ):
-        z_w_con_c_full = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(
-            grid, z_w_con_c
-        )
+        z_w_con_c_full = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
 
         if not lvn_only:
-            ddt_w_adv = cls._fused_velocity_advection_stencil_16_to_18(
-                grid,
+            ddt_w_adv = _fused_velocity_advection_stencil_16_to_18(
+                connectivities,
                 z_w_con_c,
                 w,
                 coeff1_dwdz,

@@ -16,16 +16,16 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def calculate_nabla4_numpy(
-    grid,
-    u_vert: np.array,
-    v_vert: np.array,
-    primal_normal_vert_v1: np.array,
-    primal_normal_vert_v2: np.array,
-    z_nabla2_e: np.array,
-    inv_vert_vert_length: np.array,
-    inv_primal_edge_length: np.array,
-) -> np.array:
-    e2c2v = grid.connectivities[dims.E2C2VDim]
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    u_vert: np.ndarray,
+    v_vert: np.ndarray,
+    primal_normal_vert_v1: np.ndarray,
+    primal_normal_vert_v2: np.ndarray,
+    z_nabla2_e: np.ndarray,
+    inv_vert_vert_length: np.ndarray,
+    inv_primal_edge_length: np.ndarray,
+) -> np.ndarray:
+    e2c2v = connectivities[dims.E2C2VDim]
     u_vert_e2c2v = u_vert[e2c2v]
     v_vert_e2c2v = v_vert[e2c2v]
 
@@ -61,21 +61,22 @@ def calculate_nabla4_numpy(
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
-        grid,
-        u_vert: np.array,
-        v_vert: np.array,
-        primal_normal_vert_v1: np.array,
-        primal_normal_vert_v2: np.array,
-        z_nabla2_e: np.array,
-        inv_vert_vert_length: np.array,
-        inv_primal_edge_length: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        u_vert: np.ndarray,
+        v_vert: np.ndarray,
+        primal_normal_vert_v1: np.ndarray,
+        primal_normal_vert_v2: np.ndarray,
+        z_nabla2_e: np.ndarray,
+        inv_vert_vert_length: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
         **kwargs,
     ) -> dict:
         z_nabla4_e2 = calculate_nabla4_numpy(
-            grid,
+            connectivities,
             u_vert,
             v_vert,
             primal_normal_vert_v1,
@@ -88,9 +89,6 @@ class TestCalculateNabla4(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2C2VDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
 

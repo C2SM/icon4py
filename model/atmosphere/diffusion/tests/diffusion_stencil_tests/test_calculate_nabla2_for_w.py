@@ -17,8 +17,10 @@ from icon4py.model.common.utils.data_allocation import constant_field, zero_fiel
 from icon4py.model.testing.helpers import StencilTest
 
 
-def calculate_nabla2_for_w_numpy(grid, w: np.array, geofac_n2s: np.array):
-    c2e2cO = grid.connectivities[dims.C2E2CODim]
+def calculate_nabla2_for_w_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray], w: np.ndarray, geofac_n2s: np.ndarray
+):
+    c2e2cO = connectivities[dims.C2E2CODim]
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     z_nabla2_c = np.sum(
         np.where((c2e2cO != -1)[:, :, np.newaxis], w[c2e2cO] * geofac_n2s, 0), axis=1
@@ -29,10 +31,16 @@ def calculate_nabla2_for_w_numpy(grid, w: np.array, geofac_n2s: np.array):
 class TestCalculateNabla2ForW(StencilTest):
     PROGRAM = calculate_nabla2_for_w
     OUTPUTS = ("z_nabla2_c",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
-    def reference(grid, w: np.array, geofac_n2s: np.array, **kwargs) -> dict:
-        z_nabla2_c = calculate_nabla2_for_w_numpy(grid, w, geofac_n2s)
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        w: np.ndarray,
+        geofac_n2s: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w, geofac_n2s)
         return dict(z_nabla2_c=z_nabla2_c)
 
     @pytest.fixture

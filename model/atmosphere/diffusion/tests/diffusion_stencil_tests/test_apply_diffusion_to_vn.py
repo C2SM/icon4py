@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -29,7 +30,7 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         u_vert,
         v_vert,
         primal_normal_vert_v1,
@@ -51,7 +52,7 @@ class TestApplyDiffusionToVn(StencilTest):
     ):
         vn_cp = vn.copy()
         z_nabla4_e2 = calculate_nabla4_numpy(
-            grid,
+            connectivities,
             u_vert,
             v_vert,
             primal_normal_vert_v1,
@@ -67,7 +68,6 @@ class TestApplyDiffusionToVn(StencilTest):
             vn = np.where(
                 condition,
                 apply_nabla2_and_nabla4_to_vn_numpy(
-                    grid,
                     area_edge,
                     kh_smag_e,
                     z_nabla2_e,
@@ -78,14 +78,14 @@ class TestApplyDiffusionToVn(StencilTest):
                     nudgezone_diff,
                 ),
                 apply_nabla2_to_vn_in_lateral_boundary_numpy(
-                    grid, z_nabla2_e, area_edge, vn, fac_bdydiff_v
+                    z_nabla2_e, area_edge, vn, fac_bdydiff_v
                 ),
             )
         else:
             vn = np.where(
                 condition,
                 apply_nabla2_and_nabla4_global_to_vn_numpy(
-                    grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
+                    area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
                 ),
                 vn,
             )

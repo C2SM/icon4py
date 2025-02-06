@@ -18,10 +18,12 @@ from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import type_alias as ta
+from icon4py.model.common.grid import base
 
 
 if TYPE_CHECKING:
-    from icon4py.model.common.grid import base, base as grid_base
+    from icon4py.model.common.grid import base as grid_base
+
 
 #: Enum values from Enum values taken from DLPack reference implementation at:
 #:  https://github.com/dmlc/dlpack/blob/main/include/dlpack/dlpack.h
@@ -44,11 +46,15 @@ NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
 def as_numpy(array: NDArrayInterface):
     if isinstance(array, np.ndarray):
         return array
-    else:
+    elif isinstance(array, gtx.Field):
         return array.asnumpy()
+    else:
+        import cupy as cp
+
+        return cp.asnumpy(array)
 
 
-def is_cupy_device(backend: gtx_backend.Backend) -> bool:
+def is_cupy_device(backend: Optional[gtx_backend.Backend]) -> bool:
     if backend is not None:
         return backend.allocator.__gt_device_type__ in CUDA_DEVICE_TYPES
     else:
@@ -68,12 +74,12 @@ def array_ns(try_cupy: bool):
     return np
 
 
-def import_array_ns(backend: gtx_backend.Backend):
+def import_array_ns(backend: Optional[gtx_backend.Backend]):
     """Import cupy or numpy depending on a chosen GT4Py backend DevicType."""
     return array_ns(is_cupy_device(backend))
 
 
-def as_field(field: gtx.Field, backend: gtx_backend.Backend) -> gtx.Field:
+def as_field(field: gtx.Field, backend: Optional[gtx_backend.Backend] = None) -> gtx.Field:
     """Convenience function to transfer an existing Field to a given backend."""
     return gtx.as_field(field.domain, field.ndarray, allocator=backend)
 
@@ -121,6 +127,7 @@ def random_mask(
     *dims: gtx.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gtx.Dimension, int]] = None,
+    backend: Optional[gtx_backend.Backend] = None,
 ) -> gtx.Field:
     rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
@@ -131,7 +138,7 @@ def random_mask(
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return gtx.as_field(dims, arr)
+    return gtx.as_field(dims, arr, allocator=backend)
 
 
 def zero_field(
@@ -146,11 +153,16 @@ def zero_field(
 
 
 def constant_field(
-    grid: grid_base.BaseGrid, value: float, *dims: gtx.Dimension, dtype=ta.wpfloat
+    grid: grid_base.BaseGrid,
+    value: float,
+    *dims: gtx.Dimension,
+    dtype=ta.wpfloat,
+    backend=None,
 ) -> gtx.Field:
     return gtx.as_field(
         dims,
         value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
+        allocator=backend,
     )
 
 

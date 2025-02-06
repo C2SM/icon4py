@@ -18,20 +18,12 @@ INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
 INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
 
 attrs: Final[dict[str, model.FieldMetaData]] = {
-    "functional_determinant_of_metrics_on_interface_levels": dict(
-        standard_name="functional_determinant_of_metrics_on_interface_levels",
-        long_name="functional determinant of the metrics [sqrt(gamma)] on half levels",
+    "z_ifv": dict(
+        standard_name="z_ifv",
+        long_name="z_ifv",
         units="",
-        dims=(dims.CellDim, dims.KHalfDim),
-        dtype=ta.wpfloat,
-        icon_var_name="ddqz_z_half",
-    ),
-    "height": dict(
-        standard_name="height",
-        long_name="height",
-        units="m",
-        dims=(dims.CellDim, dims.KDim),
-        icon_var_name="z_mc",
+        dims=(dims.VertexDim, dims.KDim),
+        icon_var_name="z_ifv",
         dtype=ta.wpfloat,
     ),
     "height_on_interface_levels": dict(
@@ -40,6 +32,14 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         units="m",
         dims=(dims.CellDim, dims.KHalfDim),
         icon_var_name="z_ifc",
+        dtype=ta.wpfloat,
+    ),
+    "z_ifc_sliced": dict(
+        standard_name="z_ifc_sliced",
+        long_name="z_ifc_sliced",
+        units="m",
+        dims=(dims.CellDim),
+        icon_var_name="z_ifc_sliced",
         dtype=ta.wpfloat,
     ),
     "model_level_number": dict(
@@ -82,14 +82,6 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         icon_var_name="c_lin_e",
         long_name="coefficients for cell to edge interpolation",
     ),
-    "scaling_factor_for_3d_divergence_damping": dict(
-        standard_name="scaling_factor_for_3d_divergence_damping",
-        units="",
-        dims=(dims.KDim),
-        dtype=ta.wpfloat,
-        icon_var_name="scalfac_dd3d",
-        long_name="Scaling factor for 3D divergence damping terms",
-    ),
     "model_interface_height": dict(
         standard_name="model_interface_height",
         long_name="height value of half levels without topography",
@@ -114,5 +106,53 @@ attrs: Final[dict[str, model.FieldMetaData]] = {
         dtype=int,
         dims=(dims.EdgeDim,),
         icon_var_name="refin_e_ctrl",
+    ),
+    "c_refin_ctrl": dict(
+        standard_name="c_refin_ctrl",
+        units="",
+        dims=(dims.CellDim,),
+        dtype=ta.wpfloat,
+        icon_var_name="c_refin_ctrl",
+        long_name="refinement control field on cells",
+    ),
+    "e_refin_ctrl": dict(
+        standard_name="e_refin_ctrl",
+        units="",
+        dims=(dims.EdgeDim,),
+        dtype=ta.wpfloat,
+        icon_var_name="e_refin_ctrl",
+        long_name="refinement contorl fields on edges",
+    ),
+    "cells_aw_verts_field": dict(
+        standard_name="cells_aw_verts_field",
+        units="",
+        dims=(dims.VertexDim, dims.V2CDim),
+        dtype=ta.wpfloat,
+        icon_var_name="cells_aw_verts_field",
+        long_name="grid savepoint field",
+    ),
+    "e_lev": dict(
+        standard_name="e_lev",
+        long_name="e_lev",
+        units="",
+        dims=(dims.EdgeDim,),
+        icon_var_name="e_lev",
+        dtype=gtx.int32,
+    ),
+    "e_owner_mask": dict(
+        standard_name="e_owner_mask",
+        units="",
+        dims=(dims.EdgeDim),
+        dtype=bool,
+        icon_var_name="e_owner_mask",
+        long_name="grid savepoint field",
+    ),
+    "c_owner_mask": dict(
+        standard_name="c_owner_mask",
+        units="",
+        dims=(dims.CellDim),
+        dtype=bool,
+        icon_var_name="c_owner_mask",
+        long_name="grid savepoint field",
     ),
 }

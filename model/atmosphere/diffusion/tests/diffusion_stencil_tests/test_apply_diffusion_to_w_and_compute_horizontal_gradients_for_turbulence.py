@@ -29,10 +29,11 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         area,
         geofac_n2s,
         geofac_grg_x,
@@ -56,16 +57,18 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             dwdx, dwdy = np.where(
                 0 < reshaped_k,
                 calculate_horizontal_gradients_for_turbulence_numpy(
-                    grid, w_old, geofac_grg_x, geofac_grg_y
+                    connectivities, w_old, geofac_grg_x, geofac_grg_y
                 ),
                 (dwdx, dwdy),
             )
 
-        z_nabla2_c = calculate_nabla2_for_w_numpy(grid, w_old, geofac_n2s)
+        z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w_old, geofac_n2s)
 
         w = np.where(
             (interior_idx <= reshaped_cell) & (reshaped_cell < halo_idx),
-            apply_nabla2_to_w_numpy(grid, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
+            apply_nabla2_to_w_numpy(
+                connectivities, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w
+            ),
             w_old,
         )
 

@@ -201,14 +201,7 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_corrector(
-    vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    ddxn_z_full: fa.EdgeKField[vpfloat],
-    ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
-    wgtfacq_e: fa.EdgeKField[vpfloat],
-    nflatlev: gtx.int32,
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],

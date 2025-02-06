@@ -14,25 +14,24 @@ from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rh
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
-from icon4py.model.testing.helpers import StencilTest
+from icon4py.model.testing import helpers
 
 
-class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(StencilTest):
+class TestComputeDivergenceConnectivityOfFluxesOfRhoAndTheta(helpers.StencilTest):
     PROGRAM = compute_divergence_of_fluxes_of_rho_and_theta
     OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         geofac_div: np.array,
         mass_fl_e: np.array,
         z_theta_v_fl_e: np.array,
         **kwargs,
     ) -> tuple[np.array]:
-        c2e = grid.connectivities[dims.C2EDim]
+        c2e = connectivities[dims.C2EDim]
+        c2ce = helpers.as_1d_connectivity(c2e)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
-        c2ce = grid.get_offset_provider("C2CE").table
-
         z_flxdiv_mass = np.sum(
             geofac_div[c2ce] * mass_fl_e[c2e],
             axis=1,

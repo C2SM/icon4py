@@ -17,8 +17,10 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
 
-def calculate_nabla2_of_theta_numpy(grid, z_nabla2_e: np.array, geofac_div: np.array) -> np.array:
-    c2e = grid.connectivities[dims.C2EDim]
+def calculate_nabla2_of_theta_numpy(
+    connectivities: dict[gtx.Dimension, np.ndarray], z_nabla2_e: np.ndarray, geofac_div: np.ndarray
+) -> np.ndarray:
+    c2e = connectivities[dims.C2EDim]
     geofac_div = geofac_div.reshape(c2e.shape)
     geofac_div = np.expand_dims(geofac_div, axis=-1)
     z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=1)  # sum along edge dimension
@@ -30,8 +32,13 @@ class TestCalculateNabla2OfTheta(helpers.StencilTest):
     OUTPUTS = ("z_temp",)
 
     @staticmethod
-    def reference(grid, z_nabla2_e: np.array, geofac_div: np.array, **kwargs) -> dict:
-        z_temp = calculate_nabla2_of_theta_numpy(grid, z_nabla2_e, geofac_div)
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_nabla2_e: np.ndarray,
+        geofac_div: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        z_temp = calculate_nabla2_of_theta_numpy(connectivities, z_nabla2_e, geofac_div)
         return dict(z_temp=z_temp)
 
     @pytest.fixture

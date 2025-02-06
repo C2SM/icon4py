@@ -18,19 +18,19 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def compute_advective_normal_wind_tendency_numpy(
-    grid,
-    z_kin_hor_e: np.array,
-    coeff_gradekin: np.array,
-    z_ekinh: np.array,
-    zeta: np.array,
-    vt: np.array,
-    f_e: np.array,
-    c_lin_e: np.array,
-    z_w_con_c_full: np.array,
-    vn_ie: np.array,
-    ddqz_z_full_e: np.array,
-) -> np.array:
-    e2c = grid.connectivities[dims.E2CDim]
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    z_kin_hor_e: np.ndarray,
+    coeff_gradekin: np.ndarray,
+    z_ekinh: np.ndarray,
+    zeta: np.ndarray,
+    vt: np.ndarray,
+    f_e: np.ndarray,
+    c_lin_e: np.ndarray,
+    z_w_con_c_full: np.ndarray,
+    vn_ie: np.ndarray,
+    ddqz_z_full_e: np.ndarray,
+) -> np.ndarray:
+    e2c = connectivities[dims.E2CDim]
     z_ekinh_e2c = z_ekinh[e2c]
     coeff_gradekin = coeff_gradekin.reshape(e2c.shape)
     coeff_gradekin = np.expand_dims(coeff_gradekin, axis=-1)
@@ -40,7 +40,7 @@ def compute_advective_normal_wind_tendency_numpy(
     ddt_vn_apc = -(
         (coeff_gradekin[:, 0] - coeff_gradekin[:, 1]) * z_kin_hor_e
         + (-coeff_gradekin[:, 0] * z_ekinh_e2c[:, 0] + coeff_gradekin[:, 1] * z_ekinh_e2c[:, 1])
-        + vt * (f_e + 0.5 * np.sum(zeta[grid.connectivities[dims.E2VDim]], axis=1))
+        + vt * (f_e + 0.5 * np.sum(zeta[connectivities[dims.E2VDim]], axis=1))
         + np.sum(z_w_con_c_full[e2c] * c_lin_e, axis=1)
         * (vn_ie[:, :-1] - vn_ie[:, 1:])
         / ddqz_z_full_e
@@ -51,24 +51,25 @@ def compute_advective_normal_wind_tendency_numpy(
 class TestComputeAdvectiveNormalWindTendency(StencilTest):
     PROGRAM = compute_advective_normal_wind_tendency
     OUTPUTS = ("ddt_vn_apc",)
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
-        grid,
-        z_kin_hor_e: np.array,
-        coeff_gradekin: np.array,
-        z_ekinh: np.array,
-        zeta: np.array,
-        vt: np.array,
-        f_e: np.array,
-        c_lin_e: np.array,
-        z_w_con_c_full: np.array,
-        vn_ie: np.array,
-        ddqz_z_full_e: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_kin_hor_e: np.ndarray,
+        coeff_gradekin: np.ndarray,
+        z_ekinh: np.ndarray,
+        zeta: np.ndarray,
+        vt: np.ndarray,
+        f_e: np.ndarray,
+        c_lin_e: np.ndarray,
+        z_w_con_c_full: np.ndarray,
+        vn_ie: np.ndarray,
+        ddqz_z_full_e: np.ndarray,
         **kwargs,
     ) -> dict:
         ddt_vn_apc = compute_advective_normal_wind_tendency_numpy(
-            grid,
+            connectivities,
             z_kin_hor_e,
             coeff_gradekin,
             z_ekinh,
@@ -84,9 +85,6 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
         coeff_gradekin = data_alloc.random_field(grid, dims.ECDim, dtype=ta.vpfloat)
         z_ekinh = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)

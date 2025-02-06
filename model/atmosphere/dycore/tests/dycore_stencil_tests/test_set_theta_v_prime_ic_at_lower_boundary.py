@@ -27,15 +27,14 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
     @staticmethod
     def reference(
         grid,
-        wgtfacq_c: np.array,
-        z_rth_pr: np.array,
-        theta_ref_ic: np.array,
-        z_theta_v_pr_ic: np.array,
-        theta_v_ic: np.array,
+        wgtfacq_c: np.ndarray,
+        z_rth_pr: np.ndarray,
+        theta_ref_ic: np.ndarray,
+        z_theta_v_pr_ic: np.ndarray,
+        theta_v_ic: np.ndarray,
         **kwargs,
     ) -> dict:
         z_theta_v_pr_ic = interpolate_to_surface_numpy(
-            grid=grid,
             wgtfacq_c=wgtfacq_c,
             interpolant=z_rth_pr,
             interpolation_to_surface=z_theta_v_pr_ic,

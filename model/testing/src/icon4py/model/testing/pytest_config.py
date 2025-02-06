@@ -7,55 +7,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import os
-from collections.abc import Callable
-from typing import Final
 
-import pytest
-from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
-
+from icon4py.model.common import model_backends
 from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
-
-
-DEFAULT_BACKEND: Final = "roundtrip"
-
-BACKENDS: dict[str, Callable] = {
-    "embedded": None,
-    "roundtrip": itir_python,
-    "gtfn_cpu": gtfn_cpu,
-    "gtfn_gpu": gtfn_gpu,
-}
-
-GPU_BACKENDS: list[str] = ["gtfn_gpu"]
-
-try:
-    from gt4py.next.program_processors.runners.dace import (
-        run_dace_cpu,
-        run_dace_cpu_noopt,
-        run_dace_gpu,
-        run_dace_gpu_noopt,
-    )
-
-    BACKENDS.update(
-        {
-            "dace_cpu": run_dace_cpu,
-            "dace_gpu": run_dace_gpu,
-            "dace_cpu_noopt": run_dace_cpu_noopt,
-            "dace_gpu_noopt": run_dace_gpu_noopt,
-        }
-    )
-    GPU_BACKENDS.extend(["dace_gpu", "dace_gpu_noopt"])
-
-except ImportError:
-    # dace module not installed, ignore dace backends
-    pass
+from icon4py.model.testing.helpers import apply_markers
 
 
 def _check_backend_validity(backend_name: str) -> None:
-    if backend_name not in BACKENDS:
-        available_backends = ", ".join([f"'{k}'" for k in BACKENDS.keys()])
+    if backend_name not in model_backends.BACKENDS:
+        available_backends = ", ".join([f"'{k}'" for k in model_backends.BACKENDS.keys()])
         raise Exception(
             "Need to select a backend. Select from: ["
             + available_backends
@@ -95,7 +58,7 @@ def pytest_addoption(parser):
         parser.addoption(
             "--backend",
             action="store",
-            default=DEFAULT_BACKEND,
+            default=model_backends.DEFAULT_BACKEND,
             help="GT4Py backend to use when executing stencils. Defaults to roundtrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
@@ -123,20 +86,22 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    for _ in item.iter_markers(name="datatest"):
-        if not item.config.getoption("--datatest"):
-            pytest.skip("need '--datatest' option to run")
+    apply_markers(
+        item.own_markers,
+        model_backends.BACKENDS[item.config.getoption("--backend")],
+        is_datatest=item.config.getoption("--datatest"),
+    )
 
 
 def pytest_generate_tests(metafunc):
-    selected_backend = BACKENDS[DEFAULT_BACKEND]
+    selected_backend = model_backends.BACKENDS[model_backends.DEFAULT_BACKEND]
 
     # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
         _check_backend_validity(backend_option)
 
-        selected_backend = BACKENDS[backend_option]
+        selected_backend = model_backends.BACKENDS[backend_option]
         metafunc.parametrize("backend", [selected_backend], ids=[f"backend={backend_option}"])
 
     # parametrise grid

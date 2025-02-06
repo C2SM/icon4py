@@ -23,7 +23,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         kh_smag_ec: np.array,
         vn: np.array,
         e_bln_c_s: np.array,
@@ -31,8 +31,8 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(helpers.StencilTest):
         diff_multfac_smag: np.array,
         **kwargs,
     ) -> dict:
-        c2e = grid.connectivities[dims.C2EDim]
-        c2ce = grid.get_offset_provider("C2CE").table
+        c2e = connectivities[dims.C2EDim]
+        c2ce = helpers.as_1d_connectivity(c2e)
 
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)

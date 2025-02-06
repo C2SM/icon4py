@@ -36,28 +36,28 @@ class TestComputeFfslBacktrajectory(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_vn: np.array,
-        p_vt: np.array,
-        cell_idx: np.array,
-        cell_blk: np.array,
-        edge_verts_1_x: np.array,
-        edge_verts_2_x: np.array,
-        edge_verts_1_y: np.array,
-        edge_verts_2_y: np.array,
-        pos_on_tplane_e_1_x: np.array,
-        pos_on_tplane_e_2_x: np.array,
-        pos_on_tplane_e_1_y: np.array,
-        pos_on_tplane_e_2_y: np.array,
-        primal_normal_cell_x: np.array,
-        primal_normal_cell_y: np.array,
-        dual_normal_cell_x: np.array,
-        dual_normal_cell_y: np.array,
-        lvn_sys_pos: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_vn: np.ndarray,
+        p_vt: np.ndarray,
+        cell_idx: np.ndarray,
+        cell_blk: np.ndarray,
+        edge_verts_1_x: np.ndarray,
+        edge_verts_2_x: np.ndarray,
+        edge_verts_1_y: np.ndarray,
+        edge_verts_2_y: np.ndarray,
+        pos_on_tplane_e_1_x: np.ndarray,
+        pos_on_tplane_e_2_x: np.ndarray,
+        pos_on_tplane_e_1_y: np.ndarray,
+        pos_on_tplane_e_2_y: np.ndarray,
+        primal_normal_cell_x: np.ndarray,
+        primal_normal_cell_y: np.ndarray,
+        dual_normal_cell_x: np.ndarray,
+        dual_normal_cell_y: np.ndarray,
+        lvn_sys_pos: np.ndarray,
         p_dt: float,
         **kwargs,
     ) -> dict:
-        e2c_shape = grid.connectivities[dims.E2CDim].shape
+        e2c_shape = connectivities[dims.E2CDim].shape
         cell_idx = helpers.reshape(cell_idx, e2c_shape)
         cell_blk = helpers.reshape(cell_blk, e2c_shape)
         primal_normal_cell_x = helpers.reshape(primal_normal_cell_x, e2c_shape)

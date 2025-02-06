@@ -30,6 +30,7 @@ from .utils import (
 )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
@@ -128,7 +129,11 @@ def test_run_timeloop_single_step(
     backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
-        config = icon4py_configuration.read_config(experiment)
+        # it does not matter what backend is set here because the granules are set externally in this test
+        config = icon4py_configuration.read_config(
+            icon4py_driver_backend="gtfn_cpu",
+            experiment_type=experiment,
+        )
         diffusion_config = config.diffusion_config
         nonhydro_config = config.solve_nonhydro_config
         icon4pyrun_config = config.run_config
@@ -197,12 +202,16 @@ def test_run_timeloop_single_step(
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
         e_bln_c_s=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+            dims.CEDim,
+            field=interpolation_savepoint.e_bln_c_s(),
+            backend=backend,
         ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
         geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=interpolation_savepoint.geofac_div()
+            dims.CEDim,
+            field=interpolation_savepoint.geofac_div(),
+            backend=backend,
         ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
@@ -266,7 +275,12 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        vol_flx_ic=data_alloc.zero_field(
+            icon_grid,
+            dims.CellDim,
+            dims.KDim,
+            backend=backend,
+        ),
     )
 
     current_index, next_index = (2, 1) if not linit else (1, 2)

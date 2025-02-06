@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import vertical as v_grid
@@ -107,7 +108,8 @@ def _exclaim_ape_nonhydrostatic_config(ndyn: int):
 
 
 def create_vertical_params(
-    vertical_config: v_grid.VerticalGridConfig, sp: sb.IconSerialDataProvider
+    vertical_config: v_grid.VerticalGridConfig,
+    sp: sb.IconGridSavepoint,
 ):
     return v_grid.VerticalGrid(
         config=vertical_config,

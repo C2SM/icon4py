@@ -21,17 +21,18 @@ from icon4py.model.testing.helpers import StencilTest
 class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
     PROGRAM = mo_math_gradients_grad_green_gauss_cell_dsl
     OUTPUTS = ("p_grad_1_u", "p_grad_1_v", "p_grad_2_u", "p_grad_2_v")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid,
-        p_ccpr1: np.array,
-        p_ccpr2: np.array,
-        geofac_grg_x: np.array,
-        geofac_grg_y: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_ccpr1: np.ndarray,
+        p_ccpr2: np.ndarray,
+        geofac_grg_x: np.ndarray,
+        geofac_grg_y: np.ndarray,
         **kwargs,
-    ) -> tuple[np.array]:
-        c2e2cO = grid.connectivities[dims.C2E2CODim]
+    ) -> dict:
+        c2e2cO = connectivities[dims.C2E2CODim]
         geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
         p_grad_1_u = np.sum(
             np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr1[c2e2cO], 0), axis=1

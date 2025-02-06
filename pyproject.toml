@@ -1,9 +1,11 @@
+# -- Build system requirements (PEP 518) --
 [build-system]
 build-backend = 'setuptools.build_meta'
 requires = ['setuptools>=61.0', 'wheel>=0.40.0']
 
+# -- Standard project description options (PEP 621) --
 [project]
-authors = [{email = 'gridtools@cscs.ch'}, {name = 'ETH Zurich'}]
+authors = [{email = "gridtools@cscs.ch", name = "ETH Zurich"}]
 classifiers = [
   'Development Status :: 3 - Alpha',
   'Intended Audience :: Science/Research',
@@ -32,7 +34,7 @@ license = {text = "BSD-3 License"}
 name = "icon4py"
 readme = "README.md"
 requires-python = ">=3.10"
-# bump-my-version marker:
+# managed by bump-my-version:
 version = "0.0.6"
 
 [project.optional-dependencies]
@@ -41,7 +43,7 @@ cuda11 = ["icon4py-common[cuda11]"]
 cuda12 = ["icon4py-common[cuda12]"]
 dace = ["icon4py-common[dace]"]
 distributed = ["icon4py-common[distributed]"]
-fortran = ["icon4pytools>=0.0.6"]
+fortran = ["icon4py-tools>=0.0.6"]
 io = ["icon4py-common[io]"]
 testing = ["icon4py-testing"]
 
@@ -111,7 +113,7 @@ explicit = true
 [tool.uv.sources]
 # ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
 # TODO(egparedes): use GT4Py tagged release until #596 & gt4py#1738 are merged
-gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_20241113" }
+gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_20241113_cache_fix" }
 icon4py-atmosphere-advection = { workspace = true }
 icon4py-atmosphere-diffusion = { workspace = true }
 icon4py-atmosphere-dycore = { workspace = true }
@@ -119,9 +121,8 @@ icon4py-atmosphere-microphysics = { workspace = true }
 icon4py-common = { workspace = true }
 icon4py-driver = { workspace = true }
 icon4py-testing = { workspace = true }
-icon4pytools = { workspace = true }
+icon4py-tools = { workspace = true }
 serialbox4py = { index = "test.pypi" }
-# serialbox4py = { git = "https://github.com/GridTools/serialbox", rev = "b3a7e22b73b6294011e900aa4f5b3a304860e67a" }
 
 [tool.uv.workspace]
 members = [
@@ -149,11 +150,11 @@ tag = false
 [[tool.bumpversion.files]]
 filename = "pyproject.toml"
 search = '''
-# bump-my-version marker:
+# managed by bump-my-version:
 version = "{current_version}"
 '''
 replace = '''
-# bump-my-version marker:
+# managed by bump-my-version:
 version = "{new_version}"
 '''
 
@@ -170,7 +171,7 @@ disallow_untyped_defs = true
 #   '^tests/liskov/*.py',
 #   '^tests/py2f/*.py',
 # ]
-ignore_missing_imports = true
+ignore_missing_imports = false
 implicit_reexport = true
 install_types = true
 non_interactive = true
@@ -240,3 +241,6 @@ packages = []
 # -- pytest --
 [tool.pytest.ini_options]
 addopts = ['-p icon4py.model.testing.pytest_config']
+markers = [
+    "embedded_remap_error", "uses_as_offset", "requires_concat_where", "skip_value_error", "datatest"
+]
