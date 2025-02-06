@@ -5,16 +5,11 @@ include:
   stage: benchmark
   variables:
     CODSPEED_RUNNER_VERSION: 3.2.0
-  script:
-    - echo "INSTALLING CODSPEED"
-    - echo $CODSPEED_TOKEN
+  before_script:
     - curl -fsSL https://github.com/CodSpeedHQ/runner/releases/download/v$CODSPEED_RUNNER_VERSION/codspeed-runner-installer.sh | bash -s
     - source $HOME/.cargo/env
-    - which codspeed
-    - ls -l $HOME/.cargo/bin
-    - export PATH=$HOME/.cargo/bin:$PATH
-    - echo "CHECK PATH FOR CODSPEED"
-    - echo $PATH
+  script:
+    - export PATH=$PATH:$HOME/.cargo/bin
     - env -u GITLAB_CI BUILDKITE=true BUILDKITE_AGENT_NAME=7b10eca7600b-1 BUILDKITE_BRANCH=codspeed BUILDKITE_BUILD_NUMBER=$CI_JOB_ID BUILDKITE_COMMIT=$CI_COMMIT_SHA BUILDKITE_ORGANIZATION_SLUG=C2SM BUILDKITE_PIPELINE_SLUG="my-test-run" BUILDKITE_PULL_REQUEST_BASE_BRANCH=main BUILDKITE_PULL_REQUEST=657 BUILDKITE_REPO=git@github.com:C2SM/icon4py.git CODSPEED_LOG=debug codspeed run -- nox -s benchmark_model-3.10 --reuse-existing-virtualenvs --no-install -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:

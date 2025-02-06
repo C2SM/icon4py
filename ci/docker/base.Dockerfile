@@ -28,8 +28,8 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libreadline-dev \
     git \
     rustc \
-    htop libc6-dbg && \
-    # gdb libbabeltrace1 libc6-dbg libdebuginfod-common libdebuginfod1 libdw1 libelf1 libsource-highlight-common libsource-highlight4v5 && \
+    htop \
+    libc6-dbg && \
     rm -rf /var/lib/apt/lists/*
 
 RUN wget -P /tmp https://github.com/CodSpeedHQ/valgrind-codspeed/releases/download/3.21.0-0codspeed3/valgrind_3.21.0-0codspeed3_ubuntu-22.04_arm64.deb && apt install -y /tmp/valgrind_3.21.0-0codspeed3_ubuntu-22.04_arm64.deb && rm /tmp/valgrind_3.21.0-0codspeed3_ubuntu-22.04_arm64.deb
