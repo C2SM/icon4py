@@ -22,6 +22,7 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
+    "bottleneck==1.4.0",
     "cartopy==0.22.0",
     "icon4py-atmosphere-advection>=0.0.6",
     "icon4py-atmosphere-diffusion>=0.0.6",
