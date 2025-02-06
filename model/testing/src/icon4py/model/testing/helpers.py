@@ -31,8 +31,7 @@ except ModuleNotFoundError:
 
 @pytest.fixture(scope="session")
 def connectivities_as_numpy(grid) -> dict[gtx.Dimension, np.ndarray]:
-    connectivities = dict(grid.connectivities)
-    return {dim: data_alloc.as_numpy(table, copy=True) for dim, table in connectivities.items()}
+    return {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:
