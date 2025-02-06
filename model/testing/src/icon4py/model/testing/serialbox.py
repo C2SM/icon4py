@@ -1210,10 +1210,6 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self._get_field("init_z_v_grad_w_1_7", dims.EdgeDim, dims.KDim)
 
 
-
-
-
-
 class IconDiffusionExitSavepoint(IconSavepoint):
     def vn(self):
         return self._get_field("x_vn", dims.EdgeDim, dims.KDim)
@@ -1411,6 +1407,22 @@ class IconNonhydroExitSavepoint(IconSavepoint):
 
     def exner_dyn_incr(self):
         return self._get_field("x_exner_dyn_incr", dims.CellDim, dims.KDim)
+
+    # TODO fix the dimensions
+    def x_vt_1_7(self):
+        return self._get_field("x_vt_1_7", dims.CellDim, dims.KDim)
+
+    def x_vn_ie_1_7(self):
+        return self._get_field("x_vn_ie_1_7", dims.CellDim, dims.KDim)
+
+    def x_z_kin_hor_e_1_7(self):
+        return self._get_field("x_z_kin_hor_e_1_7", dims.CellDim, dims.KDim)
+
+    def x_z_w_concorr_me_1_7(self):
+        return self._get_field("x_z_w_concorr_me_1_7", dims.CellDim, dims.KDim)
+
+    def x_z_v_grad_w_1_7(self):
+        return self._get_field("x_z_v_grad_w_1_7", dims.CellDim, dims.KDim)
 
 
 # TODO (magdalena) rename?
