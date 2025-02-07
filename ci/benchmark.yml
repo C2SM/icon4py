@@ -13,7 +13,7 @@ include:
     - asv run asv_test^!
     - pushd .asv/results
     - git add .
-    - git commit -m "Benchmark results machine: '$CI_COMMIT_SHA' commit: Santis (GH200)"
+    - git commit -m "Benchmark results"
     - git fetch origin
     - git rebase origin/$ASV_RESULTS_REPOSITORY_BRANCH
     - git push origin HEAD:$ASV_RESULTS_REPOSITORY_BRANCH
