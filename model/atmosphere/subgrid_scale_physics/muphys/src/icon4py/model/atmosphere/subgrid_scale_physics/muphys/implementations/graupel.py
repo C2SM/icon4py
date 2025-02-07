@@ -309,12 +309,12 @@ def _graupel_run(
     te:        fa.CellKField[ta.wpfloat],             # Temperature
     p:         fa.CellKField[ta.wpfloat],             # Pressure
     rho:       fa.CellKField[ta.wpfloat],             # Density containing dry air and water constituents
-    qve:       fa.CellKField[ta.wpfloat],             # Specific humidityn
+    qve:       fa.CellKField[ta.wpfloat],             # Specific humidity
     qce:       fa.CellKField[ta.wpfloat],             # Specific cloud water content
     qre:       fa.CellKField[ta.wpfloat],             # Specific rain water
-    qge:       fa.CellKField[ta.wpfloat],             # Specific graupel water content
     qse:       fa.CellKField[ta.wpfloat],             # Specific snow water
     qie:       fa.CellKField[ta.wpfloat],             # Specific ice water content
+    qge:       fa.CellKField[ta.wpfloat],             # Specific graupel water content
     dt:        ta.wpfloat,
     qnc:       ta.wpfloat,
 ) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
