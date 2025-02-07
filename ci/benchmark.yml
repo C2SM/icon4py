@@ -10,7 +10,7 @@ include:
     - cd icon4py
     - echo "Running benchmarks"
     - pip install asv
-    - ASV_RESULTS_REPOSITORY="https://github.com/iomaganaris/icon4py_asv.git"
+    - ASV_RESULTS_REPOSITORY="git@github.com:iomaganaris/icon4py_asv.git"
     - ASV_RESULTS_REPOSITORY_BRANCH="icon4py_upstream_santis"
     - git config --global user.name 'CI Benchmark'
     - git config --global user.email 'benchmark@ci.invalid'
