@@ -4,7 +4,7 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   variables:
-    CODSPEED_RUNNER_VERSION: 3.2.0
+    CODSPEED_RUNNER_VERSION: 3.2.2
   script:
     - curl -fsSL https://github.com/CodSpeedHQ/runner/releases/download/v$CODSPEED_RUNNER_VERSION/codspeed-runner-installer.sh | bash -s
     - source $HOME/.cargo/env
@@ -13,12 +13,12 @@ include:
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=cuda12 --group=test
     - source .venv/bin/activate
     - pwd
-    - ls -l
-    - env -u GITLAB_CI BUILDKITE=true BUILDKITE_AGENT_NAME=7b10eca7600b-1 BUILDKITE_BRANCH=codspeed BUILDKITE_BUILD_NUMBER=$CI_JOB_ID BUILDKITE_COMMIT=$CI_COMMIT_SHA BUILDKITE_ORGANIZATION_SLUG=C2SM BUILDKITE_PIPELINE_SLUG="my-test-run" BUILDKITE_PULL_REQUEST_BASE_BRANCH=main BUILDKITE_PULL_REQUEST=657 BUILDKITE_REPO=git@github.com:C2SM/icon4py.git CODSPEED_LOG=debug codspeed run -- pytest -sv --codspeed --backend=$BACKEND --grid=$GRID model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py
-  parallel:
-    matrix:
-      - BACKEND: [gtfn_cpu, gtfn_gpu]
-        GRID: [icon_grid, icon_grid_global]
+    - ls -la
+    - env -u GITLAB_CI BUILDKITE=true BUILDKITE_AGENT_NAME=7b10eca7600b-1 BUILDKITE_BRANCH=codspeed BUILDKITE_BUILD_NUMBER=$CI_JOB_ID BUILDKITE_COMMIT=$CI_COMMIT_SHA BUILDKITE_ORGANIZATION_SLUG=C2SM BUILDKITE_PIPELINE_SLUG="my-test-run" BUILDKITE_PULL_REQUEST_BASE_BRANCH=main BUILDKITE_PULL_REQUEST=657 BUILDKITE_REPO=git@github.com:C2SM/icon4py.git CODSPEED_LOG=debug codspeed run -- pytest -sv --codspeed --backend=gtfn_cpu --grid=icon_grid model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py
+  # parallel:
+  #   matrix:
+  #     - BACKEND: [gtfn_cpu, gtfn_gpu]
+  #       GRID: [icon_grid, icon_grid_global]
 # benchmark_model_stencils_x86_64:
 #   extends: [.benchmark_model_stencils, .test_template_x86_64]
 benchmark_model_stencils_aarch64:
