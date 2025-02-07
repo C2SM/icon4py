@@ -263,7 +263,7 @@ class IntermediateFields:
             z_exner_expl=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
             z_q=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
             z_contr_w_fl_l=data_alloc.zero_field(
-                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, grid=grid, backend=backend
+                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
             z_rho_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
             z_theta_v_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
@@ -658,7 +658,9 @@ class SolveNonhydro:
         self.z_rth_pr_2 = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.z_grad_rth_1 = data_alloc.zero_field(dims.CellDim, dims.KDim, backend=self._backend)
+        self.z_grad_rth_1 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+        )
         self.z_grad_rth_2 = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )

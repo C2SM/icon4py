@@ -18,7 +18,6 @@ from gt4py import next as gtx
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import type_alias as ta
-from icon4py.model.common.grid import base
 
 
 if TYPE_CHECKING:
@@ -167,7 +166,7 @@ def constant_field(
 
 
 def _shape(
-    grid: base.BaseGrid,
+    grid: grid_base.BaseGrid,
     *dims: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
 ) -> tuple[int, ...]:
@@ -176,7 +175,7 @@ def _shape(
 
 
 def index_field(
-    grid: base.BaseGrid,
+    grid: grid_base.BaseGrid,
     dim: gtx.Dimension,
     extend: Optional[dict[gtx.Dimension, int]] = None,
     dtype=gtx.int32,

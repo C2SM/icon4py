@@ -38,7 +38,7 @@ class TestCalculateNabla2AndSmagCoefficientsForVn(helpers.StencilTest):
         dual_normal_vert_y: np.ndarray,
         vn: np.ndarray,
         smag_limit: np.ndarray,
-        smag_offset,
+        smag_offset: float,
         **kwargs,
     ) -> dict:
         e2c2v = connectivities[dims.E2C2VDim]
