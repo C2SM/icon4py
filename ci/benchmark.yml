@@ -6,6 +6,8 @@ include:
   variables:
     GIT_STRATEGY: clone
   script:
+    - git checkout -b asv_test https://github.com/C2SM/icon4py.git
+    - cd icon4py
     - echo "Running benchmarks"
     - pip install asv
     - ASV_RESULTS_REPOSITORY="https://github.com/iomaganaris/icon4py_asv.git"
