@@ -9,7 +9,7 @@ include:
     - ASV_RESULTS_REPOSITORY="git@github.com:iomaganaris/icon4py_asv.git"
     - ASV_RESULTS_REPOSITORY_BRANCH="icon4py_upstream_santis"
     - git clone -b $ASV_RESULTS_REPOSITORY_BRANCH $ASV_RESULTS_REPOSITORY .asv/results
-    - cp asv_util/asv-machine.santis.json .asv-machine.json
+    - cp asv_util/asv-machine.santis.json ~/.asv-machine.json
     - asv run asv_test^!
     - pushd .asv/results
     - git add .
