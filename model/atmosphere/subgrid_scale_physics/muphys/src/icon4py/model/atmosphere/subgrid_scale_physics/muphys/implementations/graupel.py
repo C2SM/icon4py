@@ -163,7 +163,7 @@ def _graupel_loop2(
     # here they are simply never used:
     # identity transitions v_v, c_c, ... g_g
     # unphysical transitions: v_c, v_r, c_v, r_c, r_s, r_i, s_c, s_i, i_r, g_c, g_s, g_i
-
+    # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     # SINK calculation
 
     # if (is_sig_present[j]) or (qx_ind[ix] == lqc) or (qx_ind[ix] == lqv) or (qx_ind[ix] == lqr)
@@ -213,16 +213,18 @@ def _graupel_loop2(
     sink_g   = where( mask & (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v + sx2x_g_r, sink_g) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
 
     # water content updates:
-    qv     = maximum( 0.0, qv + ( sx2x_v_s + sx2x_v_i + sx2x_v_g - sink_v ) * dt ) # Missing: sx2x_v_c + sx2x_v_r
-    dqdt_c = sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g - sink_c                    # Missing: sx2x_c_v
+    # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
+    dqdt_v = sx2x_r_v + sx2x_s_v + sx2x_i_v + sx2x_g_v - sink_v                    # Missing: sx2x_c_v
+    qv     = maximum( 0.0, qv + dqdt_v * dt )
+    dqdt_c = sx2x_i_c - sink_c                     # Missing: sx2x_v_c, sx2x_r_c, sx2x_s_c, sx2x_g_c
     qc     = maximum( 0.0, qc + dqdt_c * dt )
-    dqdt_r = sx2x_r_v + sx2x_r_g - sink_r                                          # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
+    dqdt_r = sx2x_c_r + sx2x_s_r + sx2x_g_r - sink_r                     # Missing: sx2x_v_r + sx2x_i_r
     qr     = maximum( 0.0, qr + dqdt_r * dt )
-    dqdt_s = sx2x_s_v + sx2x_s_r + sx2x_s_g - sink_s                               # Missing: sx2x_s_c + sx2x_s_i
+    dqdt_s = sx2x_v_s + sx2x_c_s + sx2x_i_s - sink_s                     # Missing: sx2x_r_s + sx2x_g_s
     qs     = maximum( 0.0, qs + dqdt_s * dt )
-    dqdt_i = sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g - sink_i                    # Missing: sx2x_i_r
+    dqdt_i = sx2x_v_i + sx2x_c_i - sink_i                    # Missing: sx2x_r_i + sx2x_s_i + sx2x_g_i
     qi     = maximum( 0.0, qi + dqdt_i * dt )
-    dqdt_g = sx2x_g_v + sx2x_g_r - sink_g                                          # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
+    dqdt_g = sx2x_v_g + sx2x_c_g + sx2x_r_g + sx2x_s_g + sx2x_i_g - sink_g
     qg     = maximum( 0.0, qg + dqdt_g * dt )
 
     qice = qs + qi + qg
