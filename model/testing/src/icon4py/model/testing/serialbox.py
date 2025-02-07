@@ -528,9 +528,7 @@ class IconGridSavepoint(IconSavepoint):
             data_alloc.flatten_first_two_dims(dims.ECDim, field=self.primal_normal_cell_y()),
         )
 
-        dual_normal_cell: tuple[
-            gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
-        ] = (
+        dual_normal_cell: tuple[gtx.Field[[dims.ECDim], float], gtx.Field[[dims.ECDim], float]] = (
             data_alloc.flatten_first_two_dims(dims.ECDim, field=self.dual_normal_cell_x()),
             data_alloc.flatten_first_two_dims(dims.ECDim, field=self.dual_normal_cell_y()),
         )

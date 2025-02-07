@@ -38,19 +38,16 @@ def test_validate_divdamp_fields_against_savepoint_values(
     enh_divdamp_fac = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
-        extend={dims.KDim: 1},
         backend=backend,
     )
     scal_divdamp = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
-        extend={dims.KDim: 1},
         backend=backend,
     )
     bdy_divdamp = data_alloc.zero_field(
         icon_grid,
         dims.KDim,
-        extend={dims.KDim: 1},
         backend=backend,
     )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(

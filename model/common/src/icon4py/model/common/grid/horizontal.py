@@ -1,5 +1,4 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
-# ICON4Py - ICON inspired code in Python and GT4Py
 #
 # Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.

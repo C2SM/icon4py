@@ -638,7 +638,7 @@ class SolveNonhydro:
 
     def _allocate_local_fields(self):
         self.z_exner_ex_pr = data_alloc.zero_field(
-            self._grid, dims.CellDim, dims.KDim, backend=self._backend
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
         self.z_exner_ic = data_alloc.zero_field(
             self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
