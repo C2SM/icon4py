@@ -1,0 +1,2 @@
+Match Host *,!148.187.0.0/16,!172.28.0.0/16,!10.0.0.0/8
+    ProxyCommand nc -X connect -x proxy.cscs.ch:8080 %h %p
