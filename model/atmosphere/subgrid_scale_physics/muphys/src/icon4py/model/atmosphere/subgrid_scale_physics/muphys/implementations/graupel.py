@@ -8,6 +8,7 @@
 import gt4py.next as gtx
 
 from gt4py.next.ffront.fbuiltins import where, maximum, minimum, power, sqrt
+from gt4py.next.ffront.experimental import concat_where
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import idx, g_ct, t_d
@@ -57,7 +58,6 @@ def _temperature_update(
     dt:        ta.wpfloat,
 ) -> tuple[ta.wpfloat,ta.wpfloat,ta.wpfloat]:
     _, eflx, pflx = state
-
     e_int   = ei_old + eflx
 
     eflx    = dt * ( pr * ( t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc ) + (pflx + p_sig) * ( g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc ) )
@@ -236,6 +236,8 @@ def _graupel_loop2(
 
 @gtx.field_operator
 def _graupel_loop3_if_lrain(
+    k: fa.KField[gtx.int32],
+    last_lev: gtx.int32,
     kmin_r: fa.CellKField[bool],                   # rain minimum level
     kmin_i: fa.CellKField[bool],                   # ice minimum level
     kmin_s: fa.CellKField[bool],                   # snow minimum level
@@ -266,19 +268,19 @@ def _graupel_loop3_if_lrain(
     vc_s = where( kmin_s, _vel_scale_factor_snow( xrho, rho, t, qs ), 0.0 )
     vc_g = where( kmin_g, _vel_scale_factor_default( xrho ), 0.0 )
 
-    q_kp1    = qr(Koff[1])
+    q_kp1     = concat_where( k < last_lev, qr(Koff[1]), qr )
     qr, pr, _ = _precip( idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, qr, q_kp1, rho )
-    q_kp1    = qi(Koff[1])
+    q_kp1     = concat_where( k < last_lev, qi(Koff[1]), qi )
     qi, pi, _ = _precip( idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, qi, q_kp1, rho )
-    q_kp1    = qs(Koff[1])
+    q_kp1     = concat_where( k < last_lev, qs(Koff[1]), qs )
     qs, ps, _ = _precip( idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, qs, q_kp1, rho )
-    q_kp1    = qg(Koff[1])
+    q_kp1     = concat_where( k < last_lev, qg(Koff[1]), qg )
     qg, pg, _ = _precip( idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, qg, q_kp1, rho )
 
-    qliq    = qc + qr
-    qice    = qs + qi + qg
-    t_kp1   = t(Koff[1])
-    p_sig   = ps + pi + pg
+    qliq       = qc + qr
+    qice       = qs + qi + qg
+    p_sig      = ps + pi + pg
+    t_kp1      = concat_where( k < last_lev, t(Koff[1]), t )
     t, _, pflx = _temperature_update( t, t_kp1, ei_old, p_sig, qv, qliq, qice, pr, rho, dz, dt )
 
     # TODO: here we have to return a single layer for pre_gsp
@@ -301,6 +303,8 @@ def _output_calculation(
 
 @gtx.field_operator
 def _graupel_run(
+    k: fa.KField[gtx.int32],
+    last_lev:  gtx.int32,
     dz:        fa.CellKField[ta.wpfloat],             #
     te:        fa.CellKField[ta.wpfloat],             # Temperature
     p:         fa.CellKField[ta.wpfloat],             # Pressure
@@ -313,15 +317,17 @@ def _graupel_run(
     qie:       fa.CellKField[ta.wpfloat],             # Specific ice water content
     dt:        ta.wpfloat,
     qnc:       ta.wpfloat,
-) -> fa.CellKField[ta.wpfloat]:
+) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
     mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse )
     qv, qc, qr, qs, qi, qg, t = _graupel_loop2( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
-    qr, qi, qs, qg, t, pflx = _graupel_loop3_if_lrain( kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
-    return t
+ #   qr, qi, qs, qg, t, pflx = _graupel_loop3_if_lrain( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+    return t, qv, qc, qr, qs, qi, qg
 
 # TODO : program  needs to be called with offset_provider={"Koff": K}
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def graupel_run(
+    k: fa.KField[gtx.int32],
+    last_lev:  gtx.int32,
     dz:        fa.CellKField[ta.wpfloat],             #
     te:        fa.CellKField[ta.wpfloat],             # Temperature
     p:         fa.CellKField[ta.wpfloat],             # Pressure
@@ -334,13 +340,12 @@ def graupel_run(
     qge:       fa.CellKField[ta.wpfloat],             # Specific graupel water content
     dt:        ta.wpfloat,                            # Time step
     qnc:       ta.wpfloat,                            #
-    out1:      fa.CellKField[ta.wpfloat],             # output 1
-#    qti:       fa.CellKField[ta.wpfloat],             # Specific mass of all ice species (total-ice)
-#    mask_out:  fa.CellKField[bool],                      # Temporary mask for > QMIN points
-#    is_sig_present_out:  fa.CellKField[bool],            # Temporary mask S, I, or G > QMIN
-#    kmin_r_out:  fa.CellKField[bool],                    # Specific rainwater content
-#    kmin_i_out:  fa.CellKField[bool],                    # Specific cloud water content
-#    kmin_s_out:  fa.CellKField[bool],                    # Specific cloud water content
-#    kmin_g_out:  fa.CellKField[bool],                    # Specific cloud water content
+    t_out:     fa.CellKField[ta.wpfloat],             # Revised temperature
+    qv_out:    fa.CellKField[ta.wpfloat],             # Revised humidity
+    qc_out:    fa.CellKField[ta.wpfloat],             # Revised cloud water
+    qr_out:    fa.CellKField[ta.wpfloat],             # Revised rain water
+    qs_out:    fa.CellKField[ta.wpfloat],             # Revised snow water
+    qi_out:    fa.CellKField[ta.wpfloat],             # Revised ice water
+    qg_out:    fa.CellKField[ta.wpfloat],             # Revised graupel water
 ):
-    _graupel_run(dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc, out=out1 )
+    _graupel_run(k, last_lev, dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc, out=(t_out, qv_out, qc_out, qr_out, qs_out, qi_out, qg_out) )

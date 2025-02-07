@@ -10,10 +10,10 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import vel_scale_factor_snow
-
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 class TestVelScaleFactorSnow(StencilTest):
     PROGRAM = vel_scale_factor_snow
@@ -27,9 +27,9 @@ class TestVelScaleFactorSnow(StencilTest):
     def input_data(self, grid):
 
         return dict(
-            xrho            = constant_field(grid, 1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho             = constant_field(grid, 0.882961, dims.CellDim, dims.KDim, dtype=wpfloat),
-            t               = constant_field(grid, 257.101, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs              = constant_field(grid, 5.78761e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
-            scale_factor    = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            xrho            = data_alloc.constant_field(grid, 1.17787, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho             = data_alloc.constant_field(grid, 0.882961, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t               = data_alloc.constant_field(grid, 257.101, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs              = data_alloc.constant_field(grid, 5.78761e-06, dims.CellDim, dims.KDim, dtype=wpfloat),
+            scale_factor    = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

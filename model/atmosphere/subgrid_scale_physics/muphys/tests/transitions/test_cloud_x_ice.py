@@ -9,12 +9,10 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import cloud_x_ice
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
-
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
 from icon4py.model.common.type_alias import wpfloat
-
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 class TestCloudXIce(StencilTest):
     PROGRAM = cloud_x_ice
@@ -28,9 +26,9 @@ class TestCloudXIce(StencilTest):
     def input_data(self, grid):
 
         return dict(
-            t             = constant_field(grid, thermodyn.tmelt+1.0, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qc            = constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qi            = constant_field(grid, 4.50245e-07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t             = data_alloc.constant_field(grid, 274.15, dims.CellDim, dims.KDim, dtype=wpfloat), # tmelt + 1.0
+            qc            = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi            = data_alloc.constant_field(grid, 4.50245e-07, dims.CellDim, dims.KDim, dtype=wpfloat),
             dt            = 30.0,
-            freezing_rate = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            freezing_rate = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )

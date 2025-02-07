@@ -11,11 +11,9 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import fall_speed, fall_speed_scalar
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import idx
-
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
 from icon4py.model.common.type_alias import wpfloat
-
+from icon4py.model.testing.helpers import StencilTest
 
 class TestFallSpeed(StencilTest):
     PROGRAM = fall_speed_scalar

@@ -9,11 +9,10 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import ice_to_graupel
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct
-
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestIceToGraupel(StencilTest):
@@ -28,10 +27,10 @@ class TestIceToGraupel(StencilTest):
     def input_data(self, grid):
 
         return dict(
-            rho          = constant_field(grid, 1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qr           = constant_field(grid, 6.00408e-13, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qg           = constant_field(grid, 1.19022e-18, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qi           = constant_field(grid, 1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
-            sticking_eff = constant_field(grid, 1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
-            aggregation  = constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
+            rho          = data_alloc.constant_field(grid, 1.04848, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qr           = data_alloc.constant_field(grid, 6.00408e-13, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qg           = data_alloc.constant_field(grid, 1.19022e-18, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qi           = data_alloc.constant_field(grid, 1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
+            sticking_eff = data_alloc.constant_field(grid, 1.9584e-08, dims.CellDim, dims.KDim, dtype=wpfloat),
+            aggregation  = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat)
         )

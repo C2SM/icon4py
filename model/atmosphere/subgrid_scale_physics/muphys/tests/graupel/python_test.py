@@ -14,7 +14,6 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
-# vert = data_alloc.allocate_indices(dims.KDim, grid=icon_grid, is_halfdim=True, backend=backend)
 
 def set_lib_path(lib_dir):
     sys.path.append(lib_dir)
@@ -70,12 +69,19 @@ class Data:
         self.qs = nc.variables["qs"][:, :].astype(np.float64)  # inout
         self.qg = nc.variables["qg"][:, :].astype(np.float64)  # inout
         # intent(out) variables:
-        self.prr_gsp = np.zeros(self.ncells, np.float64)
-        self.pri_gsp = np.zeros(self.ncells, np.float64)
-        self.prs_gsp = np.zeros(self.ncells, np.float64)
-        self.prg_gsp = np.zeros(self.ncells, np.float64)
-        self.pre_gsp = np.zeros(self.ncells, np.float64)
-        self.pflx = np.zeros((self.ncells,self.nlev), np.float64)
+        self.t_out     = np.zeros((self.ncells,self.nlev), np.float64)
+        self.qv_out    = np.zeros((self.ncells,self.nlev), np.float64)
+        self.qc_out    = np.zeros((self.ncells,self.nlev), np.float64)
+        self.qi_out    = np.zeros((self.ncells,self.nlev), np.float64)
+        self.qr_out    = np.zeros((self.ncells,self.nlev), np.float64)
+        self.qs_out    = np.zeros((self.ncells,self.nlev), np.float64)
+        self.qg_out    = np.zeros((self.ncells,self.nlev), np.float64)
+        self.pflx_out  = np.zeros((self.ncells,self.nlev), np.float64)
+        self.prr_gsp   = np.zeros(self.ncells, np.float64)
+        self.pri_gsp   = np.zeros(self.ncells, np.float64)
+        self.prs_gsp   = np.zeros(self.ncells, np.float64)
+        self.prg_gsp   = np.zeros(self.ncells, np.float64)
+        self.pre_gsp   = np.zeros(self.ncells, np.float64)
         # allocate dz:
         self.dz = np.zeros((self.ncells, self.nlev), np.float64)
         # calc dz:
@@ -156,8 +162,18 @@ data = Data(args)
 #         total_ice=data.qg + data.qs + data.qi,
 #         rho=data.rho,
 #     )
-
-graupel_run( dz  = gtx.as_field((dims.CellDim, dims.KDim,), data.dz),
+ksize = data.dz.shape[1]
+k = gtx.as_field( (dims.KDim, ), np.arange(0,ksize,dtype=np.int32) )
+t_out = gtx.as_field((dims.CellDim, dims.KDim,), data.t_out)
+qv_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qv_out)
+qc_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qc_out)
+qr_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qr_out)
+qs_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qs_out)
+qi_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qi_out)
+qg_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qg_out)
+graupel_run( k = k,
+             last_lev = ksize-1,
+             dz  = gtx.as_field((dims.CellDim, dims.KDim,), data.dz),
              te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.t[0,:,:])),
              p   = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.p[0,:,:])),
              rho = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.rho[0,:,:])),
@@ -169,7 +185,13 @@ graupel_run( dz  = gtx.as_field((dims.CellDim, dims.KDim,), data.dz),
              qge = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.qg[0,:,:])),
              dt  = args.dt,
              qnc = args.qnc,
-             out1 = gtx.as_field((dims.CellDim, dims.KDim,), data.pflx),
+             t_out  = t_out,
+             qv_out = qv_out,
+             qc_out = qc_out,
+             qr_out = qr_out,
+             qs_out = qs_out,
+             qi_out = qi_out,
+             qg_out = qg_out,
              offset_provider={"Koff": K})
 
 # grpl.run(
@@ -209,23 +231,21 @@ graupel_run( dz  = gtx.as_field((dims.CellDim, dims.KDim,), data.dz),
 
 # grpl.finalize()
 
-'''
 write_fields(
     args.output_file,
     data.ncells,
     data.nlev,
-    t=data.t,
-    qv=data.qv,
-    qc=data.qc,
-    qi=data.qi,
-    qr=data.qr,
-    qs=data.qs,
-    qg=data.qg,
+    t= np.transpose(t_out.asnumpy()),
+    qv=np.transpose(qv_out.asnumpy()),
+    qc=np.transpose(qc_out.asnumpy()),
+    qi=np.transpose(qi_out.asnumpy()),
+    qr=np.transpose(qr_out.asnumpy()),
+    qs=np.transpose(qs_out.asnumpy()),
+    qg=np.transpose(qg_out.asnumpy()),
     prr_gsp=data.prr_gsp,
     pri_gsp=data.pri_gsp,
     prs_gsp=data.prs_gsp,
     prg_gsp=data.prg_gsp,
-    pflx=data.pflx,
+    pflx=np.transpose(data.pflx_out),
     pre_gsp=data.pre_gsp,
 )
-'''

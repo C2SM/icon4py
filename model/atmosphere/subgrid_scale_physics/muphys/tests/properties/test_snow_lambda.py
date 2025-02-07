@@ -11,10 +11,10 @@ import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import snow_lambda
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct
-
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 class TestSnowLambda(StencilTest):
     PROGRAM = snow_lambda
@@ -28,8 +28,8 @@ class TestSnowLambda(StencilTest):
     def input_data(self, grid):
 
         return dict(
-            rho             = constant_field(grid, 1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs              = constant_field(grid, graupel_ct.qmin, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ns              = constant_field(grid, 1.76669e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
-            riming_snow_rate= constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho             = data_alloc.constant_field(grid, 1.12204, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs              = data_alloc.constant_field(grid, graupel_ct.qmin, dims.CellDim, dims.KDim, dtype=wpfloat),
+            ns              = data_alloc.constant_field(grid, 1.76669e+07, dims.CellDim, dims.KDim, dtype=wpfloat),
+            riming_snow_rate= data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

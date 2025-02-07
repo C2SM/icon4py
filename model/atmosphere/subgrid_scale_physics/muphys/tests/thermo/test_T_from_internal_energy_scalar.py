@@ -10,11 +10,9 @@ import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import T_from_internal_energy_scalar
-
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
-
+from icon4py.model.testing.helpers import StencilTest
 
 class TestTFromInternalEnergy(StencilTest):
     PROGRAM = T_from_internal_energy_scalar
