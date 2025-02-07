@@ -61,7 +61,6 @@ def generate_python_wrapper(
         module_name=plugin.module_name,
         plugin_name=plugin.plugin_name,
         functions=plugin.functions,
-        imports=plugin.imports,
         backend=backend,
         debug_mode=debug_mode,
         limited_area=limited_area,
