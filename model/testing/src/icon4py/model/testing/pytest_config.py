@@ -132,8 +132,7 @@ def pytest_runtest_setup(item):
     )
 
 
-def get_grid(selected_backend, selected_grid_type)-> base_grid.BaseGrid:
-
+def get_grid(selected_backend, selected_grid_type) -> base_grid.BaseGrid:
     grid_instance = simple_grid.SimpleGrid()
     if selected_grid_type == "icon_grid":
         from icon4py.model.testing.grid_utils import (

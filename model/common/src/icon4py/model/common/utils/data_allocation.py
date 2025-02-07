@@ -52,6 +52,7 @@ def as_numpy(array: NDArrayInterface):
         return array.asnumpy()
     else:
         import cupy as cp
+
         print("cp.asnumpy()")
         return cp.asnumpy(array)
 
