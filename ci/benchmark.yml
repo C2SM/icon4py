@@ -10,7 +10,7 @@ include:
     - ASV_RESULTS_REPOSITORY_BRANCH="icon4py_upstream_santis"
     - git clone -b $ASV_RESULTS_REPOSITORY_BRANCH $ASV_RESULTS_REPOSITORY .asv/results
     - cp asv_util/asv-machine.santis.json $HOME/.asv-machine.json
-    - asv run asv_test^!
+    - asv run --environment virtualenv:3.10 -v asv_test^!
     - pushd .asv/results
     - git add .
     - git commit -m "Benchmark results"
