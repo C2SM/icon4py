@@ -3,6 +3,8 @@ include:
 
 .benchmark_model_stencils:
   stage: benchmark
+  variables:
+    GIT_STRATEGY: clone
   script:
     - echo "Running benchmarks"
     - pip install asv
