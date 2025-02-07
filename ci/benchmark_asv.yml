@@ -1,0 +1,26 @@
+include:
+  - local: 'ci/base.yml'
+
+.benchmark_model_stencils:
+  stage: benchmark
+  script:
+    - echo "Running benchmarks"
+    - pip install asv
+    - ASV_RESULTS_REPOSITORY="git@github.com:iomaganaris/icon4py_asv.git"
+    - ASV_RESULTS_REPOSITORY_BRANCH="icon4py_upstream_santis"
+    - git clone -b $ASV_RESULTS_REPOSITORY_BRANCH $ASV_RESULTS_REPOSITORY .asv/results
+    - cp asv_util/asv-machine.santis.json .asv-machine.json
+    - asv run asv_test^!
+    - pushd .asv/results
+    - git add .
+    - git commit -m "Benchmark results machine: $CI_COMMIT_SHA commit: Santis (GH200)"
+    - git fetch origin
+    - git rebase origin/$ASV_RESULTS_REPOSITORY_BRANCH
+    - git push origin HEAD:$ASV_RESULTS_REPOSITORY_BRANCH
+    - popd
+    - asv gh-pages --no-push
+    - git push $ASV_RESULTS_REPOSITORY gh-pages:gh-pages -f
+# benchmark_model_stencils_x86_64:
+#   extends: [.benchmark_model_stencils, .test_template_x86_64]
+benchmark_model_stencils_aarch64:
+  extends: [.benchmark_model_stencils, .test_template_aarch64]
