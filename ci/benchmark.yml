@@ -6,6 +6,7 @@ include:
   variables:
     GIT_STRATEGY: clone
   script:
+    - mkdir -p $HOME/.ssh
     - cp ci/proxies.txt $HOME/.ssh/config
     - git clone -b asv_test https://github.com/C2SM/icon4py.git
     - cd icon4py
