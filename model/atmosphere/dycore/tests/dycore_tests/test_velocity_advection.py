@@ -21,6 +21,7 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.common.utils.data_allocation import data_allocation as data_alloc
 from icon4py.model.common.utils.data_allocation import (
     as_1D_sparse_field,
     random_field,
