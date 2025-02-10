@@ -54,7 +54,6 @@ def _parse_params(func: Callable) -> List[FuncParameter]:
     sig_params = signature(func, follow_wrapped=False).parameters
     params = []
     for s, param in sig_params.items():
-        print(param.annotation)
         gt4py_type, is_optional = _gt4py_type_from_type_hint(param.annotation)
         dims, dtype = parse_type_spec(gt4py_type)
         params.append(FuncParameter(name=s, d_type=dtype, dimensions=dims, is_optional=is_optional))
