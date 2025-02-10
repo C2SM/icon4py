@@ -38,7 +38,9 @@ def connectivities_as_numpy(grid, backend) -> dict[gtx.Dimension, np.ndarray]:
 
         for d, t in grid.connectivities.items():
             if not isinstance(t, cp.ndarray):
-                warnings.warn(f" connectivity not on device {t} for backend {backend.name} nothing to transfer")
+                warnings.warn(
+                    f" connectivity  `{d}`:  {type(t)} already on host for backend {backend.name} nothing to transfer",
+                )
             reference_connectivities[d] = cp.asnumpy(t)
         return reference_connectivities
     else:

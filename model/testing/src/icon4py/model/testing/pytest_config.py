@@ -5,11 +5,12 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import os
+import warnings
 from typing import Final
 
 import pytest
+from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import model_backends
 from icon4py.model.common.grid import base as base_grid, simple as simple_grid
@@ -61,7 +62,10 @@ def grid(request, backend):
         grid_option = DEFAULT_GRID
     else:
         _check_grid_validity(grid_option)
-    grid = get_grid(grid_option, backend)
+    grid = _get_grid(grid_option, backend)
+    warnings.warn(
+        f"selected grid: {grid_option} (cells: {grid.num_cells}, edges: {grid.num_edges}, verts: {grid.num_vertices}, k: {grid.num_levels})  on backend {backend.name}"
+    )
     return grid
 
 
@@ -132,22 +136,27 @@ def pytest_runtest_setup(item):
     )
 
 
-def get_grid(selected_backend, selected_grid_type) -> base_grid.BaseGrid:
-    grid_instance = simple_grid.SimpleGrid()
-    if selected_grid_type == "icon_grid":
-        from icon4py.model.testing.grid_utils import (
-            get_grid_manager_for_experiment,
-        )
+def _get_grid(
+    selected_grid_type: str, selected_backend: gtx_backend.Backend | None
+) -> base_grid.BaseGrid:
+    match selected_grid_type:
+        case "icon_grid":
+            from icon4py.model.testing.grid_utils import (
+                get_grid_manager_for_experiment,
+            )
 
-        grid_instance = get_grid_manager_for_experiment(
-            REGIONAL_EXPERIMENT, backend=selected_backend
-        ).grid
-    elif selected_grid_type == "icon_grid_global":
-        from icon4py.model.testing.grid_utils import (
-            get_grid_manager_for_experiment,
-        )
+            grid_instance = get_grid_manager_for_experiment(
+                REGIONAL_EXPERIMENT, backend=selected_backend
+            ).grid
+            return grid_instance
+        case "icon_grid_global":
+            from icon4py.model.testing.grid_utils import (
+                get_grid_manager_for_experiment,
+            )
 
-        grid_instance = get_grid_manager_for_experiment(
-            GLOBAL_EXPERIMENT, backend=selected_backend
-        ).grid
-    return grid_instance
+            grid_instance = get_grid_manager_for_experiment(
+                GLOBAL_EXPERIMENT, backend=selected_backend
+            ).grid
+            return grid_instance
+        case _:
+            return simple_grid.SimpleGrid()
