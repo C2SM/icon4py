@@ -4,7 +4,7 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
     - curl -LsSf https://astral.sh/uv/install.sh | sh
     - source $HOME/.local/bin/env
