@@ -482,8 +482,8 @@ def test_velocity_fussed_1_7(
     backend,
 ):
 
-    for e in range(icon_grid.num_edges):
-        edge[e] = e
+    # for e in range(icon_grid.num_edges):
+    #     edge[e] = e
     edge_domain = h_grid.domain(dims.EdgeDim)
     
     vn=savepoint_velocity_1_7_init.vn()
@@ -512,6 +512,7 @@ def test_velocity_fussed_1_7(
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
+    # vertical_lower=1; vertical_upper=nlevp1; horizontal_lower=lateral_boundary_5; horizontal_upper=halo_2)
     horizontal_start=icon_grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
     horizontal_end=icon_grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.HALO_LEVEL_2))
     vertical_start=0
@@ -546,7 +547,7 @@ def test_velocity_fussed_1_7(
         istep=istep, 
         nlev=nlev, 
         lvn_only=lvn_only, 
-        edge=edge, #TODO 
+        edge=edge, 
         lateral_boundary_7=lateral_boundary_7, 
         halo_1=halo_1, 
         horizontal_start=horizontal_start, 
@@ -565,6 +566,8 @@ def test_velocity_fussed_1_7(
     assert helpers.dallclose(z_kin_hor_e_ref.asnumpy(), z_kin_hor_e.asnumpy())
     assert helpers.dallclose(z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy())
     assert helpers.dallclose(z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy())
+
+# TODO: can discuss the definition of k and edge
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -601,6 +604,7 @@ def test_velocity_fused_8_13(
     k = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=gtx.int32))
     nflatlev = grid_savepoint.nflatlev()
 
+    #vertical_lower=1; vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
     fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13.with_backend(backend)(
         z_kin_hor_e=z_kin_hor_e,
         e_bln_c_s=e_bln_c_s,
@@ -757,12 +761,15 @@ def test_velocity_fused_19_20(
     nrdmax = grid_savepoint.nrdmax()
 
     ddt_vn_apc_ref = savepoint_velocity_19_20_exit.ddt_vn_apc()
-    edge_domain = h_grid.domain(dims.EdgeDim) # TODO 
-    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    # ----- this not sure ----
+    edge_domain = h_grid.domain(dims.EdgeDim) 
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)) # I change the horizontal_start below
+    # ------------------------- 
 
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff() # TODO 
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit() # TODO
 
+    # vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
     fused_velocity_advection_stencil_19_to_20.fused_velocity_advection_stencil_19_to_20.with_backend(backend)(
         vn=vn,
         geofac_rot=geofac_rot,
@@ -788,7 +795,7 @@ def test_velocity_fused_19_20(
         extra_diffu=extra_diffu,
         nlev=icon_grid.num_levels,
         nrdmax=nrdmax,
-        horizontal_start=horizontal_start,
+        horizontal_start=0,
         horizontal_end=icon_grid.num_edges,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
