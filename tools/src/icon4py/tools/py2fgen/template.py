@@ -54,6 +54,7 @@ class FuncParameter(Node):
     gtdims: list[str] = datamodels.field(init=False)
     size_args_len: int = datamodels.field(init=False)
     np_type: str = datamodels.field(init=False)
+    domain: str = datamodels.field(init=False)
 
     def __post_init__(self) -> None:
         self.size_args = dims_to_size_strings(self.dimensions)
@@ -61,6 +62,11 @@ class FuncParameter(Node):
         self.is_array = True if len(self.dimensions) >= 1 else False
         self.gtdims = [dim.value if not dim.value == "KHalf" else "K" for dim in self.dimensions]
         self.np_type = to_np_type(self.d_type)
+        self.domain = (
+            "{"
+            + ",".join(f"{d}:{s}" for d, s in zip(self.gtdims, self.size_args, strict=True))
+            + "}"
+        )
 
 
 class Func(Node):
@@ -189,7 +195,6 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
-    # TODO(havogt): put np_as_located_field logic into unpack
     PythonWrapper = as_jinja(
         """\
 # imports for generated wrapper code
@@ -198,8 +203,10 @@ import logging
 from {{ plugin_name }} import ffi
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 import gt4py.next as gtx
-from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.type_system import type_specifications as ts
+from icon4py.tools.py2fgen.settings import config
 from icon4py.tools.py2fgen import wrapper_utils
+xp = config.array_ns
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
@@ -238,54 +245,18 @@ def {{ func.name }}_wrapper(
         unpack_start_time = time.perf_counter()
         {% endif %}
 
-        # Unpack pointers into Ndarrays
-        {% for arg in func.args %}
-        {% if arg.is_array %}
-        {%- if _this_node.debug_mode %}
-        msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name}})
-        logging.debug(msg)
-        {% endif %}
-
-        {%- if arg.name in _this_node.uninitialised_arrays -%}
-        {{ arg.name }} = xp.ones((1,) * {{ arg.size_args_len }}, dtype={{arg.np_type}}, order="F")
-        {%- else -%}
-        {{ arg.name }} = wrapper_utils.unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}(ffi, {{ arg.name }}, {{ ", ".join(arg.size_args) }})
-        {%- endif -%}
-
-        {%- if arg.d_type.name == "BOOL" %}
-        {{ arg.name }} = wrapper_utils.int_array_to_bool_array({{ arg.name }})
-        {%- endif %}
-
-        {%- if _this_node.debug_mode %}
-        msg = '{{ arg.name }} after unpacking: %s' % str({{ arg.name}})
-        logging.debug(msg)
-        msg = 'shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
-        logging.debug(msg)
-        {% endif %}
-        {% endif %}
-        {% endfor %}
-
-        {% if _this_node.profile %}
-        cp.cuda.Stream.null.synchronize()
-        unpack_end_time = time.perf_counter()
-        logging.critical('{{ func.name }} unpacking arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
-        {% endif %}
 
         {% if _this_node.profile %}
         cp.cuda.Stream.null.synchronize()
         allocate_start_time = time.perf_counter()
         {% endif %}
 
-        # Allocate GT4Py Fields
+        # Convert ptr to GT4Py fields
+        # TODO LOGIC FOR OPTIONAL FIELDS IS MISSING
+
         {% for arg in func.args %}
         {% if arg.is_array %}
-        {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
-        {%- if _this_node.debug_mode %}
-        msg = 'shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
-        logging.debug(msg)
-        msg = '{{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
-        logging.debug(msg)
-        {% endif %}
+        {{ arg.name }} = wrapper_utils.as_field(ffi, xp, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}})
         {% endif %}
         {% endfor %}
 

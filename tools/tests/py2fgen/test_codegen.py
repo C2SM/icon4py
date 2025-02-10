@@ -233,10 +233,12 @@ import logging
 
 from libtest_plugin import ffi
 import cupy as cp
-from gt4py.next.iterator.embedded import np_as_located_field
+import gt4py.next as gtx
+from gt4py.next.type_system import type_specifications as ts
 from icon4py.tools.py2fgen.settings import config
 from icon4py.tools.py2fgen import wrapper_utils
-from icon4py.model.common import dimension as dims
+
+xp = config.array_ns
 
 # logger setup
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -248,17 +250,18 @@ from libtest import foo
 from libtest import bar
 
 
+K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
+Cell = gtx.Dimension("Cell", kind=gtx.DimensionKind.HORIZONTAL)
+
+
 @ffi.def_extern()
 def foo_wrapper(one, two, n_Cell, n_K):
     try:
 
-        # Unpack pointers into Ndarrays
+        # Convert ptr to GT4Py fields
+        # TODO LOGIC FOR OPTIONAL FIELDS IS MISSING
 
-        two = wrapper_utils.unpack_gpu(ffi, two, n_Cell, n_K)
-
-        # Allocate GT4Py Fields
-
-        two = np_as_located_field(dims.CellDim, dims.KDim)(two)
+        two = wrapper_utils.as_field(ffi, xp, two, ts.ScalarKind.FLOAT64, {Cell: n_Cell, K: n_K})
 
         foo(one, two)
 
@@ -273,13 +276,10 @@ def foo_wrapper(one, two, n_Cell, n_K):
 def bar_wrapper(one, two, n_Cell, n_K):
     try:
 
-        # Unpack pointers into Ndarrays
+        # Convert ptr to GT4Py fields
+        # TODO LOGIC FOR OPTIONAL FIELDS IS MISSING
 
-        one = wrapper_utils.unpack_gpu(ffi, one, n_Cell, n_K)
-
-        # Allocate GT4Py Fields
-
-        one = np_as_located_field(dims.CellDim, dims.KDim)(one)
+        one = wrapper_utils.as_field(ffi, xp, one, ts.ScalarKind.FLOAT32, {Cell: n_Cell, K: n_K})
 
         bar(one, two)
 
@@ -289,6 +289,7 @@ def bar_wrapper(one, two, n_Cell, n_K):
 
     return 0
     """
+    print(interface)
     assert compare_ignore_whitespace(interface, expected)
 
 
