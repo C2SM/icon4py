@@ -2,9 +2,6 @@ include:
   - local: 'ci/base.yml'
 
 .benchmark_model_stencils:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      when: always
   stage: benchmark
   script:
     - curl --proto '=https' --tlsv1.2 -sSfL https://bencher.dev/download/install-cli.sh | sh
