@@ -13,7 +13,7 @@ include:
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=cuda12 --group=test
     - source .venv/bin/activate
     - echo $BENCHER_API_TOKEN $CI_COMMIT_REF_NAME $CI_MERGE_REQUEST_TARGET_BRANCH_NAME $CI_MERGE_REQUEST_TARGET_BRANCH_SHA
-    - bencher run --project test-1vcbiy6t --token "$BENCHER_API_TOKEN" --adapter python_pytest --file results.json "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID"
+    - bencher run --project test-1vcbiy6t --token "$BENCHER_API_TOKEN" --adapter python_pytest --file results.json "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
