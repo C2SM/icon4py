@@ -16,8 +16,10 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
+
 import cProfile
 import pstats
+from typing import Optional
 
 import gt4py.next as gtx
 
@@ -87,10 +89,10 @@ def diffusion_init(
     nudgecoeff_e: fa.EdgeField[wpfloat],
     rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    mask_hdiff: fa.CellKField[bool],
-    zd_diffcoef: fa.CellKField[wpfloat],
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.int32],
-    zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.float64],
+    mask_hdiff: Optional[fa.CellKField[bool]],
+    zd_diffcoef: Optional[fa.CellKField[wpfloat]],
+    zd_vertoffset: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.int32]],
+    zd_intcoef: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.float64]],
     ndyn_substeps: gtx.int32,
     rayleigh_damping_height: gtx.float64,
     nflat_gradp: gtx.int32,
@@ -258,10 +260,10 @@ def diffusion_run(
     exner: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     rho: fa.CellKField[wpfloat],
-    hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
-    div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
-    dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
-    dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    hdef_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64]],
+    div_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64]],
+    dwdx: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64]],
+    dwdy: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64]],
     dtime: gtx.float64,
     linit: bool,
 ):

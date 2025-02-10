@@ -132,9 +132,15 @@ def as_field(  # type: ignore[no-untyped-def] # CData type not public?
     ptr,
     scalar_kind: ts.ScalarKind,
     domain: dict[gtx.Dimension, int],
+    is_optional: bool,
 ) -> gtx.Field:
     sizes = domain.values()
     unpack = _unpack if xp == np else _unpack_gpu
+    if ptr == ffi.NULL:
+        if is_optional:
+            return gtx.zeros(domain)  # TODO dtype, longer term TODO return None and don't forward
+        else:
+            raise ValueError("Field is required but was not provided.")
     arr = unpack(ffi, ptr, *sizes)
     if scalar_kind == ts.ScalarKind.BOOL:
         # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.

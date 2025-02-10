@@ -49,6 +49,7 @@ class FuncParameter(Node):
     name: str
     d_type: ts.ScalarKind
     dimensions: Sequence[gtx.Dimension]
+    is_optional: bool = False
     size_args: list[str] = datamodels.field(init=False)
     is_array: bool = datamodels.field(init=False)
     gtdims: list[str] = datamodels.field(init=False)
@@ -256,7 +257,7 @@ def {{ func.name }}_wrapper(
 
         {% for arg in func.args %}
         {% if arg.is_array %}
-        {{ arg.name }} = wrapper_utils.as_field(ffi, xp, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}})
+        {{ arg.name }} = wrapper_utils.as_field(ffi, xp, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}}, {{arg.is_optional}})
         {% endif %}
         {% endfor %}
 
@@ -431,7 +432,14 @@ end function {{name}}_wrapper
         if len(func.args) < 1:
             arg_names, param_names_with_size_args = "", ""
         else:
-            arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
+            arg_names = ", &\n ".join(
+                map(
+                    lambda x: f"merge({x.name}, C_NULL_PTR, allocated({x.name}))"
+                    if x.is_array and x.is_optional
+                    else x.name,
+                    func.args,
+                )
+            )
             param_names_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
 
         return_code_param = ",&\nrc" if len(func.args) >= 1 else "rc"
