@@ -440,7 +440,7 @@ end function {{name}}_wrapper
             )
             arg_names = ", &\n ".join(
                 map(
-                    lambda x: f"merge(c_loc({x.name}), c_null_ptr, allocated({x.name}))"
+                    lambda x: f"merge(c_loc({x.name}), c_null_ptr, associated({x.name}))"
                     if x.is_array and x.is_optional
                     else x.name,
                     func.args,
@@ -516,7 +516,7 @@ end subroutine {{name}}
             iso_c_type=to_iso_c_type(param.d_type),
             dim=render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
             explicit_size=render_fortran_array_sizes(param),
-            allocatable="allocatable,"
+            allocatable="pointer,"
             if kwargs.get("as_allocatable", False) and param.is_optional
             else "",
             target="target",
