@@ -416,7 +416,7 @@ end module
     F90FunctionDeclaration = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
-   import :: c_int, c_double, c_bool, c_ptr, c_null_ptr
+   import :: c_int, c_double, c_bool, c_ptr, c_null_ptr, c_loc
    {% for size_arg in global_size_args %}
    integer(c_int), value :: {{ size_arg }}
    {% endfor %}
@@ -440,7 +440,7 @@ end function {{name}}_wrapper
             )
             arg_names = ", &\n ".join(
                 map(
-                    lambda x: f"merge({x.name}, c_null_ptr, allocated({x.name}))"
+                    lambda x: f"merge(c_loc({x.name}), c_null_ptr, allocated({x.name}))"
                     if x.is_array and x.is_optional
                     else x.name,
                     func.args,
@@ -496,6 +496,20 @@ end subroutine {{name}}
     )
 
     def visit_FuncParameter(self, param: FuncParameter, **kwargs: Any) -> str:
+        if kwargs["assumed_size_array"]:  # TODO: this is for F90FunctionDeclaration
+            return self.generic_visit(
+                param,
+                value="value" if param.is_optional else as_f90_value(param),
+                iso_c_type="type(c_ptr)" if param.is_optional else to_iso_c_type(param.d_type),
+                dim=""
+                if param.is_optional
+                else render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
+                explicit_size=render_fortran_array_sizes(param),
+                allocatable="allocatable,"
+                if kwargs.get("as_allocatable", False) and param.is_optional
+                else "",
+                target="" if param.is_optional else "target",
+            )
         return self.generic_visit(
             param,
             value=as_f90_value(param),
@@ -505,8 +519,9 @@ end subroutine {{name}}
             allocatable="allocatable,"
             if kwargs.get("as_allocatable", False) and param.is_optional
             else "",
+            target="target",
         )
 
     FuncParameter = as_jinja(
-        """{{iso_c_type}}, {{dim}} {{value}} {{allocatable}} target :: {{name}}"""
+        """{{iso_c_type}}, {{dim}} {{value}} {{allocatable}} {{target}} :: {{name}}"""
     )
