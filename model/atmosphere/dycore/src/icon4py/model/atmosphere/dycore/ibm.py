@@ -42,6 +42,12 @@ class ImmersedBoundaryMethod:
         self._dir_value_theta_v = -313
         self._dir_value_vn = 0.0
 
+        if DEBUG:
+            self._delta_file_vn = open("ibm_delta_vn.csv", "a")
+            self._delta_file_vn.write("\n")
+            self._delta_file_w = open("ibm_delta_w.csv", "a")
+            self._delta_file_w.write("\n")
+
         log.info("IBM initialized")
 
     def _validate_config(self):
@@ -131,15 +137,18 @@ class ImmersedBoundaryMethod:
         prognostic_state: prognostic_state.PrognosticState,
     ):
         """
-        Set boundary conditions on prognostic variables.
+        Check boundary conditions on prognostic variables.
         """
         edge_mask = self.edge_mask.ndarray
         cell_mask = self.cell_mask.ndarray
         vn = prognostic_state.vn.ndarray
         w  = prognostic_state.w.ndarray
 
-        err_vn = np.abs(vn[edge_mask] - self._dir_value_vn)
-        err_w  = np.abs(w [cell_mask] - self._dir_value_w )
+        delta_vn = np.abs(vn[edge_mask] - self._dir_value_vn)
+        delta_w  = np.abs(w [cell_mask] - self._dir_value_w )
 
-        log.info(f"IBM error on vn: min {err_vn.min():10.3e} max {err_vn.max():10.3e}")
-        log.info(f"IBM error on w : min {err_w .min():10.3e} max {err_w .max():10.3e}")
+        log.info(f"IBM delta on vn: min {delta_vn.min():10.3e} max {delta_vn.max():10.3e}")
+        log.info(f"IBM delta on w : min {delta_w .min():10.3e} max {delta_w .max():10.3e}")
+
+        self._delta_file_vn.write(f" {delta_vn.min():10.3e}, {delta_vn.max():10.3e},")
+        self._delta_file_w .write(f" {delta_w .min():10.3e}, {delta_w .max():10.3e},")
