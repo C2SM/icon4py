@@ -2,9 +2,32 @@ include:
   - local: 'ci/base.yml'
 
 .benchmark_model_stencils:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: always
   stage: benchmark
   script:
-    - nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID
+    - curl --proto '=https' --tlsv1.2 -sSfL https://bencher.dev/download/install-cli.sh | sh
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - source $HOME/.local/bin/env
+    - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=cuda12 --group=test
+    - source .venv/bin/activate
+    - echo $BENCHER_API_TOKEN $CI_COMMIT_REF_NAME $CI_MERGE_REQUEST_TARGET_BRANCH_NAME $CI_MERGE_REQUEST_TARGET_BRANCH_SHA
+    - |
+      bencher run \
+      --project test-1vcbiy6t \
+      --token "$BENCHER_API_TOKEN" \
+      --branch "$CI_COMMIT_REF_NAME" \
+      --start-point "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" \
+      --start-point-hash "$CI_MERGE_REQUEST_TARGET_BRANCH_SHA" \
+      --start-point-clone-thresholds \
+      --start-point-reset \
+      --testbed debian:bullseye \
+      --err \
+      --adapter python_pytest \
+      --file results.json \
+      pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID
+    # - nox -s benchmark_model-3.10 -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
