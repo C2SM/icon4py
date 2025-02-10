@@ -59,7 +59,7 @@ class FuncParameter(Node):
         self.size_args = dims_to_size_strings(self.dimensions)
         self.size_args_len = len(self.size_args)
         self.is_array = True if len(self.dimensions) >= 1 else False
-        self.gtdims = [dim.value for dim in self.dimensions]
+        self.gtdims = [dim.value if not dim.value == "KHalf" else "K" for dim in self.dimensions]
         self.np_type = to_np_type(self.d_type)
 
 
