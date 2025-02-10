@@ -479,7 +479,7 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
    {%- for arr in arrays %}
        !$ACC {{ arr }}{% if not loop.last %}, &{% else %} &{% endif %}
    {%- endfor %}
-   !$ACC )
+   !$ACC ) if_present
    {% endif %}
 
    {% for d in _this_node.dimension_positions %}
