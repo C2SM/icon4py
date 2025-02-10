@@ -7,15 +7,14 @@ include:
     GIT_STRATEGY: clone
   script:
     - mkdir -p $HOME/.ssh
-    - cp ci/proxies.txt $HOME/.ssh/config
     - git clone -b asv_test https://github.com/C2SM/icon4py.git
     - cd icon4py
     - echo "Running benchmarks"
     - pip install asv
-    - ASV_RESULTS_REPOSITORY="git@github.com:iomaganaris/icon4py_asv.git"
+    - ASV_RESULTS_REPOSITORY="https://iomaganaris:$ICON4PY_ASV_TOKEN@github.com/iomaganaris/icon4py_asv.git"
     - ASV_RESULTS_REPOSITORY_BRANCH="icon4py_upstream_santis"
-    - git config --global user.name 'CI Benchmark'
-    - git config --global user.email 'benchmark@ci.invalid'
+    - git config --global user.name 'icon4py CI'
+    - git config --global user.email 'icon4py@C2SM'
     - git config --global push.default nothing
     - git checkout asv_test
     - git clone -b $ASV_RESULTS_REPOSITORY_BRANCH $ASV_RESULTS_REPOSITORY .asv/results
