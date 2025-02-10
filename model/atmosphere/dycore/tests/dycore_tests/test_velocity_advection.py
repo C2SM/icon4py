@@ -8,7 +8,8 @@
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
-from icon4py.model.atmosphere.dycore.stencils import fused_velocity_advection_stencil_1o_7
+from icon4py.model.atmosphere.dycore.stencils import fused_velocity_advection_stencil_1_to_7
+
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -17,7 +18,9 @@ from icon4py.model.common.grid import (
 )
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.common.utils import data_allocation as data_alloc
 
+from model.common.tests.grid_tests.utils import horizontal_dim
 from . import utils
 import gt4py.next as gtx
 import numpy as np
@@ -470,55 +473,59 @@ def test_velocity_fussed_1_7(
     damping_height,
     icon_grid,
     grid_savepoint,
-    savepoint_velocity_init,
-    savepoint_velocity_exit,
+    savepoint_velocity_1_7_init,
+    savepoint_velocity_1_7_exit,
     interpolation_savepoint,
     metrics_savepoint,
     backend,
 
 ):
-    vn=savepoint_velocity_init.init_vn_1_7()
-    rbf_vec_coeff_e=savepoint_velocity_init.init_rbf_vec_coeff_e_1_7()
-    wgtfac_e=savepoint_velocity_init.init_wgtfac_e_1_7()
-    ddxn_z_full=savepoint_velocity_init.init_ddxn_z_full_1_7()
-    ddxt_z_full=savepoint_velocity_init.init_ddxt_z_full_1_7()
-    z_w_concorr_me=savepoint_velocity_init.init_z_w_concorr_me_1_7()
-    wgtfacq_e=savepoint_velocity_init.init_wgtfacq_1_7()
-    nflatlev=savepoint_velocity_init.init_nflatlev_1_7()
-    c_intp=savepoint_velocity_init.init_c_intp_1_7()
-    w=savepoint_velocity_init.init_w_1_7()
-    inv_dual_edge_length=savepoint_velocity_init.init_inv_dual_edge_length_1_7()
-    inv_primal_edge_length=savepoint_velocity_init.init_inv_primal_edge_length_1_7()
-    tangent_orientation=savepoint_velocity_init.init_tangent_orientation_1_7()
-    z_vt_ie=savepoint_velocity_init.init_z_vt_ie_1_7()
-    vt=savepoint_velocity_init.init_vt_1_7()
-    vn_ie=savepoint_velocity_init.init_vn_ie_1_7()
-    z_kin_hor_e=savepoint_velocity_init.init_z_kin_hor_e_1_7()
-    z_v_grad_w=savepoint_velocity_init.init_z_v_grad_w_1_7()
-    k = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=gtx.int32))
 
-    vt_ref = savepoint_velocity_exit.x_vt_1_7()
-    vn_ie_ref = savepoint_velocity_exit.x_vn_ie_1_7()
-    z_kin_hor_e_ref = savepoint_velocity_exit.x_z_kin_hor_e_1_7()
-    z_w_concorr_me_ref = savepoint_velocity_exit.x_z_w_concorr_me_1_7()
-    z_v_grad_w_ref = savepoint_velocity_exit.x_z_v_grad_w_1_7()
-
-    istep = 1
-    lvn_only = False
-    edge = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=gtx.int32)
     for e in range(icon_grid.num_edges):
         edge[e] = e
     edge_domain = h_grid.domain(dims.EdgeDim)
-
+    
+    vn=savepoint_velocity_1_7_init.vn()
+    rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e()
+    wgtfac_e=metrics_savepoint.wgtfac_e()
+    ddxn_z_full=metrics_savepoint.ddxn_z_full()
+    ddxt_z_full=metrics_savepoint.ddxt_z_full()
+    z_w_concorr_me=savepoint_velocity_1_7_init.z_w_concorr_me()
+    wgtfacq_e=metrics_savepoint.wgtfacq_e()
+    nflatlev=grid_savepoint.nflatlev() 
+    c_intp=interpolation_savepoint.c_intp()
+    w=savepoint_velocity_1_7_init.w()
+    inv_dual_edge_length=grid_savepoint.inv_dual_edge_length()
+    inv_primal_edge_length=grid_savepoint.inv_primal_edge_length()
+    tangent_orientation=grid_savepoint.tangent_orientation()
+    z_vt_ie=savepoint_velocity_1_7_init.z_vt_ie()
+    vt=savepoint_velocity_1_7_init.vt()
+    vn_ie=savepoint_velocity_1_7_init.vn_ie()
+    z_kin_hor_e=savepoint_velocity_1_7_init.z_kin_hor_e()
+    z_v_grad_w=savepoint_velocity_1_7_init.z_v_grad_w()
+    k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, is_halfdim=True, backend=backend)
+    
+    nlev = icon_grid.num_levels
+    istep = istep # TODO
+    lvn_only = False
+    edge = data_alloc.allocate_indices(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
-    horizontal_start = 0
-    horizontal_end = icon_grid.num_edges
-    vertical_start = 0
-    vertical_end = icon_grid.num_levels + 1
+    #TODO 
+    horizontal_start=icon_grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    horizontal_end=icon_grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.HALO_LEVEL_2))
+    vertical_start=icon_grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    vertical_end=icon_grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.HALO_LEVEL_2))
+    # TODO
 
+    vt_ref = savepoint_velocity_1_7_exit.vt()
+    vn_ie_ref = savepoint_velocity_1_7_exit.vn_ie()
+    z_kin_hor_e_ref = savepoint_velocity_1_7_exit.z_kin_hor_e()
+    z_w_concorr_me_ref = savepoint_velocity_1_7_exit.z_w_concorr_me()
+    z_v_grad_w_ref = savepoint_velocity_1_7_exit.z_v_grad_w()
+
+    # TODO, do we need this? 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
     vertical_config = v_grid.VerticalGridConfig(
@@ -539,39 +546,39 @@ def test_velocity_fussed_1_7(
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
+    # TODO ? 
 
-
-fused_velocity_advection_stencil_1o_7.fused_velocity_advection_stencil_1_to_7.with_backend(backend)(
-        vn=vn,
-        rbf_vec_coeff_e=rbf_vec_coeff_e,
-        wgtfac_e=wgtfac_e,
-        ddxn_z_full=ddxn_z_full,
-        ddxt_z_full=ddxt_z_full,
-        z_w_concorr_me=z_w_concorr_me,
-        wgtfacq_e=wgtfacq_e,
-        nflatlev=nflatlev,
-        c_intp=c_intp,
-        w=w,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_primal_edge_length=inv_primal_edge_length,
-        tangent_orientation=tangent_orientation,
-        z_vt_ie=z_vt_ie,
-        vt=vt,
-        vn_ie=vn_ie,
-        z_kin_hor_e=z_kin_hor_e,
-        z_v_grad_w=z_v_grad_w,
-        k=k,
-        istep=istep,
-        nlev=icon_grid.num_levels,
-        lvn_only=lvn_only,
-        edge=edge,
-        lateral_boundary_7=lateral_boundary_7,
-        halo_1=halo_1,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
-        offset_provider={"E2C":icon_grid.get_offset_provider("E2C"),
+fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7.with_backend(backend)(
+    vn=vn, 
+    rbf_vec_coeff_e=rbf_vec_coeff_e,  
+    wgtfac_e=wgtfac_e, 
+    ddxn_z_full=ddxn_z_full, 
+    ddxt_z_full=ddxt_z_full,
+    z_w_concorr_me=z_w_concorr_me, 
+    wgtfacq_e=wgtfacq_e, 
+    nflatlev=nflatlev, 
+    c_intp=c_intp, 
+    w=w, 
+    inv_dual_edge_length=inv_dual_edge_length, 
+    inv_primal_edge_length=inv_primal_edge_length, 
+    tangent_orientation=tangent_orientation,
+    z_vt_ie=z_vt_ie,
+    vt=vt, 
+    vn_ie=vn_ie, 
+    z_kin_hor_e=z_kin_hor_e, 
+    z_v_grad_w=z_v_grad_w, 
+    k=k, 
+    istep=istep, 
+    nlev=nlev, 
+    lvn_only=lvn_only, 
+    edge=edge, #TODO 
+    lateral_boundary_7=lateral_boundary_7, 
+    halo_1=halo_1, 
+    horizontal_start=horizontal_start, 
+    horizontal_end=horizonta_end, 
+    verical_start=vertical_start, 
+    vertical_end=vertical_end, 
+    offset_provider={"E2C":icon_grid.get_offset_provider("E2C"),
                          "E2V": icon_grid.get_offset_provider("E2V"),
                          "V2C": icon_grid.get_offset_provider("V2C"),
                          "E2C2E": icon_grid.get_offset_provider("E2C2E"),
