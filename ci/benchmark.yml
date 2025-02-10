@@ -20,7 +20,7 @@ include:
   artifacts:
     when: on_failure
     paths:
-      - ./valgrind.log
+      - $CI_PROJECT_DIR/valgrind.log
   # parallel:
   #   matrix:
   #     - BACKEND: [gtfn_cpu, gtfn_gpu]
