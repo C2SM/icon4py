@@ -458,6 +458,7 @@ end function {{name}}_wrapper
             arrays=set([arg.name for arg in func.args if arg.is_array]).difference(
                 set(func.uninitialised_arrays)
             ),
+            as_allocatable=True,
             return_code_param=return_code_param,
         )
 
@@ -501,7 +502,9 @@ end subroutine {{name}}
             iso_c_type=to_iso_c_type(param.d_type),
             dim=render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
             explicit_size=render_fortran_array_sizes(param),
-            allocatable="allocatable," if param.is_optional else "",
+            allocatable="allocatable,"
+            if kwargs.get("as_allocatable", False) and param.is_optional
+            else "",
         )
 
     FuncParameter = as_jinja(
