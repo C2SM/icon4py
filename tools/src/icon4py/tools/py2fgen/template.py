@@ -516,10 +516,10 @@ end subroutine {{name}}
             iso_c_type=to_iso_c_type(param.d_type),
             dim=render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
             explicit_size=render_fortran_array_sizes(param),
-            allocatable="pointer,"
+            allocatable="pointer"
             if kwargs.get("as_allocatable", False) and param.is_optional
             else "",
-            target="target",
+            target="" if kwargs.get("as_allocatable", False) and param.is_optional else "target",
         )
 
     FuncParameter = as_jinja(
