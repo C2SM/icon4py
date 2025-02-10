@@ -504,4 +504,6 @@ end subroutine {{name}}
             allocatable="allocatable," if param.is_optional else "",
         )
 
-    FuncParameter = as_jinja("""{{iso_c_type}}, {{dim}} {{value}} target :: {{name}}""")
+    FuncParameter = as_jinja(
+        """{{iso_c_type}}, {{dim}} {{value}} {{allocatable}} target :: {{name}}"""
+    )
