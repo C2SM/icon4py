@@ -430,8 +430,14 @@ end function {{name}}_wrapper
 
     def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs: Any) -> str:
         if len(func.args) < 1:
-            arg_names, param_names_with_size_args = "", ""
+            param_names, args_with_size_args = "", ""
         else:
+            param_names = ", &\n ".join(
+                map(
+                    lambda x: x.name,
+                    func.args,
+                )
+            )
             arg_names = ", &\n ".join(
                 map(
                     lambda x: f"merge({x.name}, c_null_ptr, allocated({x.name}))"
@@ -440,15 +446,15 @@ end function {{name}}_wrapper
                     func.args,
                 )
             )
-            param_names_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
+            args_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
 
         return_code_param = ",&\nrc" if len(func.args) >= 1 else "rc"
 
         return self.generic_visit(
             func,
             assumed_size_array=False,
-            param_names=arg_names,
-            param_names_with_size_args=param_names_with_size_args,
+            param_names=param_names,
+            args_with_size_args=args_with_size_args,
             arrays=set([arg.name for arg in func.args if arg.is_array]).difference(
                 set(func.uninitialised_arrays)
             ),
@@ -479,7 +485,7 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
    {% endfor %}
 
-   rc = {{ name }}_wrapper({{ param_names_with_size_args }})
+   rc = {{ name }}_wrapper({{ args_with_size_args }})
 
    {% if arrays | length >= 1 %}
    !$acc end host_data
