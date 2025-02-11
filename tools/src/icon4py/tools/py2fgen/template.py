@@ -252,9 +252,11 @@ def {{ func.name }}_wrapper(
         allocate_start_time = time.perf_counter()
         {% endif %}
 
-        # Convert ptr to GT4Py fields
-        # TODO LOGIC FOR OPTIONAL FIELDS IS MISSING
+        {% for arg in func.global_size_args %}
+        logging.info('size of {{ arg }} = %s' % str({{ arg }}))
+        {% endfor %}
 
+        # Convert ptr to GT4Py fields
         {% for arg in func.args %}
         {% if arg.is_array %}
         {{ arg.name }} = wrapper_utils.as_field(ffi, xp, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}}, {{arg.is_optional}})
@@ -430,26 +432,26 @@ end function {{name}}_wrapper
     )
 
     def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs: Any) -> str:
+        ordered_param_names = (
+            [x.name for x in func.args if not x.is_optional]
+            + ["rc"]
+            + [x.name for x in func.args if x.is_optional]
+        )
         if len(func.args) < 1:
             param_names, args_with_size_args = "", ""
         else:
-            param_names = ", &\n ".join(
-                map(
-                    lambda x: x.name,
-                    func.args,
-                )
-            )
+            param_names = ", &\n ".join(ordered_param_names)
             arg_names = ", &\n ".join(
                 map(
-                    lambda x: f"merge(c_loc({x.name}), c_null_ptr, present({x.name}))"
+                    lambda x: f"{x.name} = merge(c_loc({x.name}), c_null_ptr, present({x.name}))"
                     if x.is_array and x.is_optional
-                    else x.name,
+                    else f"{x.name} = {x.name}",
                     func.args,
                 )
             )
-            args_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
-
-        return_code_param = ",&\nrc" if len(func.args) >= 1 else "rc"
+            args_with_size_args = (
+                arg_names + ",&\n" + ", &\n".join(f"{arg} = {arg}" for arg in func.global_size_args)
+            )
 
         return self.generic_visit(
             func,
@@ -461,7 +463,6 @@ end function {{name}}_wrapper
             ],
             optional_arrays=[arg.name for arg in func.args if arg.is_array if arg.is_optional],
             as_allocatable=True,
-            return_code_param=return_code_param,
             non_optional_args=[
                 self.visit(arg, assumed_size_array=False)
                 for arg in func.args
@@ -476,7 +477,7 @@ end function {{name}}_wrapper
 
     F90FunctionDefinition = as_jinja(
         """
-subroutine {{name}}({{param_names}} {{ return_code_param }})
+subroutine {{name}}({{param_names}})
    use, intrinsic :: iso_c_binding
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
