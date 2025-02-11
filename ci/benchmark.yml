@@ -13,11 +13,15 @@ include:
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=cuda12 --group=test
     - source .venv/bin/activate
     - echo $BENCHER_API_TOKEN $CI_COMMIT_REF_NAME $CI_MERGE_REQUEST_TARGET_BRANCH_NAME $CI_MERGE_REQUEST_TARGET_BRANCH_SHA
-    - bencher run --project test-1vcbiy6t --token "$BENCHER_API_TOKEN" --adapter python_pytest --file results.json "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
-  parallel:
-    matrix:
-      - BACKEND: [gtfn_cpu, gtfn_gpu]
-        GRID: [icon_grid, icon_grid_global]
+    - env > $CI_PROJECT_DIR/env.log
+  #   - bencher run --project test-1vcbiy6t --token "$BENCHER_API_TOKEN" --adapter python_pytest --file results.json "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
+  # parallel:
+  #   matrix:
+  #     - BACKEND: [gtfn_cpu, gtfn_gpu]
+  #       GRID: [icon_grid, icon_grid_global]
+  artifacts:
+    paths:
+      - env.log
 # benchmark_model_stencils_x86_64:
 #   extends: [.benchmark_model_stencils, .test_template_x86_64]
 benchmark_model_stencils_aarch64:
