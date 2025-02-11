@@ -6,7 +6,6 @@ include:
   variables:
     GIT_STRATEGY: clone
   script:
-    - export
     - git clone -b asv_test https://github.com/C2SM/icon4py.git
     - cd icon4py
     - echo "Running benchmarks"
