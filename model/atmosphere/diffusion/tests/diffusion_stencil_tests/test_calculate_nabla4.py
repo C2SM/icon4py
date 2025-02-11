@@ -9,14 +9,9 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.common.utils.data_allocation import (
-    as_1D_sparse_field,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -94,26 +89,23 @@ class TestCalculateNabla4(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        u_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
-        v_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
+        u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
 
-        primal_normal_vert_v1 = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
-        primal_normal_vert_v2 = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_v1 = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
+        primal_normal_vert_v2 = data_alloc.random_field(grid, dims.ECVDim, dtype=ta.wpfloat)
 
-        primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, dims.ECVDim)
-        primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, dims.ECVDim)
+        z_nabla2_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
 
-        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        inv_vert_vert_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        inv_primal_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
-
-        z_nabla4_e2 = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_nabla4_e2 = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             u_vert=u_vert,
             v_vert=v_vert,
-            primal_normal_vert_v1=primal_normal_vert_v1_new,
-            primal_normal_vert_v2=primal_normal_vert_v2_new,
+            primal_normal_vert_v1=primal_normal_vert_v1,
+            primal_normal_vert_v2=primal_normal_vert_v2,
             z_nabla2_e=z_nabla2_e,
             inv_vert_vert_length=inv_vert_vert_length,
             inv_primal_edge_length=inv_primal_edge_length,

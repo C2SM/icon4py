@@ -99,20 +99,13 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        edge = data_alloc.allocate_indices(dims.EdgeDim, grid=grid, is_halfdim=False)
+        edge = data_alloc.index_field(grid=grid, dim=dims.EdgeDim)
 
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
 
-        primal_normal_vert_v1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
-        primal_normal_vert_v2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
-
-        primal_normal_vert_v1_new = data_alloc.as_1D_sparse_field(
-            primal_normal_vert_v1, dims.ECVDim
-        )
-        primal_normal_vert_v2_new = data_alloc.as_1D_sparse_field(
-            primal_normal_vert_v2, dims.ECVDim
-        )
+        primal_normal_vert_v1 = data_alloc.random_field(grid, dims.ECVDim)
+        primal_normal_vert_v2 = data_alloc.random_field(grid, dims.ECVDim)
 
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
@@ -138,8 +131,8 @@ class TestApplyDiffusionToVn(StencilTest):
         return dict(
             u_vert=u_vert,
             v_vert=v_vert,
-            primal_normal_vert_v1=primal_normal_vert_v1_new,
-            primal_normal_vert_v2=primal_normal_vert_v2_new,
+            primal_normal_vert_v1=primal_normal_vert_v1,
+            primal_normal_vert_v2=primal_normal_vert_v2,
             z_nabla2_e=z_nabla2_e,
             inv_vert_vert_length=inv_vert_vert_length,
             inv_primal_edge_length=inv_primal_edge_length,

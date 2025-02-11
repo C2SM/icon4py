@@ -73,7 +73,7 @@ class TestComputePpmSlope(helpers.StencilTest):
         p_cellhgt_mc_now = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        k = data_alloc.allocate_indices(dims.KDim, grid, is_halfdim=True, dtype=gtx.int32)
+        k = data_alloc.index_field(grid, dims.KDim, extend={dims.KDim: 1})
 
         elev = k[-2].as_scalar()
         return dict(
