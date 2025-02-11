@@ -23,14 +23,14 @@ include:
     - asv run --environment virtualenv:3.10 -v asv_test^!
     - pushd .asv/results
     - git add .
-    - git commit -m "Benchmark results"
+    - git commit -m "Benchmark results for commit $CI_COMMIT_SHA"
     - git fetch origin
     - git rebase origin/$ASV_RESULTS_REPOSITORY_BRANCH
     - git push origin HEAD:$ASV_RESULTS_REPOSITORY_BRANCH
     - popd
     - asv gh-pages --no-push
     - git push $ASV_RESULTS_REPOSITORY gh-pages:gh-pages -f
-    - COMMENT=$(asv compare $(git log -2 --reverse --format=%H) -m gh200)
+    - COMMENT=$(asv compare c714693d $(git log -1 --format=%H) -m gh200)
     - echo $COMMENT
     - PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - |
