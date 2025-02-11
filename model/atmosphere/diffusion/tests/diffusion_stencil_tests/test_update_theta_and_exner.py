@@ -1,39 +1,33 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner,
 )
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def update_theta_and_exner_numpy(
-    mesh,
-    z_temp: np.array,
-    area: np.array,
-    theta_v: np.array,
-    exner: np.array,
+    z_temp: np.ndarray,
+    area: np.ndarray,
+    theta_v: np.ndarray,
+    exner: np.ndarray,
     rd_o_cvd: float,
-) -> tuple[np.array]:
-    area = np.expand_dims(area, axis=0)
+) -> tuple[np.ndarray, np.ndarray]:
+    area = np.expand_dims(area, axis=-1)
     z_theta = theta_v
-    theta_v = theta_v + (np.expand_dims(area, axis=-1) * z_temp)
+    theta_v = theta_v + (area * z_temp)
     exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))
     return theta_v, exner
 
@@ -45,22 +39,22 @@ class TestUpdateThetaAndExner(StencilTest):
     @staticmethod
     def reference(
         grid,
-        z_temp: np.array,
-        area: np.array,
-        theta_v: np.array,
-        exner: np.array,
+        z_temp: np.ndarray,
+        area: np.ndarray,
+        theta_v: np.ndarray,
+        exner: np.ndarray,
         rd_o_cvd: float,
         **kwargs,
-    ) -> tuple[np.array]:
-        theta_v, exner = update_theta_and_exner_numpy(grid, z_temp, area, theta_v, exner, rd_o_cvd)
+    ) -> dict:
+        theta_v, exner = update_theta_and_exner_numpy(z_temp, area, theta_v, exner, rd_o_cvd)
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
     def input_data(self, grid):
-        z_temp = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        area = random_field(grid, CellDim, dtype=wpfloat)
-        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        exner = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        area = random_field(grid, dims.CellDim, dtype=wpfloat)
+        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         rd_o_cvd = vpfloat("5.0")
 
         return dict(
@@ -69,8 +63,8 @@ class TestUpdateThetaAndExner(StencilTest):
             theta_v=theta_v,
             exner=exner,
             rd_o_cvd=rd_o_cvd,
-            horizontal_start=int32(0),
-            horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
-            vertical_end=int32(grid.num_levels),
+            horizontal_start=0,
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=gtx.int32(grid.num_levels),
         )

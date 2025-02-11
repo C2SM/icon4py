@@ -1,42 +1,36 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
-from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import (
     as_1D_sparse_field,
     random_field,
     zero_field,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.testing.helpers import StencilTest
 
 
 def calculate_nabla4_numpy(
-    grid,
-    u_vert: np.array,
-    v_vert: np.array,
-    primal_normal_vert_v1: np.array,
-    primal_normal_vert_v2: np.array,
-    z_nabla2_e: np.array,
-    inv_vert_vert_length: np.array,
-    inv_primal_edge_length: np.array,
-) -> np.array:
-    e2c2v = grid.connectivities[E2C2VDim]
+    connectivities: dict[gtx.Dimension, np.ndarray],
+    u_vert: np.ndarray,
+    v_vert: np.ndarray,
+    primal_normal_vert_v1: np.ndarray,
+    primal_normal_vert_v2: np.ndarray,
+    z_nabla2_e: np.ndarray,
+    inv_vert_vert_length: np.ndarray,
+    inv_primal_edge_length: np.ndarray,
+) -> np.ndarray:
+    e2c2v = connectivities[dims.E2C2VDim]
     u_vert_e2c2v = u_vert[e2c2v]
     v_vert_e2c2v = v_vert[e2c2v]
 
@@ -72,21 +66,22 @@ def calculate_nabla4_numpy(
 class TestCalculateNabla4(StencilTest):
     PROGRAM = calculate_nabla4
     OUTPUTS = ("z_nabla4_e2",)
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
-        grid,
-        u_vert: np.array,
-        v_vert: np.array,
-        primal_normal_vert_v1: np.array,
-        primal_normal_vert_v2: np.array,
-        z_nabla2_e: np.array,
-        inv_vert_vert_length: np.array,
-        inv_primal_edge_length: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        u_vert: np.ndarray,
+        v_vert: np.ndarray,
+        primal_normal_vert_v1: np.ndarray,
+        primal_normal_vert_v2: np.ndarray,
+        z_nabla2_e: np.ndarray,
+        inv_vert_vert_length: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
         **kwargs,
     ) -> dict:
         z_nabla4_e2 = calculate_nabla4_numpy(
-            grid,
+            connectivities,
             u_vert,
             v_vert,
             primal_normal_vert_v1,
@@ -99,23 +94,20 @@ class TestCalculateNabla4(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[E2C2VDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
+        u_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
+        v_vert = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
 
-        u_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
-        v_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
+        primal_normal_vert_v1 = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_v2 = random_field(grid, dims.EdgeDim, dims.E2C2VDim, dtype=wpfloat)
 
-        primal_normal_vert_v1 = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
-        primal_normal_vert_v2 = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, dims.ECVDim)
+        primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, dims.ECVDim)
 
-        primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, ECVDim)
-        primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, ECVDim)
+        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        inv_vert_vert_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        inv_primal_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
 
-        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        inv_vert_vert_length = random_field(grid, EdgeDim, dtype=wpfloat)
-        inv_primal_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
-
-        z_nabla4_e2 = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_nabla4_e2 = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             u_vert=u_vert,
@@ -126,8 +118,8 @@ class TestCalculateNabla4(StencilTest):
             inv_vert_vert_length=inv_vert_vert_length,
             inv_primal_edge_length=inv_primal_edge_length,
             z_nabla4_e2=z_nabla4_e2,
-            horizontal_start=int32(0),
-            horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
-            vertical_end=int32(grid.num_levels),
+            horizontal_start=0,
+            horizontal_end=gtx.int32(grid.num_edges),
+            vertical_start=0,
+            vertical_end=gtx.int32(grid.num_levels),
         )

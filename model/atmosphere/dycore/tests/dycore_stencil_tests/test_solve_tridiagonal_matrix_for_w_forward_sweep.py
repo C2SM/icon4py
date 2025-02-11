@@ -1,27 +1,21 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
-from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
+from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
 
 
 def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
@@ -62,18 +56,18 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
 
 def test_solve_tridiagonal_matrix_for_w_forward_sweep():
     grid = SimpleGrid()
-    vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
-    theta_v_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
-    ddqz_z_half = random_field(grid, CellDim, KDim, dtype=vpfloat)
-    z_alpha = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
-    z_beta = random_field(grid, CellDim, KDim, dtype=vpfloat)
-    z_exner_expl = random_field(grid, CellDim, KDim, dtype=wpfloat)
-    z_w_expl = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+    vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
+    theta_v_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    z_alpha = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat)
+    z_beta = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    z_exner_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    z_w_expl = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
     dtime = wpfloat("8.0")
     cpd = wpfloat("7.0")
 
-    z_q = random_field(grid, CellDim, KDim, dtype=vpfloat)
-    w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+    z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+    w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
     z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
         vwind_impl_wgt.asnumpy(),
@@ -88,10 +82,10 @@ def test_solve_tridiagonal_matrix_for_w_forward_sweep():
         dtime,
         cpd,
     )
-    h_start = int32(0)
-    h_end = int32(grid.num_cells)
-    v_start = int32(1)
-    v_end = int32(grid.num_levels)
+    h_start = 0
+    h_end = gtx.int32(grid.num_cells)
+    v_start = 1
+    v_end = gtx.int32(grid.num_levels)
     # TODO we run this test with the C++ backend as the `embedded` backend doesn't handle this pattern
     solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(run_gtfn)(
         vwind_impl_wgt=vwind_impl_wgt,
@@ -109,7 +103,7 @@ def test_solve_tridiagonal_matrix_for_w_forward_sweep():
         horizontal_end=h_end,
         vertical_start=v_start,
         vertical_end=v_end,
-        offset_provider={"Koff": KDim},
+        offset_provider={"Koff": dims.KDim},
     )
 
     assert np.allclose(

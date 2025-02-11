@@ -1,0 +1,246 @@
+# -- Build system requirements (PEP 518) --
+[build-system]
+build-backend = 'setuptools.build_meta'
+requires = ['setuptools>=61.0', 'wheel>=0.40.0']
+
+# -- Standard project description options (PEP 621) --
+[project]
+authors = [{email = "gridtools@cscs.ch", name = "ETH Zurich"}]
+classifiers = [
+  'Development Status :: 3 - Alpha',
+  'Intended Audience :: Science/Research',
+  'License :: OSI Approved :: BSD License',
+  'Operating System :: POSIX',
+  'Programming Language :: Python',
+  'Programming Language :: Python :: 3',
+  'Programming Language :: Python :: 3 :: Only',
+  'Programming Language :: Python :: 3.10',
+  'Programming Language :: Python :: 3.11',
+  'Programming Language :: Python :: Implementation :: CPython',
+  'Topic :: Scientific/Engineering :: Atmospheric Science',
+  'Topic :: Scientific/Engineering :: Mathematics',
+  'Topic :: Scientific/Engineering :: Physics'
+]
+dependencies = [
+    "icon4py-atmosphere-advection>=0.0.6",
+    "icon4py-atmosphere-diffusion>=0.0.6",
+    "icon4py-atmosphere-dycore>=0.0.6",
+    "icon4py-atmosphere-microphysics>=0.0.6",
+    "icon4py-common>=0.0.6",
+    "icon4py-driver>=0.0.6",
+]
+description = 'ICON model in Python.'
+license = {text = "BSD-3 License"}
+name = "icon4py"
+readme = "README.md"
+requires-python = ">=3.10"
+# managed by bump-my-version:
+version = "0.0.6"
+
+[project.optional-dependencies]
+all = ["icon4py[dace,distributed,fortran,io,testing]"]
+cuda11 = ["icon4py-common[cuda11]"]
+cuda12 = ["icon4py-common[cuda12]"]
+dace = ["icon4py-common[dace]"]
+distributed = ["icon4py-common[distributed]"]
+fortran = ["icon4py-tools>=0.0.6"]
+io = ["icon4py-common[io]"]
+testing = ["icon4py-testing"]
+
+[project.urls]
+Homepage = 'https://github.com/C2SM/icon4py'
+
+# -- dependency groups --
+[dependency-groups]
+build = [
+    "bump-my-version>=0.16.0",
+    "pip>=22.1.1",
+    "setuptools>=70.1.1",
+    "wheel>=0.45.0",
+    "wget>=3.2",
+]
+docs = [
+    "esbonio>=0.16.0",
+    "myst-parser>=4.0.0",
+    "sphinx==7.3.7",
+    "sphinx-math-dollar>=1.2.1",
+    "sphinx-rtd-theme>=3.0.1",
+    "sphinx-toolbox>=3.8.1",
+    "TexSoup>=0.3.1",
+]
+lint = ["pre-commit>=4.0.1", "ruff>=0.8.0", "tach>=0.16.0"]
+test = [
+    # workspace members
+    "icon4py-testing>=0.0.6",
+    # external dependencies
+    "coverage[toml]>=7.5.0",
+    "nox @ git+https://github.com/wntrblm/nox.git@aa09595437608dfe21eb776d8a4bcc0bd5f9916b",  # TODO: remove once there is any release newer than 2024.10.09
+    "pytest>=8.0.1",
+    "pytest-benchmark>=5.0.0",
+    "pytest-cache>=1.0",
+    "pytest-cov>=5.0.0",
+    "pytest-factoryboy>=2.6.1",
+    "pytest-mpi>=0.6",
+    "pytest-xdist[psutil]>=3.5.0",
+]
+typing = [
+    "mypy[faster-cache]>=1.13.0",
+    "typing-extensions>=4.11.0",
+    "types-cffi>=1.16.0",
+]
+dev = [
+    { include-group = "build" },
+    { include-group = "docs" },
+    { include-group = "lint" },
+    { include-group = "test" },
+    { include-group = "typing" },
+]
+
+# -- uv: packages & workspace --
+[tool.uv]
+conflicts = [
+  [
+    {extra = "cuda11"},
+    {extra = "cuda12"},
+  ],
+]
+
+[[tool.uv.index]]
+name = "test.pypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
+
+[tool.uv.sources]
+# ghex = { git = "https://github.com/ghex-org/GHEX.git", branch = "master"}
+# TODO(egparedes): use GT4Py tagged release until #596 & gt4py#1738 are merged
+gt4py = { git = "https://github.com/GridTools/gt4py", tag = "icon4py_20241113_cache_fix" }
+icon4py-atmosphere-advection = { workspace = true }
+icon4py-atmosphere-diffusion = { workspace = true }
+icon4py-atmosphere-dycore = { workspace = true }
+icon4py-atmosphere-microphysics = { workspace = true }
+icon4py-common = { workspace = true }
+icon4py-driver = { workspace = true }
+icon4py-testing = { workspace = true }
+icon4py-tools = { workspace = true }
+serialbox4py = { index = "test.pypi" }
+
+[tool.uv.workspace]
+members = [
+    "model/atmosphere/advection",
+    "model/atmosphere/diffusion",
+    "model/atmosphere/dycore",
+    "model/atmosphere/subgrid_scale_physics/microphysics",
+    "model/common",
+    "model/driver",
+    "model/testing",
+    "tools",
+]
+
+# -- bumpversion --
+[tool.bumpversion]
+allow_dirty = false
+commit = false
+current_version = "0.0.6"
+ignore_missing_version = false
+message = 'Bump icon4py version: {current_version} → {new_version}'
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)?"
+serialize = ["{major}.{minor}.{patch}"]
+tag = false
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = '''
+# managed by bump-my-version:
+version = "{current_version}"
+'''
+replace = '''
+# managed by bump-my-version:
+version = "{new_version}"
+'''
+
+# -- mypy --
+[tool.mypy]
+mypy_path = "model/common/src:tools/src"
+explicit_package_bases = true
+namespace_packages = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+# exclude = [
+#   '^tests/f2ser/*.py',
+#   '^tests/icon4pygen/*.py',
+#   '^tests/liskov/*.py',
+#   '^tests/py2f/*.py',
+# ]
+ignore_missing_imports = false
+implicit_reexport = true
+install_types = true
+non_interactive = true
+show_column_numbers = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+# -- ruff --
+[tool.ruff]
+extend-exclude = [
+    '.eggs',
+    '.gt_cache',
+    '.ipynb_checkpoints',
+    '.tox',
+    '_local_',
+    'build',
+    'dist',
+    'docs',
+    '_external_src',
+    'tests/_disabled',
+    'setup.py',
+]
+indent-width = 4
+line-length = 100
+respect-gitignore = true
+show-fixes = true
+target-version = "py310"
+
+[tool.ruff.format]
+docstring-code-format = true
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+extend-select = ['E', 'F', 'I', 'B', 'A', 'T10', 'ERA', 'NPY', 'RUF']
+# # Rules sets:
+# E: pycodestyle
+# F: Pyflakes
+# I: isort
+# B: flake8-bugbear
+# A: flake8-builtins
+# T10: flake8-debugger
+# ERA: eradicate
+# NPY: NumPy-specific rules
+# RUF: Ruff-specific rules
+ignore = [
+    'E501',   # Line too long (using Bugbear's B950 warning)
+    'RUF009', # Do not perform function call in dataclass defaults
+    'B010',   # Do not call `setattr` with a constant attribute value.
+    'B905',   # Checks for zip calls without an explicit strict parameter.
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ['icon4py']
+known-third-party = ['gt4py', 'packaging', 'setuptools']
+lines-after-imports = 2
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+# -- setuptools --
+[tool.setuptools]
+packages = []
+
+# -- pytest --
+[tool.pytest.ini_options]
+addopts = ['-p icon4py.model.testing.pytest_config']
+markers = [
+    "embedded_remap_error", "uses_as_offset", "requires_concat_where", "skip_value_error", "datatest"
+]

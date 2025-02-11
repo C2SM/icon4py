@@ -1,26 +1,21 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
 def interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(
@@ -41,7 +36,7 @@ def interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(
 
 
 def interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(
-    grid, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
+    wgtfac_e: np.ndarray, vn: np.ndarray, vt: np.ndarray, **kwargs
 ) -> tuple:
     vn_ie = interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(wgtfac_e, vn)
     z_kin_hor_e = interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(vn, vt)
@@ -51,7 +46,7 @@ def interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(
     )
 
 
-class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
+class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
     PROGRAM = interpolate_vn_to_ie_and_compute_ekin_on_edges
     OUTPUTS = ("vn_ie", "z_kin_hor_e")
 
@@ -63,16 +58,16 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
         vt: np.array,
         vn_ie: np.array,
         z_kin_hor_e: np.array,
-        horizontal_start: int32,
-        horizontal_end: int32,
-        vertical_start: int32,
-        vertical_end: int32,
+        horizontal_start: gtx.int32,
+        horizontal_end: gtx.int32,
+        vertical_start: gtx.int32,
+        vertical_end: gtx.int32,
     ) -> dict:
         subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
         vn_ie, z_kin_hor_e = vn_ie.copy(), z_kin_hor_e.copy()
         vn_ie[subset], z_kin_hor_e[subset] = (
             x[subset]
-            for x in interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(grid, wgtfac_e, vn, vt)
+            for x in interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(wgtfac_e, vn, vt)
         )
 
         return dict(
@@ -82,12 +77,12 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        wgtfac_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
-        vn_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        z_kin_hor_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,
@@ -95,8 +90,8 @@ class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
             vt=vt,
             vn_ie=vn_ie,
             z_kin_hor_e=z_kin_hor_e,
-            horizontal_start=int32(0),
-            horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(1),
-            vertical_end=int32(grid.num_levels),
+            horizontal_start=0,
+            horizontal_end=gtx.int32(grid.num_edges),
+            vertical_start=1,
+            vertical_end=gtx.int32(grid.num_levels),
         )

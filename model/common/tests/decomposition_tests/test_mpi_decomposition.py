@@ -1,25 +1,23 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 import pytest
 
+from icon4py.model.common.utils.data_allocation import constant_field
+
 
 try:
-    import mpi4py  # noqa: F401 # test for optional dependency
+    import mpi4py  # noqa: F401 # import mpi4py to check for optional mpi dependency
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition.definitions import (
     DecompositionInfo,
     DomainDescriptorIdGenerator,
@@ -27,18 +25,17 @@ from icon4py.model.common.decomposition.definitions import (
     create_exchange,
 )
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
+from icon4py.model.testing.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
-    datapath,
     decomposition_info,
     download_ser_data,
     experiment,
     grid_savepoint,
     icon_grid,
+    metrics_savepoint,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.testing.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
     processor_props,
 )
@@ -65,9 +62,9 @@ def test_props(processor_props):  # noqa: F811  # fixture
 @pytest.mark.parametrize(
     ("dim, owned, total"),
     (
-        (CellDim, (10448, 10448), (10611, 10612)),
-        (EdgeDim, (15820, 15738), (16065, 16067)),
-        (VertexDim, (5373, 5290), (5455, 5456)),
+        (dims.CellDim, (10448, 10448), (10611, 10612)),
+        (dims.EdgeDim, (15820, 15738), (16065, 16067)),
+        (dims.VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
 @pytest.mark.datatest
@@ -109,9 +106,9 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 @pytest.mark.parametrize(
     ("dim, owned, total"),
     (
-        (CellDim, (10448, 10448), (10611, 10612)),
-        (EdgeDim, (15820, 15738), (16065, 16067)),
-        (VertexDim, (5373, 5290), (5455, 5456)),
+        (dims.CellDim, (10448, 10448), (10611, 10612)),
+        (dims.EdgeDim, (15820, 15738), (16065, 16067)),
+        (dims.VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
 @pytest.mark.datatest
@@ -147,14 +144,17 @@ def test_decomposition_info_local_index(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("num", [1, 2, 3])
-def test_domain_descriptor_id_are_globally_unique(num, processor_props):  # noqa: F811  # fixture
+@pytest.mark.parametrize("num", [1, 2, 3, 4, 5, 6, 7, 8])
+def test_domain_descriptor_id_are_globally_unique(
+    num,
+    processor_props,  # noqa F811 #fixture
+):
     props = processor_props
     size = props.comm_size
     id_gen = DomainDescriptorIdGenerator(parallel_props=props)
     id1 = id_gen()
     assert id1 == props.comm_size * props.rank
-    assert id1 < props.comm_size * (props.rank + 1)
+    assert id1 < props.comm_size * (props.rank + 2)
     ids = []
     ids.append(id1)
     for _ in range(1, num * size):
@@ -170,6 +170,7 @@ def test_domain_descriptor_id_are_globally_unique(num, processor_props):  # noqa
 
 @pytest.mark.mpi
 @pytest.mark.datatest
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
     caplog,
     download_ser_data,  # noqa: F811 #fixture
@@ -180,16 +181,16 @@ def test_decomposition_info_matches_gridsize(
     check_comm_size(processor_props)
     assert (
         decomposition_info.global_index(
-            dim=CellDim, entry_type=DecompositionInfo.EntryType.ALL
+            dim=dims.CellDim, entry_type=DecompositionInfo.EntryType.ALL
         ).shape[0]
-        == icon_grid.n_cells()
+        == icon_grid.num_cells
     )
     assert (
-        decomposition_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape[0]
+        decomposition_info.global_index(dims.VertexDim, DecompositionInfo.EntryType.ALL).shape[0]
         == icon_grid.num_vertices
     )
     assert (
-        decomposition_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape[0]
+        decomposition_info.global_index(dims.EdgeDim, DecompositionInfo.EntryType.ALL).shape[0]
         == icon_grid.num_edges
     )
 
@@ -209,11 +210,51 @@ def test_create_multi_node_runtime_with_mpi(
 
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
+@pytest.mark.mpi_skip()
 def test_create_single_node_runtime_without_mpi(
     processor_props,  # noqa: F811 # fixture
     decomposition_info,  # noqa: F811 # fixture
 ):
-    props = processor_props
-    exchange = create_exchange(props, decomposition_info)
-
+    exchange = create_exchange(processor_props, decomposition_info)
     assert isinstance(exchange, SingleNodeExchange)
+
+
+@pytest.mark.mpi
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
+@pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
+def test_exchange_on_dummy_data(
+    processor_props,  # noqa: F811 # fixture
+    decomposition_info,  # noqa: F811 # fixture
+    grid_savepoint,  # noqa: F811 # fixture
+    metrics_savepoint,  # noqa: F811 # fixture
+    dimension,
+):
+    exchange = create_exchange(processor_props, decomposition_info)
+    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+
+    number = processor_props.rank + 10.0
+    input_field = constant_field(
+        grid,
+        number,
+        dimension,
+        dims.KDim,
+    )
+
+    halo_points = decomposition_info.local_index(dimension, DecompositionInfo.EntryType.HALO)
+    local_points = decomposition_info.local_index(dimension, DecompositionInfo.EntryType.OWNED)
+    assert np.all(input_field == number)
+    exchange.exchange_and_wait(dimension, input_field)
+    result = input_field.asnumpy()
+    print(f"rank={processor_props.rank} - num of halo points ={halo_points.shape}")
+    print(
+        f" rank={processor_props.rank} - exchanged points: {np.sum(result != number)/grid.num_levels}"
+    )
+    print(f"rank={processor_props.rank} - halo points: {halo_points}")
+
+    assert np.all(result[local_points, :] == number)
+    assert np.all(result[halo_points, :] != number)
+
+    changed_points = np.argwhere(result[:, 2] != number)
+    print(f"rank={processor_props.rank} - num changed points {changed_points.shape} ")
+
+    print(f"rank={processor_props.rank} - changed points {changed_points} ")

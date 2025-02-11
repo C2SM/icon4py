@@ -1,38 +1,22 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.dimension import EdgeDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtrlLevel
-from icon4py.model.common.metrics.stencils.compute_nudgecoeffs import compute_nudgecoeffs
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid, refinement
+from icon4py.model.common.metrics.compute_nudgecoeffs import compute_nudgecoeffs
+from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import datatest_utils as dt_utils
+from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
-    datapath,
     download_ser_data,
     experiment,
     grid_savepoint,
@@ -41,33 +25,29 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils.helpers import zero_field
-from icon4py.model.common.type_alias import wpfloat
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_nudgecoeffs_e(
     grid_savepoint,  # noqa: F811 # fixture
     interpolation_savepoint,  # noqa: F811 # fixture
     icon_grid,  # noqa: F811  # fixture
+    backend,  # fixture
 ):
-    nudgecoeff_e = zero_field(icon_grid, EdgeDim, dtype=wpfloat)
+    nudgecoeff_e = data_alloc.zero_field(icon_grid, dims.EdgeDim, dtype=wpfloat, backend=backend)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
-    refin_ctrl = grid_savepoint.refin_ctrl(EdgeDim)
-    grf_nudge_start_e = RefinCtrlLevel.boundary_nudging_start(EdgeDim)
+    refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
+    grf_nudge_start_e = refinement.refine_control_value(dims.EdgeDim, h_grid.Zone.NUDGING).value
     nudge_max_coeff = wpfloat(0.375)
     nudge_efold_width = wpfloat(2.0)
-    nudge_zone_width = int32(10)
+    nudge_zone_width = 10
 
-    horizontal_start = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.nudging_2nd_level(EdgeDim)
-    )
-    horizontal_end = icon_grid.get_end_index(
-        EdgeDim,
-        HorizontalMarkerIndex.local(EdgeDim),
-    )
+    domain = h_grid.domain(dims.EdgeDim)
+    horizontal_start = icon_grid.start_index(domain(h_grid.Zone.NUDGING_LEVEL_2))
+    horizontal_end = icon_grid.end_index(domain(h_grid.Zone.LOCAL))
 
-    compute_nudgecoeffs(
+    compute_nudgecoeffs.with_backend(backend)(
         nudgecoeff_e,
         refin_ctrl,
         grf_nudge_start_e,
