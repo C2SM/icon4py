@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import os
-import warnings
 from typing import Final
 
 import pytest
@@ -63,9 +62,6 @@ def grid(request, backend):
     else:
         _check_grid_validity(grid_option)
     grid = _get_grid(grid_option, backend)
-    warnings.warn(
-        f"selected grid: {grid_option} (cells: {grid.num_cells}, edges: {grid.num_edges}, verts: {grid.num_vertices}, k: {grid.num_levels})  on backend {backend.name}"
-    )
     return grid
 
 

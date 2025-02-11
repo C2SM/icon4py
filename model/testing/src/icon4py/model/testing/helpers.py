@@ -8,7 +8,6 @@
 
 import hashlib
 import typing
-import warnings
 from dataclasses import dataclass, field
 from typing import ClassVar
 
@@ -32,20 +31,7 @@ except ModuleNotFoundError:
 
 @pytest.fixture(scope="session")
 def connectivities_as_numpy(grid, backend) -> dict[gtx.Dimension, np.ndarray]:
-    if data_alloc.is_cupy_device(backend):
-        reference_connectivities = {}
-        import cupy as cp
-
-        for d, t in grid.connectivities.items():
-            if not isinstance(t, cp.ndarray):
-                warnings.warn(
-                    f" connectivity  `{d}`:  {type(t)} already on host for backend {backend.name} nothing to transfer",
-                )
-            reference_connectivities[d] = cp.asnumpy(t)
-        return reference_connectivities
-    else:
-        return grid.connectivities
-        # return **{dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
+    return {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:

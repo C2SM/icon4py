@@ -45,15 +45,12 @@ NDArrayInterface: TypeAlias = Union[np.ndarray, xp.ndarray, gtx.Field]
 
 def as_numpy(array: NDArrayInterface):
     if isinstance(array, np.ndarray):
-        print("- already on numpy ")
         return array
     elif isinstance(array, gtx.Field):
-        print("field.asnumpy()")
         return array.asnumpy()
     else:
         import cupy as cp
 
-        print("cp.asnumpy()")
         return cp.asnumpy(array)
 
 
