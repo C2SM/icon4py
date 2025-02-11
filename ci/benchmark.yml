@@ -14,9 +14,7 @@ include:
     - source .venv/bin/activate
     - pwd
     - ls -la
-    - which pytest
     - env -u GITLAB_CI BUILDKITE=true BUILDKITE_AGENT_NAME=7b10eca7600b-1 BUILDKITE_BRANCH=codspeed BUILDKITE_BUILD_NUMBER=$CI_JOB_ID BUILDKITE_COMMIT=$CI_COMMIT_SHA BUILDKITE_ORGANIZATION_SLUG=C2SM BUILDKITE_PIPELINE_SLUG="my-test-run" BUILDKITE_PULL_REQUEST_BASE_BRANCH=main BUILDKITE_PULL_REQUEST=657 BUILDKITE_REPO=git@github.com:C2SM/icon4py.git CODSPEED_LOG=debug codspeed run -- pytest -sv --codspeed --backend=gtfn_cpu --grid=icon_grid model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py || (cp /tmp/profile*/valgrind.log $CI_PROJECT_DIR/valgrind.log && false)
-    - ls -la
   artifacts:
     when: on_failure
     paths:
