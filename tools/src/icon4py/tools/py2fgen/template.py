@@ -483,13 +483,9 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
     #endif
    {%- endfor %}
 
-   {% if arrays | length >= 1 %}
-   !$ACC host_data use_device( &
    {%- for arr in arrays %}
-       !$ACC {{ arr }}{% if not loop.last %}, &{% else %} &{% endif %}
-   {%- endfor %}
-   !$ACC ) if_present
-   {% endif %}
+   !$ACC host_data use_device ({{ arr }}) if_present
+   {% endfor %}
 
    {% for d in _this_node.dimension_positions %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
@@ -497,9 +493,9 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
 
    rc = {{ name }}_wrapper({{ args_with_size_args }})
 
-   {% if arrays | length >= 1 %}
+   {%- for arr in arrays %}
    !$acc end host_data
-   {% endif %}
+   {%- endfor %}
 end subroutine {{name}}
     """
     )
