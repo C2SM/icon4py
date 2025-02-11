@@ -6,6 +6,7 @@ include:
   variables:
     GIT_STRATEGY: clone
   script:
+    - export
     - git clone -b asv_test https://github.com/C2SM/icon4py.git
     - cd icon4py
     - echo "Running benchmarks"
@@ -29,6 +30,27 @@ include:
     - popd
     - asv gh-pages --no-push
     - git push $ASV_RESULTS_REPOSITORY gh-pages:gh-pages -f
+    - COMMENT=$(asv compare $(git log -2 --reverse --format=%H) -m gh200)
+    - echo $COMMENT
+    - |
+      if [[ "$CI_EXTERNAL_PULL_REQUEST_IID" != "null" ]]; then
+        curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -d "{\"body\": \"$COMMENT\"}" \
+          "https://api.github.com/repos/C2SM/icon4py/issues/$CI_EXTERNAL_PULL_REQUEST_IID/comments"
+      else
+        echo "No open pull requests found."
+      fi
+    - |
+      if [[ "$(echo $COMMENT | grep -e "runtime" | grep "|[\ ]*+[\ ]*|")" != "" ]]; then
+        exit 1
+      fi
+    - |
+      if [[ "$(echo $COMMENT | grep -e "memory" | grep "|[\ ]*+[\ ]*|")" != "" ]]; then
+        exit 1
+      fi
+
+
 # benchmark_model_stencils_x86_64:
 #   extends: [.benchmark_model_stencils, .test_template_x86_64]
 benchmark_model_stencils_aarch64:
