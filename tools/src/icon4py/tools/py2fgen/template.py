@@ -465,6 +465,7 @@ end function {{name}}_wrapper
     F90FunctionDefinition = as_jinja(
         """
 subroutine {{name}}({{param_names}} {{ return_code_param }})
+   use openacc
    use, intrinsic :: iso_c_binding
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
@@ -473,6 +474,15 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
    {{ arg }}
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
+   logical :: arr_open_acc_present
+
+   {%- for arr in arrays %}
+    #ifdef _OPENACC
+    arr_open_acc_present = acc_is_present( {{ arr }} )
+    #endif
+    print *, "Array {{ arr }} open acc present: ", arr_open_acc_present
+
+   {%- endfor %}
 
    {% if arrays | length >= 1 %}
    !$ACC host_data use_device( &
