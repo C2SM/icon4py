@@ -34,7 +34,7 @@ include:
     - echo $COMMENT
     - |
       if [[ "$CI_EXTERNAL_PULL_REQUEST_IID" != "null" ]]; then
-        curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+        curl -X POST -H "Authorization: token $ICON4PY_ASV_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
           -d "{\"body\": \"$COMMENT\"}" \
           "https://api.github.com/repos/C2SM/icon4py/issues/$CI_EXTERNAL_PULL_REQUEST_IID/comments"
