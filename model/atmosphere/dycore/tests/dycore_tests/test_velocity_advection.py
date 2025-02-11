@@ -8,11 +8,12 @@
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
-from icon4py.model.atmosphere.dycore.stencils import fused_velocity_advection_stencil_1_to_7
-from icon4py.model.atmosphere.dycore.stencils import fused_velocity_advection_stencil_19_to_20, \
-    fused_velocity_advection_stencil_15_to_18, fused_velocity_advection_stencil_8_to_13
-
-
+from icon4py.model.atmosphere.dycore.stencils import (
+    fused_velocity_advection_stencil_1_to_7,
+    fused_velocity_advection_stencil_8_to_13,
+    fused_velocity_advection_stencil_15_to_18,
+    fused_velocity_advection_stencil_19_to_20,
+)
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -20,17 +21,10 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
-from icon4py.model.common.utils.data_allocation import data_allocation as data_alloc
-from icon4py.model.common.utils.data_allocation import (
-    as_1D_sparse_field,
-    random_field,
-    random_mask,
-    zero_field,
-)
+
 from . import utils
-import gt4py.next as gtx
-import numpy as np
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
@@ -66,7 +60,6 @@ def test_velocity_init(
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
-    step_date_init,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -464,60 +457,58 @@ def test_velocity_corrector_step(
         atol=5.0e-16,
     )
 
+
 @pytest.mark.dataset
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
+@pytest.mark.parametrize("istep", [(1, 2)])
 def test_velocity_fussed_1_7(
-    istep,
     icon_grid,
     grid_savepoint,
     savepoint_velocity_1_7_init,
     savepoint_velocity_1_7_exit,
     interpolation_savepoint,
     metrics_savepoint,
+    savepoint_velocity_init,
+    step_date_init,
+    step_date_exit,
+    istep,
     backend,
 ):
-
-    # for e in range(icon_grid.num_edges):
-    #     edge[e] = e
     edge_domain = h_grid.domain(dims.EdgeDim)
-    
-    vn=savepoint_velocity_1_7_init.vn()
-    rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e()
-    wgtfac_e=metrics_savepoint.wgtfac_e()
-    ddxn_z_full=metrics_savepoint.ddxn_z_full()
-    ddxt_z_full=metrics_savepoint.ddxt_z_full()
-    z_w_concorr_me=savepoint_velocity_1_7_init.z_w_concorr_me()
-    wgtfacq_e=metrics_savepoint.wgtfacq_e()
-    nflatlev=grid_savepoint.nflatlev() 
-    c_intp=interpolation_savepoint.c_intp()
-    w=savepoint_velocity_1_7_init.w()
-    inv_dual_edge_length=grid_savepoint.inv_dual_edge_length()
-    inv_primal_edge_length=grid_savepoint.inv_primal_edge_length()
-    tangent_orientation=grid_savepoint.tangent_orientation()
-    z_vt_ie=savepoint_velocity_1_7_init.z_vt_ie()
-    vt=savepoint_velocity_1_7_init.vt()
-    vn_ie=savepoint_velocity_1_7_init.vn_ie()
-    z_kin_hor_e=savepoint_velocity_1_7_init.z_kin_hor_e()
-    z_v_grad_w=savepoint_velocity_1_7_init.z_v_grad_w()
+
+    vn = savepoint_velocity_1_7_init.vn()
+    rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
+    wgtfac_e = metrics_savepoint.wgtfac_e()
+    ddxn_z_full = metrics_savepoint.ddxn_z_full()
+    ddxt_z_full = metrics_savepoint.ddxt_z_full()
+    z_w_concorr_me = savepoint_velocity_1_7_init.z_w_concorr_me()
+    wgtfacq_e = metrics_savepoint.wgtfacq_e()
+    nflatlev = grid_savepoint.nflatlev()
+    c_intp = interpolation_savepoint.c_intp()
+    w = savepoint_velocity_1_7_init.w()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    inv_primal_edge_length = grid_savepoint.inv_primal_edge_length()
+    tangent_orientation = grid_savepoint.tangent_orientation()
+    z_vt_ie = savepoint_velocity_1_7_init.z_vt_ie()
+    vt = savepoint_velocity_1_7_init.vt()
+    vn_ie = savepoint_velocity_1_7_init.vn_ie()
+    z_kin_hor_e = savepoint_velocity_1_7_init.z_kin_hor_e()
+    z_v_grad_w = savepoint_velocity_1_7_init.z_v_grad_w()
     k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, is_halfdim=True, backend=backend)
-    
-    nlev = icon_grid.num_levels
+
     lvn_only = False
     edge = data_alloc.allocate_indices(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
-    # vertical_lower=1; vertical_upper=nlevp1; horizontal_lower=lateral_boundary_5; horizontal_upper=halo_2)
-    horizontal_start=icon_grid.start_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
-    horizontal_end=icon_grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Zone.HALO_LEVEL_2))
-    vertical_start=0
-    vertical_end=icon_grid.num_levels+1
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
     vt_ref = savepoint_velocity_1_7_exit.vt()
     vn_ie_ref = savepoint_velocity_1_7_exit.vn_ie()
@@ -525,41 +516,45 @@ def test_velocity_fussed_1_7(
     z_w_concorr_me_ref = savepoint_velocity_1_7_exit.z_w_concorr_me()
     z_v_grad_w_ref = savepoint_velocity_1_7_exit.z_v_grad_w()
 
-    fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7.with_backend(backend)(
-        vn=vn, 
-        rbf_vec_coeff_e=rbf_vec_coeff_e,  
-        wgtfac_e=wgtfac_e, 
-        ddxn_z_full=ddxn_z_full, 
+    fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7.with_backend(
+        backend
+    )(
+        vn=vn,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        wgtfac_e=wgtfac_e,
+        ddxn_z_full=ddxn_z_full,
         ddxt_z_full=ddxt_z_full,
-        z_w_concorr_me=z_w_concorr_me, 
-        wgtfacq_e=wgtfacq_e, 
-        nflatlev=nflatlev, 
-        c_intp=c_intp, 
-        w=w, 
-        inv_dual_edge_length=inv_dual_edge_length, 
-        inv_primal_edge_length=inv_primal_edge_length, 
+        z_w_concorr_me=z_w_concorr_me,
+        wgtfacq_e=wgtfacq_e,
+        nflatlev=nflatlev,
+        c_intp=c_intp,
+        w=w,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
         z_vt_ie=z_vt_ie,
-        vt=vt, 
-        vn_ie=vn_ie, 
-        z_kin_hor_e=z_kin_hor_e, 
-        z_v_grad_w=z_v_grad_w, 
-        k=k, 
-        istep=istep, 
-        nlev=nlev, 
-        lvn_only=lvn_only, 
-        edge=edge, 
-        lateral_boundary_7=lateral_boundary_7, 
-        halo_1=halo_1, 
-        horizontal_start=horizontal_start, 
-        horizontal_end=horizontal_end, 
-        verical_start=vertical_start, 
-        vertical_end=vertical_end, 
-        offset_provider={"E2C":icon_grid.get_offset_provider("E2C"),
-                            "E2V": icon_grid.get_offset_provider("E2V"),
-                            "V2C": icon_grid.get_offset_provider("V2C"),
-                            "E2C2E": icon_grid.get_offset_provider("E2C2E"),
-                            "Koff": dims.KDim}
+        vt=vt,
+        vn_ie=vn_ie,
+        z_kin_hor_e=z_kin_hor_e,
+        z_v_grad_w=z_v_grad_w,
+        k=k,
+        istep=istep,
+        nlev=icon_grid.num_levels,
+        lvn_only=lvn_only,
+        edge=edge,
+        lateral_boundary_7=lateral_boundary_7,
+        halo_1=halo_1,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        verical_start=0,
+        vertical_end=icon_grid.num_levels + 1,
+        offset_provider={
+            "E2C": icon_grid.get_offset_provider("E2C"),
+            "E2V": icon_grid.get_offset_provider("E2V"),
+            "V2C": icon_grid.get_offset_provider("V2C"),
+            "E2C2E": icon_grid.get_offset_provider("E2C2E"),
+            "Koff": dims.KDim,
+        },
     )
 
     assert helpers.dallclose(vt_ref.asnumpy(), vt.asnumpy())
@@ -568,14 +563,16 @@ def test_velocity_fussed_1_7(
     assert helpers.dallclose(z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy())
     assert helpers.dallclose(z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy())
 
+
 # TODO: can discuss the definition of k and edge
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_fused_8_13(
@@ -584,13 +581,15 @@ def test_velocity_fused_8_13(
     savepoint_velocity_8_13_init,
     savepoint_velocity_8_13_exit,
     metrics_savepoint,
-    interpolation_savepoint, 
+    interpolation_savepoint,
     istep,
+    step_date_init,
+    step_date_exit,
     backend,
 ):
-    z_ekinh_ref = savepoint_velocity_8_13_exit.z_ekinh()  
-    w_concorr_c_ref = savepoint_velocity_8_13_exit.w_concorr_c()  
-    z_w_con_c_ref = savepoint_velocity_8_13_exit.z_w_con_c()  
+    z_ekinh_ref = savepoint_velocity_8_13_exit.z_ekinh()
+    w_concorr_c_ref = savepoint_velocity_8_13_exit.w_concorr_c()
+    z_w_con_c_ref = savepoint_velocity_8_13_exit.z_w_con_c()
 
     z_kin_hor_e = savepoint_velocity_8_13_init.z_kin_hor_e()
     z_w_concorr_me = savepoint_velocity_8_13_init.z_w_concorr_m()
@@ -602,11 +601,13 @@ def test_velocity_fused_8_13(
 
     e_bln_c_s = interpolation_savepoint.e_bln_c_s()
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    k = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=gtx.int32))
+    k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
 
-    #vertical_lower=1; vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
-    fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13.with_backend(backend)(
+    # vertical_lower=1; vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+    fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13.with_backend(
+        backend
+    )(
         z_kin_hor_e=z_kin_hor_e,
         e_bln_c_s=e_bln_c_s,
         z_w_concorr_me=z_w_concorr_me,
@@ -623,20 +624,20 @@ def test_velocity_fused_8_13(
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
-        vertical_end=icon_grid.num_levels+1,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E"),
-                         "Koff": dims.KDim}
+        vertical_end=icon_grid.num_levels + 1,
+        offset_provider={"C2E": icon_grid.get_offset_provider("C2E"), "Koff": dims.KDim},
     )
     assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy())
     assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy())
     assert helpers.dallclose(z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy())
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_fused_15_18(
@@ -648,15 +649,17 @@ def test_velocity_fused_15_18(
     metrics_savepoint,
     savepoint_nonhydro_exit,
     backend,
+    savepoint_velocity_init,
+    step_date_init,
+    step_date_exit,
 ):
-    
     z_w_con_c = savepoint_velocity_15_18_init.z_w_con_c()
     w = savepoint_velocity_15_18_init.w()
     ddt_w_adv = savepoint_velocity_15_18_init.ddt_w_adv()
     z_v_grad_w = savepoint_velocity_15_18_init.z_v_grad_w()
     levelmask = savepoint_velocity_15_18_init.levelmask()
     z_w_con_c_full = savepoint_velocity_15_18_init.z_w_con_c_full()
-    
+
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
     e_bln_c_s = interpolation_savepoint.e_bln_c_s()
@@ -666,11 +669,11 @@ def test_velocity_fused_15_18(
     area = grid_savepoint.cell_areas()
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
-    z_w_con_c_full_ref = savepoint_velocity_15_18_exit.z_w_con_c_full() 
-    ddt_w_adv_ref = savepoint_velocity_15_18_exit.ddt_w_adv() 
+    z_w_con_c_full_ref = savepoint_velocity_15_18_exit.z_w_con_c_full()
+    ddt_w_adv_ref = savepoint_velocity_15_18_exit.ddt_w_adv()
 
-    k = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=gtx.int32))
-    cell = gtx.as_field((dims.CellDim,), np.arange(icon_grid.num_cells, dtype=gtx.int32))
+    k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
+    cell = data_alloc.allocate_indices(dim=dims.CellDim, grid=icon_grid, backend=backend)
 
     nrdmax = grid_savepoint.nrdmax()
     extra_diffu = True
@@ -680,11 +683,13 @@ def test_velocity_fused_15_18(
 
     lvn_only = False
 
-    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff() # TODO 
-    cfl_w_limit = savepoint_velocity_init.cfl_w_limit() # TODO
+    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()  # TODO
+    cfl_w_limit = savepoint_velocity_init.cfl_w_limit()  # TODO
     dtime = 2.0
 
-    fused_velocity_advection_stencil_15_to_18.fused_velocity_advection_stencil_15_to_18.with_backend(backend)(
+    fused_velocity_advection_stencil_15_to_18.fused_velocity_advection_stencil_15_to_18.with_backend(
+        backend
+    )(
         z_w_con_c=z_w_con_c,
         w=w,
         coeff1_dwdz=coeff1_dwdz,
@@ -710,10 +715,12 @@ def test_velocity_fused_15_18(
         nrdmax=nrdmax,
         lvn_only=lvn_only,
         extra_diffu=extra_diffu,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E"),
-                         "C2CE": icon_grid.get_offset_provider("C2CE"),
-                         "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
-                         "Koff": dims.KDim}
+        offset_provider={
+            "C2E": icon_grid.get_offset_provider("C2E"),
+            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "Koff": dims.KDim,
+        },
     )
 
     assert helpers.dallclose(z_w_con_c_full_ref.asnumpy(), z_w_con_c_full.asnumpy())
@@ -725,17 +732,20 @@ def test_velocity_fused_15_18(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_fused_19_20(
     icon_grid,
     grid_savepoint,
-    savepoint_velocity_19_20_init, 
+    savepoint_velocity_19_20_init,
     savepoint_velocity_19_20_exit,
     interpolation_savepoint,
     metrics_savepoint,
     backend,
+    savepoint_velocity_init,
+    step_date_init,
+    step_date_exit,
 ):
     vn = savepoint_velocity_19_20_init.vn()
     z_kin_hor_e = savepoint_velocity_19_20_init.z_kin_hor_e()
@@ -755,7 +765,7 @@ def test_velocity_fused_19_20(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inv_primal_edge_length()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
-    k = gtx.as_field((dims.KDim,), np.arange(icon_grid.num_levels, dtype=gtx.int32))
+    k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
 
     d_time = 2.0
     extra_diffu = True
@@ -763,15 +773,18 @@ def test_velocity_fused_19_20(
 
     ddt_vn_apc_ref = savepoint_velocity_19_20_exit.ddt_vn_apc()
     # ----- this not sure ----
-    edge_domain = h_grid.domain(dims.EdgeDim) 
-    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)) # I change the horizontal_start below
-    # ------------------------- 
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    horizontal_start = icon_grid.start_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )  # I change the horizontal_start below
+    # -------------------------
 
-    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff() # TODO 
-    cfl_w_limit = savepoint_velocity_init.cfl_w_limit() # TODO
+    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()  # TODO
+    cfl_w_limit = savepoint_velocity_init.cfl_w_limit()  # TODO
 
-    # vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
-    fused_velocity_advection_stencil_19_to_20.fused_velocity_advection_stencil_19_to_20.with_backend(backend)(
+    fused_velocity_advection_stencil_19_to_20.fused_velocity_advection_stencil_19_to_20.with_backend(
+        backend
+    )(
         vn=vn,
         geofac_rot=geofac_rot,
         z_kin_hor_e=z_kin_hor_e,
@@ -800,14 +813,14 @@ def test_velocity_fused_19_20(
         horizontal_end=icon_grid.num_edges,
         vertical_start=0,
         vertical_end=icon_grid.num_levels,
-        offset_provider={"V2E": icon_grid.get_offset_provider("V2E"),
-                         "E2EC": icon_grid.get_offset_provider("E2EC"),
-                         "E2V": icon_grid.get_offset_provider("E2V"),
-                         "E2C": icon_grid.get_offset_provider("E2C"),
-                         "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
-                         "Koff": dims.KDim}
+        offset_provider={
+            "V2E": icon_grid.get_offset_provider("V2E"),
+            "E2EC": icon_grid.get_offset_provider("E2EC"),
+            "E2V": icon_grid.get_offset_provider("E2V"),
+            "E2C": icon_grid.get_offset_provider("E2C"),
+            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "Koff": dims.KDim,
+        },
     )
 
     assert helpers.dallclose(ddt_vn_apc_ref.asnumpy(), ddt_vn_apc.asnumpy())
-
-
