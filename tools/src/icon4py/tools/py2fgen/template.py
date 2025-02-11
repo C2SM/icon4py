@@ -416,7 +416,7 @@ end module
     F90FunctionDeclaration = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
-   import :: c_int, c_double, c_bool, c_ptr, c_null_ptr, c_loc
+   import :: c_int, c_double, c_bool, c_ptr
    {% for size_arg in global_size_args %}
    integer(c_int), value :: {{ size_arg }}
    {% endfor %}
@@ -440,7 +440,7 @@ end function {{name}}_wrapper
             )
             arg_names = ", &\n ".join(
                 map(
-                    lambda x: f"merge(c_loc({x.name}), c_null_ptr, associated({x.name}))"
+                    lambda x: f"merge(c_loc({x.name}), c_null_ptr, present({x.name}))"
                     if x.is_array and x.is_optional
                     else x.name,
                     func.args,
@@ -465,8 +465,6 @@ end function {{name}}_wrapper
     F90FunctionDefinition = as_jinja(
         """
 subroutine {{name}}({{param_names}} {{ return_code_param }})
-   use openacc
-   USE mo_exception,                ONLY: message, message_text, finish
    use, intrinsic :: iso_c_binding
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
@@ -476,16 +474,13 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
 
+   {% if arrays | length >= 1 %}
+   !$ACC host_data use_device( &
    {%- for arr in arrays %}
-    #ifdef _OPENACC
-    WRITE(message_text, '(a, l4)') '{{ arr }} is present', acc_is_present( {{ arr }} )
-    CALL message('diffusion_init', message_text)
-    #endif
+       !$ACC {{ arr }}{% if not loop.last %}, &{% else %} &{% endif %}
    {%- endfor %}
-
-   {%- for arr in arrays %}
-   !$ACC host_data use_device ({{ arr }}) if_present
-   {% endfor %}
+   !$ACC ) if_present
+   {% endif %}
 
    {% for d in _this_node.dimension_positions %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
@@ -493,9 +488,9 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
 
    rc = {{ name }}_wrapper({{ args_with_size_args }})
 
-   {%- for arr in arrays %}
+   {% if arrays | length >= 1 %}
    !$acc end host_data
-   {%- endfor %}
+   {% endif %}
 end subroutine {{name}}
     """
     )
@@ -521,10 +516,12 @@ end subroutine {{name}}
             iso_c_type=to_iso_c_type(param.d_type),
             dim=render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
             explicit_size=render_fortran_array_sizes(param),
-            allocatable="pointer"
+            allocatable="optional,"
             if kwargs.get("as_allocatable", False) and param.is_optional
             else "",
-            target="" if kwargs.get("as_allocatable", False) and param.is_optional else "target",
+            # allocatable="",
+            # target="" if kwargs.get("as_allocatable", False) and param.is_optional else "target",
+            target="target",
         )
 
     FuncParameter = as_jinja(
