@@ -678,13 +678,14 @@ def test_velocity_fused_15_18(
     nrdmax = grid_savepoint.nrdmax()
     extra_diffu = True
 
-    cell_lower_bound = 2  # TODO
-    cell_upper_bound = 4  # TODO
+    cell_domain = h_grid.domain(dims.EdgeDim)
+    cell_lower_bound = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+    cell_upper_bound = icon_grid.start_index(cell_domain(h_grid.Zone.LOCAL))
 
     lvn_only = False
 
-    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()  # TODO
-    cfl_w_limit = savepoint_velocity_init.cfl_w_limit()  # TODO
+    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
+    cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     dtime = 2.0
 
     fused_velocity_advection_stencil_15_to_18.fused_velocity_advection_stencil_15_to_18.with_backend(
@@ -772,15 +773,9 @@ def test_velocity_fused_19_20(
     nrdmax = grid_savepoint.nrdmax()
 
     ddt_vn_apc_ref = savepoint_velocity_19_20_exit.ddt_vn_apc()
-    # ----- this not sure ----
-    edge_domain = h_grid.domain(dims.EdgeDim)
-    horizontal_start = icon_grid.start_index(
-        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )  # I change the horizontal_start below
-    # -------------------------
 
-    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()  # TODO
-    cfl_w_limit = savepoint_velocity_init.cfl_w_limit()  # TODO
+    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
+    cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
 
     fused_velocity_advection_stencil_19_to_20.fused_velocity_advection_stencil_19_to_20.with_backend(
         backend
