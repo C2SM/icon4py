@@ -604,7 +604,6 @@ def test_velocity_fused_8_13(
     k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
 
-    # vertical_lower=1; vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
     fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13.with_backend(
         backend
     )(
