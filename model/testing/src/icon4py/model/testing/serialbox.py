@@ -2002,9 +2002,7 @@ class IconSerialDataProvider:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-exit"]
             .istep[istep]
-            .vn_only[vn_only]
             .date[date]
-            .jstep[jstep]
             .as_savepoint()
         )
         return IconNonhydroExitSavepoint(
