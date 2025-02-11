@@ -9,7 +9,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import gt4py.next as gtx
 import numpy as np
@@ -133,12 +133,12 @@ def as_field(  # type: ignore[no-untyped-def] # CData type not public?
     scalar_kind: ts.ScalarKind,
     domain: dict[gtx.Dimension, int],
     is_optional: bool,
-) -> gtx.Field:
+) -> Optional[gtx.Field]:
     sizes = domain.values()
     unpack = _unpack if xp == np else _unpack_gpu
     if ptr == ffi.NULL:
         if is_optional:
-            return gtx.zeros(domain)  # TODO dtype, longer term TODO return None and don't forward
+            return None  # gtx.zeros(domain)  # TODO dtype, longer term TODO return None and don't forward
         else:
             raise ValueError("Field is required but was not provided.")
     arr = unpack(ffi, ptr, *sizes)

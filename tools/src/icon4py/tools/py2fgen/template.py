@@ -353,7 +353,8 @@ class F90FunctionDefinition(Func):
         """Extract a unique set of dimension positions which are used to infer dimension sizes at runtime."""
         dim_positions: list[DimensionPosition] = []
         unique_size_args: set[str] = set()
-        for arg in self.args:
+        non_optional_args = [arg for arg in self.args if not arg.is_optional]
+        for arg in non_optional_args:
             for index, size_arg in enumerate(arg.size_args):
                 if size_arg not in unique_size_args:
                     dim_positions.append(
