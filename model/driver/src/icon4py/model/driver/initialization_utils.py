@@ -465,7 +465,7 @@ def read_static_fields(
             ddxn_z_full=metrics_savepoint.ddxn_z_full(),
             zdiff_gradp=metrics_savepoint.zdiff_gradp(),
             vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
-            ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+            pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
             pg_exdist=metrics_savepoint.pg_exdist(),
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),

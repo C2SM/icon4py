@@ -1449,7 +1449,7 @@ class SolveNonhydro:
             #  - $\IDXpg$ : ipeidx_dsl
             #
             self._apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-                ipeidx_dsl=self._metric_state_nonhydro.ipeidx_dsl,
+                ipeidx_dsl=self._metric_state_nonhydro.pg_edgeidx_dsl,
                 pg_exdist=self._metric_state_nonhydro.pg_exdist,
                 z_hydro_corr=hydro_corr_horizontal,
                 z_gradh_exner=z_fields.z_gradh_exner,
