@@ -89,13 +89,13 @@ def test_velocity_init(
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
 
-
+# TODO (@halungge) re-enable global with new data
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+        #("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_regular_savepoint(
@@ -143,12 +143,12 @@ def test_verify_velocity_init_against_regular_savepoint(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
+@pytest.mark.parametrize("istep_init, istep_exit, substep", [(1, 1, 1)])
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -170,8 +170,7 @@ def test_velocity_predictor_step(
     backend,
 ):
     sp_v = savepoint_velocity_init
-    vn_only = sp_v.get_metadata("vn_only").get("vn_only")
-    ntnd = sp_v.get_metadata("ntnd").get("ntnd")
+    vn_only = sp_v.vn_only()
     dtime = sp_v.get_metadata("dtime").get("dtime")
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
@@ -189,10 +188,10 @@ def test_velocity_predictor_step(
         ddt_vn_phy=None,
         grf_tend_vn=None,
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+            sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+            sp_v.ddt_w_adv_pc(0), sp_v.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
@@ -242,8 +241,8 @@ def test_velocity_predictor_step(
         cell_areas=cell_geometry.area,
     )
 
-    icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd).asnumpy()
-    icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(ntnd).asnumpy()
+    icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(0).asnumpy()
+    icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(0).asnumpy()
     icon_result_vn_ie = savepoint_velocity_exit.vn_ie().asnumpy()
     icon_result_vt = savepoint_velocity_exit.vt().asnumpy()
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c().asnumpy()
@@ -315,17 +314,18 @@ def test_velocity_predictor_step(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
+@pytest.mark.parametrize("istep_init, istep_exit, substep", [(2, 2, 1)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
     istep_init,
     istep_exit,
+    substep,
     step_date_init,
     step_date_exit,
     lowest_layer_thickness,
@@ -339,10 +339,10 @@ def test_velocity_corrector_step(
     interpolation_savepoint,
     metrics_savepoint,
     backend,
+
 ):
     sp_v = savepoint_velocity_init
-    vn_only = sp_v.get_metadata("vn_only").get("vn_only")
-    ntnd = sp_v.get_metadata("ntnd").get("ntnd")
+    vn_only = sp_v.vn_only()
     dtime = sp_v.get_metadata("dtime").get("dtime")
 
     assert not vn_only
@@ -362,10 +362,10 @@ def test_velocity_corrector_step(
         ddt_vn_phy=None,
         grf_tend_vn=None,
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+            sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+            sp_v.ddt_w_adv_pc(0), sp_v.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
@@ -415,8 +415,8 @@ def test_velocity_corrector_step(
         cell_areas=cell_geometry.area,
     )
 
-    icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd).asnumpy()
-    icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(ntnd).asnumpy()
+    icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(1).asnumpy()
+    icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(1).asnumpy()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
     # stencil 07

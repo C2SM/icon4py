@@ -154,6 +154,10 @@ def step_date_init():
 
 
 @pytest.fixture
+def substep():
+    return 1
+
+@pytest.fixture
 def step_date_exit():
     """
     Set the step date for the loaded ICON time stamp at the end of module.
@@ -182,15 +186,17 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811
+def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep):  # F811
     """
-    Load data from ICON savepoint at start of velocity_advection module.
+    Load data from ICON savepoint at start of subroutine velocity_tendencies.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    metadata to select a unique savepoint:
+    - step_date_init: <iso_string> of the simulation timestep
+    - istep_init: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_init(
-        istep=istep_init, vn_only=vn_only, date=step_date_init, jstep=jstep_init
+        istep=istep_init, date=step_date_init, substep=substep
     )
 
 
@@ -208,15 +214,17 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_ini
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, vn_only, jstep_exit):  # F811
+def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep):  # F811
     """
-    Load data from ICON savepoint at exist of solve_nonhydro module.
+    Load data from ICON savepoint at start of subroutine velocity_tendencies.
 
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    metadata to select a unique savepoint:
+    - step_date_exit: <iso_string> of the simulation timestep
+    - istep_init: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_exit(
-        istep=istep_exit, vn_only=vn_only, date=step_date_exit, jstep=jstep_exit
+        istep=istep_exit, date=step_date_exit, substep=substep
     )
 
 
@@ -297,11 +305,9 @@ def jstep_exit():
     return 0
 
 
-@pytest.fixture
-def ntnd(savepoint_velocity_init):
-    return savepoint_velocity_init.get_metadata("ntnd").get("ntnd")
 
 
+# TODO @halungge remove?
 @pytest.fixture
 def vn_only():
     return False
