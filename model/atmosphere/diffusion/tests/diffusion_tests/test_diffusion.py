@@ -219,7 +219,7 @@ def test_diffusion_init(
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
         geofac_div=data_alloc.flatten_first_two_dims(
             dims.CEDim,
-            interpolation_savepoint.e_bln_c_s(),
+            field=interpolation_savepoint.e_bln_c_s(),
             backend=backend,
         ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
