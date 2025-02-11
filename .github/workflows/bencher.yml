@@ -1,0 +1,16 @@
+name: Continuous Benchmarking with Bencher
+
+on:
+    pull_request:
+
+jobs:
+  benchmark_with_bencher:
+    name: Benchmark with Bencher
+    runs-on: ubuntu-latest
+    env:
+      BENCHER_PROJECT: test-1vcbiy6t
+      BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bencherdev/bencher@main
+    #   - run: bencher run "bencher mock"
