@@ -315,32 +315,32 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
     @pytest.fixture
     def input_data(self, grid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        lsq_pseudoinv_1_field = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_1_field = data_alloc.flatten_first_two_dims(
+            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         )
-        lsq_pseudoinv_2_field = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_2_field = data_alloc.flatten_first_two_dims(
+            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         )
-        lsq_pseudoinv_3_field = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_3_field = data_alloc.flatten_first_two_dims(
+            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         )
-        lsq_pseudoinv_4_field = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_4_field = data_alloc.flatten_first_two_dims(
+            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         )
-        lsq_pseudoinv_5_field = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_5_field = data_alloc.flatten_first_two_dims(
+            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         )
-        lsq_pseudoinv_6_field = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_6_field = data_alloc.flatten_first_two_dims(
+            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         )
-        lsq_pseudoinv_7_field = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_7_field = data_alloc.flatten_first_two_dims(
+            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         )
-        lsq_pseudoinv_8_field = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_8_field = data_alloc.flatten_first_two_dims(
+            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         )
-        lsq_pseudoinv_9_field = data_alloc.as_1D_sparse_field(
-            data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim), dims.CECECDim
+        lsq_pseudoinv_9_field = data_alloc.flatten_first_two_dims(
+            dims.CECECDim, field=data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2E2CDim)
         )
         lsq_moments_1 = data_alloc.random_field(grid, dims.CellDim)
         lsq_moments_2 = data_alloc.random_field(grid, dims.CellDim)
