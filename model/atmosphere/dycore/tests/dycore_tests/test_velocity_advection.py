@@ -25,6 +25,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 from . import utils
+import gt4py.next as gtx
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
@@ -466,8 +467,8 @@ def test_velocity_corrector_step(
         # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep", [(1, 2)])
-def test_velocity_fussed_1_7(
+@pytest.mark.parametrize("istep", [1, 2])
+def test_velocity_fused_1_7(
     icon_grid,
     grid_savepoint,
     savepoint_velocity_1_7_init,
@@ -488,12 +489,12 @@ def test_velocity_fussed_1_7(
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
     z_w_concorr_me = savepoint_velocity_1_7_init.z_w_concorr_me()
-    wgtfacq_e = metrics_savepoint.wgtfacq_e()
+    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
     nflatlev = grid_savepoint.nflatlev()
     c_intp = interpolation_savepoint.c_intp()
     w = savepoint_velocity_1_7_init.w()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    inv_primal_edge_length = grid_savepoint.inv_primal_edge_length()
+    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     tangent_orientation = grid_savepoint.tangent_orientation()
     z_vt_ie = savepoint_velocity_1_7_init.z_vt_ie()
     vt = savepoint_velocity_1_7_init.vt()
@@ -502,7 +503,7 @@ def test_velocity_fussed_1_7(
     z_v_grad_w = savepoint_velocity_1_7_init.z_v_grad_w()
     k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, is_halfdim=True, backend=backend)
 
-    lvn_only = False
+    lvn_only = savepoint_velocity_1_7_init.lvn_only()
     edge = data_alloc.allocate_indices(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
@@ -526,7 +527,7 @@ def test_velocity_fussed_1_7(
         ddxt_z_full=ddxt_z_full,
         z_w_concorr_me=z_w_concorr_me,
         wgtfacq_e=wgtfacq_e,
-        nflatlev=nflatlev,
+        nflatlev=gtx.int32(nflatlev),
         c_intp=c_intp,
         w=w,
         inv_dual_edge_length=inv_dual_edge_length,
@@ -538,16 +539,16 @@ def test_velocity_fussed_1_7(
         z_kin_hor_e=z_kin_hor_e,
         z_v_grad_w=z_v_grad_w,
         k=k,
-        istep=istep,
-        nlev=icon_grid.num_levels,
+        istep=gtx.int32(istep),
+        nlev=gtx.int32(icon_grid.num_levels),
         lvn_only=lvn_only,
         edge=edge,
         lateral_boundary_7=lateral_boundary_7,
         halo_1=halo_1,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
-        verical_start=0,
-        vertical_end=icon_grid.num_levels + 1,
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(icon_grid.num_levels + 1),
         offset_provider={
             "E2C": icon_grid.get_offset_provider("E2C"),
             "E2V": icon_grid.get_offset_provider("E2V"),
@@ -562,9 +563,6 @@ def test_velocity_fussed_1_7(
     assert helpers.dallclose(z_kin_hor_e_ref.asnumpy(), z_kin_hor_e.asnumpy())
     assert helpers.dallclose(z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy())
     assert helpers.dallclose(z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy())
-
-
-# TODO: can discuss the definition of k and edge
 
 
 @pytest.mark.datatest

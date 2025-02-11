@@ -35,6 +35,8 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     savepoint_nonhydro_step_exit,
     savepoint_velocity_exit,
     savepoint_velocity_init,
+    savepoint_velocity_1_7_init,
+    savepoint_velocity_1_7_exit,
     step_date_exit,
     step_date_init,
     stretch_factor,

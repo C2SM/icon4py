@@ -1153,90 +1153,81 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def w_concorr_c(self):
         return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
 
-    def init_vn_1_7(self):
-        return self._get_field("init_vn_1_7", dims.EdgeDim, dims.KDim)
 
-    def init_rbf_vec_coeff_e_1_7(self):
-        return self._get_field("init_rbf_vec_coeff_e_1_7", dims.EdgeDim, dims.E2C2EDim)
+class IconVelocityInit1to7Savepoint(IconSavepoint):
+    def lvn_only(self) -> bool:
+        return self.serializer.read("vn_only", self.savepoint)[0]
 
-    def init_wgtfac_e_1_7(self):
-        return self._get_field("init_wgtfac_e_1_7", dims.EdgeDim, dims.KDim)
+    def vn(self):
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
 
-    def init_ddxn_z_full_1_7(self):
-        field = self._get_field("init_ddxn_z_full_1_7", dims.EdgeDim, dims.KDim)
-        return data_alloc.as_1D_sparse_field(field, dims.ECDim)
+    def vn_ie(self):
+        return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
 
-    def init_ddxt_z_full_1_7(self):
-        return self._get_field("init_ddxt_z_full_1_7", dims.EdgeDim, dims.KDim)
+    def vt(self):
+        return self._get_field("vt", dims.EdgeDim, dims.KDim)
 
-    def init_z_w_concorr_me_1_7(self):
-        return self._get_field("init_z_w_concorr_me_1_7", dims.EdgeDim, dims.KDim)
+    def w(self):
+        return self._get_field("w", dims.CellDim, dims.KDim)
 
-    def init_wgtfacq_1_7(self):
-        return self._get_field("init_wgtfacq_1_7", dims.EdgeDim, dims.KDim)
+    def z_kin_hor_e(self):
+        return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
 
-    # should not be here
-    def init_nflatlev_1_7(self):
-        return self._get_field("init_nflatlev_1_7", dims.EdgeDim, dims.E2CDim)
+    def z_v_grad_w(self):
+        return self._get_field("z_v_grad_w", dims.EdgeDim, dims.KDim)
 
-    def init_c_intp_1_7(self):
-        return self._get_field("init_c_intp_1_7", dims.VertexDim, dims.V2CDim)
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", dims.EdgeDim, dims.KDim)
 
-    def init_w_1_7(self):
-        return self._get_field("init_w_1_7", dims.CellDim, dims.KDim)
+    def z_w_concorr_me(self):
+        return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
 
-    def init_inv_dual_edge_length_1_7(self):
-        return self._get_field("init_inv_dual_edge_length_1_7", dims.EdgeDim)
 
-    def init_inv_primal_edge_length_1_7(self):
-        return self._get_field("init_inv_primal_edge_length_1_7", dims.EdgeDim)
+class IconVelocityExit1to7Savepoint(IconSavepoint):
+    # TODO fix the dimensions
+    def vt(self):
+        return self._get_field("vt", dims.CellDim, dims.KDim)
 
-    def init_tangent_orientation_1_7(self):
-        return self._get_field("init_tangent_orientation_1_7", dims.EdgeDim)
+    def vn_ie(self):
+        return self._get_field("vn_ie", dims.CellDim, dims.KDim)
 
-    def init_z_vt_ie_1_7(self):
-        return self._get_field("init_z_vt_ie_1_70", dims.EdgeDim, dims.KDim)
+    def z_kin_hor_e(self):
+        return self._get_field("z_kin_hor_e", dims.CellDim, dims.KDim)
 
-    def init_vt_1_7(self):
-        return self._get_field("init_vt_1_7", dims.EdgeDim, dims.KDim)
+    def z_w_concorr_me(self):
+        return self._get_field("z_w_concorr_me", dims.CellDim, dims.KDim)
 
-    def init_vn_ie_1_7(self):
-        return self._get_field("init_geofac_grdiv_19_20", dims.EdgeDim, dims.KDim)
-
-    def init_z_kin_hor_e_1_7(self):
-        return self._get_field("init_z_kin_hor_e_1_7", dims.EdgeDim, dims.KDim)
-
-    def init_z_v_grad_w_1_7(self):
-        return self._get_field("init_z_v_grad_w_1_7", dims.EdgeDim, dims.KDim)
+    def z_v_grad_w(self):
+        return self._get_field("z_v_grad_w", dims.CellDim, dims.KDim)
 
 
 class IconDiffusionExitSavepoint(IconSavepoint):
     def vn(self):
-        return self._get_field("x_vn", dims.EdgeDim, dims.KDim)
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
 
     def theta_v(self):
-        return self._get_field("x_theta_v", dims.CellDim, dims.KDim)
+        return self._get_field("theta_v", dims.CellDim, dims.KDim)
 
     def w(self):
-        return self._get_field("x_w", dims.CellDim, dims.KDim)
+        return self._get_field("w", dims.CellDim, dims.KDim)
 
     def dwdx(self):
-        return self._get_field("x_dwdx", dims.CellDim, dims.KDim)
+        return self._get_field("dwdx", dims.CellDim, dims.KDim)
 
     def dwdy(self):
-        return self._get_field("x_dwdy", dims.CellDim, dims.KDim)
+        return self._get_field("dwdy", dims.CellDim, dims.KDim)
 
     def exner(self):
-        return self._get_field("x_exner", dims.CellDim, dims.KDim)
+        return self._get_field("exner", dims.CellDim, dims.KDim)
 
     def z_temp(self):
-        return self._get_field("x_z_temp", dims.CellDim, dims.KDim)
+        return self._get_field("z_temp", dims.CellDim, dims.KDim)
 
     def div_ic(self):
-        return self._get_field("x_div_ic", dims.CellDim, dims.KDim)
+        return self._get_field("div_ic", dims.CellDim, dims.KDim)
 
     def hdef_ic(self):
-        return self._get_field("x_hdef_ic", dims.CellDim, dims.KDim)
+        return self._get_field("hdef_ic", dims.CellDim, dims.KDim)
 
 
 class IconNonhydroExitSavepoint(IconSavepoint):
@@ -1407,22 +1398,6 @@ class IconNonhydroExitSavepoint(IconSavepoint):
 
     def exner_dyn_incr(self):
         return self._get_field("x_exner_dyn_incr", dims.CellDim, dims.KDim)
-
-    # TODO fix the dimensions
-    def x_vt_1_7(self):
-        return self._get_field("x_vt_1_7", dims.CellDim, dims.KDim)
-
-    def x_vn_ie_1_7(self):
-        return self._get_field("x_vn_ie_1_7", dims.CellDim, dims.KDim)
-
-    def x_z_kin_hor_e_1_7(self):
-        return self._get_field("x_z_kin_hor_e_1_7", dims.CellDim, dims.KDim)
-
-    def x_z_w_concorr_me_1_7(self):
-        return self._get_field("x_z_w_concorr_me_1_7", dims.CellDim, dims.KDim)
-
-    def x_z_v_grad_w_1_7(self):
-        return self._get_field("x_z_v_grad_w_1_7", dims.CellDim, dims.KDim)
 
     def x_ddt_vn_apc_19_20(self):
         return self._get_field("x_ddt_vn_apc_19_20", dims.EdgeDim, dims.KDim)
@@ -1953,14 +1928,25 @@ class IconSerialDataProvider:
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconVelocityInitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-velocity-tendencies"]
+            self.serializer.savepoint["velocity-tendencies-init"]
             .istep[istep]
-            .vn_only[vn_only]
             .date[date]
-            .jstep[jstep]
             .as_savepoint()
         )
         return IconVelocityInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def savepoint_velocity_1_7_init(
+        self, istep: int, vn_only: bool, date: str, jstep: int
+    ) -> IconVelocityInit1to7Savepoint:
+        savepoint = (
+            self.serializer.savepoint["velocity-tendencies-1to7-init"]
+            .istep[istep]
+            .date[date]
+            .as_savepoint()
+        )
+        return IconVelocityInit1to7Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
@@ -2014,7 +2000,7 @@ class IconSerialDataProvider:
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconNonhydroExitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-velocity-tendencies"]
+            self.serializer.savepoint["velocity-tendencies-exit"]
             .istep[istep]
             .vn_only[vn_only]
             .date[date]
@@ -2022,6 +2008,19 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonhydroExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def savepoint_velocity_1_7_exit(
+        self, istep: int, vn_only: bool, date: str, jstep: int
+    ) -> IconVelocityExit1to7Savepoint:
+        savepoint = (
+            self.serializer.savepoint["velocity-tendencies-1to7-exit"]
+            .istep[istep]
+            .date[date]
+            .as_savepoint()
+        )
+        return IconVelocityExit1to7Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
