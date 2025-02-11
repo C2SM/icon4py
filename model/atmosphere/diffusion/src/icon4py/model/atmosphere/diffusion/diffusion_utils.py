@@ -68,8 +68,7 @@ def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> fa.KFi
 
 @gtx.field_operator
 def _setup_fields_for_initial_step(
-    k4: float,
-    hdiff_efdt_ratio: float
+    k4: float, hdiff_efdt_ratio: float
 ) -> tuple[fa.KField[float], fa.KField[float]]:
     diff_multfac_vn = _setup_initial_diff_multfac_vn(k4, hdiff_efdt_ratio)
     smag_limit = _setup_smag_limit(diff_multfac_vn)

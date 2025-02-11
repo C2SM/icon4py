@@ -89,13 +89,14 @@ def test_velocity_init(
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
 
+
 # TODO (@halungge) re-enable global with new data
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        #("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_regular_savepoint(
@@ -148,7 +149,7 @@ def test_verify_velocity_init_against_regular_savepoint(
     "experiment,step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -319,7 +320,7 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -339,7 +340,6 @@ def test_velocity_corrector_step(
     interpolation_savepoint,
     metrics_savepoint,
     backend,
-
 ):
     sp_v = savepoint_velocity_init
     vn_only = sp_v.vn_only()

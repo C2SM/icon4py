@@ -157,6 +157,7 @@ def step_date_init():
 def substep():
     return 1
 
+
 @pytest.fixture
 def step_date_exit():
     """
@@ -303,8 +304,6 @@ def jstep_init():
 @pytest.fixture
 def jstep_exit():
     return 0
-
-
 
 
 # TODO @halungge remove?
