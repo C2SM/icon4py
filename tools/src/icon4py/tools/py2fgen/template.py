@@ -455,11 +455,22 @@ end function {{name}}_wrapper
             assumed_size_array=False,
             param_names=param_names,
             args_with_size_args=args_with_size_args,
-            arrays=set([arg.name for arg in func.args if arg.is_array]).difference(
-                set(func.uninitialised_arrays)
-            ),
+            non_optional_arrays=[
+                arg.name for arg in func.args if arg.is_array if not arg.is_optional
+            ],
+            optional_arrays=[arg.name for arg in func.args if arg.is_array if arg.is_optional],
             as_allocatable=True,
             return_code_param=return_code_param,
+            non_optional_args=[
+                self.visit(arg, assumed_size_array=False)
+                for arg in func.args
+                if not arg.is_optional
+            ],
+            optional_args=[
+                self.visit(arg, as_allocatable=True, assumed_size_array=False)
+                for arg in func.args
+                if arg.is_optional
+            ],
         )
 
     F90FunctionDefinition = as_jinja(
@@ -469,18 +480,20 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
    {% endfor %}
-   {% for arg in args %}
+   {% for arg in non_optional_args %}
+   {{ arg }}
+   {% endfor %}
+   {% for arg in optional_args %}
    {{ arg }}
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
 
-   {% if arrays | length >= 1 %}
-   !$ACC host_data use_device( &
-   {%- for arr in arrays %}
-       !$ACC {{ arr }}{% if not loop.last %}, &{% else %} &{% endif %}
+   {%- for arr in non_optional_arrays %}
+       !$acc host_data use_device({{ arr }})
    {%- endfor %}
-   !$ACC ) if_present
-   {% endif %}
+   {%- for arr in optional_arrays %}
+       !$acc host_data use_device({{ arr }}) if(present({{ arr }}))
+   {%- endfor %}
 
    {% for d in _this_node.dimension_positions %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
@@ -488,9 +501,12 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
 
    rc = {{ name }}_wrapper({{ args_with_size_args }})
 
-   {% if arrays | length >= 1 %}
+   {%- for arr in non_optional_arrays %}
    !$acc end host_data
-   {% endif %}
+   {%- endfor %}
+   {%- for arr in optional_arrays %}
+   !$acc end host_data
+   {%- endfor %}
 end subroutine {{name}}
     """
     )
