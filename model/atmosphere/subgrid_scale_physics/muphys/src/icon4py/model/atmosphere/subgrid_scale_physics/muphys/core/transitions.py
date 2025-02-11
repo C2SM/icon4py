@@ -367,7 +367,7 @@ def _vapor_x_ice(
     dt:        ta.wpfloat,                           # time step
 ) -> fa.CellKField[ta.wpfloat]:                       # Rate of vapor deposition to ice
     AMI    = 130.0                 # Formfactor for mass-size relation of cold ice
-    B_EXP  = 7.0                   # exp. for conv. (-1 + 0.33) of ice mass to sfc area
+    B_EXP  = -0.67                 # exp. for conv. (-1 + 0.33) of ice mass to sfc area
     A_FACT = 4.0 * AMI**(-1.0/3.0)  
 
     # TO-DO: see if this can be folded into the WHERE statement
