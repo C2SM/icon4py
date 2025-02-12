@@ -502,7 +502,7 @@ subroutine {{name}}({{param_names}})
        !$acc host_data use_device({{ arr }})
    {%- endfor %}
    {%- for arr in optional_arrays %}
-       !$acc host_data use_device({{ arr }}) if(present({{ arr }}))
+       !$acc host_data use_device({{ arr }}) if(associated({{ arr }}))
    {%- endfor %}
 
    {% for d in _this_node.dimension_positions %}
@@ -510,7 +510,7 @@ subroutine {{name}}({{param_names}})
    {% endfor %}
    
    {% for arg in _this_node.args if arg.is_optional %}
-   if(present({{ arg.name }})) then
+   if(associated({{ arg.name }})) then
    {{ arg.name }}_ptr = c_loc({{ arg.name }})
     endif
    {% endfor %}
@@ -548,12 +548,12 @@ end subroutine {{name}}
             iso_c_type=to_iso_c_type(param.d_type),
             dim=render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
             explicit_size=render_fortran_array_sizes(param),
-            allocatable="optional,"
+            allocatable="pointer"
             if kwargs.get("as_allocatable", False) and param.is_optional
             else "",
             # allocatable="",
-            # target="" if kwargs.get("as_allocatable", False) and param.is_optional else "target",
-            target="target",
+            target="" if kwargs.get("as_allocatable", False) and param.is_optional else "target",
+            # target="target",
         )
 
     FuncParameter = as_jinja(
