@@ -29,7 +29,7 @@ include:
     # - popd
     # - asv gh-pages --no-push
     # - git push $ASV_RESULTS_REPOSITORY gh-pages:gh-pages -f
-    - ASV_COMPARE_OUTPUT=$(asv compare c714693d e238b628 -m gh200 -s -f 1.01 --only-changed)
+    - ASV_COMPARE_OUTPUT=$(asv compare c714693d e238b628 -m gh200 --only-changed -s -f 1.01)
     - PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - echo $PR_ID
     - |
