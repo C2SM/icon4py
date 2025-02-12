@@ -4,7 +4,7 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   variables:
-    CODSPEED_RUNNER_VERSION: 3.3.0-beta.5
+    CODSPEED_RUNNER_VERSION: 3.3.0
     GIT_STRATEGY: clone
   script:
     - git clone -b codspeed https://github.com/C2SM/icon4py.git
