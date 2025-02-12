@@ -364,11 +364,7 @@ class TestReconstructCubicCoefficientsSvd(helpers.StencilTest):
         p_coeff_10_dsl = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
         cell_domain = h_grid.domain(dims.CellDim)
-        horizontal_start = (
-            grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-            if hasattr(grid, "start_index")
-            else 0
-        )
+        horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
         return dict(
             p_cc=p_cc,
