@@ -511,7 +511,7 @@ subroutine {{name}}({{param_names}})
        !$acc host_data use_device({{ arr }})
    {%- endfor %}
    {%- for arr in optional_arrays %}
-       !$acc host_data use_device({{ arr }}) if(associated({{ arr }}))
+       !$acc host_data use_device({{ arr }}_ftn_ptr) if(associated({{ arr }}_ftn_ptr))
    {%- endfor %}
 
    {% for d in _this_node.dimension_positions %}
