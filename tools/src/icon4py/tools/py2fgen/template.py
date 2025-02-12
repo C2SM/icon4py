@@ -519,7 +519,7 @@ subroutine {{name}}({{param_names}})
    {% endfor %}
    
    {% for arg in _this_node.args if arg.is_optional %}
-   if(associated({{ arg.name }})) then
+   if(associated({{ arg.name }}_ftn_ptr)) then
    {{ arg.name }}_ptr = c_loc({{ arg.name }}_ftn_ptr)
     endif
    {% endfor %}
