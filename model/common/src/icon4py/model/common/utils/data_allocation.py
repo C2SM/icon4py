@@ -98,7 +98,7 @@ def flatten_first_two_dims(
 
 def unflatten_first_two_dims(field: gtx.Field | NDArray) -> NDArray:
     """Convert a (n-1)-D flattened (Felix-style) sparse field or ndarray to a n-D sparse NDArray."""
-    buffer = field.ndarray if isinstance(gtx.Field) else field
+    buffer = field.ndarray if isinstance(field, gtx.Field) else field
     old_shape = buffer.shape
     new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
     return buffer.reshape(new_shape)
