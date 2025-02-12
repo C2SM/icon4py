@@ -6,29 +6,39 @@ include:
   variables:
     GIT_STRATEGY: clone
   script:
+    # instead of this branch we should checkout $CI_COMMIT_SHA
     - git clone -b asv_test https://github.com/C2SM/icon4py.git
     - cd icon4py
     - echo "Running benchmarks"
     - pip uninstall -y uv || true
-    - pip install asv
+    - pip install git+https://github.com/iomaganaris/asv.git
     - ASV_RESULTS_REPOSITORY="https://iomaganaris:$ICON4PY_ASV_TOKEN@github.com/iomaganaris/icon4py_asv.git"
     - ASV_RESULTS_REPOSITORY_BRANCH="icon4py_upstream_santis"
     - git config --global user.name 'icon4py CI'
     - git config --global user.email 'icon4py@C2SM'
     - git config --global push.default nothing
     - git checkout asv_test
+    # .asv/results has the results of the benchmarks from 'main'
+    # from there get the last commit for which we have results by looking at the comming message of HEAD
     - git clone -b $ASV_RESULTS_REPOSITORY_BRANCH $ASV_RESULTS_REPOSITORY .asv/results
     - cp asv_util/asv-machine.santis.json $HOME/.asv-machine.json
+    # Run below only on pushes to main branch
+    ############################################################################################################
+    # Instead of "asv_test^!" use $CI_COMMIT_SHA
     # - asv run --environment virtualenv:3.10 -v asv_test^!
     # - pushd .asv/results
     # - git add .
-    # - git commit -m "Benchmark results for commit $CI_COMMIT_SHA"
+    # Commit name should be $CI_COMMIT_SHA so that we can have a reference sha to test new commits against
+    # - git commit -m "$CI_COMMIT_SHA"
     # - git fetch origin
     # - git rebase origin/$ASV_RESULTS_REPOSITORY_BRANCH
+    # Need to figure out how to allow only the CI to push to the results repository automatically. Otherwise a PR is necessary to avoid losing the data
     # - git push origin HEAD:$ASV_RESULTS_REPOSITORY_BRANCH
     # - popd
     # - asv gh-pages --no-push
     # - git push $ASV_RESULTS_REPOSITORY gh-pages:gh-pages -f
+    ############################################################################################################
+    # First commit id should be the commit id of the results we read above. Second commit id should be $CI_COMMIT_SHA
     - ASV_COMPARE_OUTPUT=$(asv compare c714693d e238b628 -m gh200 --only-changed -s -f 1.01)
     - PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - echo $PR_ID
