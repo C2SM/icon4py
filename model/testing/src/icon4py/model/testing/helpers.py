@@ -89,6 +89,7 @@ def apply_markers(
             case "requires_concat_where" if is_embedded(backend):
                 pytest.xfail("Stencil requires concat_where.")
             case "skip_value_error":
+                # TODO (@halungge) this skips too many tests: we should evaluate the grid and the needed connectivities
                 pytest.skip(
                     "Stencil does not support domain containing skip values. Consider shrinking domain."
                 )
