@@ -469,10 +469,12 @@ end function {{name}}_wrapper
                 if not arg.is_optional
             ],
             optional_args=[
-                self.visit(arg, as_allocatable=True, assumed_size_array=False)
+                self.visit(arg, as_allocatable=False, assumed_size_array=False)
                 for arg in func.args
                 if arg.is_optional
             ],
+            to_iso_c_type=to_iso_c_type,
+            render_fortran_array_dimensions=render_fortran_array_dimensions,
         )
 
     F90FunctionDefinition = as_jinja(
@@ -493,6 +495,13 @@ subroutine {{name}}({{param_names}})
    {% for arg in _this_node.args if arg.is_optional %}
    type(c_ptr) :: {{ arg.name }}_ptr
    {% endfor %}
+   {% for arg in _this_node.args if arg.is_optional %}
+   {{to_iso_c_type(arg.d_type)}}, {{render_fortran_array_dimensions(arg, False)}} pointer  :: {{ arg.name }}_ftn_ptr
+   {% endfor %}
+
+   {% for arg in _this_node.args if arg.is_optional %}
+   {{ arg.name }}_ftn_ptr => {{ arg.name }}
+   {% endfor %}
    
    {% for arg in _this_node.args if arg.is_optional %}
    {{ arg.name }}_ptr = c_null_ptr
@@ -511,7 +520,7 @@ subroutine {{name}}({{param_names}})
    
    {% for arg in _this_node.args if arg.is_optional %}
    if(associated({{ arg.name }})) then
-   {{ arg.name }}_ptr = c_loc({{ arg.name }})
+   {{ arg.name }}_ptr = c_loc({{ arg.name }}_ftn_ptr)
     endif
    {% endfor %}
 
