@@ -95,8 +95,6 @@ def apply_markers(
                     pytest.skip(
                         "Stencil does not support domain containing skip values. Consider shrinking domain."
                     )
-            case "segfault":
-                pytest.xfail("Stencil segfaults on compiled backends.")
             case "datatest" if not is_datatest:
                 pytest.skip("need '--datatest' option to run")
 
