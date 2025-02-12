@@ -291,9 +291,9 @@ def {{ func.name }}_wrapper(
         # debug info
         {% for arg in func.args %}
         {% if arg.is_array %}
-        msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
+        msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape if {{arg.name}} is not None else "None")
         logging.debug(msg)
-        msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
+        msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray if {{ arg.name }} is not None else "None")
         logging.debug(msg)
         {% endif %}
         {% endfor %}
