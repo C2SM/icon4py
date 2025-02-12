@@ -31,7 +31,8 @@ include:
     # - git push $ASV_RESULTS_REPOSITORY gh-pages:gh-pages -f
     - COMMENT=$(asv compare c714693d e238b628 -m gh200 -s)
     - echo $COMMENT
-    - FILTERED_COMMENT_FOR_JSON=$(echo $new_comment | sed 's/$/\\n/g' | tr -d '\n' | rev | cut -c 3- | rev)
+    - FILTERED_COMMENT_FOR_JSON=$(echo $COMMENT | sed 's/$/\\n/g' | tr -d '\n' | rev | cut -c 3- | rev)
+    - echo $FILTERED_COMMENT_FOR_JSON
     - PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - echo $PR_ID
     - |
