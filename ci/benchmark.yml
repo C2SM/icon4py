@@ -29,8 +29,7 @@ include:
     # - popd
     # - asv gh-pages --no-push
     # - git push $ASV_RESULTS_REPOSITORY gh-pages:gh-pages -f
-    - COMMENT=$(asv compare c714693d e238b628 -m gh200 -s -f 1.01)
-    - echo $COMMENT
+    - ASV_COMPARE_OUTPUT=$(asv compare c714693d e238b628 -m gh200 -s -f 1.01 --only-changed)
     - PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - echo $PR_ID
     - |
@@ -41,18 +40,22 @@ include:
           -H "Accept: application/vnd.github+json" \
           -H "Authorization: token $ICON4PY_ASV_TOKEN" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          https://api.github.com/repos/C2SM/icon4py/issues/$PR_ID/comments \
-          -d "{ \"body\": \"${COMMENT//$'\n'/\\n}\" }"
+          https://api.github.com/repos/C2SM/icon4py/issues/$PR_ID/ASV_COMPARE_OUTPUTs \
+          -d "{ \"body\": \"${ASV_COMPARE_OUTPUT//$'\n'/\\n}\" }"
         set +x
       else
         echo "No open pull requests found."
       fi
     - |
-      if [[ "$(echo $COMMENT | grep -e "runtime" | grep "|[\ ]*+[\ ]*|")" != "" ]]; then
+      if [[ "$(echo $ASV_COMPARE_OUTPUT | grep -e "runtime" | grep "|[\ ]*+[\ ]*|")" != "" ]]; then
+        echo "The runtime of the following benchmarks has increased"
+        echo $ASV_COMPARE_OUTPUT | grep -e "runtime" | grep "|[\ ]*+[\ ]*|" -B 1
         exit 1
       fi
     - |
-      if [[ "$(echo $COMMENT | grep -e "memory" | grep "|[\ ]*+[\ ]*|")" != "" ]]; then
+      if [[ "$(echo $ASV_COMPARE_OUTPUT | grep -e "memory" | grep "|[\ ]*+[\ ]*|")" != "" ]]; then
+        echo "The memory high watermark of the following benchmarks has increased"
+        echo $ASV_COMPARE_OUTPUT | grep -e "memory" | grep "|[\ ]*+[\ ]*|"
         exit 1
       fi
 
