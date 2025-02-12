@@ -299,6 +299,7 @@ class Plot:
                 plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=4**2, cmap=cmap, norm=norm)
             case self.grid.num_vertices:
                 plot_lev = lambda data, i: axs[i].scatter(tri.x, tri.y, c=data[:, -1-i], s=4**2, cmap=cmap, norm=norm)
+            case _: raise ValueError("Invalid data shape")
 
         fig = plt.figure(1, figsize=(14,min(13,4*nlev))); plt.clf()
         axs = fig.subplots(nrows=min(nax_per_col, nlev), ncols=max(1,int(np.ceil(nlev/nax_per_col))), sharex=True, sharey=True)
@@ -359,7 +360,7 @@ if __name__ == "__main__":
     main_dir = os.getcwd() + "/"
     state_fname = 'testdata/prognostic_states.torus_small.pkl'
     savepoint_path = 'testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data'
-    grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_1000m_x_1000m_res250m.nc"
+    grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res100m.nc"
 
     with open(main_dir + state_fname, "rb") as ifile:
         prognostic_states = pickle.load(ifile)
@@ -371,7 +372,7 @@ if __name__ == "__main__":
         )
 
     #plot.plot_data(prognostic_states.current.vn, 2, label=f"vn")
-    plot.plot_data(prognostic_states.current.w,  2, label=f"w")
+    axs = plot.plot_data(prognostic_states.current.w,  2, label=f"w")
     axs = plot.plot_data(prognostic_states.current.vn, 2, label=f"vvec_cell")
     axs = plot.plot_data(prognostic_states.current.vn, 2, label=f"vvec_edge")
     #plot.plot_grid(axs[0])

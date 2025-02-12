@@ -14,6 +14,7 @@ simple_mesh*.nc
 .profile
 imgs
 *.log
+*.csv
 
 ### Sphinx ###
 **/docs/_source/*.rst

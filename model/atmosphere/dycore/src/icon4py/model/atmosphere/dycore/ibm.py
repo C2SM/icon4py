@@ -18,7 +18,7 @@ Immersed boundary method module
 """
 
 log = logging.getLogger(__name__)
-DEBUG = True
+DEBUG_LEVEL = 2
 
 
 class ImmersedBoundaryMethod:
@@ -40,9 +40,10 @@ class ImmersedBoundaryMethod:
 
         self._dir_value_w = 0.0
         self._dir_value_theta_v = -313
+        self._dir_value_p = -717
         self._dir_value_vn = 0.0
 
-        if DEBUG:
+        if DEBUG_LEVEL >= 2:
             self._delta_file_vn = open("ibm_delta_vn.csv", "a")
             self._delta_file_vn.write("\n")
             self._delta_file_w = open("ibm_delta_w.csv", "a")
@@ -55,82 +56,83 @@ class ImmersedBoundaryMethod:
         pass
 
     def _make_cell_mask(self, grid: icon_grid.IconGrid) -> fa.CellKField[bool]:
-        cell_mask = np.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
-        cell_mask[[5,16], -2:] = True
-        return gtx.as_field((CellDim, KDim), cell_mask)
+        cell_mask_np = np.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
+        cell_mask_np[[5,16], -3:] = True
+        return gtx.as_field((CellDim, KDim), cell_mask_np)
     
     def _make_edge_mask(self, grid: icon_grid.IconGrid) -> fa.EdgeKField[bool]:
         if not hasattr(self, "cell_mask"):
             raise ValueError("Cell mask must be set before edge mask.")
-        cell_mask = self.cell_mask.ndarray
+        cell_mask_np = self.cell_mask.ndarray
         c2e = grid.connectivities[dims.C2EDim]
-        edge_mask = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
+        edge_mask_np = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
         for k in range(grid.num_levels):
-            edge_mask[c2e[np.where(cell_mask[:,k])], k] = True
-        return gtx.as_field((EdgeDim, KDim), edge_mask)
+            edge_mask_np[c2e[np.where(cell_mask_np[:,k])], k] = True
+        return gtx.as_field((EdgeDim, KDim), edge_mask_np)
 
-    def set_boundary_conditions(
+    def set_boundary_conditions_vn(
         self,
-        prognostic_state: prognostic_state.PrognosticState,
+        vn: fa.EdgeKField[float],
     ):
-        """
-        Set boundary conditions on prognostic variables.
-        """
-        log.info("IBM set BCs...")
+        if DEBUG_LEVEL >= 1:
+            vn0 = vn.ndarray.copy()
 
-        if DEBUG:
-            vn0 = prognostic_state.vn.ndarray.copy()
-            w0  = prognostic_state.w.ndarray.copy()
+        self._set_bcs_edges(
+            mask=self.edge_mask,
+            dir_value=self._dir_value_vn,
+            field=vn,
+            out=(vn),
+            offset_provider={},
+        )
+
+        if DEBUG_LEVEL >= 1:
+            vn1 = vn.ndarray
+            log.info(f"IBM max delta vn: {np.abs(vn1 - vn0).max()}")
+
+    def set_boundary_conditions_p(
+        self,
+        p: fa.CellKField[float],
+    ):
+        if DEBUG_LEVEL >= 1:
+            p0 = p.ndarray.copy()
 
         self._set_bcs_cells(
             mask=self.cell_mask,
-            dir_value_w=self._dir_value_w,
-            dir_value_theta_v=self._dir_value_theta_v,
-            w=prognostic_state.w,
-            theta_v=prognostic_state.theta_v,
-            out=(prognostic_state.w, prognostic_state.theta_v),
-            offset_provider={},
-        )
-        self._set_bcs_edges(
-            mask=self.edge_mask,
-            dir_value_vn=self._dir_value_vn,
-            vn=prognostic_state.vn,
-            out=(prognostic_state.vn),
+            dir_value=self._dir_value_p,
+            field=p,
+            out=(p),
             offset_provider={},
         )
 
-        if DEBUG:
-            vn1 = prognostic_state.vn.ndarray
-            w1  = prognostic_state.w.ndarray
-            log.info(f"IBM max delta vn: {np.abs(vn1 - vn0).max()}")
-            log.info(f"IBM max delta w : {np.abs(w1  - w0 ).max()}")
+        if DEBUG_LEVEL >= 1:
+            p1 = p.ndarray
+            log.info(f"IBM max delta p: {np.abs(p1 - p0 ).max()}")
+
 
     @gtx.field_operator
     def _set_bcs_cells(
         mask: fa.CellKField[bool],
-        dir_value_w: float,
-        dir_value_theta_v: float,
-        w: fa.CellKField[float],
-        theta_v: fa.CellKField[float],
-    ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
+        dir_value: float,
+        field: fa.CellKField[float],
+    ) -> fa.CellKField[float]:
         """
-        Set boundary conditions for variables defined on cell centres.
+        Set boundary conditions for fields defined on cell centres.
         """
-        w       = where(mask, dir_value_w,       w)
-        #theta_v = where(mask, dir_value_theta_v, theta_v)
-        return w, theta_v
+        field = where(mask, dir_value, field)
+        return field
 
     @gtx.field_operator
     def _set_bcs_edges(
         mask: fa.EdgeKField[bool],
-        dir_value_vn: float,
-        vn: fa.EdgeKField[float],
+        dir_value: float,
+        field: fa.EdgeKField[float],
     ) -> fa.EdgeKField[float]:
         """
-        Set boundary conditions for variables defined on edges.
+        Set boundary conditions for fields defined on edges.
         """
-        vn = where(mask, dir_value_vn, vn)
-        return vn
+        field = where(mask, dir_value, field)
+        return field
+
 
     def check_boundary_conditions(
         self,
@@ -139,6 +141,10 @@ class ImmersedBoundaryMethod:
         """
         Check boundary conditions on prognostic variables.
         """
+
+        if DEBUG_LEVEL < 2:
+            return
+
         edge_mask = self.edge_mask.ndarray
         cell_mask = self.cell_mask.ndarray
         vn = prognostic_state.vn.ndarray
