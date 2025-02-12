@@ -122,7 +122,7 @@ def create_vertical_params(
 def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint, swap_ddt_w_adv_pc: bool = False
 ):
-    current_index, next_index = (2, 1) if swap_ddt_w_adv_pc else (1, 2)
+    current_index, next_index = (1, 0) if swap_ddt_w_adv_pc else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
@@ -135,7 +135,7 @@ def construct_diagnostics(
         ddt_vn_phy=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            init_savepoint.ddt_vn_apc_pc(1), init_savepoint.ddt_vn_apc_pc(2)
+            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(current_index), init_savepoint.ddt_w_adv_pc(next_index)

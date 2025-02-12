@@ -1211,49 +1211,15 @@ class IconNonHydroExitSavepoint(IconSavepoint):
     def z_hydro_corr(self):
         return self._get_field("z_hydro_corr", dims.EdgeDim, dims.KDim)
 
-    def z_th_ddz_exner_c(self):
-        return self._get_field("z_th_ddz_exner_c", dims.CellDim, dims.KDim)
 
-    # z_theta_v_pr_ic?
-    # z_rth_pr_2
-    # z_grad_rth_1/2/3/4
 
-    # !$ser accdata rho_now=p_nh%prog(nnow)%rho
-    # !$ser accdata exner_now=p_nh%prog(nnow)%exner
-    # !$ser accdata theta_v_now=p_nh%prog(nnow)%theta_v
-    # !$ser accdata z_graddiv_vn=z_graddiv_vn(:,:,1)
 
-    # !$ser accdata vt=p_nh%diag%vt
-    # !$ser accdata z_w_concorr_me=z_w_concorr_me
-    # !$ser accdata z_vt_ie=z_vt_ie
-    # !$ser accdata w_concorr_c=p_nh%diag%w_concorr_c
-    # !$ser accdata theta_v_ic=p_nh%diag%theta_v_ic
-    # !$ser accdata vn_ie=p_nh%diag%vn_ie
-    # !$ser accdata z_theta_v_pr_ic=z_theta_v_pr_ic
-    # !$ser accdata z_dexner_dz_c=z_dexner_dz_c
-    # !$ser accdata z_rho_v=z_rho_v
-    # !$ser accdata z_theta_v_v=z_theta_v_v
-    # !$ser accdata z_rho_e=z_rho_e
-    # !$ser accdata z_theta_v_e=z_theta_v_e
-    # !$ser accdata z_rth_pr=z_rth_pr
-    # !$ser accdata z_th_ddz_exner_c=z_th_ddz_exner_c(:,:,1)
-    # !$ser accdata z_gradh_exner=z_gradh_exner(:,:,1)
-    # !$ser accdata z_hydro_corr=z_hydro_corr(:,:,1)
-    # !$ser accdata z_kin_hor_e=z_kin_hor_e
-    # !$ser accdata z_theta_v_fl_e=z_theta_v_fl_e(:,:,1)
-    # !$ser accdata z_grad_rth=z_grad_rth
-    # !$ser accdata z_rho_expl=z_rho_expl
-    # !$ser accdata z_exner_expl=z_exner_expl
-    # !$ser accdata z_contr_w_fl=z_contr_w_fl_l
-    # !$ser accdata z_flxdiv_mass=z_flxdiv_mass
-    # !$ser accdata z_flxdiv_theta=z_flxdiv_theta
-    # !$ser accdata z_w_expl=z_w_expl
-    # !$ser accdata z_alpha=z_alpha
-    # !$ser accdata z_beta=z_beta
-    # !$ser accdata z_q=z_q
-    # !$ser accdata z_dwdz_dd=z_dwdz_dd
+class IconNonHydroFinalSavepoint(IconSavepoint):
+    def theta_v_new(self):
+        return self._get_field("theta_v", dims.CellDim, dims.KDim)
 
-    # !$ser accdata prep_adv_mass_flx_ic=prep_adv%mass_flx_ic
+    def exner_new(self):
+        return self._get_field("exner", dims.CellDim, dims.KDim)
 
 
 class IconVelocityInitSavepoint(IconSavepoint):
@@ -1351,15 +1317,6 @@ class IconVelocityExitSavepoint(IconSavepoint):
 
     def vcfl_dsl(self):
         return self._get_field("vcfl_dsl", dims.KDim)
-
-
-# TODO (magdalena) rename?
-class IconNHFinalExitSavepoint(IconSavepoint):
-    def theta_v_new(self):
-        return self._get_field("x_theta_v", dims.CellDim, dims.KDim)
-
-    def exner_new(self):
-        return self._get_field("x_exner", dims.CellDim, dims.KDim)
 
 
 class IconJabwInitSavepoint(IconSavepoint):
@@ -1883,13 +1840,14 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_nonhydro_init(
-        self, istep: int, date: str, jstep: int
+        self, istep: int, date: str, jstep: int, substep: int
     ) -> IconNonHydroInitSavepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-init"]
             .istep[istep]
             .date[date]
             .jstep[jstep]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return IconNonHydroInitSavepoint(
@@ -1943,24 +1901,31 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_nonhydro_exit(
-        self, istep: int, date: str, jstep: int
+        self, istep: int, date: str, jstep: int, substep: int
     ) -> IconNonHydroExitSavepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-exit"]
             .istep[istep]
             .date[date]
             .jstep[jstep]
+            .dyn_timestep[substep]
             .as_savepoint()
         )
         return IconNonHydroExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_nonhydro_step_exit(self, date: str, jstep: int) -> IconNHFinalExitSavepoint:
+    def from_savepoint_nonhydro_step_exit(
+        self, date: str, jstep: int, substep: int
+    ) -> IconNonHydroFinalSavepoint:
         savepoint = (
-            self.serializer.savepoint["solve_nonhydro_final"].date[date].jstep[jstep].as_savepoint()
+            self.serializer.savepoint["solve-nonhydro-final"]
+            .date[date]
+            .jstep[jstep]
+            .dyn_timestep[substep]
+            .as_savepoint()
         )
-        return IconNHFinalExitSavepoint(
+        return IconNonHydroFinalSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
