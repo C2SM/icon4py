@@ -29,10 +29,8 @@ include:
     # - popd
     # - asv gh-pages --no-push
     # - git push $ASV_RESULTS_REPOSITORY gh-pages:gh-pages -f
-    - COMMENT=$(asv compare c714693d e238b628 -m gh200 -s)
+    - COMMENT=$(asv compare c714693d e238b628 -m gh200 -s -f 1.01)
     - echo $COMMENT
-    - FILTERED_COMMENT_FOR_JSON="$(echo $COMMENT | sed 's/$/\\n/g' | tr -d '\n' | rev | cut -c 3- | rev)"
-    - echo "$FILTERED_COMMENT_FOR_JSON"
     - PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - echo $PR_ID
     - |
@@ -44,7 +42,7 @@ include:
           -H "Authorization: token $ICON4PY_ASV_TOKEN" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
           https://api.github.com/repos/C2SM/icon4py/issues/$PR_ID/comments \
-          -d "{\"body\":\"$FILTERED_COMMENT_FOR_JSON\"}"
+          -d "$(jq -nc --arg body "$COMMENT" '{body: $body}')"
         set +x
       else
         echo "No open pull requests found."
