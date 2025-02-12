@@ -19,7 +19,7 @@ from gt4py.next import backend as gtx_backend, constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
 
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, simple
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -77,6 +77,7 @@ def allocate_data(backend, input_data):
 def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
     backend: gtx_backend.Backend | None,
+    has_skip_values: bool = False,
     is_datatest: bool = False,
 ):
     for marker in markers:
@@ -89,10 +90,11 @@ def apply_markers(
             case "requires_concat_where" if is_embedded(backend):
                 pytest.xfail("Stencil requires concat_where.")
             case "skip_value_error":
-                # TODO (@halungge) this skips too many tests: we should evaluate the grid and the needed connectivities
-                pytest.skip(
-                    "Stencil does not support domain containing skip values. Consider shrinking domain."
-                )
+                if has_skip_values:
+                    # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
+                    pytest.skip(
+                        "Stencil does not support domain containing skip values. Consider shrinking domain."
+                    )
             case "datatest" if not is_datatest:
                 pytest.skip("need '--datatest' option to run")
 
@@ -112,7 +114,9 @@ def _test_validation(
     input_data: dict,
 ):
     if self.MARKERS is not None:
-        apply_markers(self.MARKERS, backend)
+        apply_markers(
+            self.MARKERS, backend, has_skip_values=not isinstance(grid, simple.SimpleGrid)
+        )
 
     connectivities = connectivities_as_numpy
     reference_outputs = self.reference(
@@ -145,7 +149,9 @@ if pytest_benchmark:
 
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
         if self.MARKERS is not None:
-            apply_markers(self.MARKERS, backend)
+            apply_markers(
+                self.MARKERS, backend, has_skip_values=(not isinstance(grid, simple.SimpleGrid))
+            )
 
         if pytestconfig.getoption(
             "--benchmark-disable"

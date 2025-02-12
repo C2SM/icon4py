@@ -124,14 +124,6 @@ def pytest_addoption(parser):
         pass
 
 
-def pytest_runtest_setup(item):
-    apply_markers(
-        item.own_markers,
-        model_backends.BACKENDS[item.config.getoption("--backend")],
-        is_datatest=item.config.getoption("--datatest"),
-    )
-
-
 def _get_grid(
     selected_grid_type: str, selected_backend: gtx_backend.Backend | None
 ) -> base_grid.BaseGrid:
@@ -156,3 +148,15 @@ def _get_grid(
             return grid_instance
         case _:
             return simple_grid.SimpleGrid()
+
+
+def pytest_runtest_setup(item):
+    backend = model_backends.BACKENDS[item.config.getoption("--backend")]
+    grid_option = item.config.getoption("--grid")
+    has_skip_values = grid_option is not None and grid_option != DEFAULT_GRID
+    apply_markers(
+        item.own_markers,
+        backend,
+        has_skip_values,
+        is_datatest=item.config.getoption("--datatest"),
+    )
