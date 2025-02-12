@@ -32,7 +32,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libc6-dbg && \
     rm -rf /var/lib/apt/lists/*
 
-RUN wget -P /tmp https://github.com/CodSpeedHQ/valgrind-codspeed/releases/download/3.24.0-0codspeed1/valgrind_3.24.0-0codspeed1_ubuntu-22.04_arm64.deb && apt install -y /tmp/valgrind_3.24.0-0codspeed1_ubuntu-22.04_arm64.deb && rm /tmp/valgrind_3.24.0-0codspeed1_ubuntu-22.04_arm64.deb && which valgrind
+RUN wget -P /tmp https://github.com/CodSpeedHQ/valgrind-codspeed/releases/download/3.24.0-0codspeed1/valgrind_3.24.0-0codspeed1_ubuntu-22.04_arm64.deb && apt install -y /tmp/valgrind_3.24.0-0codspeed1_ubuntu-22.04_arm64.deb && rm /tmp/valgrind_3.24.0-0codspeed1_ubuntu-22.04_arm64.deb && which valgrind && valgrind --version
 
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=24.11
