@@ -4,7 +4,7 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   variables:
-    CODSPEED_RUNNER_VERSION: 3.2.2
+    CODSPEED_RUNNER_VERSION: 3.3.0-beta.5
   script:
     - curl -fsSL https://github.com/CodSpeedHQ/runner/releases/download/v$CODSPEED_RUNNER_VERSION/codspeed-runner-installer.sh | bash -s
     - source $HOME/.cargo/env
