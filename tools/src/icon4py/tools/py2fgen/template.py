@@ -443,7 +443,7 @@ end function {{name}}_wrapper
             param_names = ", &\n ".join(ordered_param_names)
             arg_names = ", &\n ".join(
                 map(
-                    lambda x: f"{x.name} = merge(c_loc({x.name}), c_null_ptr, present({x.name}))"
+                    lambda x: f"{x.name} = {x.name}_ptr"
                     if x.is_array and x.is_optional
                     else f"{x.name} = {x.name}",
                     func.args,
@@ -485,10 +485,18 @@ subroutine {{name}}({{param_names}})
    {% for arg in non_optional_args %}
    {{ arg }}
    {% endfor %}
+   integer(c_int) :: rc  ! Stores the return code
    {% for arg in optional_args %}
    {{ arg }}
    {% endfor %}
-   integer(c_int) :: rc  ! Stores the return code
+   ! ptrs
+   {% for arg in _this_node.args if arg.is_optional %}
+   type(c_ptr) :: {{ arg.name }}_ptr
+   {% endfor %}
+   
+   {% for arg in _this_node.args if arg.is_optional %}
+   {{ arg.name }}_ptr = c_null_ptr
+   {% endfor %}
 
    {%- for arr in non_optional_arrays %}
        !$acc host_data use_device({{ arr }})
@@ -499,6 +507,12 @@ subroutine {{name}}({{param_names}})
 
    {% for d in _this_node.dimension_positions %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
+   {% endfor %}
+   
+   {% for arg in _this_node.args if arg.is_optional %}
+   if(present({{ arg.name }})) then
+   {{ arg.name }}_ptr = c_loc({{ arg.name }})
+    endif
    {% endfor %}
 
    rc = {{ name }}_wrapper({{ args_with_size_args }})
