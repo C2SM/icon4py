@@ -55,13 +55,13 @@ include:
         echo "No open pull requests found."
       fi
     - |
-      if [[ "$(echo $ASV_COMPARE_OUTPUT | "|[\ ]*+[\ ]*|.*runtime")" != "" ]]; then
+      if [[ "$(echo $ASV_COMPARE_OUTPUT | grep -e "|[\ ]*+[\ ]*|.*runtime")" != "" ]]; then
         echo "The runtime of the following benchmarks has increased"
         echo $ASV_COMPARE_OUTPUT | grep -e "|[\ ]*+[\ ]*|.*runtime" -B 2 | tr '\n' '\r\n'
         exit 1
       fi
     - |
-      if [[ "$(echo $ASV_COMPARE_OUTPUT | grep "|[\ ]*+[\ ]*|.*memory")" != "" ]]; then
+      if [[ "$(echo $ASV_COMPARE_OUTPUT | grep -e "|[\ ]*+[\ ]*|.*memory")" != "" ]]; then
         echo "The memory high watermark of the following benchmarks has increased"
         echo $ASV_COMPARE_OUTPUT | grep -e "|[\ ]*+[\ ]*|.*memory" -B 2 | tr '\n' '\r\n'
         exit 1
