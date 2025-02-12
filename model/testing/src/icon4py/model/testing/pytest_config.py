@@ -21,7 +21,7 @@ from icon4py.model.testing.helpers import apply_markers
 
 
 DEFAULT_GRID: Final[str] = "simple_grid"
-VALID_GRIDS: tuple[str, str, str] = (DEFAULT_GRID, "icon_grid", "icon_grid_global")
+VALID_GRIDS: tuple[str, str, str] = ("simple_grid", "icon_grid", "icon_grid_global")
 
 
 def _check_backend_validity(backend_name: str) -> None:

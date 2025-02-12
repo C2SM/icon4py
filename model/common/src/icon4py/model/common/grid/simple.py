@@ -498,8 +498,8 @@ class SimpleGrid(BaseGrid):
         )
 
     def start_index(self, domain: h_grid.Domain) -> gtx.int32:
-        num = self._match_grid_size(domain) if domain.zone.is_halo() else gtx.int32(0)
-        return num
+        num = self._match_grid_size(domain) if domain.zone.is_halo() else 0
+        return gtx.int32(num)
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         num = self._match_grid_size(domain)
