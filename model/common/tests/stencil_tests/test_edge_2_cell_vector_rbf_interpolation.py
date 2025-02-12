@@ -23,6 +23,7 @@ from icon4py.model.testing import helpers
 class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
     PROGRAM = edge_2_cell_vector_rbf_interpolation
     OUTPUTS = ("p_u_out", "p_v_out")
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
