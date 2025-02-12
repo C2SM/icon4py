@@ -33,7 +33,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
+    levelmask: fa.kField[bool],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
