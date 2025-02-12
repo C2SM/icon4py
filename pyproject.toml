@@ -242,5 +242,5 @@ packages = []
 [tool.pytest.ini_options]
 addopts = ['-p icon4py.model.testing.pytest_config']
 markers = [
-    "embedded_remap_error", "uses_as_offset", "requires_concat_where", "skip_value_error", "datatest"
+    "embedded_remap_error", "uses_as_offset", "requires_concat_where", "skip_value_error", "datatest", "segfault"
 ]
