@@ -57,13 +57,13 @@ include:
     - |
       if [[ "$(echo $ASV_COMPARE_OUTPUT | grep -e "|[\ ]*+[\ ]*|.*runtime")" != "" ]]; then
         echo "The runtime of the following benchmarks has increased"
-        echo $ASV_COMPARE_OUTPUT | grep -e "|[\ ]*+[\ ]*|.*runtime" -B 2 | tr '\n' '\r\n'
+        echo "$ASV_COMPARE_OUTPUT" | grep -e "|[\ ]*+[\ ]*|.*runtime.*" -B 2
         exit 1
       fi
     - |
       if [[ "$(echo $ASV_COMPARE_OUTPUT | grep -e "|[\ ]*+[\ ]*|.*memory")" != "" ]]; then
         echo "The memory high watermark of the following benchmarks has increased"
-        echo $ASV_COMPARE_OUTPUT | grep -e "|[\ ]*+[\ ]*|.*memory" -B 2 | tr '\n' '\r\n'
+        echo "$ASV_COMPARE_OUTPUT" | grep -e "|[\ ]*+[\ ]*|.*memory.*" -B 2
         exit 1
       fi
 
