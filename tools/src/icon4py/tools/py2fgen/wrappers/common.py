@@ -10,10 +10,14 @@
 import logging
 
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.tools.py2fgen.settings import config
 
+
+assert hasattr(
+    mpi_decomposition, "get_multinode_properties"
+)  # TODO needs to be imported to be registered in get_processor_properties
 
 xp = config.array_ns
 
