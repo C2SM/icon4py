@@ -152,11 +152,14 @@ def _get_grid(
 
 def pytest_runtest_setup(item):
     backend = model_backends.BACKENDS[item.config.getoption("--backend")]
-    grid_option = item.config.getoption("--grid")
-    has_skip_values = grid_option is not None and grid_option != DEFAULT_GRID
+    if "grid" in item.funcargs:
+        grid = item.funcargs["grid"]
+    else:
+        # use the default grid
+        grid = simple_grid.SimpleGrid()
     apply_markers(
         item.own_markers,
+        grid,
         backend,
-        has_skip_values,
         is_datatest=item.config.getoption("--datatest"),
     )

@@ -35,3 +35,8 @@ def test_start_index(domain):
 def test_end_index(domain):
     simple_grid = simple.SimpleGrid()
     assert simple_grid.end_index(domain) == simple_grid.size[domain.dim]
+
+
+def test_has_skip_values():
+    simple_grid = simple.SimpleGrid()
+    assert not simple_grid.has_skip_values()

@@ -88,7 +88,9 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid):
-        pytest.mark.xfail("this stencil segfaults with GTFN and it is not used in diffusion")
+        pytest.xfail(
+            "stencil segfaults with GTFN and it is not used in diffusion: it is missing an if condition"
+        )
         kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = random_field(grid, dims.EdgeDim)
         theta_v_in = random_field(grid, dims.CellDim, dims.KDim)

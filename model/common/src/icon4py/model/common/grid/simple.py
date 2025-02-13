@@ -13,7 +13,7 @@ import numpy as np
 
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridSize
+from icon4py.model.common.grid.base import BaseGrid, GeometryType, GridConfig, HorizontalGridSize
 
 # periodic
 #
@@ -456,6 +456,10 @@ class SimpleGrid(BaseGrid):
         return self.config.num_levels
 
     @property
+    def geometry_type(self) -> GeometryType:
+        return GeometryType.TORUS
+
+    @property
     def id(self) -> uuid.UUID:
         return uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85")
 
@@ -470,6 +474,7 @@ class SimpleGrid(BaseGrid):
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
             vertical_size=vertical_grid_config.num_levels,
+            limited_area=False,
         )
 
         connectivity_dict = {
