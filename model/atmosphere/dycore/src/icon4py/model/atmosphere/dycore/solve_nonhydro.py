@@ -896,11 +896,10 @@ class SolveNonhydro:
         field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
         field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         log.info(f" ***after_predictor MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
-        # plot
-        # log messages
-        self._plot.plot_data(prognostic_states.next.w,  5, label=f"after_predictor_w")
-        #self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_predictor_vvec_cell")
-        self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_predictor_vvec_edge")
+        # # plots
+        # self._plot.plot_data(prognostic_states.next.w,  5, label=f"after_predictor_w")
+        # #self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_predictor_vvec_cell")
+        # self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_predictor_vvec_edge")
         #<--- IBM
 
         self.run_corrector_step(
@@ -924,9 +923,9 @@ class SolveNonhydro:
         field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         log.info(f" ***after_corrector MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
         # plots
-        self._plot.plot_data(prognostic_states.next.w,  4, label=f"after_corrector_w")
-        #self._plot.plot_data(prognostic_states.next.vn, 4, label=f"after_corrector_vvec_cell")
-        self._plot.plot_data(prognostic_states.next.vn, 4, label=f"after_corrector_vvec_edge")
+        self._plot.plot_data(prognostic_states.next.w,  5, label=f"after_corrector_w")
+        #self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_corrector_vvec_cell")
+        self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_corrector_vvec_edge")
         #<--- IBM
 
         if self._grid.limited_area:
@@ -1511,10 +1510,6 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        #---> IBM
-        self._ibm.set_boundary_conditions_vn(prognostic_states.next.vn)
-        #<--- IBM
-
         if self._config.is_iau_active:
             self._add_analysis_increments_to_vn(
                 vn_incr=diagnostic_state_nh.vn_incr,
@@ -1539,6 +1534,11 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
+
+        #---> IBM
+        self._ibm.set_boundary_conditions_vn(prognostic_states.next.vn)
+        #<--- IBM
+
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
         self._exchange.exchange_and_wait(dims.EdgeDim, prognostic_states.next.vn, z_fields.z_rho_e)
 
@@ -1711,10 +1711,12 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        #---> IBM
         self._ibm.set_boundary_conditions_w(
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_w_expl=z_fields.z_w_expl,
         )
+        #<--- IBM
 
         self._solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
@@ -2043,6 +2045,11 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
+
+        #---> IBM
+        self._ibm.set_boundary_conditions_vn(prognostic_states.next.vn)
+        #<--- IBM
+
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_states.next.vn))
         #log.debug("corrector: start stencil 31")
@@ -2230,6 +2237,15 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
+
+
+        #---> IBM
+        self._ibm.set_boundary_conditions_w(
+            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            z_w_expl=z_fields.z_w_expl,
+        )
+        #<--- IBM
+
         #log.debug(f"corrector start stencil 52")
         self._solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,
