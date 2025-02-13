@@ -197,6 +197,8 @@ class OutputIntermediateFields:
     output_graddiv_vertical: Field[[CellDim, KDim], float]
     output_before_flxdiv_vn: Field[[CellDim, KDim], float]
     output_after_flxdiv_vn: Field[[CellDim, KDim], float]
+    output_before_flxdiv2_vn: Field[[CellDim, KDim], float]
+    output_after_flxdiv2_vn: Field[[CellDim, KDim], float]
     output_before_vn: Field[[EdgeDim, KDim], float]
     output_after_vn: Field[[EdgeDim, KDim], float]
     output_before_w: Field[[CellDim, KDim], float]
@@ -228,6 +230,8 @@ class OutputIntermediateFields:
             output_graddiv_vertical=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
             output_before_flxdiv_vn=_allocate(CellDim, KDim, grid=grid),
             output_after_flxdiv_vn=_allocate(CellDim, KDim, grid=grid),
+            output_before_flxdiv2_vn=_allocate(CellDim, KDim, grid=grid),
+            output_after_flxdiv2_vn=_allocate(CellDim, KDim, grid=grid),
             output_before_vn=_allocate(EdgeDim, KDim, grid=grid),
             output_after_vn=_allocate(EdgeDim, KDim, grid=grid),
             output_before_w=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),

@@ -1103,6 +1103,12 @@ class TimeLoop:
                     "after_flxdiv_vn"
                 ] = self.solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
                 output_data[
+                    "before_flxdiv2_vn"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_before_flxdiv2_vn
+                output_data[
+                    "after_flxdiv2_vn"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_after_flxdiv2_vn
+                output_data[
                     "before_vn"
                 ] = self.solve_nonhydro.output_intermediate_fields.output_before_vn
                 output_data[
@@ -1646,8 +1652,14 @@ def initialize(
             "before_flxdiv_vn"
         ] = solve_nonhydro.output_intermediate_fields.output_before_flxdiv_vn
         output_data[
+            "before_flxdiv2_vn"
+        ] = solve_nonhydro.output_intermediate_fields.output_before_flxdiv2_vn
+        output_data[
             "after_flxdiv_vn"
         ] = solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
+        output_data[
+            "after_flxdiv2_vn"
+        ] = solve_nonhydro.output_intermediate_fields.output_after_flxdiv2_vn
         output_data["before_vn"] = solve_nonhydro.output_intermediate_fields.output_before_vn
         output_data["after_vn"] = solve_nonhydro.output_intermediate_fields.output_after_vn
         output_data["before_w"] = solve_nonhydro.output_intermediate_fields.output_before_w

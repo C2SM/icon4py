@@ -725,6 +725,24 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ),
         )
         output_variable_list.add_new_variable(
+            "before_flxdiv2_vn",
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="s-2",
+                standard_name="initial wind squared divergence",
+                long_name="squared divergence of wind before divergence damping",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="clat clon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
             "after_flxdiv_vn",
             VariableDimension(
                 horizon_dimension=OutputDimension.CELL_DIM,
@@ -735,6 +753,24 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 units="s-1",
                 standard_name="final wind divergence",
                 long_name="divergence of wind after divergence damping",
+                CDI_grid_type="unstructured",
+                param="0.0.0",
+                number_of_grid_in_reference="1",
+                coordinates="clat clon",
+                scope=OutputScope.diagnostic,
+            ),
+        )
+        output_variable_list.add_new_variable(
+            "after_flxdiv2_vn",
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units="s-2",
+                standard_name="final wind squared divergence",
+                long_name="squared divergence of wind after divergence damping",
                 CDI_grid_type="unstructured",
                 param="0.0.0",
                 number_of_grid_in_reference="1",
@@ -935,9 +971,10 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             # divdamp_fac=0.0,
             do_o2_divdamp=False,
             do_3d_divergence_damping=False,
-            do_second_order_3d_divergence_damping=True,
+            divergence_order=1,
             do_multiple_divdamp=True,
             number_of_divdamp_step=50,
+            do_proper_diagnostics_divdamp=True,
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
@@ -979,10 +1016,37 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             scal_divsign=1.0,
             do_o2_divdamp=False,
             do_3d_divergence_damping=False,
-            do_second_order_3d_divergence_damping=True,
-            do_second_order_3d_divergence_damping_o2=False,
+            divergence_order=1,
             do_multiple_divdamp=True,
             number_of_divdamp_step=100,
+            do_proper_diagnostics_divdamp=True,
+        )
+
+    def _div_converge_diffusion_config(n_substeps: int):
+        return DiffusionConfig(
+            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=False,
+            hdiff_vn=False,
+            hdiff_temp=False,
+            call_frequency=1,
+            workaround_boundary_index_for_torus=True,
+        )
+
+    def _div_converge_nonhydro_config(n_substeps: int):
+        return NonHydrostaticConfig(
+            igradp_method=3,
+            ndyn_substeps_var=n_substeps,
+            divdamp_fac=1.0,
+            divdamp_z=40000.0,
+            divdamp_z2=50000.0,
+            scal_divsign=1.0,
+            do_o2_divdamp=True,
+            do_3d_divergence_damping=True,
+            divergence_order=1,
+            do_multiple_divdamp=False,
+            number_of_divdamp_step=100,
+            do_proper_diagnostics_divdamp=True,
+            do_only_divdamp = True,
         )
 
     def _jablownoski_Williamson_config():
@@ -1022,6 +1086,26 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             gauss3d_diffusion_config,
             gauss3d_nonhydro_config,
         )
+    
+    def _div_converge_config():
+        icon_run_config = IconRunConfig(
+            dtime=timedelta(seconds=0.3),
+            end_date=datetime(1, 1, 1, 1, 0, 0),
+            # end_date=datetime(1, 1, 1, 0, 0, 6),
+            damping_height=25000.0,
+            apply_initial_stabilization=False,
+            n_substeps=5,
+        )
+        div_converge_output_config = _output_config()
+        div_converge_diffusion_config = _div_converge_diffusion_config(icon_run_config.n_substeps)
+        div_converge_nonhydro_config = _div_converge_nonhydro_config(icon_run_config.n_substeps)
+        return (
+            icon_run_config,
+            div_converge_output_config,
+            div_converge_diffusion_config,
+            div_converge_nonhydro_config,
+        )
+
 
     if experiment_type == ExperimentType.JABW:
         (
