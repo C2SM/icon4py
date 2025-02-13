@@ -72,6 +72,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
     assert test_helpers.dallclose(data_alloc.as_numpy(c_lin_e_partial), c_lin_e_ref.asnumpy())
 
 
+@pytest.mark.skip_value_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
@@ -82,7 +83,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
     edge_orientation = grid_savepoint.edge_orientation()
     area = grid_savepoint.cell_areas()
     geofac_div_ref = interpolation_savepoint.geofac_div()
-    geofac_div = test_helpers.zero_field(mesh, dims.CellDim, dims.C2EDim)
+    geofac_div = data_alloc.zero_field(mesh, dims.CellDim, dims.C2EDim)
     compute_geofac_div.with_backend(backend)(
         primal_edge_length=primal_edge_length,
         edge_orientation=edge_orientation,
@@ -105,7 +106,7 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, 
     dual_area = grid_savepoint.vertex_dual_area()
     owner_mask = grid_savepoint.v_owner_mask()
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
-    geofac_rot = test_helpers.zero_field(mesh, dims.VertexDim, dims.V2EDim)
+    geofac_rot = data_alloc.zero_field(mesh, dims.VertexDim, dims.V2EDim)
     horizontal_start = icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
     compute_geofac_rot(

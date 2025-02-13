@@ -13,8 +13,7 @@ import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.testing.helpers import StencilTest
 
 
@@ -52,6 +51,7 @@ def compute_advective_normal_wind_tendency_numpy(
 class TestComputeAdvectiveNormalWindTendency(StencilTest):
     PROGRAM = compute_advective_normal_wind_tendency
     OUTPUTS = ("ddt_vn_apc",)
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
@@ -85,27 +85,23 @@ class TestComputeAdvectiveNormalWindTendency(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
-        z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        coeff_gradekin = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=vpfloat)
-        coeff_gradekin_new = data_alloc.as_1D_sparse_field(coeff_gradekin, dims.ECDim)
-        z_ekinh = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        zeta = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
-        vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        f_e = data_alloc.random_field(grid, dims.EdgeDim, dtype=wpfloat)
-        c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
-        z_w_con_c_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        coeff_gradekin = data_alloc.random_field(grid, dims.ECDim, dtype=ta.vpfloat)
+        z_ekinh = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
+        zeta = data_alloc.random_field(grid, dims.VertexDim, dims.KDim, dtype=ta.vpfloat)
+        vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        f_e = data_alloc.random_field(grid, dims.EdgeDim, dtype=ta.wpfloat)
+        c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=ta.wpfloat)
+        z_w_con_c_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
         vn_ie = data_alloc.random_field(
-            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.vpfloat
         )
-        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        ddt_vn_apc = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        ddt_vn_apc = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
-            coeff_gradekin=coeff_gradekin_new,
+            coeff_gradekin=coeff_gradekin,
             z_ekinh=z_ekinh,
             zeta=zeta,
             vt=vt,

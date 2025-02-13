@@ -9,17 +9,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_19_to_20 import (
     fused_velocity_advection_stencil_19_to_20,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.utils.data_allocation import (
-    as_1D_sparse_field,
-    random_field,
-    random_mask,
-    zero_field,
-)
 from icon4py.model.testing.helpers import StencilTest
 
 from .test_add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -34,6 +29,7 @@ from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_19_to_20
     OUTPUTS = ("ddt_vn_apc",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
@@ -112,29 +108,28 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        coeff_gradekin = random_field(grid, dims.EdgeDim, dims.E2CDim)
-        coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, dims.ECDim)
-        z_ekinh = random_field(grid, dims.CellDim, dims.KDim)
-        vt = random_field(grid, dims.EdgeDim, dims.KDim)
-        f_e = random_field(grid, dims.EdgeDim)
-        c_lin_e = random_field(grid, dims.EdgeDim, dims.E2CDim)
-        z_w_con_c_full = random_field(grid, dims.CellDim, dims.KDim)
-        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        ddqz_z_full_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        ddt_vn_apc = zero_field(grid, dims.EdgeDim, dims.KDim)
-        levelmask = random_mask(grid, dims.KDim, extend={dims.KDim: 1})
-        area_edge = random_field(grid, dims.EdgeDim)
-        tangent_orientation = random_field(grid, dims.EdgeDim)
-        inv_primal_edge_length = random_field(grid, dims.EdgeDim)
-        geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim)
-        geofac_rot = random_field(grid, dims.VertexDim, dims.V2EDim)
+        z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        coeff_gradekin = data_alloc.random_field(grid, dims.ECDim)
+        z_ekinh = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        f_e = data_alloc.random_field(grid, dims.EdgeDim)
+        c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        z_w_con_c_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        vn_ie = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddt_vn_apc = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        levelmask = data_alloc.random_mask(grid, dims.KDim, extend={dims.KDim: 1})
+        area_edge = data_alloc.random_field(grid, dims.EdgeDim)
+        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
+        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
+        geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        geofac_rot = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim)
         cfl_w_limit = 4.0
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        k = zero_field(grid, dims.KDim, dtype=gtx.int32)
+        k = data_alloc.zero_field(grid, dims.KDim, dtype=gtx.int32)
         nlev = grid.num_levels
 
         for level in range(nlev):
@@ -153,7 +148,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
             vn=vn,
             geofac_rot=geofac_rot,
             z_kin_hor_e=z_kin_hor_e,
-            coeff_gradekin=coeff_gradekin_new,
+            coeff_gradekin=coeff_gradekin,
             z_ekinh=z_ekinh,
             vt=vt,
             f_e=f_e,

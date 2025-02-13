@@ -125,38 +125,38 @@ class VelocityAdvection:
         )
 
     def _allocate_local_fields(self):
-        self.z_w_v = data_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
+        self.z_w_v = data_alloc.zero_field(
+            self.grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self.z_v_grad_w = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.z_v_grad_w = data_alloc.zero_field(
+            self.grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.z_ekinh = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.z_ekinh = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.z_w_concorr_mc = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.z_w_concorr_mc = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.z_w_con_c = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid, backend=self._backend
+        self.z_w_con_c = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self.zeta = data_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.zeta = data_alloc.zero_field(
+            self.grid, dims.VertexDim, dims.KDim, backend=self._backend
         )
-        self.z_w_con_c_full = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.z_w_con_c_full = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.cfl_clipping = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
+        self.cfl_clipping = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, dtype=bool, backend=self._backend
         )
-        self.levmask = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
+        self.levmask = data_alloc.zero_field(
+            self.grid, dims.KDim, dtype=bool, backend=self._backend
         )
-        self.vcfl_dsl = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.vcfl_dsl = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.k_field = data_alloc.allocate_indices(
-            dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
+        self.k_field = data_alloc.index_field(
+            self.grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
 
     def _determine_local_domains(self):

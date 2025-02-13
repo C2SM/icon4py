@@ -19,6 +19,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeAvgVn(StencilTest):
     PROGRAM = compute_avg_vn
     OUTPUTS = ("z_vn_avg",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
