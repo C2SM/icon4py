@@ -9,16 +9,11 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_15_to_18 import (
     fused_velocity_advection_stencil_15_to_18,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.utils.data_allocation import (
-    as_1D_sparse_field,
-    random_field,
-    random_mask,
-    zero_field,
-)
 from icon4py.model.testing.helpers import StencilTest
 
 from .test_add_extra_diffusion_for_w_con_approaching_cfl import (
@@ -183,33 +178,33 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        coeff1_dwdz = random_field(grid, dims.CellDim, dims.KDim)
-        coeff2_dwdz = random_field(grid, dims.CellDim, dims.KDim)
+        z_w_con_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        coeff2_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
 
-        z_v_grad_w = random_field(grid, dims.EdgeDim, dims.KDim)
-        e_bln_c_s = as_1D_sparse_field(random_field(grid, dims.CellDim, dims.C2EDim), dims.CEDim)
+        z_v_grad_w = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
 
-        levelmask = random_mask(grid, dims.KDim)
-        cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim)
-        owner_mask = random_mask(grid, dims.CellDim)
-        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim)
-        area = random_field(grid, dims.CellDim)
-        geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim)
+        levelmask = data_alloc.random_mask(grid, dims.KDim)
+        cfl_clipping = data_alloc.random_mask(grid, dims.CellDim, dims.KDim)
+        owner_mask = data_alloc.random_mask(grid, dims.CellDim)
+        ddqz_z_half = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        area = data_alloc.random_field(grid, dims.CellDim)
+        geofac_n2s = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
 
-        z_w_con_c_full = zero_field(grid, dims.CellDim, dims.KDim)
-        ddt_w_adv = zero_field(grid, dims.CellDim, dims.KDim)
+        z_w_con_c_full = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        ddt_w_adv = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
 
         scalfac_exdiff = 10.0
         cfl_w_limit = 3.0
         dtime = 2.0
 
-        k = zero_field(grid, dims.KDim, dtype=gtx.int32)
+        k = data_alloc.zero_field(grid, dims.KDim, dtype=gtx.int32)
         for level in range(grid.num_levels):
             k[level] = level
 
-        cell = zero_field(grid, dims.CellDim, dtype=gtx.int32)
+        cell = data_alloc.zero_field(grid, dims.CellDim, dtype=gtx.int32)
         for c in range(grid.num_cells):
             cell[c] = c
 

@@ -193,8 +193,8 @@ class NoLimiter(VerticalLimiter):
         self._backend = backend
 
         # fields
-        self._l_limit = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._l_limit = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
         # stencils
@@ -263,11 +263,11 @@ class SemiMonotonicLimiter(VerticalLimiter):
         self._backend = backend
 
         # fields
-        self._k_field = data_alloc.allocate_indices(
-            dims.KDim, grid=self._grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
+        self._k_field = data_alloc.index_field(
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._l_limit = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, dtype=gtx.int32, backend=self._backend
+        self._l_limit = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, dtype=gtx.int32, backend=self._backend
         )
 
         # stencils
@@ -544,8 +544,13 @@ class FirstOrderUpwind(FiniteVolume):
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         # fields
-        self._k_field = data_alloc.allocate_indices(
-            dims.KDim, grid=self._grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
+        self._k_field = data_alloc.index_field(
+            self._grid,
+            dims.KDim,
+            grid=self._grid,
+            extend={dims.KDim: 1},
+            dtype=gtx.int32,
+            backend=self._backend,
         )  # TODO (dastrm): should be KHalfDim
 
         # stencils
@@ -681,29 +686,29 @@ class PiecewiseParabolicMethod(FiniteVolume):
         self._end_cell_end = self._grid.end_index(cell_domain(h_grid.Zone.END))
 
         # fields
-        self._k_field = data_alloc.allocate_indices(
-            dims.KDim, grid=self._grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
+        self._k_field = data_alloc.index_field(
+            self._grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._z_cfl = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
+        self._z_cfl = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._z_slope = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_slope = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._z_face = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
+        self._z_face = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )  # TODO (dastrm): should be KHalfDim
-        self._z_face_up = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_face_up = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._z_face_low = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_face_low = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._z_delta_q = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_delta_q = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._z_a1 = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_a1 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
         # stencils

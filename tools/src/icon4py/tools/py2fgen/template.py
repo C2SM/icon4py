@@ -177,6 +177,7 @@ def render_fortran_array_sizes(param: FuncParameter) -> Optional[str]:
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
+    # TODO(havogt): put np_as_located_field logic into unpack
     PythonWrapper = as_jinja(
         """\
 # imports for generated wrapper code
