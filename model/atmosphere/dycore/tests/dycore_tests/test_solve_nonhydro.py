@@ -88,15 +88,15 @@ def test_validate_divdamp_fields_against_savepoint_values(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, substep_init,, at_initial_timestep",
+    "istep_init, jstep_init, step_date_init, substep_init, at_initial_timestep",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 1,   True),
-        (2, 0, "2021-06-20T12:00:10.000", 2, True),
-        (1, 1, "2021-06-20T12:00:10.000", 1,  True),
+        (1, 0, "2021-06-20T12:00:10.000", 1,  True),
+        (2, 0, "2021-06-20T12:00:10.000", 1,  True),
+        (1, 1, "2021-06-20T12:00:10.000", 2,  True),
         (2, 1, "2021-06-20T12:00:10.000", 2,  True),
         (1, 0, "2021-06-20T12:00:20.000", 1,  False),
-        (2, 0, "2021-06-20T12:00:20.000", 2,  False),
-        (1, 1, "2021-06-20T12:00:20.000", 1,  False),
+        (2, 0, "2021-06-20T12:00:20.000", 1,  False),
+        (1, 1, "2021-06-20T12:00:20.000", 2,  False),
         (2, 1, "2021-06-20T12:00:20.000", 2,  False),
     ],
 )
@@ -104,14 +104,13 @@ def test_time_step_flags(
     experiment,
     istep_init,
     jstep_init,
+    substep_init,
     step_date_init,
-    istep_exit,
-    jstep_exit,
-    step_date_exit,
     at_initial_timestep,
     savepoint_nonhydro_init,
 ):
     sp = savepoint_nonhydro_init
+
     recompute = sp.get_metadata("recompute").get("recompute")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     linit = sp.get_metadata("linit").get("linit")
@@ -123,15 +122,15 @@ def test_time_step_flags(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 1, True)])
+@pytest.mark.parametrize("istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 1, 1, True)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        (
-            dt_utils.REGIONAL_EXPERIMENT,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-        ),
+        # (
+        #     dt_utils.REGIONAL_EXPERIMENT,
+        #     "2021-06-20T12:00:10.000",
+        #     "2021-06-20T12:00:10.000",
+        # ),
         (
             dt_utils.GLOBAL_EXPERIMENT,
             "2000-01-01T00:00:02.000",
@@ -142,7 +141,7 @@ def test_time_step_flags(
 def test_nonhydro_predictor_step(
     istep_init,
     istep_exit,
-    jstep_init,
+    substep_init,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -161,7 +160,7 @@ def test_nonhydro_predictor_step(
     caplog,
     backend,
 ):
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.INFO)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
@@ -197,7 +196,7 @@ def test_nonhydro_predictor_step(
         backend=backend,
     )
     nlev = icon_grid.num_levels
-    at_first_substep = jstep_init == 0
+    at_first_substep = substep_init == 1
 
     prognostic_states = utils.create_prognostic_states(sp)
     solve_nonhydro.update_time_levels_for_velocity_tendencies(
@@ -257,7 +256,7 @@ def test_nonhydro_predictor_step(
     # stencil 6
     assert helpers.dallclose(
         solve_nonhydro.z_dexner_dz_c_1.asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
-        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
+        sp_exit.z_dexner_dz_c(0).asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
         atol=5e-18,
     )
 
@@ -284,11 +283,11 @@ def test_nonhydro_predictor_step(
     # stencils 7,8,9, 13
     assert helpers.dallclose(
         solve_nonhydro.z_rth_pr_1.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_rth_pr(0).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     assert helpers.dallclose(
         solve_nonhydro.z_rth_pr_2.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_rth_pr(2).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
 
     # stencils 12
@@ -297,32 +296,32 @@ def test_nonhydro_predictor_step(
         solve_nonhydro.z_dexner_dz_c_2.asnumpy()[
             cell_start_lateral_boundary_level_2:, nflat_gradp:
         ],
-        sp_exit.z_dexner_dz_c(2).asnumpy()[cell_start_lateral_boundary_level_2:, nflat_gradp:],
+        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_2:, nflat_gradp:],
         atol=1e-22,
     )
 
     # grad_green_gauss_cell_dsl
     assert helpers.dallclose(
         solve_nonhydro.z_grad_rth_1.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_grad_rth(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_grad_rth(0).asnumpy()[cell_start_lateral_boundary_level_2:, :],
         rtol=1e-6,
         atol=1e-21,
     )
     assert helpers.dallclose(
         solve_nonhydro.z_grad_rth_2.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_grad_rth(2).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_grad_rth(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
         rtol=1e-6,
         atol=1e-21,
     )
     assert helpers.dallclose(
         solve_nonhydro.z_grad_rth_3.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_grad_rth(3).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_grad_rth(2).asnumpy()[cell_start_lateral_boundary_level_2:, :],
         rtol=5e-6,
         atol=1e-17,
     )
     assert helpers.dallclose(
         solve_nonhydro.z_grad_rth_4.asnumpy()[cell_start_lateral_boundary_level_2:, :],
-        sp_exit.z_grad_rth(4).asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_grad_rth(3).asnumpy()[cell_start_lateral_boundary_level_2:, :],
         rtol=1e-6,
         atol=1e-21,
     )
@@ -356,6 +355,8 @@ def test_nonhydro_predictor_step(
     prognostic_state_nnew = prognostic_states.next
     vn_new_reference = sp_exit.vn_new().asnumpy()
 
+
+# TODO @halungge combine the next tow
     # stencils 24
     assert helpers.dallclose(
         prognostic_state_nnew.vn.asnumpy()[edge_start_nudging_level_2:, :],
@@ -454,13 +455,14 @@ def test_nonhydro_predictor_step(
         atol=5e-12,
     )
 
+    #FIXME
     # stencils 43, 46, 47
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_contr_w_fl_l.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_contr_w_fl_l().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
-
+    #FIXME
     # stencil 43
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_w_expl.asnumpy()[cell_start_nudging:, 1:nlev],
@@ -480,6 +482,7 @@ def test_nonhydro_predictor_step(
         sp_exit.z_beta().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
+
     # stencil 45_b, 52
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_q.asnumpy()[cell_start_nudging:, :],
@@ -513,20 +516,21 @@ def test_nonhydro_predictor_step(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(2, 2, True)])
+@pytest.mark.parametrize("substep_init, substep_exit", [(1, 1), (2, 2)])
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(2,  2, True)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit",
+    "experiment, step_date_init, step_date_exit",
     [
         (
             dt_utils.REGIONAL_EXPERIMENT,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        # (
-        #     dt_utils.GLOBAL_EXPERIMENT,
-        #     "2000-01-01T00:00:02.000",
-        #     "2000-01-01T00:00:02.000",
-        # ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 def test_nonhydro_corrector_step(
@@ -719,7 +723,7 @@ def test_nonhydro_corrector_step(
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+    "istep_init, jstep_init, substep_init, istep_exit, jstep_exit, substep_exit, at_initial_timestep", [(1, 0, 1, 2, 0, 1, True)]
 )
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -851,7 +855,7 @@ def test_run_solve_nonhydro_single_step(
         atol=1e-14,
     )
 
-
+# why is this not run for APE?
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])

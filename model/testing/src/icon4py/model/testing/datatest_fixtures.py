@@ -190,7 +190,7 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep):  # F811
+def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_init):  # F811
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
 
@@ -200,12 +200,12 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep):
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_init(
-        istep=istep_init, date=step_date_init, substep=substep
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
 @pytest.fixture
-def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_init, substep):
+def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_init, substep_init):
     """
     Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
 
@@ -216,12 +216,12 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_ini
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_init(
-        istep=istep_init, date=step_date_init, jstep=jstep_init, substep=substep
+        istep=istep_init, date=step_date_init, jstep=jstep_init, substep=substep_init
     )
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep):  # F811
+def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_exit):  # F811
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
 
@@ -231,7 +231,7 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep):
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
@@ -250,6 +250,17 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exi
     return data_provider.from_savepoint_nonhydro_exit(
         istep=istep_exit, date=step_date_exit, jstep=jstep_exit, substep=substep_exit
     )
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment", ("exclaim_ape_R02B04"))
+def test_field_sizes(data_provider, experiment):
+    sp_init = data_provider.from_savepoint_nonhydro_init(istep=1, jstep=0, substep=1, date="2000-01-01T00:00:02.000")
+    sp_exit = data_provider.from_savepoint_nonhydro_exit(istep=1, jstep=0, substep=1, date="2000-01-01T00:00:02.000")
+    init_w_fl = sp_init.z_contr_w_fl_l()
+    exit_w_fl = sp_exit.z_contr_w_fl_l()
+
+    init_z_q = sp_init.z_q()
+    exit_z_q = sp_exit.z_q()
 
 
 @pytest.fixture
