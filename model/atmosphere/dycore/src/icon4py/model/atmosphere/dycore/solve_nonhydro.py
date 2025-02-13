@@ -898,9 +898,9 @@ class SolveNonhydro:
         log.info(f" ***after_predictor MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
         # plot
         # log messages
-        self._plot.plot_data(prognostic_states.next.w,  4, label=f"after_predictor_w")
-        #self._plot.plot_data(prognostic_states.next.vn, 4, label=f"after_predictor_vvec_cell")
-        self._plot.plot_data(prognostic_states.next.vn, 4, label=f"after_predictor_vvec_edge")
+        self._plot.plot_data(prognostic_states.next.w,  5, label=f"after_predictor_w")
+        #self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_predictor_vvec_cell")
+        self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_predictor_vvec_edge")
         #<--- IBM
 
         self.run_corrector_step(
@@ -1710,6 +1710,11 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
+
+        self._ibm.set_boundary_conditions_w(
+            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            z_w_expl=z_fields.z_w_expl,
+        )
 
         self._solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self._metric_state_nonhydro.vwind_impl_wgt,

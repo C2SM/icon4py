@@ -38,10 +38,10 @@ class ImmersedBoundaryMethod:
         self.cell_mask = self._make_cell_mask(grid)
         self.edge_mask = self._make_edge_mask(grid)
 
+        self._dir_value_vn = 0.0
         self._dir_value_w = 0.0
         self._dir_value_theta_v = -313
         self._dir_value_p = -717
-        self._dir_value_vn = 0.0
 
         if DEBUG_LEVEL >= 2:
             self._delta_file_vn = open("ibm_delta_vn.csv", "a")
@@ -88,6 +88,36 @@ class ImmersedBoundaryMethod:
         if DEBUG_LEVEL >= 1:
             vn1 = vn.ndarray
             log.info(f"IBM max delta vn: {np.abs(vn1 - vn0).max()}")
+
+    def set_boundary_conditions_w(
+        self,
+        theta_v_ic: fa.CellKField[float],
+        z_w_expl: fa.CellKField[float],
+    ):
+
+        # Set $theta_v_{k+1/2} = 0$ as a 'hack' for setting $\gamma_{k+1/2} = 0$
+        # in the tridiagonal solver. This results in:
+        #  $a_{k+1/2} = 0$
+        #  $b_{k+1/2} = 1$
+        #  $c_{k+1/2} = 0$
+        #  $d_{k+1/2} = z_w_expl_{k+1/2}$
+        # and should work as theta_v_ic is not used anymore after this point.
+        self._set_bcs_cells(
+            mask=self.cell_mask,
+            dir_value=0.,
+            field=theta_v_ic,
+            out=(theta_v_ic),
+            offset_provider={},
+        )
+        # Then set the Dirichlet value for $w$.
+        self._set_bcs_cells(
+            mask=self.cell_mask,
+            dir_value=self._dir_value_w,
+            field=z_w_expl,
+            out=(z_w_expl),
+            offset_provider={},
+        )
+
 
     def set_boundary_conditions_p(
         self,
