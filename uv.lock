@@ -982,7 +982,7 @@ wheels = [
 [[package]]
 name = "dace"
 version = "1.0.0"
-source = { git = "https://github.com/spcl/dace?branch=main#5097d6f1a4b6e1dc8e06be6eb4aa585a6c6e04f3" }
+source = { git = "https://github.com/spcl/dace?branch=main#bf547145b9e65d8fb5afb3abbc5dc1cd948c6034" }
 dependencies = [
     { name = "aenum" },
     { name = "astunparse" },
@@ -1477,7 +1477,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/GridTools/gt4py?branch=main#64b90dc73e12d415b93d0ee6344df68f5c912c46" }
+source = { git = "https://github.com/GridTools/gt4py?branch=main#83985b29389c9889e4969bcb95035508265eeb3e" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
