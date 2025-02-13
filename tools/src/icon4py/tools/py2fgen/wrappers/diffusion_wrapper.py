@@ -373,9 +373,9 @@ def grid_init_diffusion(
             decomposition_info,
             exchange_runtime,
         ) = wrapper_common.construct_decomposition(
-            c_glb_index,
-            e_glb_index,
-            v_glb_index,
+            c_glb_index.ndarray,
+            e_glb_index.ndarray,
+            v_glb_index.ndarray,
             c_owner_mask,
             e_owner_mask,
             v_owner_mask,

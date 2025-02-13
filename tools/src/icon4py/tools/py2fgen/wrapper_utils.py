@@ -16,6 +16,10 @@ import numpy as np
 from gt4py.next import common as gtx_common
 from gt4py.next.type_system import type_specifications as ts
 
+from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
+    BUILTIN_TO_NUMPY_TYPE,
+)
+
 
 if TYPE_CHECKING:
     import cffi
@@ -138,7 +142,9 @@ def as_field(  # type: ignore[no-untyped-def] # CData type not public?
     unpack = _unpack if xp == np else _unpack_gpu
     if ptr == ffi.NULL:
         if is_optional:
-            return None  # gtx.zeros(domain)  # TODO dtype, longer term TODO return None and don't forward
+            return gtx.zeros(
+                domain, dtype=BUILTIN_TO_NUMPY_TYPE[scalar_kind]
+            )  # TODO return None and don't forward
         else:
             raise ValueError("Field is required but was not provided.")
     arr = unpack(ffi, ptr, *sizes)
