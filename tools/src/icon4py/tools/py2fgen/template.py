@@ -37,6 +37,7 @@ class FuncParameter(Node):
     is_optional: bool = False
     size_args: list[str] = datamodels.field(init=False)
     is_array: bool = datamodels.field(init=False)
+    is_bool: bool = datamodels.field(init=False)
     gtdims: list[str] = datamodels.field(init=False)
     size_args_len: int = datamodels.field(init=False)
     np_type: str = datamodels.field(init=False)
@@ -46,6 +47,7 @@ class FuncParameter(Node):
         self.size_args = dims_to_size_strings(self.dimensions)
         self.size_args_len = len(self.size_args)
         self.is_array = True if len(self.dimensions) >= 1 else False
+        self.is_bool = self.d_type == ts.ScalarKind.BOOL
         self.gtdims = [dim.value if not dim.value == "KHalf" else "K" for dim in self.dimensions]
         self.np_type = to_np_type(self.d_type)
         self.domain = (
@@ -242,6 +244,10 @@ def {{ func.name }}_wrapper(
         {% for arg in func.args %}
         {% if arg.is_array %}
         {{ arg.name }} = wrapper_utils.as_field(ffi, xp, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}}, {{arg.is_optional}})
+        {% endif %}
+        {% if arg.is_bool %}
+        assert isinstance({{ arg.name }}, int)
+        {{ arg.name }} = {{ arg.name }} != 0
         {% endif %}
         {% endfor %}
 
