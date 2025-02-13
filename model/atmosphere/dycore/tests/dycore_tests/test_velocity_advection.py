@@ -90,13 +90,12 @@ def test_velocity_init(
     assert velocity_advection.scalfac_exdiff == 0.05
 
 
-# TODO (@halungge) re-enable global with new data
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_regular_savepoint(
@@ -149,7 +148,7 @@ def test_verify_velocity_init_against_regular_savepoint(
     "experiment,step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -170,14 +169,14 @@ def test_velocity_predictor_step(
     savepoint_velocity_exit,
     backend,
 ):
-    sp_v = savepoint_velocity_init
-    vn_only = sp_v.vn_only()
-    dtime = sp_v.get_metadata("dtime").get("dtime")
+    init_savepoint = savepoint_velocity_init
+    vn_only = init_savepoint.vn_only()
+    dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
+        vt=init_savepoint.vt(),
+        vn_ie=init_savepoint.vn_ie(),
+        w_concorr_c=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
         rho_ic=None,
@@ -189,10 +188,10 @@ def test_velocity_predictor_step(
         ddt_vn_phy=None,
         grf_tend_vn=None,
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
+            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(0), sp_v.ddt_w_adv_pc(1)
+            init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
@@ -200,8 +199,8 @@ def test_velocity_predictor_step(
         exner_dyn_incr=None,
     )
     prognostic_state = prognostics.PrognosticState(
-        w=sp_v.w(),
-        vn=sp_v.vn(),
+        w=init_savepoint.w(),
+        vn=init_savepoint.vn(),
         theta_v=None,
         rho=None,
         exner=None,
@@ -235,9 +234,9 @@ def test_velocity_predictor_step(
         vn_only=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        z_w_concorr_me=sp_v.z_w_concorr_me(),
-        z_kin_hor_e=sp_v.z_kin_hor_e(),
-        z_vt_ie=sp_v.z_vt_ie(),
+        z_w_concorr_me=init_savepoint.z_w_concorr_me(),
+        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
+        z_vt_ie=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
     )
@@ -320,7 +319,7 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -341,16 +340,16 @@ def test_velocity_corrector_step(
     metrics_savepoint,
     backend,
 ):
-    sp_v = savepoint_velocity_init
-    vn_only = sp_v.vn_only()
-    dtime = sp_v.get_metadata("dtime").get("dtime")
+    init_savepoint = savepoint_velocity_init
+    vn_only = init_savepoint.vn_only()
+    dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
     assert not vn_only
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
+        vt=init_savepoint.vt(),
+        vn_ie=init_savepoint.vn_ie(),
+        w_concorr_c=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
         rho_ic=None,
@@ -362,10 +361,10 @@ def test_velocity_corrector_step(
         ddt_vn_phy=None,
         grf_tend_vn=None,
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(0), sp_v.ddt_vn_apc_pc(1)
+            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(0), sp_v.ddt_w_adv_pc(1)
+            init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
@@ -373,8 +372,8 @@ def test_velocity_corrector_step(
         exner_dyn_incr=None,
     )
     prognostic_state = prognostics.PrognosticState(
-        w=sp_v.w(),
-        vn=sp_v.vn(),
+        w=init_savepoint.w(),
+        vn=init_savepoint.vn(),
         theta_v=None,
         rho=None,
         exner=None,
@@ -409,8 +408,8 @@ def test_velocity_corrector_step(
     velocity_advection.run_corrector_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        z_kin_hor_e=sp_v.z_kin_hor_e(),
-        z_vt_ie=sp_v.z_vt_ie(),
+        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
+        z_vt_ie=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
     )

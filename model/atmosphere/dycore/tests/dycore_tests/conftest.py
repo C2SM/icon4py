@@ -40,5 +40,4 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     step_date_init,
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
-    vn_only,
 )

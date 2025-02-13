@@ -154,9 +154,12 @@ def step_date_init():
 
 
 @pytest.fixture
-def substep():
+def substep_init():
     return 1
 
+@pytest.fixture
+def substep_exit():
+    return 1
 
 @pytest.fixture
 def step_date_exit():
@@ -233,7 +236,7 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep):
 
 
 @pytest.fixture
-def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exit, substep):
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exit, substep_exit):
     """
     Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
     subroutine nh_solve in mo_solve_nonhydro.f90.
@@ -245,12 +248,12 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exi
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_exit(
-        istep=istep_exit, date=step_date_exit, jstep=jstep_exit, substep=substep
+        istep=istep_exit, date=step_date_exit, jstep=jstep_exit, substep=substep_exit
     )
 
 
 @pytest.fixture
-def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit, substep):
+def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit, substep_exit):
     """
     Load data from ICON savepoint at final exit of subroutine nh_solve in mo_solve_nonhydro.f90.
     (after predictor and corrector and 3 final stencils have run).
@@ -261,7 +264,7 @@ def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit, subs
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_step_exit(
-        date=step_date_exit, jstep=jstep_exit, substep=substep
+        date=step_date_exit, jstep=jstep_exit, substep=substep_exit
     )
 
 
@@ -318,10 +321,6 @@ def jstep_exit():
     return 0
 
 
-# TODO @halungge remove?
-@pytest.fixture
-def vn_only():
-    return False
 
 
 @pytest.fixture

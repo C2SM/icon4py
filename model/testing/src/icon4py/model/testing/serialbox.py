@@ -94,7 +94,7 @@ class IconSavepoint:
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
         ar = self._reduce_to_dim_size(ar, dimensions)
-        return gtx.as_field(dimensions, ar, allocator=self.backend)
+        return gtx.as_field(dimensions, ar, allocator=self.backend, dtype=dtype)
 
     def get_metadata(self, *names):
         metadata = self.savepoint.metainfo.to_dict()
@@ -651,6 +651,13 @@ class InterpolationSavepoint(IconSavepoint):
     def rbf_vec_idx_v(self):
         return self._get_field("rbf_vec_idx_v", dims.VertexDim, dims.V2EDim)
 
+    def lsq_pseudoinv_1(self):
+        field = self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
+        return data_alloc.flatten_first_two_dims(dims.CECDim, field=field)
+
+    def lsq_pseudoinv_2(self):
+        field = self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
+        return data_alloc.flatten_first_two_dims(dims.CECDim, field=field)
 
 class MetricSavepoint(IconSavepoint):
     def bdy_halo_c(self):
@@ -817,13 +824,8 @@ class MetricSavepoint(IconSavepoint):
 
 
 class LeastSquaresSavepoint(IconSavepoint):
-    def lsq_pseudoinv_1(self):
-        field = self._get_field("lsq_pseudoinv_1", dims.CellDim, dims.C2E2CDim)
-        return data_alloc.flatten_first_two_dims(dims.CECDim, field=field)
+    pass
 
-    def lsq_pseudoinv_2(self):
-        field = self._get_field("lsq_pseudoinv_2", dims.CellDim, dims.C2E2CDim)
-        return data_alloc.flatten_first_two_dims(dims.CECDim, field=field)
 
 
 class AdvectionInitSavepoint(IconSavepoint):
@@ -1039,13 +1041,8 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
 
     def ddt_w_adv_pc(self, ntnd):
-        return self._get_field_component("ddt_w_adv_ntl", ntnd, (dims.CellDim, dims.KDim))
+        return self._get_field_component("ddt_w_adv_pc", ntnd, (dims.CellDim, dims.KDim))
 
-    def ddt_vn_adv_ntl(self, ntl):
-        return self._get_field_component("ddt_vn_apc_pc", ntl, (dims.EdgeDim, dims.KDim))
-
-    def ddt_w_adv_ntl(self, ntl):
-        return self._get_field_component("ddt_w_adv_ntl", ntl, (dims.CellDim, dims.KDim))
 
     def grf_tend_w(self):
         return self._get_field("grf_tend_w", dims.CellDim, dims.KDim)
@@ -1185,16 +1182,16 @@ class IconNonHydroExitSavepoint(IconSavepoint):
         return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
 
     def mass_flx_me(self):
-        return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
+        return self._get_field("prep_adv_mass_flx_me", dims.EdgeDim, dims.KDim)
 
     def vn_traj(self):
-        return self._get_field("vn_traj", dims.EdgeDim, dims.KDim)
+        return self._get_field("prep_adv_vn_traj", dims.EdgeDim, dims.KDim)
 
     def exner_dyn_incr(self):
         return self._get_field("exner_dyn_incr", dims.CellDim, dims.KDim)
 
     def z_exner_ic(self):
-        return self._get_field("z_exner_ic", dims.CellDim, dims.KDims)
+        return self._get_field("z_exner_ic", dims.CellDim, dims.KDim)
 
     def z_dexner_dz_c(self, ntnd: TimeLevel):
         return self._get_field_component("z_dexner_dz_c", ntnd, (dims.CellDim, dims.KDim))
@@ -1819,7 +1816,7 @@ class IconSerialDataProvider:
         date: str,
     ) -> IconDiffusionInitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-diffusion-init"].linit[linit].date[date].as_savepoint()
+            self.serializer.savepoint["diffusion-init"].linit[linit].date[date].as_savepoint()
         )
         return IconDiffusionInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
@@ -1855,13 +1852,13 @@ class IconSerialDataProvider:
         )
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
-        savepoint = self.serializer.savepoint["interpolation_state"].as_savepoint()
+        savepoint = self.serializer.savepoint["interpolation-state"].as_savepoint()
         return InterpolationSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_metrics_savepoint(self) -> MetricSavepoint:
-        savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
+        savepoint = self.serializer.savepoint["metric-state"].as_savepoint()
         return MetricSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
@@ -1880,7 +1877,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_diffusion_exit(self, linit: bool, date: str) -> IconDiffusionExitSavepoint:
         savepoint = (
-            self.serializer.savepoint["call-diffusion-exit"].linit[linit].date[date].as_savepoint()
+            self.serializer.savepoint["diffusion-exit"].linit[linit].date[date].as_savepoint()
         )
         return IconDiffusionExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
