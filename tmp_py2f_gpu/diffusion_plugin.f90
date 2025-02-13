@@ -437,6 +437,10 @@ contains
                              nudgecoeff_e, &
                              rbf_coeff_1, &
                              rbf_coeff_2, &
+                             mask_hdiff, &
+                             zd_diffcoef, &
+                             zd_vertoffset, &
+                             zd_intcoef, &
                              ndyn_substeps, &
                              rayleigh_damping_height, &
                              nflat_gradp, &
@@ -480,11 +484,7 @@ contains
                              lowest_layer_thickness, &
                              model_top_height, &
                              stretch_factor, &
-                             rc, &
-                             mask_hdiff, &
-                             zd_diffcoef, &
-                             zd_vertoffset, &
-                             zd_intcoef)
+                             rc)
       use, intrinsic :: iso_c_binding
 
       integer(c_int) :: n_C2E
@@ -530,6 +530,14 @@ contains
       real(c_double), dimension(:, :), target :: rbf_coeff_1
 
       real(c_double), dimension(:, :), target :: rbf_coeff_2
+
+      logical(c_int), dimension(:, :), pointer :: mask_hdiff
+
+      real(c_double), dimension(:, :), pointer :: zd_diffcoef
+
+      integer(c_int), dimension(:, :, :), pointer :: zd_vertoffset
+
+      real(c_double), dimension(:, :, :), pointer :: zd_intcoef
 
       integer(c_int), value, target :: ndyn_substeps
 
@@ -618,15 +626,6 @@ contains
       real(c_double), value, target :: stretch_factor
 
       integer(c_int) :: rc  ! Stores the return code
-
-      logical(c_int), dimension(:, :), pointer :: mask_hdiff
-
-      real(c_double), dimension(:, :), pointer :: zd_diffcoef
-
-      integer(c_int), dimension(:, :, :), pointer :: zd_vertoffset
-
-      real(c_double), dimension(:, :, :), pointer :: zd_intcoef
-
       ! ptrs
 
       type(c_ptr) :: mask_hdiff_ptr
@@ -832,13 +831,13 @@ contains
                             exner, &
                             theta_v, &
                             rho, &
-                            dtime, &
-                            linit, &
-                            rc, &
                             hdef_ic, &
                             div_ic, &
                             dwdx, &
-                            dwdy)
+                            dwdy, &
+                            dtime, &
+                            linit, &
+                            rc)
       use, intrinsic :: iso_c_binding
 
       integer(c_int) :: n_Cell
@@ -859,12 +858,6 @@ contains
 
       real(c_double), dimension(:, :), target :: rho
 
-      real(c_double), value, target :: dtime
-
-      logical(c_int), value, target :: linit
-
-      integer(c_int) :: rc  ! Stores the return code
-
       real(c_double), dimension(:, :), pointer :: hdef_ic
 
       real(c_double), dimension(:, :), pointer :: div_ic
@@ -873,6 +866,11 @@ contains
 
       real(c_double), dimension(:, :), pointer :: dwdy
 
+      real(c_double), value, target :: dtime
+
+      logical(c_int), value, target :: linit
+
+      integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
       type(c_ptr) :: hdef_ic_ptr
@@ -1078,7 +1076,6 @@ contains
       logical(c_int), value, target :: limited_area
 
       integer(c_int) :: rc  ! Stores the return code
-
       ! ptrs
 
       !$acc host_data use_device(cell_starts)

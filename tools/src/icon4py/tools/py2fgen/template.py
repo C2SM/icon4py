@@ -435,12 +435,6 @@ end function {{name}}_wrapper
     )
 
     def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs: Any) -> str:
-        ordered_param_names = (
-            [x.name for x in func.args if not x.is_optional]
-            + ["rc"]
-            + [x.name for x in func.args if x.is_optional]
-        )
-
         def render_args(arg: FuncParameter) -> str:
             if arg.is_array and arg.is_optional:
                 return f"{arg.name} = {arg.name}_ptr"
@@ -451,7 +445,7 @@ end function {{name}}_wrapper
         if len(func.args) < 1:
             param_names, args_with_size_args = "", ""
         else:
-            param_names = ", &\n ".join(ordered_param_names)
+            param_names = ", &\n ".join([arg.name for arg in func.args] + ["rc"])
             arg_names = ", &\n ".join(
                 map(
                     render_args,
@@ -462,31 +456,17 @@ end function {{name}}_wrapper
                 arg_names + ",&\n" + ", &\n".join(f"{arg} = {arg}" for arg in func.global_size_args)
             )
 
-        non_optional_param_declarations = [
+        param_declarations = [
             _render_parameter_declaration(
                 name=param.name,
                 attributes=[
                     to_iso_c_type(param.d_type),
                     render_fortran_array_dimensions(param, False),
                     as_f90_value(param),
-                    "target",
+                    "pointer" if param.is_optional else "target",
                 ],
             )
             for param in func.args
-            if not param.is_optional
-        ]
-        optional_param_declarations = [
-            _render_parameter_declaration(
-                name=param.name,
-                attributes=[
-                    to_iso_c_type(param.d_type),
-                    render_fortran_array_dimensions(param, False),
-                    as_f90_value(param),
-                    "pointer",
-                ],
-            )
-            for param in func.args
-            if param.is_optional
         ]
 
         return self.generic_visit(
@@ -499,8 +479,7 @@ end function {{name}}_wrapper
             ],
             optional_arrays=[arg.name for arg in func.args if arg.is_array if arg.is_optional],
             as_allocatable=True,
-            non_optional_param_declarations=non_optional_param_declarations,
-            optional_param_declarations=optional_param_declarations,
+            param_declarations=param_declarations,
             to_iso_c_type=to_iso_c_type,
             render_fortran_array_dimensions=render_fortran_array_dimensions,
         )
@@ -512,13 +491,10 @@ subroutine {{name}}({{param_names}})
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
    {% endfor %}
-   {% for arg in non_optional_param_declarations %}
+   {% for arg in param_declarations %}
    {{ arg }}
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
-   {% for arg in optional_param_declarations %}
-   {{ arg }}
-   {% endfor %}
    ! ptrs
    {% for arg in _this_node.args if arg.is_optional %}
    type(c_ptr) :: {{ arg.name }}_ptr
