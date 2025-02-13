@@ -20,7 +20,7 @@ include:
     - export RUST_LOG=debug
     - cp ./event.json $CI_PROJECT_DIR
     - bencher run --project test-1vcbiy6t --token "$BENCHER_API_TOKEN" --adapter python_pytest --file results.json "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID ./model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py"
-    - cat $GITHUB_STEP_SUMMARY
+    # - cat $GITHUB_STEP_SUMMARY
     - |
       curl -L \
       -H "Accept: application/vnd.github+json" \
