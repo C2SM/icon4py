@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
 import gt4py.next as gtx
 from gt4py.eve import Node, datamodels
@@ -21,21 +21,6 @@ from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
 from icon4py.tools.py2fgen.settings import GT4PyBackend
 from icon4py.tools.py2fgen.utils import flatten_and_get_unique_elts
 
-
-# these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
-# therefore unpacking needs to be skipped as otherwise it will trigger an error.
-
-
-UNINITIALISED_ARRAYS = [
-    "mask_hdiff",  # optional diffusion init fields
-    "zd_diffcoef",
-    "zd_vertoffset",
-    "zd_intcoef",
-    "hdef_ic",  # optional diffusion output fields
-    "div_ic",
-    "dwdx",
-    "dwdy",
-]
 
 CFFI_DECORATOR = "@ffi.def_extern()"
 
@@ -98,16 +83,11 @@ class PythonWrapper(CffiPlugin):
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.gt4py_backend = GT4PyBackend[self.backend].value
-        self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 
         self.used_dimensions = set()
         for func in self.functions:
             for arg in func.args:
                 self.used_dimensions.update(arg.dimensions)
-
-
-def get_uninitialised_arrays(limited_area: bool) -> list[str]:
-    return UNINITIALISED_ARRAYS if not limited_area else []
 
 
 def to_c_type(scalar_type: ts.ScalarKind) -> str:
@@ -125,7 +105,7 @@ def to_iso_c_type(scalar_type: ts.ScalarKind) -> str:
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
 
-def as_f90_value(param: FuncParameter) -> str:
+def as_f90_value(param: FuncParameter) -> Optional[str]:
     """
     Return the Fortran 90 'value' keyword for scalar types.
 
@@ -135,7 +115,7 @@ def as_f90_value(param: FuncParameter) -> str:
     Returns:
         A string containing 'value,' for scalar types, otherwise an empty string.
     """
-    return "value," if len(param.dimensions) == 0 else ""
+    return "value" if len(param.dimensions) == 0 else None
 
 
 def render_c_pointer(param: FuncParameter) -> str:
@@ -143,7 +123,9 @@ def render_c_pointer(param: FuncParameter) -> str:
     return "*" if len(param.dimensions) > 0 else ""
 
 
-def render_fortran_array_dimensions(param: FuncParameter, assumed_size_array: bool) -> str:
+def render_fortran_array_dimensions(
+    param: FuncParameter, assumed_size_array: bool
+) -> Optional[str]:
     """
     Render Fortran array dimensions for array types.
 
@@ -154,13 +136,13 @@ def render_fortran_array_dimensions(param: FuncParameter, assumed_size_array: bo
         A string representing Fortran array dimensions.
     """
     if len(param.dimensions) > 0 and assumed_size_array:
-        return "dimension(*),"
+        return "dimension(*)"
 
     if len(param.dimensions) > 0 and not assumed_size_array:
         dims = ",".join(":" for _ in param.dimensions)
-        return f"dimension({dims}),"
+        return f"dimension({dims})"
 
-    return ""
+    return None
 
 
 def dims_to_size_strings(dimensions: Sequence[gtx.Dimension]) -> list[str]:
@@ -179,7 +161,7 @@ def dims_to_size_strings(dimensions: Sequence[gtx.Dimension]) -> list[str]:
     return [f"n_{dim.value}" for dim in dimensions]
 
 
-def render_fortran_array_sizes(param: FuncParameter) -> str:
+def render_fortran_array_sizes(param: FuncParameter) -> Optional[str]:
     """
     Render Fortran array size strings for array parameters.
 
@@ -192,7 +174,7 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
     if len(param.dimensions) > 0:
         size_strings = dims_to_size_strings(param.dimensions)
         return "(" + ", ".join(size_strings) + ")"
-    return ""
+    return None
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
@@ -349,7 +331,6 @@ class F90FunctionDefinition(Func):
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         super().__post_init__()  # call Func __post_init__
         self.dimension_positions = self.extract_dimension_positions()
-        self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 
     def extract_dimension_positions(self) -> Sequence[DimensionPosition]:
         """Extract a unique set of dimension positions which are used to infer dimension sizes at runtime."""
@@ -366,6 +347,10 @@ class F90FunctionDefinition(Func):
                     )  # Use Fortran indexing
                     unique_size_args.add(size_arg)
         return dim_positions
+
+
+def _render_parameter_declaration(name: str, attributes: Sequence[str | None]) -> str:
+    return f"{','.join(attribute for attribute in  attributes if attribute is not None)} :: {name}"
 
 
 class F90Interface(Node):
@@ -411,10 +396,28 @@ end module
     )
 
     def visit_F90FunctionDeclaration(self, func: F90FunctionDeclaration, **kwargs: Any) -> str:
-        arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
+        param_names = ", &\n ".join(map(lambda x: x.name, func.args))
         if func.global_size_args:
-            arg_names += ",&\n" + ", &\n".join(func.global_size_args)
-        return self.generic_visit(func, assumed_size_array=True, param_names=arg_names)
+            param_names += ",&\n" + ", &\n".join(func.global_size_args)
+
+        param_declarations = [
+            _render_parameter_declaration(
+                name=param.name,
+                attributes=[
+                    "type(c_ptr)" if param.is_optional else to_iso_c_type(param.d_type),
+                    None if param.is_optional else render_fortran_array_dimensions(param, True),
+                    "value" if param.is_optional else as_f90_value(param),
+                    None if param.is_optional else "target",
+                ],
+            )
+            for param in func.args
+        ]
+        return self.generic_visit(
+            func,
+            as_func_declaration=True,
+            param_names=param_names,
+            param_declarations=param_declarations,
+        )
 
     F90FunctionDeclaration = as_jinja(
         """
@@ -424,8 +427,8 @@ function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") resu
    integer(c_int), value :: {{ size_arg }}
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
-   {% for arg in args %}
-   {{ arg }}
+   {% for param in param_declarations %}
+   {{ param }}
    {% endfor %}
 end function {{name}}_wrapper
     """
@@ -453,6 +456,33 @@ end function {{name}}_wrapper
                 arg_names + ",&\n" + ", &\n".join(f"{arg} = {arg}" for arg in func.global_size_args)
             )
 
+        non_optional_param_declarations = [
+            _render_parameter_declaration(
+                name=param.name,
+                attributes=[
+                    to_iso_c_type(param.d_type),
+                    render_fortran_array_dimensions(param, False),
+                    as_f90_value(param),
+                    "target",
+                ],
+            )
+            for param in func.args
+            if not param.is_optional
+        ]
+        optional_param_declarations = [
+            _render_parameter_declaration(
+                name=param.name,
+                attributes=[
+                    to_iso_c_type(param.d_type),
+                    render_fortran_array_dimensions(param, False),
+                    as_f90_value(param),
+                    "target",
+                ],
+            )
+            for param in func.args
+            if param.is_optional
+        ]
+
         return self.generic_visit(
             func,
             assumed_size_array=False,
@@ -463,16 +493,8 @@ end function {{name}}_wrapper
             ],
             optional_arrays=[arg.name for arg in func.args if arg.is_array if arg.is_optional],
             as_allocatable=True,
-            non_optional_args=[
-                self.visit(arg, assumed_size_array=False)
-                for arg in func.args
-                if not arg.is_optional
-            ],
-            optional_args=[
-                self.visit(arg, as_allocatable=False, assumed_size_array=False)
-                for arg in func.args
-                if arg.is_optional
-            ],
+            non_optional_param_declarations=non_optional_param_declarations,
+            optional_param_declarations=optional_param_declarations,
             to_iso_c_type=to_iso_c_type,
             render_fortran_array_dimensions=render_fortran_array_dimensions,
         )
@@ -484,11 +506,11 @@ subroutine {{name}}({{param_names}})
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
    {% endfor %}
-   {% for arg in non_optional_args %}
+   {% for arg in non_optional_param_declarations %}
    {{ arg }}
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
-   {% for arg in optional_args %}
+   {% for arg in optional_param_declarations %}
    {{ arg }}
    {% endfor %}
    ! ptrs
@@ -496,7 +518,7 @@ subroutine {{name}}({{param_names}})
    type(c_ptr) :: {{ arg.name }}_ptr
    {% endfor %}
    {% for arg in _this_node.args if arg.is_optional %}
-   {{to_iso_c_type(arg.d_type)}}, {{render_fortran_array_dimensions(arg, False)}} pointer  :: {{ arg.name }}_ftn_ptr
+   {{to_iso_c_type(arg.d_type)}}, {{render_fortran_array_dimensions(arg, False)}}, pointer  :: {{ arg.name }}_ftn_ptr
    {% endfor %}
 
    {% for arg in _this_node.args if arg.is_optional %}
@@ -534,37 +556,4 @@ subroutine {{name}}({{param_names}})
    {%- endfor %}
 end subroutine {{name}}
     """
-    )
-
-    def visit_FuncParameter(self, param: FuncParameter, **kwargs: Any) -> str:
-        if kwargs["assumed_size_array"]:  # TODO: this is for F90FunctionDeclaration
-            return self.generic_visit(
-                param,
-                value="value" if param.is_optional else as_f90_value(param),
-                iso_c_type="type(c_ptr)" if param.is_optional else to_iso_c_type(param.d_type),
-                dim=""
-                if param.is_optional
-                else render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
-                explicit_size=render_fortran_array_sizes(param),
-                allocatable="allocatable,"
-                if kwargs.get("as_allocatable", False) and param.is_optional
-                else "",
-                target="" if param.is_optional else "target",
-            )
-        return self.generic_visit(
-            param,
-            value=as_f90_value(param),
-            iso_c_type=to_iso_c_type(param.d_type),
-            dim=render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
-            explicit_size=render_fortran_array_sizes(param),
-            allocatable="pointer"
-            if kwargs.get("as_allocatable", False) and param.is_optional
-            else "",
-            # allocatable="",
-            target="" if kwargs.get("as_allocatable", False) and param.is_optional else "target",
-            # target="target",
-        )
-
-    FuncParameter = as_jinja(
-        """{{iso_c_type}}, {{dim}} {{value}} {{allocatable}} {{target}} :: {{name}}"""
     )
