@@ -573,6 +573,7 @@ def test_velocity_fused_1_7(
         # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
+@pytest.mark.parametrize("istep", [1, 2])
 def test_velocity_fused_8_13(
     icon_grid,
     grid_savepoint,
