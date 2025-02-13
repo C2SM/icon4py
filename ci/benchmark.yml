@@ -17,9 +17,16 @@ include:
     - export GITHUB_SHA=$CI_COMMIT_SHA
     - export GITHUB_ACTIONS=true
     - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json
+    - export RUST_LOG=debug
     - cp ./event.json $CI_PROJECT_DIR
-    - bencher run --project test-1vcbiy6t --token "$BENCHER_API_TOKEN" --github-actions "$CK_COMMENT_TOKEN" --adapter python_pytest --file results.json "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID ./model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py"
+    - bencher run --project test-1vcbiy6t --token "$BENCHER_API_TOKEN" --adapter python_pytest --file results.json "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID ./model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py"
     - cat $GITHUB_STEP_SUMMARY
+    - |
+      curl -L \
+      -H "Accept: application/vnd.github+json" \
+      -H "Authorization: Bearer $CK_COMMENT_TOKEN" \
+      -H "X-GitHub-Api-Version: 2022-11-28" \
+      https://api.github.com/repos/C2SM/icon4py/issues/662/comments
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
