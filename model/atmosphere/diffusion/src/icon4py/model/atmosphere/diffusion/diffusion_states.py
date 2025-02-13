@@ -17,9 +17,6 @@ from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.settings import xp
-from icon4py.model.common.grid.base import BaseGrid
-
 from icon4py.model.common.dimension import (
     C2E2CODim,
     CECDim,
@@ -30,6 +27,8 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.base import BaseGrid
+from icon4py.model.common.settings import xp
 
 
 @dataclass(frozen=True)
@@ -114,7 +113,7 @@ class DiffusionOutputIntermediateFields:
     output_nabla2_diff: Field[[EdgeDim, KDim], float]
     output_nabla4_diff: Field[[EdgeDim, KDim], float]
     output_w_nabla4_diff: Field[[CellDim, KDim], float]
-    
+
     @classmethod
     def allocate(cls, grid: BaseGrid):
         return DiffusionOutputIntermediateFields(

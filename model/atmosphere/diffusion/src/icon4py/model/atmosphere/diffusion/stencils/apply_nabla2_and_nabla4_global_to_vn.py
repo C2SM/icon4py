@@ -31,7 +31,7 @@ def _apply_nabla2_and_nabla4_global_to_vn(
 ) -> tuple[
     Field[[EdgeDim, KDim], wpfloat],
     Field[[EdgeDim, KDim], wpfloat],
-    Field[[EdgeDim, KDim], wpfloat]
+    Field[[EdgeDim, KDim], wpfloat],
 ]:
     kh_smag_e_wp, z_nabla4_e2_wp = astype((kh_smag_e, z_nabla4_e2), wpfloat)
 
@@ -41,7 +41,7 @@ def _apply_nabla2_and_nabla4_global_to_vn(
     nabla2_diff = area_edge * kh_smag_e_wp * z_nabla2_e
     # scal_divdamp = broadcast(scal_divdamp, (EdgeDim, KDim))
     # edge_areas = broadcast(edge_areas, (EdgeDim, KDim))
-    nabla4_diff = - area_edge * ( diff_multfac_vn * z_nabla4_e2_wp * area_edge )
+    nabla4_diff = -area_edge * (diff_multfac_vn * z_nabla4_e2_wp * area_edge)
     return vn_wp, nabla2_diff, nabla4_diff
 
 

@@ -17,8 +17,8 @@ from enum import Enum
 from pathlib import Path
 
 from gt4py.next import as_field
-from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.common import Field
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -34,6 +34,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
 from icon4py.model.common.constants import (
+    CPD,
     CPD_O_RD,
     CVD_O_RD,
     EARTH_ANGULAR_VELOCITY,
@@ -42,7 +43,6 @@ from icon4py.model.common.constants import (
     P0REF,
     RD,
     RD_O_CPD,
-    CPD,
 )
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
@@ -50,7 +50,9 @@ from icon4py.model.common.dimension import (
     CEDim,
     CellDim,
     EdgeDim,
-    KDim, VertexDim, V2C2EDim, V2CDim, C2EDim, VCEDim,
+    KDim,
+    V2C2EDim,
+    VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
@@ -72,7 +74,10 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
-from icon4py.model.driver.testcase_functions import hydrostatic_adjustment_ndarray, hydrostatic_adjustment_constant_thetav_ndarray
+from icon4py.model.driver.testcase_functions import (
+    hydrostatic_adjustment_constant_thetav_ndarray,
+    hydrostatic_adjustment_ndarray,
+)
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -211,7 +216,7 @@ def model_initialization_gauss3d(
     # - mount_height
     # - mount_width
     nh_t0 = 300.0
-    nh_u0 = xp.full((num_edges, num_levels), fill_value = 20.0, dtype=float)
+    nh_u0 = xp.full((num_edges, num_levels), fill_value=20.0, dtype=float)
     nh_brunt_vais = 0.01
     log.info("Topography can only be read from serialized data for now.")
 
@@ -219,7 +224,6 @@ def model_initialization_gauss3d(
     u = xp.where(mask, nh_u0, 0.0)
     vn_ndarray = xp.zeros_like(u)
     for k in range(num_levels):
-
         vn_ndarray[:, k] = u[:, k] * primal_normal_x[:, k]
         # log.info(f"EEEEEEEEEEEE {vn_ndarray[0:3, k]} -- {u[0:3, k] * primal_normal_x[0:3, k]} -- {u[0:3, k]} -- {primal_normal_x[0:3, k]}")
     log.info("Wind profile assigned.")
@@ -233,9 +237,9 @@ def model_initialization_gauss3d(
     # Lower boundary condition for exner pressure
     if nh_brunt_vais != 0.0:
         z_help = (nh_brunt_vais / GRAV) ** 2 * geopot[:, num_levels - 1]
-        exner_ndarray[:, num_levels - 1] = (
-            GRAV / nh_brunt_vais
-        ) ** 2 / nh_t0 / CPD * (xp.exp(-z_help) - 1.0) + 1.0
+        exner_ndarray[:, num_levels - 1] = (GRAV / nh_brunt_vais) ** 2 / nh_t0 / CPD * (
+            xp.exp(-z_help) - 1.0
+        ) + 1.0
     else:
         exner_ndarray[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / CPD / nh_t0
     log.info("Vertical computations completed.")
@@ -988,7 +992,9 @@ def read_geometry_fields(
             nflatlev=sp.nflatlev(),
             nflat_gradp=sp.nflat_gradp(),
         )
-        log.info(f"Checking mean cell area: {cell_geometry.mean_cell_area}, real mean is {cell_geometry.area.asnumpy().mean()}")
+        log.info(
+            f"Checking mean cell area: {cell_geometry.mean_cell_area}, real mean is {cell_geometry.area.asnumpy().mean()}"
+        )
         return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -1083,7 +1089,7 @@ def read_static_fields(
         #                 print ("PENTAGON POINT", i, v2c2e_connectivity[i])
         #                 geofac_2order_div_array[i, j] = 0.0
 
-        # 
+        #
         # v2c = icon_grid.connectivities[V2CDim]
         # v2c2e = icon_grid.connectivities[V2C2EDim]
         # c2e = icon_grid.connectivities[C2EDim]
@@ -1092,35 +1098,54 @@ def read_static_fields(
         # testing1 = xp.where((v2c_connectivity != -1), v2c_connectivity, -100)
         # testing2 = xp.where((v2c != -1), v2c, -100)
 
+        ########################################
         # find pentagon
         pentagon = xp.zeros(icon_grid.num_vertices, dtype=bool)
         for i in range(icon_grid.num_vertices):
-            if v2c_connectivity[i,4] == v2c_connectivity[i,5]:
+            if v2c_connectivity[i, 4] == v2c_connectivity[i, 5]:
                 pentagon[i] = True
-        hexagon_area_ref = xp.where(pentagon, xp.sum(cell_area[v2c_connectivity][:,:-1], axis=1), xp.sum(cell_area[v2c_connectivity][:,:], axis=1))  # xp.sum(xp.where((v2c != -1), cell_area[v2c_connectivity], 0), axis=1)
+        hexagon_area_ref = xp.where(
+            pentagon,
+            xp.sum(cell_area[v2c_connectivity][:, :-1], axis=1),
+            xp.sum(cell_area[v2c_connectivity][:, :], axis=1),
+        )  # xp.sum(xp.where((v2c != -1), cell_area[v2c_connectivity], 0), axis=1)
         geofac_2order_div_array_ref = xp.zeros((icon_grid.num_vertices, 6), dtype=float)
         cell_edge_orientation_ref = cell_edge_orientation[v2c_connectivity]
         v2c2eo = c2e_connectivity[v2c_connectivity]
-        v2c2eo_reshape = xp.reshape(v2c2eo, (v2c2eo.shape[0], v2c2eo.shape[1]*v2c2eo.shape[2]))
+        v2c2eo_reshape = xp.reshape(v2c2eo, (v2c2eo.shape[0], v2c2eo.shape[1] * v2c2eo.shape[2]))
         v2c2eo_bool = xp.zeros((v2c2eo_reshape.shape[0], v2c2eo_reshape.shape[1]), dtype=bool)
         for i in range(icon_grid.num_vertices):
             v2c2eo_bool[i] = xp.isin(v2c2eo_reshape[i], v2c2e_connectivity[i])
             if i == 100:
-                log.info(f"debugging: ++ {i} {v2c2eo_bool[i]} {v2c2eo_reshape[i]} {v2c2e_connectivity[i]}")
+                log.info(
+                    f"debugging: ++ {i} {v2c2eo_bool[i]} {v2c2eo_reshape[i]} {v2c2e_connectivity[i]}"
+                )
         v2c2eo_bool = xp.reshape(v2c2eo_bool, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2]))
-        v2c2eo_back = xp.reshape(v2c2eo_reshape, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2]))
-        assert xp.allclose(v2c2eo_back, v2c2eo, rtol=1.e-12, atol=1.e-12)
+        v2c2eo_back = xp.reshape(
+            v2c2eo_reshape, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2])
+        )
+        assert xp.allclose(v2c2eo_back, v2c2eo, rtol=1.0e-12, atol=1.0e-12)
         # cell_edge_orientation_ref = xp.reshape(cell_edge_orientation_ref, (cell_edge_orientation_ref.shape[0], cell_edge_orientation_ref.shape[1]*cell_edge_orientation_ref.shape[2]))
         primal_edge_length_ref = primal_edge_length[v2c2eo_reshape]
-        primal_edge_length_ref = xp.reshape(primal_edge_length_ref, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2]))
-        log.info(f"debugging new way: {geofac_2order_div_array_ref.shape} {cell_edge_orientation_ref.shape} {primal_edge_length_ref.shape} {v2c2eo_bool.shape}")
+        primal_edge_length_ref = xp.reshape(
+            primal_edge_length_ref, (v2c2eo.shape[0], v2c2eo.shape[1], v2c2eo.shape[2])
+        )
+        log.info(
+            f"debugging new way: {geofac_2order_div_array_ref.shape} {cell_edge_orientation_ref.shape} {primal_edge_length_ref.shape} {v2c2eo_bool.shape}"
+        )
         for j in range(6):
-            geofac_2order_div_array_ref[:,j] = xp.sum( cell_edge_orientation_ref[:,j,:] * primal_edge_length_ref[:,j,:] * v2c2eo_bool[:,j,:], axis=1)
+            geofac_2order_div_array_ref[:, j] = xp.sum(
+                cell_edge_orientation_ref[:, j, :]
+                * primal_edge_length_ref[:, j, :]
+                * v2c2eo_bool[:, j, :],
+                axis=1,
+            )
         hexagon_area_ref_expand = xp.expand_dims(hexagon_area_ref, axis=-1)
         geofac_2order_div_array_ref = -geofac_2order_div_array_ref / hexagon_area_ref_expand
         for i in range(icon_grid.num_vertices):
             if pentagon[i] == True:
-                geofac_2order_div_array_ref[i,5] = 0.0
+                geofac_2order_div_array_ref[i, 5] = 0.0
+        ########################################
 
         # hexagon_area = xp.zeros(v2c_connectivity.shape[0], dtype=float)
         # log.info(f"debugging new way: {cell_edge_orientation.shape}")
@@ -1177,7 +1202,9 @@ def read_static_fields(
         geofac_2order_div = as_field((VertexDim, V2C2EDim), geofac_2order_div_array_ref)
         log.info(f"geofac_div shape: {interpolation_savepoint.geofac_div().ndarray.shape}")
         log.info(f"geofac_div 0: {interpolation_savepoint.geofac_div().ndarray[0]}")
-        log.info(f"geofac_div 1: {interpolation_savepoint.geofac_div().ndarray[1]}", )
+        log.info(
+            f"geofac_div 1: {interpolation_savepoint.geofac_div().ndarray[1]}",
+        )
         log.info(f"geofac_div 2: {interpolation_savepoint.geofac_div().ndarray[2]}")
         log.info(f"geofac_2order_div 0: {geofac_2order_div.ndarray[0]}")
         log.info(f"geofac_2order_div 1: {geofac_2order_div.ndarray[1]}")
@@ -1185,7 +1212,9 @@ def read_static_fields(
         log.info(f"geofac_2order_div array 0: {geofac_2order_div_array[0]}")
         log.info(f"geofac_2order_div array 1: {geofac_2order_div_array[1]}")
         log.info(f"geofac_2order_div array 2: {geofac_2order_div_array[2]}")
-        log.info(f"sparsed geofac_div shape: {as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim).ndarray.shape}")
+        log.info(
+            f"sparsed geofac_div shape: {as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim).ndarray.shape}"
+        )
         log.info(f"V2C connectivity: {v2c_connectivity[0]}")
         log.info(f"c_intp 0: {interpolation_savepoint.c_intp().ndarray[0]}")
         log.info(f"c_intp 1: {interpolation_savepoint.c_intp().ndarray[1]}")
@@ -1293,7 +1322,7 @@ def configure_logging(
     logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
     logfile.touch(exist_ok=True)
     if disable_logging:
-        #logging.disable(logging.CRITICAL)
+        # logging.disable(logging.CRITICAL)
         logging_level = logging.CRITICAL
     else:
         logging_level = logging.DEBUG

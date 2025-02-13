@@ -644,8 +644,8 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ),
             VariableAttributes(
                 units="s-1",
-                standard_name="laplacian of normal wind",
-                long_name="laplacian of normal wind in horizontal momentum equation",
+                standard_name="laplacian or double laplacian of normal wind",
+                long_name="laplacian or double laplacian of normal wind in horizontal momentum equation",
                 CDI_grid_type="unstructured",
                 param="0.0.0",
                 number_of_grid_in_reference="1",
@@ -654,25 +654,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ),
         )
         output_variable_list.add_new_variable(
-            "graddiv2_vn",
-            VariableDimension(
-                horizon_dimension=OutputDimension.EDGE_DIM,
-                vertical_dimension=OutputDimension.FULL_LEVEL,
-                time_dimension=OutputDimension.TIME,
-            ),
-            VariableAttributes(
-                units="m-1 s-1",
-                standard_name="double laplacian of normal wind",
-                long_name="double laplacian of normal wind in horizontal momentum equation",
-                CDI_grid_type="unstructured",
-                param="0.0.0",
-                number_of_grid_in_reference="1",
-                coordinates="elat elon",
-                scope=OutputScope.diagnostic,
-            ),
-        )
-        output_variable_list.add_new_variable(
-            "graddiv2_normal",
+            "graddiv_normal",
             VariableDimension(
                 horizon_dimension=OutputDimension.EDGE_DIM,
                 vertical_dimension=OutputDimension.FULL_LEVEL,
@@ -680,8 +662,8 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ),
             VariableAttributes(
                 units="m s-1",
-                standard_name="horizontal gradient of double laplacian",
-                long_name="horizontal gradient of double laplacian of wind in horizontal momentum equation",
+                standard_name="horizontal gradient of laplacian or double laplacian or wind",
+                long_name="horizontal gradient of laplacian or double laplacian of wind in horizontal momentum equation",
                 CDI_grid_type="unstructured",
                 param="0.0.0",
                 number_of_grid_in_reference="1",
@@ -690,7 +672,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ),
         )
         output_variable_list.add_new_variable(
-            "graddiv2_vertical",
+            "graddiv_vertical",
             VariableDimension(
                 horizon_dimension=OutputDimension.CELL_DIM,
                 vertical_dimension=OutputDimension.HALF_LEVEL,
@@ -698,8 +680,8 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ),
             VariableAttributes(
                 units="m s-1",
-                standard_name="vertical fradient of double laplacian of wind",
-                long_name="vertical fradient of double laplacian of wind in horizontal momentum equation",
+                standard_name="vertical fradient of laplacian or double laplacian of wind",
+                long_name="vertical fradient of laplacian or double laplacian of wind in horizontal momentum equation",
                 CDI_grid_type="unstructured",
                 param="0.0.0",
                 number_of_grid_in_reference="1",
@@ -926,10 +908,10 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             n_substeps=n_substeps,
             type_t_diffu=2,
             type_vn_diffu=1,
-            hdiff_efdt_ratio=10.0,
-            hdiff_w_efdt_ratio=15.0,
-            # hdiff_efdt_ratio=1000.0,
-            # hdiff_w_efdt_ratio=1000.0,
+            # hdiff_efdt_ratio=10.0,
+            # hdiff_w_efdt_ratio=15.0,
+            hdiff_efdt_ratio=1000.0,
+            hdiff_w_efdt_ratio=1000.0,
             # hdiff_efdt_ratio=1.e15,
             # hdiff_w_efdt_ratio=1.e15,
             # smagorinski_scaling_factor=0.025,
@@ -955,24 +937,24 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             do_3d_divergence_damping=False,
             do_second_order_3d_divergence_damping=True,
             do_multiple_divdamp=True,
-            number_of_divdamp_step=10,
+            number_of_divdamp_step=50,
         )
-    
+
     def _gauss3d_diffusion_config(n_substeps: int):
         return DiffusionConfig(
             diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
+            hdiff_w=False,
+            hdiff_vn=False,
             hdiff_temp=False,
             n_substeps=n_substeps,
             type_t_diffu=2,
             type_vn_diffu=1,
-            # hdiff_efdt_ratio=36.0,
-            # hdiff_w_efdt_ratio=15.0,
+            hdiff_efdt_ratio=36.0,
+            hdiff_w_efdt_ratio=15.0,
             # hdiff_efdt_ratio=1.e15,
             # hdiff_w_efdt_ratio=1.e15,
-            hdiff_efdt_ratio=1000.0,
-            hdiff_w_efdt_ratio=1000.0,
+            # hdiff_efdt_ratio=1000.0,
+            # hdiff_w_efdt_ratio=1000.0,
             smagorinski_scaling_factor=0.015,
             # smagorinski_scaling_factor=0.025,
             # smagorinski_scaling_factor=0.0,
@@ -981,6 +963,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             velocity_boundary_diffusion_denom=200.0,
             max_nudging_coeff=0.02,
             call_frequency=1,
+            workaround_boundary_index_for_torus=True,
         )
 
     def _gauss3d_nonhydro_config(n_substeps: int):
@@ -990,6 +973,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             max_nudging_coeff=0.02,
             rayleigh_coeff=0.1,
             divdamp_fac=0.0025,
+            # divdamp_fac=0.0,
             divdamp_z=40000.0,
             divdamp_z2=50000.0,
             scal_divsign=1.0,
@@ -1000,11 +984,11 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             do_multiple_divdamp=True,
             number_of_divdamp_step=100,
         )
-    
+
     def _jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=600.0),
-            end_date=datetime(1, 1, 30, 0, 0, 0),
+            dtime=timedelta(seconds=1200.0),
+            end_date=datetime(1, 1, 15, 0, 0, 0),
             # end_date=datetime(1, 1, 1, 0, 30, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,
@@ -1019,10 +1003,10 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             jabw_diffusion_config,
             jabw_nonhydro_config,
         )
-    
+
     def _gauss3d_config():
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=3.0),
+            dtime=timedelta(seconds=0.3),
             end_date=datetime(1, 1, 1, 1, 0, 0),
             # end_date=datetime(1, 1, 1, 0, 0, 6),
             damping_height=25000.0,

@@ -162,7 +162,9 @@ def predictor_stencils_2_3(
             KDim: (vertical_end - 1, vertical_end),
         },
     )
-'''
+
+
+"""
     _predictor_stencils_2_3(
         exner_exfac,
         exner,
@@ -177,7 +179,7 @@ def predictor_stencils_2_3(
             KDim: (vertical_start, vertical_end),
         },
     )
-'''
+"""
 
 
 @field_operator
@@ -257,7 +259,9 @@ def predictor_stencils_4_5_6(
             KDim: (vertical_start, vertical_end - 1),
         },
     )
-'''
+
+
+"""
     _predictor_stencils_4_5_6(
         wgtfacq_c_dsl,
         z_exner_ex_pr,
@@ -273,7 +277,7 @@ def predictor_stencils_4_5_6(
             KDim: (vertical_start, vertical_end),
         },
     )
-'''
+"""
 
 
 @field_operator
@@ -480,6 +484,7 @@ def compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels(
             KDim: (vertical_start, vertical_end),
         },
     )
+
 
 @field_operator
 def _predictor_stencils_7_8_9_firststep(
@@ -967,7 +972,7 @@ def _stencils_42_44_45(
         ),
         (z_beta, z_alpha),
     )
-    #z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    # z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
 
     z_q = where(k_field == int32(0), _init_cell_kdim_field_with_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
@@ -1110,7 +1115,7 @@ def _stencils_43_44_45(
         ),
         (z_beta, z_alpha),
     )
-    #z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    # z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
     z_q = where(k_field == int32(0), _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
@@ -1282,7 +1287,9 @@ def stencils_47_48_49(
             KDim: (vertical_start, vertical_end - 1),
         },
     )
-'''
+
+
+"""
     _stencils_47_48_49(
         w_nnew,
         z_contr_w_fl_l,
@@ -1306,7 +1313,7 @@ def stencils_47_48_49(
             KDim: (vertical_start, vertical_end),
         },
     )
-'''
+"""
 
 
 @field_operator
@@ -1386,7 +1393,9 @@ def stencils_61_62(
             KDim: (vertical_end - 1, vertical_end),
         },
     )
-'''
+
+
+"""
     _stencils_61_62(
         rho_now,
         grf_tend_rho,
@@ -1406,4 +1415,4 @@ def stencils_61_62(
             KDim: (vertical_start, vertical_end),
         },
     )
-'''
+"""

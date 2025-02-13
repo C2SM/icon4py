@@ -92,8 +92,11 @@ def _calculate_scal_divdamp(
         if divdamp_order == 24
         else enh_divdamp_fac
     )
-    #return -enh_divdamp_fac * mean_cell_area**2, enh_divdamp_fac * mean_cell_area
-    return -scal_divsign * enh_divdamp_fac * mean_cell_area**2, scal_divsign * enh_divdamp_fac * mean_cell_area
+    # return -enh_divdamp_fac * mean_cell_area**2, enh_divdamp_fac * mean_cell_area
+    return (
+        -scal_divsign * enh_divdamp_fac * mean_cell_area**2,
+        scal_divsign * enh_divdamp_fac * mean_cell_area,
+    )
 
 
 @field_operator
@@ -136,7 +139,8 @@ def calculate_divdamp_fields(
         scal_divsign,
         out=(scal_divdamp, scal_divdamp_o2, bdy_divdamp),
     )
-    
+
+
 @field_operator
 def _compute_z_raylfac(rayleigh_w: Field[[KDim], float], dtime: float) -> Field[[KDim], float]:
     return 1.0 / (1.0 + dtime * rayleigh_w)
@@ -158,8 +162,16 @@ def _calculate_scal_divdamp_half(
     level_above_height = 0.5 * (vct_a + vct_a(Koff[-1]))
     level_below_height = 0.5 * (vct_a + vct_a(Koff[1]))
     return (
-        (scal_divdamp(Koff[-1])*(vct_a - level_below_height) + scal_divdamp*(level_above_height - vct_a)) / (level_above_height - level_below_height),
-        (scal_divdamp_o2(Koff[-1])*(vct_a - level_below_height) + scal_divdamp_o2*(level_above_height - vct_a)) / (level_above_height - level_below_height)
+        (
+            scal_divdamp(Koff[-1]) * (vct_a - level_below_height)
+            + scal_divdamp * (level_above_height - vct_a)
+        )
+        / (level_above_height - level_below_height),
+        (
+            scal_divdamp_o2(Koff[-1]) * (vct_a - level_below_height)
+            + scal_divdamp_o2 * (level_above_height - vct_a)
+        )
+        / (level_above_height - level_below_height),
     )
 
 

@@ -37,6 +37,12 @@ from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilat
 from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
     add_analysis_increments_to_vn as add_analysis_increments_to_vn_orig,
 )
+from icon4py.model.atmosphere.dycore.add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv import (
+    add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv as add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv_orig,
+)
+from icon4py.model.atmosphere.dycore.add_dwdz_to_divergence_of_flux_of_normal_wind import (
+    add_dwdz_to_divergence_of_flux_of_normal_wind as add_dwdz_to_divergence_of_flux_of_normal_wind_orig,
+)
 from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn as add_temporal_tendencies_to_vn_orig,
 )
@@ -48,6 +54,15 @@ from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_
 )
 from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping as apply_2nd_order_divergence_damping_orig,
+)
+from icon4py.model.atmosphere.dycore.apply_3d_divergence_damping import (
+    apply_3d_divergence_damping as apply_3d_divergence_damping_orig,
+)
+from icon4py.model.atmosphere.dycore.apply_4th_order_3d_divergence_damping_to_vn import (
+    apply_4th_order_3d_divergence_damping_to_vn as apply_4th_order_3d_divergence_damping_to_vn_orig,
+)
+from icon4py.model.atmosphere.dycore.apply_4th_order_3d_divergence_damping_to_w import (
+    apply_4th_order_3d_divergence_damping_to_w as apply_4th_order_3d_divergence_damping_to_w_orig,
 )
 from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
     apply_4th_order_divergence_damping as apply_4th_order_divergence_damping_orig,
@@ -64,6 +79,15 @@ from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
 from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence_damping import (
     apply_weighted_2nd_and_4th_order_divergence_damping as apply_weighted_2nd_and_4th_order_divergence_damping_orig,
 )
+from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux import (
+    compute_2nd_order_divergence_of_flux as compute_2nd_order_divergence_of_flux_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_full3d_graddiv import (
+    compute_2nd_order_divergence_of_flux_of_full3d_graddiv as compute_2nd_order_divergence_of_flux_of_full3d_graddiv_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_normal_wind import (
+    compute_2nd_order_divergence_of_flux_of_normal_wind as compute_2nd_order_divergence_of_flux_of_normal_wind_orig,
+)
 from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner as compute_approx_of_2nd_vertical_derivative_of_exner_orig,
 )
@@ -71,34 +95,33 @@ from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn as com
 from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt as compute_avg_vn_and_graddiv_vn_and_vt_orig,
 )
-from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
-    compute_divergence_of_fluxes_of_rho_and_theta as compute_divergence_of_fluxes_of_rho_and_theta_orig,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    compute_contravariant_correction as compute_contravariant_correction_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_dgraddiv_dz_for_full3d_divergence_damping import (
+    compute_dgraddiv_dz_for_full3d_divergence_damping as compute_dgraddiv_dz_for_full3d_divergence_damping_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_divergence_of_flux import (
+    compute_divergence_of_flux as compute_divergence_of_flux_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_divergence_of_flux_of_full3d_graddiv import (
+    compute_divergence_of_flux_of_full3d_graddiv as compute_divergence_of_flux_of_full3d_graddiv_orig,
 )
 
 # New divergence stencils
 from icon4py.model.atmosphere.dycore.compute_divergence_of_flux_of_normal_wind import (
     compute_divergence_of_flux_of_normal_wind as compute_divergence_of_flux_of_normal_wind_orig,
 )
-from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex import (
-    interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex as interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex_orig,
+from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
+    compute_divergence_of_fluxes_of_rho_and_theta as compute_divergence_of_fluxes_of_rho_and_theta_orig,
 )
-from icon4py.model.atmosphere.dycore.add_dwdz_to_divergence_of_flux_of_normal_wind import (
-    add_dwdz_to_divergence_of_flux_of_normal_wind as add_dwdz_to_divergence_of_flux_of_normal_wind_orig,
+
+# end of new divergence stencils
+from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
+    compute_dwdz_for_divergence_damping as compute_dwdz_for_divergence_damping_orig,
 )
-from icon4py.model.atmosphere.dycore.compute_full3d_graddiv_normal import (
-    compute_full3d_graddiv_normal as compute_full3d_graddiv_normal_orig,
-)
-from icon4py.model.atmosphere.dycore.compute_full3d_graddiv_vertical import (
-    compute_full3d_graddiv_vertical as compute_full3d_graddiv_vertical_orig,
-)
-from icon4py.model.atmosphere.dycore.compute_dgraddiv_dz_for_full3d_divergence_damping import (
-    compute_dgraddiv_dz_for_full3d_divergence_damping as compute_dgraddiv_dz_for_full3d_divergence_damping_orig,
-)
-from icon4py.model.atmosphere.dycore.compute_divergence_of_flux_of_full3d_graddiv import (
-    compute_divergence_of_flux_of_full3d_graddiv as compute_divergence_of_flux_of_full3d_graddiv_orig,
-)
-from icon4py.model.atmosphere.dycore.add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv import (
-    add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv as add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv_orig,
+from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
+    compute_exner_from_rhotheta as compute_exner_from_rhotheta_orig,
 )
 from icon4py.model.atmosphere.dycore.compute_full3d_graddiv2_normal import (
     compute_full3d_graddiv2_normal as compute_full3d_graddiv2_normal_orig,
@@ -106,34 +129,20 @@ from icon4py.model.atmosphere.dycore.compute_full3d_graddiv2_normal import (
 from icon4py.model.atmosphere.dycore.compute_full3d_graddiv2_vertical import (
     compute_full3d_graddiv2_vertical as compute_full3d_graddiv2_vertical_orig,
 )
-from icon4py.model.atmosphere.dycore.apply_4th_order_3d_divergence_damping_to_vn import (
-    apply_4th_order_3d_divergence_damping_to_vn as apply_4th_order_3d_divergence_damping_to_vn_orig,
+from icon4py.model.atmosphere.dycore.compute_full3d_graddiv_normal import (
+    compute_full3d_graddiv_normal as compute_full3d_graddiv_normal_orig,
 )
-from icon4py.model.atmosphere.dycore.apply_4th_order_3d_divergence_damping_to_w import (
-    apply_4th_order_3d_divergence_damping_to_w as apply_4th_order_3d_divergence_damping_to_w_orig,
+from icon4py.model.atmosphere.dycore.compute_full3d_graddiv_vertical import (
+    compute_full3d_graddiv_vertical as compute_full3d_graddiv_vertical_orig,
 )
-from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_normal_wind import (
-    compute_2nd_order_divergence_of_flux_of_normal_wind as compute_2nd_order_divergence_of_flux_of_normal_wind_orig,
-)
-from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell import (
-    interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell as interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell_orig,
-)
-from icon4py.model.atmosphere.dycore.compute_2nd_order_divergence_of_flux_of_full3d_graddiv import (
-    compute_2nd_order_divergence_of_flux_of_full3d_graddiv as compute_2nd_order_divergence_of_flux_of_full3d_graddiv_orig,
-)
-from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell import (
-    interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell as interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell_orig,
-)
-# end of new divergence stencils
-
-from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
-    compute_dwdz_for_divergence_damping as compute_dwdz_for_divergence_damping_orig,
-)
-from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
-    compute_exner_from_rhotheta as compute_exner_from_rhotheta_orig,
+from icon4py.model.atmosphere.dycore.compute_graddiv import (
+    compute_graddiv as compute_graddiv_orig,
 )
 from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import (
     compute_graddiv2_of_vn as compute_graddiv2_of_vn_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_graddiv_of_vn import (
+    compute_graddiv_of_vn as compute_graddiv_of_vn_orig,
 )
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates as compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_orig,
@@ -159,8 +168,14 @@ from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables
 from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient as compute_rho_virtual_potential_temperatures_and_pressure_gradient_orig,
 )
+from icon4py.model.atmosphere.dycore.compute_tangential_wind_and_contravariant import (
+    compute_tangential_wind_and_contravariant as compute_tangential_wind_and_contravariant_orig,
+)
 from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
     compute_theta_and_exner as compute_theta_and_exner_orig,
+)
+from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
+    compute_pressure_gradient as compute_pressure_gradient_orig,
 )
 from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary as compute_vn_on_lateral_boundary_orig,
@@ -170,6 +185,9 @@ from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import (
 )
 from icon4py.model.atmosphere.dycore.copy_edge_kdim_field_to_vp import (
     copy_edge_kdim_field_to_vp as copy_edge_kdim_field_to_vp_orig,
+)
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+    init_cell_kdim_field_with_zero_vp as init_cell_kdim_field_with_zero_vp_orig,
 )
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp as init_cell_kdim_field_with_zero_wp_orig,
@@ -183,6 +201,15 @@ from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_wp impo
 from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
     init_two_edge_kdim_fields_with_zero_wp as init_two_edge_kdim_fields_with_zero_wp_orig,
 )
+from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex import (
+    interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex as interpolate_2nd_order_divergence_of_flux_from_cell_to_vertex_orig,
+)
+from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell import (
+    interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell as interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell_orig,
+)
+from icon4py.model.atmosphere.dycore.interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell import (
+    interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell as interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell_orig,
+)
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl as mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_orig,
 )
@@ -191,11 +218,11 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 )
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
     compute_horizontal_advection_of_rho_and_theta as compute_horizontal_advection_of_rho_and_theta_orig,
+    compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels as compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels_orig,
     init_test_fields as init_test_fields_orig,
     predictor_stencils_2_3 as predictor_stencils_2_3_orig,
     predictor_stencils_4_5_6 as predictor_stencils_4_5_6_orig,
     predictor_stencils_7_8_9 as predictor_stencils_7_8_9_orig,
-    compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels as compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels_orig,
     predictor_stencils_7_8_9_firststep as predictor_stencils_7_8_9_firststep_orig,
     predictor_stencils_7_8_9_secondstep as predictor_stencils_7_8_9_secondstep_orig,
     predictor_stencils_11_lower_upper as predictor_stencils_11_lower_upper_orig,
@@ -207,11 +234,6 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
     stencils_47_48_49 as stencils_47_48_49_orig,
     stencils_61_62 as stencils_61_62_orig,
 )
-
-from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
-    compute_pressure_gradient as compute_pressure_gradient_orig,
-)
-
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution as solve_tridiagonal_matrix_for_w_back_substitution_orig,
 )
@@ -219,9 +241,9 @@ from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_swee
     solve_tridiagonal_matrix_for_w_forward_sweep as solve_tridiagonal_matrix_for_w_forward_sweep_orig,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
-    compute_z_raylfac as compute_z_raylfac_orig,
-    calculate_scal_divdamp_half as calculate_scal_divdamp_half_orig,
     calculate_divdamp_fields as calculate_divdamp_fields_orig,
+    calculate_scal_divdamp_half as calculate_scal_divdamp_half_orig,
+    compute_z_raylfac as compute_z_raylfac_orig,
 )
 from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment as update_dynamical_exner_time_increment_orig,
@@ -237,13 +259,6 @@ from icon4py.model.common.math.smagorinsky import (
     en_smag_fac_for_zero_nshift as en_smag_fac_for_zero_nshift_orig,
 )
 from icon4py.model.common.settings import device
-
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
-    init_cell_kdim_field_with_zero_vp as init_cell_kdim_field_with_zero_vp_orig,
-)
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
-    compute_contravariant_correction as compute_contravariant_correction_orig,
-)
 
 
 def handle_numpy_integer(value):
@@ -351,7 +366,9 @@ apply_2nd_order_divergence_damping = CachedProgram(apply_2nd_order_divergence_da
 
 apply_4th_order_divergence_damping = CachedProgram(apply_4th_order_divergence_damping_orig)
 
-apply_4th_order_divergence_damping_nonmeancell = CachedProgram(apply_4th_order_divergence_damping_nonmeancell_orig)
+apply_4th_order_divergence_damping_nonmeancell = CachedProgram(
+    apply_4th_order_divergence_damping_nonmeancell_orig
+)
 
 apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure = CachedProgram(
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_orig
@@ -387,13 +404,9 @@ add_dwdz_to_divergence_of_flux_of_normal_wind = CachedProgram(
     add_dwdz_to_divergence_of_flux_of_normal_wind_orig
 )
 
-compute_full3d_graddiv_normal = CachedProgram(
-    compute_full3d_graddiv_normal_orig
-)
+compute_full3d_graddiv_normal = CachedProgram(compute_full3d_graddiv_normal_orig)
 
-compute_full3d_graddiv_vertical = CachedProgram(
-    compute_full3d_graddiv_vertical_orig
-)
+compute_full3d_graddiv_vertical = CachedProgram(compute_full3d_graddiv_vertical_orig)
 
 compute_dgraddiv_dz_for_full3d_divergence_damping = CachedProgram(
     compute_dgraddiv_dz_for_full3d_divergence_damping_orig
@@ -407,13 +420,9 @@ add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv = CachedProgram(
     add_dgraddiv_dz_to_full3d_divergence_flux_of_graddiv_orig
 )
 
-compute_full3d_graddiv2_normal = CachedProgram(
-    compute_full3d_graddiv2_normal_orig
-)
+compute_full3d_graddiv2_normal = CachedProgram(compute_full3d_graddiv2_normal_orig)
 
-compute_full3d_graddiv2_vertical = CachedProgram(
-    compute_full3d_graddiv2_vertical_orig
-)
+compute_full3d_graddiv2_vertical = CachedProgram(compute_full3d_graddiv2_vertical_orig)
 
 apply_4th_order_3d_divergence_damping_to_vn = CachedProgram(
     apply_4th_order_3d_divergence_damping_to_vn_orig
@@ -434,12 +443,21 @@ compute_2nd_order_divergence_of_flux_of_full3d_graddiv = CachedProgram(
 interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell = CachedProgram(
     interpolate_2nd_order_divergence_of_flux_of_full3d_graddiv_to_cell_orig
 )
+
+compute_divergence_of_flux = CachedProgram(compute_divergence_of_flux_orig)
+compute_2nd_order_divergence_of_flux = CachedProgram(compute_2nd_order_divergence_of_flux_orig)
+compute_graddiv = CachedProgram(compute_graddiv_orig)
+apply_3d_divergence_damping = CachedProgram(apply_3d_divergence_damping_orig)
+compute_tangential_wind_and_contravariant = CachedProgram(
+    compute_tangential_wind_and_contravariant_orig
+)
 # end of new divergence stencils
 
 compute_dwdz_for_divergence_damping = CachedProgram(compute_dwdz_for_divergence_damping_orig)
 
 compute_exner_from_rhotheta = CachedProgram(compute_exner_from_rhotheta_orig)
 
+compute_graddiv_of_vn = CachedProgram(compute_graddiv_of_vn_orig)
 compute_graddiv2_of_vn = CachedProgram(compute_graddiv2_of_vn_orig)
 
 compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates = CachedProgram(
@@ -518,7 +536,9 @@ predictor_stencils_4_5_6 = CachedProgram(predictor_stencils_4_5_6_orig)
 
 predictor_stencils_7_8_9 = CachedProgram(predictor_stencils_7_8_9_orig)
 
-compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels = CachedProgram(compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels_orig)
+compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels = CachedProgram(
+    compute_perturbed_rho_and_potential_temperatures_at_half_and_full_levels_orig
+)
 
 compute_pressure_gradient = CachedProgram(compute_pressure_gradient_orig)
 

@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, where, broadcast
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_global_to_vn import (
     _apply_nabla2_and_nabla4_global_to_vn,
@@ -92,7 +92,7 @@ def _apply_diffusion_to_vn(
                 diff_multfac_vn,
                 vn,
             ),
-            (vn, zero_nabla2_diff, zero_nabla4_diff)
+            (vn, zero_nabla2_diff, zero_nabla4_diff),
         )
     )
 

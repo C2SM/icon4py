@@ -176,7 +176,7 @@ def diffusion_init(
         mean_cell_area=mean_cell_area,
         cell_center_lon=None,  # type: ignore
         cell_center_lat=None,  # type: ignore
-        )
+    )
 
     # diffusion parameters
     config = DiffusionConfig(

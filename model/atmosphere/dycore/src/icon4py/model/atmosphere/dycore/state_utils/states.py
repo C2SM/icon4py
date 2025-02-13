@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 from gt4py.next.common import Field
 
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.common.dimension import (
     C2E2CODim,
     CEDim,
@@ -24,13 +25,12 @@ from icon4py.model.common.dimension import (
     ECDim,
     EdgeDim,
     KDim,
-    V2CDim,
     V2C2EDim,
+    V2CDim,
     V2EDim,
     VertexDim,
 )
 from icon4py.model.common.grid.base import BaseGrid
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 
 
 @dataclass
@@ -192,10 +192,9 @@ class OutputIntermediateFields:
     output_velocity_corrector_vertical_wind_e: Field[[EdgeDim, KDim], float]
     output_velocity_corrector_vgrad_vn_e: Field[[EdgeDim, KDim], float]
     output_graddiv_vn: Field[[EdgeDim, KDim], float]
-    output_graddiv2_vn: Field[[EdgeDim, KDim], float]
     output_scal_divdamp: Field[[KDim], float]
-    output_graddiv2_normal: Field[[EdgeDim, KDim], float]
-    output_graddiv2_vertical: Field[[CellDim, KDim], float]
+    output_graddiv_normal: Field[[EdgeDim, KDim], float]
+    output_graddiv_vertical: Field[[CellDim, KDim], float]
     output_before_flxdiv_vn: Field[[CellDim, KDim], float]
     output_after_flxdiv_vn: Field[[CellDim, KDim], float]
     output_before_vn: Field[[EdgeDim, KDim], float]
@@ -224,10 +223,9 @@ class OutputIntermediateFields:
             output_velocity_corrector_vertical_wind_e=_allocate(EdgeDim, KDim, grid=grid),
             output_velocity_corrector_vgrad_vn_e=_allocate(EdgeDim, KDim, grid=grid),
             output_graddiv_vn=_allocate(EdgeDim, KDim, grid=grid),
-            output_graddiv2_vn=_allocate(EdgeDim, KDim, grid=grid),
             output_scal_divdamp=_allocate(KDim, grid=grid),
-            output_graddiv2_normal=_allocate(EdgeDim, KDim, grid=grid),
-            output_graddiv2_vertical=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
+            output_graddiv_normal=_allocate(EdgeDim, KDim, grid=grid),
+            output_graddiv_vertical=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
             output_before_flxdiv_vn=_allocate(CellDim, KDim, grid=grid),
             output_after_flxdiv_vn=_allocate(CellDim, KDim, grid=grid),
             output_before_vn=_allocate(EdgeDim, KDim, grid=grid),

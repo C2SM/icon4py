@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from icon4py.model.common.constants import CPD_O_RD, CVD_O_RD, GRAV_O_RD, P0REF, RD 
+from icon4py.model.common.constants import CPD_O_RD, CVD_O_RD, GRAV_O_RD, P0REF, RD
 from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.settings import xp
@@ -164,9 +164,7 @@ def hydrostatic_adjustment_constant_thetav_ndarray(
         )
 
     for k in range(num_levels - 1, -1, -1):
-        rho[:, k] = (
-            exner[:, k] ** CVD_O_RD * P0REF / (RD * theta_v[:, k])
-        )
+        rho[:, k] = exner[:, k] ** CVD_O_RD * P0REF / (RD * theta_v[:, k])
 
     return rho, exner
 

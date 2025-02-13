@@ -16,6 +16,7 @@ from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
 
 from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
+    copy_edge_kdim_field_to_vp,
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
@@ -42,10 +43,6 @@ from icon4py.model.atmosphere.dycore.velocity.helpers import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
     interpolate_vt_to_interface_edges,
     mo_math_divrot_rot_vertex_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
-    copy_cell_kdim_field_to_vp,
-    copy_edge_kdim_field_to_vp,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
@@ -940,7 +937,7 @@ class VelocityAdvection:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-            
+
         """
         ddt_vn_apc_pc[ntnd] (max(3,damp_lev-2)-1:nlev-5):
             Add diffusion to the advection of normal wind at full levels (edge center) according

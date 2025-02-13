@@ -187,12 +187,6 @@ class IconGridSavepoint(IconSavepoint):
     def vert_vert_length(self):
         return self._get_reciprocal_field("inv_vert_vert_length", EdgeDim)
 
-    def inv_vert_vert_length(self):
-        return self._get_field("inv_vert_vert_length", EdgeDim)
-
-    def vert_vert_length(self):
-        return self._get_reciprocal_field("inv_vert_vert_length", EdgeDim)
-
     def primal_normal_vert_x(self):
         return self._get_field("primal_normal_vert_x", EdgeDim, E2C2VDim)
 
@@ -237,12 +231,6 @@ class IconGridSavepoint(IconSavepoint):
 
     def edge_center_lon(self):
         return self._get_field("edges_center_lon", EdgeDim)
-
-    def v_lat(self):
-        return self._get_field("v_lat", VertexDim)
-
-    def v_lon(self):
-        return self._get_field("v_lon", VertexDim)
 
     @IconSavepoint.optionally_registered(VertexDim)
     def v_lat(self):
@@ -357,12 +345,6 @@ class IconGridSavepoint(IconSavepoint):
     def v2c(self):
         return self._get_connectivity_array("v2c", VertexDim)
 
-    def v2c2v(self):
-        if self._v2c2v() is None:
-            return xp.zeros((self.sizes[VertexDim], 6), dtype=int)
-        else:
-            return self._v2c2v()
-
     def v2c2e(self):
         v2c = xp.asarray(self.v2c())
         c2e = xp.asarray(self.c2e())
@@ -396,7 +378,7 @@ class IconGridSavepoint(IconSavepoint):
         # v2c2eall_1d = v2c2eall.reshape(v2c2eall.shape[0]*v2c2eall.shape[1])
         # for i in range()
         # debug_v2c2e[:] = debug_v2c2eall[i, ~xp.isin(debug_v2c2eall[i, :], v2e[i, :])]
-        log.info(f"old slice method")
+        log.info("old slice method")
         temp_v2c2eall = c2e[v2c, :]
         temp_v2c2eall_shape = temp_v2c2eall.shape
         v2c2eall = temp_v2c2eall.reshape(
@@ -406,7 +388,7 @@ class IconGridSavepoint(IconSavepoint):
         v2c2e = xp.zeros_like(v2c)
         for i in range(v2c2eall_shape[0]):
             v2c2e[i] = v2c2eall[i, ~xp.isin(v2c2eall[i, :], v2e[i, :])]
-        log.info(f"debugging new slice method")
+        log.info("debugging new slice method")
         # for i in range(v2c2e.shape[0]):
         #     if any(debug_v2c2e[i] != v2c2e[i]):
         #         log.info(f"different values: {i}, {debug_v2c2e[i]} === {v2c2e[i]}")

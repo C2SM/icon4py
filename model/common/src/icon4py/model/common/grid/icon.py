@@ -41,8 +41,8 @@ from icon4py.model.common.dimension import (
     V2C2VDim,
     V2CDim,
     V2EDim,
-    VertexDim,
     VCEDim,
+    VertexDim,
 )
 from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder

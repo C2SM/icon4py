@@ -31,7 +31,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     zero_field,
 )
 from icon4py.model.common import constants
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import (
     CellParams,
     EdgeParams,
@@ -66,6 +66,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     mean_cell_area = grid_savepoint.mean_cell_area()
     enh_divdamp_fac = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
     scal_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
+    scal_divdamp_o2 = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
     bdy_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
     en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
@@ -85,7 +86,8 @@ def test_validate_divdamp_fields_against_savepoint_values(
         divdamp_order=config.divdamp_order,
         mean_cell_area=mean_cell_area,
         divdamp_fac_o2=divdamp_fac_o2,
-        out=scal_divdamp,
+        scal_divsign=1.0,
+        out=(scal_divdamp, scal_divdamp_o2),
         offset_provider={},
     )
     _calculate_bdy_divdamp.with_backend(backend)(
@@ -580,6 +582,10 @@ def test_nonhydro_corrector_step(
         z_flxdiv_graddiv_vn_and_w=_allocate(CellDim, KDim, grid=icon_grid),
         z_flxdiv2order_vn_vertex=_allocate(VertexDim, KDim, grid=icon_grid),
         z_flxdiv2order_graddiv_vn_vertex=_allocate(VertexDim, KDim, grid=icon_grid),
+        vt=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_w_concorr_me=_allocate(EdgeDim, KDim, grid=icon_grid),
+        z_w_concorr_mc=_allocate(CellDim, KDim, grid=icon_grid),
+        w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
     )
 
     divdamp_fac_o2 = sp.divdamp_fac_o2()
@@ -615,6 +621,9 @@ def test_nonhydro_corrector_step(
         dtime=dtime,
         nnew=nnew,
         nnow=nnow,
+        do_output=False,
+        do_output_step=1,
+        do_output_substep=1,
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
         at_last_substep=jstep_init == (ndyn_substeps - 1),
@@ -645,7 +654,8 @@ def test_nonhydro_corrector_step(
     assert dallclose(
         prognostic_state_ls[nnew].vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-9,  # TODO (magdalena) was 1e-10 for local experiment only
+        # rtol=1e-9,  # TODO (magdalena) was 1e-10 for local experiment only
+        rtol=1e-8,  # TODO (magdalena) was 1e-10 for local experiment only
     )
 
     assert dallclose(

@@ -171,6 +171,7 @@ class DiffusionConfig:
         nudging_decay_rate: float = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
         call_frequency: int = 1,
+        workaround_boundary_index_for_torus: bool = False,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
@@ -264,6 +265,7 @@ class DiffusionConfig:
         self.shear_type = shear_type
 
         self.call_frequency = call_frequency
+        self.workaround_boundary_index_for_torus = workaround_boundary_index_for_torus
 
         self._validate()
 
@@ -443,12 +445,16 @@ class Diffusion:
         self._allocate_temporary_fields()
 
         def _get_start_index_for_w_diffusion() -> int32:
+            if self.config.workaround_boundary_index_for_torus:
+                interior_index = int32(0)
+            else:
+                interior_index = HorizontalMarkerIndex.interior(CellDim)
             return self.grid.get_start_index(
                 CellDim,
                 (
                     HorizontalMarkerIndex.nudging(CellDim)
                     if self.grid.limited_area
-                    else HorizontalMarkerIndex.interior(CellDim)
+                    else interior_index
                 ),
             )
 
@@ -611,9 +617,12 @@ class Diffusion:
 
         """
         klevels = self.grid.num_levels
-        cell_start_interior = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.interior(CellDim)
-        )
+        if self.config.workaround_boundary_index_for_torus:
+            cell_start_interior = int32(0)
+        else:
+            cell_start_interior = self.grid.get_start_index(
+                CellDim, HorizontalMarkerIndex.interior(CellDim)
+            )
         cell_start_nudging = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
         )
@@ -799,11 +808,10 @@ class Diffusion:
                 nrdmax=int32(
                     self.vertical_params.index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
-                #interior_idx=int32(cell_start_interior),
-                interior_idx=int32(0),
+                interior_idx=int32(cell_start_interior),
                 halo_idx=int32(cell_end_local),
-                # horizontal_start=self._horizontal_start_index_w_diffusion,
-                horizontal_start=int32(0),
+                horizontal_start=self._horizontal_start_index_w_diffusion,
+                # horizontal_start=int32(0),
                 horizontal_end=cell_end_halo,
                 vertical_start=0,
                 vertical_end=klevels,

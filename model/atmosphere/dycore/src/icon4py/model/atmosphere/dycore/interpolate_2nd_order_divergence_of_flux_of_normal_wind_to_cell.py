@@ -15,17 +15,16 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
-from icon4py.model.common.dimension import C2V, CellDim, VertexDim, C2VDim, KDim
+from icon4py.model.common.dimension import C2V, C2VDim, CellDim, KDim, VertexDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
-from icon4pytools.icon4pygen.bindings.locations import Vertex
 
 
 @field_operator
 def _interpolate_2nd_order_divergence_of_flux_of_normal_wind_to_cell(
     z_flxdiv2order_vn_vertex: Field[[VertexDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    z_flxdiv2order_vn = neighbor_sum( z_flxdiv2order_vn_vertex(C2V), axis=C2VDim) / 3.0
+    z_flxdiv2order_vn = neighbor_sum(z_flxdiv2order_vn_vertex(C2V), axis=C2VDim) / 3.0
     return z_flxdiv2order_vn
 
 

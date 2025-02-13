@@ -13,38 +13,40 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_full3d_graddiv2_vertical(
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    z_flxdiv_graddiv_vn_and_w: Field[[CellDim, KDim], vpfloat],
+def _compute_divergence_of_flux(
+    geofac_div: Field[[CEDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    dwdz: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    z_graddiv2_vertical = (
-        z_flxdiv_graddiv_vn_and_w(Koff[-1]) - z_flxdiv_graddiv_vn_and_w
-    ) / ddqz_z_half
-    return z_graddiv2_vertical
+    divergence_wp = neighbor_sum(geofac_div(C2CE) * vn(C2E), axis=C2EDim)
+    divergence_wp = divergence_wp + astype(dwdz, wpfloat)
+    return astype(divergence_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def compute_full3d_graddiv2_vertical(
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    z_flxdiv_graddiv_vn_and_w: Field[[CellDim, KDim], vpfloat],
-    z_graddiv2_vertical: Field[[CellDim, KDim], vpfloat],
+def compute_divergence_of_flux(
+    geofac_div: Field[[CEDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    dwdz: Field[[CellDim, KDim], vpfloat],
+    divergence: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_full3d_graddiv2_vertical(
-        ddqz_z_half,
-        z_flxdiv_graddiv_vn_and_w,
-        out=z_graddiv2_vertical,
+    _compute_divergence_of_flux(
+        geofac_div,
+        vn,
+        dwdz,
+        out=divergence,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

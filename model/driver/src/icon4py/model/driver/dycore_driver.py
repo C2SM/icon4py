@@ -23,8 +23,8 @@ import netCDF4 as nf4
 import numpy as np
 from cftime import date2num
 from devtools import Timer
-from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next import as_field
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
@@ -52,11 +52,6 @@ from icon4py.model.common.dimension import (
     KDim,
     V2C2VDim,
     V2CDim,
-    # debug
-    V2EDim,
-    V2C2EDim,
-    C2EDim,
-    VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
@@ -173,7 +168,7 @@ class NewOutputState:
     @property
     def current_file_number(self):
         return self._current_file_number
-    
+
     def _create_variables(self):
         for i in range(self._number_of_files):
             """
@@ -401,7 +396,12 @@ class NewOutputState:
             self._nf4_basegrp[i].variables["height_2"][:] = half_height
             self._nf4_basegrp[i].variables["height_bnds"][:, :] = full_height_bnds
 
-    def _grid_to_netcdf(self, cell_geometry: CellParams, edge_geometry: EdgeParams, diagnostic_metric_state: DiagnosticMetricState):
+    def _grid_to_netcdf(
+        self,
+        cell_geometry: CellParams,
+        edge_geometry: EdgeParams,
+        diagnostic_metric_state: DiagnosticMetricState,
+    ):
         # the grid details are only write to the first netCDF file to save memory
         cell_areas: nf4.Variable = self._nf4_basegrp[0].createVariable(
             "cell_area", "f8", (OutputDimension.CELL_DIM,)
@@ -424,7 +424,6 @@ class NewOutputState:
         cell_center_height: nf4.Variable = self._nf4_basegrp[0].createVariable(
             "cell_center_height", "f8", (OutputDimension.FULL_LEVEL, OutputDimension.CELL_DIM)
         )
-
 
         cell_areas.units = "m2"
         edge_areas.units = "m2"
@@ -488,13 +487,13 @@ class NewOutputState:
         primal_edge_lengths[:] = retract_data(edge_geometry.primal_edge_lengths)
         vert_vert_edge_lengths[:] = retract_data(edge_geometry.vertex_vertex_lengths)
         dual_edge_lengths[:] = retract_data(edge_geometry.dual_edge_lengths)
-        interface_height[:,:] = retract_data(diagnostic_metric_state.z_ifc).transpose()
+        interface_height[:, :] = retract_data(diagnostic_metric_state.z_ifc).transpose()
 
         z_ifc = retract_data(diagnostic_metric_state.z_ifc)
-        z_full = np.zeros((z_ifc.shape[0], z_ifc.shape[1]-1), dtype=float)
+        z_full = np.zeros((z_ifc.shape[0], z_ifc.shape[1] - 1), dtype=float)
         for k in range(z_full.shape[1]):
-            z_full[:,k] = 0.5 * (z_ifc[:,k] + z_ifc[:,k+1])
-        cell_center_height[:,:] = np.transpose(z_full)
+            z_full[:, k] = 0.5 * (z_ifc[:, k] + z_ifc[:, k + 1])
+        cell_center_height[:, :] = np.transpose(z_full)
 
     def write_to_netcdf(
         self,
@@ -507,9 +506,7 @@ class NewOutputState:
         for var_name in output_dict.keys():
             if var_name in self._variable_list.variable_name_list:
                 if self._check_list[var_name] == 0:
-                    log.warning(
-                        f"Debugging Data {var_name}"
-                    )
+                    log.warning(f"Debugging Data {var_name}")
                     self._nf4_basegrp[self._current_file_number].variables[var_name][
                         self._current_write_step
                     ] = retract_data(output_dict[var_name]).transpose()
@@ -933,7 +930,9 @@ class TimeLoop:
                 prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
             )
 
-            log.info(f"Debugging U (before diffusion): {xp.max(xp.abs(diagnostic_state.u.ndarray))}")
+            log.info(
+                f"Debugging U (before diffusion): {xp.max(xp.abs(diagnostic_state.u.ndarray))}"
+            )
 
         if (
             self.diffusion.config.apply_to_horizontal_wind
@@ -1089,14 +1088,11 @@ class TimeLoop:
                     "graddiv_vn"
                 ] = self.solve_nonhydro.output_intermediate_fields.output_graddiv_vn
                 output_data[
-                    "graddiv2_vn"
-                ] = self.solve_nonhydro.output_intermediate_fields.output_graddiv2_vn
+                    "graddiv_normal"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_graddiv_normal
                 output_data[
-                    "graddiv2_normal"
-                ] = self.solve_nonhydro.output_intermediate_fields.output_graddiv2_normal
-                output_data[
-                    "graddiv2_vertical"
-                ] = self.solve_nonhydro.output_intermediate_fields.output_graddiv2_vertical
+                    "graddiv_vertical"
+                ] = self.solve_nonhydro.output_intermediate_fields.output_graddiv_vertical
                 output_data[
                     "scal_divdamp"
                 ] = self.solve_nonhydro.output_intermediate_fields.output_scal_divdamp
@@ -1247,7 +1243,10 @@ class TimeLoop:
         self._timer2.capture()
 
         self._timer3.start()
-        if self.diffusion.config.apply_to_horizontal_wind and time_step % self.diffusion.config.call_frequency == 0:
+        if (
+            self.diffusion.config.apply_to_horizontal_wind
+            and time_step % self.diffusion.config.call_frequency == 0
+        ):
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
@@ -1571,7 +1570,7 @@ def initialize(
     # #     log.debug(f"debugging first level divdamp: {i} {z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-1]} {z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1]} {xp.abs(z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-1] - z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])/xp.abs(z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])*100.0}")
     # # for i in range(icon_grid.num_cells):
     # #     log.debug(f"debugging tenth level divdamp: {i} {z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-10]} {z_flxdiv_vn.ndarray[i,icon_grid.num_levels-10]} {xp.abs(z_flxdiv_vn_debug.ndarray[i,icon_grid.num_levels-10] - z_flxdiv_vn.ndarray[i,icon_grid.num_levels-10])/xp.abs(z_flxdiv_vn.ndarray[i,icon_grid.num_levels-1])*100.0}")
-    # #div_geofac_ndarray = 
+    # #div_geofac_ndarray =
 
     if enable_output:
         log.info("initializing netCDF4 output state")
@@ -1635,12 +1634,20 @@ def initialize(
             "corrector_vgrad_vn"
         ] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vgrad_vn_e
         output_data["graddiv_vn"] = solve_nonhydro.output_intermediate_fields.output_graddiv_vn
-        output_data["graddiv2_vn"] = solve_nonhydro.output_intermediate_fields.output_graddiv2_vn
-        output_data["graddiv2_normal"] = solve_nonhydro.output_intermediate_fields.output_graddiv2_normal
-        output_data["graddiv2_vertical"] = solve_nonhydro.output_intermediate_fields.output_graddiv2_vertical
+        # output_data["graddiv2_vn"] = solve_nonhydro.output_intermediate_fields.output_graddiv2_vn
+        output_data[
+            "graddiv_normal"
+        ] = solve_nonhydro.output_intermediate_fields.output_graddiv_normal
+        output_data[
+            "graddiv_vertical"
+        ] = solve_nonhydro.output_intermediate_fields.output_graddiv_vertical
         output_data["scal_divdamp"] = solve_nonhydro.output_intermediate_fields.output_scal_divdamp
-        output_data["before_flxdiv_vn"] = solve_nonhydro.output_intermediate_fields.output_before_flxdiv_vn
-        output_data["after_flxdiv_vn"] = solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
+        output_data[
+            "before_flxdiv_vn"
+        ] = solve_nonhydro.output_intermediate_fields.output_before_flxdiv_vn
+        output_data[
+            "after_flxdiv_vn"
+        ] = solve_nonhydro.output_intermediate_fields.output_after_flxdiv_vn
         output_data["before_vn"] = solve_nonhydro.output_intermediate_fields.output_before_vn
         output_data["after_vn"] = solve_nonhydro.output_intermediate_fields.output_after_vn
         output_data["before_w"] = solve_nonhydro.output_intermediate_fields.output_before_w
@@ -1697,7 +1704,11 @@ def initialize(
 @click.option("--profile", default=False, help="Whether to profile code using cProfile.")
 @click.option("--disable_logging", is_flag=True, help="Disable all logging output.")
 @click.option("--enable_output", is_flag=True, help="Enable output.")
-@click.option("--enable_debug_message", is_flag=True, help="Enable debug message which requires some computation.")
+@click.option(
+    "--enable_debug_message",
+    is_flag=True,
+    help="Enable debug message which requires some computation.",
+)
 def main(
     input_path,
     run_path,
@@ -1736,7 +1747,9 @@ def main(
     """
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
     configure_logging(run_path, experiment_type, parallel_props, disable_logging)
-    log.info(f"flag value (disable_logging, enable_output, enable_debug_message): {disable_logging} {enable_output} {enable_debug_message}")
+    log.info(
+        f"flag value (disable_logging, enable_output, enable_debug_message): {disable_logging} {enable_output} {enable_debug_message}"
+    )
     (
         timeloop,
         diffusion_diagnostic_state,

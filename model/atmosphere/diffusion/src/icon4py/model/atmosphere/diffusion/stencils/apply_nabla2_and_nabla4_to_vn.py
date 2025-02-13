@@ -32,7 +32,7 @@ def _apply_nabla2_and_nabla4_to_vn(
 ) -> tuple[
     Field[[EdgeDim, KDim], wpfloat],
     Field[[EdgeDim, KDim], wpfloat],
-    Field[[EdgeDim, KDim], wpfloat]
+    Field[[EdgeDim, KDim], wpfloat],
 ]:
     kh_smag_e_wp, z_nabla4_e2_wp, nudgezone_diff_wp = astype(
         (kh_smag_e, z_nabla4_e2, nudgezone_diff), wpfloat
@@ -44,7 +44,7 @@ def _apply_nabla2_and_nabla4_to_vn(
         - area_edge_broadcast * diff_multfac_vn * z_nabla4_e2_wp
     )
     nabla2_diff = area_edge * maximum(nudgezone_diff_wp * nudgecoeff_e, kh_smag_e_wp) * z_nabla2_e
-    nabla4_diff = - area_edge * area_edge_broadcast * diff_multfac_vn * z_nabla4_e2_wp
+    nabla4_diff = -area_edge * area_edge_broadcast * diff_multfac_vn * z_nabla4_e2_wp
     return vn_wp, nabla2_diff, nabla4_diff
 
 

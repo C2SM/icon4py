@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -25,7 +25,9 @@ def _compute_full3d_graddiv_normal(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_flxdiv_vn_and_w: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
-    z_graddiv_normal_wp = inv_dual_edge_length * astype(z_flxdiv_vn_and_w(E2C[1]) - z_flxdiv_vn_and_w(E2C[0]), wpfloat)
+    z_graddiv_normal_wp = inv_dual_edge_length * astype(
+        z_flxdiv_vn_and_w(E2C[1]) - z_flxdiv_vn_and_w(E2C[0]), wpfloat
+    )
 
     return astype(z_graddiv_normal_wp, vpfloat)
 

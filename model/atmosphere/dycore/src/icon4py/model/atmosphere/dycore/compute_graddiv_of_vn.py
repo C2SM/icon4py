@@ -13,40 +13,38 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.dimension import E2C2EO, E2C2EODim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_full3d_graddiv2_vertical(
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    z_flxdiv_graddiv_vn_and_w: Field[[CellDim, KDim], vpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
-    z_graddiv2_vertical = (
-        z_flxdiv_graddiv_vn_and_w(Koff[-1]) - z_flxdiv_graddiv_vn_and_w
-    ) / ddqz_z_half
-    return z_graddiv2_vertical
+def _compute_graddiv_of_vn(
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
+    vn: Field[[EdgeDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    z_graddiv_vn_vp = astype(neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim), vpfloat)
+    return z_graddiv_vn_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def compute_full3d_graddiv2_vertical(
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    z_flxdiv_graddiv_vn_and_w: Field[[CellDim, KDim], vpfloat],
-    z_graddiv2_vertical: Field[[CellDim, KDim], vpfloat],
+def compute_graddiv_of_vn(
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
+    vn: Field[[EdgeDim, KDim], vpfloat],
+    z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_full3d_graddiv2_vertical(
-        ddqz_z_half,
-        z_flxdiv_graddiv_vn_and_w,
-        out=z_graddiv2_vertical,
+    _compute_graddiv_of_vn(
+        geofac_grdiv,
+        vn,
+        out=z_graddiv_vn,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
+            EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )
