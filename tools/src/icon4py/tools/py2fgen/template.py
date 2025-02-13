@@ -244,8 +244,7 @@ def {{ func.name }}_wrapper(
         {% for arg in func.args %}
         {% if arg.is_array %}
         {{ arg.name }} = wrapper_utils.as_field(ffi, xp, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}}, {{arg.is_optional}})
-        {% endif %}
-        {% if arg.is_bool %}
+        {% elif arg.is_bool %}
         assert isinstance({{ arg.name }}, int)
         {{ arg.name }} = {{ arg.name }} != 0
         {% endif %}

@@ -45,6 +45,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.py2fgen import settings as settings
 from icon4py.tools.py2fgen.settings import backend, config as config_settings, device
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common
 from icon4py.tools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
@@ -363,7 +364,7 @@ def grid_init_diffusion(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=True if config_settings.device == "GPU" else False,
+        on_gpu=config_settings.device == settings.Device.GPU,
     )
 
     if config_settings.parallel_run:
