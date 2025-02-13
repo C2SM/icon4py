@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -14,6 +22,12 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_56_63 import (
+    mo_solve_nonhydro_stencil_56_63_numpy,
+)
+from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_59 import (
+    mo_solve_nonhydro_stencil_59_numpy,
+)
 
 from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_41_to_60 import (
     fused_solve_nonhydro_stencil_41_to_60,
@@ -21,16 +35,8 @@ from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_41_to_60 impor
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
-    flatten_first_two_dims,
     random_field,
-    random_mask,
     zero_field,
-)
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_56_63 import (
-    mo_solve_nonhydro_stencil_56_63_numpy,
-)
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_59 import (
-    mo_solve_nonhydro_stencil_59_numpy,
 )
 
 from .test_mo_solve_nonhydro_stencil_41 import mo_solve_nonhydro_stencil_41_numpy
@@ -369,7 +375,6 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
                 )
 
         else:
-
             if idiv_method == 1:
                 # verified for e-9
                 z_flxdiv_mass, z_flxdiv_theta = np.where(
@@ -384,7 +389,6 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
                 )
 
             if itime_scheme == 4:
-
                 (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
                     (horizontal_lower <= horz_idx)
                     & (horz_idx < horizontal_upper)

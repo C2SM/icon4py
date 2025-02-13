@@ -1212,8 +1212,6 @@ class IconNonHydroExitSavepoint(IconSavepoint):
         return self._get_field("z_hydro_corr", dims.EdgeDim, dims.KDim)
 
 
-
-
 class IconNonHydroFinalSavepoint(IconSavepoint):
     def theta_v_new(self):
         return self._get_field("theta_v", dims.CellDim, dims.KDim)

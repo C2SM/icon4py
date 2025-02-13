@@ -17,11 +17,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
-def add_analysis_increments_to_vn_numpy(
-    grid, vn_incr: np.array, vn: np.array, iau_wgt_dyn
-) -> np.array:
+
+def add_analysis_increments_to_vn_numpy(vn_incr: np.array, vn: np.array, iau_wgt_dyn) -> np.array:
     vn = vn + (iau_wgt_dyn * vn_incr)
     return vn
+
 
 class TestAddAnalysisIncrementsToVn(StencilTest):
     PROGRAM = add_analysis_increments_to_vn
@@ -29,7 +29,7 @@ class TestAddAnalysisIncrementsToVn(StencilTest):
 
     @staticmethod
     def reference(grid, vn_incr: np.array, vn: np.array, iau_wgt_dyn, **kwargs) -> dict:
-        vn = add_analysis_increments_to_vn_numpy(grid, vn_incr, vn, iau_wgt_dyn)
+        vn = add_analysis_increments_to_vn_numpy(vn_incr, vn, iau_wgt_dyn)
         return dict(vn=vn)
 
     @pytest.fixture

@@ -14,6 +14,7 @@ import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
     dycore_utils,
+    fused_solve_nonhydro_stencil_15_to_28,
     solve_nonhydro as solve_nh,
 )
 from icon4py.model.common import constants, dimension as dims
@@ -1030,3 +1031,207 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     assert params.wgt_nnow_vel == savepoint_nonhydro_init.wgt_nnow_vel()
     assert params.wgt_nnew_rth == savepoint_nonhydro_init.wgt_nnew_rth()
     assert params.wgt_nnow_rth == savepoint_nonhydro_init.wgt_nnow_rth()
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+)
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
+    ],
+)
+@pytest.mark.parametrize("istep", [1, 2])
+def test_run_solve_nonhydro_15_to_28(
+    istep_init,
+    istep_exit,
+    jstep_init,
+    jstep_exit,
+    step_date_init,
+    step_date_exit,
+    experiment,
+    ndyn_substeps,
+    icon_grid,
+    savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    grid_savepoint,
+    metrics_savepoint,
+    interpolation_savepoint,
+    savepoint_nonhydro_exit,
+    savepoint_nonhydro_step_exit,
+    at_initial_timestep,
+    istep,
+    savepoint_velocity_15_28_init,
+    savepoint_velocity_15_28_exit,
+    backend,
+):
+    edge_domain = h_grid.domain(dims.EdgeDim)
+
+    start_edge_halo_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+    end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+    start_edge_lateral_boundary = icon_grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
+    end_edge_halo = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
+    start_edge_lateral_boundary_level_7 = icon_grid.start_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
+    )
+    start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+    end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+    end_edge_end = icon_grid.num_edges  # TODO: check
+
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    nflatlev = vertical_params.nflatlev
+    nflat_gradp = vertical_params.nflat_gradp
+    vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
+
+    p_vn = savepoint_velocity_15_28_init.p_vn()
+    p_vt = savepoint_velocity_15_28_init.p_vt()
+    z_rth_pr_1 = savepoint_velocity_15_28_init.z_rth_pr_1()
+    z_rth_pr_2 = savepoint_velocity_15_28_init.z_rth_pr_2()
+    z_exner_ex_pr = savepoint_velocity_15_28_init.z_exner_ex_pr()
+    z_dexner_dz_c_1 = savepoint_velocity_15_28_init.z_dexner_dz_c_1()
+    z_dexner_dz_c_2 = savepoint_velocity_15_28_init.z_dexner_dz_c_2()
+    theta_v = savepoint_velocity_15_28_init.theta_v()
+    theta_v_ic = savepoint_velocity_15_28_init.theta_v_ic()
+    z_dwdz_dd = savepoint_velocity_15_28_init.z_dwdz_dd()
+    ddt_vn_apc_ntl2 = savepoint_velocity_15_28_init.ddt_vn_apc_ntl2()
+    ddt_vn_apc_ntl1 = savepoint_velocity_15_28_init.ddt_vn_apc_ntl1()
+    ddt_vn_phy = savepoint_velocity_15_28_init.ddt_vn_phy()
+    vn_incr = savepoint_velocity_15_28_init.vn_incr()
+    bdy_divdamp = savepoint_velocity_15_28_init.bdy_divdamp()
+    z_hydro_corr = savepoint_velocity_15_28_init.z_hydro_corr()
+    z_graddiv2_vn = savepoint_velocity_15_28_init.z_graddiv2_vn()
+    scal_divdamp = savepoint_velocity_15_28_init.scal_divdamp()
+    z_rho_e = savepoint_velocity_15_28_init.z_rho_e()
+    z_theta_v_e = savepoint_velocity_15_28_init.z_theta_v_e()
+    z_gradh_exner = savepoint_velocity_15_28_init.z_gradh_exner()
+    vn = savepoint_velocity_15_28_init.vn()
+    z_graddiv_vn = savepoint_velocity_15_28_init.z_graddiv_vn()
+    iau_wgt_dyn = savepoint_velocity_15_28_init.iau_wgt_dyn()
+    itime_scheme = savepoint_velocity_15_28_init.itime_scheme()
+    divdamp_order = savepoint_velocity_15_28_init.divdamp_order()
+    scal_divdamp_o2 = savepoint_velocity_15_28_init.scal_divdamp_o2()
+    iadv_rhotheta = savepoint_velocity_15_28_init.iadv_rhotheta()
+    is_iau_active = savepoint_velocity_15_28_init.is_iau_active()
+    igradp_method = savepoint_velocity_15_28_init.igradp_method()
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+
+    z_rho_e_ref = savepoint_velocity_15_28_exit.z_rho_e()
+    z_theta_v_e_ref = savepoint_velocity_15_28_exit.z_theta_v_e()
+    z_gradh_exner_ref = savepoint_velocity_15_28_exit.z_gradh_exner()
+    vn_ref = savepoint_velocity_15_28_exit.vn()
+    z_graddiv_vn_ref = savepoint_velocity_15_28_exit.z_graddiv_vn()
+
+    fused_solve_nonhydro_stencil_15_to_28.fused_solve_nonhydro_stencil_15_to_28.with_backend(
+        backend
+    )(
+        geofac_grg_x=interpolation_savepoint.geofac_grg_x(),
+        geofac_grg_y=interpolation_savepoint.geofac_grg_y(),
+        p_vn=p_vn,
+        p_vt=p_vt,
+        pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_1(),
+        pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_2(),
+        primal_normal_cell_1=grid_savepoint.primal_normal_cell_x(),
+        dual_normal_cell_1=grid_savepoint.dual_normal_cell_x(),
+        primal_normal_cell_2=grid_savepoint.primal_normal_cell_y(),
+        dual_normal_cell_2=grid_savepoint.dual_normal_cell_y(),
+        rho_ref_me=metrics_savepoint.rho_ref_me(),
+        theta_ref_me=metrics_savepoint.theta_ref_me(),
+        z_rth_pr_1=z_rth_pr_1,
+        z_rth_pr_2=z_rth_pr_2,
+        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+        c_lin_e=interpolation_savepoint.c_lin_e(),
+        z_exner_ex_pr=z_exner_ex_pr,
+        z_dexner_dz_c_1=z_dexner_dz_c_1,
+        z_dexner_dz_c_2=z_dexner_dz_c_2,
+        theta_v=theta_v,
+        ikoffset=metrics_savepoint.vertoffset_gradp(),
+        zdiff_gradp=metrics_savepoint.zdiff_gradp,
+        theta_v_ic=theta_v_ic,
+        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+        ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+        pg_exdist=metrics_savepoint.pg_exdist(),
+        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
+        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        z_dwdz_dd=z_dwdz_dd,
+        inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
+        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+        ddt_vn_phy=ddt_vn_phy,
+        vn_incr=vn_incr,
+        horz_idx=horz_idx,
+        vert_idx=vert_idx,
+        bdy_divdamp=bdy_divdamp,
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+        z_hydro_corr=z_hydro_corr,
+        geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
+        z_graddiv2_vn=z_graddiv2_vn,
+        scal_divdamp=scal_divdamp,
+        z_rho_e=z_rho_e,
+        z_theta_v_e=z_theta_v_e,
+        z_gradh_exner=z_gradh_exner,
+        vn=vn,
+        z_graddiv_vn=z_graddiv_vn,
+        divdamp_fac=savepoint_nonhydro_init.divdamp_fac(),
+        divdamp_fac_o2=savepoint_nonhydro_init.divdamp_fac_o2(),
+        wgt_nnow_vel=savepoint_nonhydro_init.wgt_nnow_vel(),
+        wgt_nnew_vel=savepoint_nonhydro_init.wgt_nnew_vel(),
+        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        cpd=constants.CPD,
+        iau_wgt_dyn=iau_wgt_dyn,
+        is_iau_active=is_iau_active,
+        itime_scheme=itime_scheme,
+        p_dthalf=(0.5 * savepoint_nonhydro_init.get_metadata("dtime").get("dtime")),
+        grav_o_cpd=nonhydro_params.grav_o_cpd,
+        limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
+        divdamp_order=divdamp_order,
+        scal_divdamp_o2=scal_divdamp_o2,
+        istep=istep,
+        start_edge_halo_level_2=start_edge_halo_level_2,
+        end_edge_halo_level_2=end_edge_halo_level_2,
+        start_edge_lateral_boundary=start_edge_lateral_boundary,
+        end_edge_halo=end_edge_halo,
+        start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
+        start_edge_nudging_level_2=start_edge_nudging_level_2,
+        end_edge_local=end_edge_local,
+        end_edge_end=end_edge_end,
+        iadv_rhotheta=iadv_rhotheta,
+        igradp_method=igradp_method,
+        MIURA=solve_nh.RhoThetaAdvectionType.MIURA,
+        TAYLOR_HYDRO=solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
+        nlev=icon_grid.num_levels,
+        kstart_dd3d=nonhydro_params.kstart_dd3d,
+        COMBINED=solve_nh.DivergenceDampingOrder.COMBINED,
+        FOURTH_ORDER=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
+        nflatlev=nflatlev,
+        nflat_gradp=nflat_gradp,
+    )
+
+    assert helpers.dallclose(z_rho_e.asnumpy(), z_rho_e_ref.asnumpy())
+    assert helpers.dallclose(z_theta_v_e.asnumpy(), z_theta_v_e_ref.asnumpy())
+    assert helpers.dallclose(z_gradh_exner.asnumpy(), z_gradh_exner_ref.asnumpy())
+    assert helpers.dallclose(vn.asnumpy(), vn_ref.asnumpy())
+    assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy())

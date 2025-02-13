@@ -17,8 +17,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
+
 def apply_4th_order_divergence_damping_numpy(
-    grid,
     scal_divdamp: np.array,
     z_graddiv2_vn: np.array,
     vn: np.array,
@@ -26,6 +26,7 @@ def apply_4th_order_divergence_damping_numpy(
     scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
     vn = vn + (scal_divdamp * z_graddiv2_vn)
     return dict(vn=vn)
+
 
 class TestApply4thOrderDivergenceDamping(StencilTest):
     PROGRAM = apply_4th_order_divergence_damping
@@ -39,7 +40,7 @@ class TestApply4thOrderDivergenceDamping(StencilTest):
         vn: np.array,
         **kwargs,
     ) -> dict:
-        vn = mo_solve_nonhydro_4th_order_divdamp_numpy(grid, scal_divdamp, z_graddiv2_vn, vn)
+        vn = apply_4th_order_divergence_damping_numpy(scal_divdamp, z_graddiv2_vn, vn)
         return dict(vn=vn)
 
     @pytest.fixture
