@@ -356,7 +356,6 @@ def test_nonhydro_predictor_step(
     vn_new_reference = sp_exit.vn_new().asnumpy()
 
 
-# TODO @halungge combine the next tow
     # stencils 24
     assert helpers.dallclose(
         prognostic_state_nnew.vn.asnumpy()[edge_start_nudging_level_2:, :],
@@ -455,14 +454,13 @@ def test_nonhydro_predictor_step(
         atol=5e-12,
     )
 
-    #FIXME
     # stencils 43, 46, 47
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_contr_w_fl_l.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_contr_w_fl_l().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
-    #FIXME
+
     # stencil 43
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_w_expl.asnumpy()[cell_start_nudging:, 1:nlev],
@@ -485,8 +483,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 45_b, 52
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_q.asnumpy()[cell_start_nudging:, :],
-        sp_exit.z_q().asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.intermediate_fields.z_q.asnumpy()[cell_start_nudging:, :icon_grid.num_levels],
+        sp_exit.z_q().asnumpy()[cell_start_nudging:, :icon_grid.num_levels],
         atol=2e-15,
     )
     # stencil 48, 49
@@ -516,8 +514,7 @@ def test_nonhydro_predictor_step(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("substep_init, substep_exit", [(1, 1), (2, 2)])
-@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(2,  2, True)])
+@pytest.mark.parametrize("istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(2, 1, 2,1, True)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [

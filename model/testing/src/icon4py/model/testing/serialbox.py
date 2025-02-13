@@ -29,8 +29,13 @@ log = logging.getLogger(__name__)
 TimeLevel: TypeAlias = Literal[0, 1]
 Level: TypeAlias = Literal[0, 1, 2, 3]
 
+FIELD_DEFINITIONS = {
+    "theta_v":(dims.CellDim, dims.KDim),
+    "exner": (dims.CellDim, dims.KDim)
+                     }
 
 class IconSavepoint:
+    FIELDS = []
     def __init__(
         self,
         sp: serialbox.Savepoint,
@@ -38,13 +43,15 @@ class IconSavepoint:
         size: dict,
         backend: Optional[gtx_backend.Backend],
     ):
-        # def __init__(self, sp: serialbox.Savepoint, ser: serialbox.Serializer, size: dict):
         self.savepoint = sp
         self.serializer = ser
         self.sizes = size
         self.log = logging.getLogger((__name__))
         self.backend = backend
         self.xp = data_alloc.import_array_ns(self.backend)
+
+
+
 
     def optionally_registered(*dims):
         def decorator(func):
@@ -89,8 +96,8 @@ class IconSavepoint:
             self.sizes[d] if d.kind is gtx.DimensionKind.HORIZONTAL else s
             for s, d in zip(buffer.shape, dimensions, strict=False)
         )
-        buffer = buffer[tuple(map(slice, buffer_size))]
-        return buffer
+        return buffer[tuple(map(slice, buffer_size))]
+
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
         ar = self._reduce_to_dim_size(ar, dimensions)
@@ -1249,13 +1256,13 @@ class IconNonHydroExitSavepoint(IconSavepoint):
         return self._get_field("z_flxdiv_mass", dims.CellDim, dims.KDim)
 
     def z_w_expl(self):
-        return self._get_field("z_flxdiv_mass", dims.CellDim, dims.KDim)
+        return self._get_field("z_w_expl", dims.CellDim, dims.KDim)
 
     def z_flxdiv_theta(self):
         return self._get_field("z_flxdiv_theta", dims.CellDim, dims.KDim)
 
     def z_contr_w_fl_l(self):
-        return self._get_field("z_flxdiv_theta", dims.CellDim, dims.KDim)
+        return self._get_field("z_contr_w_fl", dims.CellDim, dims.KDim)
 
     def vn_ie(self):
         return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
