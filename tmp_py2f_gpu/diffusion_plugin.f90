@@ -619,13 +619,13 @@ contains
 
       integer(c_int) :: rc  ! Stores the return code
 
-      logical(c_int), dimension(:, :), target :: mask_hdiff
+      logical(c_int), dimension(:, :), pointer :: mask_hdiff
 
-      real(c_double), dimension(:, :), target :: zd_diffcoef
+      real(c_double), dimension(:, :), pointer :: zd_diffcoef
 
-      integer(c_int), dimension(:, :, :), target :: zd_vertoffset
+      integer(c_int), dimension(:, :, :), pointer :: zd_vertoffset
 
-      real(c_double), dimension(:, :, :), target :: zd_intcoef
+      real(c_double), dimension(:, :, :), pointer :: zd_intcoef
 
       ! ptrs
 
@@ -636,22 +636,6 @@ contains
       type(c_ptr) :: zd_vertoffset_ptr
 
       type(c_ptr) :: zd_intcoef_ptr
-
-      logical(c_int), dimension(:, :), pointer  :: mask_hdiff_ftn_ptr
-
-      real(c_double), dimension(:, :), pointer  :: zd_diffcoef_ftn_ptr
-
-      integer(c_int), dimension(:, :, :), pointer  :: zd_vertoffset_ftn_ptr
-
-      real(c_double), dimension(:, :, :), pointer  :: zd_intcoef_ftn_ptr
-
-      mask_hdiff_ftn_ptr => mask_hdiff
-
-      zd_diffcoef_ftn_ptr => zd_diffcoef
-
-      zd_vertoffset_ftn_ptr => zd_vertoffset
-
-      zd_intcoef_ftn_ptr => zd_intcoef
 
       mask_hdiff_ptr = c_null_ptr
 
@@ -694,10 +678,10 @@ contains
       !$acc host_data use_device(edge_center_lon)
       !$acc host_data use_device(primal_normal_x)
       !$acc host_data use_device(primal_normal_y)
-      !$acc host_data use_device(mask_hdiff_ftn_ptr) if(associated(mask_hdiff_ftn_ptr))
-      !$acc host_data use_device(zd_diffcoef_ftn_ptr) if(associated(zd_diffcoef_ftn_ptr))
-      !$acc host_data use_device(zd_vertoffset_ftn_ptr) if(associated(zd_vertoffset_ftn_ptr))
-      !$acc host_data use_device(zd_intcoef_ftn_ptr) if(associated(zd_intcoef_ftn_ptr))
+      !$acc host_data use_device(mask_hdiff) if(associated(mask_hdiff))
+      !$acc host_data use_device(zd_diffcoef) if(associated(zd_diffcoef))
+      !$acc host_data use_device(zd_vertoffset) if(associated(zd_vertoffset))
+      !$acc host_data use_device(zd_intcoef) if(associated(zd_intcoef))
 
       n_KHalf = SIZE(vct_a, 1)
 
@@ -719,20 +703,20 @@ contains
 
       n_E2C = SIZE(primal_normal_cell_x, 2)
 
-      if (associated(mask_hdiff_ftn_ptr)) then
-         mask_hdiff_ptr = c_loc(mask_hdiff_ftn_ptr)
+      if (associated(mask_hdiff)) then
+         mask_hdiff_ptr = c_loc(mask_hdiff)
       end if
 
-      if (associated(zd_diffcoef_ftn_ptr)) then
-         zd_diffcoef_ptr = c_loc(zd_diffcoef_ftn_ptr)
+      if (associated(zd_diffcoef)) then
+         zd_diffcoef_ptr = c_loc(zd_diffcoef)
       end if
 
-      if (associated(zd_vertoffset_ftn_ptr)) then
-         zd_vertoffset_ptr = c_loc(zd_vertoffset_ftn_ptr)
+      if (associated(zd_vertoffset)) then
+         zd_vertoffset_ptr = c_loc(zd_vertoffset)
       end if
 
-      if (associated(zd_intcoef_ftn_ptr)) then
-         zd_intcoef_ptr = c_loc(zd_intcoef_ftn_ptr)
+      if (associated(zd_intcoef)) then
+         zd_intcoef_ptr = c_loc(zd_intcoef)
       end if
 
       rc = diffusion_init_wrapper(vct_a=c_loc(vct_a), &
@@ -881,13 +865,13 @@ contains
 
       integer(c_int) :: rc  ! Stores the return code
 
-      real(c_double), dimension(:, :), target :: hdef_ic
+      real(c_double), dimension(:, :), pointer :: hdef_ic
 
-      real(c_double), dimension(:, :), target :: div_ic
+      real(c_double), dimension(:, :), pointer :: div_ic
 
-      real(c_double), dimension(:, :), target :: dwdx
+      real(c_double), dimension(:, :), pointer :: dwdx
 
-      real(c_double), dimension(:, :), target :: dwdy
+      real(c_double), dimension(:, :), pointer :: dwdy
 
       ! ptrs
 
@@ -898,22 +882,6 @@ contains
       type(c_ptr) :: dwdx_ptr
 
       type(c_ptr) :: dwdy_ptr
-
-      real(c_double), dimension(:, :), pointer  :: hdef_ic_ftn_ptr
-
-      real(c_double), dimension(:, :), pointer  :: div_ic_ftn_ptr
-
-      real(c_double), dimension(:, :), pointer  :: dwdx_ftn_ptr
-
-      real(c_double), dimension(:, :), pointer  :: dwdy_ftn_ptr
-
-      hdef_ic_ftn_ptr => hdef_ic
-
-      div_ic_ftn_ptr => div_ic
-
-      dwdx_ftn_ptr => dwdx
-
-      dwdy_ftn_ptr => dwdy
 
       hdef_ic_ptr = c_null_ptr
 
@@ -928,10 +896,10 @@ contains
       !$acc host_data use_device(exner)
       !$acc host_data use_device(theta_v)
       !$acc host_data use_device(rho)
-      !$acc host_data use_device(hdef_ic_ftn_ptr) if(associated(hdef_ic_ftn_ptr))
-      !$acc host_data use_device(div_ic_ftn_ptr) if(associated(div_ic_ftn_ptr))
-      !$acc host_data use_device(dwdx_ftn_ptr) if(associated(dwdx_ftn_ptr))
-      !$acc host_data use_device(dwdy_ftn_ptr) if(associated(dwdy_ftn_ptr))
+      !$acc host_data use_device(hdef_ic) if(associated(hdef_ic))
+      !$acc host_data use_device(div_ic) if(associated(div_ic))
+      !$acc host_data use_device(dwdx) if(associated(dwdx))
+      !$acc host_data use_device(dwdy) if(associated(dwdy))
 
       n_Cell = SIZE(w, 1)
 
@@ -941,20 +909,20 @@ contains
 
       n_K = SIZE(vn, 2)
 
-      if (associated(hdef_ic_ftn_ptr)) then
-         hdef_ic_ptr = c_loc(hdef_ic_ftn_ptr)
+      if (associated(hdef_ic)) then
+         hdef_ic_ptr = c_loc(hdef_ic)
       end if
 
-      if (associated(div_ic_ftn_ptr)) then
-         div_ic_ptr = c_loc(div_ic_ftn_ptr)
+      if (associated(div_ic)) then
+         div_ic_ptr = c_loc(div_ic)
       end if
 
-      if (associated(dwdx_ftn_ptr)) then
-         dwdx_ptr = c_loc(dwdx_ftn_ptr)
+      if (associated(dwdx)) then
+         dwdx_ptr = c_loc(dwdx)
       end if
 
-      if (associated(dwdy_ftn_ptr)) then
-         dwdy_ptr = c_loc(dwdy_ftn_ptr)
+      if (associated(dwdy)) then
+         dwdy_ptr = c_loc(dwdy)
       end if
 
       rc = diffusion_run_wrapper(w=c_loc(w), &

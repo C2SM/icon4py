@@ -477,7 +477,7 @@ end function {{name}}_wrapper
                     to_iso_c_type(param.d_type),
                     render_fortran_array_dimensions(param, False),
                     as_f90_value(param),
-                    "target",
+                    "pointer",
                 ],
             )
             for param in func.args
@@ -518,14 +518,7 @@ subroutine {{name}}({{param_names}})
    {% for arg in _this_node.args if arg.is_optional %}
    type(c_ptr) :: {{ arg.name }}_ptr
    {% endfor %}
-   {% for arg in _this_node.args if arg.is_optional %}
-   {{to_iso_c_type(arg.d_type)}}, {{render_fortran_array_dimensions(arg, False)}}, pointer  :: {{ arg.name }}_ftn_ptr
-   {% endfor %}
 
-   {% for arg in _this_node.args if arg.is_optional %}
-   {{ arg.name }}_ftn_ptr => {{ arg.name }}
-   {% endfor %}
-   
    {% for arg in _this_node.args if arg.is_optional %}
    {{ arg.name }}_ptr = c_null_ptr
    {% endfor %}
@@ -534,7 +527,7 @@ subroutine {{name}}({{param_names}})
        !$acc host_data use_device({{ arr }})
    {%- endfor %}
    {%- for arr in optional_arrays %}
-       !$acc host_data use_device({{ arr }}_ftn_ptr) if(associated({{ arr }}_ftn_ptr))
+       !$acc host_data use_device({{ arr }}) if(associated({{ arr }}))
    {%- endfor %}
 
    {% for d in _this_node.dimension_positions %}
@@ -542,8 +535,8 @@ subroutine {{name}}({{param_names}})
    {% endfor %}
    
    {% for arg in _this_node.args if arg.is_optional %}
-   if(associated({{ arg.name }}_ftn_ptr)) then
-   {{ arg.name }}_ptr = c_loc({{ arg.name }}_ftn_ptr)
+   if(associated({{ arg.name }})) then
+   {{ arg.name }}_ptr = c_loc({{ arg.name }})
     endif
    {% endfor %}
 
