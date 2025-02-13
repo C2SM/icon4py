@@ -103,29 +103,29 @@ module diffusion_plugin
 
          integer(c_int) :: rc  ! Stores the return code
 
-         real(c_double), dimension(*), target :: vct_a
+         type(c_ptr), value :: vct_a
 
-         real(c_double), dimension(*), target :: vct_b
+         type(c_ptr), value :: vct_b
 
-         real(c_double), dimension(*), target :: theta_ref_mc
+         type(c_ptr), value :: theta_ref_mc
 
-         real(c_double), dimension(*), target :: wgtfac_c
+         type(c_ptr), value :: wgtfac_c
 
-         real(c_double), dimension(*), target :: e_bln_c_s
+         type(c_ptr), value :: e_bln_c_s
 
-         real(c_double), dimension(*), target :: geofac_div
+         type(c_ptr), value :: geofac_div
 
-         real(c_double), dimension(*), target :: geofac_grg_x
+         type(c_ptr), value :: geofac_grg_x
 
-         real(c_double), dimension(*), target :: geofac_grg_y
+         type(c_ptr), value :: geofac_grg_y
 
-         real(c_double), dimension(*), target :: geofac_n2s
+         type(c_ptr), value :: geofac_n2s
 
-         real(c_double), dimension(*), target :: nudgecoeff_e
+         type(c_ptr), value :: nudgecoeff_e
 
-         real(c_double), dimension(*), target :: rbf_coeff_1
+         type(c_ptr), value :: rbf_coeff_1
 
-         real(c_double), dimension(*), target :: rbf_coeff_2
+         type(c_ptr), value :: rbf_coeff_2
 
          type(c_ptr), value :: mask_hdiff
 
@@ -135,91 +135,91 @@ module diffusion_plugin
 
          type(c_ptr), value :: zd_intcoef
 
-         integer(c_int), value, target :: ndyn_substeps
+         integer(c_int), value :: ndyn_substeps
 
-         real(c_double), value, target :: rayleigh_damping_height
+         real(c_double), value :: rayleigh_damping_height
 
-         integer(c_int), value, target :: nflat_gradp
+         integer(c_int), value :: nflat_gradp
 
-         integer(c_int), value, target :: diffusion_type
+         integer(c_int), value :: diffusion_type
 
-         logical(c_int), value, target :: hdiff_w
+         logical(c_int), value :: hdiff_w
 
-         logical(c_int), value, target :: hdiff_vn
+         logical(c_int), value :: hdiff_vn
 
-         logical(c_int), value, target :: zdiffu_t
+         logical(c_int), value :: zdiffu_t
 
-         integer(c_int), value, target :: type_t_diffu
+         integer(c_int), value :: type_t_diffu
 
-         integer(c_int), value, target :: type_vn_diffu
+         integer(c_int), value :: type_vn_diffu
 
-         real(c_double), value, target :: hdiff_efdt_ratio
+         real(c_double), value :: hdiff_efdt_ratio
 
-         real(c_double), value, target :: smagorinski_scaling_factor
+         real(c_double), value :: smagorinski_scaling_factor
 
-         logical(c_int), value, target :: hdiff_temp
+         logical(c_int), value :: hdiff_temp
 
-         real(c_double), value, target :: thslp_zdiffu
+         real(c_double), value :: thslp_zdiffu
 
-         real(c_double), value, target :: thhgtd_zdiffu
+         real(c_double), value :: thhgtd_zdiffu
 
-         real(c_double), value, target :: denom_diffu_v
+         real(c_double), value :: denom_diffu_v
 
-         real(c_double), value, target :: nudge_max_coeff
+         real(c_double), value :: nudge_max_coeff
 
-         integer(c_int), value, target :: itype_sher
+         integer(c_int), value :: itype_sher
 
-         real(c_double), dimension(*), target :: tangent_orientation
+         type(c_ptr), value :: tangent_orientation
 
-         real(c_double), dimension(*), target :: inverse_primal_edge_lengths
+         type(c_ptr), value :: inverse_primal_edge_lengths
 
-         real(c_double), dimension(*), target :: inv_dual_edge_length
+         type(c_ptr), value :: inv_dual_edge_length
 
-         real(c_double), dimension(*), target :: inv_vert_vert_length
+         type(c_ptr), value :: inv_vert_vert_length
 
-         real(c_double), dimension(*), target :: edge_areas
+         type(c_ptr), value :: edge_areas
 
-         real(c_double), dimension(*), target :: f_e
+         type(c_ptr), value :: f_e
 
-         real(c_double), dimension(*), target :: cell_center_lat
+         type(c_ptr), value :: cell_center_lat
 
-         real(c_double), dimension(*), target :: cell_center_lon
+         type(c_ptr), value :: cell_center_lon
 
-         real(c_double), dimension(*), target :: cell_areas
+         type(c_ptr), value :: cell_areas
 
-         real(c_double), dimension(*), target :: primal_normal_vert_x
+         type(c_ptr), value :: primal_normal_vert_x
 
-         real(c_double), dimension(*), target :: primal_normal_vert_y
+         type(c_ptr), value :: primal_normal_vert_y
 
-         real(c_double), dimension(*), target :: dual_normal_vert_x
+         type(c_ptr), value :: dual_normal_vert_x
 
-         real(c_double), dimension(*), target :: dual_normal_vert_y
+         type(c_ptr), value :: dual_normal_vert_y
 
-         real(c_double), dimension(*), target :: primal_normal_cell_x
+         type(c_ptr), value :: primal_normal_cell_x
 
-         real(c_double), dimension(*), target :: primal_normal_cell_y
+         type(c_ptr), value :: primal_normal_cell_y
 
-         real(c_double), dimension(*), target :: dual_normal_cell_x
+         type(c_ptr), value :: dual_normal_cell_x
 
-         real(c_double), dimension(*), target :: dual_normal_cell_y
+         type(c_ptr), value :: dual_normal_cell_y
 
-         real(c_double), dimension(*), target :: edge_center_lat
+         type(c_ptr), value :: edge_center_lat
 
-         real(c_double), dimension(*), target :: edge_center_lon
+         type(c_ptr), value :: edge_center_lon
 
-         real(c_double), dimension(*), target :: primal_normal_x
+         type(c_ptr), value :: primal_normal_x
 
-         real(c_double), dimension(*), target :: primal_normal_y
+         type(c_ptr), value :: primal_normal_y
 
-         integer(c_int), value, target :: global_root
+         integer(c_int), value :: global_root
 
-         integer(c_int), value, target :: global_level
+         integer(c_int), value :: global_level
 
-         real(c_double), value, target :: lowest_layer_thickness
+         real(c_double), value :: lowest_layer_thickness
 
-         real(c_double), value, target :: model_top_height
+         real(c_double), value :: model_top_height
 
-         real(c_double), value, target :: stretch_factor
+         real(c_double), value :: stretch_factor
 
       end function diffusion_init_wrapper
 
@@ -250,15 +250,15 @@ module diffusion_plugin
 
          integer(c_int) :: rc  ! Stores the return code
 
-         real(c_double), dimension(*), target :: w
+         type(c_ptr), value :: w
 
-         real(c_double), dimension(*), target :: vn
+         type(c_ptr), value :: vn
 
-         real(c_double), dimension(*), target :: exner
+         type(c_ptr), value :: exner
 
-         real(c_double), dimension(*), target :: theta_v
+         type(c_ptr), value :: theta_v
 
-         real(c_double), dimension(*), target :: rho
+         type(c_ptr), value :: rho
 
          type(c_ptr), value :: hdef_ic
 
@@ -268,9 +268,9 @@ module diffusion_plugin
 
          type(c_ptr), value :: dwdy
 
-         real(c_double), value, target :: dtime
+         real(c_double), value :: dtime
 
-         logical(c_int), value, target :: linit
+         logical(c_int), value :: linit
 
       end function diffusion_run_wrapper
 
@@ -361,63 +361,63 @@ module diffusion_plugin
 
          integer(c_int) :: rc  ! Stores the return code
 
-         integer(c_int), dimension(*), target :: cell_starts
+         type(c_ptr), value :: cell_starts
 
-         integer(c_int), dimension(*), target :: cell_ends
+         type(c_ptr), value :: cell_ends
 
-         integer(c_int), dimension(*), target :: vertex_starts
+         type(c_ptr), value :: vertex_starts
 
-         integer(c_int), dimension(*), target :: vertex_ends
+         type(c_ptr), value :: vertex_ends
 
-         integer(c_int), dimension(*), target :: edge_starts
+         type(c_ptr), value :: edge_starts
 
-         integer(c_int), dimension(*), target :: edge_ends
+         type(c_ptr), value :: edge_ends
 
-         integer(c_int), dimension(*), target :: c2e
+         type(c_ptr), value :: c2e
 
-         integer(c_int), dimension(*), target :: e2c
+         type(c_ptr), value :: e2c
 
-         integer(c_int), dimension(*), target :: c2e2c
+         type(c_ptr), value :: c2e2c
 
-         integer(c_int), dimension(*), target :: e2c2e
+         type(c_ptr), value :: e2c2e
 
-         integer(c_int), dimension(*), target :: e2v
+         type(c_ptr), value :: e2v
 
-         integer(c_int), dimension(*), target :: v2e
+         type(c_ptr), value :: v2e
 
-         integer(c_int), dimension(*), target :: v2c
+         type(c_ptr), value :: v2c
 
-         integer(c_int), dimension(*), target :: e2c2v
+         type(c_ptr), value :: e2c2v
 
-         integer(c_int), dimension(*), target :: c2v
+         type(c_ptr), value :: c2v
 
-         logical(c_int), dimension(*), target :: c_owner_mask
+         type(c_ptr), value :: c_owner_mask
 
-         logical(c_int), dimension(*), target :: e_owner_mask
+         type(c_ptr), value :: e_owner_mask
 
-         logical(c_int), dimension(*), target :: v_owner_mask
+         type(c_ptr), value :: v_owner_mask
 
-         integer(c_int), dimension(*), target :: c_glb_index
+         type(c_ptr), value :: c_glb_index
 
-         integer(c_int), dimension(*), target :: e_glb_index
+         type(c_ptr), value :: e_glb_index
 
-         integer(c_int), dimension(*), target :: v_glb_index
+         type(c_ptr), value :: v_glb_index
 
-         integer(c_int), value, target :: comm_id
+         integer(c_int), value :: comm_id
 
-         integer(c_int), value, target :: global_root
+         integer(c_int), value :: global_root
 
-         integer(c_int), value, target :: global_level
+         integer(c_int), value :: global_level
 
-         integer(c_int), value, target :: num_vertices
+         integer(c_int), value :: num_vertices
 
-         integer(c_int), value, target :: num_cells
+         integer(c_int), value :: num_cells
 
-         integer(c_int), value, target :: num_edges
+         integer(c_int), value :: num_edges
 
-         integer(c_int), value, target :: vertical_size
+         integer(c_int), value :: vertical_size
 
-         logical(c_int), value, target :: limited_area
+         logical(c_int), value :: limited_area
 
       end function grid_init_diffusion_wrapper
 
@@ -735,18 +735,18 @@ contains
          zd_intcoef_ptr = c_loc(zd_intcoef_ftn_ptr)
       end if
 
-      rc = diffusion_init_wrapper(vct_a=vct_a, &
-                                  vct_b=vct_b, &
-                                  theta_ref_mc=theta_ref_mc, &
-                                  wgtfac_c=wgtfac_c, &
-                                  e_bln_c_s=e_bln_c_s, &
-                                  geofac_div=geofac_div, &
-                                  geofac_grg_x=geofac_grg_x, &
-                                  geofac_grg_y=geofac_grg_y, &
-                                  geofac_n2s=geofac_n2s, &
-                                  nudgecoeff_e=nudgecoeff_e, &
-                                  rbf_coeff_1=rbf_coeff_1, &
-                                  rbf_coeff_2=rbf_coeff_2, &
+      rc = diffusion_init_wrapper(vct_a=c_loc(vct_a), &
+                                  vct_b=c_loc(vct_b), &
+                                  theta_ref_mc=c_loc(theta_ref_mc), &
+                                  wgtfac_c=c_loc(wgtfac_c), &
+                                  e_bln_c_s=c_loc(e_bln_c_s), &
+                                  geofac_div=c_loc(geofac_div), &
+                                  geofac_grg_x=c_loc(geofac_grg_x), &
+                                  geofac_grg_y=c_loc(geofac_grg_y), &
+                                  geofac_n2s=c_loc(geofac_n2s), &
+                                  nudgecoeff_e=c_loc(nudgecoeff_e), &
+                                  rbf_coeff_1=c_loc(rbf_coeff_1), &
+                                  rbf_coeff_2=c_loc(rbf_coeff_2), &
                                   mask_hdiff=mask_hdiff_ptr, &
                                   zd_diffcoef=zd_diffcoef_ptr, &
                                   zd_vertoffset=zd_vertoffset_ptr, &
@@ -768,27 +768,27 @@ contains
                                   denom_diffu_v=denom_diffu_v, &
                                   nudge_max_coeff=nudge_max_coeff, &
                                   itype_sher=itype_sher, &
-                                  tangent_orientation=tangent_orientation, &
-                                  inverse_primal_edge_lengths=inverse_primal_edge_lengths, &
-                                  inv_dual_edge_length=inv_dual_edge_length, &
-                                  inv_vert_vert_length=inv_vert_vert_length, &
-                                  edge_areas=edge_areas, &
-                                  f_e=f_e, &
-                                  cell_center_lat=cell_center_lat, &
-                                  cell_center_lon=cell_center_lon, &
-                                  cell_areas=cell_areas, &
-                                  primal_normal_vert_x=primal_normal_vert_x, &
-                                  primal_normal_vert_y=primal_normal_vert_y, &
-                                  dual_normal_vert_x=dual_normal_vert_x, &
-                                  dual_normal_vert_y=dual_normal_vert_y, &
-                                  primal_normal_cell_x=primal_normal_cell_x, &
-                                  primal_normal_cell_y=primal_normal_cell_y, &
-                                  dual_normal_cell_x=dual_normal_cell_x, &
-                                  dual_normal_cell_y=dual_normal_cell_y, &
-                                  edge_center_lat=edge_center_lat, &
-                                  edge_center_lon=edge_center_lon, &
-                                  primal_normal_x=primal_normal_x, &
-                                  primal_normal_y=primal_normal_y, &
+                                  tangent_orientation=c_loc(tangent_orientation), &
+                                  inverse_primal_edge_lengths=c_loc(inverse_primal_edge_lengths), &
+                                  inv_dual_edge_length=c_loc(inv_dual_edge_length), &
+                                  inv_vert_vert_length=c_loc(inv_vert_vert_length), &
+                                  edge_areas=c_loc(edge_areas), &
+                                  f_e=c_loc(f_e), &
+                                  cell_center_lat=c_loc(cell_center_lat), &
+                                  cell_center_lon=c_loc(cell_center_lon), &
+                                  cell_areas=c_loc(cell_areas), &
+                                  primal_normal_vert_x=c_loc(primal_normal_vert_x), &
+                                  primal_normal_vert_y=c_loc(primal_normal_vert_y), &
+                                  dual_normal_vert_x=c_loc(dual_normal_vert_x), &
+                                  dual_normal_vert_y=c_loc(dual_normal_vert_y), &
+                                  primal_normal_cell_x=c_loc(primal_normal_cell_x), &
+                                  primal_normal_cell_y=c_loc(primal_normal_cell_y), &
+                                  dual_normal_cell_x=c_loc(dual_normal_cell_x), &
+                                  dual_normal_cell_y=c_loc(dual_normal_cell_y), &
+                                  edge_center_lat=c_loc(edge_center_lat), &
+                                  edge_center_lon=c_loc(edge_center_lon), &
+                                  primal_normal_x=c_loc(primal_normal_x), &
+                                  primal_normal_y=c_loc(primal_normal_y), &
                                   global_root=global_root, &
                                   global_level=global_level, &
                                   lowest_layer_thickness=lowest_layer_thickness, &
@@ -957,11 +957,11 @@ contains
          dwdy_ptr = c_loc(dwdy_ftn_ptr)
       end if
 
-      rc = diffusion_run_wrapper(w=w, &
-                                 vn=vn, &
-                                 exner=exner, &
-                                 theta_v=theta_v, &
-                                 rho=rho, &
+      rc = diffusion_run_wrapper(w=c_loc(w), &
+                                 vn=c_loc(vn), &
+                                 exner=c_loc(exner), &
+                                 theta_v=c_loc(theta_v), &
+                                 rho=c_loc(rho), &
                                  hdef_ic=hdef_ic_ptr, &
                                  div_ic=div_ic_ptr, &
                                  dwdx=dwdx_ptr, &
@@ -1171,27 +1171,27 @@ contains
 
       n_VertexGlobalIndex = SIZE(v_glb_index, 1)
 
-      rc = grid_init_diffusion_wrapper(cell_starts=cell_starts, &
-                                       cell_ends=cell_ends, &
-                                       vertex_starts=vertex_starts, &
-                                       vertex_ends=vertex_ends, &
-                                       edge_starts=edge_starts, &
-                                       edge_ends=edge_ends, &
-                                       c2e=c2e, &
-                                       e2c=e2c, &
-                                       c2e2c=c2e2c, &
-                                       e2c2e=e2c2e, &
-                                       e2v=e2v, &
-                                       v2e=v2e, &
-                                       v2c=v2c, &
-                                       e2c2v=e2c2v, &
-                                       c2v=c2v, &
-                                       c_owner_mask=c_owner_mask, &
-                                       e_owner_mask=e_owner_mask, &
-                                       v_owner_mask=v_owner_mask, &
-                                       c_glb_index=c_glb_index, &
-                                       e_glb_index=e_glb_index, &
-                                       v_glb_index=v_glb_index, &
+      rc = grid_init_diffusion_wrapper(cell_starts=c_loc(cell_starts), &
+                                       cell_ends=c_loc(cell_ends), &
+                                       vertex_starts=c_loc(vertex_starts), &
+                                       vertex_ends=c_loc(vertex_ends), &
+                                       edge_starts=c_loc(edge_starts), &
+                                       edge_ends=c_loc(edge_ends), &
+                                       c2e=c_loc(c2e), &
+                                       e2c=c_loc(e2c), &
+                                       c2e2c=c_loc(c2e2c), &
+                                       e2c2e=c_loc(e2c2e), &
+                                       e2v=c_loc(e2v), &
+                                       v2e=c_loc(v2e), &
+                                       v2c=c_loc(v2c), &
+                                       e2c2v=c_loc(e2c2v), &
+                                       c2v=c_loc(c2v), &
+                                       c_owner_mask=c_loc(c_owner_mask), &
+                                       e_owner_mask=c_loc(e_owner_mask), &
+                                       v_owner_mask=c_loc(v_owner_mask), &
+                                       c_glb_index=c_loc(c_glb_index), &
+                                       e_glb_index=c_loc(e_glb_index), &
+                                       v_glb_index=c_loc(v_glb_index), &
                                        comm_id=comm_id, &
                                        global_root=global_root, &
                                        global_level=global_level, &

@@ -404,10 +404,8 @@ end module
             _render_parameter_declaration(
                 name=param.name,
                 attributes=[
-                    "type(c_ptr)" if param.is_optional else to_iso_c_type(param.d_type),
-                    None if param.is_optional else render_fortran_array_dimensions(param, True),
-                    "value" if param.is_optional else as_f90_value(param),
-                    None if param.is_optional else "target",
+                    "type(c_ptr)" if param.is_array else to_iso_c_type(param.d_type),
+                    "value",
                 ],
             )
             for param in func.args
@@ -440,15 +438,21 @@ end function {{name}}_wrapper
             + ["rc"]
             + [x.name for x in func.args if x.is_optional]
         )
+
+        def render_args(arg: FuncParameter) -> str:
+            if arg.is_array and arg.is_optional:
+                return f"{arg.name} = {arg.name}_ptr"
+            elif arg.is_array:
+                return f"{arg.name} = c_loc({arg.name})"
+            return f"{arg.name} = {arg.name}"
+
         if len(func.args) < 1:
             param_names, args_with_size_args = "", ""
         else:
             param_names = ", &\n ".join(ordered_param_names)
             arg_names = ", &\n ".join(
                 map(
-                    lambda x: f"{x.name} = {x.name}_ptr"
-                    if x.is_array and x.is_optional
-                    else f"{x.name} = {x.name}",
+                    render_args,
                     func.args,
                 )
             )
