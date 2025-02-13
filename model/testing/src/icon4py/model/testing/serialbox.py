@@ -1283,7 +1283,6 @@ class IconVelocityExit15to18Savepoint(IconSavepoint):
         return self._get_field("ddt_w_adv", dims.CellDim, dims.KDim)
 
 class IconVelocityExit19to20Savepoint(IconSavepoint):
-    # data serialized for 19to20 exit
     def ddt_vn_apc(self):
         return self._get_field("ddt_vn_apc", dims.EdgeDim, dims.KDim)
 
