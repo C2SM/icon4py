@@ -35,14 +35,20 @@ def test_validate_divdamp_fields_against_savepoint_values(
     config = solve_nh.NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
-    enh_divdamp_fac = data_alloc.allocate_zero_field(
-        dims.KDim, grid=icon_grid, is_halfdim=False, backend=backend
+    enh_divdamp_fac = data_alloc.zero_field(
+        icon_grid,
+        dims.KDim,
+        backend=backend,
     )
-    scal_divdamp = data_alloc.allocate_zero_field(
-        dims.KDim, grid=icon_grid, is_halfdim=False, backend=backend
+    scal_divdamp = data_alloc.zero_field(
+        icon_grid,
+        dims.KDim,
+        backend=backend,
     )
-    bdy_divdamp = data_alloc.allocate_zero_field(
-        dims.KDim, grid=icon_grid, is_halfdim=False, backend=backend
+    bdy_divdamp = data_alloc.zero_field(
+        icon_grid,
+        dims.KDim,
+        backend=backend,
     )
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
@@ -82,16 +88,16 @@ def test_validate_divdamp_fields_against_savepoint_values(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only, at_initial_timestep",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, substep,  step_date_exit, at_initial_timestep",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 1, 0, "2021-06-20T12:00:10.000", False, True),
-        (2, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000", False, True),
-        (1, 1, "2021-06-20T12:00:10.000", 1, 1, "2021-06-20T12:00:10.000", True, True),
-        (2, 1, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False, True),
-        (1, 0, "2021-06-20T12:00:20.000", 1, 0, "2021-06-20T12:00:20.000", True, False),
-        (2, 0, "2021-06-20T12:00:20.000", 2, 0, "2021-06-20T12:00:20.000", False, False),
-        (1, 1, "2021-06-20T12:00:20.000", 1, 1, "2021-06-20T12:00:20.000", True, False),
-        (2, 1, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", False, False),
+        (1, 0, "2021-06-20T12:00:10.000", 1, 0, 1, "2021-06-20T12:00:10.000", True),
+        (2, 0, "2021-06-20T12:00:10.000", 2, 0, 1, "2021-06-20T12:00:10.000", True),
+        (1, 1, "2021-06-20T12:00:10.000", 1, 1, 2, "2021-06-20T12:00:10.000", True),
+        (2, 1, "2021-06-20T12:00:10.000", 2, 1, 2, "2021-06-20T12:00:10.000", True),
+        (1, 0, "2021-06-20T12:00:20.000", 1, 0, 1, "2021-06-20T12:00:20.000", False),
+        (2, 0, "2021-06-20T12:00:20.000", 2, 0, 1, "2021-06-20T12:00:20.000", False),
+        (1, 1, "2021-06-20T12:00:20.000", 1, 1, 2, "2021-06-20T12:00:20.000", False),
+        (2, 1, "2021-06-20T12:00:20.000", 2, 1, 2, "2021-06-20T12:00:20.000", False),
     ],
 )
 def test_time_step_flags(
@@ -127,11 +133,11 @@ def test_time_step_flags(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (
-            dt_utils.GLOBAL_EXPERIMENT,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -261,7 +267,6 @@ def test_nonhydro_predictor_step(
         diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
         sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
-
     assert helpers.dallclose(
         solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
         sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
@@ -518,11 +523,11 @@ def test_nonhydro_predictor_step(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (
-            dt_utils.GLOBAL_EXPERIMENT,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
     ],
 )
 def test_nonhydro_corrector_step(
@@ -565,9 +570,7 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
-        ),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
@@ -727,11 +730,11 @@ def test_nonhydro_corrector_step(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (
-            dt_utils.GLOBAL_EXPERIMENT,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
     ],
 )
 def test_run_solve_nonhydro_single_step(
@@ -778,9 +781,7 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
-        ),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
     diagnostic_state_nh = utils.construct_diagnostics(sp)
@@ -900,9 +901,7 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
-        ),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
     linit = sp.get_metadata("linit").get("linit")

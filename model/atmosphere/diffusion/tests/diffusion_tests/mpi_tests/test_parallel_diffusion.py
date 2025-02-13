@@ -87,13 +87,13 @@ def test_parallel_diffusion(
         zd_diffcoef=metrics_savepoint.zd_diffcoef(),
     )
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.as_1D_sparse_field(
-            interpolation_savepoint.e_bln_c_s(), dims.CEDim, backend=backend
+        e_bln_c_s=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
         ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(
-            interpolation_savepoint.geofac_div(), dims.CEDim, backend=backend
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.geofac_div(), backend=backend
         ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
@@ -215,13 +215,13 @@ def test_parallel_diffusion_multiple_steps(
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
     interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.as_1D_sparse_field(
-            interpolation_savepoint.e_bln_c_s(), dims.CEDim, backend=backend
+        e_bln_c_s=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.e_bln_c_s(), backend=backend
         ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(
-            interpolation_savepoint.geofac_div(), dims.CEDim, backend=backend
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.geofac_div(), backend=backend
         ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],

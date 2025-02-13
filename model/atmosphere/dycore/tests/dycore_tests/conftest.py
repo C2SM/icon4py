@@ -23,6 +23,7 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     jstep_exit,
     jstep_init,
     linit,
+    substep,
     lowest_layer_thickness,
     maximal_layer_thickness,
     metrics_savepoint,

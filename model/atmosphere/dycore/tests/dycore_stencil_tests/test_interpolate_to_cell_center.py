@@ -13,8 +13,7 @@ import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
     interpolate_to_cell_center,
 )
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.testing import helpers
 
 
@@ -46,13 +45,13 @@ class TestInterpolateToCellCenter(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        interpolant = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
-        e_bln_c_s = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
-        interpolation = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        interpolant = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.vpfloat)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim, dtype=ta.wpfloat)
+        interpolation = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.vpfloat)
 
         return dict(
             interpolant=interpolant,
-            e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+            e_bln_c_s=e_bln_c_s,
             interpolation=interpolation,
             horizontal_start=0,
             horizontal_end=gtx.int32(grid.num_cells),

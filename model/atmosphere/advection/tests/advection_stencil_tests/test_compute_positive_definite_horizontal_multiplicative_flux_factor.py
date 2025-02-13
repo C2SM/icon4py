@@ -56,8 +56,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
-        geofac_div_new = data_alloc.as_1D_sparse_field(geofac_div, dims.CEDim)
+        geofac_div = data_alloc.random_field(grid, dims.CEDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_tracer_h = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
@@ -65,7 +64,7 @@ class TestComputePositiveDefiniteHorizontalMultiplicativeFluxFactor(helpers.Sten
         p_dtime = np.float64(5)
         dbl_eps = np.float64(1e-9)
         return dict(
-            geofac_div=geofac_div_new,
+            geofac_div=geofac_div,
             p_cc=p_cc,
             p_rhodz_now=p_rhodz_now,
             p_mflx_tracer_h=p_mflx_tracer_h,

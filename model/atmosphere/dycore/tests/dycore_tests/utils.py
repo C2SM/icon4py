@@ -28,10 +28,10 @@ def construct_interpolation_state(
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=data_alloc.as_1D_sparse_field(savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.e_bln_c_s()),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.geofac_div()),
         geofac_n2s=savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
@@ -64,7 +64,7 @@ def construct_metric_state(
         ddxn_z_full=savepoint.ddxn_z_full(),
         zdiff_gradp=savepoint.zdiff_gradp(),
         vertoffset_gradp=savepoint.vertoffset_gradp(),
-        ipeidx_dsl=savepoint.ipeidx_dsl(),
+        pg_edgeidx_dsl=savepoint.pg_edgeidx_dsl(),
         pg_exdist=savepoint.pg_exdist(),
         ddqz_z_full_e=savepoint.ddqz_z_full_e(),
         ddxt_z_full=savepoint.ddxt_z_full(),
@@ -122,7 +122,7 @@ def create_vertical_params(
 def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint, swap_ddt_w_adv_pc: bool = False
 ):
-    current_index, next_index = (2, 1) if swap_ddt_w_adv_pc else (1, 2)
+    current_index, next_index = (1, 0) if swap_ddt_w_adv_pc else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
@@ -135,7 +135,7 @@ def construct_diagnostics(
         ddt_vn_phy=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            init_savepoint.ddt_vn_apc_pc(1), init_savepoint.ddt_vn_apc_pc(2)
+            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(current_index), init_savepoint.ddt_w_adv_pc(next_index)

@@ -27,10 +27,10 @@ def construct_interpolation_state_for_diffusion(
 ) -> diffus_states.DiffusionInterpolationState:
     grg = savepoint.geofac_grg()
     return diffus_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.as_1D_sparse_field(savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.e_bln_c_s()),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.geofac_div()),
         geofac_n2s=savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
