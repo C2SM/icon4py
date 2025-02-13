@@ -76,7 +76,6 @@ class PythonWrapper(CffiPlugin):
     backend: str
     debug_mode: bool
     profile: bool
-    limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
     gt4py_backend: str = datamodels.field(init=False)
     used_dimensions: set[gtx.Dimension] = datamodels.field(init=False)
@@ -325,7 +324,6 @@ class DimensionPosition(Node):
 
 
 class F90FunctionDefinition(Func):
-    limited_area: bool
     dimension_positions: Sequence[DimensionPosition] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
@@ -355,7 +353,6 @@ def _render_parameter_declaration(name: str, attributes: Sequence[str | None]) -
 
 class F90Interface(Node):
     cffi_plugin: CffiPlugin
-    limited_area: bool
     function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
@@ -368,7 +365,6 @@ class F90Interface(Node):
             F90FunctionDefinition(
                 name=f.name,
                 args=f.args,
-                limited_area=self.limited_area,
             )
             for f in functions
         ]

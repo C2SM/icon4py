@@ -128,10 +128,6 @@ class Icon4PyConfig:
         return device
 
     @cached_property
-    def limited_area(self) -> bool:
-        return env_flag_to_bool("ICON4PY_LAM", False)
-
-    @cached_property
     def parallel_run(self) -> bool:
         return env_flag_to_bool("ICON4PY_PARALLEL", False)
 
@@ -140,4 +136,3 @@ config = Icon4PyConfig()
 backend = config.gt4py_runner
 dace_orchestration = config.icon4py_dace_orchestration
 device = config.device
-limited_area = config.limited_area

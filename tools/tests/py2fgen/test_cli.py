@@ -68,11 +68,10 @@ def run_test_case(
     compiler="gfortran",
     extra_compiler_flags=(),
     expected_error_code=0,
-    limited_area=False,
     env_vars=None,
 ):
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
-        invoke_cli(cli, module, function, plugin_name, backend, limited_area)
+        invoke_cli(cli, module, function, plugin_name, backend)
         compile_and_run_fortran(
             plugin_name,
             samples_path,
@@ -85,10 +84,8 @@ def run_test_case(
         )
 
 
-def invoke_cli(cli, module, function, plugin_name, backend, limited_area):
+def invoke_cli(cli, module, function, plugin_name, backend):
     cli_args = [module, function, plugin_name, "-b", backend, "-d"]
-    if limited_area:
-        cli_args.append("--limited-area")
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 
@@ -168,15 +165,23 @@ def test_py2fgen_python_error_propagation_to_fortran(
 
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
-    "function_name, plugin_name, test_name, run_backend, extra_flags",
+    "python_module, function_name, plugin_name, test_name, run_backend, extra_flags",
     [
         (
+            "icon4py.tools.py2fgen.wrappers.simple",
             "square_from_function",
             "square_plugin",
             "test_square",
             "GPU",
             ("-acc", "-Minfo=acc", "-DUSE_SQUARE_FROM_FUNCTION"),
         ),
+        # (
+        #     "mask_with_optional_and_scalar",
+        #     "square_plugin",
+        #     "test_mask_with_optional_and_scalar",
+        #     "GPU",
+        #     ("-acc", "-Minfo=acc"),
+        # ),
     ],
 )
 def test_py2fgen_compilation_and_execution_gpu(
@@ -186,13 +191,13 @@ def test_py2fgen_compilation_and_execution_gpu(
     test_name,
     run_backend,
     samples_path,
-    square_wrapper_module,
+    python_module,
     extra_flags,
     test_temp_dir,
 ):
     run_test_case(
         cli_runner,
-        square_wrapper_module,
+        python_module,
         function_name,
         plugin_name,
         run_backend,
@@ -241,7 +246,6 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
         test_temp_dir,
         os.environ["NVFORTRAN_COMPILER"],
         ("-acc", "-Minfo=acc"),
-        limited_area=True,
         env_vars={"ICON4PY_BACKEND": "GPU"},
     )
 
@@ -257,7 +261,6 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, t
         samples_path,
         "test_diffusion",
         test_temp_dir,
-        limited_area=True,
     )
 
 
@@ -272,7 +275,6 @@ def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test
         samples_path,
         "test_dycore",
         test_temp_dir,
-        limited_area=True,
     )
 
 
@@ -289,6 +291,5 @@ def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path, 
         test_temp_dir,
         os.environ["NVFORTRAN_COMPILER"],
         ("-acc", "-Minfo=acc"),
-        limited_area=True,
         env_vars={"ICON4PY_BACKEND": "GPU"},
     )

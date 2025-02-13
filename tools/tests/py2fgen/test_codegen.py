@@ -104,7 +104,7 @@ def dummy_plugin():
 
 
 def test_fortran_interface(dummy_plugin):
-    interface = generate_f90_interface(dummy_plugin, limited_area=True)
+    interface = generate_f90_interface(dummy_plugin)
     expected = """
     module libtest_plugin
    use, intrinsic :: iso_c_binding
