@@ -3,14 +3,17 @@ include:
 
 .benchmark_model_stencils:
   stage: benchmark
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: always
   script:
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     - source "$HOME/.cargo/env"
-    - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
-    - bencher --version
+    - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli
     - curl -LsSf https://astral.sh/uv/install.sh | sh
     - source $HOME/.local/bin/env
-    - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=cuda12 --group=test
+    - echo $ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS
+    - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
     - source .venv/bin/activate
     - export GITHUB_EVENT_NAME=pull_request
     - export GITHUB_STEP_SUMMARY=$CI_PROJECT_DIR/step_summary.log
@@ -20,7 +23,6 @@ include:
     - export RUST_LOG=debug
     - cp ./event.json $CI_PROJECT_DIR
     - bencher run --project test-1vcbiy6t --token "$BENCHER_API_TOKEN" --adapter python_pytest --file results.json "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID ./model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py"
-    # - cat $GITHUB_STEP_SUMMARY
     - |
       curl -L \
       -H "Accept: application/vnd.github+json" \
@@ -31,7 +33,9 @@ include:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
         GRID: [icon_grid, icon_grid_global]
+
 # benchmark_model_stencils_x86_64:
 #   extends: [.benchmark_model_stencils, .test_template_x86_64]
+
 benchmark_model_stencils_aarch64:
   extends: [.benchmark_model_stencils, .test_template_aarch64]
