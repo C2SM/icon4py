@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.common import constants as phy_const, dimension as dims, type
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
     diagnose_pressure,
 )
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
@@ -23,22 +26,24 @@ class TestDiagnosePressure(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        surface_pressure: np.array,
-        temperature: np.array,
-        ddqz_z_full: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        surface_pressure: np.ndarray,
+        virtual_temperature: np.ndarray,
+        ddqz_z_full: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
-        pressure_ifc = np.zeros_like(temperature)
-        pressure = np.zeros_like(temperature)
-        ground_level = temperature.shape[1] - 1
+        pressure_ifc = np.zeros_like(virtual_temperature)
+        pressure = np.zeros_like(virtual_temperature)
+        ground_level = virtual_temperature.shape[1] - 1
         pressure_ifc[:, ground_level] = surface_pressure * np.exp(
-            -phy_const.GRAV_O_RD * ddqz_z_full[:, ground_level] / temperature[:, ground_level]
+            -phy_const.GRAV_O_RD
+            * ddqz_z_full[:, ground_level]
+            / virtual_temperature[:, ground_level]
         )
         pressure[:, ground_level] = np.sqrt(pressure_ifc[:, ground_level] * surface_pressure)
         for k in range(ground_level - 1, -1, -1):
             pressure_ifc[:, k] = pressure_ifc[:, k + 1] * np.exp(
-                -phy_const.GRAV_O_RD * ddqz_z_full[:, k] / temperature[:, k]
+                -phy_const.GRAV_O_RD * ddqz_z_full[:, k] / virtual_temperature[:, k]
             )
             pressure[:, k] = np.sqrt(pressure_ifc[:, k] * pressure_ifc[:, k + 1])
 
@@ -48,10 +53,7 @@ class TestDiagnosePressure(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
-        if helpers.is_roundtrip:
-            pytest.xfail("This stencil currently does not work properly with roundtrip backend.")
-
+    def input_data(self, grid: base.BaseGrid) -> dict:
         ddqz_z_full = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
         )

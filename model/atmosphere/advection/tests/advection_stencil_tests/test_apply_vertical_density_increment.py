@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.apply_vertical_density_incremen
     apply_vertical_density_increment,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -30,13 +32,13 @@ class TestApplyVerticalDensityIncrement(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        rhodz_ast: np.array,
-        p_mflx_contra_v: np.array,
-        deepatmo_divzl: np.array,
-        deepatmo_divzu: np.array,
-        p_dtime,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        rhodz_ast: np.ndarray,
+        p_mflx_contra_v: np.ndarray,
+        deepatmo_divzl: np.ndarray,
+        deepatmo_divzu: np.ndarray,
+        p_dtime: float,
+        **kwargs: Any,
     ) -> dict:
         tmp = p_dtime * (
             p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
@@ -46,7 +48,7 @@ class TestApplyVerticalDensityIncrement(helpers.StencilTest):
         return dict(rhodz_ast2=rhodz_ast2)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         rhodz_ast = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_contra_v = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}

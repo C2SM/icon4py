@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
-import pytest
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
@@ -17,10 +16,7 @@ from icon4py.model.testing.reference_funcs import (
 )
 
 
-# TODO (halungge) stencil does not run on embedded backend, broadcast(0.0, (dims.KDim,)) return scalar?
 def test_init_enh_smag_fac(backend, grid):
-    if backend is None:
-        pytest.skip("test does not run on embedded backend")
     enh_smag_fac = data_alloc.zero_field(grid, dims.KDim, backend=backend)
     a_vec = data_alloc.random_field(
         grid, dims.KDim, low=1.0, high=10.0, extend={dims.KDim: 1}, backend=backend
