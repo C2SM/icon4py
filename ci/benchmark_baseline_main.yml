@@ -16,7 +16,7 @@ include:
       --project "$BENCHER_PROJECT" \
       --token "$BENCHER_API_TOKEN" \
       --branch main \
-      --testbed ci-runner:gh200 \
+      --testbed "ci-runner:$SYSTEM_NAME" \
       --threshold-measure latency \
       --threshold-test t_test \
       --threshold-max-sample-size 64 \
