@@ -25,7 +25,7 @@ include:
       --err \
       --adapter python_pytest \
       --file results.json \
-      "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
+      "pytest --benchmark-json results.json -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
