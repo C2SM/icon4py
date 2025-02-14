@@ -8,13 +8,12 @@
 
 import os
 
-import pytest
-
 from icon4py.model.common import model_backends
 from icon4py.model.testing.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
+from icon4py.model.testing.helpers import apply_markers
 
 
 def _check_backend_validity(backend_name: str) -> None:
@@ -87,9 +86,11 @@ def pytest_addoption(parser):
 
 
 def pytest_runtest_setup(item):
-    for _ in item.iter_markers(name="datatest"):
-        if not item.config.getoption("--datatest"):
-            pytest.skip("need '--datatest' option to run")
+    apply_markers(
+        item.own_markers,
+        model_backends.BACKENDS[item.config.getoption("--backend")],
+        is_datatest=item.config.getoption("--datatest"),
+    )
 
 
 def pytest_generate_tests(metafunc):

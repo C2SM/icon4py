@@ -7,12 +7,9 @@ include:
     - nox -s test_model-3.10 -t stencils -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
-    - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
+    - BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
       GRID: [simple_grid, icon_grid]
   rules:
-    # exclude slow test configurations
-    - if: $BACKEND == "roundtrip" && $GRID == "icon_grid"
-      when: never
     - when: on_success
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
@@ -35,7 +32,7 @@ test_tools_aarch64:
   parallel:
     matrix:
     - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
-      BACKEND: [gtfn_cpu, gtfn_gpu]
+      BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:

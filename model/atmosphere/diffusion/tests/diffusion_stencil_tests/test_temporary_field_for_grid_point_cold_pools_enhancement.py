@@ -21,6 +21,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
     PROGRAM = temporary_field_for_grid_point_cold_pools_enhancement
     OUTPUTS = ("enh_diffu_3d",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

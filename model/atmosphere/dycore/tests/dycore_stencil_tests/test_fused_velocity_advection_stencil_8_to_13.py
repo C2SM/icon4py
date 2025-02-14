@@ -15,7 +15,6 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
@@ -34,6 +33,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         "w_concorr_c",
         "z_w_con_c",
     )
+    MARKERS = (pytest.mark.requires_concat_where,)
 
     @staticmethod
     def reference(
@@ -92,17 +92,17 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim)
-        z_ekinh = zero_field(grid, dims.CellDim, dims.KDim)
-        z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim)
-        z_w_concorr_mc = zero_field(grid, dims.CellDim, dims.KDim)
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim)
-        w_concorr_c = zero_field(grid, dims.CellDim, dims.KDim)
-        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        z_w_con_c = zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
+        z_ekinh = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_w_concorr_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_w_concorr_mc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        w_concorr_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        z_w_con_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
-        k = data_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
+        k = data_alloc.index_field(grid=grid, dim=dims.KDim, extend={dims.KDim: 1})
 
         nlev = grid.num_levels
         nflatlev = 4
@@ -116,7 +116,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
-            e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+            e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             w=w,

@@ -75,7 +75,8 @@ def test_get_c_lin_e(interpolation_savepoint, grid_file, experiment, backend, rt
 def get_interpolation_factory(
     backend, experiment, grid_file
 ) -> interpolation_factory.InterpolationFieldsFactory:
-    registry_key = experiment.join(backend.name)
+    backend_name = test_helpers.extract_backend_name(backend)
+    registry_key = experiment.join(backend_name)
     factory = interpolation_factories.get(registry_key)
     if not factory:
         geometry = gridtest_utils.get_grid_geometry(backend, experiment, grid_file)

@@ -51,7 +51,7 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
         field_index_with_zero_2 = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, dtype=vpfloat
         )
-        k = data_alloc.allocate_indices(dims.KDim, grid)
+        k = data_alloc.index_field(grid, dims.KDim)
 
         k1 = 1
         k2 = gtx.int32(grid.num_levels)
