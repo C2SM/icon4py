@@ -11,7 +11,6 @@ import pytest
 from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     damping_height,
     data_provider,
-    data_provider_advection,
     decomposition_info,
     download_ser_data,
     experiment,
@@ -36,20 +35,8 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa: F401  # import fi
 
 
 @pytest.fixture
-def least_squares_savepoint(
-    data_provider,  # noqa: F811 # imported fixtures data_provider
-    data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection
-):
-    """
-    Load data from least squares ICON savepoint.
-    """
-    return data_provider_advection.from_least_squares_savepoint(size=data_provider.grid_size)
-
-
-@pytest.fixture
 def advection_init_savepoint(
     data_provider,  # noqa: F811 # imported fixtures data_provider
-    data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection
     date,
 ):
     """
@@ -58,7 +45,7 @@ def advection_init_savepoint(
     Date of the timestamp to be selected can be set seperately by overriding the 'date'
     fixture, passing 'date=<iso_string>'.
     """
-    return data_provider_advection.from_advection_init_savepoint(
+    return data_provider.from_advection_init_savepoint(
         size=data_provider.grid_size, date=date
     )
 
@@ -66,7 +53,6 @@ def advection_init_savepoint(
 @pytest.fixture
 def advection_exit_savepoint(
     data_provider,  # noqa: F811 # imported fixtures data_provider
-    data_provider_advection,  # noqa: F811 # imported fixtures data_provider_advection
     date,
 ):
     """
@@ -75,6 +61,6 @@ def advection_exit_savepoint(
     Date of the timestamp to be selected can be set seperately by overriding the 'date'
     fixture, passing 'date=<iso_string>'.
     """
-    return data_provider_advection.from_advection_exit_savepoint(
+    return data_provider.from_advection_exit_savepoint(
         size=data_provider.grid_size, date=date
     )

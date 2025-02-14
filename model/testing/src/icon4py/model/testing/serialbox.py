@@ -29,13 +29,9 @@ log = logging.getLogger(__name__)
 TimeLevel: TypeAlias = Literal[0, 1]
 Level: TypeAlias = Literal[0, 1, 2, 3]
 
-FIELD_DEFINITIONS = {
-    "theta_v":(dims.CellDim, dims.KDim),
-    "exner": (dims.CellDim, dims.KDim)
-                     }
+
 
 class IconSavepoint:
-    FIELDS = []
     def __init__(
         self,
         sp: serialbox.Savepoint,
@@ -830,8 +826,7 @@ class MetricSavepoint(IconSavepoint):
         return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
 
-class LeastSquaresSavepoint(IconSavepoint):
-    pass
+
 
 
 
@@ -1826,7 +1821,6 @@ class IconSerialDataProvider:
         path=".",
         do_print=False,
         mpi_rank=0,
-        advection=False,
     ):
         self.rank = mpi_rank
         self.serializer: serialbox.Serializer = None
@@ -1835,8 +1829,6 @@ class IconSerialDataProvider:
         self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
         self.backend = backend
-        if not advection:  # TODO (dastrm): somebody should make this class load only what it needs
-            self.grid_size = self._grid_size()
 
     def _init_serializer(self, do_print: bool):
         if not self.fname:
@@ -1851,7 +1843,8 @@ class IconSerialDataProvider:
         self.log.info(f"SAVEPOINTS: {self.serializer.savepoint_list()}")
         self.log.info(f"FIELDNAMES: {self.serializer.fieldnames()}")
 
-    def _grid_size(self):
+    @functools.cached_property
+    def grid_size(self):
         sp = self._get_icon_grid_savepoint()
         grid_sizes = {
             dims.CellDim: self.serializer.read("num_cells", savepoint=sp).astype(gtx.int32)[0],
@@ -1932,16 +1925,13 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_least_squares_savepoint(self, size: dict) -> LeastSquaresSavepoint:
-        savepoint = self.serializer.savepoint["least_squares_state"].jg[1].as_savepoint()
-        return LeastSquaresSavepoint(savepoint, self.serializer, size=size, backend=self.backend)
 
     def from_advection_init_savepoint(self, size: dict, date: str) -> AdvectionInitSavepoint:
-        savepoint = self.serializer.savepoint["advection_init"].id[1].date[date].as_savepoint()
+        savepoint = self.serializer.savepoint["advection-init"].id[1].date[date].as_savepoint()
         return AdvectionInitSavepoint(savepoint, self.serializer, size=size, backend=self.backend)
 
     def from_advection_exit_savepoint(self, size: dict, date: str) -> AdvectionExitSavepoint:
-        savepoint = self.serializer.savepoint["advection_exit"].id[1].date[date].as_savepoint()
+        savepoint = self.serializer.savepoint["advection-exit"].id[1].date[date].as_savepoint()
         return AdvectionExitSavepoint(savepoint, self.serializer, size=size, backend=self.backend)
 
     def from_savepoint_diffusion_exit(self, linit: bool, date: str) -> IconDiffusionExitSavepoint:

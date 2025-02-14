@@ -83,12 +83,10 @@ def test_advection_run_single_step(
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
-    least_squares_savepoint,
     metrics_savepoint,
     advection_init_savepoint,
     advection_exit_savepoint,
     data_provider,
-    data_provider_advection,
     backend,
     even_timestep,
     ntracer,
@@ -112,7 +110,7 @@ def test_advection_run_single_step(
         vertical_advection_limiter=vertical_advection_limiter,
     )
     interpolation_state = construct_interpolation_state(interpolation_savepoint, backend=backend)
-    least_squares_state = construct_least_squares_state(least_squares_savepoint)
+    least_squares_state = construct_least_squares_state(interpolation_savepoint, backend=backend)
     metric_state = construct_metric_state(icon_grid, metrics_savepoint, backend=backend)
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()

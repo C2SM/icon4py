@@ -83,13 +83,6 @@ def data_provider(download_ser_data, ranked_data_path, experiment, processor_pro
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 
 
-@pytest.fixture
-def data_provider_advection(
-    download_ser_data, ranked_data_path, experiment, processor_props, backend
-):
-    data_path = dt_utils.get_datapath_for_experiment_advection(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider_advection(data_path, processor_props, backend)
-
 
 @pytest.fixture
 def grid_savepoint(data_provider, experiment):
@@ -251,6 +244,16 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exi
         istep=istep_exit, date=step_date_exit, jstep=jstep_exit, substep=substep_exit
     )
 
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment", ("exclaim_ape_R02B04", ))
+def test_field_sizes(data_provider, experiment):
+    sp_init = data_provider.from_savepoint_nonhydro_init(istep=1, jstep=0, substep=1, date="2000-01-01T00:00:02.000")
+    sp_exit = data_provider.from_savepoint_nonhydro_exit(istep=1, jstep=0, substep=1, date="2000-01-01T00:00:02.000")
+    init_w_fl = sp_init.z_contr_w_fl_l()
+    exit_w_fl = sp_exit.z_contr_w_fl_l()
+
+    init_z_q = sp_init.z_q()
+    exit_z_q = sp_exit.z_q()
 
 
 @pytest.fixture
