@@ -170,9 +170,9 @@ def _graupel_loop2(
     sink_v   = sx2x_v_s + sx2x_v_i + sx2x_v_g   # Missing sx2x_v_c + sx2x_v_r
     sink_c   = sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g   # Missing  sx2x_c_v
     sink_r   = sx2x_r_v + sx2x_r_g # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
-    sink_s   = where ( mask & is_sig_present, sx2x_s_v + sx2x_s_r + sx2x_s_g, 0.0 ) # Missing: sx2x_s_c + sx2x_s_i
-    sink_i   = where ( mask & is_sig_present, sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g, 0.0 ) # Missing: sx2x_i_r
-    sink_g   = where ( mask & is_sig_present, sx2x_g_v + sx2x_g_r, 0.0 ) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
+    sink_s   = where ( is_sig_present, sx2x_s_v + sx2x_s_r + sx2x_s_g, 0.0 ) # Missing: sx2x_s_c + sx2x_s_i
+    sink_i   = where ( is_sig_present, sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g, 0.0 ) # Missing: sx2x_i_r
+    sink_g   = where ( is_sig_present, sx2x_g_v + sx2x_g_r, 0.0 ) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
 
     #  if ((sink[qx_ind[ix]] > stot) && (q[qx_ind[ix]].x[oned_vec_index] > qmin))
 
