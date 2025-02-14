@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.common import constants as phy_const, dimension as dims, type
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
     diagnose_surface_pressure,
 )
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
@@ -27,7 +30,7 @@ class TestDiagnoseSurfacePressure(helpers.StencilTest):
         exner: np.ndarray,
         virtual_temperature: np.ndarray,
         ddqz_z_full: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         shape = virtual_temperature.shape
         surface_pressure = np.zeros((shape[0], shape[1] + 1), dtype=ta.wpfloat)
@@ -45,9 +48,9 @@ class TestDiagnoseSurfacePressure(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         low = 1.0e-2
-        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat)
+        exner = data_alloc.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
         virtual_temperature = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=low, dtype=ta.wpfloat
         )

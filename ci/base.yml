@@ -65,6 +65,7 @@ build_image_aarch64:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
+    - env | grep ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS
     - cd /icon4py
     - ls "${TEST_DATA_PATH}"
   variables:
