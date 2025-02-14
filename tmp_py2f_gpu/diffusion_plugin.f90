@@ -103,123 +103,123 @@ module diffusion_plugin
 
          integer(c_int) :: rc  ! Stores the return code
 
-         type(c_ptr), value :: vct_a
+         type(c_ptr), value, target :: vct_a
 
-         type(c_ptr), value :: vct_b
+         type(c_ptr), value, target :: vct_b
 
-         type(c_ptr), value :: theta_ref_mc
+         type(c_ptr), value, target :: theta_ref_mc
 
-         type(c_ptr), value :: wgtfac_c
+         type(c_ptr), value, target :: wgtfac_c
 
-         type(c_ptr), value :: e_bln_c_s
+         type(c_ptr), value, target :: e_bln_c_s
 
-         type(c_ptr), value :: geofac_div
+         type(c_ptr), value, target :: geofac_div
 
-         type(c_ptr), value :: geofac_grg_x
+         type(c_ptr), value, target :: geofac_grg_x
 
-         type(c_ptr), value :: geofac_grg_y
+         type(c_ptr), value, target :: geofac_grg_y
 
-         type(c_ptr), value :: geofac_n2s
+         type(c_ptr), value, target :: geofac_n2s
 
-         type(c_ptr), value :: nudgecoeff_e
+         type(c_ptr), value, target :: nudgecoeff_e
 
-         type(c_ptr), value :: rbf_coeff_1
+         type(c_ptr), value, target :: rbf_coeff_1
 
-         type(c_ptr), value :: rbf_coeff_2
+         type(c_ptr), value, target :: rbf_coeff_2
 
-         type(c_ptr), value :: mask_hdiff
+         type(c_ptr), value, target :: mask_hdiff
 
-         type(c_ptr), value :: zd_diffcoef
+         type(c_ptr), value, target :: zd_diffcoef
 
-         type(c_ptr), value :: zd_vertoffset
+         type(c_ptr), value, target :: zd_vertoffset
 
-         type(c_ptr), value :: zd_intcoef
+         type(c_ptr), value, target :: zd_intcoef
 
-         integer(c_int), value :: ndyn_substeps
+         integer(c_int), value, target :: ndyn_substeps
 
-         real(c_double), value :: rayleigh_damping_height
+         real(c_double), value, target :: rayleigh_damping_height
 
-         integer(c_int), value :: nflat_gradp
+         integer(c_int), value, target :: nflat_gradp
 
-         integer(c_int), value :: diffusion_type
+         integer(c_int), value, target :: diffusion_type
 
-         logical(c_int), value :: hdiff_w
+         logical(c_int), value, target :: hdiff_w
 
-         logical(c_int), value :: hdiff_vn
+         logical(c_int), value, target :: hdiff_vn
 
-         logical(c_int), value :: zdiffu_t
+         logical(c_int), value, target :: zdiffu_t
 
-         integer(c_int), value :: type_t_diffu
+         integer(c_int), value, target :: type_t_diffu
 
-         integer(c_int), value :: type_vn_diffu
+         integer(c_int), value, target :: type_vn_diffu
 
-         real(c_double), value :: hdiff_efdt_ratio
+         real(c_double), value, target :: hdiff_efdt_ratio
 
-         real(c_double), value :: smagorinski_scaling_factor
+         real(c_double), value, target :: smagorinski_scaling_factor
 
-         logical(c_int), value :: hdiff_temp
+         logical(c_int), value, target :: hdiff_temp
 
-         real(c_double), value :: thslp_zdiffu
+         real(c_double), value, target :: thslp_zdiffu
 
-         real(c_double), value :: thhgtd_zdiffu
+         real(c_double), value, target :: thhgtd_zdiffu
 
-         real(c_double), value :: denom_diffu_v
+         real(c_double), value, target :: denom_diffu_v
 
-         real(c_double), value :: nudge_max_coeff
+         real(c_double), value, target :: nudge_max_coeff
 
-         integer(c_int), value :: itype_sher
+         integer(c_int), value, target :: itype_sher
 
-         type(c_ptr), value :: tangent_orientation
+         type(c_ptr), value, target :: tangent_orientation
 
-         type(c_ptr), value :: inverse_primal_edge_lengths
+         type(c_ptr), value, target :: inverse_primal_edge_lengths
 
-         type(c_ptr), value :: inv_dual_edge_length
+         type(c_ptr), value, target :: inv_dual_edge_length
 
-         type(c_ptr), value :: inv_vert_vert_length
+         type(c_ptr), value, target :: inv_vert_vert_length
 
-         type(c_ptr), value :: edge_areas
+         type(c_ptr), value, target :: edge_areas
 
-         type(c_ptr), value :: f_e
+         type(c_ptr), value, target :: f_e
 
-         type(c_ptr), value :: cell_center_lat
+         type(c_ptr), value, target :: cell_center_lat
 
-         type(c_ptr), value :: cell_center_lon
+         type(c_ptr), value, target :: cell_center_lon
 
-         type(c_ptr), value :: cell_areas
+         type(c_ptr), value, target :: cell_areas
 
-         type(c_ptr), value :: primal_normal_vert_x
+         type(c_ptr), value, target :: primal_normal_vert_x
 
-         type(c_ptr), value :: primal_normal_vert_y
+         type(c_ptr), value, target :: primal_normal_vert_y
 
-         type(c_ptr), value :: dual_normal_vert_x
+         type(c_ptr), value, target :: dual_normal_vert_x
 
-         type(c_ptr), value :: dual_normal_vert_y
+         type(c_ptr), value, target :: dual_normal_vert_y
 
-         type(c_ptr), value :: primal_normal_cell_x
+         type(c_ptr), value, target :: primal_normal_cell_x
 
-         type(c_ptr), value :: primal_normal_cell_y
+         type(c_ptr), value, target :: primal_normal_cell_y
 
-         type(c_ptr), value :: dual_normal_cell_x
+         type(c_ptr), value, target :: dual_normal_cell_x
 
-         type(c_ptr), value :: dual_normal_cell_y
+         type(c_ptr), value, target :: dual_normal_cell_y
 
-         type(c_ptr), value :: edge_center_lat
+         type(c_ptr), value, target :: edge_center_lat
 
-         type(c_ptr), value :: edge_center_lon
+         type(c_ptr), value, target :: edge_center_lon
 
-         type(c_ptr), value :: primal_normal_x
+         type(c_ptr), value, target :: primal_normal_x
 
-         type(c_ptr), value :: primal_normal_y
+         type(c_ptr), value, target :: primal_normal_y
 
-         integer(c_int), value :: global_root
+         integer(c_int), value, target :: global_root
 
-         integer(c_int), value :: global_level
+         integer(c_int), value, target :: global_level
 
-         real(c_double), value :: lowest_layer_thickness
+         real(c_double), value, target :: lowest_layer_thickness
 
-         real(c_double), value :: model_top_height
+         real(c_double), value, target :: model_top_height
 
-         real(c_double), value :: stretch_factor
+         real(c_double), value, target :: stretch_factor
 
       end function diffusion_init_wrapper
 
@@ -250,27 +250,27 @@ module diffusion_plugin
 
          integer(c_int) :: rc  ! Stores the return code
 
-         type(c_ptr), value :: w
+         type(c_ptr), value, target :: w
 
-         type(c_ptr), value :: vn
+         type(c_ptr), value, target :: vn
 
-         type(c_ptr), value :: exner
+         type(c_ptr), value, target :: exner
 
-         type(c_ptr), value :: theta_v
+         type(c_ptr), value, target :: theta_v
 
-         type(c_ptr), value :: rho
+         type(c_ptr), value, target :: rho
 
-         type(c_ptr), value :: hdef_ic
+         type(c_ptr), value, target :: hdef_ic
 
-         type(c_ptr), value :: div_ic
+         type(c_ptr), value, target :: div_ic
 
-         type(c_ptr), value :: dwdx
+         type(c_ptr), value, target :: dwdx
 
-         type(c_ptr), value :: dwdy
+         type(c_ptr), value, target :: dwdy
 
-         real(c_double), value :: dtime
+         real(c_double), value, target :: dtime
 
-         logical(c_int), value :: linit
+         logical(c_int), value, target :: linit
 
       end function diffusion_run_wrapper
 
@@ -361,63 +361,63 @@ module diffusion_plugin
 
          integer(c_int) :: rc  ! Stores the return code
 
-         type(c_ptr), value :: cell_starts
+         type(c_ptr), value, target :: cell_starts
 
-         type(c_ptr), value :: cell_ends
+         type(c_ptr), value, target :: cell_ends
 
-         type(c_ptr), value :: vertex_starts
+         type(c_ptr), value, target :: vertex_starts
 
-         type(c_ptr), value :: vertex_ends
+         type(c_ptr), value, target :: vertex_ends
 
-         type(c_ptr), value :: edge_starts
+         type(c_ptr), value, target :: edge_starts
 
-         type(c_ptr), value :: edge_ends
+         type(c_ptr), value, target :: edge_ends
 
-         type(c_ptr), value :: c2e
+         type(c_ptr), value, target :: c2e
 
-         type(c_ptr), value :: e2c
+         type(c_ptr), value, target :: e2c
 
-         type(c_ptr), value :: c2e2c
+         type(c_ptr), value, target :: c2e2c
 
-         type(c_ptr), value :: e2c2e
+         type(c_ptr), value, target :: e2c2e
 
-         type(c_ptr), value :: e2v
+         type(c_ptr), value, target :: e2v
 
-         type(c_ptr), value :: v2e
+         type(c_ptr), value, target :: v2e
 
-         type(c_ptr), value :: v2c
+         type(c_ptr), value, target :: v2c
 
-         type(c_ptr), value :: e2c2v
+         type(c_ptr), value, target :: e2c2v
 
-         type(c_ptr), value :: c2v
+         type(c_ptr), value, target :: c2v
 
-         type(c_ptr), value :: c_owner_mask
+         type(c_ptr), value, target :: c_owner_mask
 
-         type(c_ptr), value :: e_owner_mask
+         type(c_ptr), value, target :: e_owner_mask
 
-         type(c_ptr), value :: v_owner_mask
+         type(c_ptr), value, target :: v_owner_mask
 
-         type(c_ptr), value :: c_glb_index
+         type(c_ptr), value, target :: c_glb_index
 
-         type(c_ptr), value :: e_glb_index
+         type(c_ptr), value, target :: e_glb_index
 
-         type(c_ptr), value :: v_glb_index
+         type(c_ptr), value, target :: v_glb_index
 
-         integer(c_int), value :: comm_id
+         integer(c_int), value, target :: comm_id
 
-         integer(c_int), value :: global_root
+         integer(c_int), value, target :: global_root
 
-         integer(c_int), value :: global_level
+         integer(c_int), value, target :: global_level
 
-         integer(c_int), value :: num_vertices
+         integer(c_int), value, target :: num_vertices
 
-         integer(c_int), value :: num_cells
+         integer(c_int), value, target :: num_cells
 
-         integer(c_int), value :: num_edges
+         integer(c_int), value, target :: num_edges
 
-         integer(c_int), value :: vertical_size
+         integer(c_int), value, target :: vertical_size
 
-         logical(c_int), value :: limited_area
+         logical(c_int), value, target :: limited_area
 
       end function grid_init_diffusion_wrapper
 

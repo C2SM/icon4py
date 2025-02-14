@@ -408,6 +408,7 @@ end module
                 attributes=[
                     "type(c_ptr)" if param.is_array else to_iso_c_type(param.d_type),
                     "value",
+                    "target",
                 ],
             )
             for param in func.args
