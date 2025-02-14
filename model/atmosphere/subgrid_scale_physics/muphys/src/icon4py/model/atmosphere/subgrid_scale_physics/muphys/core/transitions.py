@@ -215,9 +215,10 @@ def _rain_to_graupel(
     B2        = 1.625              # TBD
     QS_CRIT   = 1.0e-7             # TBD
 
+    maskinner = ( (dvsw+qc <= 0.0) | (qr > C4 * qc) ) 
     mask   = (qr > g_ct.qmin) & (t < TFRZ_RAIN)
-    result = where( mask & (dvsw+qc <= 0.0), (exp(C2*(TFRZ_RAIN-t))-C3) * (A1 * power((qr * rho), B1)), 0. )
-    result = where( mask & (t <= g_ct.tfrz_hom), qr/dt, 0. )
+    result = where( mask & (t > g_ct.tfrz_hom) & maskinner, (exp(C2*(TFRZ_RAIN-t))-C3) * (A1 * power((qr * rho), B1)), 0. )
+    result = where( mask & (t <= g_ct.tfrz_hom), qr/dt, result )
 
     return where( (minimum(qi,qr) > g_ct.qmin) & (qs > QS_CRIT), result + A2*(qi/mi)*power((rho*qr), B2), result)
 
@@ -423,8 +424,8 @@ def _vapor_x_snow(
     result = where( (qs > g_ct.qmin) & (t < t_d.tmelt) & (mask > 0.0), minimum(mask, dvsi/dt - ice_dep), 0.0 ) 
     result = where( (qs > g_ct.qmin) & (t < t_d.tmelt) & (qs <= QS_LIM), minimum(result, 0.0), result )
     # ELSE section
-    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t > (t_d.tmelt - g_ct.tx*dvsw0)), (C1_VS/p + C2_VS) * minimum(0.0, dvsw0) * power(qs*rho, B_VS), 0.0)
-    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t <= (t_d.tmelt - g_ct.tx*dvsw0)), (C3_VS + C4_VS*p) * dvsw * power(qs*rho, B_VS), 0.0)
+    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t > (t_d.tmelt - g_ct.tx*dvsw0)), (C1_VS/p + C2_VS) * minimum(0.0, dvsw0) * power(qs*rho, B_VS), result)
+    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t <= (t_d.tmelt - g_ct.tx*dvsw0)), (C3_VS + C4_VS*p) * dvsw * power(qs*rho, B_VS), result)
     return where( (qs > g_ct.qmin), maximum(result, -qs/dt), 0.0)
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
