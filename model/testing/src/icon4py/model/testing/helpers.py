@@ -158,10 +158,6 @@ if pytest_benchmark:
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
-            if self.MARKERS is not None:
-                for marker in self.MARKERS:
-                    if marker.markname == "requires_concat_where":
-                        pytest.xfail("test requires concat_where")
             input_data = allocate_data(backend, input_data)
             benchmark(
                 self.PROGRAM.with_backend(backend),
