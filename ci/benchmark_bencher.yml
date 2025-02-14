@@ -6,7 +6,7 @@ include:
   script:
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     - source "$HOME/.cargo/env"
-    - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
+    - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli
     - curl -LsSf https://astral.sh/uv/install.sh | sh
     - source $HOME/.local/bin/env
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
