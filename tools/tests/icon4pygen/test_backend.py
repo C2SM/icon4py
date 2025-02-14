@@ -60,7 +60,7 @@ def test_grid_size_param_generation(temporaries, imperative):
 
     grid = SimpleGrid()
     offset_provider = {"E2V": grid.get_offset_provider("E2V")}
-    fencil = testee_prog.itir
+    fencil = testee_prog.gtir
 
     # validate the grid sizes appear in the generated code
     gtheader = generate_gtheader(fencil, offset_provider, temporaries, imperative)

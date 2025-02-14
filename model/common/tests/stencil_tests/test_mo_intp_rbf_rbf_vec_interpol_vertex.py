@@ -41,7 +41,7 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if grid.get_offset_provider("V2E").has_skip_values:
+        if grid.get_offset_provider("V2E").__gt_type__().has_skip_values:
             pytest.xfail("Stencil does not support missing neighbors.")
         p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         ptr_coeff_1 = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim, dtype=wpfloat)
