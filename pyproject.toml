@@ -170,7 +170,7 @@ disallow_untyped_defs = true
 #   '^tests/liskov/*.py',
 #   '^tests/py2f/*.py',
 # ]
-ignore_missing_imports = true
+ignore_missing_imports = false
 implicit_reexport = true
 install_types = true
 non_interactive = true

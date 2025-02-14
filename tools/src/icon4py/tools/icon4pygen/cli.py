@@ -25,7 +25,9 @@ class ModuleType(click.ParamType):
         f"{dycore_import_path}.mo_velocity_advection_stencil_",
     ]
 
-    def shell_complete(self, ctx, param, incomplete):
+    def shell_complete(
+        self, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> list[click.shell_completion.CompletionItem]:
         if len(incomplete) > 0 and incomplete.endswith(":"):
             completions = [incomplete + incomplete[:-1].split(".")[-1]]
         else:

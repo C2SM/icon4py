@@ -97,27 +97,25 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
     def input_data(self, grid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        cell_idx = grid.connectivities[dims.E2CDim]
-        cell_idx_new = data_alloc.numpy_to_1D_sparse_field(cell_idx, dims.ECDim)
-        cell_blk = data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)
-        cell_blk_new = data_alloc.as_1D_sparse_field(cell_blk, dims.ECDim)
-        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_1_new = data_alloc.as_1D_sparse_field(pos_on_tplane_e_1, dims.ECDim)
-        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        pos_on_tplane_e_2_new = data_alloc.as_1D_sparse_field(pos_on_tplane_e_2, dims.ECDim)
-        primal_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_1_new = data_alloc.as_1D_sparse_field(primal_normal_cell_1, dims.ECDim)
-        dual_normal_cell_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_1_new = data_alloc.as_1D_sparse_field(dual_normal_cell_1, dims.ECDim)
-        primal_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        primal_normal_cell_2_new = data_alloc.as_1D_sparse_field(primal_normal_cell_2, dims.ECDim)
-        dual_normal_cell_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
-        dual_normal_cell_2_new = data_alloc.as_1D_sparse_field(dual_normal_cell_2, dims.ECDim)
-        p_cell_idx = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
-        p_cell_rel_idx_dsl = data_alloc.constant_field(
-            grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32
+        cell_idx = data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=(grid.connectivities[dims.E2CDim])
         )
-        p_cell_blk = data_alloc.constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        cell_blk = data_alloc.flatten_first_two_dims(
+            dims.ECDim,
+            field=(data_alloc.constant_field(grid, 1, dims.EdgeDim, dims.E2CDim, dtype=gtx.int32)),
+        )
+        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.ECDim)
+        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.ECDim)
+        primal_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim)
+
+        dual_normal_cell_1 = data_alloc.random_field(grid, dims.ECDim)
+        primal_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim)
+
+        dual_normal_cell_2 = data_alloc.random_field(grid, dims.ECDim)
+
+        p_cell_idx = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_rel_idx_dsl = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
+        p_cell_blk = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32)
         p_distv_bary_1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_distv_bary_2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_dthalf = 2.0
@@ -125,14 +123,14 @@ class TestComputeBarycentricBacktrajectory(helpers.StencilTest):
         return dict(
             p_vn=p_vn,
             p_vt=p_vt,
-            cell_idx=cell_idx_new,
-            cell_blk=cell_blk_new,
-            pos_on_tplane_e_1=pos_on_tplane_e_1_new,
-            pos_on_tplane_e_2=pos_on_tplane_e_2_new,
-            primal_normal_cell_1=primal_normal_cell_1_new,
-            dual_normal_cell_1=dual_normal_cell_1_new,
-            primal_normal_cell_2=primal_normal_cell_2_new,
-            dual_normal_cell_2=dual_normal_cell_2_new,
+            cell_idx=cell_idx,
+            cell_blk=cell_blk,
+            pos_on_tplane_e_1=pos_on_tplane_e_1,
+            pos_on_tplane_e_2=pos_on_tplane_e_2,
+            primal_normal_cell_1=primal_normal_cell_1,
+            dual_normal_cell_1=dual_normal_cell_1,
+            primal_normal_cell_2=primal_normal_cell_2,
+            dual_normal_cell_2=dual_normal_cell_2,
             p_cell_idx=p_cell_idx,
             p_cell_rel_idx_dsl=p_cell_rel_idx_dsl,
             p_cell_blk=p_cell_blk,
