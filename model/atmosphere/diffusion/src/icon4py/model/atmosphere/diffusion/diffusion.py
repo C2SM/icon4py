@@ -697,7 +697,7 @@ class Diffusion:
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-            or self.ltkeshs
+            or self.config.ltkeshs
         ):
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
