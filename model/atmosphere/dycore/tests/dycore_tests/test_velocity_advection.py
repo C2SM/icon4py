@@ -105,8 +105,6 @@ def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
     assert scalfac_exdiff == savepoint_velocity_init.scalfac_exdiff()
 
 
-
-
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit, substep_init", [(1, 1, 1)])

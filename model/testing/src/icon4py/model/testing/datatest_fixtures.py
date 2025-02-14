@@ -83,7 +83,6 @@ def data_provider(download_ser_data, ranked_data_path, experiment, processor_pro
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 
 
-
 @pytest.fixture
 def grid_savepoint(data_provider, experiment):
     root, level = dt_utils.get_global_grid_params(experiment)
@@ -150,9 +149,11 @@ def step_date_init():
 def substep_init():
     return 1
 
+
 @pytest.fixture
 def substep_exit():
     return 1
+
 
 @pytest.fixture
 def step_date_exit():
@@ -241,14 +242,19 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_exit(
-        istep=istep_exit, date=step_date_exit,  substep=substep_exit
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
+
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", ("exclaim_ape_R02B04", ))
+@pytest.mark.parametrize("experiment", ("exclaim_ape_R02B04",))
 def test_field_sizes(data_provider, experiment):
-    sp_init = data_provider.from_savepoint_nonhydro_init(istep=1,  substep=1, date="2000-01-01T00:00:02.000")
-    sp_exit = data_provider.from_savepoint_nonhydro_exit(istep=1,  substep=1, date="2000-01-01T00:00:02.000")
+    sp_init = data_provider.from_savepoint_nonhydro_init(
+        istep=1, substep=1, date="2000-01-01T00:00:02.000"
+    )
+    sp_exit = data_provider.from_savepoint_nonhydro_exit(
+        istep=1, substep=1, date="2000-01-01T00:00:02.000"
+    )
     init_w_fl = sp_init.z_contr_w_fl_l()
     exit_w_fl = sp_exit.z_contr_w_fl_l()
 
@@ -268,7 +274,7 @@ def savepoint_nonhydro_step_exit(data_provider, step_date_exit, substep_exit):
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_step_exit(
-        date=step_date_exit,  substep=substep_exit
+        date=step_date_exit, substep=substep_exit
     )
 
 
@@ -313,9 +319,6 @@ def istep_init():
 @pytest.fixture
 def istep_exit():
     return 1
-
-
-
 
 
 @pytest.fixture

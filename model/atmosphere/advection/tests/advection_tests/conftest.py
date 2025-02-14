@@ -45,9 +45,7 @@ def advection_init_savepoint(
     Date of the timestamp to be selected can be set seperately by overriding the 'date'
     fixture, passing 'date=<iso_string>'.
     """
-    return data_provider.from_advection_init_savepoint(
-        size=data_provider.grid_size, date=date
-    )
+    return data_provider.from_advection_init_savepoint(size=data_provider.grid_size, date=date)
 
 
 @pytest.fixture
@@ -61,6 +59,4 @@ def advection_exit_savepoint(
     Date of the timestamp to be selected can be set seperately by overriding the 'date'
     fixture, passing 'date=<iso_string>'.
     """
-    return data_provider.from_advection_exit_savepoint(
-        size=data_provider.grid_size, date=date
-    )
+    return data_provider.from_advection_exit_savepoint(size=data_provider.grid_size, date=date)

@@ -40,7 +40,6 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         pytest.mark.skip_value_error,
     )
 
-    
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
