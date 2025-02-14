@@ -364,7 +364,7 @@ def test_grid_manager_eval_c2e2cO(caplog, grid_savepoint, grid_file, experiment,
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
         grid.get_offset_provider("C2E2CO").asnumpy(),
-        serialized_grid.get_offset_provider("C2E2CO").table,
+        serialized_grid.get_offset_provider("C2E2CO").asnumpy(),
     )
 
 
@@ -382,8 +382,8 @@ def test_grid_manager_eval_e2c2e(caplog, grid_savepoint, grid_file, experiment, 
     caplog.set_level(logging.DEBUG)
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
-    serialized_e2c2e = serialized_grid.get_offset_provider("E2C2E").table
-    serialized_e2c2eO = serialized_grid.get_offset_provider("E2C2EO").table
+    serialized_e2c2e = serialized_grid.get_offset_provider("E2C2E").asnumpy()
+    serialized_e2c2eO = serialized_grid.get_offset_provider("E2C2EO").asnumpy()
     assert_invalid_indices(serialized_e2c2e, grid_file)
 
     e2c2e_table = grid.get_offset_provider("E2C2E").asnumpy()
@@ -421,7 +421,7 @@ def test_grid_manager_eval_e2c2v(caplog, grid_savepoint, grid_file, backend):
     )
     # e2c2e in ICON (quad_idx) has a different neighbor ordering than the e2c2e constructed in grid_manager.py
     assert_up_to_order(table, serialized_ref, start_index)
-    assert np.allclose(table[:, :2], grid.get_offset_provider("E2V").table)
+    assert np.allclose(table[:, :2], grid.get_offset_provider("E2V").asnumpy())
 
 
 @pytest.mark.datatest
@@ -508,10 +508,10 @@ def test_grid_manager_eval_c2e2c2e(caplog, grid_savepoint, grid_file, backend):
     grid = _run_grid_manager(grid_file, backend).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
-        grid.get_offset_provider("C2E2C2E").table,
-        serialized_grid.get_offset_provider("C2E2C2E").table,
+        grid.get_offset_provider("C2E2C2E").asnumpy(),
+        serialized_grid.get_offset_provider("C2E2C2E").asnumpy(),
     )
-    assert grid.get_offset_provider("C2E2C2E").table.shape == (grid.num_cells, 9)
+    assert grid.get_offset_provider("C2E2C2E").asnumpy().shape == (grid.num_cells, 9)
 
 
 @pytest.mark.datatest
