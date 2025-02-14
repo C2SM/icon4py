@@ -339,10 +339,10 @@ def _vapor_x_graupel(
     A7    = 0.0418521
     A8    = -4.7524E-8
     B_VG  = 0.6
-    result = where( (qg > g_ct.qmin) & (t < t_d.tmelt), (A1_VG + A2_VG*t + A3/p + A4*p) * dvsi * power(qg*rho, B_VG), 0. )
-    result = where( (qg > g_ct.qmin) & (t >= t_d.tmelt) & (t > (t_d.tmelt - g_ct.tx*dvsw0)), (A5 + A6*p) * minimum(0.0, dvsw0) * power(qg*rho, B_VG), result )
-    result = where( (qg > g_ct.qmin) & (t >= t_d.tmelt) & (t <= (t_d.tmelt - g_ct.tx*dvsw0)), (A7 + A8*p) * dvsw * power(qg*rho, B_VG), result )
-    return maximum(result, -qg/dt)
+    result = where( (t < t_d.tmelt), (A1_VG + A2_VG*t + A3/p + A4*p) * dvsi * power(qg*rho, B_VG), \
+               where( (t > (t_d.tmelt - g_ct.tx*dvsw0)), (A5 + A6*p) * minimum(0.0, dvsw0) * power(qg*rho, B_VG), \
+                                                         (A7 + A8*p) * dvsw * power(qg*rho, B_VG) ) )
+    return where( qg > g_ct.qmin, maximum(result, -qg/dt), 0.0 )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def vapor_x_graupel(
@@ -372,8 +372,9 @@ def _vapor_x_ice(
     A_FACT = 4.0 * AMI**(-1.0/3.0)  
 
     # TO-DO: see if this can be folded into the WHERE statement
-    mask   = (A_FACT * eta) * rho * qi * power(mi, B_EXP) * dvsi
-    return where( mask > 0.0, minimum(mask, dvsi/dt), maximum(maximum(mask, dvsi/dt), -qi/dt) )
+    result  = (A_FACT * eta) * rho * qi * power(mi, B_EXP) * dvsi
+    result  = where( result > 0.0, minimum(result, dvsi/dt), maximum(maximum(result, dvsi/dt), -qi/dt) )
+    return where( qi > g_ct.qmin, result, 0.0 )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def vapor_x_ice(
