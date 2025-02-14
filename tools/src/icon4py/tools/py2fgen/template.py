@@ -235,7 +235,9 @@ from {{ plugin_name }} import ffi
 from gt4py.next.iterator.embedded import np_as_located_field
 from icon4py.tools.py2fgen.settings import config
 from icon4py.tools.py2fgen import wrapper_utils
+from icon4py.tools.py2fgen.wrappers.wrapper_dimension import *
 from icon4py.model.common import dimension as dims
+xp = config.array_ns
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
