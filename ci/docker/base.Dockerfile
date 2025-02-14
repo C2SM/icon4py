@@ -24,7 +24,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libffi-dev \
     libhdf5-dev \
     liblzma-dev \
-    python-openssl \
+    python3-openssl \
     libreadline-dev \
     git \
     rustc \
