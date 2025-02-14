@@ -21,7 +21,6 @@ include:
     - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json
     - |
       echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
-    - cat $CI_PROJECT_DIR/event.json
     - |
       bencher run \
       --project "$BENCHER_PROJECT" \
@@ -35,7 +34,7 @@ include:
       --err \
       --adapter python_pytest \
       --file results.json \
-      "pytest --benchmark-json results.json -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model/atmosphere/diffusion/tests/diffusion_stencil_tests/test_apply_diffusion_to_vn.py"
+      "pytest --benchmark-json results.json -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
     - cp results.json $CI_PROJECT_DIR/results.json
     - |
       if [[ "$PR_ID" != "" && "$BACKEND" == "gtfn_cpu" && "$GRID" == "icon_grid" ]]; then
