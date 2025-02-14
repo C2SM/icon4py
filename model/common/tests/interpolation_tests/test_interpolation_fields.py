@@ -86,7 +86,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
         primal_edge_length=primal_edge_length,
         edge_orientation=edge_orientation,
         area=area,
-        out=(geofac_div),
+        out=geofac_div,
         offset_provider={"C2E": mesh.get_offset_provider("C2E")},
     )
     assert test_helpers.dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
