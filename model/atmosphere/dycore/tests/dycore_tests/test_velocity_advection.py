@@ -38,8 +38,8 @@ def create_vertical_params(vertical_config, grid_savepoint):
     ],
 )
 def test_verify_velocity_init_against_savepoint(
-    savepoint_velocity_init,
     interpolation_savepoint,
+    step_date_init,
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
@@ -50,8 +50,6 @@ def test_verify_velocity_init_against_savepoint(
     experiment,
     backend,
 ):
-    savepoint = savepoint_velocity_init
-    dtime = savepoint.get_metadata("dtime").get("dtime")
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
