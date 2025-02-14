@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import numpy as np
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -44,7 +44,6 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        advection_uri = None
         if experiment == dt_utils.GLOBAL_EXPERIMENT:
             uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
         elif experiment == dt_utils.JABW_EXPERIMENT:
@@ -55,20 +54,13 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
         else:
             uri = dt_utils.DATA_URIS[processor_props.comm_size]
-            advection_uri = dt_utils.DATA_URIS_ADVECTION.get(processor_props.comm_size)
 
         data_file = ranked_data_path.joinpath(
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
             data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
-            if advection_uri:
-                advection_path = dt_utils.get_datapath_for_experiment(
-                    ranked_data_path, f"{experiment}/advection"
-                )
-                data.download_and_extract(
-                    advection_uri, ranked_data_path, advection_path, f"advection_{data_file}"
-                )
+    
         if processor_props.comm:
             processor_props.comm.barrier()
     except KeyError as err:
@@ -238,7 +230,6 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
     metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - jstep: step count since last boundary interpolation (ranges from 0 to 2*ndyn_substeps-1)
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_exit(
@@ -254,12 +245,22 @@ def savepoint_nonhydro_step_exit(data_provider, step_date_exit, substep_exit):
 
      metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
-    - jstep: step count since last boundary interpolation (ranges from 0 to 2*ndyn_substeps-1)
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_step_exit(
         date=step_date_exit, substep=substep_exit
     )
+
+def test_field_generation(data_provider, step_date_exit, substep_exit):
+    sp = data_provider.from_savepoint_nonhydro_step_exit(
+        date=step_date_exit, substep=substep_exit
+    )
+    print(type(sp))
+    print(sp.__dict__)
+    ser = sp.serializer
+
+    assert np.allclose(sp.exner().asnumpy(), sp.exner_new().asnumpy())
+
 
 
 @pytest.fixture
