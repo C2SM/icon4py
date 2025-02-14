@@ -27,7 +27,7 @@ from .utils import (
 
 # ntracer legend for the serialization data used here in test_advection:
 # ------------------------------------
-# ntracer          |  1, 2, 3, 4, 5 |
+# ntracer          |  0, 1, 2, 3, 4 |
 # ------------------------------------
 # ivadv_tracer     |  3, 0, 0, 2, 3 |
 # itype_hlimit     |  3, 4, 3, 0, 0 |
@@ -44,7 +44,7 @@ from .utils import (
         (
             "2021-06-20T12:00:10.000",
             False,
-            2,
+            1,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
             advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             advection.VerticalAdvectionType.NO_ADVECTION,
@@ -53,7 +53,7 @@ from .utils import (
         (
             "2021-06-20T12:00:20.000",
             True,
-            2,
+            1,
             advection.HorizontalAdvectionType.LINEAR_2ND_ORDER,
             advection.HorizontalAdvectionLimiter.POSITIVE_DEFINITE,
             advection.VerticalAdvectionType.NO_ADVECTION,
@@ -62,7 +62,7 @@ from .utils import (
         (
             "2021-06-20T12:00:10.000",
             False,
-            5,
+            4,
             advection.HorizontalAdvectionType.NO_ADVECTION,
             advection.HorizontalAdvectionLimiter.NO_LIMITER,
             advection.VerticalAdvectionType.PPM_3RD_ORDER,
@@ -71,7 +71,7 @@ from .utils import (
         (
             "2021-06-20T12:00:20.000",
             True,
-            5,
+            4,
             advection.HorizontalAdvectionType.NO_ADVECTION,
             advection.HorizontalAdvectionLimiter.NO_LIMITER,
             advection.VerticalAdvectionType.PPM_3RD_ORDER,

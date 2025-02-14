@@ -124,11 +124,11 @@ def test_time_step_flags(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
-        # (
-        #     dt_utils.REGIONAL_EXPERIMENT,
-        #     "2021-06-20T12:00:10.000",
-        #     "2021-06-20T12:00:10.000",
-        # ),
+        (
+             dt_utils.REGIONAL_EXPERIMENT,
+             "2021-06-20T12:00:10.000",
+             "2021-06-20T12:00:10.000",
+        ),
         (
             dt_utils.GLOBAL_EXPERIMENT,
             "2000-01-01T00:00:02.000",

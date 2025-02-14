@@ -847,37 +847,21 @@ class AdvectionInitSavepoint(IconSavepoint):
         return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
 
     def grf_tend_tracer(self, ntracer: int):
-        for i in range(1, 6):
-            if i == ntracer:
-                return self._get_field(f"grf_tend_tracer_{i}", dims.CellDim, dims.KDim)
-        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+        return self._get_field_component("grf_tend_tracers",ntracer, (dims.CellDim, dims.KDim))
 
     def tracer(self, ntracer: int):
-        for i in range(1, 6):
-            if i == ntracer:
-                return self._get_field(f"tracer_{i}", dims.CellDim, dims.KDim)
-        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
-
+        return self._get_field_component("tracers_now", ntracer, (dims.CellDim, dims.KDim))
+        
 
 class AdvectionExitSavepoint(IconSavepoint):
     def hfl_tracer(self, ntracer: int):
-        for i in range(1, 6):
-            if i == ntracer:
-                return self._get_field(f"hfl_tracer_{i}", dims.EdgeDim, dims.KDim)
-        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+        return self._get_field_component("hfl_tracers",ntracer,  (dims.EdgeDim, dims.KDim))
 
     def vfl_tracer(self, ntracer: int):
-        for i in range(1, 6):
-            if i == ntracer:
-                # TODO (dastrm): should be KHalfDim
-                return self._get_field(f"vfl_tracer_{i}", dims.CellDim, dims.KDim)
-        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+        return self._get_field_component("vfl_tracers",ntracer, (dims.CellDim, dims.KDim))
 
     def tracer(self, ntracer: int):
-        for i in range(1, 6):
-            if i == ntracer:
-                return self._get_field(f"tracer_{i}", dims.CellDim, dims.KDim)
-        raise NotImplementedError(f"Unknown tracer index: ntracer = {ntracer}.")
+        return self._get_field_component("tracers", ntracer, (dims.CellDim, dims.KDim))
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
