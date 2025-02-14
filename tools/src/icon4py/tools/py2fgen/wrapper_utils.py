@@ -142,9 +142,7 @@ def as_field(  # type: ignore[no-untyped-def] # CData type not public?
     unpack = _unpack if xp == np else _unpack_gpu
     if ptr == ffi.NULL:
         if is_optional:
-            return gtx.zeros(
-                domain, dtype=BUILTIN_TO_NUMPY_TYPE[scalar_kind]
-            )  # TODO return None and don't forward
+            return None
         else:
             raise ValueError("Field is required but was not provided.")
     arr = unpack(ffi, ptr, *sizes)

@@ -224,6 +224,19 @@ def diffusion_init(
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
+    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1 # TODO(havogt): because of crazy KHalfDim hacks this actually refers to KHalfDim
+    cell_k_domain = {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
+    c2e2c_size = geofac_grg_x.domain[dims.C2E2CODim].unit_range.stop - 1
+    cell_c2e2c_k_domain = {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.C2E2CDim: c2e2c_size, dims.KDim: nlev}
+    xp = wgtfac_c.array_ns
+    if mask_hdiff is None:
+        mask_hdiff = gtx.zeros(cell_k_domain, dtype=xp.bool_)
+    if zd_diffcoef is None:
+        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
+    if zd_intcoef is None:
+        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
+    if zd_vertoffset is None:
+        zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
     # Metric state
     metric_state = DiffusionMetricState(
         mask_hdiff=mask_hdiff,
@@ -285,6 +298,15 @@ def diffusion_run(
         rho=rho,
     )
 
+    backend = diffusion_wrapper_state["granule"]._backend
+    if hdef_ic is None:
+        hdef_ic = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+    if div_ic is None:
+        div_ic = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+    if dwdx is None:
+        dwdx = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+    if dwdy is None:
+        dwdy = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
     diagnostic_state = DiffusionDiagnosticState(
         hdef_ic=hdef_ic,
         div_ic=div_ic,
