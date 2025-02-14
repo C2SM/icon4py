@@ -139,7 +139,7 @@ def _graupel_loop2(
 
     ice_dep  = minimum( sx2x_v_i, dvsi / dt)
     sx2x_i_s = where( (t < t_d.tmelt) & is_sig_present, _deposition_auto_conversion( qi, m_ice, ice_dep ) + _ice_to_snow( qi, n_snow, l_snow, x_ice ), 0.0 )
-    sx2x_i_g = where( (t < t_d.tmelt) & is_sig_present, _ice_to_graupel( rho, qr, qg, qi, m_ice ), 0.0 )
+    sx2x_i_g = where( (t < t_d.tmelt) & is_sig_present, _ice_to_graupel( rho, qr, qg, qi, x_ice ), 0.0 )
     sx2x_s_g = where( (t < t_d.tmelt) & is_sig_present, _snow_to_graupel( t, rho, qc, qs ), 0.0 )
     sx2x_r_g = where( (t < t_d.tmelt) & is_sig_present, _rain_to_graupel( t, rho, qc, qr, qi, qs, m_ice, dvsw, dt ), 0.0 )
 
@@ -177,55 +177,55 @@ def _graupel_loop2(
     #  if ((sink[qx_ind[ix]] > stot) && (q[qx_ind[ix]].x[oned_vec_index] > qmin))
 
     stot     = qv / dt
-    sx2x_v_s = where( mask & (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_s * stot / sink_v, sx2x_v_s )
-    sx2x_v_i = where( mask & (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_i * stot / sink_v, sx2x_v_i )
-    sx2x_v_g = where( mask & (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_g * stot / sink_v, sx2x_v_g )
-    sink_v   = where( mask & (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_s + sx2x_v_i + sx2x_v_g, sink_v) # Missing: sx2x_v_c + sx2x_v_r
+    sx2x_v_s = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_s * stot / sink_v, sx2x_v_s )
+    sx2x_v_i = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_i * stot / sink_v, sx2x_v_i )
+    sx2x_v_g = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_g * stot / sink_v, sx2x_v_g )
+    sink_v   = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_s + sx2x_v_i + sx2x_v_g, sink_v) # Missing: sx2x_v_c + sx2x_v_r
 
     stot     = qc / dt
-    sx2x_c_r = where( mask & (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_r * stot / sink_c, sx2x_c_r )
-    sx2x_c_s = where( mask & (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_s * stot / sink_c, sx2x_c_s )
-    sx2x_c_i = where( mask & (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_i * stot / sink_c, sx2x_c_i )
-    sx2x_c_g = where( mask & (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_g * stot / sink_c, sx2x_c_g )
-    sink_c   = where( mask & (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g, sink_c) # Missing: sx2x_c_v
+    sx2x_c_r = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_r * stot / sink_c, sx2x_c_r )
+    sx2x_c_s = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_s * stot / sink_c, sx2x_c_s )
+    sx2x_c_i = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_i * stot / sink_c, sx2x_c_i )
+    sx2x_c_g = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_g * stot / sink_c, sx2x_c_g )
+    sink_c   = where( (sink_c > stot) & (qc > g_ct.qmin), sx2x_c_r + sx2x_c_s + sx2x_c_i + sx2x_c_g, sink_c) # Missing: sx2x_c_v
 
     stot     = qr / dt
-    sx2x_r_v = where( mask & (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_v * stot / sink_r, sx2x_r_v )
-    sx2x_r_g = where( mask & (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_g * stot / sink_r, sx2x_r_g )
-    sink_r   = where( mask & (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_v + sx2x_r_g, sink_r) # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
+    sx2x_r_v = where( (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_v * stot / sink_r, sx2x_r_v )
+    sx2x_r_g = where( (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_g * stot / sink_r, sx2x_r_g )
+    sink_r   = where( (sink_r > stot) & (qr > g_ct.qmin), sx2x_r_v + sx2x_r_g, sink_r) # Missing: sx2x_r_c + sx2x_r_s + sx2x_r_i
 
     stot     = qs / dt
-    sx2x_s_v = where( mask & (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_v * stot / sink_s, sx2x_s_v )
-    sx2x_s_r = where( mask & (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_r * stot / sink_s, sx2x_s_r )
-    sx2x_s_g = where( mask & (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_g * stot / sink_s, sx2x_s_g )
-    sink_s   = where( mask & (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_v + sx2x_s_r + sx2x_s_g, sink_s) # Missing: sx2x_s_c + sx2x_s_i
+    sx2x_s_v = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_v * stot / sink_s, sx2x_s_v )
+    sx2x_s_r = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_r * stot / sink_s, sx2x_s_r )
+    sx2x_s_g = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_g * stot / sink_s, sx2x_s_g )
+    sink_s   = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_v + sx2x_s_r + sx2x_s_g, sink_s) # Missing: sx2x_s_c + sx2x_s_i
 
     stot     = qi / dt
-    sx2x_i_v = where( mask & (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_v * stot / sink_i, sx2x_i_v )
-    sx2x_i_c = where( mask & (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_c * stot / sink_i, sx2x_i_c )
-    sx2x_i_s = where( mask & (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_s * stot / sink_i, sx2x_i_s )
-    sx2x_i_g = where( mask & (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_g * stot / sink_i, sx2x_i_g )
-    sink_i   = where( mask & (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g, sink_i) # Missing: sx2x_i_r
+    sx2x_i_v = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_v * stot / sink_i, sx2x_i_v )
+    sx2x_i_c = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_c * stot / sink_i, sx2x_i_c )
+    sx2x_i_s = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_s * stot / sink_i, sx2x_i_s )
+    sx2x_i_g = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_g * stot / sink_i, sx2x_i_g )
+    sink_i   = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_v + sx2x_i_c + sx2x_i_s + sx2x_i_g, sink_i) # Missing: sx2x_i_r
 
     stot     = qg / dt
-    sx2x_g_v = where( mask & (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v * stot / sink_g, sx2x_g_v )
-    sx2x_g_r = where( mask & (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_r * stot / sink_g, sx2x_g_r )
-    sink_g   = where( mask & (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v + sx2x_g_r, sink_g) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
+    sx2x_g_v = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v * stot / sink_g, sx2x_g_v )
+    sx2x_g_r = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_r * stot / sink_g, sx2x_g_r )
+    sink_g   = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v + sx2x_g_r, sink_g) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
 
     # water content updates:
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
     dqdt_v = sx2x_r_v + sx2x_s_v + sx2x_i_v + sx2x_g_v - sink_v                    # Missing: sx2x_c_v
-    qv     = maximum( 0.0, qv + dqdt_v * dt )
+    qv     = where( mask, maximum( 0.0, qv + dqdt_v * dt ), qv )
     dqdt_c = sx2x_i_c - sink_c                     # Missing: sx2x_v_c, sx2x_r_c, sx2x_s_c, sx2x_g_c
-    qc     = maximum( 0.0, qc + dqdt_c * dt )
+    qc     = where( mask, maximum( 0.0, qc + dqdt_c * dt ), qc )
     dqdt_r = sx2x_c_r + sx2x_s_r + sx2x_g_r - sink_r                     # Missing: sx2x_v_r + sx2x_i_r
-    qr     = maximum( 0.0, qr + dqdt_r * dt )
+    qr     = where( mask, maximum( 0.0, qr + dqdt_r * dt ), qr )
     dqdt_s = sx2x_v_s + sx2x_c_s + sx2x_i_s - sink_s                     # Missing: sx2x_r_s + sx2x_g_s
-    qs     = maximum( 0.0, qs + dqdt_s * dt )
+    qs     = where( mask, maximum( 0.0, qs + dqdt_s * dt ), qs )
     dqdt_i = sx2x_v_i + sx2x_c_i - sink_i                    # Missing: sx2x_r_i + sx2x_s_i + sx2x_g_i
-    qi     = maximum( 0.0, qi + dqdt_i * dt )
+    qi     = where( mask, maximum( 0.0, qi + dqdt_i * dt ), qi )
     dqdt_g = sx2x_v_g + sx2x_c_g + sx2x_r_g + sx2x_s_g + sx2x_i_g - sink_g
-    qg     = maximum( 0.0, qg + dqdt_g * dt )
+    qg     = where( mask, maximum( 0.0, qg + dqdt_g * dt ), qg )
 
     qice = qs + qi + qg
     qliq = qc + qr
