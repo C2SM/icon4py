@@ -84,26 +84,24 @@ def test_validate_divdamp_fields_against_savepoint_values(
     )
     assert helpers.dallclose(bdy_divdamp.asnumpy(), savepoint_nonhydro_init.bdy_divdamp().asnumpy())
 
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, substep_init, at_initial_timestep",
+    "istep_init, step_date_init, substep_init, at_initial_timestep",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 1,  True),
-        (2, 0, "2021-06-20T12:00:10.000", 1,  True),
-        (1, 1, "2021-06-20T12:00:10.000", 2,  True),
-        (2, 1, "2021-06-20T12:00:10.000", 2,  True),
-        (1, 0, "2021-06-20T12:00:20.000", 1,  False),
-        (2, 0, "2021-06-20T12:00:20.000", 1,  False),
-        (1, 1, "2021-06-20T12:00:20.000", 2,  False),
-        (2, 1, "2021-06-20T12:00:20.000", 2,  False),
+        (1, "2021-06-20T12:00:10.000", 1,  True),
+        (2,  "2021-06-20T12:00:10.000", 1,  True),
+        (1,  "2021-06-20T12:00:10.000", 2,  True),
+        (2,  "2021-06-20T12:00:10.000", 2,  True),
+        (1,  "2021-06-20T12:00:20.000", 1,  False),
+        (2,  "2021-06-20T12:00:20.000", 1,  False),
+        (1,  "2021-06-20T12:00:20.000", 2,  False),
+        (2,  "2021-06-20T12:00:20.000", 2,  False),
     ],
 )
 def test_time_step_flags(
     experiment,
     istep_init,
-    jstep_init,
     substep_init,
     step_date_init,
     at_initial_timestep,
@@ -115,9 +113,9 @@ def test_time_step_flags(
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     linit = sp.get_metadata("linit").get("linit")
 
-    assert recompute == (jstep_init == 0)
-    assert clean_mflx == (jstep_init == 0)
-    assert linit == (at_initial_timestep and (jstep_init == 0))
+    assert recompute == (substep_init == 1)
+    assert clean_mflx == (substep_init == 1)
+    assert linit == (at_initial_timestep and (substep_init == 1))
 
 
 @pytest.mark.embedded_remap_error
@@ -533,7 +531,7 @@ def test_nonhydro_predictor_step(
 def test_nonhydro_corrector_step(
     istep_init,
     istep_exit,
-    jstep_init,
+    substep_init,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -612,8 +610,8 @@ def test_nonhydro_corrector_step(
         owner_mask=grid_savepoint.c_owner_mask(),
         backend=backend,
     )
-    at_first_substep = jstep_init == 0
-    at_last_substep = jstep_init == (ndyn_substeps - 1)
+    at_first_substep = substep_init == 1
+    at_last_substep = substep_init == ndyn_substeps
 
     prognostic_states = utils.create_prognostic_states(init_savepoint)
     solve_nonhydro.update_time_levels_for_velocity_tendencies(
@@ -720,7 +718,7 @@ def test_nonhydro_corrector_step(
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, substep_init, istep_exit, jstep_exit, substep_exit, at_initial_timestep", [(1, 0, 1, 2, 0, 1, True)]
+    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
 )
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -740,8 +738,8 @@ def test_nonhydro_corrector_step(
 def test_run_solve_nonhydro_single_step(
     istep_init,
     istep_exit,
-    jstep_init,
-    jstep_exit,
+    substep_init,
+    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
@@ -816,8 +814,8 @@ def test_run_solve_nonhydro_single_step(
         dtime=dtime,
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
-        at_first_substep=jstep_init == 0,
-        at_last_substep=jstep_init == (ndyn_substeps - 1),
+        at_first_substep=substep_init == 1,
+        at_last_substep=substep_init == (ndyn_substeps),
     )
     prognostic_state_nnew = prognostic_states.next
     assert helpers.dallclose(
@@ -857,10 +855,10 @@ def test_run_solve_nonhydro_single_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, substep_init, step_date_init, istep_exit, jstep_exit, substep_exit, step_date_exit,  at_initial_timestep",
+    "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit,  at_initial_timestep",
     [
-        (1, 0, 1, "2021-06-20T12:00:10.000", 2, 1, 2, "2021-06-20T12:00:10.000", True),
-        (1, 0, 1, "2021-06-20T12:00:20.000", 2, 1, 2, "2021-06-20T12:00:20.000", False),
+        (1,  1, "2021-06-20T12:00:10.000", 2,  2, "2021-06-20T12:00:10.000", True),
+        (1,  1, "2021-06-20T12:00:20.000", 2,  2, "2021-06-20T12:00:20.000", False),
     ],
 )
 def test_run_solve_nonhydro_multi_step(

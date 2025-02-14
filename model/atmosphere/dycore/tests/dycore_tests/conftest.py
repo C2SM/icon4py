@@ -20,8 +20,6 @@ from icon4py.model.testing.datatest_fixtures import (  # noqa F401
     interpolation_savepoint,
     istep_exit,
     istep_init,
-    jstep_exit,
-    jstep_init,
     linit,
     substep_init,
     substep_exit,

@@ -198,7 +198,7 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_i
 
 
 @pytest.fixture
-def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_init, substep_init):
+def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_init):
     """
     Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
 
@@ -209,7 +209,7 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_ini
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_init(
-        istep=istep_init, date=step_date_init, jstep=jstep_init, substep=substep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
@@ -229,7 +229,7 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_e
 
 
 @pytest.fixture
-def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exit, substep_exit):
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_exit):
     """
     Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
     subroutine nh_solve in mo_solve_nonhydro.f90.
@@ -241,14 +241,14 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exi
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_exit(
-        istep=istep_exit, date=step_date_exit, jstep=jstep_exit, substep=substep_exit
+        istep=istep_exit, date=step_date_exit,  substep=substep_exit
     )
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", ("exclaim_ape_R02B04", ))
 def test_field_sizes(data_provider, experiment):
-    sp_init = data_provider.from_savepoint_nonhydro_init(istep=1, jstep=0, substep=1, date="2000-01-01T00:00:02.000")
-    sp_exit = data_provider.from_savepoint_nonhydro_exit(istep=1, jstep=0, substep=1, date="2000-01-01T00:00:02.000")
+    sp_init = data_provider.from_savepoint_nonhydro_init(istep=1,  substep=1, date="2000-01-01T00:00:02.000")
+    sp_exit = data_provider.from_savepoint_nonhydro_exit(istep=1,  substep=1, date="2000-01-01T00:00:02.000")
     init_w_fl = sp_init.z_contr_w_fl_l()
     exit_w_fl = sp_exit.z_contr_w_fl_l()
 
@@ -257,7 +257,7 @@ def test_field_sizes(data_provider, experiment):
 
 
 @pytest.fixture
-def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit, substep_exit):
+def savepoint_nonhydro_step_exit(data_provider, step_date_exit, substep_exit):
     """
     Load data from ICON savepoint at final exit of subroutine nh_solve in mo_solve_nonhydro.f90.
     (after predictor and corrector and 3 final stencils have run).
@@ -268,7 +268,7 @@ def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit, subs
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_step_exit(
-        date=step_date_exit, jstep=jstep_exit, substep=substep_exit
+        date=step_date_exit,  substep=substep_exit
     )
 
 
@@ -314,15 +314,6 @@ def istep_init():
 def istep_exit():
     return 1
 
-
-@pytest.fixture
-def jstep_init():
-    return 0
-
-
-@pytest.fixture
-def jstep_exit():
-    return 0
 
 
 

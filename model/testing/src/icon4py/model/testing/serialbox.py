@@ -1899,13 +1899,12 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_nonhydro_init(
-        self, istep: int, date: str, jstep: int, substep: int
+        self, istep: int, date: str, substep: int
     ) -> IconNonHydroInitSavepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-init"]
             .istep[istep]
             .date[date]
-            .jstep[jstep]
             .dyn_timestep[substep]
             .as_savepoint()
         )
@@ -1957,13 +1956,12 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_nonhydro_exit(
-        self, istep: int, date: str, jstep: int, substep: int
+        self, istep: int, date: str,  substep: int
     ) -> IconNonHydroExitSavepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-exit"]
             .istep[istep]
             .date[date]
-            .jstep[jstep]
             .dyn_timestep[substep]
             .as_savepoint()
         )
@@ -1972,12 +1970,11 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_nonhydro_step_exit(
-        self, date: str, jstep: int, substep: int
+        self, date: str,  substep: int
     ) -> IconNonHydroFinalSavepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-final"]
             .date[date]
-            .jstep[jstep]
             .dyn_timestep[substep]
             .as_savepoint()
         )
