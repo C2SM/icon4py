@@ -1,25 +1,20 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
-from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 from .test_apply_nabla2_to_w import apply_nabla2_to_w_numpy
 from .test_apply_nabla2_to_w_in_upper_damping_layer import (
@@ -34,10 +29,11 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         area,
         geofac_n2s,
         geofac_grg_x,
@@ -61,16 +57,18 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             dwdx, dwdy = np.where(
                 0 < reshaped_k,
                 calculate_horizontal_gradients_for_turbulence_numpy(
-                    grid, w_old, geofac_grg_x, geofac_grg_y
+                    connectivities, w_old, geofac_grg_x, geofac_grg_y
                 ),
                 (dwdx, dwdy),
             )
 
-        z_nabla2_c = calculate_nabla2_for_w_numpy(grid, w_old, geofac_n2s)
+        z_nabla2_c = calculate_nabla2_for_w_numpy(connectivities, w_old, geofac_n2s)
 
         w = np.where(
             (interior_idx <= reshaped_cell) & (reshaped_cell < halo_idx),
-            apply_nabla2_to_w_numpy(grid, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
+            apply_nabla2_to_w_numpy(
+                connectivities, area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w
+            ),
             w_old,
         )
 
@@ -86,11 +84,11 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @pytest.fixture
     def input_data(self, grid):
-        k = zero_field(grid, KDim, dtype=int32)
+        k = zero_field(grid, dims.KDim, dtype=gtx.int32)
         for lev in range(grid.num_levels):
             k[lev] = lev
 
-        cell = zero_field(grid, CellDim, dtype=int32)
+        cell = zero_field(grid, dims.CellDim, dtype=gtx.int32)
         for c in range(grid.num_cells):
             cell[c] = c
 
@@ -99,17 +97,17 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         halo_idx = 5
         type_shear = 2
 
-        geofac_grg_x = random_field(grid, CellDim, C2E2CODim)
-        geofac_grg_y = random_field(grid, CellDim, C2E2CODim)
-        diff_multfac_n2w = random_field(grid, KDim)
-        area = random_field(grid, CellDim)
-        geofac_n2s = random_field(grid, CellDim, C2E2CODim)
-        w_old = random_field(grid, CellDim, KDim)
+        geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim)
+        geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim)
+        diff_multfac_n2w = random_field(grid, dims.KDim)
+        area = random_field(grid, dims.CellDim)
+        geofac_n2s = random_field(grid, dims.CellDim, dims.C2E2CODim)
+        w_old = random_field(grid, dims.CellDim, dims.KDim)
         diff_multfac_w = 5.0
 
-        w = zero_field(grid, CellDim, KDim)
-        dwdx = zero_field(grid, CellDim, KDim)
-        dwdy = zero_field(grid, CellDim, KDim)
+        w = zero_field(grid, dims.CellDim, dims.KDim)
+        dwdx = zero_field(grid, dims.CellDim, dims.KDim)
+        dwdy = zero_field(grid, dims.CellDim, dims.KDim)
 
         return dict(
             area=area,

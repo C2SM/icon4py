@@ -25,6 +25,10 @@ jobs:
 
                       * `cscs-ci run benchmark`
 
+                      To run tests and benchmarks with the DaCe backend you can use:
+
+                      * `cscs-ci run dace`
+
                       In case your change might affect downstream [icon-exclaim](https://github.com/C2SM/icon-exclaim), please consider running
 
                       * `launch jenkins icon`

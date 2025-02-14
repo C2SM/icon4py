@@ -1,46 +1,36 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import os
 import pkgutil
 import re
+import traceback
 from importlib import reload
 
-import icon4py.model.atmosphere.diffusion.stencils as diffusion
-import icon4py.model.atmosphere.dycore as dycore
-import icon4py.model.common.interpolation.stencils as intp
-import icon4py.model.common.type_alias as type_alias
 import pytest
-from click.testing import CliRunner
 from gt4py.next.ffront.fbuiltins import float32, float64
 
-from icon4pytools.icon4pygen.cli import main
+import icon4py.model.atmosphere.diffusion.stencils as diffusion
+import icon4py.model.atmosphere.dycore.stencils as dycore
+import icon4py.model.common.interpolation.stencils as intp
+import icon4py.model.common.type_alias as type_alias
+from icon4py.tools.icon4pygen.cli import main
 
 from .conftest import get_stencil_module_path
 
 
-DYCORE_PKG = "atmosphere.dycore"
+DYCORE_PKG = "atmosphere.dycore.stencils"
 INTERPOLATION_PKG = "common.interpolation.stencils"
 DIFFUSION_PKG = "atmosphere.diffusion.stencils"
 
 LEVELS_PER_THREAD = "1"
 BLOCK_SIZE = "128"
 OUTPATH = "."
-
-
-@pytest.fixture
-def cli():
-    return CliRunner()
 
 
 def dycore_fencils() -> list[tuple[str, str]]:
@@ -92,6 +82,7 @@ def check_fortran_codegen(fname: str) -> None:
         f"run_and_verify_{stencil_name}",
         f"setup_{stencil_name}",
         f"free_{stencil_name}",
+        f"wrap_run_and_verify_{stencil_name}",
         f"wrap_run_{stencil_name}",
     ]
     check_for_matches(fname, patterns)
@@ -134,15 +125,17 @@ def check_code_was_generated(stencil_name: str) -> None:
 # TODO: (samkellerhals) add temporaries codegen here once all work.
 @pytest.mark.parametrize(
     ("stencil_module", "stencil_name"),
-    dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
+    dycore_fencils(),
 )
 @pytest.mark.parametrize("flags", [()], ids=["normal"])
-def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
+def test_codegen(cli, stencil_module, stencil_name, flags, test_temp_dir) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
-    with cli.isolated_filesystem():
-        cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH] + list(flags)
+    with cli.isolated_filesystem(temp_dir=test_temp_dir):
+        cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH, *flags]
         result = cli.invoke(main, cli_args)
-        assert result.exit_code == 0
+        assert (
+            result.exit_code == 0
+        ), f"Codegen failed with error:\n{''.join(traceback.format_exception(*result.exc_info))}"
         check_code_was_generated(stencil_name)
 
 

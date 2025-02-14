@@ -1,42 +1,24 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
+from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation,
 )
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field
+from icon4py.model.testing.helpers import StencilTest
 
 
-def add_analysis_increments_from_data_assimilation_numpy(
-    grid,
-    z_rho_expl: np.array,
-    rho_incr: np.array,
-    z_exner_expl: np.array,
-    exner_incr: np.array,
-    iau_wgt_dyn: wpfloat,
-) -> tuple[np.array, np.array]:
-    z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
-    z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
-    return z_rho_expl, z_exner_expl
-
-
-class TestMoSolveNonhydroStencil50(StencilTest):
+class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
     PROGRAM = add_analysis_increments_from_data_assimilation
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
 
@@ -47,20 +29,19 @@ class TestMoSolveNonhydroStencil50(StencilTest):
         rho_incr: np.array,
         z_exner_expl: np.array,
         exner_incr: np.array,
-        iau_wgt_dyn: wpfloat,
+        iau_wgt_dyn,
         **kwargs,
     ) -> dict:
-        z_rho_expl, z_exner_expl = add_analysis_increments_from_data_assimilation_numpy(
-            grid, z_rho_expl, rho_incr, z_exner_expl, exner_incr, iau_wgt_dyn
-        )
+        z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
+        z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture
     def input_data(self, grid):
-        z_exner_expl = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        exner_incr = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_rho_expl = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        rho_incr = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_exner_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner_incr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rho_expl = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_incr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         iau_wgt_dyn = wpfloat("8.0")
 
         return dict(
@@ -69,8 +50,8 @@ class TestMoSolveNonhydroStencil50(StencilTest):
             rho_incr=rho_incr,
             exner_incr=exner_incr,
             iau_wgt_dyn=iau_wgt_dyn,
-            horizontal_start=int32(0),
-            horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
-            vertical_end=int32(grid.num_levels),
+            horizontal_start=0,
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=0,
+            vertical_end=gtx.int32(grid.num_levels),
         )

@@ -1,18 +1,15 @@
 include:
   - local: 'ci/base.yml'
 
-variables:
-  DACE_VERSION: "0.15.1"
-
-build:
-  extends: .build_template
-
-benchmark_model_icon_grid:
-  extends: .test_template
+.benchmark_model_stencils:
   stage: benchmark
   script:
-    - if [ "$BACKEND" = "dace_cpu" ] || [ "$BACKEND" = "dace_gpu" ]; then pip install dace==$DACE_VERSION; fi
-    - tox -r -e run_benchmarks -c model/ --verbose -- --backend=$BACKEND --grid=icon_grid
+    - nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
-      - BACKEND: [dace_cpu, gtfn_cpu, gtfn_gpu]
+      - BACKEND: [gtfn_cpu, gtfn_gpu]
+        GRID: [icon_grid, icon_grid_global]
+# benchmark_model_stencils_x86_64:
+#   extends: [.benchmark_model_stencils, .test_template_x86_64]
+benchmark_model_stencils_aarch64:
+  extends: [.benchmark_model_stencils, .test_template_aarch64]

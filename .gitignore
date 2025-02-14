@@ -1,3 +1,7 @@
+# nvidia
+*.ncu-rep
+
+
 ### Custom ####
 _build
 _local
@@ -6,6 +10,11 @@ _reports
 tmp
 testdata
 simple_mesh*.nc
+/prof
+.profile
+
+### Sphinx ###
+**/docs/_source/*.rst
 
 ### GT4Py ####
 .gt_cache/
@@ -109,7 +118,7 @@ venv.bak/
 .idea/
 
 # VSCode project settings
-.vscode/
+.vscode
 
 # SublimeText project settings
 *.sublime-project

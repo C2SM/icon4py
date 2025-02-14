@@ -2,38 +2,71 @@ include:
   - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
 
 stages:
-  - build
+  - baseimage
+  - image
   - test
   - benchmark
 
-.py310: &py310
+variables:
   PYVERSION_PREFIX: py310
   PYVERSION: 3.10.9
 
-variables:
-  PYTHON_VERSION: "3.10"
-  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
-
-.build_template:
-  stage: build
-  extends: .container-builder-cscs-zen2
+# Base image build step with SHA256 checksum for caching
+.build_baseimage:
+  stage: baseimage
+  before_script:
+    # include build arguments in hash since we use a parameterized Docker file
+    - DOCKER_TAG=`echo "$(cat $DOCKERFILE) $DOCKER_BUILD_ARGS" | sha256sum | head -c 16`
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-$PYVERSION
+    - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
   variables:
-    DOCKERFILE: ci/docker/Dockerfile.build
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION"]'
-    <<: *py310
+    DOCKERFILE: ci/docker/base.Dockerfile
+    # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
+    CSCS_REBUILD_POLICY: if-not-exists
+    DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
+# build_baseimage_x86_64:
+#   extends: [.container-builder-cscs-zen2, .build_baseimage]
+#   variables:
+#     HPC_SDK_VERSION: 22.11
+#     HPC_SDK_NAME: "nvhpc_2022_2211_Linux_${ARCH}_cuda_11.8"
+build_baseimage_aarch64:
+  extends: [.container-builder-cscs-gh200, .build_baseimage]
+  variables:
+    HPC_SDK_VERSION: 24.11
+    HPC_SDK_NAME: "nvhpc_2024_2411_Linux_${ARCH}_cuda_12.6"
+    # TODO(edopao): use santis config until a gh200 machine is available in a kubernetes cluster
+    # CI-Ext is awaiting task to be done: https://jira.cscs.ch/browse/SD-60293
+    F7T_URL: 'https://api.cscs.ch/cw/firecrest/v1'
+    FIRECREST_SYSTEM: 'santis'
+
+.build_image:
+  stage: image
+  variables:
+      # Unique image name based on commit SHA
+      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+      DOCKERFILE: ci/docker/checkout.Dockerfile
+      DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+# build_image_x86_64:
+#   extends: [.container-builder-cscs-zen2, .build_image]
+#   needs: [build_baseimage_x86_64]
+build_image_aarch64:
+  extends: [.container-builder-cscs-gh200, .build_image]
+  needs: [build_baseimage_aarch64]
+  variables:
+    # TODO(edopao): use santis config until a gh200 machine is available in a kubernetes cluster
+    # CI-Ext is awaiting task to be done: https://jira.cscs.ch/browse/SD-60293
+    F7T_URL: 'https://api.cscs.ch/cw/firecrest/v1'
+    FIRECREST_SYSTEM: 'santis'
 
 .test_template:
-  extends: .container-runner-daint-gpu
   timeout: 8h
-  image: $PERSIST_IMAGE_NAME
+  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
-    - apt-get update
-    - python3 -m pip install --upgrade pip setuptools wheel
     - cd /icon4py
-    - pyversion_no_dot="${PYTHON_VERSION//./}"
-    - pip install tox clang-format
-    - python -c "import cupy"
-    - ls ${TEST_DATA_PATH}
+    - ls "${TEST_DATA_PATH}"
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
@@ -41,5 +74,28 @@ variables:
     CRAY_CUDA_MPS: 1
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
-    CSCS_NEEDED_DATA: icon4py
-    TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"
+    TEST_DATA_PATH: "/icon4py/ci/testdata"
+    ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
+    PY2F_GPU_TESTS: 1
+    CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
+    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+# .test_template_x86_64:
+#   extends: [.container-runner-daint-gpu-f7t, .test_template]
+#   needs: [build_image_x86_64]
+#   variables:
+#     CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
+#     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/22.11"
+#     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda11"
+.test_template_aarch64:
+  extends: [.container-runner-santis-gh200, .test_template]
+  needs: [build_image_aarch64]
+  variables:
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
+    # Grace-Hopper gpu architecture is not enabled by default in CUDA build
+    CUDAARCHS: "90"
+    # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
+    # Another problem, observed in test stage, is that gpu tests hang in combination with CUDA MPS,
+    # when high test parallelism is used.
+    NUM_PROCESSES: 16
+    ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"

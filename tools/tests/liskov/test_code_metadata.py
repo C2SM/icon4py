@@ -1,28 +1,24 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
 import pytest
 
-import icon4pytools
-from icon4pytools.liskov.external.metadata import CodeMetadata
+import icon4py.tools
+from icon4py.tools.liskov.external.metadata import CodeMetadata
 
 
 @pytest.fixture
 def module_parent():
-    import icon4pytools.liskov.external.metadata as meta
+    import icon4py.tools.liskov.external.metadata as meta
 
     return Path(meta.__file__).parent
 
@@ -36,7 +32,7 @@ def test_generated_on():
 
 def test_version(module_parent):
     metadata = CodeMetadata()
-    assert metadata.version == icon4pytools.__version__
+    assert metadata.version == icon4py.tools.__version__
 
 
 def test_click_context():

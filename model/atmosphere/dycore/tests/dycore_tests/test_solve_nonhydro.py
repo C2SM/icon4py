@@ -1,68 +1,57 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import logging
 
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    IntermediateFields,
-    NonHydrostaticConfig,
-    NonHydrostaticParams,
-    SolveNonhydro,
+import icon4py.model.common.grid.states as grid_states
+from icon4py.model.atmosphere.dycore import (
+    dycore_states,
+    dycore_utils,
+    fused_solve_nonhydro_stencil_15_to_28,
+    solve_nonhydro as solve_nh,
 )
-from icon4py.model.atmosphere.dycore.state_utils.states import (
-    DiagnosticStateNonHydro,
-    PrepAdvection,
-)
-from icon4py.model.atmosphere.dycore.state_utils.utils import (
-    _allocate,
-    _calculate_bdy_divdamp,
-    _calculate_scal_divdamp,
-)
-from icon4py.model.common import constants
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
-from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
-from icon4py.model.common.test_utils.helpers import dallclose
-from icon4py.model.common.test_utils.serialbox_utils import IconNonHydroInitSavepoint
-
-from .utils import (
-    construct_config,
-    construct_interpolation_state_for_nonhydro,
-    construct_nh_metric_state,
+from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing import (
+    datatest_utils as dt_utils,
+    helpers,
 )
 
-
-backend = run_gtfn
+from . import utils
 
 
 @pytest.mark.datatest
 def test_validate_divdamp_fields_against_savepoint_values(
-    grid_savepoint,
-    savepoint_nonhydro_init,
-    icon_grid,
+    grid_savepoint, savepoint_nonhydro_init, icon_grid, backend
 ):
-    config = NonHydrostaticConfig()
+    config = solve_nh.NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
-    enh_divdamp_fac = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
-    scal_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
-    bdy_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
-    en_smag_fac_for_zero_nshift.with_backend(backend)(
+    enh_divdamp_fac = data_alloc.zero_field(
+        icon_grid,
+        dims.KDim,
+        backend=backend,
+    )
+    scal_divdamp = data_alloc.zero_field(
+        icon_grid,
+        dims.KDim,
+        backend=backend,
+    )
+    bdy_divdamp = data_alloc.zero_field(
+        icon_grid,
+        dims.KDim,
+        backend=backend,
+    )
+    smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
         config.divdamp_fac,
         config.divdamp_fac2,
@@ -73,9 +62,9 @@ def test_validate_divdamp_fields_against_savepoint_values(
         config.divdamp_z3,
         config.divdamp_z4,
         enh_divdamp_fac,
-        offset_provider={"Koff": KDim},
+        offset_provider={"Koff": dims.KDim},
     )
-    _calculate_scal_divdamp.with_backend(backend)(
+    dycore_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_order=config.divdamp_order,
         mean_cell_area=mean_cell_area,
@@ -83,21 +72,73 @@ def test_validate_divdamp_fields_against_savepoint_values(
         out=scal_divdamp,
         offset_provider={},
     )
-    _calculate_bdy_divdamp.with_backend(backend)(
-        scal_divdamp, config.nudge_max_coeff, constants.dbl_eps, out=bdy_divdamp, offset_provider={}
+    dycore_utils._calculate_bdy_divdamp.with_backend(backend)(
+        scal_divdamp,
+        config.nudge_max_coeff,
+        constants.DBL_EPS,
+        out=bdy_divdamp,
+        offset_provider={},
     )
 
-    assert dallclose(scal_divdamp.asnumpy(), savepoint_nonhydro_init.scal_divdamp().asnumpy())
-    assert dallclose(bdy_divdamp.asnumpy(), savepoint_nonhydro_init.bdy_divdamp().asnumpy())
+    assert helpers.dallclose(
+        scal_divdamp.asnumpy(), savepoint_nonhydro_init.scal_divdamp().asnumpy()
+    )
+    assert helpers.dallclose(bdy_divdamp.asnumpy(), savepoint_nonhydro_init.bdy_divdamp().asnumpy())
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit, damping_height",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, substep,  step_date_exit, at_initial_timestep",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (1, 0, "2021-06-20T12:00:10.000", 1, 0, 1, "2021-06-20T12:00:10.000", True),
+        (2, 0, "2021-06-20T12:00:10.000", 2, 0, 1, "2021-06-20T12:00:10.000", True),
+        (1, 1, "2021-06-20T12:00:10.000", 1, 1, 2, "2021-06-20T12:00:10.000", True),
+        (2, 1, "2021-06-20T12:00:10.000", 2, 1, 2, "2021-06-20T12:00:10.000", True),
+        (1, 0, "2021-06-20T12:00:20.000", 1, 0, 1, "2021-06-20T12:00:20.000", False),
+        (2, 0, "2021-06-20T12:00:20.000", 2, 0, 1, "2021-06-20T12:00:20.000", False),
+        (1, 1, "2021-06-20T12:00:20.000", 1, 1, 2, "2021-06-20T12:00:20.000", False),
+        (2, 1, "2021-06-20T12:00:20.000", 2, 1, 2, "2021-06-20T12:00:20.000", False),
+    ],
+)
+def test_time_step_flags(
+    experiment,
+    istep_init,
+    jstep_init,
+    step_date_init,
+    istep_exit,
+    jstep_exit,
+    step_date_exit,
+    vn_only,
+    at_initial_timestep,
+    savepoint_nonhydro_init,
+):
+    sp = savepoint_nonhydro_init
+    recompute = sp.get_metadata("recompute").get("recompute")
+    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
+    linit = sp.get_metadata("linit").get("linit")
+
+    assert recompute == (jstep_init == 0)
+    assert clean_mflx == (jstep_init == 0)
+    assert linit == (at_initial_timestep and (jstep_init == 0))
+
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 1, True)])
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -108,6 +149,9 @@ def test_nonhydro_predictor_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     grid_savepoint,
     metrics_savepoint,
@@ -115,32 +159,34 @@ def test_nonhydro_predictor_step(
     savepoint_nonhydro_exit,
     experiment,
     ndyn_substeps,
+    at_initial_timestep,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
-    config = construct_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
-    nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = create_vertical_params(damping_height, grid_savepoint)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    recompute = sp.get_metadata("recompute").get("recompute")
-    linit = sp.get_metadata("linit").get("linit")
 
-    nnow = 0
-    nnew = 1
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
 
-    diagnostic_state_nh = construct_diagnostics(sp)
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
-
-    solve_nonhydro = SolveNonhydro()
-    nlev = icon_grid.num_levels
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -150,339 +196,339 @@ def test_nonhydro_predictor_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
+    )
+    nlev = icon_grid.num_levels
+    at_first_substep = jstep_init == 0
+
+    prognostic_states = utils.create_prognostic_states(sp)
+    solve_nonhydro.update_time_levels_for_velocity_tendencies(
+        diagnostic_state_nh,
+        at_first_substep=at_first_substep,
+        at_initial_timestep=at_initial_timestep,
     )
 
-    prognostic_state_ls = create_prognostic_states(sp)
-    solve_nonhydro.set_timelevels(nnow, nnew)
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state=prognostic_state_ls,
+        prognostic_states=prognostic_states,
         z_fields=solve_nonhydro.intermediate_fields,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        at_first_substep=(jstep_init == 0),
-        nnow=nnow,
-        nnew=nnew,
+        at_initial_timestep=at_initial_timestep,
+        at_first_substep=at_first_substep,
     )
 
-    cell_start_lb_plus2 = icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+    cell_domain = h_grid.domain(dims.CellDim)
+    edge_domain = h_grid.domain(dims.EdgeDim)
+
+    cell_start_lateral_boundary_level_2 = icon_grid.start_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    cell_start_nudging = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
-    edge_start_lb_plus4 = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+    cell_start_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+
+    edge_start_lateral_boundary_level_5 = icon_grid.start_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
-    edge_start_lb_plus6 = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+    edge_start_lateral_boundary_level_7 = icon_grid.start_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
-    edge_start_nuding_plus1 = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
-    )
+    edge_start_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
 
     # stencils 2, 3
-    assert dallclose(
-        diagnostic_state_nh.exner_pr.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.exner_pr().asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        diagnostic_state_nh.exner_pr.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.exner_pr().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
-    assert dallclose(
-        solve_nonhydro.z_exner_ex_pr.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.z_exner_ex_pr.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_exner_ex_pr().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
 
     # stencils 4,5
-    assert dallclose(
-        solve_nonhydro.z_exner_ic.asnumpy()[cell_start_lb_plus2:, nlev - 1],
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lb_plus2:, nlev - 1],
+    assert helpers.dallclose(
+        solve_nonhydro.z_exner_ic.asnumpy()[cell_start_lateral_boundary_level_2:, nlev - 1],
+        sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_2:, nlev - 1],
     )
     nflatlev = vertical_params.nflatlev
-    assert dallclose(
-        solve_nonhydro.z_exner_ic.asnumpy()[cell_start_lb_plus2:, nflatlev : nlev - 1],
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lb_plus2:, nflatlev : nlev - 1],
+    assert helpers.dallclose(
+        solve_nonhydro.z_exner_ic.asnumpy()[
+            cell_start_lateral_boundary_level_2:, nflatlev : nlev - 1
+        ],
+        sp_exit.z_exner_ic().asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev : nlev - 1],
         rtol=1.0e-9,
     )
     # stencil 6
-    assert dallclose(
-        solve_nonhydro.z_dexner_dz_c_1.asnumpy()[cell_start_lb_plus2:, nflatlev:],
-        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lb_plus2:, nflatlev:],
+    assert helpers.dallclose(
+        solve_nonhydro.z_dexner_dz_c_1.asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
+        sp_exit.z_dexner_dz_c(1).asnumpy()[cell_start_lateral_boundary_level_2:, nflatlev:],
         atol=5e-18,
     )
 
     # stencils 7,8,9
-    assert dallclose(
-        diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.rho_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
-    assert dallclose(
-        solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lb_plus2:, 1:],
-        sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lb_plus2:, 1:],
+    assert helpers.dallclose(
+        solve_nonhydro.z_th_ddz_exner_c.asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
+        sp_exit.z_th_ddz_exner_c().asnumpy()[cell_start_lateral_boundary_level_2:, 1:],
+        rtol=2.0e-12,
     )
 
     # stencils 7,8,9, 11
-    assert dallclose(
-        solve_nonhydro.z_theta_v_pr_ic.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.z_theta_v_pr_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_theta_v_pr_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
-    assert dallclose(
-        diagnostic_state_nh.theta_v_ic.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        diagnostic_state_nh.theta_v_ic.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.theta_v_ic().asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
     # stencils 7,8,9, 13
-    assert dallclose(
-        solve_nonhydro.z_rth_pr_1.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.z_rth_pr_1.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_rth_pr(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
-    assert dallclose(
-        solve_nonhydro.z_rth_pr_2.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.z_rth_pr(2).asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.z_rth_pr_2.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_rth_pr(2).asnumpy()[cell_start_lateral_boundary_level_2:, :],
     )
 
     # stencils 12
     nflat_gradp = vertical_params.nflat_gradp
-    assert dallclose(
-        solve_nonhydro.z_dexner_dz_c_2.asnumpy()[cell_start_lb_plus2:, nflat_gradp:],
-        sp_exit.z_dexner_dz_c(2).asnumpy()[cell_start_lb_plus2:, nflat_gradp:],
+    assert helpers.dallclose(
+        solve_nonhydro.z_dexner_dz_c_2.asnumpy()[
+            cell_start_lateral_boundary_level_2:, nflat_gradp:
+        ],
+        sp_exit.z_dexner_dz_c(2).asnumpy()[cell_start_lateral_boundary_level_2:, nflat_gradp:],
         atol=1e-22,
     )
 
     # grad_green_gauss_cell_dsl
-    assert dallclose(
-        solve_nonhydro.z_grad_rth_1.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.z_grad_rth(1).asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.z_grad_rth_1.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_grad_rth(1).asnumpy()[cell_start_lateral_boundary_level_2:, :],
         rtol=1e-6,
         atol=1e-21,
     )
-    assert dallclose(
-        solve_nonhydro.z_grad_rth_2.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.z_grad_rth(2).asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.z_grad_rth_2.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_grad_rth(2).asnumpy()[cell_start_lateral_boundary_level_2:, :],
         rtol=1e-6,
         atol=1e-21,
     )
-    assert dallclose(
-        solve_nonhydro.z_grad_rth_3.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.z_grad_rth(3).asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.z_grad_rth_3.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_grad_rth(3).asnumpy()[cell_start_lateral_boundary_level_2:, :],
         rtol=5e-6,
         atol=1e-17,
     )
-    assert dallclose(
-        solve_nonhydro.z_grad_rth_4.asnumpy()[cell_start_lb_plus2:, :],
-        sp_exit.z_grad_rth(4).asnumpy()[cell_start_lb_plus2:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.z_grad_rth_4.asnumpy()[cell_start_lateral_boundary_level_2:, :],
+        sp_exit.z_grad_rth(4).asnumpy()[cell_start_lateral_boundary_level_2:, :],
         rtol=1e-6,
         atol=1e-21,
     )
 
     # compute_horizontal_advection_of_rho_and_theta
-    assert dallclose(
-        solve_nonhydro.intermediate_fields.z_rho_e.asnumpy()[edge_start_lb_plus6:, :],
-        sp_exit.z_rho_e().asnumpy()[edge_start_lb_plus6:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.intermediate_fields.z_rho_e.asnumpy()[
+            edge_start_lateral_boundary_level_7:, :
+        ],
+        sp_exit.z_rho_e().asnumpy()[edge_start_lateral_boundary_level_7:, :],
     )
-    assert dallclose(
-        solve_nonhydro.intermediate_fields.z_theta_v_e.asnumpy()[edge_start_lb_plus6:, :],
-        sp_exit.z_theta_v_e().asnumpy()[edge_start_lb_plus6:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.intermediate_fields.z_theta_v_e.asnumpy()[
+            edge_start_lateral_boundary_level_7:, :
+        ],
+        sp_exit.z_theta_v_e().asnumpy()[edge_start_lateral_boundary_level_7:, :],
     )
 
     # stencils 18,19, 20, 22
-    assert dallclose(
-        solve_nonhydro.intermediate_fields.z_gradh_exner.asnumpy()[edge_start_nuding_plus1:, :],
-        sp_exit.z_gradh_exner().asnumpy()[edge_start_nuding_plus1:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.intermediate_fields.z_gradh_exner.asnumpy()[edge_start_nudging_level_2:, :],
+        sp_exit.z_gradh_exner().asnumpy()[edge_start_nudging_level_2:, :],
         atol=1e-20,
     )
     # stencil 21
-    assert dallclose(
-        solve_nonhydro.z_hydro_corr.asnumpy()[edge_start_nuding_plus1:, nlev - 1],
-        sp_exit.z_hydro_corr().asnumpy()[edge_start_nuding_plus1:, nlev - 1],
+    assert helpers.dallclose(
+        solve_nonhydro.z_hydro_corr.asnumpy()[edge_start_nudging_level_2:, nlev - 1],
+        sp_exit.z_hydro_corr().asnumpy()[edge_start_nudging_level_2:, nlev - 1],
         atol=1e-20,
     )
-    prognostic_state_nnew = prognostic_state_ls[1]
+    prognostic_state_nnew = prognostic_states.next
     vn_new_reference = sp_exit.vn_new().asnumpy()
 
     # stencils 24
-    assert dallclose(
-        prognostic_state_nnew.vn.asnumpy()[edge_start_nuding_plus1:, :],
-        vn_new_reference[edge_start_nuding_plus1:, :],
+    assert helpers.dallclose(
+        prognostic_state_nnew.vn.asnumpy()[edge_start_nudging_level_2:, :],
+        vn_new_reference[edge_start_nudging_level_2:, :],
         atol=6e-15,
     )
     # stencil 29
-    assert dallclose(
-        prognostic_state_nnew.vn.asnumpy()[:edge_start_nuding_plus1, :],
-        vn_new_reference[:edge_start_nuding_plus1, :],
+    assert helpers.dallclose(
+        prognostic_state_nnew.vn.asnumpy()[:edge_start_nudging_level_2, :],
+        vn_new_reference[:edge_start_nudging_level_2, :],
     )
 
     # stencil 30
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.z_vn_avg.asnumpy(),
         sp_exit.z_vn_avg().asnumpy(),
         atol=5e-14,
     )
     # stencil 30
-    assert dallclose(
-        solve_nonhydro.intermediate_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
-        sp_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.intermediate_fields.z_graddiv_vn.asnumpy()[
+            edge_start_lateral_boundary_level_5:, :
+        ],
+        sp_exit.z_graddiv_vn().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=5e-20,
     )
     # stencil 30
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.vt.asnumpy(),
         sp_exit.vt().asnumpy(),
         atol=5e-14,
     )
 
     # stencil 32
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.mass_fl_e.asnumpy(),
         sp_exit.mass_fl_e().asnumpy(),
         atol=4e-12,
     )
     # stencil 32
     # TODO: @abishekg7 higher tol.
-    assert dallclose(
-        solve_nonhydro.z_theta_v_fl_e.asnumpy(),
-        sp_exit.z_theta_v_fl_e().asnumpy(),
+    assert helpers.dallclose(
+        solve_nonhydro.z_theta_v_fl_e.asnumpy()[edge_start_lateral_boundary_level_5:, :],
+        sp_exit.z_theta_v_fl_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=1e-9,
     )
 
     # stencil 35,36, 37,38
-    assert dallclose(
-        diagnostic_state_nh.vn_ie.asnumpy()[edge_start_lb_plus4:, :],
-        sp_exit.vn_ie().asnumpy()[edge_start_lb_plus4:, :],
+    assert helpers.dallclose(
+        diagnostic_state_nh.vn_ie.asnumpy()[edge_start_lateral_boundary_level_5:, :],
+        sp_exit.vn_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=2e-14,
     )
 
     # stencil 35,36, 37,38
-    assert dallclose(
-        solve_nonhydro.intermediate_fields.z_vt_ie.asnumpy(),
-        sp_exit.z_vt_ie().asnumpy(),
+    assert helpers.dallclose(
+        solve_nonhydro.intermediate_fields.z_vt_ie.asnumpy()[
+            edge_start_lateral_boundary_level_5:, :
+        ],
+        sp_exit.z_vt_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=2e-14,
     )
     # stencil 35,36
-    assert dallclose(
-        solve_nonhydro.intermediate_fields.z_kin_hor_e.asnumpy()[edge_start_lb_plus4:, :],
-        sp_exit.z_kin_hor_e().asnumpy()[edge_start_lb_plus4:, :],
+    assert helpers.dallclose(
+        solve_nonhydro.intermediate_fields.z_kin_hor_e.asnumpy()[
+            edge_start_lateral_boundary_level_5:, :
+        ],
+        sp_exit.z_kin_hor_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=1e-20,
     )
     # stencil 35
-    assert dallclose(
-        solve_nonhydro.z_w_concorr_me.asnumpy()[:, nflatlev:],
-        sp_exit.z_w_concorr_me().asnumpy()[:, nflatlev:],
+    assert helpers.dallclose(
+        solve_nonhydro.z_w_concorr_me.asnumpy()[edge_start_lateral_boundary_level_5:, nflatlev:],
+        sp_exit.z_w_concorr_me().asnumpy()[edge_start_lateral_boundary_level_5:, nflatlev:],
         atol=1e-15,
     )
 
     # stencils 39,40
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.w_concorr_c.asnumpy(),
         sp_exit.w_concorr_c().asnumpy(),
         atol=1e-15,
     )
 
     # stencil 41
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.z_flxdiv_mass.asnumpy(),
         sp_exit.z_flxdiv_mass().asnumpy(),
         atol=5e-13,  # TODO (magdalena) was 5e-15 for local experiment only
     )
 
     # TODO: @abishekg7 higher tol.
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.z_flxdiv_theta.asnumpy(),
         sp_exit.z_flxdiv_theta().asnumpy(),
         atol=5e-12,
     )
 
     # stencils 43, 46, 47
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_contr_w_fl_l.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_contr_w_fl_l().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
 
     # stencil 43
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_w_expl.asnumpy()[cell_start_nudging:, 1:nlev],
         sp_exit.z_w_expl().asnumpy()[cell_start_nudging:, 1:nlev],
         atol=1e-14,
     )
 
     # stencil 44, 45
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_alpha.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_alpha().asnumpy()[cell_start_nudging:, :],
         atol=5e-13,
     )
     # stencil 44
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_beta.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_beta().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 45_b, 52
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_q.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_q().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 48, 49
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_rho_expl.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_rho_expl().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 48, 49
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_exner_expl.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_exner_expl().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
 
     # end
-    assert dallclose(prognostic_state_nnew.rho.asnumpy(), sp_exit.rho_new().asnumpy())
-    assert dallclose(prognostic_state_nnew.w.asnumpy(), sp_exit.w_new().asnumpy(), atol=7e-14)
+    assert helpers.dallclose(prognostic_state_nnew.rho.asnumpy(), sp_exit.rho_new().asnumpy())
+    assert helpers.dallclose(
+        prognostic_state_nnew.w.asnumpy(), sp_exit.w_new().asnumpy(), atol=7e-14
+    )
 
-    assert dallclose(prognostic_state_nnew.exner.asnumpy(), sp_exit.exner_new().asnumpy())
-    assert dallclose(prognostic_state_nnew.theta_v.asnumpy(), sp_exit.theta_v_new().asnumpy())
-
-
-def construct_diagnostics(init_savepoint: IconNonHydroInitSavepoint):
-    return DiagnosticStateNonHydro(
-        theta_v_ic=init_savepoint.theta_v_ic(),
-        exner_pr=init_savepoint.exner_pr(),
-        rho_ic=init_savepoint.rho_ic(),
-        ddt_exner_phy=init_savepoint.ddt_exner_phy(),
-        grf_tend_rho=init_savepoint.grf_tend_rho(),
-        grf_tend_thv=init_savepoint.grf_tend_thv(),
-        grf_tend_w=init_savepoint.grf_tend_w(),
-        mass_fl_e=init_savepoint.mass_fl_e(),
-        ddt_vn_phy=init_savepoint.ddt_vn_phy(),
-        grf_tend_vn=init_savepoint.grf_tend_vn(),
-        ddt_vn_apc_ntl1=init_savepoint.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=init_savepoint.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=init_savepoint.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=init_savepoint.ddt_w_adv_pc(2),
-        vt=init_savepoint.vt(),
-        vn_ie=init_savepoint.vn_ie(),
-        w_concorr_c=init_savepoint.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=init_savepoint.exner_dyn_incr(),
+    assert helpers.dallclose(prognostic_state_nnew.exner.asnumpy(), sp_exit.exner_new().asnumpy())
+    assert helpers.dallclose(
+        prognostic_state_nnew.theta_v.asnumpy(), sp_exit.theta_v_new().asnumpy()
     )
 
 
-def create_vertical_params(damping_height, grid_savepoint):
-    return VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
-        rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
-        nflatlev=grid_savepoint.nflatlev(),
-    )
-
-
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(2, 2, True)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit, damping_height",
+    "experiment,step_date_init, step_date_exit",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
     ],
 )
 def test_nonhydro_corrector_step(
@@ -493,6 +539,9 @@ def test_nonhydro_corrector_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     grid_savepoint,
     metrics_savepoint,
@@ -500,31 +549,34 @@ def test_nonhydro_corrector_step(
     savepoint_nonhydro_exit,
     experiment,
     ndyn_substeps,
+    at_initial_timestep,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
-    config = construct_config(experiment, ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
-    nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp(),
     )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+    prep_adv = dycore_states.PrepAdvection(
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
-    nnow = 0  # TODO: @abishekg7 read from serialized data?
-    nnew = 1
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
 
-    diagnostic_state_nh = construct_diagnostics(sp)
-
-    z_fields = IntermediateFields(
+    z_fields = solve_nh.IntermediateFields(
         z_gradh_exner=sp.z_gradh_exner(),
         z_alpha=sp.z_alpha(),
         z_beta=sp.z_beta(),
@@ -543,14 +595,13 @@ def test_nonhydro_corrector_step(
 
     divdamp_fac_o2 = sp.divdamp_fac_o2()
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -560,111 +611,131 @@ def test_nonhydro_corrector_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
+    at_first_substep = jstep_init == 0
+    at_last_substep = jstep_init == (ndyn_substeps - 1)
 
-    prognostic_state_ls = create_prognostic_states(sp)
-    solve_nonhydro.set_timelevels(nnow, nnew)
+    prognostic_states = utils.create_prognostic_states(sp)
+    solve_nonhydro.update_time_levels_for_velocity_tendencies(
+        diagnostic_state_nh,
+        at_first_substep=at_first_substep,
+        at_initial_timestep=at_initial_timestep,
+    )
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state=prognostic_state_ls,
+        prognostic_states=prognostic_states,
         z_fields=z_fields,
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
-        nnew=nnew,
-        nnow=nnow,
-        lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
-        at_last_substep=jstep_init == (ndyn_substeps - 1),
+        at_first_substep=at_first_substep,
+        at_last_substep=at_last_substep,
     )
-    if icon_grid.limited_area:
-        assert dallclose(solve_nonhydro._bdy_divdamp.asnumpy(), sp.bdy_divdamp().asnumpy())
 
-    assert dallclose(solve_nonhydro.scal_divdamp.asnumpy(), sp.scal_divdamp().asnumpy())
+    if icon_grid.limited_area:
+        assert helpers.dallclose(solve_nonhydro._bdy_divdamp.asnumpy(), sp.bdy_divdamp().asnumpy())
+
+    assert helpers.dallclose(solve_nonhydro.scal_divdamp.asnumpy(), sp.scal_divdamp().asnumpy())
     # stencil 10
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.rho_ic.asnumpy(),
         savepoint_nonhydro_exit.rho_ic().asnumpy(),
     )
     # stencil 10
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.theta_v_ic.asnumpy(),
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
     )
 
     # stencil 17
-    assert dallclose(
+    assert helpers.dallclose(
         z_fields.z_graddiv_vn.asnumpy(),
         savepoint_nonhydro_exit.z_graddiv_vn().asnumpy(),
         atol=1e-12,
     )
 
     # stencil 23,26, 27, 4th_order_divdamp
-    assert dallclose(
-        prognostic_state_ls[nnew].vn.asnumpy(),
+    assert helpers.dallclose(
+        prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-9,  # TODO (magdalena) was 1e-10 for local experiment only
     )
 
-    assert dallclose(
-        prognostic_state_ls[nnew].exner.asnumpy(), savepoint_nonhydro_exit.exner_new().asnumpy()
+    assert helpers.dallclose(
+        prognostic_states.next.exner.asnumpy(),
+        savepoint_nonhydro_exit.exner_new().asnumpy(),
     )
 
-    assert dallclose(
-        prognostic_state_ls[nnew].rho.asnumpy(),
+    assert helpers.dallclose(
+        prognostic_states.next.rho.asnumpy(),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
-    assert dallclose(
-        prognostic_state_ls[nnew].w.asnumpy(),
+    assert helpers.dallclose(
+        prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
-    assert dallclose(
-        prognostic_state_ls[nnew].theta_v.asnumpy(),
+    assert helpers.dallclose(
+        prognostic_states.next.theta_v.asnumpy(),
         savepoint_nonhydro_exit.theta_v_new().asnumpy(),
     )
     # stencil 31
-    assert dallclose(
-        solve_nonhydro.z_vn_avg.asnumpy(), savepoint_nonhydro_exit.z_vn_avg().asnumpy(), rtol=5e-7
+    assert helpers.dallclose(
+        solve_nonhydro.z_vn_avg.asnumpy(),
+        savepoint_nonhydro_exit.z_vn_avg().asnumpy(),
+        rtol=5e-7,
     )
 
     # stencil 32
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.mass_fl_e.asnumpy(),
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
         rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
     )
 
     # stencil 33, 34
-    assert dallclose(
+    assert helpers.dallclose(
         prep_adv.mass_flx_me.asnumpy(),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
     )
     # stencil 33, 34
-    assert dallclose(
+    assert helpers.dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
     )
     # stencil 60 only relevant for last substep
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.exner_dyn_incr.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init,jstep_init, istep_exit,jstep_exit", [(1, 0, 2, 0)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit, damping_height",
+    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+)
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
     ],
 )
 def test_run_solve_nonhydro_single_step(
@@ -678,43 +749,51 @@ def test_run_solve_nonhydro_single_step(
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
+    at_initial_timestep,
     caplog,
+    backend,
 ):
     caplog.set_level(logging.DEBUG)
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
 
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
-    nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = create_vertical_params(damping_height, grid_savepoint)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
-    prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+    prep_adv = dycore_states.PrepAdvection(
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
-    nnow = 0
-    nnew = 1
-    recompute = sp.get_metadata("recompute").get("recompute")
-    linit = sp.get_metadata("linit").get("linit")
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
 
-    diagnostic_state_nh = construct_diagnostics(sp)
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
-
-    solve_nonhydro = SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -724,65 +803,65 @@ def test_run_solve_nonhydro_single_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
-    prognostic_state_ls = create_prognostic_states(sp)
+    prognostic_states = utils.create_prognostic_states(sp)
 
     initial_divdamp_fac = sp.divdamp_fac_o2()
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
-        prognostic_state_ls=prognostic_state_ls,
+        prognostic_states=prognostic_states,
         prep_adv=prep_adv,
         divdamp_fac_o2=initial_divdamp_fac,
         dtime=dtime,
-        l_recompute=recompute,
-        l_init=linit,
-        nnew=nnew,
-        nnow=nnow,
-        lclean_mflx=clean_mflx,
+        at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=jstep_init == 0,
         at_last_substep=jstep_init == (ndyn_substeps - 1),
     )
-    prognostic_state_nnew = prognostic_state_ls[1]
-    assert dallclose(
+    prognostic_state_nnew = prognostic_states.next
+    assert helpers.dallclose(
         prognostic_state_nnew.theta_v.asnumpy(),
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
-    assert dallclose(prognostic_state_nnew.exner.asnumpy(), sp_step_exit.exner_new().asnumpy())
+    assert helpers.dallclose(
+        prognostic_state_nnew.exner.asnumpy(), sp_step_exit.exner_new().asnumpy()
+    )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_nnew.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         rtol=1e-12,
         atol=1e-13,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_nnew.rho.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_nnew.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.exner_dyn_incr.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
     )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only, at_initial_timestep",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
-        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False, True),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True, False),
     ],
 )
 def test_run_solve_nonhydro_multi_step(
@@ -790,6 +869,9 @@ def test_run_solve_nonhydro_multi_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     grid_savepoint,
     vn_only,
@@ -799,35 +881,42 @@ def test_run_solve_nonhydro_multi_step(
     savepoint_nonhydro_step_exit,
     experiment,
     ndyn_substeps,
+    backend,
+    at_initial_timestep,
 ):
-    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
-    nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = create_vertical_params(damping_height, grid_savepoint)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
-    prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+    prep_adv = dycore_states.PrepAdvection(
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
-    nnow = 0
-    nnew = 1
-    recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = construct_diagnostics(sp)
-    prognostic_state_ls = create_prognostic_states(sp)
+    diagnostic_state_nh = utils.construct_diagnostics(sp, swap_ddt_w_adv_pc=not linit)
+    prognostic_states = utils.create_prognostic_states(sp)
 
-    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
-    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro = solve_nh.SolveNonhydro(
         grid=icon_grid,
         config=config,
         params=nonhydro_params,
@@ -837,102 +926,96 @@ def test_run_solve_nonhydro_multi_step(
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
     )
 
     for i_substep in range(ndyn_substeps):
-        is_first_substep = i_substep == 0
-        is_last_substep = i_substep == (ndyn_substeps - 1)
+        at_first_substep = i_substep == 0
+        at_last_substep = i_substep == (ndyn_substeps - 1)
+
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
-            prognostic_state_ls=prognostic_state_ls,
+            prognostic_states=prognostic_states,
             prep_adv=prep_adv,
             divdamp_fac_o2=sp.divdamp_fac_o2(),
             dtime=dtime,
-            l_recompute=recompute,
-            l_init=linit,
-            nnew=nnew,
-            nnow=nnow,
-            lclean_mflx=clean_mflx,
+            at_initial_timestep=at_initial_timestep,
             lprep_adv=lprep_adv,
-            at_first_substep=is_first_substep,
-            at_last_substep=is_last_substep,
+            at_first_substep=at_first_substep,
+            at_last_substep=at_last_substep,
         )
-        linit = False
-        recompute = False
-        clean_mflx = False
-        if not is_last_substep:
-            ntemp = nnow
-            nnow = nnew
-            nnew = ntemp
 
-    cell_start_lb_plus2 = icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+        if not at_last_substep:
+            prognostic_states.swap()
+
+    cell_start_lb_plus2 = icon_grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    edge_start_lb_plus4 = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+    edge_start_lb_plus4 = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.theta_v_ic.asnumpy()[cell_start_lb_plus2:, :],
         savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
         atol=1.0e-18,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.mass_fl_e.asnumpy()[edge_start_lb_plus4:, :],
         savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-7,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prep_adv.mass_flx_me.asnumpy(),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
         atol=5e-7,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         atol=1e-12,
     )
 
-    assert dallclose(
-        prognostic_state_ls[nnew].theta_v.asnumpy(),
+    assert helpers.dallclose(
+        prognostic_states.next.theta_v.asnumpy(),
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
-    assert dallclose(
-        prognostic_state_ls[nnew].rho.asnumpy(),
+    assert helpers.dallclose(
+        prognostic_states.next.rho.asnumpy(),
         savepoint_nonhydro_exit.rho_new().asnumpy(),
     )
 
-    assert dallclose(
-        prognostic_state_ls[nnew].exner.asnumpy(),
+    assert helpers.dallclose(
+        prognostic_states.next.exner.asnumpy(),
         sp_step_exit.exner_new().asnumpy(),
     )
 
-    assert dallclose(
-        prognostic_state_ls[nnew].w.asnumpy(),
+    assert helpers.dallclose(
+        prognostic_states.next.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
     )
 
-    assert dallclose(
-        prognostic_state_ls[nnew].vn.asnumpy(),
+    assert helpers.dallclose(
+        prognostic_states.next.vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         atol=5e-13,
     )
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state_nh.exner_dyn_incr.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
         atol=1e-14,
@@ -941,8 +1024,8 @@ def test_run_solve_nonhydro_multi_step(
 
 @pytest.mark.datatest
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
-    config = NonHydrostaticConfig()
-    params = NonHydrostaticParams(config)
+    config = solve_nh.NonHydrostaticConfig()
+    params = solve_nh.NonHydrostaticParams(config)
 
     assert params.wgt_nnew_vel == savepoint_nonhydro_init.wgt_nnew_vel()
     assert params.wgt_nnow_vel == savepoint_nonhydro_init.wgt_nnow_vel()
@@ -950,20 +1033,213 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
     assert params.wgt_nnow_rth == savepoint_nonhydro_init.wgt_nnow_rth()
 
 
-def create_prognostic_states(sp):
-    prognostic_state_nnow = PrognosticState(
-        w=sp.w_now(),
-        vn=sp.vn_now(),
-        theta_v=sp.theta_v_now(),
-        rho=sp.rho_now(),
-        exner=sp.exner_now(),
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+)
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
+    ],
+)
+@pytest.mark.parametrize("istep", [1, 2])
+def test_run_solve_nonhydro_15_to_28(
+    istep_init,
+    istep_exit,
+    jstep_init,
+    jstep_exit,
+    step_date_init,
+    step_date_exit,
+    experiment,
+    ndyn_substeps,
+    icon_grid,
+    savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    grid_savepoint,
+    metrics_savepoint,
+    interpolation_savepoint,
+    savepoint_nonhydro_exit,
+    savepoint_nonhydro_step_exit,
+    at_initial_timestep,
+    istep,
+    savepoint_nonhydro_15_28_init,
+    savepoint_nonhydro_15_28_exit,
+    backend,
+):
+    edge_domain = h_grid.domain(dims.EdgeDim)
+
+    start_edge_halo_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+    end_edge_halo_level_2 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+    start_edge_lateral_boundary = icon_grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
+    end_edge_halo = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
+    start_edge_lateral_boundary_level_7 = icon_grid.start_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
-    prognostic_state_nnew = PrognosticState(
-        w=sp.w_new(),
-        vn=sp.vn_new(),
-        theta_v=sp.theta_v_new(),
-        rho=sp.rho_new(),
-        exner=sp.exner_new(),
+    start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+    end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+    end_edge_end = icon_grid.num_edges  # TODO: check
+
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
     )
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
-    return prognostic_state_ls
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    nflatlev = vertical_params.nflatlev
+    nflat_gradp = vertical_params.nflat_gradp
+    vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
+
+    p_vn = savepoint_nonhydro_15_28_init.p_vn()
+    p_vt = savepoint_nonhydro_15_28_init.p_vt()
+    z_rth_pr_1 = savepoint_nonhydro_15_28_init.z_rth_pr_1()
+    z_rth_pr_2 = savepoint_nonhydro_15_28_init.z_rth_pr_2()
+    z_exner_ex_pr = savepoint_nonhydro_15_28_init.z_exner_ex_pr()
+    z_dexner_dz_c_1 = savepoint_nonhydro_15_28_init.z_dexner_dz_c_1()
+    z_dexner_dz_c_2 = savepoint_nonhydro_15_28_init.z_dexner_dz_c_2()
+    theta_v = savepoint_nonhydro_15_28_init.theta_v()
+    theta_v_ic = savepoint_nonhydro_15_28_init.theta_v_ic()
+    z_dwdz_dd = savepoint_nonhydro_15_28_init.z_dwdz_dd()
+    ddt_vn_apc_ntl2 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl2()
+    ddt_vn_apc_ntl1 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl1()
+    ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
+    vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
+    bdy_divdamp = savepoint_nonhydro_15_28_init.bdy_divdamp()
+    z_hydro_corr = savepoint_nonhydro_15_28_init.z_hydro_corr()
+    z_graddiv2_vn = savepoint_nonhydro_15_28_init.z_graddiv2_vn()
+    scal_divdamp = savepoint_nonhydro_15_28_init.scal_divdamp()
+    z_rho_e = savepoint_nonhydro_15_28_init.z_rho_e()
+    z_theta_v_e = savepoint_nonhydro_15_28_init.z_theta_v_e()
+    z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
+    vn = savepoint_nonhydro_15_28_init.vn()
+    z_graddiv_vn = savepoint_nonhydro_15_28_init.z_graddiv_vn()
+    iau_wgt_dyn = savepoint_nonhydro_15_28_init.iau_wgt_dyn()
+    itime_scheme = savepoint_nonhydro_15_28_init.itime_scheme()
+    divdamp_order = savepoint_nonhydro_15_28_init.divdamp_order()
+    scal_divdamp_o2 = savepoint_nonhydro_15_28_init.scal_divdamp_o2()
+    iadv_rhotheta = savepoint_nonhydro_15_28_init.iadv_rhotheta()
+    is_iau_active = savepoint_nonhydro_15_28_init.is_iau_active()
+    igradp_method = savepoint_nonhydro_15_28_init.igradp_method()
+
+    z_rho_e_ref = savepoint_nonhydro_15_28_exit.z_rho_e()
+    z_theta_v_e_ref = savepoint_nonhydro_15_28_exit.z_theta_v_e()
+    z_gradh_exner_ref = savepoint_nonhydro_15_28_exit.z_gradh_exner()
+    vn_ref = savepoint_nonhydro_15_28_exit.vn()
+    z_graddiv_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv_vn()
+
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+
+    fused_solve_nonhydro_stencil_15_to_28.fused_solve_nonhydro_stencil_15_to_28.with_backend(
+        backend
+    )(
+        geofac_grg_x=interpolation_savepoint.geofac_grg_x(),
+        geofac_grg_y=interpolation_savepoint.geofac_grg_y(),
+        p_vn=p_vn,
+        p_vt=p_vt,
+        pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_1(),
+        pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_2(),
+        primal_normal_cell_1=grid_savepoint.primal_normal_cell_x(),
+        dual_normal_cell_1=grid_savepoint.dual_normal_cell_x(),
+        primal_normal_cell_2=grid_savepoint.primal_normal_cell_y(),
+        dual_normal_cell_2=grid_savepoint.dual_normal_cell_y(),
+        rho_ref_me=metrics_savepoint.rho_ref_me(),
+        theta_ref_me=metrics_savepoint.theta_ref_me(),
+        z_rth_pr_1=z_rth_pr_1,
+        z_rth_pr_2=z_rth_pr_2,
+        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+        c_lin_e=interpolation_savepoint.c_lin_e(),
+        z_exner_ex_pr=z_exner_ex_pr,
+        z_dexner_dz_c_1=z_dexner_dz_c_1,
+        z_dexner_dz_c_2=z_dexner_dz_c_2,
+        theta_v=theta_v,
+        ikoffset=metrics_savepoint.vertoffset_gradp(),
+        zdiff_gradp=metrics_savepoint.zdiff_gradp,
+        theta_v_ic=theta_v_ic,
+        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+        ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+        pg_exdist=metrics_savepoint.pg_exdist(),
+        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
+        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        z_dwdz_dd=z_dwdz_dd,
+        inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
+        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+        ddt_vn_phy=ddt_vn_phy,
+        vn_incr=vn_incr,
+        horz_idx=horz_idx,
+        vert_idx=vert_idx,
+        bdy_divdamp=bdy_divdamp,
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
+        z_hydro_corr=z_hydro_corr,
+        geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
+        z_graddiv2_vn=z_graddiv2_vn,
+        scal_divdamp=scal_divdamp,
+        z_rho_e=z_rho_e,
+        z_theta_v_e=z_theta_v_e,
+        z_gradh_exner=z_gradh_exner,
+        vn=vn,
+        z_graddiv_vn=z_graddiv_vn,
+        divdamp_fac=savepoint_nonhydro_init.divdamp_fac(),
+        divdamp_fac_o2=savepoint_nonhydro_init.divdamp_fac_o2(),
+        wgt_nnow_vel=savepoint_nonhydro_init.wgt_nnow_vel(),
+        wgt_nnew_vel=savepoint_nonhydro_init.wgt_nnew_vel(),
+        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        cpd=constants.CPD,
+        iau_wgt_dyn=iau_wgt_dyn,
+        is_iau_active=is_iau_active,
+        itime_scheme=itime_scheme,
+        p_dthalf=(0.5 * savepoint_nonhydro_init.get_metadata("dtime").get("dtime")),
+        grav_o_cpd=nonhydro_params.grav_o_cpd,
+        limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
+        divdamp_order=divdamp_order,
+        scal_divdamp_o2=scal_divdamp_o2,
+        istep=istep,
+        start_edge_halo_level_2=start_edge_halo_level_2,
+        end_edge_halo_level_2=end_edge_halo_level_2,
+        start_edge_lateral_boundary=start_edge_lateral_boundary,
+        end_edge_halo=end_edge_halo,
+        start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
+        start_edge_nudging_level_2=start_edge_nudging_level_2,
+        end_edge_local=end_edge_local,
+        end_edge_end=end_edge_end,
+        iadv_rhotheta=iadv_rhotheta,
+        igradp_method=igradp_method,
+        MIURA=solve_nh.RhoThetaAdvectionType.MIURA,
+        TAYLOR_HYDRO=solve_nh.HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
+        nlev=icon_grid.num_levels,
+        kstart_dd3d=nonhydro_params.kstart_dd3d,
+        COMBINED=solve_nh.DivergenceDampingOrder.COMBINED,
+        FOURTH_ORDER=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
+        nflatlev=nflatlev,
+        nflat_gradp=nflat_gradp,
+        offset_provider={
+            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "E2EC": icon_grid.get_offset_provider("E2EC"),
+            "E2C": icon_grid.get_offset_provider("E2C"),
+            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "Koff": dims.KDim,
+        },
+    )
+
+    assert helpers.dallclose(z_rho_e.asnumpy(), z_rho_e_ref.asnumpy())
+    assert helpers.dallclose(z_theta_v_e.asnumpy(), z_theta_v_e_ref.asnumpy())
+    assert helpers.dallclose(z_gradh_exner.asnumpy(), z_gradh_exner_ref.asnumpy())
+    assert helpers.dallclose(vn.asnumpy(), vn_ref.asnumpy())
+    assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy())

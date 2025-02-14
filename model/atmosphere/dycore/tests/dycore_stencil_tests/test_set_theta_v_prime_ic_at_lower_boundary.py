@@ -1,46 +1,40 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
+from icon4py.model.atmosphere.dycore.stencils.set_theta_v_prime_ic_at_lower_boundary import (
     set_theta_v_prime_ic_at_lower_boundary,
 )
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 from .test_interpolate_to_surface import interpolate_to_surface_numpy
 
 
-class TestMoSolveNonhydroStencil11Upper(StencilTest):
+class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
     PROGRAM = set_theta_v_prime_ic_at_lower_boundary
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic")
 
     @staticmethod
     def reference(
         grid,
-        wgtfacq_c: np.array,
-        z_rth_pr: np.array,
-        theta_ref_ic: np.array,
-        z_theta_v_pr_ic: np.array,
-        theta_v_ic: np.array,
+        wgtfacq_c: np.ndarray,
+        z_rth_pr: np.ndarray,
+        theta_ref_ic: np.ndarray,
+        z_theta_v_pr_ic: np.ndarray,
+        theta_v_ic: np.ndarray,
         **kwargs,
     ) -> dict:
         z_theta_v_pr_ic = interpolate_to_surface_numpy(
-            grid=grid,
             wgtfacq_c=wgtfacq_c,
             interpolant=z_rth_pr,
             interpolation_to_surface=z_theta_v_pr_ic,
@@ -50,11 +44,11 @@ class TestMoSolveNonhydroStencil11Upper(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        wgtfacq_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        theta_ref_ic = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_theta_v_pr_ic = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_theta_v_pr_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             wgtfacq_c=wgtfacq_c,
@@ -62,8 +56,8 @@ class TestMoSolveNonhydroStencil11Upper(StencilTest):
             theta_ref_ic=theta_ref_ic,
             z_theta_v_pr_ic=z_theta_v_pr_ic,
             theta_v_ic=theta_v_ic,
-            horizontal_start=int32(0),
-            horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(3),
-            vertical_end=int32(grid.num_levels),
+            horizontal_start=0,
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=3,
+            vertical_end=gtx.int32(grid.num_levels),
         )

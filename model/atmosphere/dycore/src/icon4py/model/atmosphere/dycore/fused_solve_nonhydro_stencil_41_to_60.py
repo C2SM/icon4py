@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -1345,7 +1353,7 @@ def fused_solve_nonhydro_stencil_41_to_60(
         idiv_method,
         l_open_ubc,
         l_vert_nested,
-         is_iau_active,
+        is_iau_active,
         rayleigh_type,
         lhdiff_rcf,
         divdamp_type,

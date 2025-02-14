@@ -1,29 +1,24 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
+from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.utils.data_allocation import random_field, zero_field
+from icon4py.model.testing.helpers import StencilTest
 
 
-class TestMoSolveNonhydroStencil10(StencilTest):
+class TestComputeRhoVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
     PROGRAM = compute_rho_virtual_potential_temperatures_and_pressure_gradient
     OUTPUTS = ("rho_ic", "z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 
@@ -93,22 +88,22 @@ class TestMoSolveNonhydroStencil10(StencilTest):
         dtime = wpfloat("1.0")
         wgt_nnow_rth = wpfloat("2.0")
         wgt_nnew_rth = wpfloat("3.0")
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        ddqz_z_half = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        rho_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        rho_var = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        theta_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        theta_var = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        wgtfac_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        theta_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(grid, CellDim, dtype=wpfloat)
-        exner_pr = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        d_exner_dz_ref_ic = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        rho_ic = zero_field(grid, CellDim, KDim, dtype=wpfloat)
-        z_theta_v_pr_ic = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        theta_v_ic = zero_field(grid, CellDim, KDim, dtype=wpfloat)
-        z_th_ddz_exner_c = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        rho_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_var = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_now = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_var = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
+        exner_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        d_exner_dz_ref_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        rho_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_theta_v_pr_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_th_ddz_exner_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(
             w=w,
             w_concorr_c=w_concorr_c,
@@ -129,8 +124,8 @@ class TestMoSolveNonhydroStencil10(StencilTest):
             dtime=dtime,
             wgt_nnow_rth=wgt_nnow_rth,
             wgt_nnew_rth=wgt_nnew_rth,
-            horizontal_start=int32(0),
-            horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(1),
-            vertical_end=int32(grid.num_levels),
+            horizontal_start=0,
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=1,
+            vertical_end=gtx.int32(grid.num_levels),
         )

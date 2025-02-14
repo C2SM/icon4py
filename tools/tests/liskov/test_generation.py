@@ -1,20 +1,15 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
-from icon4pytools.liskov.codegen.integration.generate import IntegrationCodeGenerator
-from icon4pytools.liskov.codegen.integration.interface import (
+from icon4py.tools.liskov.codegen.integration.generate import IntegrationCodeGenerator
+from icon4py.tools.liskov.codegen.integration.interface import (
     BoundsData,
     DeclareData,
     EndCreateData,
@@ -35,8 +30,8 @@ from icon4pytools.liskov.codegen.integration.interface import (
 )
 
 # TODO: fix tests to adapt to new custom output fields
-from icon4pytools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
-from icon4pytools.liskov.codegen.serialisation.interface import (
+from icon4py.tools.liskov.codegen.serialisation.generate import SerialisationCodeGenerator
+from icon4py.tools.liskov.codegen.serialisation.interface import (
     FieldSerialisationData,
     ImportData,
     InitData,
@@ -70,12 +65,16 @@ def integration_code_interface():
             FieldAssociationData(
                 "out6", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=3
             ),
+            FieldAssociationData(
+                "out7", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=2
+            ),
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
         startln=1,
         acc_present=False,
         mergecopy=False,
         copies=True,
+        optional_module="None",
     )
     end_stencil_data = EndStencilData(
         name="stencil1", startln=3, noendif=False, noprofile=False, noaccenddata=False
@@ -117,6 +116,9 @@ def integration_code_interface():
             FieldAssociationData(
                 "out6", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=3
             ),
+            FieldAssociationData(
+                "out7", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=2
+            ),
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
     )
@@ -147,8 +149,7 @@ def expected_start_create_source():
     return """
 !$ACC DATA CREATE( &
 !$ACC   foo, &
-!$ACC   bar ) &
-!$ACC   IF ( i_am_accel_node )"""
+!$ACC   bar )"""
 
 
 @pytest.fixture
@@ -159,8 +160,8 @@ def expected_end_create_source():
 @pytest.fixture
 def expected_imports_source():
     return """\
-  USE fused_stencil, ONLY: wrap_run_fused_stencil
-  USE stencil1, ONLY: wrap_run_stencil1"""
+  USE fused_stencil, ONLY: wrap_run_and_verify_fused_stencil
+  USE stencil1, ONLY: wrap_run_and_verify_stencil1"""
 
 
 @pytest.fixture
@@ -179,17 +180,18 @@ def expected_start_stencil_source():
         !$ACC   out3_before, &
         !$ACC   out4_before, &
         !$ACC   out5_before, &
-        !$ACC   out6_before ) &
-        !$ACC      IF ( i_am_accel_node )
+        !$ACC   out6_before, &
+        !$ACC   out7_before )
 
 #ifdef __DSL_VERIFY
-        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(NONE) ASYNC(1)
+        !$ACC KERNELS DEFAULT(NONE) ASYNC(1)
         out1_before(:, :) = out1(:, :, 1)
         out2_before(:, :, :) = p_nh%prog(nnew)%out2(:, :, :)
         out3_before(:, :) = p_nh%prog(nnew)%w(:, :, jb)
         out4_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, 2)
         out5_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
         out6_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
+        out7_before(:, :) = p_nh%prog(nnew)%w(:, :, 1, ntnd)
         !$ACC END KERNELS
         call nvtxStartRange("stencil1")"""
 
@@ -199,7 +201,7 @@ def expected_end_stencil_source():
     return """
         call nvtxEndRange()
 #endif
-        call wrap_run_stencil1( &
+        call wrap_run_and_verify_stencil1( &
            scalar1=scalar1, &
            inp1=inp1(:, :, 1), &
            out1=out1(:, :, 1), &
@@ -214,6 +216,8 @@ def expected_end_stencil_source():
            out5_before=out5_before(:, :, 1), &
            out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
            out6_before=out6_before(:, :, 1), &
+           out7=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
+           out7_before=out7_before(:, :), &
            out1_abs_tol=0.5, &
            out2_abs_tol=0.2, &
            vertical_lower=-1, &
@@ -233,17 +237,18 @@ def expected_start_fused_stencil_source():
         !$ACC   out3_before, &
         !$ACC   out4_before, &
         !$ACC   out5_before, &
-        !$ACC   out6_before ) &
-        !$ACC      IF ( i_am_accel_node )
+        !$ACC   out6_before, &
+        !$ACC   out7_before )
 
 #ifdef __DSL_VERIFY
-        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1)
+        !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
         out1_before(:, :) = out1(:, :, 1)
         out2_before(:, :, :) = p_nh%prog(nnew)%out2(:, :, :)
         out3_before(:, :) = p_nh%prog(nnew)%w(:, :, jb)
         out4_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, 2)
         out5_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
         out6_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
+        out7_before(:, :) = p_nh%prog(nnew)%w(:, :, 1, ntnd)
         !$ACC END KERNELS
 #endif"""
 
@@ -251,7 +256,7 @@ def expected_start_fused_stencil_source():
 @pytest.fixture
 def expected_end_fused_stencil_source():
     return """
-        call wrap_run_fused_stencil( &
+        call wrap_run_and_verify_fused_stencil( &
            scalar1=scalar1, &
            inp1=inp1(:, :, 1), &
            out1=out1(:, :, 1), &
@@ -266,6 +271,8 @@ def expected_end_fused_stencil_source():
            out5_before=out5_before(:, :, 1), &
            out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
            out6_before=out6_before(:, :, 1), &
+           out7=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
+           out7_before=out7_before(:, :), &
            out1_abs_tol=0.5, &
            out2_abs_tol=0.2, &
            vertical_lower=-1, &
@@ -279,8 +286,8 @@ def expected_end_fused_stencil_source():
         !$ACC   out3_before, &
         !$ACC   out4_before, &
         !$ACC   out5_before, &
-        !$ACC   out6_before ) &
-        !$ACC      IF ( i_am_accel_node )"""
+        !$ACC   out6_before, &
+        !$ACC   out7_before )"""
 
 
 @pytest.fixture
@@ -315,7 +322,9 @@ def expected_insert_source():
 
 @pytest.fixture
 def integration_code_generator(integration_code_interface):
-    return IntegrationCodeGenerator(integration_code_interface, profile=True, metadatagen=False)
+    return IntegrationCodeGenerator(
+        integration_code_interface, profile=True, metadatagen=False, verification=True
+    )
 
 
 def test_integration_code_generation(

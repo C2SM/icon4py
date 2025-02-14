@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -11,75 +19,63 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next import int32
-
-from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_15_to_28 import (
-    fused_solve_nonhydro_stencil_15_to_28,
-)
-from icon4py.model.common.dimension import (
-    C2E2CODim,
-    CellDim,
-    E2C2EODim,
-    E2CDim,
-    ECDim,
-    EdgeDim,
-    KDim,
-)
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    flatten_first_two_dims,
-    random_field,
-    random_mask,
-    zero_field,
-)
-
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
-    mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_4th_order_divergence_damping import (
-    apply_4th_order_divergence_damping_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_advection_of_rho_and_theta import (
-    compute_horizontal_advection_of_rho_and_theta_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_vertical_wind_derivative_to_divergence_damping import (
-    add_vertical_wind_derivative_to_divergence_damping_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
-    compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
-    compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
-    compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_hydrostatic_correction_term import (
-    compute_hydrostatic_correction_term_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
-    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
-    add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_analysis_increments_to_vn import (
+    add_analysis_increments_to_vn_numpy,
 )
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_graddiv2_of_vn import (
-    compute_graddiv2_of_vn_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
+    add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_vertical_wind_derivative_to_divergence_damping import (
+    add_vertical_wind_derivative_to_divergence_damping_numpy,
 )
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping_numpy,
 )
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_4th_order_divergence_damping import (
+    apply_4th_order_divergence_damping_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy,
+)
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_weighted_2nd_and_4th_order_divergence_damping import (
     apply_weighted_2nd_and_4th_order_divergence_damping_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_analysis_increments_to_vn import (
-    add_analysis_increments_to_vn_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_graddiv2_of_vn import (
+    compute_graddiv2_of_vn_numpy,
 )
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_advection_of_rho_and_theta import (
+    compute_horizontal_advection_of_rho_and_theta_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
+    compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
+    mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
+)
+
+import icon4py.model.common.type_alias as ta
+from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_15_to_28 import (
+    fused_solve_nonhydro_stencil_15_to_28,
+)
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.testing.helpers import StencilTest
 
 
 class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
@@ -90,101 +86,97 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
     @classmethod
     def reference(
         cls,
-        grid,
-        geofac_grg_x,
-        geofac_grg_y,
-        p_vn,
-        p_vt,
-        pos_on_tplane_e_1,
-        pos_on_tplane_e_2,
-        primal_normal_cell_1,
-        dual_normal_cell_1,
-        primal_normal_cell_2,
-        dual_normal_cell_2,
-        rho_ref_me,
-        theta_ref_me,
-        z_rth_pr_1,
-        z_rth_pr_2,
-        ddxn_z_full,
-        c_lin_e,
-        z_exner_ex_pr,
-        z_dexner_dz_c_1,
-        z_dexner_dz_c_2,
-        theta_v,
-        ikoffset,
-        zdiff_gradp,
-        theta_v_ic,
-        inv_ddqz_z_full,
-        ipeidx_dsl,
-        pg_exdist,
-        hmask_dd3d,
-        scalfac_dd3d,
-        z_dwdz_dd,
-        inv_dual_edge_length,
-        ddt_vn_apc_ntl2,
-        vn_nnow,
-        ddt_vn_apc_ntl1,
-        ddt_vn_phy,
-        z_graddiv_vn,
-        vn_incr,
-        vn,
-        z_rho_e,
-        z_theta_v_e,
-        z_gradh_exner,
-        z_graddiv2_vn,
-        z_hydro_corr,
-        geofac_grdiv,
-        scal_divdamp,
-        bdy_divdamp,
-        nudgecoeff_e,
-        horz_idx,
-        vert_idx,
-        grav_o_cpd,
-        p_dthalf,
-        wgt_nnow_vel,
-        wgt_nnew_vel,
-        dtime,
-        cpd,
-        iau_wgt_dyn,
-        is_iau_active,
-        lhdiff_rcf,
-        divdamp_fac,
-        divdamp_fac_o2,
-        divdamp_order,
-        scal_divdamp_o2,
-        limited_area,
-        itime_scheme,
-        istep,
-        horizontal_lower_0,
-        horizontal_upper_0,
-        horizontal_lower_00,
-        horizontal_upper_00,
-        horizontal_lower_01,
-        horizontal_upper_01,
-        horizontal_lower_1,
-        horizontal_upper_1,
-        horizontal_lower_2,
-        horizontal_upper_2,
-        horizontal_lower_3,
-        horizontal_upper_3,
-        horizontal_lower_4,
-        horizontal_upper_4,
-        kstart_dd3d,
-        nflatlev,
-        nflat_gradp,
-    ):
-        iadv_rhotheta = 2
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        geofac_grg_x: np.ndarray,
+        geofac_grg_y: np.ndarray,
+        p_vn: np.ndarray,
+        p_vt: np.ndarray,
+        pos_on_tplane_e_1: np.ndarray,
+        pos_on_tplane_e_2: np.ndarray,
+        primal_normal_cell_1: np.ndarray,
+        dual_normal_cell_1: np.ndarray,
+        primal_normal_cell_2: np.ndarray,
+        dual_normal_cell_2: np.ndarray,
+        rho_ref_me: np.ndarray,
+        theta_ref_me: np.ndarray,
+        z_rth_pr_1: np.ndarray,
+        z_rth_pr_2: np.ndarray,
+        ddxn_z_full: np.ndarray,
+        c_lin_e: np.ndarray,
+        z_exner_ex_pr: np.ndarray,
+        z_dexner_dz_c_1: np.ndarray,
+        z_dexner_dz_c_2: np.ndarray,
+        theta_v: np.ndarray,
+        ikoffset: np.ndarray,
+        zdiff_gradp: np.ndarray,
+        theta_v_ic: np.ndarray,
+        inv_ddqz_z_full: np.ndarray,
+        ipeidx_dsl: np.ndarray,
+        pg_exdist: np.ndarray,
+        hmask_dd3d: np.ndarray,
+        scalfac_dd3d: np.ndarray,
+        z_dwdz_dd: np.ndarray,
+        inv_dual_edge_length: np.ndarray,
+        ddt_vn_apc_ntl2: np.ndarray,
+        ddt_vn_apc_ntl1: np.ndarray,
+        ddt_vn_phy: np.ndarray,
+        vn_incr: np.ndarray,
+        horz_idx: np.ndarray,
+        vert_idx: np.ndarray,
+        bdy_divdamp: np.ndarray,
+        nudgecoeff_e: np.ndarray,
+        z_hydro_corr: np.ndarray,
+        geofac_grdiv: np.ndarray,
+        z_graddiv2_vn: np.ndarray,
+        scal_divdamp: np.ndarray,
+        z_rho_e: np.ndarray,
+        z_theta_v_e: np.ndarray,
+        z_gradh_exner: np.ndarray,
+        vn: np.ndarray,
+        z_graddiv_vn: np.ndarray,
+        divdamp_fac: ta.wpfloat,
+        divdamp_fac_o2: ta.wpfloat,
+        wgt_nnow_vel: ta.wpfloat,
+        wgt_nnew_vel: ta.wpfloat,
+        dtime: ta.wpfloat,
+        cpd: ta.wpfloat,
+        iau_wgt_dyn: ta.wpfloat,
+        is_iau_active: gtx.int32,
+        itime_scheme: gtx.int32,
+        p_dthalf: gtx.int32,
+        grav_o_cpd: gtx.int32,
+        limited_area: gtx.int32,
+        divdamp_order: gtx.int32,
+        scal_divdamp_o2: ta.wpfloat,
+        istep: gtx.int32,
+        start_edge_halo_level_2: gtx.int32,
+        end_edge_halo_level_2: gtx.int32,
+        start_edge_lateral_boundary: gtx.int32,
+        end_edge_halo: gtx.int32,
+        start_edge_lateral_boundary_level_7: gtx.int32,
+        start_edge_nudging_level_2: gtx.int32,
+        end_edge_local: gtx.int32,
+        end_edge_end: gtx.int32,
+        iadv_rhotheta: gtx.int32,
+        igradp_method: gtx.int32,
+        MIURA: gtx.int32,
+        TAYLOR_HYDRO: gtx.int32,
+        nlev: gtx.int32,
+        kstart_dd3d: gtx.int32,
+        COMBINED: gtx.int32,
+        FOURTH_ORDER: gtx.int32,
+        nflatlev: gtx.int32,
+        nflat_gradp: gtx.int32,
+    ) -> dict:
         horz_idx = horz_idx[:, np.newaxis]
-        horizontal_lower = horizontal_lower_0
-        horizontal_upper = horizontal_upper_0
-        nlev = 10
-        z_grad_rth_1 = zero_field(grid, CellDim, KDim)
-        z_grad_rth_2 = zero_field(grid, CellDim, KDim)
-        z_grad_rth_3 = zero_field(grid, CellDim, KDim)
-        z_grad_rth_4 = zero_field(grid, CellDim, KDim)
+
+        z_grad_rth_1 = np.zeros(theta_v.shape)
+        z_grad_rth_2 = np.zeros(theta_v.shape)
+        z_grad_rth_3 = np.zeros(theta_v.shape)
+        z_grad_rth_4 = np.zeros(theta_v.shape)
 
         if istep == 1:
-            if iadv_rhotheta == 2:
+            if iadv_rhotheta == MIURA:
                 # Compute Green-Gauss gradients for rho and theta
                 (
                     z_grad_rth_1,
@@ -192,7 +184,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     z_grad_rth_3,
                     z_grad_rth_4,
                 ) = mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     p_ccpr1=z_rth_pr_1,
                     p_ccpr2=z_rth_pr_2,
                     geofac_grg_x=geofac_grg_x,
@@ -200,44 +192,30 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 )
 
             if iadv_rhotheta <= 2:
-                (tmp_0_0, tmp_0_1) = (horizontal_lower_00, horizontal_upper_00)
-                #if idiv_method == 1:
-                (tmp_0_0, tmp_0_1) = (horizontal_lower_01, horizontal_upper_01)
-
-                z_rho_e = np.where(
-                    (tmp_0_0 <= horz_idx) & (horz_idx < tmp_0_1),
-                    np.zeros_like(z_rho_e),
-                    z_rho_e,
-                )
-
-                z_theta_v_e = np.where(
-                    (tmp_0_0 <= horz_idx) & (horz_idx < tmp_0_1),
-                    np.zeros_like(z_rho_e),
-                    z_theta_v_e,
+                # if idiv_method == 1:
+                (z_rho_e, z_theta_v_e) = np.where(
+                    (horz_idx >= start_edge_halo_level_2) & (horz_idx < end_edge_halo_level_2),
+                    (0.0, 0.0),
+                    (z_rho_e, z_theta_v_e),
                 )
 
                 # initialize also nest boundary points with zero
                 if limited_area:
-                    z_rho_e = np.where(
-                        (horizontal_lower_4 <= horz_idx) & (horz_idx < horizontal_upper_4),
-                        np.zeros_like(z_rho_e),
-                        z_rho_e,
+                    (z_rho_e, z_theta_v_e) = np.where(
+                        (horz_idx >= start_edge_lateral_boundary) & (horz_idx < end_edge_halo),
+                        (0.0, 0.0),
+                        (z_rho_e, z_theta_v_e),
                     )
 
-                    z_theta_v_e = np.where(
-                        (horizontal_lower_4 <= horz_idx) & (horz_idx < horizontal_upper_4),
-                        np.zeros_like(z_rho_e),
-                        z_theta_v_e,
-                    )
-
-                if iadv_rhotheta == 2:
+                if iadv_rhotheta == MIURA:
                     # Compute upwind-biased values for rho and theta starting from centered differences
                     # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
                     # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
                     (z_rho_e, z_theta_v_e) = np.where(
-                        (horizontal_lower_1 <= horz_idx) & (horz_idx < horizontal_upper_1),
+                        (start_edge_lateral_boundary_level_7 <= horz_idx)
+                        & (horz_idx < end_edge_halo),
                         compute_horizontal_advection_of_rho_and_theta_numpy(
-                            grid=grid,
+                            connectivities=connectivities,
                             p_vn=p_vn,
                             p_vt=p_vt,
                             pos_on_tplane_e_1=pos_on_tplane_e_1,
@@ -261,85 +239,90 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             # Remaining computations at edge points
             z_gradh_exner = np.where(
-                (horizontal_lower <= horz_idx)
-                & (horz_idx < horizontal_upper)
+                (start_edge_nudging_level_2 <= horz_idx)
+                & (horz_idx < end_edge_local)
                 & (vert_idx < nflatlev),
                 compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     inv_dual_edge_length=inv_dual_edge_length,
                     z_exner_ex_pr=z_exner_ex_pr,
                 ),
                 z_gradh_exner,
             )
 
-            #if igradp_method == 3:
-            # horizontal gradient of Exner pressure, including metric correction
-            # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
-            z_gradh_exner = np.where(
-                (horizontal_lower <= horz_idx)
-                & (horz_idx < horizontal_upper)
-                & (vert_idx >= nflatlev)
-                & (vert_idx < (nflat_gradp + int32(1))),
-                compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
-                    grid=grid,
-                    inv_dual_edge_length=inv_dual_edge_length,
-                    z_exner_ex_pr=z_exner_ex_pr,
-                    ddxn_z_full=ddxn_z_full,
-                    c_lin_e=c_lin_e,
-                    z_dexner_dz_c_1=z_dexner_dz_c_1,
-                ),
-                z_gradh_exner,
-            )
+            if igradp_method == TAYLOR_HYDRO:
+                # horizontal gradient of Exner pressure, including metric correction
+                # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
+                z_gradh_exner = np.where(
+                    (start_edge_nudging_level_2 <= horz_idx)
+                    & (horz_idx < end_edge_local)
+                    & (vert_idx >= nflatlev)
+                    & (vert_idx < (nflat_gradp + gtx.int32(1))),
+                    compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
+                        connectivities=connectivities,
+                        inv_dual_edge_length=inv_dual_edge_length,
+                        z_exner_ex_pr=z_exner_ex_pr,
+                        ddxn_z_full=ddxn_z_full,
+                        c_lin_e=c_lin_e,
+                        z_dexner_dz_c_1=z_dexner_dz_c_1,
+                    ),
+                    z_gradh_exner,
+                )
 
-            new_shape = list(grid.e2c.shape)
-            new_shape.append(nlev)
-            new_shape = tuple(new_shape)
-            z_gradh_exner = np.where(
-                (horizontal_lower <= horz_idx)
-                & (horz_idx < horizontal_upper)
-                & (vert_idx >= (nflat_gradp + int32(1))),
-                compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_numpy(
-                    grid=grid,
-                    inv_dual_edge_length=inv_dual_edge_length,
-                    z_exner_ex_pr=z_exner_ex_pr,
-                    zdiff_gradp=zdiff_gradp.reshape(new_shape),
-                    ikoffset=ikoffset.reshape(new_shape),
-                    z_dexner_dz_c_1=z_dexner_dz_c_1,
-                    z_dexner_dz_c_2=z_dexner_dz_c_2,
-                ),
-                z_gradh_exner,
-            )
-        # compute hydrostatically approximated correction term that replaces downward extrapolation
-            #if igradp_method == 3:
-            z_hydro_corr = compute_hydrostatic_correction_term_numpy(
-                grid=grid,
-                theta_v=theta_v,
-                ikoffset=ikoffset.reshape(new_shape),
-                zdiff_gradp=zdiff_gradp.reshape(new_shape),
-                theta_v_ic=theta_v_ic,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                inv_dual_edge_length=inv_dual_edge_length,
-                grav_o_cpd=grav_o_cpd,
-            )
+                new_shape = list(connectivities[dims.E2CDim].shape)
+                new_shape.append(nlev)
+                new_shape = tuple(new_shape)
+                z_gradh_exner = np.where(
+                    (start_edge_nudging_level_2 <= horz_idx)
+                    & (horz_idx < end_edge_local)
+                    & (vert_idx >= (nflat_gradp + gtx.int32(1))),
+                    compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_numpy(
+                        connectivities=connectivities,
+                        inv_dual_edge_length=inv_dual_edge_length,
+                        z_exner_ex_pr=z_exner_ex_pr,
+                        zdiff_gradp=zdiff_gradp.reshape(new_shape),
+                        ikoffset=ikoffset.reshape(new_shape),
+                        z_dexner_dz_c_1=z_dexner_dz_c_1,
+                        z_dexner_dz_c_2=z_dexner_dz_c_2,
+                    ),
+                    z_gradh_exner,
+                )
+                # compute hydrostatically approximated correction term that replaces downward extrapolation
+                # if igradp_method == 3:
+                z_hydro_corr = np.where(
+                    (start_edge_nudging_level_2 <= horz_idx)
+                    & (horz_idx < end_edge_local)
+                    & (vert_idx >= (nlev - 1)),
+                    compute_hydrostatic_correction_term_numpy(
+                        connectivities=connectivities,
+                        theta_v=theta_v,
+                        ikoffset=ikoffset.reshape(new_shape),
+                        zdiff_gradp=zdiff_gradp.reshape(new_shape),
+                        theta_v_ic=theta_v_ic,
+                        inv_ddqz_z_full=inv_ddqz_z_full,
+                        inv_dual_edge_length=inv_dual_edge_length,
+                        grav_o_cpd=grav_o_cpd,
+                    ),
+                    z_hydro_corr,
+                )
 
-            #if igradp_method == 3:
-            z_gradh_exner = np.where(
-                (horizontal_lower_3 <= horz_idx) & (horz_idx < horizontal_upper_3),
-                apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(
-                    grid=grid,
-                    ipeidx_dsl=ipeidx_dsl,
-                    pg_exdist=pg_exdist,
-                    z_hydro_corr=z_hydro_corr,
-                    z_gradh_exner=z_gradh_exner,
-                ),
-                z_gradh_exner,
-            )
+                hydro_corr_horizontal = z_hydro_corr[:, nlev - 1]
+                # if igradp_method == 3:
+                z_gradh_exner = np.where(
+                    (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_end),
+                    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(
+                        ipeidx_dsl=ipeidx_dsl,
+                        pg_exdist=pg_exdist,
+                        z_hydro_corr=hydro_corr_horizontal,
+                        z_gradh_exner=z_gradh_exner,
+                    ),
+                    z_gradh_exner,
+                )
 
             vn = np.where(
-                (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                 add_temporal_tendencies_to_vn_numpy(
-                    grid=grid,
-                    vn_nnow=vn_nnow,
+                    vn_nnow=vn,
                     ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
                     ddt_vn_phy=ddt_vn_phy,
                     z_theta_v_e=z_theta_v_e,
@@ -352,9 +335,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             if is_iau_active:
                 vn = np.where(
-                    (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                    (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                     add_analysis_increments_to_vn_numpy(
-                        grid=grid,
                         vn_incr=vn_incr,
                         vn=vn,
                         iau_wgt_dyn=iau_wgt_dyn,
@@ -363,13 +345,12 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 )
 
         else:
-
             z_graddiv_vn = np.where(
-                (horizontal_lower_2 <= horz_idx)
-                & (horz_idx < horizontal_upper_2)
+                (start_edge_lateral_boundary_level_7 <= horz_idx)
+                & (horz_idx < end_edge_halo_level_2)
                 & (vert_idx >= kstart_dd3d),
                 add_vertical_wind_derivative_to_divergence_damping_numpy(
-                    grid=grid,
+                    connectivities=connectivities,
                     hmask_dd3d=hmask_dd3d,
                     scalfac_dd3d=scalfac_dd3d,
                     inv_dual_edge_length=inv_dual_edge_length,
@@ -381,9 +362,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             if itime_scheme == 4:
                 vn = np.where(
-                    (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                    (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                     add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
-                        grid=grid,
                         vn_nnow=vn,
                         ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
                         ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
@@ -398,24 +378,23 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     vn,
                 )
 
-            if lhdiff_rcf and (divdamp_order == 24 or divdamp_order == 4):
+            if divdamp_order == COMBINED or divdamp_order == FOURTH_ORDER:
                 # verified for e-10
                 z_graddiv2_vn = np.where(
-                    (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                    (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                     compute_graddiv2_of_vn_numpy(
-                        grid=grid,
+                        connectivities=connectivities,
                         geofac_grdiv=geofac_grdiv,
                         z_graddiv_vn=z_graddiv_vn,
                     ),
                     z_graddiv2_vn,
                 )
 
-            if lhdiff_rcf:
-                if divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
+            if True:
+                if divdamp_order == COMBINED and scal_divdamp_o2 > 1.0e-6:
                     vn = np.where(
-                        (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                        (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                         apply_2nd_order_divergence_damping_numpy(
-                            grid=grid,
                             z_graddiv_vn=z_graddiv_vn,
                             vn=vn,
                             scal_divdamp_o2=scal_divdamp_o2,
@@ -423,12 +402,11 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                         vn,
                     )
 
-                if divdamp_order == 24 and divdamp_fac_o2 <= 4 * divdamp_fac:
+                if divdamp_order == COMBINED and divdamp_fac_o2 <= 4 * divdamp_fac:
                     if limited_area:
                         vn = np.where(
-                            (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                            (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                             apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
-                                grid=grid,
                                 scal_divdamp=scal_divdamp,
                                 bdy_divdamp=bdy_divdamp,
                                 nudgecoeff_e=nudgecoeff_e,
@@ -439,9 +417,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                         )
                     else:
                         vn = np.where(
-                            (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                            (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                             apply_4th_order_divergence_damping_numpy(
-                                grid=grid,
                                 scal_divdamp=scal_divdamp,
                                 z_graddiv2_vn=z_graddiv2_vn,
                                 vn=vn,
@@ -451,9 +428,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             if is_iau_active:
                 vn = np.where(
-                    (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                    (start_edge_nudging_level_2 <= horz_idx) & (horz_idx < end_edge_local),
                     add_analysis_increments_to_vn_numpy(
-                        grid=grid,
                         vn_incr=vn_incr,
                         vn=vn,
                         iau_wgt_dyn=iau_wgt_dyn,
@@ -471,53 +447,54 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        geofac_grg_x = random_field(grid, CellDim, C2E2CODim)
-        geofac_grg_y = random_field(grid, CellDim, C2E2CODim)
-        p_vn = random_field(grid, EdgeDim, KDim)
-        p_vt = random_field(grid, EdgeDim, KDim)
-        pos_on_tplane_e_1 = random_field(grid, ECDim)
-        pos_on_tplane_e_2 = random_field(grid, ECDim)
-        primal_normal_cell_1 = random_field(grid, ECDim)
-        dual_normal_cell_1 = random_field(grid, ECDim)
-        primal_normal_cell_2 = random_field(grid, ECDim)
-        dual_normal_cell_2 = random_field(grid, ECDim)
-        rho_ref_me = random_field(grid, EdgeDim, KDim)
-        theta_ref_me = random_field(grid, EdgeDim, KDim)
-        z_rth_pr_1 = random_field(grid, CellDim, KDim)
-        z_rth_pr_2 = random_field(grid, CellDim, KDim)
-        ddxn_z_full = random_field(grid, EdgeDim, KDim)
-        c_lin_e = random_field(grid, EdgeDim, E2CDim)
-        z_exner_ex_pr = random_field(grid, CellDim, KDim)
-        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim)
-        z_dexner_dz_c_2 = random_field(grid, CellDim, KDim)
-        z_hydro_corr = random_field(grid, EdgeDim, KDim)
-        theta_v = random_field(grid, CellDim, KDim)
-        zdiff_gradp = random_field(grid, ECDim, KDim)
-        theta_v_ic = random_field(grid, CellDim, KDim)
-        inv_ddqz_z_full = random_field(grid, CellDim, KDim)
-        ipeidx_dsl = random_mask(grid, EdgeDim, KDim)
-        pg_exdist = random_field(grid, EdgeDim, KDim)
-        hmask_dd3d = random_field(grid, EdgeDim)
-        scalfac_dd3d = random_field(grid, KDim)
-        z_dwdz_dd = random_field(grid, CellDim, KDim)
-        inv_dual_edge_length = random_field(grid, EdgeDim)
-        ddt_vn_apc_ntl2 = random_field(grid, EdgeDim, KDim)
-        vn_nnow = random_field(grid, EdgeDim, KDim)
-        ddt_vn_apc_ntl1 = random_field(grid, EdgeDim, KDim)
-        ddt_vn_phy = random_field(grid, EdgeDim, KDim)
-        z_graddiv_vn = random_field(grid, EdgeDim, KDim)
-        vn_incr = random_field(grid, EdgeDim, KDim)
-        vn = random_field(grid, EdgeDim, KDim)
-        z_theta_v_e = random_field(grid, EdgeDim, KDim)
-        z_gradh_exner = random_field(grid, EdgeDim, KDim)
-        z_graddiv2_vn = random_field(grid, EdgeDim, KDim)
-        z_rho_e = random_field(grid, EdgeDim, KDim)
-        geofac_grdiv = random_field(grid, EdgeDim, E2C2EODim)
-        scal_divdamp = random_field(grid, KDim)
-        bdy_divdamp = random_field(grid, KDim)
-        nudgecoeff_e = random_field(grid, EdgeDim)
+        geofac_grg_x = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
+        geofac_grg_y = data_alloc.random_field(grid, dims.CellDim, dims.C2E2CODim)
+        p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        pos_on_tplane_e_1 = data_alloc.random_field(grid, dims.ECDim)
+        pos_on_tplane_e_2 = data_alloc.random_field(grid, dims.ECDim)
+        primal_normal_cell_x = data_alloc.random_field(grid, dims.ECDim)
+        dual_normal_cell_x = data_alloc.random_field(grid, dims.ECDim)
+        primal_normal_cell_y = data_alloc.random_field(grid, dims.ECDim)
+        dual_normal_cell_y = data_alloc.random_field(grid, dims.ECDim)
+        rho_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        theta_ref_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_rth_pr_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_rth_pr_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        z_exner_ex_pr = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_dexner_dz_c_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_dexner_dz_c_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        z_hydro_corr = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        theta_v = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        zdiff_gradp = data_alloc.random_field(grid, dims.ECDim, dims.KDim)
+        theta_v_ic = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        inv_ddqz_z_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        ipeidx_dsl = data_alloc.random_mask(grid, dims.EdgeDim, dims.KDim)
+        pg_exdist = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        hmask_dd3d = data_alloc.random_field(grid, dims.EdgeDim)
+        scalfac_dd3d = data_alloc.random_field(grid, dims.KDim)
+        z_dwdz_dd = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
+        ddt_vn_apc_ntl2 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddt_vn_apc_ntl1 = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddt_vn_phy = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_graddiv_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        vn_incr = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_theta_v_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_gradh_exner = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_graddiv2_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_rho_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
+        scal_divdamp = data_alloc.random_field(grid, dims.KDim)
+        bdy_divdamp = data_alloc.random_field(grid, dims.KDim)
+        nudgecoeff_e = data_alloc.random_field(grid, dims.EdgeDim)
 
-        ikoffset = zero_field(grid, EdgeDim, E2CDim, KDim, dtype=int32)
+        ikoffset = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+        )
         rng = np.random.default_rng()
         k_levels = 10
 
@@ -526,27 +503,20 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             ikoffset[:, :, k] = rng.integers(
                 low=0 - k,
                 high=k_levels - k - 1,
-                size=(ikoffset.shape[0], ikoffset.shape[1]),
+                size=(ikoffset.asnumpy().shape[0], ikoffset.asnumpy().shape[1]),
             )
-        ikoffset = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
+        ikoffset = data_alloc.flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset)
 
-        vert_idx = zero_field(grid, KDim, dtype=int32)
-        for level in range(k_levels):
-            vert_idx[level] = level
-
-        horz_idx = zero_field(grid, EdgeDim, dtype=int32)
-        for edge in range(grid.num_edges):
-            horz_idx[edge] = edge
+        vert_idx = data_alloc.index_field(dim=dims.KDim, grid=grid)
+        horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
 
         grav_o_cpd = 9.80665 / 1004.64
         dtime = 0.9
-        p_dthalf = 0.5 * dtime
-        wgt_nnow_vel = 0.25
         wgt_nnew_vel = 0.75
+        wgt_nnow_vel = 0.25
         cpd = 1004.64
         iau_wgt_dyn = 1.0
         is_iau_active = False
-        lhdiff_rcf = True
         divdamp_fac = 0.004
         divdamp_fac_o2 = 0.032
         divdamp_order = 24
@@ -554,20 +524,24 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         limited_area = True
         itime_scheme = 4
         istep = 2
-        horizontal_lower_0 = 5387
-        horizontal_upper_0 = 31558
-        horizontal_lower_00 = 31558
-        horizontal_upper_00 = 31558
-        horizontal_lower_01 = 31558
-        horizontal_upper_01 = 31558
-        horizontal_lower_1 = 3777
-        horizontal_upper_1 = 31558
-        horizontal_lower_2 = 3777
-        horizontal_upper_2 = 31558
-        horizontal_lower_3 = 5387
-        horizontal_upper_3 = 31558
-        horizontal_lower_4 = 0
-        horizontal_upper_4 = 31558
+        iadv_rhotheta = 2
+        igradp_method = 3
+        MIURA = 2
+        TAYLOR_HYDRO = 3
+        COMBINED = 24
+        FOURTH_ORDER = 4
+        edge_domain = h_grid.domain(dims.EdgeDim)
+
+        start_edge_halo_level_2 = grid.start_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        end_edge_halo_level_2 = grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        start_edge_lateral_boundary = grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
+        end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
+        start_edge_lateral_boundary_level_7 = grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
+        )
+        start_edge_nudging_level_2 = grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+        end_edge_local = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        end_edge_end = grid.num_edges  # TODO: check
         kstart_dd3d = 0
         nlev = k_levels
         nflatlev = 4
@@ -580,10 +554,10 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             p_vt=p_vt,
             pos_on_tplane_e_1=pos_on_tplane_e_1,
             pos_on_tplane_e_2=pos_on_tplane_e_2,
-            primal_normal_cell_1=primal_normal_cell_1,
-            dual_normal_cell_1=dual_normal_cell_1,
-            primal_normal_cell_2=primal_normal_cell_2,
-            dual_normal_cell_2=dual_normal_cell_2,
+            primal_normal_cell_1=primal_normal_cell_x,
+            dual_normal_cell_1=dual_normal_cell_x,
+            primal_normal_cell_2=primal_normal_cell_y,
+            dual_normal_cell_2=dual_normal_cell_y,
             rho_ref_me=rho_ref_me,
             theta_ref_me=theta_ref_me,
             z_rth_pr_1=z_rth_pr_1,
@@ -605,54 +579,53 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             z_dwdz_dd=z_dwdz_dd,
             inv_dual_edge_length=inv_dual_edge_length,
             ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
-            vn_nnow=vn_nnow,
             ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
             ddt_vn_phy=ddt_vn_phy,
             vn_incr=vn_incr,
             horz_idx=horz_idx,
             vert_idx=vert_idx,
+            bdy_divdamp=bdy_divdamp,
+            nudgecoeff_e=nudgecoeff_e,
             z_hydro_corr=z_hydro_corr,
-            z_graddiv_vn=z_graddiv_vn,
-            vn=vn,
+            geofac_grdiv=geofac_grdiv,
+            z_graddiv2_vn=z_graddiv2_vn,
+            scal_divdamp=scal_divdamp,
             z_rho_e=z_rho_e,
             z_theta_v_e=z_theta_v_e,
             z_gradh_exner=z_gradh_exner,
-            z_graddiv2_vn=z_graddiv2_vn,
-            geofac_grdiv=geofac_grdiv,
-            scal_divdamp=scal_divdamp,
-            bdy_divdamp=bdy_divdamp,
-            nudgecoeff_e=nudgecoeff_e,
-            grav_o_cpd=grav_o_cpd,
-            p_dthalf=p_dthalf,
+            vn=vn,
+            z_graddiv_vn=z_graddiv_vn,
+            divdamp_fac=divdamp_fac,
+            divdamp_fac_o2=divdamp_fac_o2,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
             dtime=dtime,
             cpd=cpd,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
-            lhdiff_rcf=lhdiff_rcf,
-            divdamp_fac=divdamp_fac,
-            divdamp_fac_o2=divdamp_fac_o2,
+            itime_scheme=itime_scheme,
+            p_dthalf=(0.5 * dtime),
+            grav_o_cpd=grav_o_cpd,
+            limited_area=limited_area,
             divdamp_order=divdamp_order,
             scal_divdamp_o2=scal_divdamp_o2,
-            limited_area=limited_area,
-            itime_scheme=itime_scheme,
             istep=istep,
-            horizontal_lower_0=horizontal_lower_0,
-            horizontal_upper_0=horizontal_upper_0,
-            horizontal_lower_00=horizontal_lower_00,
-            horizontal_upper_00=horizontal_upper_00,
-            horizontal_lower_01=horizontal_lower_01,
-            horizontal_upper_01=horizontal_upper_01,
-            horizontal_lower_1=horizontal_lower_1,
-            horizontal_upper_1=horizontal_upper_1,
-            horizontal_lower_2=horizontal_lower_2,
-            horizontal_upper_2=horizontal_upper_2,
-            horizontal_lower_3=horizontal_lower_3,
-            horizontal_upper_3=horizontal_upper_3,
-            horizontal_lower_4=horizontal_lower_4,
-            horizontal_upper_4=horizontal_upper_4,
+            start_edge_halo_level_2=start_edge_halo_level_2,
+            end_edge_halo_level_2=end_edge_halo_level_2,
+            start_edge_lateral_boundary=start_edge_lateral_boundary,
+            end_edge_halo=end_edge_halo,
+            start_edge_lateral_boundary_level_7=start_edge_lateral_boundary_level_7,
+            start_edge_nudging_level_2=start_edge_nudging_level_2,
+            end_edge_local=end_edge_local,
+            end_edge_end=end_edge_end,
+            iadv_rhotheta=iadv_rhotheta,
+            igradp_method=igradp_method,
+            MIURA=MIURA,
+            TAYLOR_HYDRO=TAYLOR_HYDRO,
+            nlev=nlev,
             kstart_dd3d=kstart_dd3d,
+            COMBINED=COMBINED,
+            FOURTH_ORDER=FOURTH_ORDER,
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
         )

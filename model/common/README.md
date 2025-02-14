@@ -10,17 +10,38 @@ Check the `README.md` at the root of the `model` folder for installation instruc
 
 ## Contents
 
-### decomposition
+### IO
 
-Contains infrastructure for parallel implementation of `icon4py/model`.
+module containing IO funcitonality for ICON4Py.
+
+The IO module requires the installation of the `io` optional dependencies defined in [pyproject.toml](./pyproject.toml)
+of the `icon4py-common` package and can be installed with the following command:
+
+```bash
+uv pip install .[io]
+```
+
+or even better by running:
+
+```bash
+uv sync --extra io  # or `uv sync --extra all` which includes everything
+```
+
+at the top-level folder of the repository, which installs all `ICON4Py` packages including the IO dependencies.
+
+### Distributed run
+
+The package `decomposition` contains infrastructure for parallel implementation of `icon4py/model`.
 `icon4py` uses [GHEX](https://github.com/ghex-org/GHEX) for halo exchanges. In order to run in parallel
 optional dependencies `mpi4py` and `ghex` need to be installed, which can be done through
 
 ```bash
-pip install -r requirements-dev-opt.txt
+uv sync --extra distributed  # or `uv sync --extra all` which includes everything
 ```
 
-### grid
+from the top-level folder of the repository.
+
+### Grid
 
 Contains basic infrastructure regarding the (unstructured) grid used in `icon4py`. There are
 two implementations of the general grid a small simple grid with periodic boundaries in
@@ -31,8 +52,10 @@ The ICON grid can be initialized from an ICON grid file via the [grid_manager.py
 The `grid_manager.py` needs netcdf as an optional dependency, which can be installed with
 
 ```bash
-pip install -r requirements-dev-opt.txt
+uv sync --extra io  # or `uv sync --extra all` which includes everything
 ```
+
+from the top-level folder of the repository.
 
 ### interpolation
 
