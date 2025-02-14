@@ -25,9 +25,6 @@ from gt4py.next.ffront.fbuiltins import int32
 from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_56_63 import (
     mo_solve_nonhydro_stencil_56_63_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_59 import (
-    mo_solve_nonhydro_stencil_59_numpy,
-)
 
 from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_41_to_60 import (
     fused_solve_nonhydro_stencil_41_to_60,
@@ -43,8 +40,6 @@ from .test_mo_solve_nonhydro_stencil_41 import mo_solve_nonhydro_stencil_41_nump
 from .test_mo_solve_nonhydro_stencil_42 import mo_solve_nonhydro_stencil_42_numpy
 from .test_mo_solve_nonhydro_stencil_43 import mo_solve_nonhydro_stencil_43_numpy
 from .test_mo_solve_nonhydro_stencil_44 import mo_solve_nonhydro_stencil_44_numpy
-from .test_mo_solve_nonhydro_stencil_45 import mo_solve_nonhydro_stencil_45_numpy
-from .test_mo_solve_nonhydro_stencil_46 import mo_solve_nonhydro_stencil_46_numpy
 from .test_mo_solve_nonhydro_stencil_47 import mo_solve_nonhydro_stencil_47_numpy
 from .test_mo_solve_nonhydro_stencil_49 import mo_solve_nonhydro_stencil_49_numpy
 from .test_mo_solve_nonhydro_stencil_50 import mo_solve_nonhydro_stencil_50_numpy
