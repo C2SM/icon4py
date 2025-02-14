@@ -119,6 +119,7 @@ def _install_session_venv(
     groups: Sequence[str] = (),
 ) -> None:
     """Install session packages using uv."""
+    print(f" === SESSION_ENV = {session.env}")
     if (env_extras := session.env.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", "")):
         extras = [*extras, *re.split(r'\W+', env_extras)]
     session.run_install(
