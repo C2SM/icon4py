@@ -246,22 +246,6 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
     )
 
 
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment", ("exclaim_ape_R02B04",))
-def test_field_sizes(data_provider, experiment):
-    sp_init = data_provider.from_savepoint_nonhydro_init(
-        istep=1, substep=1, date="2000-01-01T00:00:02.000"
-    )
-    sp_exit = data_provider.from_savepoint_nonhydro_exit(
-        istep=1, substep=1, date="2000-01-01T00:00:02.000"
-    )
-    init_w_fl = sp_init.z_contr_w_fl_l()
-    exit_w_fl = sp_exit.z_contr_w_fl_l()
-
-    init_z_q = sp_init.z_q()
-    exit_z_q = sp_exit.z_q()
-
-
 @pytest.fixture
 def savepoint_nonhydro_step_exit(data_provider, step_date_exit, substep_exit):
     """
