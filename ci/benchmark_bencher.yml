@@ -21,6 +21,7 @@ include:
     - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json
     - |
       echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
+    - cat $CI_PROJECT_DIR/event.json
     - |
       bencher run \
       --project "$BENCHER_PROJECT" \
