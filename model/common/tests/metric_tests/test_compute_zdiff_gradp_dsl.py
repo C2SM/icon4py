@@ -25,15 +25,10 @@ from icon4py.model.testing.helpers import (
     is_roundtrip,
 )
 
-
+@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip(
-            "skipping: gpu backend is unsupported because _compute_flat_idx and _compute_z_aux2 cannot be called with_backend"
-        )
-    if is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
+
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
     z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     z_ifc = metrics_savepoint.z_ifc()

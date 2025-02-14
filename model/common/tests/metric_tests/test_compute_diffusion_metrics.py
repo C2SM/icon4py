@@ -23,18 +23,13 @@ from icon4py.model.common.metrics.metric_fields import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
-
+@pytest.mark.cpu_only
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_metrics(
     metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip("GPU backend is not supported")
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
-
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         pytest.skip(f"Fields not computed for {experiment}")
 

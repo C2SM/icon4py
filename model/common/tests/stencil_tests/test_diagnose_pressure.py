@@ -52,8 +52,6 @@ class TestDiagnosePressure(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        if helpers.is_roundtrip:
-            pytest.xfail("This stencil currently does not work properly with roundtrip backend.")
 
         ddqz_z_full = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
