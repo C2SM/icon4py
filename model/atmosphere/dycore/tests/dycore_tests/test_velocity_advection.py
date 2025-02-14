@@ -573,6 +573,7 @@ def test_velocity_fused_1_7(
         # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
+@pytest.mark.parametrize("istep", [1, 2])
 def test_velocity_fused_8_13(
     icon_grid,
     grid_savepoint,
@@ -602,7 +603,6 @@ def test_velocity_fused_8_13(
     k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
 
-    # vertical_lower=1; vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
     fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13.with_backend(
         backend
     )(
