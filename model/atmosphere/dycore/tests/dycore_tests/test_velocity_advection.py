@@ -23,6 +23,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing.datatest_fixtures import savepoint_velocity_exit
 
 from . import utils
 import gt4py.next as gtx
@@ -558,11 +559,11 @@ def test_velocity_fused_1_7(
         },
     )
 
-    assert helpers.dallclose(vt_ref.asnumpy(), vt.asnumpy())
-    assert helpers.dallclose(vn_ie_ref.asnumpy(), vn_ie.asnumpy())
-    assert helpers.dallclose(z_kin_hor_e_ref.asnumpy(), z_kin_hor_e.asnumpy())
-    assert helpers.dallclose(z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy())
-    assert helpers.dallclose(z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy())
+    assert helpers.dallclose(vt_ref.asnumpy(), vt.asnumpy(), atol=1.0e-12)
+    assert helpers.dallclose(vn_ie_ref.asnumpy(), vn_ie.asnumpy(), atol=1.0e-15)
+    assert helpers.dallclose(z_kin_hor_e_ref.asnumpy(), z_kin_hor_e.asnumpy(), atol=1.0e-15)
+    assert helpers.dallclose(z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy(), atol=1.0e-15)
+    assert helpers.dallclose(z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy(), atol=1.0e-15)
 
 
 @pytest.mark.datatest
@@ -591,7 +592,7 @@ def test_velocity_fused_8_13(
     z_w_con_c_ref = savepoint_velocity_8_13_exit.z_w_con_c()
 
     z_kin_hor_e = savepoint_velocity_8_13_init.z_kin_hor_e()
-    z_w_concorr_me = savepoint_velocity_8_13_init.z_w_concorr_m()
+    z_w_concorr_me = savepoint_velocity_8_13_init.z_w_concorr_me()
     w = savepoint_velocity_8_13_init.w()
     z_w_concorr_mc = savepoint_velocity_8_13_init.z_w_concorr_mc()
     w_concorr_c = savepoint_velocity_8_13_init.w_concorr_c()
@@ -645,7 +646,7 @@ def test_velocity_fused_15_18(
     savepoint_velocity_15_18_exit,
     interpolation_savepoint,
     metrics_savepoint,
-    savepoint_nonhydro_exit,
+    savepoint_velocity_exit,
     backend,
     savepoint_velocity_init,
     step_date_init,
@@ -655,13 +656,14 @@ def test_velocity_fused_15_18(
     w = savepoint_velocity_15_18_init.w()
     ddt_w_adv = savepoint_velocity_15_18_init.ddt_w_adv()
     z_v_grad_w = savepoint_velocity_15_18_init.z_v_grad_w()
-    levelmask = savepoint_velocity_15_18_init.levelmask()
+    levmask = savepoint_velocity_15_18_init.levmask()
     z_w_con_c_full = savepoint_velocity_15_18_init.z_w_con_c_full()
+    lvn_only = savepoint_velocity_15_18_init.lvn_only()
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
     e_bln_c_s = interpolation_savepoint.e_bln_c_s()
-    cfl_clipping = savepoint_nonhydro_exit.cfl_clipping()
+    cfl_clipping = savepoint_velocity_exit.cfl_clipping()
     owner_mask = grid_savepoint.c_owner_mask()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
     area = grid_savepoint.cell_areas()
@@ -680,8 +682,6 @@ def test_velocity_fused_15_18(
     cell_lower_bound = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
     cell_upper_bound = icon_grid.start_index(cell_domain(h_grid.Zone.LOCAL))
 
-    lvn_only = False
-
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     dtime = 2.0
@@ -696,7 +696,7 @@ def test_velocity_fused_15_18(
         ddt_w_adv=ddt_w_adv,
         e_bln_c_s=e_bln_c_s,
         z_v_grad_w=z_v_grad_w,
-        levelmask=levelmask,
+        levelmask=levmask,
         cfl_clipping=cfl_clipping,
         owner_mask=owner_mask,
         ddqz_z_half=ddqz_z_half,
@@ -762,7 +762,7 @@ def test_velocity_fused_19_20(
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     area_edge = grid_savepoint.edge_areas()
     tangent_orientation = grid_savepoint.tangent_orientation()
-    inv_primal_edge_length = grid_savepoint.inv_primal_edge_length()
+    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
     k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
 

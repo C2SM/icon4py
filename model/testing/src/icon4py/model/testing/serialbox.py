@@ -1156,7 +1156,7 @@ class IconVelocityInitSavepoint(IconSavepoint):
 
 class IconVelocityInit1to7Savepoint(IconSavepoint):
     def lvn_only(self) -> bool:
-        return self.serializer.read("vn_only", self.savepoint)[0]
+        return bool(self.serializer.read("vn_only", self.savepoint)[0])
 
     def vn(self):
         return self._get_field("vn", dims.EdgeDim, dims.KDim)
@@ -1181,7 +1181,7 @@ class IconVelocityInit1to7Savepoint(IconSavepoint):
 
     def z_w_concorr_me(self):
         return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
-    
+
 class IconVelocityInit8to13Savepoint(IconSavepoint):
     def z_kin_hor_e(self):
         return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
@@ -1203,7 +1203,7 @@ class IconVelocityInit8to13Savepoint(IconSavepoint):
 
     def z_w_con_c(self):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
-    
+
 class IconVelocityInit15to18Savepoint(IconSavepoint):
     def z_w_con_c(self):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
@@ -1216,13 +1216,16 @@ class IconVelocityInit15to18Savepoint(IconSavepoint):
 
     def z_v_grad_w(self):
         return self._get_field("z_v_grad_w", dims.EdgeDim, dims.KDim)
-    
-    def levelmask(self):
-        return self._get_field("levelmask", dims.KDim, dtype=bool)
+
+    def levmask(self):
+        return self._get_field("levmask", dims.KDim, dtype=bool)
 
     def z_w_con_c_full(self):
         return self._get_field("z_w_con_c_full", dims.CellDim, dims.KDim)
-    
+
+    def lvn_only(self) -> bool:
+        return bool(self.serializer.read("vn_only", self.savepoint)[0])
+
 class IconVelocityInit19to20Savepoint(IconSavepoint):
     def vn(self):
         return self._get_field("vn", dims.EdgeDim, dims.KDim)
@@ -1241,7 +1244,7 @@ class IconVelocityInit19to20Savepoint(IconSavepoint):
 
     def vn_ie(self):
         return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
-    
+
     def levelmask(self):
         return self._get_field("levelmask", dims.KDim, dtype=bool)
 
@@ -1251,20 +1254,20 @@ class IconVelocityInit19to20Savepoint(IconSavepoint):
 
 class IconVelocityExit1to7Savepoint(IconSavepoint):
     def vt(self):
-        return self._get_field("vt", dims.CellDim, dims.KDim)
+        return self._get_field("vt", dims.EdgeDim, dims.KDim)
 
     def vn_ie(self):
-        return self._get_field("vn_ie", dims.CellDim, dims.KDim)
+        return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
 
     def z_kin_hor_e(self):
-        return self._get_field("z_kin_hor_e", dims.CellDim, dims.KDim)
+        return self._get_field("z_kin_hor_e", dims.EdgeDim, dims.KDim)
 
     def z_w_concorr_me(self):
-        return self._get_field("z_w_concorr_me", dims.CellDim, dims.KDim)
+        return self._get_field("z_w_concorr_me", dims.EdgeDim, dims.KDim)
 
     def z_v_grad_w(self):
-        return self._get_field("z_v_grad_w", dims.CellDim, dims.KDim)
-    
+        return self._get_field("z_v_grad_w", dims.EdgeDim, dims.KDim)
+
 class IconVelocityExit8to13Savepoint(IconSavepoint):
     def z_ekinh(self):
         return self._get_field("z_ekinh", dims.CellDim, dims.KDim)
@@ -1274,7 +1277,7 @@ class IconVelocityExit8to13Savepoint(IconSavepoint):
 
     def z_w_con_c(self):
         return self._get_field("z_w_con_c", dims.CellDim, dims.KDim)
-    
+
 class IconVelocityExit15to18Savepoint(IconSavepoint):
     def z_w_con_c_full(self):
         return self._get_field("z_w_con_c_full", dims.CellDim, dims.KDim)
@@ -2035,12 +2038,12 @@ class IconSerialDataProvider:
         return IconVelocityInit1to7Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
-    
+
     def savepoint_velocity_8_13_init(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconVelocityInit8to13Savepoint:
         savepoint = (
-            self.serializer.savepoint["velocity-tendencies-8to13-init"]
+            self.serializer.savepoint["velocity-tendencies-8to14-init"]
             .istep[istep]
             .date[date]
             .as_savepoint()
@@ -2048,7 +2051,7 @@ class IconSerialDataProvider:
         return IconVelocityInit8to13Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
-    
+
     def savepoint_velocity_15_18_init(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconVelocityInit15to18Savepoint:
@@ -2061,7 +2064,7 @@ class IconSerialDataProvider:
         return IconVelocityInit15to18Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
-    
+
     def savepoint_velocity_19_20_init(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconVelocityInit19to20Savepoint:
@@ -2090,13 +2093,13 @@ class IconSerialDataProvider:
         )
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
-        savepoint = self.serializer.savepoint["interpolation_state"].as_savepoint()
+        savepoint = self.serializer.savepoint["interpolation-state"].as_savepoint()
         return InterpolationSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_metrics_savepoint(self) -> MetricSavepoint:
-        savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
+        savepoint = self.serializer.savepoint["metric-state"].as_savepoint()
         return MetricSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
@@ -2146,7 +2149,7 @@ class IconSerialDataProvider:
         return IconVelocityExit1to7Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
-    
+
     def savepoint_velocity_8_13_exit(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconVelocityExit8to13Savepoint:
@@ -2159,7 +2162,7 @@ class IconSerialDataProvider:
         return IconVelocityExit8to13Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
-    
+
     def savepoint_velocity_15_18_exit(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconVelocityExit15to18Savepoint:
@@ -2172,7 +2175,7 @@ class IconSerialDataProvider:
         return IconVelocityExit15to18Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
     )
-    
+
     def savepoint_velocity_19_20_exit(
         self, istep: int, vn_only: bool, date: str, jstep: int
     ) -> IconVelocityExit19to20Savepoint:
