@@ -25,8 +25,6 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils
 
 
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
@@ -92,7 +90,6 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 def test_compute_reference_atmsophere_on_half_level_mass_points(
     icon_grid, metrics_savepoint, backend
 ):
-
     theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
     z_ifc = metrics_savepoint.z_ifc()
 

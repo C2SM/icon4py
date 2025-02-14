@@ -104,6 +104,7 @@ def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
     yield field_source
     field_source.reset()
 
+
 @pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_field_operator_provider(cell_coordinate_source):

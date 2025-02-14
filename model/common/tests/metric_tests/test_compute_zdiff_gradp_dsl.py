@@ -22,13 +22,12 @@ from icon4py.model.common.metrics.metric_fields import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import (
     dallclose,
-    is_roundtrip,
 )
+
 
 @pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
-
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
     z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     z_ifc = metrics_savepoint.z_ifc()

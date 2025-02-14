@@ -36,7 +36,9 @@ class TestDiagnosePressure(helpers.StencilTest):
         pressure = np.zeros_like(virtual_temperature)
         ground_level = virtual_temperature.shape[1] - 1
         pressure_ifc[:, ground_level] = surface_pressure * np.exp(
-            -phy_const.GRAV_O_RD * ddqz_z_full[:, ground_level] / virtual_temperature[:, ground_level]
+            -phy_const.GRAV_O_RD
+            * ddqz_z_full[:, ground_level]
+            / virtual_temperature[:, ground_level]
         )
         pressure[:, ground_level] = np.sqrt(pressure_ifc[:, ground_level] * surface_pressure)
         for k in range(ground_level - 1, -1, -1):
@@ -52,7 +54,6 @@ class TestDiagnosePressure(helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-
         ddqz_z_full = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
         )
