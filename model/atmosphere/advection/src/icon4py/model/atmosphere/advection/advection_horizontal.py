@@ -100,8 +100,8 @@ class PositiveDefinite(HorizontalFluxLimiter):
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # limiter fields
-        self._r_m = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._r_m = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
         # stencils
@@ -214,14 +214,14 @@ class SecondOrderMiura(SemiLagrangianTracerFlux):
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # reconstruction fields
-        self._p_coeff_1 = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._p_coeff_1 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._p_coeff_2 = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._p_coeff_2 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._p_coeff_3 = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._p_coeff_3 = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
 
         # stencils
@@ -473,14 +473,14 @@ class SemiLagrangian(FiniteVolume):
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # backtrajectory fields
-        self._z_real_vt = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
+        self._z_real_vt = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self._p_distv_bary_1 = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self._grid, dtype=ta.vpfloat, backend=self._backend
+        self._p_distv_bary_1 = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self._p_distv_bary_2 = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self._grid, dtype=ta.vpfloat, backend=self._backend
+        self._p_distv_bary_2 = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
 
         # stencils

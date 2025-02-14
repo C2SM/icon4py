@@ -468,51 +468,41 @@ class Diffusion:
         self.compile_time_connectivities = self._grid.offset_providers
 
     def _allocate_temporary_fields(self):
-        self.diff_multfac_vn = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
+        self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.enh_smag_fac = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.u_vert = data_alloc.zero_field(
+            self._grid, dims.VertexDim, dims.KDim, backend=self._backend
         )
-        self.diff_multfac_n2w = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
+        self.v_vert = data_alloc.zero_field(
+            self._grid, dims.VertexDim, dims.KDim, backend=self._backend
         )
-        self.smag_limit = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
+        self.kh_smag_e = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.enh_smag_fac = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
+        self.kh_smag_ec = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.u_vert = data_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
+        self.z_nabla2_e = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.v_vert = data_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
+        self.z_temp = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.kh_smag_e = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
-        )
-        self.kh_smag_ec = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
-        )
-        self.z_nabla2_e = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
-        )
-        self.z_temp = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
-        )
-        self.diff_multfac_smag = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
-        )
+        self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         # TODO(Magdalena): this is KHalfDim
-        self.vertical_index = data_alloc.allocate_indices(
-            dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
+        self.vertical_index = data_alloc.index_field(
+            self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self.horizontal_cell_index = data_alloc.allocate_indices(
-            dims.CellDim, grid=self._grid, backend=self._backend
+        self.horizontal_cell_index = data_alloc.index_field(
+            self._grid, dims.CellDim, backend=self._backend
         )
-        self.horizontal_edge_index = data_alloc.allocate_indices(
-            dims.EdgeDim, grid=self._grid, backend=self._backend
+        self.horizontal_edge_index = data_alloc.index_field(
+            self._grid, dims.EdgeDim, backend=self._backend
         )
-        self.w_tmp = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
+        self.w_tmp = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
 
     def _determine_horizontal_domains(self):
@@ -567,12 +557,8 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
-        )
-        smag_limit = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
-        )
+        diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        smag_limit = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
 
         self.setup_fields_for_initial_step(
             self._params.K4,

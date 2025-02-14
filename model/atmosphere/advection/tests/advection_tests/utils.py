@@ -42,8 +42,8 @@ def construct_interpolation_state(
     savepoint: sb.InterpolationSavepoint, backend: Optional[gtx_backend.Backend]
 ) -> advection_states.AdvectionInterpolationState:
     return advection_states.AdvectionInterpolationState(
-        geofac_div=data_alloc.as_1D_sparse_field(
-            savepoint.geofac_div(), dims.CEDim, backend=backend
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=savepoint.geofac_div(), backend=backend
         ),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
@@ -83,35 +83,30 @@ def construct_diagnostic_init_state(
         airmass_now=savepoint.airmass_now(),
         airmass_new=savepoint.airmass_new(),
         grf_tend_tracer=savepoint.grf_tend_tracer(ntracer),
-        hfl_tracer=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=icon_grid, backend=backend
-        ),  # exit field
-        vfl_tracer=data_alloc.allocate_zero_field(  # TODO (dastrm): should be KHalfDim
-            dims.CellDim, dims.KDim, is_halfdim=True, grid=icon_grid, backend=backend
-        ),  # exit field
+        hfl_tracer=data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend),
+        vfl_tracer=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+        ),
     )
 
 
 def construct_diagnostic_exit_state(
     icon_grid,
-    savepoint: sb.AdvectionInitSavepoint,
+    savepoint: sb.AdvectionExitSavepoint,
     ntracer: int,
     backend: Optional[gtx_backend.Backend],
 ) -> advection_states.AdvectionDiagnosticState:
-    zero_f = data_alloc.allocate_zero_field(
-        dims.CellDim, dims.KDim, grid=icon_grid, backend=backend
-    )
     return advection_states.AdvectionDiagnosticState(
-        airmass_now=zero_f,  # init field
-        airmass_new=zero_f,  # init field
-        grf_tend_tracer=zero_f,  # init field
+        airmass_now=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
+        airmass_new=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend),
+        grf_tend_tracer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
         hfl_tracer=savepoint.hfl_tracer(ntracer),
         vfl_tracer=savepoint.vfl_tracer(ntracer),
     )
 
 
 def construct_prep_adv(
-    icon_grid, savepoint: sb.AdvectionInitSavepoint
+    savepoint: sb.AdvectionInitSavepoint,
 ) -> advection_states.AdvectionPrepAdvState:
     return advection_states.AdvectionPrepAdvState(
         vn_traj=savepoint.vn_traj(),
@@ -141,7 +136,6 @@ def log_serialized(
 
 
 def verify_advection_fields(
-    config: advection.AdvectionConfig,
     grid: icon_grid.IconGrid,
     diagnostic_state: advection_states.AdvectionDiagnosticState,
     diagnostic_state_ref: advection_states.AdvectionDiagnosticState,

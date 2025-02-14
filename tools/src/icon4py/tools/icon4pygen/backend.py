@@ -140,6 +140,14 @@ def generate_gtheader(
                 "Cell": "num_cells",
                 "Edge": "num_edges",
                 "Vertex": "num_vertices",
+                # These might be used temporarily in the domain inference, but will disappear
+                # later. Can be removed after domain sizes are determined at runtime.
+                "EC": "UNKNOWN",
+                "CE": "UNKNOWN",
+                "CECD": "UNKNOWN",
+                "ECD": "UNKNOWN",
+                "ECVD": "UNKNOWN",
+                "CECECD": "UNKNOWN",
             },
         )
 
