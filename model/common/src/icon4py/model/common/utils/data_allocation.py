@@ -87,6 +87,7 @@ def flatten_first_two_dims(
     *dims: gtx.Dimension, field: gtx.Field | NDArray, backend: Optional[gtx_backend.Backend] = None
 ) -> gtx.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
+    # TODO check that dimensions are compatible
     buffer = field.ndarray if isinstance(field, gtx.Field) else field
     old_shape = buffer.shape
     assert len(old_shape) >= 2
