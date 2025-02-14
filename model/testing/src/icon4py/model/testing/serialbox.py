@@ -1147,6 +1147,98 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
 
 
+class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
+    def p_vn(self):
+        return self._get_field("p_vn", dims.EdgeDim, dims.KDim)
+
+    def p_vt(self):
+        return self._get_field("p_vt", dims.EdgeDim, dims.KDim)
+
+    def z_rth_pr_1(self):
+        return self._get_field("z_rth_pr_1", dims.CellDim, dims.KDim)
+
+    def z_rth_pr_2(self):
+        return self._get_field("z_rth_pr_2", dims.CellDim, dims.KDim)
+
+    def z_exner_ex_pr(self):
+        return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)
+
+    def z_dexner_dz_c_1(self):
+        return self._get_field("z_dexner_dz_c_1", dims.CellDim, dims.KDim)
+
+    def z_dexner_dz_c_2(self):
+        return self._get_field("z_dexner_dz_c_2", dims.CellDim, dims.KDim)
+
+    def theta_v(self):
+        return self._get_field("theta_v", dims.CellDim, dims.KDim)
+
+    def theta_v_ic(self):
+        return self._get_field("theta_v_ic", dims.CellDim, dims.KDim)
+
+    def z_dwdz_dd(self):
+        return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
+
+    def ddt_vn_apc_ntl2(self):
+        return self._get_field("ddt_vn_apc_ntl2", dims.EdgeDim, dims.KDim)
+
+    def ddt_vn_apc_ntl1(self):
+        return self._get_field("ddt_vn_apc_ntl1", dims.EdgeDim, dims.KDim)
+
+    def ddt_vn_phy(self):
+        return self._get_field("ddt_vn_phy", dims.EdgeDim, dims.KDim)
+
+    def vn_incr(self):
+        return self._get_field("vn_incr", dims.EdgeDim, dims.KDim)
+
+    def bdy_divdamp(self):
+        return self._get_field("bdy_divdamp", dims.KDim)
+
+    def z_hydro_corr(self):
+        return self._get_field("z_hydro_corr", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv2_vn(self):
+        return self._get_field("z_graddiv2_vn", dims.EdgeDim, dims.KDim)
+
+    def scal_divdamp(self):
+        return self._get_field("scal_divdamp", dims.KDim)
+
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+
+    def z_gradh_exner(self):
+        return self._get_field("z_gradh_exner", dims.EdgeDim, dims.KDim)
+
+    def vn(self):
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
+
+    def iau_wgt_dyn(self):
+        return self._get_field("iau_wgt_dyn", dims.EdgeDim, dims.KDim)
+
+    def itime_scheme(self) -> int:
+        return self.serializer.read("itime_scheme", self.savepoint)[0]
+
+    def divdamp_order(self) -> int:
+        return self.serializer.read("divdamp_order", self.savepoint)[0]
+
+    def scal_divdamp_o2(self) -> float:
+        return self.serializer.read("scal_divdamp_o2", self.savepoint)[0]
+
+    def iadv_rhotheta(self) -> int:
+        return self.serializer.read("iadv_rhotheta", self.savepoint)[0]
+
+    def is_iau_active(self) -> bool:
+        return bool(self.serializer.read("is_iau_active", self.savepoint)[0])
+
+    def igradp_method(self) -> int:
+        return self.serializer.read("igradp_method", self.savepoint)[0]
+
+
 class IconNonHydroExitSavepoint(IconSavepoint):
     def z_exner_ex_pr(self):
         return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)  # KHalfDim
@@ -1210,6 +1302,23 @@ class IconNonHydroExitSavepoint(IconSavepoint):
 
     def z_hydro_corr(self):
         return self._get_field("z_hydro_corr", dims.EdgeDim, dims.KDim)
+
+
+class IconNonHydroExit_15_28_Savepoint(IconSavepoint):
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
+
+    def z_theta_v_e(self):
+        return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
+
+    def z_gradh_exner(self):
+        return self._get_field("z_gradh_exner", dims.EdgeDim, dims.KDim)
+
+    def vn(self):
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+
+    def z_graddiv_vn(self):
+        return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
 
 
 class IconNonHydroFinalSavepoint(IconSavepoint):
@@ -1852,6 +1961,21 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
+    def from_savepoint_nonhydro_15_28_init(
+        self, istep: int, date: str, jstep: int, substep: int
+    ) -> IconNonHydroInit_15_28_Savepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-15-28-init"]  # TODO
+            .istep[istep]
+            .date[date]
+            .jstep[jstep]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return IconNonHydroInit_15_28_Savepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
         savepoint = self.serializer.savepoint["interpolation_state"].as_savepoint()
         return InterpolationSavepoint(
@@ -1910,6 +2034,21 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconNonHydroExitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_nonhydro_15_28_exit(
+        self, istep: int, date: str, jstep: int, substep: int
+    ) -> IconNonHydroExit_15_28_Savepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-15-28-exit"]  # TODO
+            .istep[istep]
+            .date[date]
+            .jstep[jstep]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return IconNonHydroExit_15_28_Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 

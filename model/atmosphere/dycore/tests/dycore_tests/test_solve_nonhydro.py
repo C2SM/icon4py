@@ -1076,8 +1076,8 @@ def test_run_solve_nonhydro_15_to_28(
     savepoint_nonhydro_step_exit,
     at_initial_timestep,
     istep,
-    savepoint_velocity_15_28_init,
-    savepoint_velocity_15_28_exit,
+    savepoint_nonhydro_15_28_init,
+    savepoint_nonhydro_15_28_exit,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -1106,44 +1106,45 @@ def test_run_solve_nonhydro_15_to_28(
     vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
-    p_vn = savepoint_velocity_15_28_init.p_vn()
-    p_vt = savepoint_velocity_15_28_init.p_vt()
-    z_rth_pr_1 = savepoint_velocity_15_28_init.z_rth_pr_1()
-    z_rth_pr_2 = savepoint_velocity_15_28_init.z_rth_pr_2()
-    z_exner_ex_pr = savepoint_velocity_15_28_init.z_exner_ex_pr()
-    z_dexner_dz_c_1 = savepoint_velocity_15_28_init.z_dexner_dz_c_1()
-    z_dexner_dz_c_2 = savepoint_velocity_15_28_init.z_dexner_dz_c_2()
-    theta_v = savepoint_velocity_15_28_init.theta_v()
-    theta_v_ic = savepoint_velocity_15_28_init.theta_v_ic()
-    z_dwdz_dd = savepoint_velocity_15_28_init.z_dwdz_dd()
-    ddt_vn_apc_ntl2 = savepoint_velocity_15_28_init.ddt_vn_apc_ntl2()
-    ddt_vn_apc_ntl1 = savepoint_velocity_15_28_init.ddt_vn_apc_ntl1()
-    ddt_vn_phy = savepoint_velocity_15_28_init.ddt_vn_phy()
-    vn_incr = savepoint_velocity_15_28_init.vn_incr()
-    bdy_divdamp = savepoint_velocity_15_28_init.bdy_divdamp()
-    z_hydro_corr = savepoint_velocity_15_28_init.z_hydro_corr()
-    z_graddiv2_vn = savepoint_velocity_15_28_init.z_graddiv2_vn()
-    scal_divdamp = savepoint_velocity_15_28_init.scal_divdamp()
-    z_rho_e = savepoint_velocity_15_28_init.z_rho_e()
-    z_theta_v_e = savepoint_velocity_15_28_init.z_theta_v_e()
-    z_gradh_exner = savepoint_velocity_15_28_init.z_gradh_exner()
-    vn = savepoint_velocity_15_28_init.vn()
-    z_graddiv_vn = savepoint_velocity_15_28_init.z_graddiv_vn()
-    iau_wgt_dyn = savepoint_velocity_15_28_init.iau_wgt_dyn()
-    itime_scheme = savepoint_velocity_15_28_init.itime_scheme()
-    divdamp_order = savepoint_velocity_15_28_init.divdamp_order()
-    scal_divdamp_o2 = savepoint_velocity_15_28_init.scal_divdamp_o2()
-    iadv_rhotheta = savepoint_velocity_15_28_init.iadv_rhotheta()
-    is_iau_active = savepoint_velocity_15_28_init.is_iau_active()
-    igradp_method = savepoint_velocity_15_28_init.igradp_method()
+    p_vn = savepoint_nonhydro_15_28_init.p_vn()
+    p_vt = savepoint_nonhydro_15_28_init.p_vt()
+    z_rth_pr_1 = savepoint_nonhydro_15_28_init.z_rth_pr_1()
+    z_rth_pr_2 = savepoint_nonhydro_15_28_init.z_rth_pr_2()
+    z_exner_ex_pr = savepoint_nonhydro_15_28_init.z_exner_ex_pr()
+    z_dexner_dz_c_1 = savepoint_nonhydro_15_28_init.z_dexner_dz_c_1()
+    z_dexner_dz_c_2 = savepoint_nonhydro_15_28_init.z_dexner_dz_c_2()
+    theta_v = savepoint_nonhydro_15_28_init.theta_v()
+    theta_v_ic = savepoint_nonhydro_15_28_init.theta_v_ic()
+    z_dwdz_dd = savepoint_nonhydro_15_28_init.z_dwdz_dd()
+    ddt_vn_apc_ntl2 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl2()
+    ddt_vn_apc_ntl1 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl1()
+    ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
+    vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
+    bdy_divdamp = savepoint_nonhydro_15_28_init.bdy_divdamp()
+    z_hydro_corr = savepoint_nonhydro_15_28_init.z_hydro_corr()
+    z_graddiv2_vn = savepoint_nonhydro_15_28_init.z_graddiv2_vn()
+    scal_divdamp = savepoint_nonhydro_15_28_init.scal_divdamp()
+    z_rho_e = savepoint_nonhydro_15_28_init.z_rho_e()
+    z_theta_v_e = savepoint_nonhydro_15_28_init.z_theta_v_e()
+    z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
+    vn = savepoint_nonhydro_15_28_init.vn()
+    z_graddiv_vn = savepoint_nonhydro_15_28_init.z_graddiv_vn()
+    iau_wgt_dyn = savepoint_nonhydro_15_28_init.iau_wgt_dyn()
+    itime_scheme = savepoint_nonhydro_15_28_init.itime_scheme()
+    divdamp_order = savepoint_nonhydro_15_28_init.divdamp_order()
+    scal_divdamp_o2 = savepoint_nonhydro_15_28_init.scal_divdamp_o2()
+    iadv_rhotheta = savepoint_nonhydro_15_28_init.iadv_rhotheta()
+    is_iau_active = savepoint_nonhydro_15_28_init.is_iau_active()
+    igradp_method = savepoint_nonhydro_15_28_init.igradp_method()
+
+    z_rho_e_ref = savepoint_nonhydro_15_28_exit.z_rho_e()
+    z_theta_v_e_ref = savepoint_nonhydro_15_28_exit.z_theta_v_e()
+    z_gradh_exner_ref = savepoint_nonhydro_15_28_exit.z_gradh_exner()
+    vn_ref = savepoint_nonhydro_15_28_exit.vn()
+    z_graddiv_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv_vn()
+
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
-
-    z_rho_e_ref = savepoint_velocity_15_28_exit.z_rho_e()
-    z_theta_v_e_ref = savepoint_velocity_15_28_exit.z_theta_v_e()
-    z_gradh_exner_ref = savepoint_velocity_15_28_exit.z_gradh_exner()
-    vn_ref = savepoint_velocity_15_28_exit.vn()
-    z_graddiv_vn_ref = savepoint_velocity_15_28_exit.z_graddiv_vn()
 
     fused_solve_nonhydro_stencil_15_to_28.fused_solve_nonhydro_stencil_15_to_28.with_backend(
         backend
@@ -1228,6 +1229,13 @@ def test_run_solve_nonhydro_15_to_28(
         FOURTH_ORDER=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
         nflatlev=nflatlev,
         nflat_gradp=nflat_gradp,
+        offset_provider={
+            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "E2EC": icon_grid.get_offset_provider("E2EC"),
+            "E2C": icon_grid.get_offset_provider("E2C"),
+            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "Koff": dims.KDim,
+        },
     )
 
     assert helpers.dallclose(z_rho_e.asnumpy(), z_rho_e_ref.asnumpy())

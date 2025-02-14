@@ -218,6 +218,22 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_ini
 
 
 @pytest.fixture
+def savepoint_nonhydro_15_28_init(data_provider, step_date_init, istep_init, jstep_init, substep):
+    """
+    Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
+
+     metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - jstep: step count since last boundary interpolation (ranges from 0 to 2*ndyn_substeps-1)
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_nonhydro_15_28_init(
+        istep=istep_init, date=step_date_init, jstep=jstep_init, substep=substep
+    )
+
+
+@pytest.fixture
 def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep):  # F811
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
@@ -245,6 +261,23 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exi
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_exit(
+        istep=istep_exit, date=step_date_exit, jstep=jstep_exit, substep=substep
+    )
+
+
+@pytest.fixture
+def savepoint_nonhydro_15_28_exit(data_provider, step_date_exit, istep_exit, jstep_exit, substep):
+    """
+    Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
+    subroutine nh_solve in mo_solve_nonhydro.f90.
+
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - jstep: step count since last boundary interpolation (ranges from 0 to 2*ndyn_substeps-1)
+    - substep: dynamical substep
+    """
+    return data_provider.from_savepoint_nonhydro_15_28_exit(
         istep=istep_exit, date=step_date_exit, jstep=jstep_exit, substep=substep
     )
 
