@@ -82,6 +82,8 @@ def apply_markers(
 ):
     for marker in markers:
         match marker.name:
+            case "embbedded_only" if not is_embedded(backend):
+                pytest.xfail("only runs on embedded backend")
             case "embedded_remap_error" if is_embedded(backend):
                 # https://github.com/GridTools/gt4py/issues/1583
                 pytest.xfail("Embedded backend currently fails in remap function.")

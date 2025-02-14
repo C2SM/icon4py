@@ -72,12 +72,10 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid, bac
     assert test_helpers.dallclose(data_alloc.as_numpy(c_lin_e_partial), c_lin_e_ref.asnumpy())
 
 
-@pytest.mark.skip_value_error
+@pytest.mark.embbedded_only
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, backend):
-    if backend is not None:
-        pytest.xfail("writes a sparse fields: only runs in field view embedded")
     mesh = icon_grid
     primal_edge_length = grid_savepoint.primal_edge_length()
     edge_orientation = grid_savepoint.edge_orientation()
@@ -88,18 +86,16 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid, 
         primal_edge_length=primal_edge_length,
         edge_orientation=edge_orientation,
         area=area,
-        out=(geofac_div),
+        out=geofac_div,
         offset_provider={"C2E": mesh.get_offset_provider("C2E")},
     )
     assert test_helpers.dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
 
 
+@pytest.mark.embedded_only
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid, backend):
-    if backend is not None:
-        pytest.xfail("writes a sparse fields: only runs in field view embedded")
-
     mesh = icon_grid
     dual_edge_length = grid_savepoint.dual_edge_length()
     edge_orientation = grid_savepoint.vertex_edge_orientation()
