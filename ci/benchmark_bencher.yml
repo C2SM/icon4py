@@ -1,0 +1,37 @@
+include:
+  - local: 'ci/base.yml'
+
+.benchmark_model_stencils:
+  stage: benchmark
+  script:
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    - source "$HOME/.cargo/env"
+    - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - source $HOME/.local/bin/env
+    - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
+    - source .venv/bin/activate
+    - env
+    - |
+      bencher run \
+      --project "$BENCHER_PROJECT" \
+      --token "$BENCHER_API_TOKEN" \
+      --branch feature_branch \
+      --start-point main \
+      --start-point-clone-thresholds \
+      --start-point-reset \
+      --testbed "ci-runner:$SYSTEM_NAME" \
+      --err \
+      --adapter python_pytest \
+      --file results.json \
+      "pytest --benchmark-json results.json -sv --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
+  parallel:
+    matrix:
+      - BACKEND: [gtfn_cpu, gtfn_gpu]
+        GRID: [icon_grid, icon_grid_global]
+
+# benchmark_bencher_x86_64:
+#   extends: [.benchmark_model_stencils, .test_template_x86_64]
+
+benchmark_bencher_aarch64:
+  extends: [.benchmark_model_stencils, .test_template_aarch64]
