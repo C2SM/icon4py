@@ -15,7 +15,6 @@ from icon4py.model.common.interpolation import (
     interpolation_attributes as attrs,
     interpolation_factory,
 )
-from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import (
     datatest_utils as dt_utils,
     grid_utils as gridtest_utils,
@@ -99,11 +98,9 @@ def get_interpolation_factory(
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-12),
     ],
 )
+@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend, rtol):
-    # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip("skipping: gpu backend is unsupported")
     field_ref = interpolation_savepoint.geofac_div()
     factory = get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
@@ -121,11 +118,9 @@ def test_get_geofac_div(interpolation_savepoint, grid_file, experiment, backend,
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
+@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_grdiv(interpolation_savepoint, grid_file, experiment, backend, rtol):
-    # TODO (any): This test does not work with gpu backend because geofac_div cannot be computed on gpu backend.
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip("skipping: gpu backend is unsupported")
     field_ref = interpolation_savepoint.geofac_grdiv()
     factory = get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
@@ -152,11 +147,9 @@ def assert_reordered(val: np.ndarray, ref: np.ndarray, rtol):
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
+@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend, rtol):
-    # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip("skipping: gpu backend is unsupported")
     field_ref = interpolation_savepoint.geofac_rot()
     factory = get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
@@ -175,11 +168,9 @@ def test_get_geofac_rot(interpolation_savepoint, grid_file, experiment, backend,
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
+@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend, rtol):
-    # TODO (any): This test does not work with gpu backend because geofac_div cannot be computed on gpu backend.
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip("skipping: gpu backend is unsupported")
     field_ref = interpolation_savepoint.geofac_n2s()
     factory = get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
@@ -195,11 +186,9 @@ def test_get_geofac_n2s(interpolation_savepoint, grid_file, experiment, backend,
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
+@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_get_geofac_grg(interpolation_savepoint, grid_file, experiment, backend):
-    # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip("skipping: gpu backend is unsupported")
     field_ref = interpolation_savepoint.geofac_grg()
     factory = get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
@@ -251,11 +240,9 @@ def test_get_mass_conserving_cell_average_weight(
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT, 5e-9),
     ],
 )
+@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_e_flx_avg(interpolation_savepoint, grid_file, experiment, backend, rtol):
-    # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip("skipping: gpu backend is unsupported")
     field_ref = interpolation_savepoint.e_flx_avg()
     factory = get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
@@ -307,10 +294,9 @@ def test_pos_on_tplane_e_x_y(interpolation_savepoint, grid_file, experiment, bac
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT, 1e-11),
     ],
 )
+@pytest.mark.cpu_only  # TODO (any): This test does not work on gpu backend because the field operator is run with embedded backend
 @pytest.mark.datatest
 def test_cells_aw_verts(interpolation_savepoint, grid_file, experiment, backend, rtol):
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip("skipping: gpu backend is unsupported")
     field_ref = interpolation_savepoint.c_intp()
     factory = get_interpolation_factory(backend, experiment, grid_file)
     grid = factory.grid
