@@ -28,20 +28,20 @@ class TestDiagnosePressure(helpers.StencilTest):
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
         surface_pressure: np.ndarray,
-        temperature: np.ndarray,
+        virtual_temperature: np.ndarray,
         ddqz_z_full: np.ndarray,
         **kwargs: Any,
     ) -> dict:
-        pressure_ifc = np.zeros_like(temperature)
-        pressure = np.zeros_like(temperature)
-        ground_level = temperature.shape[1] - 1
+        pressure_ifc = np.zeros_like(virtual_temperature)
+        pressure = np.zeros_like(virtual_temperature)
+        ground_level = virtual_temperature.shape[1] - 1
         pressure_ifc[:, ground_level] = surface_pressure * np.exp(
-            -phy_const.GRAV_O_RD * ddqz_z_full[:, ground_level] / temperature[:, ground_level]
+            -phy_const.GRAV_O_RD * ddqz_z_full[:, ground_level] / virtual_temperature[:, ground_level]
         )
         pressure[:, ground_level] = np.sqrt(pressure_ifc[:, ground_level] * surface_pressure)
         for k in range(ground_level - 1, -1, -1):
             pressure_ifc[:, k] = pressure_ifc[:, k + 1] * np.exp(
-                -phy_const.GRAV_O_RD * ddqz_z_full[:, k] / temperature[:, k]
+                -phy_const.GRAV_O_RD * ddqz_z_full[:, k] / virtual_temperature[:, k]
             )
             pressure[:, k] = np.sqrt(pressure_ifc[:, k] * pressure_ifc[:, k + 1])
 
