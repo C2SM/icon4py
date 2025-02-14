@@ -4,7 +4,7 @@ include:
 .test_model_stencils:
   stage: test
   script:
-    - nox -s test_model-3.10(stencils, $COMPONENT) -- --backend=$BACKEND --grid=$GRID
+    - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
