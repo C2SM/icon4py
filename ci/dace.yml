@@ -33,7 +33,7 @@ test_model_datatests_aarch64:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - nox -s "benchmark_model-3.10(subpackage='$COMPONENT')"  -- --backend=$BACKEND --grid=$GRID
+    - nox -s "benchmark_model-3.10($COMPONENT)"  -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
