@@ -82,6 +82,10 @@ def apply_markers(
 ):
     for marker in markers:
         match marker.name:
+            case "cpu_only" if data_alloc.is_cupy_device(backend):
+                pytest.xfail("currently only runs on CPU")
+            case "embedded_only" if not is_embedded(backend):
+                pytest.skip("stencil runs only on embedded backend")
             case "embedded_remap_error" if is_embedded(backend):
                 # https://github.com/GridTools/gt4py/issues/1583
                 pytest.xfail("Embedded backend currently fails in remap function.")
