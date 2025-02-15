@@ -4,12 +4,10 @@ include:
 .test_model_stencils:
   stage: test
   script:
-    - nox -s "test_model-3.10(stencils, $COMPONENT)" -- --backend=$BACKEND --grid=$GRID
+    - nox -s test_model-3.10 -t stencils -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
-      # TODO(edopao): Add more components once they work fine with DaCe 
-      COMPONENT: [diffusion, dycore]
       GRID: [simple_grid, icon_grid]
 # test_model_stencils_x86_64:
 #   extends: [.test_model_stencils, .test_template_x86_64]
@@ -33,7 +31,7 @@ test_model_datatests_aarch64:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - nox -s "benchmark_model-3.10($COMPONENT)"  -- --backend=$BACKEND --grid=$GRID
+    - nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
