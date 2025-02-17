@@ -79,14 +79,14 @@ def test_cheader_generation_for_single_function():
     plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[foo])
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern int foo_wrapper(int one, double* two, int n_Cell, int n_K);"
+    assert header == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1);"
 
 
 def test_cheader_for_pointer_args():
     plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[bar])
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern int bar_wrapper(float* one, int two, int n_Cell, int n_K);"
+    assert header == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two);"
 
 
 def compare_ignore_whitespace(actual: str, expected: str):
@@ -126,35 +126,33 @@ module libtest_plugin
 
       function foo_wrapper(one, &
                            two, &
-                           n_Cell, &
-                           n_K) bind(c, name="foo_wrapper") result(rc)
+                           two_size_0, &
+                           two_size_1) bind(c, name="foo_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
-
-         integer(c_int), value :: n_Cell
-
-         integer(c_int), value :: n_K
-
          integer(c_int) :: rc  ! Stores the return code
 
          integer(c_int), value, target :: one
 
          type(c_ptr), value, target :: two
 
+         integer(c_int), value :: two_size_0
+
+         integer(c_int), value :: two_size_1
+
       end function foo_wrapper
 
       function bar_wrapper(one, &
-                           two, &
-                           n_Cell, &
-                           n_K) bind(c, name="bar_wrapper") result(rc)
+                           one_size_0, &
+                           one_size_1, &
+                           two) bind(c, name="bar_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
-
-         integer(c_int), value :: n_Cell
-
-         integer(c_int), value :: n_K
-
          integer(c_int) :: rc  ! Stores the return code
 
          type(c_ptr), value, target :: one
+
+         integer(c_int), value :: one_size_0
+
+         integer(c_int), value :: one_size_1
 
          integer(c_int), value, target :: two
 
@@ -169,27 +167,26 @@ contains
                   rc)
       use, intrinsic :: iso_c_binding
 
-      integer(c_int) :: n_Cell
-
-      integer(c_int) :: n_K
-
       integer(c_int), value, target :: one
 
       real(c_double), dimension(:, :), target :: two
+
+      integer(c_int) :: two_size_0
+
+      integer(c_int) :: two_size_1
 
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
       !$acc host_data use_device(two)
 
-      n_Cell = SIZE(two, 1)
-
-      n_K = SIZE(two, 2)
+      two_size_0 = SIZE(two, 1)
+      two_size_1 = SIZE(two, 2)
 
       rc = foo_wrapper(one=one, &
                        two=c_loc(two), &
-                       n_Cell=n_Cell, &
-                       n_K=n_K)
+                       two_size_0=two_size_0, &
+                       two_size_1=two_size_1)
       !$acc end host_data
    end subroutine foo
 
@@ -198,27 +195,26 @@ contains
                   rc)
       use, intrinsic :: iso_c_binding
 
-      integer(c_int) :: n_Cell
-
-      integer(c_int) :: n_K
-
       real(c_float), dimension(:, :), target :: one
 
       integer(c_int), value, target :: two
+
+      integer(c_int) :: one_size_0
+
+      integer(c_int) :: one_size_1
 
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
 
       !$acc host_data use_device(one)
 
-      n_Cell = SIZE(one, 1)
-
-      n_K = SIZE(one, 2)
+      one_size_0 = SIZE(one, 1)
+      one_size_1 = SIZE(one, 2)
 
       rc = bar_wrapper(one=c_loc(one), &
-                       two=two, &
-                       n_Cell=n_Cell, &
-                       n_K=n_K)
+                       one_size_0=one_size_0, &
+                       one_size_1=one_size_1, &
+                       two=two)
       !$acc end host_data
    end subroutine bar
 
@@ -251,22 +247,18 @@ from libtest import foo
 from libtest import bar
 
 
-K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 Cell = gtx.Dimension("Cell", kind=gtx.DimensionKind.HORIZONTAL)
+K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 
 
 @ffi.def_extern()
-def foo_wrapper(one, two, n_Cell, n_K):
+def foo_wrapper(one, two, two_size_0, two_size_1):
     try:
-
-        logging.info("size of n_Cell = %s" % str(n_Cell))
-
-        logging.info("size of n_K = %s" % str(n_K))
 
         # Convert ptr to GT4Py fields
 
         two = wrapper_utils.as_field(
-            ffi, xp, two, ts.ScalarKind.FLOAT64, {Cell: n_Cell, K: n_K}, False
+            ffi, xp, two, ts.ScalarKind.FLOAT64, {Cell: two_size_0, K: two_size_1}, False
         )
 
         foo(one, two)
@@ -279,17 +271,13 @@ def foo_wrapper(one, two, n_Cell, n_K):
 
 
 @ffi.def_extern()
-def bar_wrapper(one, two, n_Cell, n_K):
+def bar_wrapper(one, one_size_0, one_size_1, two):
     try:
-
-        logging.info("size of n_Cell = %s" % str(n_Cell))
-
-        logging.info("size of n_K = %s" % str(n_K))
 
         # Convert ptr to GT4Py fields
 
         one = wrapper_utils.as_field(
-            ffi, xp, one, ts.ScalarKind.FLOAT32, {Cell: n_Cell, K: n_K}, False
+            ffi, xp, one, ts.ScalarKind.FLOAT32, {Cell: one_size_0, K: one_size_1}, False
         )
 
         bar(one, two)
@@ -299,14 +287,15 @@ def bar_wrapper(one, two, n_Cell, n_K):
         return 1
 
     return 0
-    """
+
+"""
     assert compare_ignore_whitespace(interface, expected)
 
 
 def test_c_header(dummy_plugin):
     interface = generate_c_header(dummy_plugin)
     expected = """
-    extern int foo_wrapper(int one, double *two, int n_Cell, int n_K);
-    extern int bar_wrapper(float *one, int two, int n_Cell, int n_K);
+    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1);
+    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two);
     """
     assert compare_ignore_whitespace(interface, expected)
