@@ -109,7 +109,7 @@ def _install_session_venv(
 ) -> None:
     """Install session packages using uv."""
     #TODO(egparedes): remove this workaround once `backend` parameter is added to sessions
-    if (env_extras := session.env.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", "")):
+    if (env_extras := os.environ.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", "")):
         extras = [*extras, *re.split(r'\W+', env_extras)]
     env = dict(os.environ.items()) | {"UV_PROJECT_ENVIRONMENT": session.virtualenv.location}
     session.run_install(
