@@ -23,7 +23,9 @@ from icon4py.tools.liskov.pipeline.collection import (
 logger = setup_logger(__name__)
 
 
-def split_comma(ctx, param, value) -> Optional[tuple[str]]:
+def split_comma(
+    ctx: click.Context, param: click.Parameter, value: str
+) -> Optional[tuple[str, ...]]:
     return tuple(v.strip() for v in value.split(",")) if value else None
 
 

@@ -34,7 +34,7 @@ def print_grid_decomp_info(
     num_cells: int,
     num_edges: int,
     num_verts: int,
-):
+) -> None:
     log.info("icon_grid:cell_start%s", icon_grid._start_indices[CellDim])
     log.info("icon_grid:cell_end:%s", icon_grid._end_indices[CellDim])
     log.info("icon_grid:vert_start:%s", icon_grid._start_indices[VertexDim])

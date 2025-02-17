@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ffsl_backtrajectory_cou
     compute_ffsl_backtrajectory_counterclockwise_indicator,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -24,7 +26,11 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest
 
     @staticmethod
     def reference(
-        grid, p_vn: np.array, tangent_orientation: np.array, lcounterclock: bool, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_vn: np.ndarray,
+        tangent_orientation: np.ndarray,
+        lcounterclock: bool,
+        **kwargs: Any,
     ) -> dict:
         tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
@@ -39,7 +45,7 @@ class TestComputeFfslBacktrajectoryCounterclockwiseIndicator(helpers.StencilTest
         return dict(lvn_sys_pos=lvn_sys_pos)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         p_vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
         lvn_sys_pos = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, dtype=bool)

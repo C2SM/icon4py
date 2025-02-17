@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_quartic_face_values
     compute_ppm_quartic_face_values,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -24,7 +26,11 @@ class TestComputePpmQuarticFaceValues(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_cc: np.array, p_cellhgt_mc_now: np.array, z_slope: np.array, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cc: np.ndarray,
+        p_cellhgt_mc_now: np.ndarray,
+        z_slope: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         p_cellhgt_mc_now_k_minus_1 = p_cellhgt_mc_now[:, 1:-2]
         p_cellhgt_mc_now_k_minus_2 = p_cellhgt_mc_now[:, 0:-3]
@@ -63,7 +69,7 @@ class TestComputePpmQuarticFaceValues(helpers.StencilTest):
         return dict(p_face=p_face)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_cellhgt_mc_now = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}

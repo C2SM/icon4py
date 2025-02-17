@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.apply_interpolated_tracer_time_
     apply_interpolated_tracer_time_tendency,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -24,11 +26,11 @@ class TestApplyInterpolatedTracerTimeTendency(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_tracer_now: np.array,
-        p_grf_tend_tracer: np.array,
-        p_dtime,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_tracer_now: np.ndarray,
+        p_grf_tend_tracer: np.ndarray,
+        p_dtime: float,
+        **kwargs: Any,
     ) -> dict:
         p_tracer_new = p_tracer_now + p_dtime * p_grf_tend_tracer
         p_tracer_new = np.where(p_tracer_new < 0.0, 0.0, p_tracer_new)
@@ -36,7 +38,7 @@ class TestApplyInterpolatedTracerTimeTendency(helpers.StencilTest):
         return dict(p_tracer_new=p_tracer_new)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         p_tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_grf_tend_tracer = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_tracer_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

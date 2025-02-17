@@ -23,6 +23,7 @@ from icon4py.model.common import (
 )
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import (
+    base,
     geometry_stencils as stencils,
     grid_manager as gm,
     horizontal as h_grid,
@@ -100,7 +101,7 @@ class GridGeometry(factory.FieldSource):
         self._grid = grid
         self._decomposition_info = decomposition_info
         self._attrs = metadata
-        self._geometry_type: icon.GeometryType = grid.global_properties.geometry_type
+        self._geometry_type: base.GeometryType = grid.global_properties.geometry_type
         self._edge_domain = h_grid.domain(dims.EdgeDim)
 
         (
