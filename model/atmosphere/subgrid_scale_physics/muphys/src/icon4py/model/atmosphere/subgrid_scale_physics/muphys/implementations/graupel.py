@@ -12,7 +12,7 @@ from gt4py.next.ffront.experimental import concat_where
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import idx, g_ct, t_d
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda, _ice_number, _ice_mass, _ice_sticking, _deposition_factor, _deposition_auto_conversion, _ice_deposition_nucleation, _vel_scale_factor_default, _vel_scale_factor_ice, _vel_scale_factor_snow
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda, _ice_number, _ice_mass, _ice_sticking, _deposition_factor, _deposition_auto_conversion, _ice_deposition_nucleation, _vel_scale_factor_default, _vel_scale_factor_ice, _vel_scale_factor_snow, _fall_speed_scalar
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import _qsat_rho, _qsat_ice_rho, _internal_energy
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import _cloud_to_rain, _rain_to_vapor, _cloud_x_ice, _cloud_to_snow, _cloud_to_graupel, _vapor_x_ice, _ice_to_snow, _ice_to_graupel, _rain_to_graupel, _snow_to_graupel, _vapor_x_snow, _vapor_x_graupel, _snow_to_rain, _graupel_to_rain
 
@@ -33,37 +33,45 @@ def _precip(
     _, flx, vt = state
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0*flx
-#    flx_partial = minimum(rho_x * vc * _fall_speed(rho_x, prefactor, offset, exponent), flx_eff)
+#    flx_partial = minimum(rho_x * vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent), flx_eff)
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x+offset), exponent), flx_eff)
     update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)   # q update
     update1 = (update0 * rho * vt + flx_partial) * 0.5                       # flux
     rho_x   = (update0 + q_kp1) * 0.5 * rho
-#    update2 = vc * _fall_speed(rho_x, prefactor, offset, exponent)           # vt
+#    update2 = vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent)           # vt
     update2 = vc * prefactor * power((rho_x+offset), exponent)                # vt
     return update0, update1, update2
 
-@gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, 0.0))
+@gtx.scan_operator(axis=K, forward=True, init=0.0)
+def _precipitation_flux(
+    state:     ta.wpfloat,
+    pr:        ta.wpfloat,
+) -> ta.wpfloat:
+    pflx = state
+    pflx    = pflx + pr  # pflx[oned_vec_index] = pflx[oned_vec_index] + q[lqr].p[iv];
+
+    return pflx
+
+@gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0))
 def _temperature_update(
-    state:     tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat],
+    state:     tuple[ta.wpfloat, ta.wpfloat],
     t:         ta.wpfloat,
     t_kp1:     ta.wpfloat,
     ei_old:    ta.wpfloat,
-    p_sig:     ta.wpfloat,
+    pr:        ta.wpfloat,             # precipitable rain
+    pflx_tot:  ta.wpfloat,             # total precipitation flux
     qv:        ta.wpfloat,
     qliq:      ta.wpfloat,
     qice:      ta.wpfloat,
-    pr:        ta.wpfloat,
     rho:       ta.wpfloat,             # density
     dz:        ta.wpfloat,
     dt:        ta.wpfloat,
-) -> tuple[ta.wpfloat,ta.wpfloat,ta.wpfloat]:
-    _, eflx, pflx = state
+) -> tuple[ta.wpfloat,ta.wpfloat]:
+    _, eflx = state
     e_int   = ei_old + eflx
 
-    eflx    = dt * ( pr * ( t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc ) + (pflx + p_sig) * ( g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc ) )
+    eflx    = dt * ( pr * ( t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc ) + (pflx_tot) * ( g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc ) )
     e_int   = e_int - eflx
-
-    pflx    = pflx + pr  # pflx[oned_vec_index] = pflx[oned_vec_index] + q[lqr].p[iv];
 
 #   t       = T_from_internal_energy_scalar( min_k, e_int, qv, qliq, qice, rho, dz )
 #   inlined in order to avoid scan_operator -> field_operator
@@ -71,7 +79,7 @@ def _temperature_update(
     cv      = ( t_d.cvd * ( 1.0 - qtot ) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice ) * rho * dz # Moist isometric specific heat
     t       = ( e_int + rho * dz * ( qliq * g_ct.lvc + qice * g_ct.lsc )) / cv
 
-    return t, eflx, pflx
+    return t, eflx
 
 @gtx.field_operator
 def _graupel_mask(
@@ -94,7 +102,7 @@ def _graupel_mask(
     return mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g
 
 @gtx.field_operator
-def _graupel_loop2(
+def _q_t_update(
     t:              fa.CellKField[ta.wpfloat],
     p:              fa.CellKField[ta.wpfloat],
     rho:            fa.CellKField[ta.wpfloat],
@@ -237,7 +245,7 @@ def _graupel_loop2(
     return qv, qc, qr, qs, qi, qg, t
 
 @gtx.field_operator
-def _graupel_loop3_if_lrain(
+def _precipitation_effects(
     k: fa.KField[gtx.int32],
     last_lev: gtx.int32,
     kmin_r: fa.CellKField[bool],                   # rain minimum level
@@ -279,14 +287,15 @@ def _graupel_loop3_if_lrain(
     q_kp1     = concat_where( k < last_lev, qg(Koff[1]), qg )
     qg, pg, _ = _precip( idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, qg, q_kp1, rho )
 
-    qliq       = qc + qr
-    qice       = qs + qi + qg
-    p_sig      = ps + pi + pg
-    t_kp1      = concat_where( k < last_lev, t(Koff[1]), t )
-    t, _, pflx = _temperature_update( t, t_kp1, ei_old, p_sig, qv, qliq, qice, pr, rho, dz, dt )
-
+    qliq      = qc + qr
+    qice      = qs + qi + qg
+    p_sig     = ps + pi + pg
+    t_kp1     = concat_where( k < last_lev, t(Koff[1]), t )
+    pflx      = _precipitation_flux( pr )   # Integrate the rain
+    pflx      = pflx + p_sig    # Add it snow, ice and graupel which are also precipitating
+#    t, _      = _temperature_update( t, t_kp1, ei_old, pr, pflx, qv, qliq, qice, rho, dz, dt )
     # TODO: here we have to return a single layer for pre_gsp
-    return qr, qi, qs, qg, t, pflx+p_sig
+    return qr, qs, qi, qg, t, pflx
 
 @gtx.field_operator
 def _output_calculation(
@@ -321,8 +330,8 @@ def _graupel_run(
     qnc:       ta.wpfloat,
 ) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
     mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse )
-    qv, qc, qr, qs, qi, qg, t = _graupel_loop2( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
- #   qr, qi, qs, qg, t, pflx = _graupel_loop3_if_lrain( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+    qv, qc, qr, qs, qi, qg, t = _q_t_update( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
+    qr, qs, qi, qg, t, pflx = _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
     return t, qv, qc, qr, qs, qi, qg
 
 # TODO : program  needs to be called with offset_provider={"Koff": K}
