@@ -15,9 +15,8 @@ from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.tools.py2fgen.settings import config
 
 
-assert hasattr(
-    mpi_decomposition, "get_multinode_properties"
-)  # TODO needs to be imported to be registered in get_processor_properties
+# TODO(havogt) import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
+assert hasattr(mpi_decomposition, "get_multinode_properties")
 
 xp = config.array_ns
 
