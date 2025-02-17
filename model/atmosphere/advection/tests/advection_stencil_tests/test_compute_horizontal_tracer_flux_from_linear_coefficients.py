@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,7 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_horizontal_tracer_flux_
     compute_horizontal_tracer_flux_from_linear_coefficients,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -34,7 +35,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest)
         p_mass_flx_e: np.ndarray,
         cell_rel_idx_dsl: np.ndarray,
         p_out_e: np.ndarray,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         p_out_e_cp = p_out_e.copy()
         e2c = connectivities[dims.E2CDim]
@@ -57,7 +58,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest)
         return dict(p_out_e=p_out_e)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_lsq_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_lsq_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_lsq_coeff_3 = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -70,11 +71,7 @@ class TestComputeHorizontalTracerFluxFromLinearCoefficients(helpers.StencilTest)
         p_out_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
-            if hasattr(grid, "start_index")
-            else 0
-        )
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
         return dict(
             z_lsq_coeff_1=z_lsq_coeff_1,
