@@ -27,14 +27,10 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     python3-openssl \
     libreadline-dev \
     git \
+    rustc \
     jq \
     htop && \
     rm -rf /var/lib/apt/lists/*
-
-# Install Rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-# Set Rust binary path
-ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=24.11

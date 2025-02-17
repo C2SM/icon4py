@@ -4,6 +4,8 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   script:
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+    - source "$HOME/.cargo/env"
     - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
     - source .venv/bin/activate
@@ -31,7 +33,6 @@ include:
       --adapter python_pytest \
       --file results.json \
       "pytest --benchmark-json results.json -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
-    - cp results.json $CI_PROJECT_DIR/results.json
     - |
       if [[ "$PR_ID" != "" && "$BACKEND" == "gtfn_cpu" && "$GRID" == "icon_grid" ]]; then
         COMMENT_BODY="[Bencher Dashboard](https://bencher.dev/perf/test-1vcbiy6t?key=true&reports_per_page=4&branches_per_page=8&testbeds_per_page=8&benchmarks_per_page=8&plots_per_page=8&reports_page=1&branches_page=1&testbeds_page=1&benchmarks_page=1&plots_page=1&report=f3aa9281-81fb-4e78-b1be-ac16fd75166f&branches=7a47ac96-d190-4655-887d-d2e89ae50517&heads=c78d28ff-5189-496e-bc45-d546350075dd&testbeds=7d98dd14-676a-43d4-a74a-9770378a78a3&benchmarks=a4bff634-ad5b-4642-97a7-09b6e5068ae7&measures=6a44cec8-c116-4864-97c3-51c68376c10d&start_time=1736928077000&end_time=1739520126000&lower_boundary=false&upper_boundary=false&clear=true)"
@@ -47,9 +48,6 @@ include:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
         GRID: [icon_grid, icon_grid_global]
-  artifacts:
-    paths:
-      - results.json
 
 # benchmark_bencher_x86_64:
 #   extends: [.benchmark_model_stencils, .test_template_x86_64]
