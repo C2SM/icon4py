@@ -711,6 +711,7 @@ def test_velocity_fused_8_13(
         # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
+@pytest.mark.parametrize("istep", [1, 2])
 def test_velocity_fused_15_18(
     icon_grid,
     grid_savepoint,
@@ -723,6 +724,7 @@ def test_velocity_fused_15_18(
     savepoint_velocity_init,
     step_date_init,
     step_date_exit,
+    istep,
 ):
     z_w_con_c = savepoint_velocity_15_18_init.z_w_con_c()
     w = savepoint_velocity_15_18_init.w()
@@ -757,8 +759,10 @@ def test_velocity_fused_15_18(
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     dtime = 2.0
-    start_cell_lateral_boundary_level_4 = icon_grid.start_index(
-        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
+    start_cell_lateral_boundary = (
+        icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+        if istep == 1
+        else icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
     )
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
@@ -790,7 +794,7 @@ def test_velocity_fused_15_18(
         nrdmax=nrdmax,
         lvn_only=lvn_only,
         extra_diffu=extra_diffu,
-        start_cell_lateral_boundary_level_4=start_cell_lateral_boundary_level_4,
+        start_cell_lateral_boundary=start_cell_lateral_boundary,
         end_cell_halo=end_cell_halo,
         offset_provider={
             "C2E": icon_grid.get_offset_provider("C2E"),

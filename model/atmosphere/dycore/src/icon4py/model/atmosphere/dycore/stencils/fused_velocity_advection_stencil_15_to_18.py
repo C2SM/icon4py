@@ -118,11 +118,11 @@ def _fused_velocity_advection_stencil_15_to_18(
     nrdmax: gtx.int32,
     lvn_only: bool,
     extra_diffu: bool,
-    start_cell_lateral_boundary_level_4: gtx.int32,
+    start_cell_lateral_boundary: gtx.int32,
     end_cell_halo: gtx.int32,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     z_w_con_c_full = where(
-        start_cell_lateral_boundary_level_4 <= cell < end_cell_halo,
+        start_cell_lateral_boundary <= cell < end_cell_halo,
         _interpolate_contravariant_vertical_velocity_to_full_levels(z_w_con_c),
         z_w_con_c_full,
     )
@@ -186,7 +186,7 @@ def fused_velocity_advection_stencil_15_to_18(
     nrdmax: gtx.int32,
     lvn_only: bool,
     extra_diffu: bool,
-    start_cell_lateral_boundary_level_4: gtx.int32,
+    start_cell_lateral_boundary: gtx.int32,
     end_cell_halo: gtx.int32,
 ):
     _fused_velocity_advection_stencil_15_to_18(
@@ -215,7 +215,7 @@ def fused_velocity_advection_stencil_15_to_18(
         nrdmax,
         lvn_only,
         extra_diffu,
-        start_cell_lateral_boundary_level_4,
+        start_cell_lateral_boundary,
         end_cell_halo,
         out=(z_w_con_c_full, ddt_w_adv),
     )

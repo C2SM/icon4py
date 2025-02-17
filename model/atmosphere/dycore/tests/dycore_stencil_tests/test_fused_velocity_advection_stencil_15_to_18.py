@@ -144,12 +144,12 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         lvn_only,
         extra_diffu,
         z_w_con_c_full,
-        start_cell_lateral_boundary_level_4,
+        start_cell_lateral_boundary,
         end_cell_halo,
         **kwargs,
     ):
         z_w_con_c_full[
-            start_cell_lateral_boundary_level_4:end_cell_halo, :
+            start_cell_lateral_boundary:end_cell_halo, :
         ] = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
 
         if not lvn_only:
@@ -220,9 +220,12 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
         cell_lower_bound = 2
         cell_upper_bound = 4
+        istep = 1
         cell_domain = h_grid.domain(dims.EdgeDim)
-        start_cell_lateral_boundary_level_4 = (
+        start_cell_lateral_boundary = (
             grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+            if istep == 1
+            else grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
             if hasattr(grid, "start_index")
             else 0
         )
@@ -258,6 +261,6 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
             lvn_only=lvn_only,
             extra_diffu=extra_diffu,
             z_w_con_c_full=z_w_con_c_full,
-            start_cell_lateral_boundary_level_4=start_cell_lateral_boundary_level_4,
+            start_cell_lateral_boundary=start_cell_lateral_boundary,
             end_cell_halo=end_cell_halo,
         )
