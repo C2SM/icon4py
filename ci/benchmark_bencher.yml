@@ -27,7 +27,7 @@ include:
       --start-point main \
       --start-point-clone-thresholds \
       --start-point-reset \
-      --testbed "ci-runner:${SYSTEM_NAME}:${BACKEND}:{GRID}" \
+      --testbed "ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}" \
       --err \
       --adapter python_pytest \
       --file results.json \
