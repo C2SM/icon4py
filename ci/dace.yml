@@ -36,8 +36,6 @@ test_model_datatests_aarch64:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
       GRID: [icon_grid, icon_grid_global]
-      # TODO(edopao): Add more components once they work fine with DaCe 
-      COMPONENT: [diffusion, dycore]
 # benchmark_model_stencils_x86_64:
 #   extends: [.benchmark_model_stencils, .test_template_x86_64]
 benchmark_model_stencils_aarch64:
