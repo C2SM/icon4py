@@ -4,8 +4,6 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-    - source "$HOME/.cargo/env"
     - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
     - source .venv/bin/activate

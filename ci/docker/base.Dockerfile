@@ -28,6 +28,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libreadline-dev \
     git \
     rustc \
+    cargo \
     jq \
     htop && \
     rm -rf /var/lib/apt/lists/*
