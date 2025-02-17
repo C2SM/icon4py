@@ -15,7 +15,7 @@ include:
       --project "$BENCHER_PROJECT" \
       --token "$BENCHER_API_TOKEN" \
       --branch main \
-      --testbed "ci-runner:${SYSTEM_NAME}:${BACKEND}:{GRID}" \
+      --testbed "ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}" \
       --threshold-measure latency \
       --threshold-test t_test \
       --threshold-max-sample-size 64 \
