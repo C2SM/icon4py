@@ -223,8 +223,11 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     nlev: gtx.int32,
     lvn_only: bool,
     edge: fa.EdgeField[gtx.int32],
-    lateral_boundary_7: gtx.int32,
-    halo_1: gtx.int32,
+    vertex: fa.VertexField[gtx.int32],
+    start_edge_lateral_boundary_level_7: gtx.int32,
+    end_edge_halo: gtx.int32,
+    start_vertex_lateral_boundary_level_2: gtx.int32,
+    end_vertex_halo: gtx.int32
 ) -> tuple[
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
@@ -232,13 +235,15 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
-    k = broadcast(k, (dims.EdgeDim, dims.KDim))
 
-    z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
+    z_w_v = where((start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo),
+                    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp),
+                    0.
+                  )
 
     z_v_grad_w = (
         where(
-            (lateral_boundary_7 <= edge < halo_1) & (k < nlev),
+            (start_edge_lateral_boundary_level_7 <= edge < end_edge_halo),
             _compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie,
                 inv_dual_edge_length,
@@ -250,8 +255,8 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
             ),
             z_v_grad_w,
         )
-        if not lvn_only
-        else z_v_grad_w
+        # if not lvn_only
+        # else z_v_grad_w
     )
 
     return vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w
@@ -282,8 +287,11 @@ def _fused_velocity_advection_stencil_1_to_7(
     nlev: gtx.int32,
     lvn_only: bool,
     edge: fa.EdgeField[gtx.int32],
+    vertex: fa.VertexField[gtx.int32],
     lateral_boundary_7: gtx.int32,
     halo_1: gtx.int32,
+    start_vertex_lateral_boundary_level_2: gtx.int32,
+    end_vertex_halo: gtx.int32
 ) -> tuple[
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
@@ -342,8 +350,11 @@ def _fused_velocity_advection_stencil_1_to_7(
             nlev,
             lvn_only,
             edge,
+            vertex,
             lateral_boundary_7,
             halo_1,
+            start_vertex_lateral_boundary_level_2,
+            end_vertex_halo
         )
     )
 
@@ -375,8 +386,11 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
     nlev: gtx.int32,
     lvn_only: bool,
     edge: fa.EdgeField[gtx.int32],
+    vertex: fa.VertexField[gtx.int32],
     lateral_boundary_7: gtx.int32,
     halo_1: gtx.int32,
+    start_vertex_lateral_boundary_level_2: gtx.int32,
+    end_vertex_halo: gtx.int32,
 ) -> fa.EdgeKField[float]:
     return _fused_velocity_advection_stencil_1_to_7(
         vn,
@@ -402,8 +416,11 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
         nlev,
         lvn_only,
         edge,
+        vertex,
         lateral_boundary_7,
         halo_1,
+        start_vertex_lateral_boundary_level_2,
+        end_vertex_halo
     )[1]
 
 
@@ -432,8 +449,11 @@ def fused_velocity_advection_stencil_1_to_7(
     nlev: gtx.int32,
     lvn_only: bool,
     edge: fa.EdgeField[gtx.int32],
+    vertex: fa.VertexField[gtx.int32],
     lateral_boundary_7: gtx.int32,
     halo_1: gtx.int32,
+    start_vertex_lateral_boundary_level_2: gtx.int32,
+    end_vertex_halo: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -463,8 +483,11 @@ def fused_velocity_advection_stencil_1_to_7(
         nlev,
         lvn_only,
         edge,
+        vertex,
         lateral_boundary_7,
         halo_1,
+        start_vertex_lateral_boundary_level_2,
+        end_vertex_halo,
         out=(vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
@@ -495,8 +518,11 @@ def fused_velocity_advection_stencil_1_to_7(
         nlev,
         lvn_only,
         edge,
+        vertex,
         lateral_boundary_7,
         halo_1,
+        start_vertex_lateral_boundary_level_2,
+        end_vertex_halo,
         out=vn_ie,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
