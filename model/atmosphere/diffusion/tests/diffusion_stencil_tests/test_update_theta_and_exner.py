@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -38,7 +39,7 @@ class TestUpdateThetaAndExner(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         z_temp: np.ndarray,
         area: np.ndarray,
         theta_v: np.ndarray,
@@ -50,7 +51,7 @@ class TestUpdateThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         area = random_field(grid, dims.CellDim, dtype=wpfloat)
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
