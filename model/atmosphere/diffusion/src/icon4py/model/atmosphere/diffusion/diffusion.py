@@ -143,7 +143,6 @@ class DiffusionConfig:
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
-        ltkeshs: bool = True,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
@@ -235,9 +234,6 @@ class DiffusionConfig:
         #: Type of shear forcing used in turbulence
         #: Called itype_shear in `mo_turbdiff_nml.f90
         self.shear_type = shear_type
-
-        #: TODO
-        self.ltkeshs = ltkeshs
 
         self._validate()
 
@@ -697,7 +693,6 @@ class Diffusion:
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-            or self.config.ltkeshs
         ):
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
