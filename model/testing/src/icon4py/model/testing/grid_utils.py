@@ -21,7 +21,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils
+from icon4py.model.testing import data_handling, datatest_utils as dt_utils, helpers
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -135,11 +135,12 @@ def get_grid_geometry(
     on_gpu = data_alloc.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
     num_levels = get_num_levels(experiment)
-    register_name = experiment.join(backend.name)
+    backend_name = helpers.extract_backend_name(backend)
+    register_name = experiment.join(backend_name)
 
     def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):
-            indices = data_alloc.allocate_indices(dim, grid)
+            indices = data_alloc.index_field(grid, dim)
             owner_mask = xp.ones((grid.size[dim],), dtype=bool)
             decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
@@ -151,7 +152,7 @@ def get_grid_geometry(
         return decomposition_info
 
     def construct_grid_geometry(grid_file: str):
-        gm = _run_grid_manager_for_file(grid_file, backend=backend, num_levels=num_levels)
+        gm = _download_and_load_gridfile(grid_file, num_levels=num_levels, backend=backend)
         grid = gm.grid
         decomposition_info = construct_decomposition_info(grid)
         geometry_source = geometry.GridGeometry(
@@ -160,7 +161,5 @@ def get_grid_geometry(
         return geometry_source
 
     if not grid_geometries.get(register_name):
-        grid_geometries[register_name] = construct_grid_geometry(
-            str(resolve_full_grid_file_name(grid_file))
-        )
+        grid_geometries[register_name] = construct_grid_geometry(grid_file)
     return grid_geometries[register_name]

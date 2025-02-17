@@ -88,11 +88,10 @@ class TestComputeZMc(testing_helpers.StencilTest):
         )
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
-    if testing_helpers.is_python(backend):
-        pytest.skip("skipping: unsupported backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
     z_mc = data_alloc.zero_field(
@@ -132,8 +131,6 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
     ddqz_z_full = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
@@ -208,8 +205,6 @@ def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savep
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backend):
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz_ref = metrics_savepoint.coeff2_dwdz()
 
@@ -237,13 +232,10 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
     assert testing_helpers.dallclose(coeff2_dwdz_full.asnumpy(), coeff2_dwdz_ref.asnumpy())
 
 
+@pytest.mark.cpu_only
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip("skipping: gpu backend is unsupported")
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
     compute_z_mc.with_backend(backend)(
@@ -300,8 +292,6 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
 def test_compute_ddxt_z_full_e(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
     horizontal_start_vertex = icon_grid.start_index(
@@ -374,8 +364,6 @@ def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_ddqz_z_full_e(interpolation_savepoint, icon_grid, metrics_savepoint, backend):
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     ddqz_z_full = gtx.as_field(
         (dims.CellDim, dims.KDim),
         1.0 / metrics_savepoint.inv_ddqz_z_full().asnumpy(),
@@ -402,8 +390,6 @@ def test_compute_ddqz_z_full_e(interpolation_savepoint, icon_grid, metrics_savep
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_ddxn_z_full(grid_savepoint, icon_grid, metrics_savepoint, backend):
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
@@ -443,8 +429,6 @@ def test_compute_ddxn_z_full(grid_savepoint, icon_grid, metrics_savepoint, backe
 def test_compute_ddxt_z_full(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
@@ -493,9 +477,6 @@ def test_compute_ddxt_z_full(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
-
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     exner_expol = 0.333 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.3333333333333
 
@@ -521,8 +502,6 @@ def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_save
 def test_compute_vwind_impl_wgt(
     icon_grid, experiment, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     z_ddxn_z_half_e = data_alloc.zero_field(
@@ -600,8 +579,6 @@ def test_compute_vwind_impl_wgt(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid, backend):
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     wgtfac_e = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
@@ -619,17 +596,14 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
     assert testing_helpers.dallclose(wgtfac_e.asnumpy(), wgtfac_e_ref.asnumpy())
 
 
+@pytest.mark.cpu_only
+@pytest.mark.embedded_remap_error
+@pytest.mark.skip_value_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_pg_exdist_dsl(
     metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
-    if data_alloc.is_cupy_device(backend):
-        pytest.skip(
-            "skipping: compute_z_aux2 and compute_flat_idx cannot be executed with specified backend"
-        )
-    if testing_helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     nlev = icon_grid.num_levels
     k_lev = gtx.as_field((dims.KDim,), np.arange(nlev, dtype=gtx.int32), allocator=backend)

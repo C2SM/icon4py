@@ -5,20 +5,19 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 from types import ModuleType
 
+import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 def compute_coeff_gradekin(
     edge_cell_length: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
-    horizontal_start: int,
-    horizontal_end: int,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -40,4 +39,5 @@ def compute_coeff_gradekin(
             edge_cell_length[e, 0] / edge_cell_length[e, 1] * inv_dual_edge_length[e]
         )
     coeff_gradekin_full = array_ns.column_stack((coeff_gradekin_0, coeff_gradekin_1))
-    return data_alloc.numpy_to_1D_sparse_field(coeff_gradekin_full, dims.ECDim).asnumpy()
+    shp = coeff_gradekin_full.shape
+    return coeff_gradekin_full.reshape(shp[0] * shp[1])

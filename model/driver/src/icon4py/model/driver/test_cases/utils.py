@@ -222,17 +222,17 @@ def initialize_diffusion_diagnostic_state(
     grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]
 ) -> diffusion_states.DiffusionDiagnosticState:
     return diffusion_states.DiffusionDiagnosticState(
-        hdef_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        hdef_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        div_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        div_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        dwdx=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        dwdx=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        dwdy=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        dwdy=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
     )
 
@@ -243,61 +243,47 @@ def initialize_solve_nonhydro_diagnostic_state(
     backend: Optional[gtx_backend.Backend],
 ) -> dycore_states.DiagnosticStateNonHydro:
     ddt_vn_apc = common_utils.PredictorCorrectorPair(
-        data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend),
-        data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend),
+        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
     )
     ddt_w_adv = common_utils.PredictorCorrectorPair(
-        data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
     )
     return dycore_states.DiagnosticStateNonHydro(
-        theta_v_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        theta_v_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         exner_pr=exner_pr,
-        rho_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        rho_ic=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        ddt_exner_phy=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, backend=backend
+        ddt_exner_phy=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        grf_tend_rho=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        grf_tend_thv=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        grf_tend_w=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        grf_tend_rho=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, backend=backend
-        ),
-        grf_tend_thv=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, backend=backend
-        ),
-        grf_tend_w=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
-        ),
-        mass_fl_e=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
-        ),
-        ddt_vn_phy=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
-        ),
-        grf_tend_vn=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
-        ),
+        mass_fl_e=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        ddt_vn_phy=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        grf_tend_vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
         ddt_vn_apc_pc=ddt_vn_apc,
         ddt_w_adv_pc=ddt_w_adv,
-        vt=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend),
-        vn_ie=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        vt=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        vn_ie=data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        w_concorr_c=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, is_halfdim=True, backend=backend
+        w_concorr_c=data_alloc.zero_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
-        exner_dyn_incr=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, backend=backend
-        ),
+        exner_dyn_incr=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
 
@@ -305,16 +291,10 @@ def initialize_prep_advection(
     grid: icon_grid.IconGrid, backend: Optional[gtx_backend.Backend]
 ) -> dycore_states.PrepAdvection:
     return dycore_states.PrepAdvection(
-        vn_traj=data_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid, backend=backend),
-        mass_flx_me=data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=grid, backend=backend
-        ),
-        mass_flx_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, backend=backend
-        ),
-        vol_flx_ic=data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=grid, backend=backend
-        ),
+        vn_traj=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        mass_flx_me=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+        mass_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+        vol_flx_ic=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
     )
 
 
@@ -365,8 +345,8 @@ def create_gt4py_field_for_prognostic_and_diagnostic_variables(
     rho_next = gtx.as_field((dims.CellDim, dims.KDim), rho_ndarray, allocator=backend)
     theta_v_next = gtx.as_field((dims.CellDim, dims.KDim), theta_v_ndarray, allocator=backend)
 
-    u = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend)
-    v = data_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid, backend=backend)
+    u = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
+    v = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend)
 
     return (
         vn,

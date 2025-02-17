@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.limit_vertical_slope_semi_monot
     limit_vertical_slope_semi_monotonically,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -24,7 +26,12 @@ class TestLimitVerticalSlopeSemiMonotonically(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_cc: np.array, z_slope: np.array, k: np.array, elev: gtx.int32, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cc: np.ndarray,
+        z_slope: np.ndarray,
+        k: np.ndarray,
+        elev: gtx.int32,
+        **kwargs: Any,
     ) -> dict:
         p_cc_min_last = np.minimum(p_cc[:, :-2], p_cc[:, 1:-1])
         p_cc_min = np.where(k[1:-1] == elev, p_cc_min_last, np.minimum(p_cc_min_last, p_cc[:, 2:]))
@@ -33,10 +40,10 @@ class TestLimitVerticalSlopeSemiMonotonically(helpers.StencilTest):
         return dict(z_slope=slope)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         z_slope = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
-        k = data_alloc.allocate_indices(dims.KDim, grid, is_halfdim=False, dtype=gtx.int32)
+        k = data_alloc.index_field(grid, dims.KDim)
 
         elev = k[-2].as_scalar()
         return dict(

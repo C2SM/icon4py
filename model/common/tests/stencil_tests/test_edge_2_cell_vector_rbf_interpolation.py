@@ -5,11 +5,14 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import base
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
@@ -20,14 +23,15 @@ from icon4py.model.testing import helpers
 class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
     PROGRAM = edge_2_cell_vector_rbf_interpolation
     OUTPUTS = ("p_u_out", "p_v_out")
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        p_e_in: np.array,
-        ptr_coeff_1: np.array,
-        ptr_coeff_2: np.array,
-        **kwargs,
+        p_e_in: np.ndarray,
+        ptr_coeff_1: np.ndarray,
+        ptr_coeff_2: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         c2e2c2e = connectivities[dims.C2E2C2EDim]
         ptr_coeff_1 = np.expand_dims(ptr_coeff_1, axis=-1)
@@ -38,9 +42,7 @@ class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
         return dict(p_v_out=p_v_out, p_u_out=p_u_out)
 
     @pytest.fixture
-    def input_data(self, grid):
-        if grid.get_offset_provider("C2E2C2E").has_skip_values:
-            pytest.xfail("Stencil does not support missing neighbors.")
+    def input_data(self, grid: base.BaseGrid) -> dict:
         p_e_in = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
         ptr_coeff_1 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
         ptr_coeff_2 = data_alloc.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)

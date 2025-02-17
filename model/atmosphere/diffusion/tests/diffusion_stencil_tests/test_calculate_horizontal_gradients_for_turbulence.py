@@ -23,7 +23,7 @@ def calculate_horizontal_gradients_for_turbulence_numpy(
     w: np.ndarray,
     geofac_grg_x: np.ndarray,
     geofac_grg_y: np.ndarray,
-) -> tuple[: np.ndarray, : np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     c2e2cO = connectivities[dims.C2E2CODim]
     geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
     dwdx = np.sum(np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * w[c2e2cO], 0.0), axis=1)
@@ -36,6 +36,7 @@ def calculate_horizontal_gradients_for_turbulence_numpy(
 class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = calculate_horizontal_gradients_for_turbulence
     OUTPUTS = ("dwdx", "dwdy")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

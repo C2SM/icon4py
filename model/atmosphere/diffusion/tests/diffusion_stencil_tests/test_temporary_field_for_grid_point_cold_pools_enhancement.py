@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_
     temporary_field_for_grid_point_cold_pools_enhancement,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -21,6 +22,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
     PROGRAM = temporary_field_for_grid_point_cold_pools_enhancement
     OUTPUTS = ("enh_diffu_3d",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
@@ -51,7 +53,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
         return dict(enh_diffu_3d=enh_diffu_3d)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         enh_diffu_3d = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)

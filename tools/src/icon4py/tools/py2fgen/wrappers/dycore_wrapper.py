@@ -32,29 +32,10 @@ import cProfile
 import pstats
 
 import gt4py.next as gtx
-from gt4py.next import common as gt4py_common
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.dimension import (
-    C2E2CODim,
-    C2EDim,
-    CEDim,
-    CellDim,
-    E2C2EDim,
-    E2C2EODim,
-    E2C2VDim,
-    E2CDim,
-    ECDim,
-    ECVDim,
-    EdgeDim,
-    KDim,
-    KHalfDim,
-    V2CDim,
-    V2EDim,
-    VertexDim,
-)
 from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
@@ -229,14 +210,22 @@ def solve_nh_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inverse_dual_edge_lengths,
         inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
-        primal_normal_vert_x=data_alloc.as_1D_sparse_field(primal_normal_vert_x, ECVDim),
-        primal_normal_vert_y=data_alloc.as_1D_sparse_field(primal_normal_vert_y, ECVDim),
-        dual_normal_vert_x=data_alloc.as_1D_sparse_field(dual_normal_vert_x, ECVDim),
-        dual_normal_vert_y=data_alloc.as_1D_sparse_field(dual_normal_vert_y, ECVDim),
-        primal_normal_cell_x=data_alloc.as_1D_sparse_field(primal_normal_cell_x, ECDim),
-        primal_normal_cell_y=data_alloc.as_1D_sparse_field(primal_normal_cell_y, ECDim),
-        dual_normal_cell_x=data_alloc.as_1D_sparse_field(dual_normal_cell_x, ECDim),
-        dual_normal_cell_y=data_alloc.as_1D_sparse_field(dual_normal_cell_y, ECDim),
+        primal_normal_vert_x=data_alloc.flatten_first_two_dims(
+            dims.ECVDim, field=primal_normal_vert_x
+        ),
+        primal_normal_vert_y=data_alloc.flatten_first_two_dims(
+            dims.ECVDim, field=primal_normal_vert_y
+        ),
+        dual_normal_vert_x=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_x),
+        dual_normal_vert_y=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_y),
+        primal_normal_cell_x=data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=primal_normal_cell_x
+        ),
+        primal_normal_cell_y=data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=primal_normal_cell_y
+        ),
+        dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
+        dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
         edge_areas=edge_areas,
         f_e=f_e,
         edge_center_lat=edge_center_lat,
@@ -260,13 +249,17 @@ def solve_nh_init(
         e_flx_avg=e_flx_avg,
         geofac_grdiv=geofac_grdiv,
         geofac_rot=geofac_rot,
-        pos_on_tplane_e_1=data_alloc.as_1D_sparse_field(pos_on_tplane_e_1[:, 0:2], ECDim),
-        pos_on_tplane_e_2=data_alloc.as_1D_sparse_field(pos_on_tplane_e_2[:, 0:2], ECDim),
+        pos_on_tplane_e_1=data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=pos_on_tplane_e_1[:, 0:2]
+        ),
+        pos_on_tplane_e_2=data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=pos_on_tplane_e_2[:, 0:2]
+        ),
         rbf_vec_coeff_e=rbf_vec_coeff_e,
-        e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, CEDim),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=e_bln_c_s),
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=data_alloc.as_1D_sparse_field(geofac_div, CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=geofac_div),
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
@@ -306,7 +299,7 @@ def solve_nh_init(
         scalfac_dd3d=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
-        coeff_gradekin=data_alloc.as_1D_sparse_field(coeff_gradekin, ECDim),
+        coeff_gradekin=data_alloc.flatten_first_two_dims(dims.ECDim, field=coeff_gradekin),
     )
 
     # datatest config
@@ -341,37 +334,37 @@ def solve_nh_init(
 
 
 def solve_nh_run(
-    rho_now: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    rho_new: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    exner_now: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    exner_new: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    w_now: gt4py_common.Field[[CellDim, KHalfDim], gtx.float64],
-    w_new: gt4py_common.Field[[CellDim, KHalfDim], gtx.float64],
-    theta_v_now: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    theta_v_new: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    vn_now: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
-    vn_new: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
-    w_concorr_c: gt4py_common.Field[[CellDim, KHalfDim], gtx.float64],
-    ddt_vn_apc_ntl1: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
-    ddt_vn_apc_ntl2: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
-    ddt_w_adv_ntl1: gt4py_common.Field[[CellDim, KHalfDim], gtx.float64],
-    ddt_w_adv_ntl2: gt4py_common.Field[[CellDim, KHalfDim], gtx.float64],
-    theta_v_ic: gt4py_common.Field[[CellDim, KHalfDim], gtx.float64],
-    rho_ic: gt4py_common.Field[[CellDim, KHalfDim], gtx.float64],
-    exner_pr: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    exner_dyn_incr: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    ddt_exner_phy: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    grf_tend_rho: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    grf_tend_thv: gt4py_common.Field[[CellDim, KDim], gtx.float64],
-    grf_tend_w: gt4py_common.Field[[CellDim, KHalfDim], gtx.float64],
-    mass_fl_e: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
-    ddt_vn_phy: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
-    grf_tend_vn: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
-    vn_ie: gt4py_common.Field[[EdgeDim, KHalfDim], gtx.float64],
-    vt: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
-    mass_flx_me: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
-    mass_flx_ic: gt4py_common.Field[[CellDim, KHalfDim], gtx.float64],
-    vn_traj: gt4py_common.Field[[EdgeDim, KDim], gtx.float64],
+    rho_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    rho_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    exner_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    exner_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    w_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    w_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    theta_v_now: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    theta_v_new: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    vn_now: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    vn_new: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    w_concorr_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    ddt_vn_apc_ntl1: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    ddt_vn_apc_ntl2: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    ddt_w_adv_ntl1: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    ddt_w_adv_ntl2: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    theta_v_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    rho_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    exner_pr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    exner_dyn_incr: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    ddt_exner_phy: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    grf_tend_rho: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    grf_tend_thv: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    grf_tend_w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    mass_fl_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    ddt_vn_phy: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    grf_tend_vn: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    vn_ie: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KHalfDim], gtx.float64],
+    vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
+    mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     dtime: gtx.float64,
     lprep_adv: bool,
     at_initial_timestep: bool,
@@ -386,7 +379,7 @@ def solve_nh_run(
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
         vol_flx_ic=data_alloc.zero_field(
-            dycore_wrapper_state["grid"], CellDim, KDim, dtype=gtx.float64
+            dycore_wrapper_state["grid"], dims.CellDim, dims.KDim, dtype=gtx.float64
         ),
     )
 
@@ -445,21 +438,21 @@ def solve_nh_run(
 
 
 def grid_init(
-    cell_starts: gt4py_common.Field[[CellIndexDim], gtx.int32],
-    cell_ends: gt4py_common.Field[[CellIndexDim], gtx.int32],
-    vertex_starts: gt4py_common.Field[[VertexIndexDim], gtx.int32],
-    vertex_ends: gt4py_common.Field[[VertexIndexDim], gtx.int32],
-    edge_starts: gt4py_common.Field[[EdgeIndexDim], gtx.int32],
-    edge_ends: gt4py_common.Field[[EdgeIndexDim], gtx.int32],
-    c2e: gt4py_common.Field[[dims.CellDim, dims.C2EDim], gtx.int32],
-    e2c: gt4py_common.Field[[dims.EdgeDim, dims.E2CDim], gtx.int32],
-    c2e2c: gt4py_common.Field[[dims.CellDim, dims.C2E2CDim], gtx.int32],
-    e2c2e: gt4py_common.Field[[dims.EdgeDim, dims.E2C2EDim], gtx.int32],
-    e2v: gt4py_common.Field[[dims.EdgeDim, dims.E2VDim], gtx.int32],
-    v2e: gt4py_common.Field[[dims.VertexDim, dims.V2EDim], gtx.int32],
-    v2c: gt4py_common.Field[[dims.VertexDim, dims.V2CDim], gtx.int32],
-    e2c2v: gt4py_common.Field[[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
-    c2v: gt4py_common.Field[[dims.CellDim, dims.C2VDim], gtx.int32],
+    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
+    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
+    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
+    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
+    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
+    c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
+    e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
+    c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
+    e2c2e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], gtx.int32],
+    e2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2VDim], gtx.int32],
+    v2e: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.int32],
+    v2c: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.int32],
+    e2c2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
+    c2v: gtx.Field[gtx.Dims[dims.CellDim, dims.C2VDim], gtx.int32],
     global_root: gtx.int32,
     global_level: gtx.int32,
     num_vertices: gtx.int32,

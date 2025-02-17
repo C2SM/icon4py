@@ -171,7 +171,7 @@ disallow_untyped_defs = true
 #   '^tests/liskov/*.py',
 #   '^tests/py2f/*.py',
 # ]
-ignore_missing_imports = true
+ignore_missing_imports = false
 implicit_reexport = true
 install_types = true
 non_interactive = true
@@ -241,3 +241,6 @@ packages = []
 # -- pytest --
 [tool.pytest.ini_options]
 addopts = ['-p icon4py.model.testing.pytest_config']
+markers = [
+    "embedded_remap_error", "uses_as_offset", "requires_concat_where", "skip_value_error", "datatest", "embedded_only", "cpu_only"
+]

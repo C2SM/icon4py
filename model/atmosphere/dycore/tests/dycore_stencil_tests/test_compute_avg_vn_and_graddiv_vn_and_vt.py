@@ -21,6 +21,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeAvgVnAndGraddivVnAndVt(StencilTest):
     PROGRAM = compute_avg_vn_and_graddiv_vn_and_vt
     OUTPUTS = ("z_vn_avg", "z_graddiv_vn", "vt")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(

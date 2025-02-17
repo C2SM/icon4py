@@ -16,7 +16,6 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
@@ -35,6 +34,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         "w_concorr_c",
         "z_w_con_c",
     )
+    MARKERS = (pytest.mark.requires_concat_where,)
 
     @staticmethod
     def reference(
@@ -148,7 +148,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
-            e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+            e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             w=w,

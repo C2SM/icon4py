@@ -42,6 +42,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         "z_w_concorr_me",
         "z_v_grad_w",
     )
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
@@ -207,7 +208,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base_grid.BaseGrid):
+    def input_data(self, grid: base_grid.BaseGrid) -> dict:
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)

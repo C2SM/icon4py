@@ -5,21 +5,18 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
 
+import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_19_to_20 import (
     fused_velocity_advection_stencil_19_to_20,
 )
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
-from icon4py.model.common.utils.data_allocation import (
-    as_1D_sparse_field,
-    random_field,
-    random_mask,
-    zero_field,
-)
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.testing.helpers import StencilTest
 
 from .test_add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -34,36 +31,37 @@ from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_19_to_20
     OUTPUTS = ("ddt_vn_apc",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        vn,
-        geofac_rot,
-        z_kin_hor_e,
-        coeff_gradekin,
-        z_ekinh,
-        vt,
-        f_e,
-        c_lin_e,
-        z_w_con_c_full,
-        vn_ie,
-        ddqz_z_full_e,
-        levelmask,
-        area_edge,
-        tangent_orientation,
-        inv_primal_edge_length,
-        geofac_grdiv,
-        k,
-        cfl_w_limit,
-        scalfac_exdiff,
-        d_time,
-        extra_diffu,
-        nlev,
-        nrdmax,
-        ddt_vn_apc,
-        **kwargs,
-    ):
+        vn: np.ndarray,
+        geofac_rot: np.ndarray,
+        z_kin_hor_e: np.ndarray,
+        coeff_gradekin: np.ndarray,
+        z_ekinh: np.ndarray,
+        vt: np.ndarray,
+        f_e: np.ndarray,
+        c_lin_e: np.ndarray,
+        z_w_con_c_full: np.ndarray,
+        vn_ie: np.ndarray,
+        ddqz_z_full_e: np.ndarray,
+        levelmask: np.ndarray,
+        area_edge: np.ndarray,
+        tangent_orientation: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        geofac_grdiv: np.ndarray,
+        k: np.ndarray,
+        cfl_w_limit: np.ndarray,
+        scalfac_exdiff: np.ndarray,
+        d_time: float,
+        extra_diffu: bool,
+        nlev: int,
+        nrdmax: int,
+        ddt_vn_apc: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         ddt_vn_apc_cp = ddt_vn_apc.copy()
         zeta = mo_math_divrot_rot_vertex_ri_dsl_numpy(connectivities, vn, geofac_rot)
 
@@ -111,30 +109,29 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, grid):
-        z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        coeff_gradekin = random_field(grid, dims.EdgeDim, dims.E2CDim)
-        coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, dims.ECDim)
-        z_ekinh = random_field(grid, dims.CellDim, dims.KDim)
-        vt = random_field(grid, dims.EdgeDim, dims.KDim)
-        f_e = random_field(grid, dims.EdgeDim)
-        c_lin_e = random_field(grid, dims.EdgeDim, dims.E2CDim)
-        z_w_con_c_full = random_field(grid, dims.CellDim, dims.KDim)
-        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        ddqz_z_full_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        ddt_vn_apc = zero_field(grid, dims.EdgeDim, dims.KDim)
-        levelmask = random_mask(grid, dims.KDim, extend={dims.KDim: 1})
-        area_edge = random_field(grid, dims.EdgeDim)
-        tangent_orientation = random_field(grid, dims.EdgeDim)
-        inv_primal_edge_length = random_field(grid, dims.EdgeDim)
-        geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim)
-        vn = random_field(grid, dims.EdgeDim, dims.KDim)
-        geofac_rot = random_field(grid, dims.VertexDim, dims.V2EDim)
+    def input_data(self, grid: base.BaseGrid) -> dict:
+        z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        coeff_gradekin = data_alloc.random_field(grid, dims.ECDim)
+        z_ekinh = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        vt = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        f_e = data_alloc.random_field(grid, dims.EdgeDim)
+        c_lin_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2CDim)
+        z_w_con_c_full = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        vn_ie = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        ddqz_z_full_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        ddt_vn_apc = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        levelmask = data_alloc.random_mask(grid, dims.KDim, extend={dims.KDim: 1})
+        area_edge = data_alloc.random_field(grid, dims.EdgeDim)
+        tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
+        inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
+        geofac_grdiv = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EODim)
+        vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        geofac_rot = data_alloc.random_field(grid, dims.VertexDim, dims.V2EDim)
         cfl_w_limit = 4.0
         scalfac_exdiff = 6.0
         d_time = 2.0
 
-        k = zero_field(grid, dims.KDim, dtype=gtx.int32)
+        k = data_alloc.zero_field(grid, dims.KDim, dtype=gtx.int32)
         nlev = grid.num_levels
 
         for level in range(nlev):
@@ -143,17 +140,13 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         nrdmax = 5
         extra_diffu = True
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-            if hasattr(grid, "start_index")
-            else 0
-        )
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
 
         return dict(
             vn=vn,
             geofac_rot=geofac_rot,
             z_kin_hor_e=z_kin_hor_e,
-            coeff_gradekin=coeff_gradekin_new,
+            coeff_gradekin=coeff_gradekin,
             z_ekinh=z_ekinh,
             vt=vt,
             f_e=f_e,

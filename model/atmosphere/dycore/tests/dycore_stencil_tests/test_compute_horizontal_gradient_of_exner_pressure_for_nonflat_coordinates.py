@@ -21,6 +21,7 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates
     OUTPUTS = ("z_gradh_exner",)
+    MARKERS = (pytest.mark.skip_value_error,)
 
     @staticmethod
     def reference(
@@ -46,9 +47,6 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[dims.E2CDim] == -1):
-            pytest.xfail("Stencil does not support missing neighbors.")
-
         inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
         z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)

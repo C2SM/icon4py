@@ -105,12 +105,9 @@ def height_coordinate_source(metrics_savepoint, grid_savepoint, backend):
     field_source.reset()
 
 
+@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_field_operator_provider(cell_coordinate_source):
-    if data_alloc.is_cupy_device(cell_coordinate_source.backend):
-        pytest.xfail(
-            "this test fails on with GPU backend because dependency data is not transfer to the host in the factory"
-        )
     field_op = math_helpers.geographical_to_cartesian_on_cells.with_backend(None)
     domain = {dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL))}
     deps = {"lat": "lat", "lon": "lon"}

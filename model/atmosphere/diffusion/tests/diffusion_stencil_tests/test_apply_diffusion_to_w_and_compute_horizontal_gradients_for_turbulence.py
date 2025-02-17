@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_comput
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
@@ -29,6 +30,7 @@ from .test_calculate_nabla2_for_w import calculate_nabla2_for_w_numpy
 class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTest):
     PROGRAM = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence
     OUTPUTS = ("w", "dwdx", "dwdy")
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
@@ -49,7 +51,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         interior_idx,
         halo_idx,
         **kwargs,
-    ):
+    ) -> dict:
         reshaped_k = k[np.newaxis, :]
         reshaped_cell = cell[:, np.newaxis]
         if type_shear == 2:
@@ -82,7 +84,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         return dict(w=w, dwdx=dwdx, dwdy=dwdy)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         k = zero_field(grid, dims.KDim, dtype=gtx.int32)
         for lev in range(grid.num_levels):
             k[lev] = lev

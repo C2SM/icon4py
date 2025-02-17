@@ -6,15 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-from collections.abc import Callable
 from typing import Final
 
+import gt4py.next.backend as gtx_backend
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
 
-DEFAULT_BACKEND: Final = "roundtrip"
+DEFAULT_BACKEND: Final = "embedded"
 
-BACKENDS: dict[str, Callable] = {
+BACKENDS: dict[str, gtx_backend.Backend | None] = {
     "embedded": None,
     "roundtrip": itir_python,
     "gtfn_cpu": gtfn_cpu,
