@@ -193,8 +193,11 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, 
         istep=istep_init, vn_only=vn_only, date=step_date_init, jstep=jstep_init
     )
 
+
 @pytest.fixture
-def savepoint_velocity_1_7_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811
+def savepoint_velocity_1_7_init(
+    data_provider, step_date_init, istep_init, vn_only, jstep_init
+):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 1 to 7.
 
@@ -205,8 +208,11 @@ def savepoint_velocity_1_7_init(data_provider, step_date_init, istep_init, vn_on
         istep=istep_init, vn_only=vn_only, date=step_date_init, jstep=jstep_init
     )
 
+
 @pytest.fixture
-def savepoint_velocity_8_13_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811
+def savepoint_velocity_8_13_init(
+    data_provider, step_date_init, istep_init, vn_only, jstep_init
+):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 8 to 13.
 
@@ -217,8 +223,11 @@ def savepoint_velocity_8_13_init(data_provider, step_date_init, istep_init, vn_o
         istep=istep_init, vn_only=vn_only, date=step_date_init, jstep=jstep_init
     )
 
+
 @pytest.fixture
-def savepoint_velocity_15_18_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811
+def savepoint_velocity_15_18_init(
+    data_provider, step_date_init, istep_init, vn_only, jstep_init
+):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 15 to 18.
 
@@ -229,8 +238,11 @@ def savepoint_velocity_15_18_init(data_provider, step_date_init, istep_init, vn_
         istep=istep_init, vn_only=vn_only, date=step_date_init, jstep=jstep_init
     )
 
+
 @pytest.fixture
-def savepoint_velocity_19_20_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811
+def savepoint_velocity_19_20_init(
+    data_provider, step_date_init, istep_init, vn_only, jstep_init
+):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 19 to 20.
 
@@ -267,8 +279,11 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, vn_only, 
         istep=istep_exit, vn_only=vn_only, date=step_date_exit, jstep=jstep_exit
     )
 
+
 @pytest.fixture
-def savepoint_velocity_1_7_exit(data_provider, step_date_exit, istep_exit, vn_only, jstep_exit):  # F811
+def savepoint_velocity_1_7_exit(
+    data_provider, step_date_exit, istep_exit, vn_only, jstep_exit
+):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 1 to 7.
 
@@ -279,8 +294,11 @@ def savepoint_velocity_1_7_exit(data_provider, step_date_exit, istep_exit, vn_on
         istep=istep_exit, vn_only=vn_only, date=step_date_exit, jstep=jstep_exit
     )
 
+
 @pytest.fixture
-def savepoint_velocity_8_13_exit(data_provider, step_date_exit, istep_exit, vn_only, jstep_exit):  # F811
+def savepoint_velocity_8_13_exit(
+    data_provider, step_date_exit, istep_exit, vn_only, jstep_exit
+):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 8 to 13.
 
@@ -291,8 +309,11 @@ def savepoint_velocity_8_13_exit(data_provider, step_date_exit, istep_exit, vn_o
         istep=istep_exit, vn_only=vn_only, date=step_date_exit, jstep=jstep_exit
     )
 
+
 @pytest.fixture
-def savepoint_velocity_15_18_exit(data_provider, step_date_exit, istep_exit, vn_only, jstep_exit):  # F811
+def savepoint_velocity_15_18_exit(
+    data_provider, step_date_exit, istep_exit, vn_only, jstep_exit
+):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 15 to 18.
 
@@ -305,7 +326,9 @@ def savepoint_velocity_15_18_exit(data_provider, step_date_exit, istep_exit, vn_
 
 
 @pytest.fixture
-def savepoint_velocity_19_20_exit(data_provider, step_date_exit, istep_exit, vn_only, jstep_exit):  # F811
+def savepoint_velocity_19_20_exit(
+    data_provider, step_date_exit, istep_exit, vn_only, jstep_exit
+):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 19 to 20.
 

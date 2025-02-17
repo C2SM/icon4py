@@ -227,7 +227,7 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     start_edge_lateral_boundary_level_7: gtx.int32,
     end_edge_halo: gtx.int32,
     start_vertex_lateral_boundary_level_2: gtx.int32,
-    end_vertex_halo: gtx.int32
+    end_vertex_halo: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
@@ -235,11 +235,11 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
-
-    z_w_v = where((start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo),
-                    _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp),
-                    0.
-                  )
+    z_w_v = where(
+        (start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo),
+        _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp),
+        0.0,
+    )
 
     z_v_grad_w = (
         where(
@@ -291,7 +291,7 @@ def _fused_velocity_advection_stencil_1_to_7(
     lateral_boundary_7: gtx.int32,
     halo_1: gtx.int32,
     start_vertex_lateral_boundary_level_2: gtx.int32,
-    end_vertex_halo: gtx.int32
+    end_vertex_halo: gtx.int32,
 ) -> tuple[
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
@@ -354,7 +354,7 @@ def _fused_velocity_advection_stencil_1_to_7(
             lateral_boundary_7,
             halo_1,
             start_vertex_lateral_boundary_level_2,
-            end_vertex_halo
+            end_vertex_halo,
         )
     )
 
@@ -420,7 +420,7 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
         lateral_boundary_7,
         halo_1,
         start_vertex_lateral_boundary_level_2,
-        end_vertex_halo
+        end_vertex_halo,
     )[1]
 
 

@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
@@ -23,10 +24,8 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
-from icon4py.model.testing.datatest_fixtures import savepoint_velocity_exit
 
 from . import utils
-import gt4py.next as gtx
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
@@ -519,7 +518,9 @@ def test_velocity_fused_1_7(
     z_kin_hor_e_ref = savepoint_velocity_1_7_exit.z_kin_hor_e()
     z_w_concorr_me_ref = savepoint_velocity_1_7_exit.z_w_concorr_me()
     z_v_grad_w_ref = savepoint_velocity_1_7_exit.z_v_grad_w()
-    start_vertex_lateral_boundary_level_2 = icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    start_vertex_lateral_boundary_level_2 = icon_grid.start_index(
+        vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
     end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
     if istep == 2:
@@ -618,7 +619,6 @@ def test_velocity_fused_1_7(
     assert helpers.dallclose(z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy(), atol=1.0e-15)
 
 
-
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -640,6 +640,7 @@ def test_velocity_fused_8_13(
     step_date_exit,
     backend,
 ):
+    cell_domain = h_grid.domain(dims.CellDim)
     z_ekinh_ref = savepoint_velocity_8_13_exit.z_ekinh()
     w_concorr_c_ref = savepoint_velocity_8_13_exit.w_concorr_c()
     z_w_con_c_ref = savepoint_velocity_8_13_exit.z_w_con_c()
@@ -652,10 +653,16 @@ def test_velocity_fused_8_13(
     z_ekinh = savepoint_velocity_8_13_init.z_ekinh()
     z_w_con_c = savepoint_velocity_8_13_init.z_w_con_c()
 
-    e_bln_c_s = interpolation_savepoint.e_bln_c_s()
+    e_bln_c_s = data_alloc.flatten_first_two_dims(
+        dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+    )
     wgtfac_c = metrics_savepoint.wgtfac_c()
     k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
+    cell = data_alloc.allocate_indices(dim=dims.CellDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
+    lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+    lateral_boundary_3 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+    end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
     fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13.with_backend(
         backend
@@ -670,14 +677,22 @@ def test_velocity_fused_8_13(
         z_ekinh=z_ekinh,
         z_w_con_c=z_w_con_c,
         k=k,
+        cell=cell,
         istep=istep,
         nlev=icon_grid.num_levels,
         nflatlev=nflatlev,
+        lateral_boundary_3=lateral_boundary_3,
+        lateral_boundary_4=lateral_boundary_4,
+        end_halo=end_halo,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=icon_grid.num_levels + 1,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E"), "Koff": dims.KDim},
+        offset_provider={
+            "C2E": icon_grid.get_offset_provider("C2E"),
+            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "Koff": dims.KDim,
+        },
     )
     assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy())
     assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy())
