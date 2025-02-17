@@ -1383,7 +1383,7 @@ class IconNonhydroExitSavepoint(IconSavepoint):
         return self._get_field("x_z_w_con_c", dims.CellDim, dims.KDim)
 
     def cfl_clipping(self):
-        return self._get_field("x_cfl_clipping", dims.CellDim, dims.KDim, dtype=bool)
+        return self._get_field("cfl_clipping", dims.CellDim, dims.KDim, dtype=bool)
 
     def vcfl(self):
         return self._get_field("x_vcfl_dsl", dims.CellDim, dims.KDim)

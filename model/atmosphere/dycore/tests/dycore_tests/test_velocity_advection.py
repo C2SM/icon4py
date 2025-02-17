@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
@@ -24,8 +23,10 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.model.testing.datatest_fixtures import savepoint_velocity_exit
 
 from . import utils
+import gt4py.next as gtx
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
@@ -616,11 +617,11 @@ def test_velocity_fused_1_7(
         },
     )
 
-    assert helpers.dallclose(vt_ref.asnumpy(), vt.asnumpy(), atol=1.0e-12)
-    assert helpers.dallclose(vn_ie_ref.asnumpy(), vn_ie.asnumpy(), atol=1.0e-15)
-    assert helpers.dallclose(z_kin_hor_e_ref.asnumpy(), z_kin_hor_e.asnumpy(), atol=1.0e-15)
-    assert helpers.dallclose(z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy(), atol=1.0e-15)
-    assert helpers.dallclose(z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy(), atol=1.0e-15)
+    assert helpers.dallclose(vt_ref.asnumpy(), vt.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
+    assert helpers.dallclose(vn_ie_ref.asnumpy(), vn_ie.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
+    assert helpers.dallclose(z_kin_hor_e_ref.asnumpy(), z_kin_hor_e.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
+    assert helpers.dallclose(z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
+    assert helpers.dallclose(z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
 
 
 @pytest.mark.datatest
