@@ -108,18 +108,18 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
-        e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim)
-        z_ekinh = zero_field(grid, dims.CellDim, dims.KDim)
-        z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim)
-        z_w_concorr_mc = zero_field(grid, dims.CellDim, dims.KDim)
-        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim)
-        w_concorr_c = zero_field(grid, dims.CellDim, dims.KDim)
-        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        z_w_con_c = zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        z_kin_hor_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        e_bln_c_s = data_alloc.random_field(grid, dims.CEDim)
+        z_ekinh = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_w_concorr_me = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        z_w_concorr_mc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        wgtfac_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
+        w_concorr_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        z_w_con_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
-        k = data_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
-        cell = data_alloc.allocate_indices(dims.CellDim, grid=grid)
+        k = data_alloc.index_field(dim=dims.KDim, grid=grid, extend={dims.KDim: 1})
+        cell = data_alloc.index_field(dim=dims.CellDim, grid=grid)
 
         nlev = grid.num_levels
         nflatlev = 4

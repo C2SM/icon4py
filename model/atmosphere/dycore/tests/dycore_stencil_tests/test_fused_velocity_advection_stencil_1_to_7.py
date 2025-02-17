@@ -227,9 +227,13 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         z_v_grad_w = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
 
-        k = data_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
-        edge = data_alloc.allocate_indices(dims.EdgeDim, grid=grid)
-        vertex = data_alloc.allocate_indices(dims.VertexDim, grid=grid)
+        k = data_alloc.index_field(
+            dim=dims.KDim,
+            grid=grid,
+            extend={dims.KDim: 1},
+        )
+        edge = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
+        vertex = data_alloc.index_field(dim=dims.VertexDim, grid=grid)
 
         nlev = grid.num_levels
         nflatlev = 13

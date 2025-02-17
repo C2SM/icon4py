@@ -504,11 +504,13 @@ def test_velocity_fused_1_7(
     vn_ie = savepoint_velocity_1_7_init.vn_ie()
     z_kin_hor_e = savepoint_velocity_1_7_init.z_kin_hor_e()
     z_v_grad_w = savepoint_velocity_1_7_init.z_v_grad_w()
-    k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, is_halfdim=True, backend=backend)
+    k = data_alloc.index_field(
+        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
+    )
 
     lvn_only = savepoint_velocity_1_7_init.lvn_only()
-    edge = data_alloc.allocate_indices(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
-    vertex = data_alloc.allocate_indices(dim=dims.VertexDim, grid=icon_grid, backend=backend)
+    edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
+    vertex = data_alloc.index_field(dim=dims.VertexDim, grid=icon_grid, backend=backend)
     lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
     halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
 
@@ -659,8 +661,8 @@ def test_velocity_fused_8_13(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
-    cell = data_alloc.allocate_indices(dim=dims.CellDim, grid=icon_grid, backend=backend)
+    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     lateral_boundary_3 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
@@ -742,8 +744,8 @@ def test_velocity_fused_15_18(
     z_w_con_c_full_ref = savepoint_velocity_15_18_exit.z_w_con_c_full()
     ddt_w_adv_ref = savepoint_velocity_15_18_exit.ddt_w_adv()
 
-    k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
-    cell = data_alloc.allocate_indices(dim=dims.CellDim, grid=icon_grid, backend=backend)
+    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
 
     nrdmax = grid_savepoint.nrdmax()
     extra_diffu = True
@@ -834,7 +836,7 @@ def test_velocity_fused_19_20(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
-    k = data_alloc.allocate_indices(dim=dims.KDim, grid=icon_grid, backend=backend)
+    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
 
     d_time = 2.0
     extra_diffu = True
