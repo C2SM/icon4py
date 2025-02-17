@@ -848,6 +848,15 @@ def test_velocity_fused_19_20(
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
     k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
+
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    vertex_domain = h_grid.domain(dims.VertexDim)
+
+    start_vertex_lateral_boundary_level_2 =icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
+    start_edge_nudging_level_2 =icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+    end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
     d_time = 2.0
     extra_diffu = True
@@ -879,12 +888,17 @@ def test_velocity_fused_19_20(
         geofac_grdiv=geofac_grdiv,
         ddt_vn_apc=ddt_vn_apc,
         k=k,
+        cell=cell,
         cfl_w_limit=cfl_w_limit,
         scalfac_exdiff=scalfac_exdiff,
         d_time=d_time,
         extra_diffu=extra_diffu,
         nlev=icon_grid.num_levels,
         nrdmax=nrdmax,
+        start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
+        end_vertex_halo=end_vertex_halo,
+        start_edge_nudging_level_2=start_edge_nudging_level_2,
+        end_edge_local=end_edge_local,
         horizontal_start=0,
         horizontal_end=icon_grid.num_edges,
         vertical_start=0,

@@ -42,31 +42,49 @@ def _fused_velocity_advection_stencil_19_to_20(
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     k: fa.KField[gtx.int32],
+    cell: fa.KField[gtx.int32],
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     d_time: wpfloat,
     extra_diffu: bool,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
+    start_vertex_lateral_boundary_level_2: gtx.int32,
+    end_vertex_halo: gtx.int32,
+    start_edge_nudging_level_2: gtx.int32,
+    end_edge_local: gtx.int32,
 ) -> fa.EdgeKField[vpfloat]:
-    zeta = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
-
-    ddt_vn_apc = _compute_advective_normal_wind_tendency(
-        z_kin_hor_e,
-        coeff_gradekin,
-        z_ekinh,
+    #            horizontal_start=self._start_vertex_lateral_boundary_level_2,
+    # horizontal_end=self._end_vertex_halo,
+    zeta = where(
+        start_vertex_lateral_boundary_level_2 <= cell < end_vertex_halo,
+        _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot),
         zeta,
-        vt,
-        f_e,
-        c_lin_e,
-        z_w_con_c_full,
-        vn_ie,
-        ddqz_z_full_e,
     )
 
     ddt_vn_apc = (
         where(
-            maximum(2, nrdmax - 2) <= k < nlev - 3,
+            (start_edge_nudging_level_2 <= cell < end_edge_local),
+            _compute_advective_normal_wind_tendency(
+                z_kin_hor_e,
+                coeff_gradekin,
+                z_ekinh,
+                zeta,
+                vt,
+                f_e,
+                c_lin_e,
+                z_w_con_c_full,
+                vn_ie,
+                ddqz_z_full_e,
+            ),
+            ddt_vn_apc
+        )
+    )
+
+
+    ddt_vn_apc = (
+        where(
+            (maximum(2, nrdmax - 2) <= k < nlev - 3) & (start_edge_nudging_level_2 <= cell < end_edge_local),
             _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
                 levelmask,
                 c_lin_e,
@@ -112,12 +130,17 @@ def fused_velocity_advection_stencil_19_to_20(
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     ddt_vn_apc: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
+    cell: fa.KField[gtx.int32],
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     d_time: wpfloat,
     extra_diffu: bool,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
+    start_vertex_lateral_boundary_level_2: gtx.int32,
+    end_vertex_halo: gtx.int32,
+    start_edge_nudging_level_2: gtx.int32,
+    end_edge_local: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -141,12 +164,17 @@ def fused_velocity_advection_stencil_19_to_20(
         inv_primal_edge_length,
         geofac_grdiv,
         k,
+        cell,
         cfl_w_limit,
         scalfac_exdiff,
         d_time,
         extra_diffu,
         nlev,
         nrdmax,
+        start_vertex_lateral_boundary_level_2,
+        end_vertex_halo,
+        start_edge_nudging_level_2,
+        end_edge_local,
         out=ddt_vn_apc,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
