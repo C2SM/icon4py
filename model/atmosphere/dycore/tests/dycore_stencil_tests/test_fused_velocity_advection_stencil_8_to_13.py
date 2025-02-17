@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8
     fused_velocity_advection_stencil_8_to_13,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
@@ -47,13 +48,22 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         w_concorr_c,
         z_ekinh,
         k,
+        cell,
         istep,
         nlev,
         nflatlev,
         z_w_con_c,
+        lateral_boundary_4,
+        lateral_boundary_3,
+        end_halo,
         **kwargs,
     ):
+        lateral_boundary = lateral_boundary_4 if istep == 1 else lateral_boundary_3
         k_nlev = k[:-1]
+
+        z_ekinh_cp = z_ekinh.copy()
+        w_concorr_c_cp = w_concorr_c.copy()
+        z_w_con_c_cp = z_w_con_c.copy()
 
         z_ekinh = np.where(
             k_nlev < nlev,
@@ -83,11 +93,14 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
             correct_contravariant_vertical_velocity_numpy(z_w_con_c[:, :-1], w_concorr_c),
             z_w_con_c[:, :-1],
         )
+        z_ekinh_cp[lateral_boundary:end_halo, :] = z_ekinh[lateral_boundary:end_halo, :]
+        w_concorr_c_cp[lateral_boundary:end_halo, :] = w_concorr_c[lateral_boundary:end_halo, :]
+        z_w_con_c_cp[lateral_boundary:end_halo, :] = z_w_con_c[lateral_boundary:end_halo, :]
 
         return dict(
-            z_ekinh=z_ekinh,
-            w_concorr_c=w_concorr_c,
-            z_w_con_c=z_w_con_c,
+            z_ekinh=z_ekinh_cp,
+            w_concorr_c=w_concorr_c_cp,
+            z_w_con_c=z_w_con_c_cp,
         )
 
     @pytest.fixture
@@ -103,11 +116,27 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         z_w_con_c = zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
         k = data_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
+        cell = data_alloc.allocate_indices(dims.CellDim, grid=grid)
 
         nlev = grid.num_levels
         nflatlev = 4
 
         istep = 1
+
+        cell_domain = h_grid.domain(dims.CellDim)
+        lateral_boundary_3 = (
+            grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        lateral_boundary_4 = (
+            grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        end_halo = (
+            grid.end_index(cell_domain(h_grid.Zone.HALO)) if hasattr(grid, "end_index") else 0
+        )
 
         horizontal_start = 0
         horizontal_end = grid.num_cells
@@ -125,9 +154,13 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
             z_ekinh=z_ekinh,
             z_w_con_c=z_w_con_c,
             k=k,
+            cell=cell,
             istep=istep,
             nlev=nlev,
             nflatlev=nflatlev,
+            lateral_boundary_4=lateral_boundary_4,
+            lateral_boundary_3=lateral_boundary_3,
+            end_halo=end_halo,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=vertical_start,
