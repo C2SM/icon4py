@@ -10,13 +10,12 @@ include:
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
     - source .venv/bin/activate
     - BENCHER_RESULTS_JSON="results_${CI_COMMIT_SHA}_${BACKEND}_${GRID}.json"
-    - echo $BENCHER_RESULTS_JSON
     - |
       bencher run \
       --project "$BENCHER_PROJECT" \
       --token "$BENCHER_API_TOKEN" \
       --branch main \
-      --testbed "ci-runner:$SYSTEM_NAME" \
+      --testbed "ci-runner:${SYSTEM_NAME}:${BACKEND}:{GRID}" \
       --threshold-measure latency \
       --threshold-test t_test \
       --threshold-max-sample-size 64 \
@@ -26,24 +25,17 @@ include:
       --adapter python_pytest \
       --file $BENCHER_RESULTS_JSON \
       "pytest --benchmark-json $BENCHER_RESULTS_JSON -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
-    - cp $BENCHER_RESULTS_JSON $CI_PROJECT_DIR/before.json
     - |
       jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py_bencher_baseline_TEST\", \"namespace\": \"alps\"}} + ." $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
-    - cp $BENCHER_RESULTS_JSON $CI_PROJECT_DIR/after.json
-    - ls -la .
-    - |
-      curl -X POST \
-      -H "Content-Type: application/json" \
-      -d "./${BENCHER_RESULTS_JSON}" \
-      "${CSCS_LOGSTASH_URL}"
+    # - |
+    #   curl -X POST \
+    #   -H "Content-Type: application/json" \
+    #   -d "./${BENCHER_RESULTS_JSON}" \
+    #   "${CSCS_LOGSTASH_URL}"
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
         GRID: [icon_grid, icon_grid_global]
-  artifacts:
-    paths:
-      - before.json
-      - after.json
 
 # benchmark_bencher_baseline_x86_64:
 #   extends: [.benchmark_model_stencils, .test_template_x86_64]
