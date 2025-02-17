@@ -9,6 +9,8 @@ include:
     - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
     - source .venv/bin/activate
+    - BENCHER_RESULTS_JSON="results_${CI_COMMIT_SHA}_${BACKEND}_${GRID}.json"
+    - echo $BENCHER_RESULTS_JSON
     - |
       bencher run \
       --project "$BENCHER_PROJECT" \
@@ -22,22 +24,26 @@ include:
       --thresholds-reset \
       --err \
       --adapter python_pytest \
-      --file results.json \
-      "pytest --benchmark-json results.json -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
-    - cp results.json $CI_PROJECT_DIR/results_before.json
+      --file $BENCHER_RESULTS_JSON \
+      "pytest --benchmark-json $BENCHER_RESULTS_JSON -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
+    - cp $BENCHER_RESULTS_JSON $CI_PROJECT_DIR/before.json
     - |
-      jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py_bencher_baseline\", \"namespace\": \"alps\"}} + ." results.json > results_tmp.json && mv results_tmp.json results.json
-    - cp results.json $CI_PROJECT_DIR/results_after.json
-    - cp results.json ./results_${CI_COMMIT_SHA}_${BACKEND}_${GRID}.json
+      jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py_bencher_baseline_TEST\", \"namespace\": \"alps\"}} + ." $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
+    - cp $BENCHER_RESULTS_JSON $CI_PROJECT_DIR/after.json
     - ls -la .
+    - |
+      curl -X POST \
+      -H "Content-Type: application/json" \
+      -d "./${BENCHER_RESULTS_JSON}" \
+      "${CSCS_LOGSTASH_URL}"
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
         GRID: [icon_grid, icon_grid_global]
   artifacts:
     paths:
-      - results_before.json
-      - results_after.json
+      - before.json
+      - after.json
 
 # benchmark_bencher_baseline_x86_64:
 #   extends: [.benchmark_model_stencils, .test_template_x86_64]
