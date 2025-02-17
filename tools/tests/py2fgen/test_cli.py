@@ -165,23 +165,15 @@ def test_py2fgen_python_error_propagation_to_fortran(
 
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
-    "python_module, function_name, plugin_name, test_name, run_backend, extra_flags",
+    "function_name, plugin_name, test_name, run_backend, extra_flags",
     [
         (
-            "icon4py.tools.py2fgen.wrappers.simple",
             "square_from_function",
             "square_plugin",
             "test_square",
             "GPU",
             ("-acc", "-Minfo=acc", "-DUSE_SQUARE_FROM_FUNCTION"),
         ),
-        # (
-        #     "mask_with_optional_and_scalar",
-        #     "square_plugin",
-        #     "test_mask_with_optional_and_scalar",
-        #     "GPU",
-        #     ("-acc", "-Minfo=acc"),
-        # ),
     ],
 )
 def test_py2fgen_compilation_and_execution_gpu(
@@ -191,13 +183,13 @@ def test_py2fgen_compilation_and_execution_gpu(
     test_name,
     run_backend,
     samples_path,
-    python_module,
+    square_wrapper_module,
     extra_flags,
     test_temp_dir,
 ):
     run_test_case(
         cli_runner,
-        python_module,
+        square_wrapper_module,
         function_name,
         plugin_name,
         run_backend,

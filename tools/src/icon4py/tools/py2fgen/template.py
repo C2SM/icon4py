@@ -443,19 +443,12 @@ end function {{name}}_wrapper
                 return f"{arg.name} = c_loc({arg.name})"
             return f"{arg.name} = {arg.name}"
 
-        if len(func.args) < 1:
-            param_names, args_with_size_args = "", ""
-        else:
-            param_names = ", &\n ".join([arg.name for arg in func.args] + ["rc"])
-            arg_names = ", &\n ".join(
-                map(
-                    render_args,
-                    func.args,
-                )
-            )
-            args_with_size_args = (
-                arg_names + ",&\n" + ", &\n".join(f"{arg} = {arg}" for arg in func.global_size_args)
-            )
+        param_names = ", &\n ".join([arg.name for arg in func.args] + ["rc"])
+        arg_names = [render_args(arg) for arg in func.args] + [
+            f"{arg} = {arg}" for arg in func.global_size_args
+        ]
+
+        compiled_arg_names = ", &\n".join(arg_names)
 
         param_declarations = [
             _render_parameter_declaration(
@@ -474,7 +467,7 @@ end function {{name}}_wrapper
             func,
             assumed_size_array=False,
             param_names=param_names,
-            args_with_size_args=args_with_size_args,
+            args_with_size_args=compiled_arg_names,
             non_optional_arrays=[
                 arg.name for arg in func.args if arg.is_array if not arg.is_optional
             ],

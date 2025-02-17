@@ -88,7 +88,7 @@ class Icon4PyConfig:
     @cached_property
     def array_ns(self) -> ModuleType:
         if self.device == Device.GPU:
-            import cupy as cp  # type: ignore[import-not-found]
+            import cupy as cp  # type: ignore # either `import-not-found` or `import-untyped`
 
             return cp
         else:
@@ -129,7 +129,7 @@ class Icon4PyConfig:
 
     @cached_property
     def parallel_run(self) -> bool:
-        return env_flag_to_bool("ICON4PY_PARALLEL", False)
+        return env_flag_to_bool("ICON4PY_PARALLEL", True)
 
 
 config = Icon4PyConfig()

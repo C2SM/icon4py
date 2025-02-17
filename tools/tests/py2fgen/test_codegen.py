@@ -41,7 +41,7 @@ simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[
 
 
 @pytest.mark.parametrize(
-    ("param", "expected"), ((simple_type, "value,"), (field_2d, ""), (field_1d, ""))
+    ("param", "expected"), ((simple_type, "value"), (field_2d, None), (field_1d, None))
 )
 def test_as_target(param, expected):
     assert expected == as_f90_value(param)
@@ -89,9 +89,17 @@ def test_cheader_for_pointer_args():
     assert header == "extern int bar_wrapper(float* one, int two, int n_Cell, int n_K);"
 
 
-def compare_ignore_whitespace(s1: str, s2: str):
+def compare_ignore_whitespace(actual: str, expected: str):
     no_whitespace = {ord(c): None for c in string.whitespace}
-    return s1.translate(no_whitespace) == s2.translate(no_whitespace)
+    if actual.translate(no_whitespace) != expected.translate(no_whitespace):
+        print("Expected:")
+        print(expected)
+        print("Actual:")
+        print("------------------------------")
+        print(actual)
+        print("------------------------------")
+        return False
+    return True
 
 
 @pytest.fixture
@@ -106,7 +114,7 @@ def dummy_plugin():
 def test_fortran_interface(dummy_plugin):
     interface = generate_f90_interface(dummy_plugin)
     expected = """
-    module libtest_plugin
+module libtest_plugin
    use, intrinsic :: iso_c_binding
    implicit none
 
@@ -130,7 +138,7 @@ def test_fortran_interface(dummy_plugin):
 
          integer(c_int), value, target :: one
 
-         real(c_double), dimension(*), target :: two
+         type(c_ptr), value, target :: two
 
       end function foo_wrapper
 
@@ -146,7 +154,7 @@ def test_fortran_interface(dummy_plugin):
 
          integer(c_int) :: rc  ! Stores the return code
 
-         real(c_float), dimension(*), target :: one
+         type(c_ptr), value, target :: one
 
          integer(c_int), value, target :: two
 
@@ -170,20 +178,18 @@ contains
       real(c_double), dimension(:, :), target :: two
 
       integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
 
-      !$ACC host_data use_device( &
-      !$ACC two &
-      !$ACC )
+      !$acc host_data use_device(two)
 
       n_Cell = SIZE(two, 1)
 
       n_K = SIZE(two, 2)
 
-      rc = foo_wrapper(one, &
-                       two, &
-                       n_Cell, &
-                       n_K)
-
+      rc = foo_wrapper(one=one, &
+                       two=c_loc(two), &
+                       n_Cell=n_Cell, &
+                       n_K=n_K)
       !$acc end host_data
    end subroutine foo
 
@@ -201,20 +207,18 @@ contains
       integer(c_int), value, target :: two
 
       integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
 
-      !$ACC host_data use_device( &
-      !$ACC one &
-      !$ACC )
+      !$acc host_data use_device(one)
 
       n_Cell = SIZE(one, 1)
 
       n_K = SIZE(one, 2)
 
-      rc = bar_wrapper(one, &
-                       two, &
-                       n_Cell, &
-                       n_K)
-
+      rc = bar_wrapper(one=c_loc(one), &
+                       two=two, &
+                       n_Cell=n_Cell, &
+                       n_K=n_K)
       !$acc end host_data
    end subroutine bar
 
@@ -224,11 +228,8 @@ end module
 
 
 def test_python_wrapper(dummy_plugin):
-    interface = generate_python_wrapper(
-        dummy_plugin, "GPU", False, limited_area=True, profile=False
-    )
-    expected = """
-# imports for generated wrapper code
+    interface = generate_python_wrapper(dummy_plugin, "GPU", False, profile=False)
+    expected = """# imports for generated wrapper code
 import logging
 
 from libtest_plugin import ffi
@@ -258,10 +259,15 @@ Cell = gtx.Dimension("Cell", kind=gtx.DimensionKind.HORIZONTAL)
 def foo_wrapper(one, two, n_Cell, n_K):
     try:
 
-        # Convert ptr to GT4Py fields
-        # TODO LOGIC FOR OPTIONAL FIELDS IS MISSING
+        logging.info("size of n_Cell = %s" % str(n_Cell))
 
-        two = wrapper_utils.as_field(ffi, xp, two, ts.ScalarKind.FLOAT64, {Cell: n_Cell, K: n_K})
+        logging.info("size of n_K = %s" % str(n_K))
+
+        # Convert ptr to GT4Py fields
+
+        two = wrapper_utils.as_field(
+            ffi, xp, two, ts.ScalarKind.FLOAT64, {Cell: n_Cell, K: n_K}, False
+        )
 
         foo(one, two)
 
@@ -276,10 +282,15 @@ def foo_wrapper(one, two, n_Cell, n_K):
 def bar_wrapper(one, two, n_Cell, n_K):
     try:
 
-        # Convert ptr to GT4Py fields
-        # TODO LOGIC FOR OPTIONAL FIELDS IS MISSING
+        logging.info("size of n_Cell = %s" % str(n_Cell))
 
-        one = wrapper_utils.as_field(ffi, xp, one, ts.ScalarKind.FLOAT32, {Cell: n_Cell, K: n_K})
+        logging.info("size of n_K = %s" % str(n_K))
+
+        # Convert ptr to GT4Py fields
+
+        one = wrapper_utils.as_field(
+            ffi, xp, one, ts.ScalarKind.FLOAT32, {Cell: n_Cell, K: n_K}, False
+        )
 
         bar(one, two)
 

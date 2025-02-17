@@ -365,10 +365,6 @@ def grid_init_diffusion(
     vertical_size: gtx.int32,
     limited_area: bool,
 ):
-    # todo: write this logic into template.py
-    if isinstance(limited_area, int):
-        limited_area = bool(limited_area)
-
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
     diffusion_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
