@@ -19,6 +19,7 @@ from gt4py.next import backend as gtx_backend, constructors
 from gt4py.next.ffront.decorator import Program
 from typing_extensions import Buffer
 
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -28,14 +29,9 @@ except ModuleNotFoundError:
     pytest_benchmark = None
 
 
-@pytest.fixture
-def backend(request):
-    return request.param
-
-
-@pytest.fixture
-def grid(request):
-    return request.param
+@pytest.fixture(scope="session")
+def connectivities_as_numpy(grid, backend) -> dict[gtx.Dimension, np.ndarray]:
+    return {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
 
 
 def is_python(backend: gtx_backend.Backend | None) -> bool:
@@ -80,11 +76,16 @@ def allocate_data(backend, input_data):
 
 def apply_markers(
     markers: tuple[pytest.Mark | pytest.MarkDecorator, ...],
+    grid: base.BaseGrid,
     backend: gtx_backend.Backend | None,
     is_datatest: bool = False,
 ):
     for marker in markers:
         match marker.name:
+            case "cpu_only" if data_alloc.is_cupy_device(backend):
+                pytest.xfail("currently only runs on CPU")
+            case "embedded_only" if not is_embedded(backend):
+                pytest.skip("stencil runs only on embedded backend")
             case "embedded_remap_error" if is_embedded(backend):
                 # https://github.com/GridTools/gt4py/issues/1583
                 pytest.xfail("Embedded backend currently fails in remap function.")
@@ -93,9 +94,11 @@ def apply_markers(
             case "requires_concat_where" if is_embedded(backend):
                 pytest.xfail("Stencil requires concat_where.")
             case "skip_value_error":
-                pytest.skip(
-                    "Stencil does not support domain containing skip values. Consider shrinking domain."
-                )
+                if grid.config.limited_area or grid.has_skip_values():
+                    # TODO (@halungge) this still skips too many tests: it matters what connectivity the test uses
+                    pytest.skip(
+                        "Stencil does not support domain containing skip values. Consider shrinking domain."
+                    )
             case "datatest" if not is_datatest:
                 pytest.skip("need '--datatest' option to run")
 
@@ -107,11 +110,17 @@ class Output:
     gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
 
 
-def _test_validation(self, grid, backend, input_data):
+def _test_validation(
+    self,
+    grid: base.BaseGrid,
+    backend: gtx_backend.Backend,
+    connectivities_as_numpy: dict,
+    input_data: dict,
+):
     if self.MARKERS is not None:
-        apply_markers(self.MARKERS, backend)
+        apply_markers(self.MARKERS, grid, backend)
 
-    connectivities = {dim: data_alloc.as_numpy(table) for dim, table in grid.connectivities.items()}
+    connectivities = connectivities_as_numpy
     reference_outputs = self.reference(
         connectivities,
         **{k: v.asnumpy() if isinstance(v, gtx.Field) else v for k, v in input_data.items()},
@@ -142,7 +151,7 @@ if pytest_benchmark:
 
     def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
         if self.MARKERS is not None:
-            apply_markers(self.MARKERS, backend)
+            apply_markers(self.MARKERS, grid, backend)
 
         if pytestconfig.getoption(
             "--benchmark-disable"

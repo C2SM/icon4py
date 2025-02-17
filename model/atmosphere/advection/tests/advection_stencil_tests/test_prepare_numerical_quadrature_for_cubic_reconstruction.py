@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.prepare_numerical_quadrature_fo
     prepare_numerical_quadrature_for_cubic_reconstruction,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -336,15 +338,15 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(helpers.StencilTest):
     @classmethod
     def reference(
         cls,
-        grid,
-        p_coords_dreg_v_1_x: np.array,
-        p_coords_dreg_v_2_x: np.array,
-        p_coords_dreg_v_3_x: np.array,
-        p_coords_dreg_v_4_x: np.array,
-        p_coords_dreg_v_1_y: np.array,
-        p_coords_dreg_v_2_y: np.array,
-        p_coords_dreg_v_3_y: np.array,
-        p_coords_dreg_v_4_y: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_coords_dreg_v_1_x: np.ndarray,
+        p_coords_dreg_v_2_x: np.ndarray,
+        p_coords_dreg_v_3_x: np.ndarray,
+        p_coords_dreg_v_4_x: np.ndarray,
+        p_coords_dreg_v_1_y: np.ndarray,
+        p_coords_dreg_v_2_y: np.ndarray,
+        p_coords_dreg_v_3_y: np.ndarray,
+        p_coords_dreg_v_4_y: np.ndarray,
         shape_func_1_1: float,
         shape_func_2_1: float,
         shape_func_3_1: float,
@@ -375,7 +377,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(helpers.StencilTest):
         wgt_eta_2: float,
         dbl_eps: float,
         eps: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         wgt_t_detjac_1, wgt_t_detjac_2, wgt_t_detjac_3, wgt_t_detjac_4 = cls._compute_wgt_t_detjac(
             wgt_zeta_1,
@@ -484,7 +486,7 @@ class TestPrepareNumericalQuadratureForCubicReconstruction(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         p_coords_dreg_v_1_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_coords_dreg_v_2_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         p_coords_dreg_v_3_x = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)

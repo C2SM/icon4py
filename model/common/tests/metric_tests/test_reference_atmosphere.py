@@ -25,17 +25,11 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils
 
 
-# TODO (@halungge) some tests need to run on a compiled backend: embedded does not work with the
-#  Koff[-1] and roundtrip is too slow on the large grid
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     icon_grid, metrics_savepoint, backend
 ):
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
     rho_ref_mc_ref = metrics_savepoint.rho_ref_mc()
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
@@ -96,8 +90,6 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 def test_compute_reference_atmsophere_on_half_level_mass_points(
     icon_grid, metrics_savepoint, backend
 ):
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
     z_ifc = metrics_savepoint.z_ifc()
 
@@ -140,8 +132,6 @@ def test_compute_reference_atmsophere_on_half_level_mass_points(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
     d_exner_dz_ref_ic = data_alloc.zero_field(
@@ -163,8 +153,6 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
 def test_compute_reference_atmosphere_on_full_level_edge_fields(
     icon_grid, interpolation_savepoint, metrics_savepoint, backend
 ):
-    if helpers.is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
     rho_ref_me_ref = metrics_savepoint.rho_ref_me()
     theta_ref_me_ref = metrics_savepoint.theta_ref_me()
     rho_ref_me = metrics_savepoint.rho_ref_me()
