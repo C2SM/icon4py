@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -34,7 +35,12 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
 
     @staticmethod
     def reference(
-        grid, wgtfac_c: np.ndarray, div: np.ndarray, kh_c: np.ndarray, div_ic, hdef_ic
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfac_c: np.ndarray,
+        div: np.ndarray,
+        kh_c: np.ndarray,
+        div_ic: np.ndarray,
+        hdef_ic: np.ndarray,
     ) -> dict:
         div_ic, hdef_ic = calculate_diagnostics_for_turbulence_numpy(
             wgtfac_c, div, kh_c, div_ic, hdef_ic
