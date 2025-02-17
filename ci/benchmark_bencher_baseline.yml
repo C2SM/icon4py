@@ -7,8 +7,6 @@ include:
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     - source "$HOME/.cargo/env"
     - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
-    - curl -LsSf https://astral.sh/uv/install.sh | sh
-    - source $HOME/.local/bin/env
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
     - source .venv/bin/activate
     - |
@@ -26,10 +24,18 @@ include:
       --adapter python_pytest \
       --file results.json \
       "pytest --benchmark-json results.json -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
+    - cp results.json $CI_PROJECT_DIR/results_before.json
+    - |
+      jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py_bencher_baseline\", \"namespace\": \"alps\"}} + ." results.json > results_tmp.json && mv results_tmp.json results.json
+    - cp results.json $CI_PROJECT_DIR/results_after.json
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
         GRID: [icon_grid, icon_grid_global]
+  artifacts:
+    paths:
+      - results_before.json
+      - results_after.json
 
 # benchmark_bencher_baseline_x86_64:
 #   extends: [.benchmark_model_stencils, .test_template_x86_64]
