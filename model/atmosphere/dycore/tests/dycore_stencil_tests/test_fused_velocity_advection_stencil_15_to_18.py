@@ -14,6 +14,7 @@ from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_1
     fused_velocity_advection_stencil_15_to_18,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.testing.helpers import StencilTest
 
 from .test_add_extra_diffusion_for_w_con_approaching_cfl import (
@@ -142,9 +143,14 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         nrdmax,
         lvn_only,
         extra_diffu,
+        z_w_con_c_full,
+        start_cell_lateral_boundary_level_4,
+        end_cell_halo,
         **kwargs,
     ):
-        z_w_con_c_full = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
+        z_w_con_c_full[
+            start_cell_lateral_boundary_level_4:end_cell_halo, :
+        ] = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
 
         if not lvn_only:
             ddt_w_adv = _fused_velocity_advection_stencil_16_to_18(
@@ -214,6 +220,15 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
         cell_lower_bound = 2
         cell_upper_bound = 4
+        cell_domain = h_grid.domain(dims.EdgeDim)
+        start_cell_lateral_boundary_level_4 = (
+            grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        end_cell_halo = (
+            grid.end_index(cell_domain(h_grid.Zone.HALO)) if hasattr(grid, "end_index") else 0
+        )
 
         lvn_only = False
 
@@ -243,4 +258,6 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
             lvn_only=lvn_only,
             extra_diffu=extra_diffu,
             z_w_con_c_full=z_w_con_c_full,
+            start_cell_lateral_boundary_level_4=start_cell_lateral_boundary_level_4,
+            end_cell_halo=end_cell_halo,
         )

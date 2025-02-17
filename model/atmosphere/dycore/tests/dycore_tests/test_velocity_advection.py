@@ -757,6 +757,10 @@ def test_velocity_fused_15_18(
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     dtime = 2.0
+    start_cell_lateral_boundary_level_4 = icon_grid.start_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
+    )
+    end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
     fused_velocity_advection_stencil_15_to_18.fused_velocity_advection_stencil_15_to_18.with_backend(
         backend
@@ -786,6 +790,8 @@ def test_velocity_fused_15_18(
         nrdmax=nrdmax,
         lvn_only=lvn_only,
         extra_diffu=extra_diffu,
+        start_cell_lateral_boundary_level_4=start_cell_lateral_boundary_level_4,
+        end_cell_halo=end_cell_halo,
         offset_provider={
             "C2E": icon_grid.get_offset_provider("C2E"),
             "C2CE": icon_grid.get_offset_provider("C2CE"),
