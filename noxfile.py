@@ -69,7 +69,7 @@ def test_model(session: nox.Session, selection: ModelTestsSubset, subpackage: Mo
     pytest_args = _selection_to_pytest_args(selection)
     with session.chdir(f"model/{subpackage}"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')}".split(),
+            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')}".split(),
             *pytest_args,
             *session.posargs,
             success_codes=[0, NO_TESTS_COLLECTED_EXIT_CODE],
@@ -96,7 +96,7 @@ def test_tools(session: nox.Session, datatest: bool) -> None:
 
     with session.chdir("tools"):
         session.run(
-            *f"pytest -sv --benchmark-skip -n {session.env.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
+            *f"pytest -sv --benchmark-skip -n {os.environ.get('NUM_PROCESSES', 'auto')} {'--datatest' if datatest else ''}".split(),
             *session.posargs
         )
 
@@ -109,7 +109,7 @@ def _install_session_venv(
 ) -> None:
     """Install session packages using uv."""
     #TODO(egparedes): remove this workaround once `backend` parameter is added to sessions
-    if (env_extras := session.env.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", "")):
+    if (env_extras := os.environ.get("ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS", "")):
         extras = [*extras, *re.split(r'\W+', env_extras)]
     env = dict(os.environ.items()) | {"UV_PROJECT_ENVIRONMENT": session.virtualenv.location}
     session.run_install(
