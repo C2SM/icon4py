@@ -836,125 +836,125 @@ contains
 
       real(c_double), value, target :: stretch_factor
 
-      integer(c_int), value :: vct_a_size_0
+      integer(c_int) :: vct_a_size_0
 
-      integer(c_int), value :: vct_b_size_0
+      integer(c_int) :: vct_b_size_0
 
-      integer(c_int), value :: theta_ref_mc_size_0
+      integer(c_int) :: theta_ref_mc_size_0
 
-      integer(c_int), value :: theta_ref_mc_size_1
+      integer(c_int) :: theta_ref_mc_size_1
 
-      integer(c_int), value :: wgtfac_c_size_0
+      integer(c_int) :: wgtfac_c_size_0
 
-      integer(c_int), value :: wgtfac_c_size_1
+      integer(c_int) :: wgtfac_c_size_1
 
-      integer(c_int), value :: e_bln_c_s_size_0
+      integer(c_int) :: e_bln_c_s_size_0
 
-      integer(c_int), value :: e_bln_c_s_size_1
+      integer(c_int) :: e_bln_c_s_size_1
 
-      integer(c_int), value :: geofac_div_size_0
+      integer(c_int) :: geofac_div_size_0
 
-      integer(c_int), value :: geofac_div_size_1
+      integer(c_int) :: geofac_div_size_1
 
-      integer(c_int), value :: geofac_grg_x_size_0
+      integer(c_int) :: geofac_grg_x_size_0
 
-      integer(c_int), value :: geofac_grg_x_size_1
+      integer(c_int) :: geofac_grg_x_size_1
 
-      integer(c_int), value :: geofac_grg_y_size_0
+      integer(c_int) :: geofac_grg_y_size_0
 
-      integer(c_int), value :: geofac_grg_y_size_1
+      integer(c_int) :: geofac_grg_y_size_1
 
-      integer(c_int), value :: geofac_n2s_size_0
+      integer(c_int) :: geofac_n2s_size_0
 
-      integer(c_int), value :: geofac_n2s_size_1
+      integer(c_int) :: geofac_n2s_size_1
 
-      integer(c_int), value :: nudgecoeff_e_size_0
+      integer(c_int) :: nudgecoeff_e_size_0
 
-      integer(c_int), value :: rbf_coeff_1_size_0
+      integer(c_int) :: rbf_coeff_1_size_0
 
-      integer(c_int), value :: rbf_coeff_1_size_1
+      integer(c_int) :: rbf_coeff_1_size_1
 
-      integer(c_int), value :: rbf_coeff_2_size_0
+      integer(c_int) :: rbf_coeff_2_size_0
 
-      integer(c_int), value :: rbf_coeff_2_size_1
+      integer(c_int) :: rbf_coeff_2_size_1
 
-      integer(c_int), value :: mask_hdiff_size_0
+      integer(c_int) :: mask_hdiff_size_0
 
-      integer(c_int), value :: mask_hdiff_size_1
+      integer(c_int) :: mask_hdiff_size_1
 
-      integer(c_int), value :: zd_diffcoef_size_0
+      integer(c_int) :: zd_diffcoef_size_0
 
-      integer(c_int), value :: zd_diffcoef_size_1
+      integer(c_int) :: zd_diffcoef_size_1
 
-      integer(c_int), value :: zd_vertoffset_size_0
+      integer(c_int) :: zd_vertoffset_size_0
 
-      integer(c_int), value :: zd_vertoffset_size_1
+      integer(c_int) :: zd_vertoffset_size_1
 
-      integer(c_int), value :: zd_vertoffset_size_2
+      integer(c_int) :: zd_vertoffset_size_2
 
-      integer(c_int), value :: zd_intcoef_size_0
+      integer(c_int) :: zd_intcoef_size_0
 
-      integer(c_int), value :: zd_intcoef_size_1
+      integer(c_int) :: zd_intcoef_size_1
 
-      integer(c_int), value :: zd_intcoef_size_2
+      integer(c_int) :: zd_intcoef_size_2
 
-      integer(c_int), value :: tangent_orientation_size_0
+      integer(c_int) :: tangent_orientation_size_0
 
-      integer(c_int), value :: inverse_primal_edge_lengths_size_0
+      integer(c_int) :: inverse_primal_edge_lengths_size_0
 
-      integer(c_int), value :: inv_dual_edge_length_size_0
+      integer(c_int) :: inv_dual_edge_length_size_0
 
-      integer(c_int), value :: inv_vert_vert_length_size_0
+      integer(c_int) :: inv_vert_vert_length_size_0
 
-      integer(c_int), value :: edge_areas_size_0
+      integer(c_int) :: edge_areas_size_0
 
-      integer(c_int), value :: f_e_size_0
+      integer(c_int) :: f_e_size_0
 
-      integer(c_int), value :: cell_center_lat_size_0
+      integer(c_int) :: cell_center_lat_size_0
 
-      integer(c_int), value :: cell_center_lon_size_0
+      integer(c_int) :: cell_center_lon_size_0
 
-      integer(c_int), value :: cell_areas_size_0
+      integer(c_int) :: cell_areas_size_0
 
-      integer(c_int), value :: primal_normal_vert_x_size_0
+      integer(c_int) :: primal_normal_vert_x_size_0
 
-      integer(c_int), value :: primal_normal_vert_x_size_1
+      integer(c_int) :: primal_normal_vert_x_size_1
 
-      integer(c_int), value :: primal_normal_vert_y_size_0
+      integer(c_int) :: primal_normal_vert_y_size_0
 
-      integer(c_int), value :: primal_normal_vert_y_size_1
+      integer(c_int) :: primal_normal_vert_y_size_1
 
-      integer(c_int), value :: dual_normal_vert_x_size_0
+      integer(c_int) :: dual_normal_vert_x_size_0
 
-      integer(c_int), value :: dual_normal_vert_x_size_1
+      integer(c_int) :: dual_normal_vert_x_size_1
 
-      integer(c_int), value :: dual_normal_vert_y_size_0
+      integer(c_int) :: dual_normal_vert_y_size_0
 
-      integer(c_int), value :: dual_normal_vert_y_size_1
+      integer(c_int) :: dual_normal_vert_y_size_1
 
-      integer(c_int), value :: primal_normal_cell_x_size_0
+      integer(c_int) :: primal_normal_cell_x_size_0
 
-      integer(c_int), value :: primal_normal_cell_x_size_1
+      integer(c_int) :: primal_normal_cell_x_size_1
 
-      integer(c_int), value :: primal_normal_cell_y_size_0
+      integer(c_int) :: primal_normal_cell_y_size_0
 
-      integer(c_int), value :: primal_normal_cell_y_size_1
+      integer(c_int) :: primal_normal_cell_y_size_1
 
-      integer(c_int), value :: dual_normal_cell_x_size_0
+      integer(c_int) :: dual_normal_cell_x_size_0
 
-      integer(c_int), value :: dual_normal_cell_x_size_1
+      integer(c_int) :: dual_normal_cell_x_size_1
 
-      integer(c_int), value :: dual_normal_cell_y_size_0
+      integer(c_int) :: dual_normal_cell_y_size_0
 
-      integer(c_int), value :: dual_normal_cell_y_size_1
+      integer(c_int) :: dual_normal_cell_y_size_1
 
-      integer(c_int), value :: edge_center_lat_size_0
+      integer(c_int) :: edge_center_lat_size_0
 
-      integer(c_int), value :: edge_center_lon_size_0
+      integer(c_int) :: edge_center_lon_size_0
 
-      integer(c_int), value :: primal_normal_x_size_0
+      integer(c_int) :: primal_normal_x_size_0
 
-      integer(c_int), value :: primal_normal_y_size_0
+      integer(c_int) :: primal_normal_y_size_0
 
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
@@ -1317,41 +1317,41 @@ contains
 
       logical(c_int), value, target :: linit
 
-      integer(c_int), value :: w_size_0
+      integer(c_int) :: w_size_0
 
-      integer(c_int), value :: w_size_1
+      integer(c_int) :: w_size_1
 
-      integer(c_int), value :: vn_size_0
+      integer(c_int) :: vn_size_0
 
-      integer(c_int), value :: vn_size_1
+      integer(c_int) :: vn_size_1
 
-      integer(c_int), value :: exner_size_0
+      integer(c_int) :: exner_size_0
 
-      integer(c_int), value :: exner_size_1
+      integer(c_int) :: exner_size_1
 
-      integer(c_int), value :: theta_v_size_0
+      integer(c_int) :: theta_v_size_0
 
-      integer(c_int), value :: theta_v_size_1
+      integer(c_int) :: theta_v_size_1
 
-      integer(c_int), value :: rho_size_0
+      integer(c_int) :: rho_size_0
 
-      integer(c_int), value :: rho_size_1
+      integer(c_int) :: rho_size_1
 
-      integer(c_int), value :: hdef_ic_size_0
+      integer(c_int) :: hdef_ic_size_0
 
-      integer(c_int), value :: hdef_ic_size_1
+      integer(c_int) :: hdef_ic_size_1
 
-      integer(c_int), value :: div_ic_size_0
+      integer(c_int) :: div_ic_size_0
 
-      integer(c_int), value :: div_ic_size_1
+      integer(c_int) :: div_ic_size_1
 
-      integer(c_int), value :: dwdx_size_0
+      integer(c_int) :: dwdx_size_0
 
-      integer(c_int), value :: dwdx_size_1
+      integer(c_int) :: dwdx_size_1
 
-      integer(c_int), value :: dwdy_size_0
+      integer(c_int) :: dwdy_size_0
 
-      integer(c_int), value :: dwdy_size_1
+      integer(c_int) :: dwdy_size_1
 
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs
@@ -1551,65 +1551,65 @@ contains
 
       logical(c_int), value, target :: limited_area
 
-      integer(c_int), value :: cell_starts_size_0
+      integer(c_int) :: cell_starts_size_0
 
-      integer(c_int), value :: cell_ends_size_0
+      integer(c_int) :: cell_ends_size_0
 
-      integer(c_int), value :: vertex_starts_size_0
+      integer(c_int) :: vertex_starts_size_0
 
-      integer(c_int), value :: vertex_ends_size_0
+      integer(c_int) :: vertex_ends_size_0
 
-      integer(c_int), value :: edge_starts_size_0
+      integer(c_int) :: edge_starts_size_0
 
-      integer(c_int), value :: edge_ends_size_0
+      integer(c_int) :: edge_ends_size_0
 
-      integer(c_int), value :: c2e_size_0
+      integer(c_int) :: c2e_size_0
 
-      integer(c_int), value :: c2e_size_1
+      integer(c_int) :: c2e_size_1
 
-      integer(c_int), value :: e2c_size_0
+      integer(c_int) :: e2c_size_0
 
-      integer(c_int), value :: e2c_size_1
+      integer(c_int) :: e2c_size_1
 
-      integer(c_int), value :: c2e2c_size_0
+      integer(c_int) :: c2e2c_size_0
 
-      integer(c_int), value :: c2e2c_size_1
+      integer(c_int) :: c2e2c_size_1
 
-      integer(c_int), value :: e2c2e_size_0
+      integer(c_int) :: e2c2e_size_0
 
-      integer(c_int), value :: e2c2e_size_1
+      integer(c_int) :: e2c2e_size_1
 
-      integer(c_int), value :: e2v_size_0
+      integer(c_int) :: e2v_size_0
 
-      integer(c_int), value :: e2v_size_1
+      integer(c_int) :: e2v_size_1
 
-      integer(c_int), value :: v2e_size_0
+      integer(c_int) :: v2e_size_0
 
-      integer(c_int), value :: v2e_size_1
+      integer(c_int) :: v2e_size_1
 
-      integer(c_int), value :: v2c_size_0
+      integer(c_int) :: v2c_size_0
 
-      integer(c_int), value :: v2c_size_1
+      integer(c_int) :: v2c_size_1
 
-      integer(c_int), value :: e2c2v_size_0
+      integer(c_int) :: e2c2v_size_0
 
-      integer(c_int), value :: e2c2v_size_1
+      integer(c_int) :: e2c2v_size_1
 
-      integer(c_int), value :: c2v_size_0
+      integer(c_int) :: c2v_size_0
 
-      integer(c_int), value :: c2v_size_1
+      integer(c_int) :: c2v_size_1
 
-      integer(c_int), value :: c_owner_mask_size_0
+      integer(c_int) :: c_owner_mask_size_0
 
-      integer(c_int), value :: e_owner_mask_size_0
+      integer(c_int) :: e_owner_mask_size_0
 
-      integer(c_int), value :: v_owner_mask_size_0
+      integer(c_int) :: v_owner_mask_size_0
 
-      integer(c_int), value :: c_glb_index_size_0
+      integer(c_int) :: c_glb_index_size_0
 
-      integer(c_int), value :: e_glb_index_size_0
+      integer(c_int) :: e_glb_index_size_0
 
-      integer(c_int), value :: v_glb_index_size_0
+      integer(c_int) :: v_glb_index_size_0
 
       integer(c_int) :: rc  ! Stores the return code
       ! ptrs

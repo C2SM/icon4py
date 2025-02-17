@@ -365,15 +365,47 @@ def grid_init_diffusion(
     vertical_size: gtx.int32,
     limited_area: bool,
 ):
+    on_gpu = config_settings.device == settings.Device.GPU
+    xp = c2e.array_ns
+
+    # TODO(havogt): add direct support for ndarrays in py2fgen
+    cell_starts = cell_starts.ndarray
+    cell_ends = cell_ends.ndarray
+    vertex_starts = vertex_starts.ndarray
+    vertex_ends = vertex_ends.ndarray
+    edge_starts = edge_starts.ndarray
+    edge_ends = edge_ends.ndarray
+    c_owner_mask = c_owner_mask.ndarray
+    e_owner_mask = e_owner_mask.ndarray
+    v_owner_mask = v_owner_mask.ndarray
+    c_glb_index = c_glb_index.ndarray
+    e_glb_index = e_glb_index.ndarray
+    v_glb_index = v_glb_index.ndarray
+
+    if on_gpu:
+        cp = xp
+        cell_starts = cp.asnumpy(cell_starts)
+        cell_ends = cp.asnumpy(cell_ends)
+        vertex_starts = cp.asnumpy(vertex_starts)
+        vertex_ends = cp.asnumpy(vertex_ends)
+        edge_starts = cp.asnumpy(edge_starts)
+        edge_ends = cp.asnumpy(edge_ends)
+        c_owner_mask = cp.asnumpy(c_owner_mask)
+        e_owner_mask = cp.asnumpy(e_owner_mask)
+        v_owner_mask = cp.asnumpy(v_owner_mask)
+        c_glb_index = cp.asnumpy(c_glb_index)
+        e_glb_index = cp.asnumpy(e_glb_index)
+        v_glb_index = cp.asnumpy(v_glb_index)
+
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
     diffusion_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
-        cell_starts=cell_starts.ndarray,
-        cell_ends=cell_ends.ndarray,
-        vertex_starts=vertex_starts.ndarray,
-        vertex_ends=vertex_ends.ndarray,
-        edge_starts=edge_starts.ndarray,
-        edge_ends=edge_ends.ndarray,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         c2e=c2e.ndarray,
         e2c=e2c.ndarray,
         c2e2c=c2e2c.ndarray,
@@ -390,7 +422,7 @@ def grid_init_diffusion(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=config_settings.device == settings.Device.GPU,
+        on_gpu=on_gpu,
     )
 
     if config_settings.parallel_run:
@@ -400,12 +432,12 @@ def grid_init_diffusion(
             decomposition_info,
             exchange_runtime,
         ) = wrapper_common.construct_decomposition(
-            c_glb_index.ndarray,
-            e_glb_index.ndarray,
-            v_glb_index.ndarray,
-            c_owner_mask.ndarray,
-            e_owner_mask.ndarray,
-            v_owner_mask.ndarray,
+            c_glb_index,
+            e_glb_index,
+            v_glb_index,
+            c_owner_mask,
+            e_owner_mask,
+            v_owner_mask,
             num_cells,
             num_edges,
             num_vertices,
