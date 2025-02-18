@@ -19,7 +19,25 @@ def _compute_first_vertical_derivative(
     z_exner_ic: fa.CellKField[vpfloat],
     inv_ddqz_z_full: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_06."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_06.
+
+    # scidoc:
+    # Outputs:
+    #  - z_dexner_dz_c_1 :
+    #     $$
+    #     \exnerprimedz{\ntilde}{\c}{\k} \approx \frac{\exnerprime{\ntilde}{\c}{\k-1/2} - \exnerprime{\ntilde}{\c}{\k+1/2}}{\Dz{\k}}, \quad \k \in [\max(1,\nflatlev), \nlev]
+    #     $$
+    #     Use the interpolated values to compute the vertical derivative
+    #     of perturbation exner at full levels.
+    #
+    # Inputs:
+    #  - $\exnerprime{\ntilde}{\c}{\k\pm1/2}$ : z_exner_ic
+    #  - $1 / \Dz{\k}$ : inv_ddqz_z_full
+    #
+
+
+    """
     z_dexner_dz_c_1 = (z_exner_ic - z_exner_ic(Koff[1])) * inv_ddqz_z_full
     return z_dexner_dz_c_1
 

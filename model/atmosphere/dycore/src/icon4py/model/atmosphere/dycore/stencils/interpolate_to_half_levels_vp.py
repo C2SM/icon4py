@@ -29,6 +29,25 @@ def _interpolate_to_half_levels_vp(
         interpolant: CellDim variables at full levels
     Returns:
         CellDim variables at half levels
+
+
+    # scidoc:
+    # Outputs:
+    #  - interpolation_to_half_levels :
+    #     $$
+    #     \exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
+    #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
+    #     $$
+    #     Interpolate the perturbation exner from full to half levels.
+    #     The ground level is based on quadratic extrapolation (with
+    #     hydrostatic assumption?).
+    # Inputs:
+    #  - $\Wlev$ : wgtfac_c
+    #  - $\Wlev_{\k}$ : wgtfacq_c
+    #  - $\exnerprime{\ntilde}{\c}{\k}$ : interpolant
+    #
+
+
     """
     interpolation_to_half_levels_vp = wgtfac_c * interpolant + (
         vpfloat("1.0") - wgtfac_c

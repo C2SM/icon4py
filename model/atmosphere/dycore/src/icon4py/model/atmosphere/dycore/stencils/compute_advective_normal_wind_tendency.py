@@ -35,7 +35,39 @@ def _compute_advective_normal_wind_tendency(
     vn_ie: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
-    """Formerly known as _mo_velocity_advection_stencil_19."""
+    """
+    Formerly known as _mo_velocity_advection_stencil_19.
+
+    # scidoc:
+    # Outputs:
+    #  - ddt_vn_apc_pc[ntnd] :
+    #     $$
+    #     \advvn{\n}{\e}{\k} &&= \pdxn{\kinehori{}{}{}} + \vt{}{}{} (\vortvert{}{}{} + \coriolis{}) + \pdz{\vn{}{}{}} (\w{}{}{} - \wcc{}{}{}) \\
+    #                        &&= \Gradn_{\offProv{e2c}} \Cgrad \kinehori{\n}{c}{\k} + \kinehori{\n}{\e}{\k} \Gradn_{\offProv{e2c}} \Cgrad     \\
+    #                        &&+ \vt{\n}{\e}{\k} (\coriolis{\e} + 1/2 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k})                             \\
+    #                        &&+ \frac{\vn{\n}{\e}{\k-1/2} - \vn{\n}{\e}{\k+1/2}}{\Dz{k}}
+    #                            \sum_{\offProv{e2c}} \Whor (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k})
+    #     $$
+    #     Compute the advective tendency of the normal wind (eq. 13 in
+    #     |ICONdycorePaper|).
+    #     The edge-normal derivative of the kinetic energy is computed by
+    #     combining the first order approximation across adiacent cell
+    #     centres (eq. 7 in |BonaventuraRingler2005|) with the edge value of
+    #     the kinetic energy (TODO: this needs explaining and a reference).
+    #
+    # Inputs:
+    #  - $\Cgrad$ : coeff_gradekin
+    #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
+    #  - $\kinehori{\n}{\c}{\k}$ : z_ekinh
+    #  - $\vt{\n}{\e}{\k}$ : vt
+    #  - $\coriolis{\e}$ : f_e
+    #  - $\vortvert{\n}{\v}{\k}$ : zeta
+    #  - $\Whor$ : c_lin_e
+    #  - $(\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k})$ : z_w_con_c_full
+    #  - $\vn{\n}{\e}{\k\pm1/2}$ : vn_ie
+    #  - $\Dz{\k}$ : ddqz_z_full_e
+    #
+    """
     vt_wp, z_w_con_c_full_wp, ddqz_z_full_e_wp = astype(
         (vt, z_w_con_c_full, ddqz_z_full_e), wpfloat
     )

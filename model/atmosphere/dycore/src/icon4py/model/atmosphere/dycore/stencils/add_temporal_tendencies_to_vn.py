@@ -24,7 +24,27 @@ def _add_temporal_tendencies_to_vn(
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> fa.EdgeKField[wpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_24."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_24.
+
+    # scidoc:
+    # Outputs:
+    #  - vn :
+    #     $$
+    #     \vn{\n+1^*}{\e}{\k} = \vn{\n}{\e}{\k} - \Dt \left( \advvn{\n}{\e}{\k} + \cpd \vpotemp{\n}{\e}{\k} \exnerprimegradh{\ntilde}{\e}{\k} \right)
+    #     $$
+    #     Update the normal wind speed with the advection and pressure
+    #     gradient terms.
+    #
+    # Inputs:
+    #  - $\vn{\n}{\e}{\k}$ : vn
+    #  - $\Dt$ : dtime
+    #  - $\advvn{\n}{\e}{\k}$ : ddt_vn_apc_pc[self.ntl1]
+    #  - $\vpotemp{\n}{\e}{\k}$ : z_theta_v_e
+    #  - $\exnerprimegradh{\ntilde}{\e}{\k}$ : z_gradh_exner
+    #  - $\cpd$ : CPD
+    #
+    """
     z_gradh_exner_wp = astype(z_gradh_exner, wpfloat)
 
     vn_nnew_wp = vn_nnow + dtime * (
