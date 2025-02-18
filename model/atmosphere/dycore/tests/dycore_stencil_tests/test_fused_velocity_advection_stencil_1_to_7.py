@@ -200,7 +200,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base_grid.BaseGrid):
+    def input_data(self, grid: base_grid.BaseGrid) -> dict:
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
@@ -219,7 +219,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         z_v_grad_w = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
 
-        k = data_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
+        k = data_alloc.index_field(grid=grid, dim=dims.KDim, extend={dims.KDim: 1})
 
         edge = data_alloc.zero_field(grid, dims.EdgeDim, dtype=gtx.int32)
         for e in range(grid.num_edges):
@@ -233,16 +233,8 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
-        lateral_boundary_7 = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-            if hasattr(grid, "start_index")
-            else 0
-        )
-        halo_1 = (
-            grid.end_index(edge_domain(h_grid.Zone.HALO))
-            if hasattr(grid, "end_index")
-            else grid.num_edges
-        )
+        lateral_boundary_7 = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+        halo_1 = grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         horizontal_start = 0
         horizontal_end = grid.num_edges

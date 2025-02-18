@@ -641,11 +641,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_zdiff_gradp_dsl_np)
 
-        compute_coeff_gradekin_np = factory.NumpyFieldsProvider(
+        coeff_gradekin = factory.NumpyFieldsProvider(
             func=functools.partial(
                 compute_coeff_gradekin.compute_coeff_gradekin, array_ns=self._xp
             ),
-            domain=(dims.EdgeDim,),
+            domain=(dims.ECDim,),
             fields=(attrs.COEFF_GRADEKIN,),
             deps={
                 "edge_cell_length": geometry_attrs.EDGE_CELL_DISTANCE,
@@ -658,7 +658,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "horizontal_end": self._grid.num_edges,
             },
         )
-        self.register_provider(compute_coeff_gradekin_np)
+        self.register_provider(coeff_gradekin)
 
         compute_wgtfacq_c = factory.NumpyFieldsProvider(
             func=functools.partial(compute_wgtfacq.compute_wgtfacq_c_dsl, array_ns=self._xp),

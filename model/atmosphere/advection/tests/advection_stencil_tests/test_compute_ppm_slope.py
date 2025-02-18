@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.compute_ppm_slope import (
     compute_ppm_slope,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -28,7 +30,12 @@ class TestComputePpmSlope(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_cc: np.array, p_cellhgt_mc_now: np.array, k: np.array, elev: gtx.int32, **kwargs
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_cc: np.ndarray,
+        p_cellhgt_mc_now: np.ndarray,
+        k: np.ndarray,
+        elev: gtx.int32,
+        **kwargs: Any,
     ) -> dict:
         zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
             p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
@@ -60,13 +67,13 @@ class TestComputePpmSlope(helpers.StencilTest):
         return dict(z_slope=z_slope)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         z_slope = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         p_cellhgt_mc_now = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
         )
-        k = data_alloc.allocate_indices(dims.KDim, grid, is_halfdim=True, dtype=gtx.int32)
+        k = data_alloc.index_field(grid, dims.KDim, extend={dims.KDim: 1})
 
         elev = k[-2].as_scalar()
         return dict(
