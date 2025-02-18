@@ -471,7 +471,7 @@ def test_velocity_corrector_step(
     ],
 )
 @pytest.mark.parametrize("istep_init", [1, 2])
-@pytest.mark.parametrize("substep_init", [1, 1])
+@pytest.mark.parametrize("substep_init", [1])
 def test_velocity_fused_1_7(
     icon_grid,
     grid_savepoint,
@@ -589,7 +589,9 @@ def test_velocity_fused_1_7(
         # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep", [1, 2])
+@pytest.mark.parametrize("istep_init", [1, 2])
+@pytest.mark.parametrize("substep_init", [1])
+@pytest.mark.parametrize("substep_exit", [1])
 def test_velocity_fused_8_13(
     icon_grid,
     grid_savepoint,
@@ -597,7 +599,9 @@ def test_velocity_fused_8_13(
     savepoint_velocity_8_13_exit,
     metrics_savepoint,
     interpolation_savepoint,
-    istep,
+    istep_init,
+    substep_init,
+    substep_exit,
     step_date_init,
     step_date_exit,
     backend,
@@ -619,7 +623,7 @@ def test_velocity_fused_8_13(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    k = data_alloc.index_field(dim=dims.KHalfDim, grid=icon_grid, backend=backend)
     cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
@@ -640,7 +644,7 @@ def test_velocity_fused_8_13(
         z_w_con_c=z_w_con_c,
         k=k,
         cell=cell,
-        istep=istep,
+        istep=istep_init,
         nlev=icon_grid.num_levels,
         nflatlev=nflatlev,
         lateral_boundary_3=lateral_boundary_3,
@@ -657,7 +661,7 @@ def test_velocity_fused_8_13(
         },
     )
     assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy())
-    assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy())
+    assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
     assert helpers.dallclose(z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy())
 
 
@@ -669,7 +673,9 @@ def test_velocity_fused_8_13(
         # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep", [1, 2])
+@pytest.mark.parametrize("istep_init", [1, 2])
+@pytest.mark.parametrize("substep_init", [1])
+@pytest.mark.parametrize("substep_exit", [1])
 def test_velocity_fused_15_18(
     icon_grid,
     grid_savepoint,
@@ -682,7 +688,9 @@ def test_velocity_fused_15_18(
     savepoint_velocity_init,
     step_date_init,
     step_date_exit,
-    istep,
+    substep_init,
+    substep_exit,
+    istep_init,
 ):
     z_w_con_c = savepoint_velocity_15_18_init.z_w_con_c()
     w = savepoint_velocity_15_18_init.w()
@@ -694,7 +702,9 @@ def test_velocity_fused_15_18(
 
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
-    e_bln_c_s = interpolation_savepoint.e_bln_c_s()
+    e_bln_c_s = data_alloc.flatten_first_two_dims(
+        dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+    )
     cfl_clipping = savepoint_velocity_exit.cfl_clipping()
     owner_mask = grid_savepoint.c_owner_mask()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
@@ -719,7 +729,7 @@ def test_velocity_fused_15_18(
     dtime = 2.0
     start_cell_lateral_boundary = (
         icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
-        if istep == 1
+        if istep_init == 1
         else icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
     )
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
@@ -775,13 +785,15 @@ def test_velocity_fused_15_18(
     ],
 )
 @pytest.mark.parametrize("istep_init", [1, 2])
-@pytest.mark.parametrize("substep_init", [1, 1])
+@pytest.mark.parametrize("substep_init", [1])
 def test_velocity_fused_19_20(
     icon_grid,
     grid_savepoint,
     savepoint_velocity_19_20_init,
     savepoint_velocity_19_20_exit,
+    savepoint_velocity_15_18_init,
     interpolation_savepoint,
+    savepoint_nonhydro_init,
     metrics_savepoint,
     backend,
     savepoint_velocity_init,
@@ -796,7 +808,7 @@ def test_velocity_fused_19_20(
     vt = savepoint_velocity_19_20_init.vt()
     z_w_con_c_full = savepoint_velocity_19_20_init.z_w_con_c_full()
     vn_ie = savepoint_velocity_19_20_init.vn_ie()
-    levelmask = savepoint_velocity_19_20_init.levelmask()
+    levelmask = savepoint_velocity_15_18_init.levmask()
     ddt_vn_apc = savepoint_velocity_19_20_init.ddt_vn_apc()
 
     geofac_rot = interpolation_savepoint.geofac_rot()
@@ -820,7 +832,7 @@ def test_velocity_fused_19_20(
     start_edge_nudging_level_2 =icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    d_time = 2.0
+    d_time = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
     extra_diffu = True
     nrdmax = grid_savepoint.nrdmax()
 
@@ -876,4 +888,4 @@ def test_velocity_fused_19_20(
         },
     )
 
-    assert helpers.dallclose(ddt_vn_apc_ref.asnumpy(), ddt_vn_apc.asnumpy())
+    assert helpers.dallclose(ddt_vn_apc_ref.asnumpy(), ddt_vn_apc.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
