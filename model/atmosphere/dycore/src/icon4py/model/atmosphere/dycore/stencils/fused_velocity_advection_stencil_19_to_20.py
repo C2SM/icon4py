@@ -79,27 +79,28 @@ def _fused_velocity_advection_stencil_19_to_20(
             ddt_vn_apc,
         )
 
-
-
     ddt_vn_apc =  where(
-            (maximum(2, nrdmax - 2) <= k < nlev - 3) & (start_edge_nudging_level_2 <= edge < end_edge_local),
-            _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-                levelmask,
-                c_lin_e,
-                z_w_con_c_full,
-                ddqz_z_full_e,
-                area_edge,
-                tangent_orientation,
-                inv_primal_edge_length,
-                zeta,
-                geofac_grdiv,
-                vn,
-                ddt_vn_apc,
-                cfl_w_limit,
-                scalfac_exdiff,
-                d_time,
-            ),
-            ddt_vn_apc,
+            (maximum(2, nrdmax - 2) <= k < nlev - 3),
+                where((start_edge_nudging_level_2 <= edge < end_edge_local),
+                    _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
+                        levelmask,
+                        c_lin_e,
+                        z_w_con_c_full,
+                        ddqz_z_full_e,
+                        area_edge,
+                        tangent_orientation,
+                        inv_primal_edge_length,
+                        zeta,
+                        geofac_grdiv,
+                        vn,
+                        ddt_vn_apc,
+                        cfl_w_limit,
+                        scalfac_exdiff,
+                        d_time,
+                    ),
+                    ddt_vn_apc
+                ),
+            ddt_vn_apc
         )
         # if extra_diffu
         # else ddt_vn_apc
