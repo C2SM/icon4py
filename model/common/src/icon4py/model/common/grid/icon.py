@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-import enum
 import functools
 import logging
 import uuid
@@ -22,29 +21,19 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 log = logging.getLogger(__name__)
 
 
-class GeometryType(enum.Enum):
-    """Define geometries of the horizontal domain supported by the ICON grid.
-
-    Values are the same as mo_grid_geometry_info.f90.
-    """
-
-    SPHERE = 1
-    TORUS = 2
-
-
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
     root: int
     level: int
-    geometry_type: Final[GeometryType] = GeometryType.SPHERE
+    geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
     radius = constants.EARTH_RADIUS
 
     @functools.cached_property
     def num_cells(self):
         match self.geometry_type:
-            case GeometryType.SPHERE:
+            case base.GeometryType.ICOSAHEDRON:
                 return compute_icosahedron_num_cells(self.root, self.level)
-            case GeometryType.TORUS:
+            case base.GeometryType.TORUS:
                 return compute_torus_num_cells(1000, 1000)
             case _:
                 NotImplementedError(f"Unknown gemoetry type {self.geometry_type}")
@@ -157,6 +146,10 @@ class IconGrid(base.BaseGrid):
         and returns the local number of cells.
         """
         return self.global_properties.num_cells if self.global_properties else self.num_cells
+
+    @property
+    def geometry_type(self) -> base.GeometryType:
+        return self.global_properties.geometry_type
 
     @property
     def num_vertices(self):

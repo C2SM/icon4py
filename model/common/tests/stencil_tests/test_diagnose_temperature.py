@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
+
 import gt4py.next as gtx
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from icon4py.model.common import constants as phy_const, dimension as dims, type
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
     diagnose_virtual_temperature_and_temperature,
 )
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import helpers
 
@@ -23,16 +26,16 @@ class TestDiagnoseTemperature(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        qv: np.array,
-        qc: np.array,
-        qi: np.array,
-        qr: np.array,
-        qs: np.array,
-        qg: np.array,
-        theta_v: np.array,
-        exner: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        qv: np.ndarray,
+        qc: np.ndarray,
+        qi: np.ndarray,
+        qr: np.ndarray,
+        qs: np.ndarray,
+        qg: np.ndarray,
+        theta_v: np.ndarray,
+        exner: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
         qsum = qc + qi + qr + qs + qg
         virtual_temperature = theta_v * exner
@@ -43,7 +46,7 @@ class TestDiagnoseTemperature(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid) -> dict:
         theta_v = data_alloc.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, high=1.0, dtype=ta.wpfloat
         )

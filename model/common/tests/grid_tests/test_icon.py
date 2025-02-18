@@ -17,14 +17,19 @@ from icon4py.model.common.grid import (
     icon,
     vertical as v_grid,
 )
-from icon4py.model.testing import grid_utils as gridtest_utils
+from icon4py.model.testing import datatest_utils as dt_utils, grid_utils as gridtest_utils
 
 from . import utils
 
 
 @functools.cache
 def grid_from_file() -> icon.IconGrid:
-    file_name = gridtest_utils.resolve_full_grid_file_name("mch_ch_r04b09_dsl")
+    return from_file(dt_utils.REGIONAL_EXPERIMENT)
+
+
+@functools.cache
+def from_file(filename: str) -> icon.IconGrid:
+    file_name = gridtest_utils.resolve_full_grid_file_name(filename)
     manager = gm.GridManager(
         gm.ToZeroBasedIndexTransformation(), str(file_name), v_grid.VerticalGridConfig(1)
     )
@@ -129,7 +134,7 @@ def test_nudging(icon_grid, source, dim, marker):
     # working around the fact that fixtures cannot be used in parametrized functions
     grid = icon_grid if source == "serialbox" else grid_from_file()
     num = int(next(iter(re.findall(r"\d+", marker.value))))
-    if dim == dims.VertexDim or dim == dims.CellDim and num > 1:
+    if dim == dims.VertexDim or (dim == dims.CellDim and num > 1):
         with pytest.raises(AssertionError) as e:
             h_grid.domain(dim)(marker)
             e.match(f"Invalid marker '{marker}' for dimension")
@@ -159,3 +164,9 @@ def test_grid_size(icon_grid):
     assert 10663 == icon_grid.size[dims.VertexDim]
     assert 20896 == icon_grid.size[dims.CellDim]
     assert 31558 == icon_grid.size[dims.EdgeDim]
+
+
+@pytest.mark.parametrize("grid_file", (dt_utils.REGIONAL_EXPERIMENT, dt_utils.R02B04_GLOBAL))
+def test_has_skip_values(grid_file):
+    grid = from_file(grid_file)
+    assert grid.has_skip_values()
