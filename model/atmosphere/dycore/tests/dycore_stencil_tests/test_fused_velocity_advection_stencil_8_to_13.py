@@ -13,7 +13,8 @@ import pytest
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import (
     fused_velocity_advection_stencil_8_to_13,
 )
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -38,22 +39,34 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        z_kin_hor_e,
-        e_bln_c_s,
-        z_w_concorr_me,
-        wgtfac_c,
-        w,
-        z_w_concorr_mc,
-        w_concorr_c,
-        z_ekinh,
-        k,
-        istep,
-        nlev,
-        nflatlev,
-        z_w_con_c,
-        **kwargs,
-    ):
+        z_kin_hor_e: np.ndarray,
+        e_bln_c_s: np.ndarray,
+        z_w_concorr_me: np.ndarray,
+        wgtfac_c: np.ndarray,
+        w: np.ndarray,
+        z_w_concorr_mc: np.ndarray,
+        w_concorr_c: np.ndarray,
+        z_ekinh: np.ndarray,
+        k: np.ndarray,
+        cell: np.ndarray,
+        istep: int,
+        nlev: ta.wpfloat,
+        nflatlev: ta.wpfloat,
+        z_w_con_c: np.ndarray,
+        lateral_boundary_4: int,
+        lateral_boundary_3: int,
+        end_halo: int,
+        horizontal_start: int,
+        horizontal_end: int,
+        vertical_start: int,
+        vertical_end: int,
+    ) -> dict:
+        lateral_boundary = lateral_boundary_4 if istep == 1 else lateral_boundary_3
         k_nlev = k[:-1]
+
+        z_ekinh_cp = z_ekinh.copy()
+        w_concorr_c_cp = w_concorr_c.copy()
+        z_w_con_c_cp = z_w_con_c.copy()
 
         z_ekinh = np.where(
             k_nlev < nlev,
@@ -83,11 +96,14 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
             correct_contravariant_vertical_velocity_numpy(z_w_con_c[:, :-1], w_concorr_c),
             z_w_con_c[:, :-1],
         )
+        z_ekinh_cp[lateral_boundary:end_halo, :] = z_ekinh[lateral_boundary:end_halo, :]
+        w_concorr_c_cp[lateral_boundary:end_halo, :] = w_concorr_c[lateral_boundary:end_halo, :]
+        z_w_con_c_cp[lateral_boundary:end_halo, :] = z_w_con_c[lateral_boundary:end_halo, :]
 
         return dict(
-            z_ekinh=z_ekinh,
-            w_concorr_c=w_concorr_c,
-            z_w_con_c=z_w_con_c,
+            z_ekinh=z_ekinh_cp,
+            w_concorr_c=w_concorr_c_cp,
+            z_w_con_c=z_w_con_c_cp,
         )
 
     @pytest.fixture
@@ -102,12 +118,28 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         z_w_con_c = data_alloc.zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
-        k = data_alloc.index_field(grid=grid, dim=dims.KDim, extend={dims.KDim: 1})
+        k = data_alloc.index_field(dim=dims.KDim, grid=grid, extend={dims.KDim: 1})
+        cell = data_alloc.index_field(dim=dims.CellDim, grid=grid)
 
         nlev = grid.num_levels
         nflatlev = 4
 
         istep = 1
+
+        cell_domain = h_grid.domain(dims.CellDim)
+        lateral_boundary_3 = (
+            grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        lateral_boundary_4 = (
+            grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        end_halo = (
+            grid.end_index(cell_domain(h_grid.Zone.HALO)) if hasattr(grid, "end_index") else 0
+        )
 
         horizontal_start = 0
         horizontal_end = grid.num_cells
@@ -125,9 +157,13 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
             z_ekinh=z_ekinh,
             z_w_con_c=z_w_con_c,
             k=k,
+            cell=cell,
             istep=istep,
             nlev=nlev,
             nflatlev=nflatlev,
+            lateral_boundary_4=lateral_boundary_4,
+            lateral_boundary_3=lateral_boundary_3,
+            end_halo=end_halo,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=vertical_start,
