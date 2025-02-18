@@ -640,6 +640,7 @@ class InterpolationSavepoint(IconSavepoint):
         ).transpose()
         return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
 
+    # TODO nameing in icon-exclaim
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)
 
@@ -930,31 +931,31 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
 class IconDiffusionExitSavepoint(IconSavepoint):
     def vn(self):
-        return self._get_field("x_vn", dims.EdgeDim, dims.KDim)
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
 
     def theta_v(self):
-        return self._get_field("x_theta_v", dims.CellDim, dims.KDim)
+        return self._get_field("theta_v", dims.CellDim, dims.KDim)
 
     def w(self):
-        return self._get_field("x_w", dims.CellDim, dims.KDim)
+        return self._get_field("w", dims.CellDim, dims.KDim)
 
     def dwdx(self):
-        return self._get_field("x_dwdx", dims.CellDim, dims.KDim)
+        return self._get_field("dwdx", dims.CellDim, dims.KDim)
 
     def dwdy(self):
-        return self._get_field("x_dwdy", dims.CellDim, dims.KDim)
+        return self._get_field("dwdy", dims.CellDim, dims.KDim)
 
     def exner(self):
-        return self._get_field("x_exner", dims.CellDim, dims.KDim)
+        return self._get_field("exner", dims.CellDim, dims.KDim)
 
     def z_temp(self):
-        return self._get_field("x_z_temp", dims.CellDim, dims.KDim)
+        return self._get_field("z_temp", dims.CellDim, dims.KDim)
 
     def div_ic(self):
-        return self._get_field("x_div_ic", dims.CellDim, dims.KDim)
+        return self._get_field("div_ic", dims.CellDim, dims.KDim)
 
     def hdef_ic(self):
-        return self._get_field("x_hdef_ic", dims.CellDim, dims.KDim)
+        return self._get_field("hdef_ic", dims.CellDim, dims.KDim)
 
 
 class IconNonHydroInitSavepoint(IconSavepoint):
@@ -1939,7 +1940,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_nonhydro_step_exit(
+    def from_savepoint_nonhydro_step_final(
         self, date: str, substep: int
     ) -> IconNonHydroFinalSavepoint:
         savepoint = (

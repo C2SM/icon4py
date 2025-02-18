@@ -45,7 +45,7 @@ def test_run_solve_nonhydro_single_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+        savepoint_nonhydro_step_final,
     processor_props,  # : F811 fixture
     decomposition_info,  # : F811 fixture
     backend,
@@ -76,7 +76,7 @@ def test_run_solve_nonhydro_single_step(
 
     config = utils.construct_solve_nh_config(experiment, ndyn=ndyn_substeps)
     sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_exit
+    sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,

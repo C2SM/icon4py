@@ -36,8 +36,6 @@ from icon4py.model.testing.datatest_fixtures import (
     interpolation_savepoint,
     istep_exit,
     istep_init,
-    jstep_exit,
-    jstep_init,
     lowest_layer_thickness,
     maximal_layer_thickness,
     metrics_savepoint,
@@ -47,13 +45,12 @@ from icon4py.model.testing.datatest_fixtures import (
     ranked_data_path,
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     savepoint_velocity_init,
     step_date_exit,
     step_date_init,
     stretch_factor,
     top_height_limit_for_maximal_layer_thickness,
-    vn_only,
 )
 
 
@@ -88,7 +85,7 @@ __all__ = [
     "ranked_data_path",
     "savepoint_nonhydro_exit",
     "savepoint_nonhydro_init",
-    "savepoint_nonhydro_step_exit",
+    "savepoint_nonhydro_step_final",
     "savepoint_velocity_init",
     "step_date_exit",
     "step_date_init",

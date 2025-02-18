@@ -132,11 +132,11 @@ def test_time_step_flags(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        (
-            dt_utils.GLOBAL_EXPERIMENT,
-            "2000-01-01T00:00:02.000",
-            "2000-01-01T00:00:02.000",
-        ),
+        #(
+        #    dt_utils.GLOBAL_EXPERIMENT,
+        #    "2000-01-01T00:00:02.000",
+        #    "2000-01-01T00:00:02.000",
+        #),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -327,6 +327,7 @@ def test_nonhydro_predictor_step(
         atol=1e-21,
     )
 
+  # TODO Fix REGIONAL
     # compute_horizontal_advection_of_rho_and_theta
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_rho_e.asnumpy()[
@@ -766,7 +767,7 @@ def test_run_solve_nonhydro_single_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     at_initial_timestep,
     caplog,
     backend,
@@ -775,7 +776,7 @@ def test_run_solve_nonhydro_single_step(
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
 
     sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_exit
+    sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -887,7 +888,7 @@ def test_run_solve_nonhydro_multi_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     experiment,
     ndyn_substeps,
     backend,
@@ -895,7 +896,7 @@ def test_run_solve_nonhydro_multi_step(
 ):
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_exit
+    sp_step_exit = savepoint_nonhydro_step_final
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,

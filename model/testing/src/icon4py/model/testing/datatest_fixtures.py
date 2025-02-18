@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-import numpy as np
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -238,7 +237,7 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
 
 
 @pytest.fixture
-def savepoint_nonhydro_step_exit(data_provider, step_date_exit, substep_exit):
+def savepoint_nonhydro_step_final(data_provider, step_date_exit, substep_exit):
     """
     Load data from ICON savepoint at final exit of subroutine nh_solve in mo_solve_nonhydro.f90.
     (after predictor and corrector and 3 final stencils have run).
@@ -247,19 +246,10 @@ def savepoint_nonhydro_step_exit(data_provider, step_date_exit, substep_exit):
     - date: <iso_string> of the simulation timestep
     - substep: dynamical substep
     """
-    return data_provider.from_savepoint_nonhydro_step_exit(
+    return data_provider.from_savepoint_nonhydro_step_final(
         date=step_date_exit, substep=substep_exit
     )
 
-def test_field_generation(data_provider, step_date_exit, substep_exit):
-    sp = data_provider.from_savepoint_nonhydro_step_exit(
-        date=step_date_exit, substep=substep_exit
-    )
-    print(type(sp))
-    print(sp.__dict__)
-    ser = sp.serializer
-
-    assert np.allclose(sp.exner().asnumpy(), sp.exner_new().asnumpy())
 
 
 
