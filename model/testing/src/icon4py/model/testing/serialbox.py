@@ -26,8 +26,9 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 
 log = logging.getLogger(__name__)
 
-TimeLevel: TypeAlias = Literal[0, 1]
-Level: TypeAlias = Literal[0, 1, 2, 3]
+TimeIndex: TypeAlias = Literal[0, 1]
+FourIndex: TypeAlias = Literal[0, 1, 2, 3]
+TwoIndex: TypeAlias = Literal[0, 1]
 
 
 class IconSavepoint:
@@ -640,7 +641,6 @@ class InterpolationSavepoint(IconSavepoint):
         ).transpose()
         return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer, allocator=self.backend)
 
-    # TODO nameing in icon-exclaim
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", dims.VertexDim, dims.V2EDim)
 
@@ -1195,13 +1195,13 @@ class IconNonHydroExitSavepoint(IconSavepoint):
     def z_exner_ic(self):
         return self._get_field("z_exner_ic", dims.CellDim, dims.KDim)
 
-    def z_dexner_dz_c(self, ntnd: TimeLevel):
+    def z_dexner_dz_c(self, ntnd: TimeIndex):
         return self._get_field_component("z_dexner_dz_c", ntnd, (dims.CellDim, dims.KDim))
 
-    def z_rth_pr(self, ind: Level):
+    def z_rth_pr(self, ind: TwoIndex):
         return self._get_field_component("z_rth_pr", ind, (dims.CellDim, dims.KDim))
 
-    def z_grad_rth(self, ind: Level):
+    def z_grad_rth(self, ind: FourIndex):
         return self._get_field_component("z_grad_rth", ind, (dims.CellDim, dims.KDim))
 
     def z_th_ddz_exner_c(self):
@@ -1268,10 +1268,10 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
 
-    def ddt_vn_apc_pc(self, ntnd: TimeLevel):
+    def ddt_vn_apc_pc(self, ntnd: TimeIndex):
         return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
 
-    def ddt_w_adv_pc(self, ntnd: TimeLevel):
+    def ddt_w_adv_pc(self, ntnd: TimeIndex):
         return self._get_field_component("ddt_w_adv_pc", ntnd, (dims.CellDim, dims.KDim))
 
     def vn(self):
@@ -1303,10 +1303,10 @@ class IconVelocityExitSavepoint(IconSavepoint):
     def max_vcfl_dyn(self):
         return self.serializer.read("max_vcfl_dyn", self.savepoint)[0]
 
-    def ddt_vn_apc_pc(self, ntnd: TimeLevel):
+    def ddt_vn_apc_pc(self, ntnd: TimeIndex):
         return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
 
-    def ddt_w_adv_pc(self, ntnd: TimeLevel):
+    def ddt_w_adv_pc(self, ntnd: TimeIndex):
         return self._get_field_component("ddt_w_adv_pc", ntnd, (dims.CellDim, dims.KDim))
 
     def vn(self):
