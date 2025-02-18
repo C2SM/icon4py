@@ -733,7 +733,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-        savepoint_nonhydro_step_final,
+    savepoint_nonhydro_step_final,
     caplog,
     icon_grid,
     at_initial_timestep,

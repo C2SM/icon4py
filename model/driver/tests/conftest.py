@@ -72,8 +72,6 @@ __all__ = [
     "interpolation_savepoint",
     "istep_exit",
     "istep_init",
-    "jstep_exit",
-    "jstep_init",
     "lowest_layer_thickness",
     "maximal_layer_thickness",
     "metrics_savepoint",
@@ -89,7 +87,6 @@ __all__ = [
     "step_date_init",
     "stretch_factor",
     "top_height_limit_for_maximal_layer_thickness",
-    "vn_only",
 ]
 
 

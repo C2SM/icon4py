@@ -50,7 +50,6 @@ def test_verify_velocity_init_against_savepoint(
     experiment,
     backend,
 ):
-
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
     vertical_config = v_grid.VerticalGridConfig(

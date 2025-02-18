@@ -118,7 +118,6 @@ def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
-
 def create_icon_serial_data_provider(
     datapath, processor_props, backend: Optional[gtx_backend.Backend]
 ):
@@ -132,4 +131,3 @@ def create_icon_serial_data_provider(
         mpi_rank=processor_props.rank,
         do_print=True,
     )
-

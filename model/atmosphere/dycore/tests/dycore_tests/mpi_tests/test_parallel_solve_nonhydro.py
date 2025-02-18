@@ -45,7 +45,7 @@ def test_run_solve_nonhydro_single_step(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-        savepoint_nonhydro_step_final,
+    savepoint_nonhydro_step_final,
     processor_props,  # : F811 fixture
     decomposition_info,  # : F811 fixture
     backend,

@@ -132,11 +132,11 @@ def test_time_step_flags(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        #(
+        # (
         #    dt_utils.GLOBAL_EXPERIMENT,
         #    "2000-01-01T00:00:02.000",
         #    "2000-01-01T00:00:02.000",
-        #),
+        # ),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -327,7 +327,7 @@ def test_nonhydro_predictor_step(
         atol=1e-21,
     )
 
-  # TODO Fix REGIONAL
+    # TODO Fix REGIONAL
     # compute_horizontal_advection_of_rho_and_theta
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_rho_e.asnumpy()[

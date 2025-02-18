@@ -59,7 +59,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
         ).name
         if processor_props.rank == 0:
             data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
-    
+
         if processor_props.comm:
             processor_props.comm.barrier()
     except KeyError as err:
@@ -249,8 +249,6 @@ def savepoint_nonhydro_step_final(data_provider, step_date_exit, substep_exit):
     return data_provider.from_savepoint_nonhydro_step_final(
         date=step_date_exit, substep=substep_exit
     )
-
-
 
 
 @pytest.fixture
