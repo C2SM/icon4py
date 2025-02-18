@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 import numpy as np
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from gt4py.next.program_processors.runners.dace import run_dace_cpu
 
 from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
@@ -87,7 +87,7 @@ def test_solve_tridiagonal_matrix_for_w_forward_sweep():
     v_start = 1
     v_end = gtx.int32(grid.num_levels)
     # TODO we run this test with the C++ backend as the `embedded` backend doesn't handle this pattern
-    solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(run_gtfn)(
+    solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(run_dace_cpu)(
         vwind_impl_wgt=vwind_impl_wgt,
         theta_v_ic=theta_v_ic,
         ddqz_z_half=ddqz_z_half,
