@@ -304,9 +304,6 @@ def diffusion_run(
         rho=rho,
     )
 
-    backend = (
-        config_settings.icon4py_backend
-    )  # TODO(havogt): construction on each call is a performance problem
     if hdef_ic is None:
         hdef_ic = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
     if div_ic is None:
