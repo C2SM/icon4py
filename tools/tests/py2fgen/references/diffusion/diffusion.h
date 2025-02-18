@@ -1,3 +1,11 @@
+extern int diffusion_run_wrapper(
+    double *w, int w_size_0, int w_size_1, double *vn, int vn_size_0,
+    int vn_size_1, double *exner, int exner_size_0, int exner_size_1,
+    double *theta_v, int theta_v_size_0, int theta_v_size_1, double *rho,
+    int rho_size_0, int rho_size_1, double *hdef_ic, int hdef_ic_size_0,
+    int hdef_ic_size_1, double *div_ic, int div_ic_size_0, int div_ic_size_1,
+    double *dwdx, int dwdx_size_0, int dwdx_size_1, double *dwdy,
+    int dwdy_size_0, int dwdy_size_1, double dtime, int linit);
 extern int diffusion_init_wrapper(
     double *vct_a, int vct_a_size_0, double *vct_b, int vct_b_size_0,
     double *theta_ref_mc, int theta_ref_mc_size_0, int theta_ref_mc_size_1,
@@ -46,14 +54,6 @@ extern int diffusion_init_wrapper(
     double *primal_normal_y, int primal_normal_y_size_0, int global_root,
     int global_level, double lowest_layer_thickness, double model_top_height,
     double stretch_factor);
-extern int diffusion_run_wrapper(
-    double *w, int w_size_0, int w_size_1, double *vn, int vn_size_0,
-    int vn_size_1, double *exner, int exner_size_0, int exner_size_1,
-    double *theta_v, int theta_v_size_0, int theta_v_size_1, double *rho,
-    int rho_size_0, int rho_size_1, double *hdef_ic, int hdef_ic_size_0,
-    int hdef_ic_size_1, double *div_ic, int div_ic_size_0, int div_ic_size_1,
-    double *dwdx, int dwdx_size_0, int dwdx_size_1, double *dwdy,
-    int dwdy_size_0, int dwdy_size_1, double dtime, int linit);
 extern int grid_init_diffusion_wrapper(
     int *cell_starts, int cell_starts_size_0, int *cell_ends,
     int cell_ends_size_0, int *vertex_starts, int vertex_starts_size_0,

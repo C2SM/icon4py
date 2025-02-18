@@ -1,7 +1,7 @@
 # imports for generated wrapper code
 import logging
 
-from diffusion_plugin import ffi
+from diffusion import ffi
 import cupy as cp
 import gt4py.next as gtx
 from gt4py.next.type_system import type_specifications as ts
@@ -16,8 +16,8 @@ logging.basicConfig(level=logging.DEBUG, format=log_format, datefmt="%Y-%m-%d %H
 logging.info(cp.show_config())
 
 # embedded function imports
-from icon4py.tools.py2fgen.wrappers.diffusion_wrapper import diffusion_init
 from icon4py.tools.py2fgen.wrappers.diffusion_wrapper import diffusion_run
+from icon4py.tools.py2fgen.wrappers.diffusion_wrapper import diffusion_init
 from icon4py.tools.py2fgen.wrappers.diffusion_wrapper import grid_init_diffusion
 
 
@@ -36,12 +36,166 @@ Edge = gtx.Dimension("Edge", kind=gtx.DimensionKind.HORIZONTAL)
 EdgeGlobalIndex = gtx.Dimension("EdgeGlobalIndex", kind=gtx.DimensionKind.HORIZONTAL)
 EdgeIndex = gtx.Dimension("EdgeIndex", kind=gtx.DimensionKind.HORIZONTAL)
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
-KHalf = gtx.Dimension("KHalf", kind=gtx.DimensionKind.VERTICAL)
 V2C = gtx.Dimension("V2C", kind=gtx.DimensionKind.LOCAL)
 V2E = gtx.Dimension("V2E", kind=gtx.DimensionKind.LOCAL)
 Vertex = gtx.Dimension("Vertex", kind=gtx.DimensionKind.HORIZONTAL)
 VertexGlobalIndex = gtx.Dimension("VertexGlobalIndex", kind=gtx.DimensionKind.HORIZONTAL)
 VertexIndex = gtx.Dimension("VertexIndex", kind=gtx.DimensionKind.HORIZONTAL)
+
+
+@ffi.def_extern()
+def diffusion_run_wrapper(
+    w,
+    w_size_0,
+    w_size_1,
+    vn,
+    vn_size_0,
+    vn_size_1,
+    exner,
+    exner_size_0,
+    exner_size_1,
+    theta_v,
+    theta_v_size_0,
+    theta_v_size_1,
+    rho,
+    rho_size_0,
+    rho_size_1,
+    hdef_ic,
+    hdef_ic_size_0,
+    hdef_ic_size_1,
+    div_ic,
+    div_ic_size_0,
+    div_ic_size_1,
+    dwdx,
+    dwdx_size_0,
+    dwdx_size_1,
+    dwdy,
+    dwdy_size_0,
+    dwdy_size_1,
+    dtime,
+    linit,
+):
+    try:
+        logging.info("Python Execution Context Start")
+
+        # Convert ptr to GT4Py fields
+
+        w = wrapper_utils.as_field(
+            ffi, xp, w, ts.ScalarKind.FLOAT64, {Cell: w_size_0, K: w_size_1}, False
+        )
+
+        vn = wrapper_utils.as_field(
+            ffi, xp, vn, ts.ScalarKind.FLOAT64, {Edge: vn_size_0, K: vn_size_1}, False
+        )
+
+        exner = wrapper_utils.as_field(
+            ffi, xp, exner, ts.ScalarKind.FLOAT64, {Cell: exner_size_0, K: exner_size_1}, False
+        )
+
+        theta_v = wrapper_utils.as_field(
+            ffi,
+            xp,
+            theta_v,
+            ts.ScalarKind.FLOAT64,
+            {Cell: theta_v_size_0, K: theta_v_size_1},
+            False,
+        )
+
+        rho = wrapper_utils.as_field(
+            ffi, xp, rho, ts.ScalarKind.FLOAT64, {Cell: rho_size_0, K: rho_size_1}, False
+        )
+
+        hdef_ic = wrapper_utils.as_field(
+            ffi, xp, hdef_ic, ts.ScalarKind.FLOAT64, {Cell: hdef_ic_size_0, K: hdef_ic_size_1}, True
+        )
+
+        div_ic = wrapper_utils.as_field(
+            ffi, xp, div_ic, ts.ScalarKind.FLOAT64, {Cell: div_ic_size_0, K: div_ic_size_1}, True
+        )
+
+        dwdx = wrapper_utils.as_field(
+            ffi, xp, dwdx, ts.ScalarKind.FLOAT64, {Cell: dwdx_size_0, K: dwdx_size_1}, True
+        )
+
+        dwdy = wrapper_utils.as_field(
+            ffi, xp, dwdy, ts.ScalarKind.FLOAT64, {Cell: dwdy_size_0, K: dwdy_size_1}, True
+        )
+
+        assert isinstance(linit, int)
+        linit = linit != 0
+
+        diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime, linit)
+
+        # debug info
+
+        msg = "shape of w after computation = %s" % str(w.shape if w is not None else "None")
+        logging.debug(msg)
+        msg = "w after computation: %s" % str(w.ndarray if w is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of vn after computation = %s" % str(vn.shape if vn is not None else "None")
+        logging.debug(msg)
+        msg = "vn after computation: %s" % str(vn.ndarray if vn is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of exner after computation = %s" % str(
+            exner.shape if exner is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "exner after computation: %s" % str(exner.ndarray if exner is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of theta_v after computation = %s" % str(
+            theta_v.shape if theta_v is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "theta_v after computation: %s" % str(
+            theta_v.ndarray if theta_v is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of rho after computation = %s" % str(rho.shape if rho is not None else "None")
+        logging.debug(msg)
+        msg = "rho after computation: %s" % str(rho.ndarray if rho is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of hdef_ic after computation = %s" % str(
+            hdef_ic.shape if hdef_ic is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "hdef_ic after computation: %s" % str(
+            hdef_ic.ndarray if hdef_ic is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of div_ic after computation = %s" % str(
+            div_ic.shape if div_ic is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "div_ic after computation: %s" % str(div_ic.ndarray if div_ic is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of dwdx after computation = %s" % str(
+            dwdx.shape if dwdx is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "dwdx after computation: %s" % str(dwdx.ndarray if dwdx is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of dwdy after computation = %s" % str(
+            dwdy.shape if dwdy is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "dwdy after computation: %s" % str(dwdy.ndarray if dwdy is not None else "None")
+        logging.debug(msg)
+
+        logging.critical("Python Execution Context End")
+
+    except Exception as e:
+        logging.exception(f"A Python error occurred: {e}")
+        return 1
+
+    return 0
 
 
 @ffi.def_extern()
@@ -848,161 +1002,6 @@ def diffusion_init_wrapper(
         msg = "primal_normal_y after computation: %s" % str(
             primal_normal_y.ndarray if primal_normal_y is not None else "None"
         )
-        logging.debug(msg)
-
-        logging.critical("Python Execution Context End")
-
-    except Exception as e:
-        logging.exception(f"A Python error occurred: {e}")
-        return 1
-
-    return 0
-
-
-@ffi.def_extern()
-def diffusion_run_wrapper(
-    w,
-    w_size_0,
-    w_size_1,
-    vn,
-    vn_size_0,
-    vn_size_1,
-    exner,
-    exner_size_0,
-    exner_size_1,
-    theta_v,
-    theta_v_size_0,
-    theta_v_size_1,
-    rho,
-    rho_size_0,
-    rho_size_1,
-    hdef_ic,
-    hdef_ic_size_0,
-    hdef_ic_size_1,
-    div_ic,
-    div_ic_size_0,
-    div_ic_size_1,
-    dwdx,
-    dwdx_size_0,
-    dwdx_size_1,
-    dwdy,
-    dwdy_size_0,
-    dwdy_size_1,
-    dtime,
-    linit,
-):
-    try:
-        logging.info("Python Execution Context Start")
-
-        # Convert ptr to GT4Py fields
-
-        w = wrapper_utils.as_field(
-            ffi, xp, w, ts.ScalarKind.FLOAT64, {Cell: w_size_0, K: w_size_1}, False
-        )
-
-        vn = wrapper_utils.as_field(
-            ffi, xp, vn, ts.ScalarKind.FLOAT64, {Edge: vn_size_0, K: vn_size_1}, False
-        )
-
-        exner = wrapper_utils.as_field(
-            ffi, xp, exner, ts.ScalarKind.FLOAT64, {Cell: exner_size_0, K: exner_size_1}, False
-        )
-
-        theta_v = wrapper_utils.as_field(
-            ffi,
-            xp,
-            theta_v,
-            ts.ScalarKind.FLOAT64,
-            {Cell: theta_v_size_0, K: theta_v_size_1},
-            False,
-        )
-
-        rho = wrapper_utils.as_field(
-            ffi, xp, rho, ts.ScalarKind.FLOAT64, {Cell: rho_size_0, K: rho_size_1}, False
-        )
-
-        hdef_ic = wrapper_utils.as_field(
-            ffi, xp, hdef_ic, ts.ScalarKind.FLOAT64, {Cell: hdef_ic_size_0, K: hdef_ic_size_1}, True
-        )
-
-        div_ic = wrapper_utils.as_field(
-            ffi, xp, div_ic, ts.ScalarKind.FLOAT64, {Cell: div_ic_size_0, K: div_ic_size_1}, True
-        )
-
-        dwdx = wrapper_utils.as_field(
-            ffi, xp, dwdx, ts.ScalarKind.FLOAT64, {Cell: dwdx_size_0, K: dwdx_size_1}, True
-        )
-
-        dwdy = wrapper_utils.as_field(
-            ffi, xp, dwdy, ts.ScalarKind.FLOAT64, {Cell: dwdy_size_0, K: dwdy_size_1}, True
-        )
-
-        assert isinstance(linit, int)
-        linit = linit != 0
-
-        diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime, linit)
-
-        # debug info
-
-        msg = "shape of w after computation = %s" % str(w.shape if w is not None else "None")
-        logging.debug(msg)
-        msg = "w after computation: %s" % str(w.ndarray if w is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of vn after computation = %s" % str(vn.shape if vn is not None else "None")
-        logging.debug(msg)
-        msg = "vn after computation: %s" % str(vn.ndarray if vn is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of exner after computation = %s" % str(
-            exner.shape if exner is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "exner after computation: %s" % str(exner.ndarray if exner is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of theta_v after computation = %s" % str(
-            theta_v.shape if theta_v is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "theta_v after computation: %s" % str(
-            theta_v.ndarray if theta_v is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of rho after computation = %s" % str(rho.shape if rho is not None else "None")
-        logging.debug(msg)
-        msg = "rho after computation: %s" % str(rho.ndarray if rho is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of hdef_ic after computation = %s" % str(
-            hdef_ic.shape if hdef_ic is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "hdef_ic after computation: %s" % str(
-            hdef_ic.ndarray if hdef_ic is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of div_ic after computation = %s" % str(
-            div_ic.shape if div_ic is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "div_ic after computation: %s" % str(div_ic.ndarray if div_ic is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of dwdx after computation = %s" % str(
-            dwdx.shape if dwdx is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "dwdx after computation: %s" % str(dwdx.ndarray if dwdx is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of dwdy after computation = %s" % str(
-            dwdy.shape if dwdy is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "dwdy after computation: %s" % str(dwdy.ndarray if dwdy is not None else "None")
         logging.debug(msg)
 
         logging.critical("Python Execution Context End")

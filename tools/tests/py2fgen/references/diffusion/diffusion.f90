@@ -1,14 +1,106 @@
-module diffusion_plugin
+module diffusion
    use, intrinsic :: iso_c_binding
    implicit none
 
-   public :: diffusion_init
-
    public :: diffusion_run
+
+   public :: diffusion_init
 
    public :: grid_init_diffusion
 
    interface
+
+      function diffusion_run_wrapper(w, &
+                                     w_size_0, &
+                                     w_size_1, &
+                                     vn, &
+                                     vn_size_0, &
+                                     vn_size_1, &
+                                     exner, &
+                                     exner_size_0, &
+                                     exner_size_1, &
+                                     theta_v, &
+                                     theta_v_size_0, &
+                                     theta_v_size_1, &
+                                     rho, &
+                                     rho_size_0, &
+                                     rho_size_1, &
+                                     hdef_ic, &
+                                     hdef_ic_size_0, &
+                                     hdef_ic_size_1, &
+                                     div_ic, &
+                                     div_ic_size_0, &
+                                     div_ic_size_1, &
+                                     dwdx, &
+                                     dwdx_size_0, &
+                                     dwdx_size_1, &
+                                     dwdy, &
+                                     dwdy_size_0, &
+                                     dwdy_size_1, &
+                                     dtime, &
+                                     linit) bind(c, name="diffusion_run_wrapper") result(rc)
+         import :: c_int, c_double, c_bool, c_ptr
+         integer(c_int) :: rc  ! Stores the return code
+
+         type(c_ptr), value, target :: w
+
+         integer(c_int), value :: w_size_0
+
+         integer(c_int), value :: w_size_1
+
+         type(c_ptr), value, target :: vn
+
+         integer(c_int), value :: vn_size_0
+
+         integer(c_int), value :: vn_size_1
+
+         type(c_ptr), value, target :: exner
+
+         integer(c_int), value :: exner_size_0
+
+         integer(c_int), value :: exner_size_1
+
+         type(c_ptr), value, target :: theta_v
+
+         integer(c_int), value :: theta_v_size_0
+
+         integer(c_int), value :: theta_v_size_1
+
+         type(c_ptr), value, target :: rho
+
+         integer(c_int), value :: rho_size_0
+
+         integer(c_int), value :: rho_size_1
+
+         type(c_ptr), value, target :: hdef_ic
+
+         integer(c_int), value :: hdef_ic_size_0
+
+         integer(c_int), value :: hdef_ic_size_1
+
+         type(c_ptr), value, target :: div_ic
+
+         integer(c_int), value :: div_ic_size_0
+
+         integer(c_int), value :: div_ic_size_1
+
+         type(c_ptr), value, target :: dwdx
+
+         integer(c_int), value :: dwdx_size_0
+
+         integer(c_int), value :: dwdx_size_1
+
+         type(c_ptr), value, target :: dwdy
+
+         integer(c_int), value :: dwdy_size_0
+
+         integer(c_int), value :: dwdy_size_1
+
+         real(c_double), value, target :: dtime
+
+         logical(c_int), value, target :: linit
+
+      end function diffusion_run_wrapper
 
       function diffusion_init_wrapper(vct_a, &
                                       vct_a_size_0, &
@@ -375,98 +467,6 @@ module diffusion_plugin
 
       end function diffusion_init_wrapper
 
-      function diffusion_run_wrapper(w, &
-                                     w_size_0, &
-                                     w_size_1, &
-                                     vn, &
-                                     vn_size_0, &
-                                     vn_size_1, &
-                                     exner, &
-                                     exner_size_0, &
-                                     exner_size_1, &
-                                     theta_v, &
-                                     theta_v_size_0, &
-                                     theta_v_size_1, &
-                                     rho, &
-                                     rho_size_0, &
-                                     rho_size_1, &
-                                     hdef_ic, &
-                                     hdef_ic_size_0, &
-                                     hdef_ic_size_1, &
-                                     div_ic, &
-                                     div_ic_size_0, &
-                                     div_ic_size_1, &
-                                     dwdx, &
-                                     dwdx_size_0, &
-                                     dwdx_size_1, &
-                                     dwdy, &
-                                     dwdy_size_0, &
-                                     dwdy_size_1, &
-                                     dtime, &
-                                     linit) bind(c, name="diffusion_run_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
-         integer(c_int) :: rc  ! Stores the return code
-
-         type(c_ptr), value, target :: w
-
-         integer(c_int), value :: w_size_0
-
-         integer(c_int), value :: w_size_1
-
-         type(c_ptr), value, target :: vn
-
-         integer(c_int), value :: vn_size_0
-
-         integer(c_int), value :: vn_size_1
-
-         type(c_ptr), value, target :: exner
-
-         integer(c_int), value :: exner_size_0
-
-         integer(c_int), value :: exner_size_1
-
-         type(c_ptr), value, target :: theta_v
-
-         integer(c_int), value :: theta_v_size_0
-
-         integer(c_int), value :: theta_v_size_1
-
-         type(c_ptr), value, target :: rho
-
-         integer(c_int), value :: rho_size_0
-
-         integer(c_int), value :: rho_size_1
-
-         type(c_ptr), value, target :: hdef_ic
-
-         integer(c_int), value :: hdef_ic_size_0
-
-         integer(c_int), value :: hdef_ic_size_1
-
-         type(c_ptr), value, target :: div_ic
-
-         integer(c_int), value :: div_ic_size_0
-
-         integer(c_int), value :: div_ic_size_1
-
-         type(c_ptr), value, target :: dwdx
-
-         integer(c_int), value :: dwdx_size_0
-
-         integer(c_int), value :: dwdx_size_1
-
-         type(c_ptr), value, target :: dwdy
-
-         integer(c_int), value :: dwdy_size_0
-
-         integer(c_int), value :: dwdy_size_1
-
-         real(c_double), value, target :: dtime
-
-         logical(c_int), value, target :: linit
-
-      end function diffusion_run_wrapper
-
       function grid_init_diffusion_wrapper(cell_starts, &
                                            cell_starts_size_0, &
                                            cell_ends, &
@@ -652,6 +652,186 @@ module diffusion_plugin
    end interface
 
 contains
+
+   subroutine diffusion_run(w, &
+                            vn, &
+                            exner, &
+                            theta_v, &
+                            rho, &
+                            hdef_ic, &
+                            div_ic, &
+                            dwdx, &
+                            dwdy, &
+                            dtime, &
+                            linit, &
+                            rc)
+      use, intrinsic :: iso_c_binding
+
+      real(c_double), dimension(:, :), target :: w
+
+      real(c_double), dimension(:, :), target :: vn
+
+      real(c_double), dimension(:, :), target :: exner
+
+      real(c_double), dimension(:, :), target :: theta_v
+
+      real(c_double), dimension(:, :), target :: rho
+
+      real(c_double), dimension(:, :), pointer :: hdef_ic
+
+      real(c_double), dimension(:, :), pointer :: div_ic
+
+      real(c_double), dimension(:, :), pointer :: dwdx
+
+      real(c_double), dimension(:, :), pointer :: dwdy
+
+      real(c_double), value, target :: dtime
+
+      logical(c_int), value, target :: linit
+
+      integer(c_int) :: w_size_0
+
+      integer(c_int) :: w_size_1
+
+      integer(c_int) :: vn_size_0
+
+      integer(c_int) :: vn_size_1
+
+      integer(c_int) :: exner_size_0
+
+      integer(c_int) :: exner_size_1
+
+      integer(c_int) :: theta_v_size_0
+
+      integer(c_int) :: theta_v_size_1
+
+      integer(c_int) :: rho_size_0
+
+      integer(c_int) :: rho_size_1
+
+      integer(c_int) :: hdef_ic_size_0
+
+      integer(c_int) :: hdef_ic_size_1
+
+      integer(c_int) :: div_ic_size_0
+
+      integer(c_int) :: div_ic_size_1
+
+      integer(c_int) :: dwdx_size_0
+
+      integer(c_int) :: dwdx_size_1
+
+      integer(c_int) :: dwdy_size_0
+
+      integer(c_int) :: dwdy_size_1
+
+      integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
+
+      type(c_ptr) :: hdef_ic_ptr
+
+      type(c_ptr) :: div_ic_ptr
+
+      type(c_ptr) :: dwdx_ptr
+
+      type(c_ptr) :: dwdy_ptr
+
+      hdef_ic_ptr = c_null_ptr
+
+      div_ic_ptr = c_null_ptr
+
+      dwdx_ptr = c_null_ptr
+
+      dwdy_ptr = c_null_ptr
+
+      !$acc host_data use_device(w)
+      !$acc host_data use_device(vn)
+      !$acc host_data use_device(exner)
+      !$acc host_data use_device(theta_v)
+      !$acc host_data use_device(rho)
+      !$acc host_data use_device(hdef_ic) if(associated(hdef_ic))
+      !$acc host_data use_device(div_ic) if(associated(div_ic))
+      !$acc host_data use_device(dwdx) if(associated(dwdx))
+      !$acc host_data use_device(dwdy) if(associated(dwdy))
+
+      w_size_0 = SIZE(w, 1)
+      w_size_1 = SIZE(w, 2)
+
+      vn_size_0 = SIZE(vn, 1)
+      vn_size_1 = SIZE(vn, 2)
+
+      exner_size_0 = SIZE(exner, 1)
+      exner_size_1 = SIZE(exner, 2)
+
+      theta_v_size_0 = SIZE(theta_v, 1)
+      theta_v_size_1 = SIZE(theta_v, 2)
+
+      rho_size_0 = SIZE(rho, 1)
+      rho_size_1 = SIZE(rho, 2)
+
+      if (associated(hdef_ic)) then
+         hdef_ic_ptr = c_loc(hdef_ic)
+         hdef_ic_size_0 = SIZE(hdef_ic, 1)
+         hdef_ic_size_1 = SIZE(hdef_ic, 2)
+      end if
+
+      if (associated(div_ic)) then
+         div_ic_ptr = c_loc(div_ic)
+         div_ic_size_0 = SIZE(div_ic, 1)
+         div_ic_size_1 = SIZE(div_ic, 2)
+      end if
+
+      if (associated(dwdx)) then
+         dwdx_ptr = c_loc(dwdx)
+         dwdx_size_0 = SIZE(dwdx, 1)
+         dwdx_size_1 = SIZE(dwdx, 2)
+      end if
+
+      if (associated(dwdy)) then
+         dwdy_ptr = c_loc(dwdy)
+         dwdy_size_0 = SIZE(dwdy, 1)
+         dwdy_size_1 = SIZE(dwdy, 2)
+      end if
+
+      rc = diffusion_run_wrapper(w=c_loc(w), &
+                                 w_size_0=w_size_0, &
+                                 w_size_1=w_size_1, &
+                                 vn=c_loc(vn), &
+                                 vn_size_0=vn_size_0, &
+                                 vn_size_1=vn_size_1, &
+                                 exner=c_loc(exner), &
+                                 exner_size_0=exner_size_0, &
+                                 exner_size_1=exner_size_1, &
+                                 theta_v=c_loc(theta_v), &
+                                 theta_v_size_0=theta_v_size_0, &
+                                 theta_v_size_1=theta_v_size_1, &
+                                 rho=c_loc(rho), &
+                                 rho_size_0=rho_size_0, &
+                                 rho_size_1=rho_size_1, &
+                                 hdef_ic=hdef_ic_ptr, &
+                                 hdef_ic_size_0=hdef_ic_size_0, &
+                                 hdef_ic_size_1=hdef_ic_size_1, &
+                                 div_ic=div_ic_ptr, &
+                                 div_ic_size_0=div_ic_size_0, &
+                                 div_ic_size_1=div_ic_size_1, &
+                                 dwdx=dwdx_ptr, &
+                                 dwdx_size_0=dwdx_size_0, &
+                                 dwdx_size_1=dwdx_size_1, &
+                                 dwdy=dwdy_ptr, &
+                                 dwdy_size_0=dwdy_size_0, &
+                                 dwdy_size_1=dwdy_size_1, &
+                                 dtime=dtime, &
+                                 linit=linit)
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+   end subroutine diffusion_run
 
    subroutine diffusion_init(vct_a, &
                              vct_b, &
@@ -1280,186 +1460,6 @@ contains
       !$acc end host_data
       !$acc end host_data
    end subroutine diffusion_init
-
-   subroutine diffusion_run(w, &
-                            vn, &
-                            exner, &
-                            theta_v, &
-                            rho, &
-                            hdef_ic, &
-                            div_ic, &
-                            dwdx, &
-                            dwdy, &
-                            dtime, &
-                            linit, &
-                            rc)
-      use, intrinsic :: iso_c_binding
-
-      real(c_double), dimension(:, :), target :: w
-
-      real(c_double), dimension(:, :), target :: vn
-
-      real(c_double), dimension(:, :), target :: exner
-
-      real(c_double), dimension(:, :), target :: theta_v
-
-      real(c_double), dimension(:, :), target :: rho
-
-      real(c_double), dimension(:, :), pointer :: hdef_ic
-
-      real(c_double), dimension(:, :), pointer :: div_ic
-
-      real(c_double), dimension(:, :), pointer :: dwdx
-
-      real(c_double), dimension(:, :), pointer :: dwdy
-
-      real(c_double), value, target :: dtime
-
-      logical(c_int), value, target :: linit
-
-      integer(c_int) :: w_size_0
-
-      integer(c_int) :: w_size_1
-
-      integer(c_int) :: vn_size_0
-
-      integer(c_int) :: vn_size_1
-
-      integer(c_int) :: exner_size_0
-
-      integer(c_int) :: exner_size_1
-
-      integer(c_int) :: theta_v_size_0
-
-      integer(c_int) :: theta_v_size_1
-
-      integer(c_int) :: rho_size_0
-
-      integer(c_int) :: rho_size_1
-
-      integer(c_int) :: hdef_ic_size_0
-
-      integer(c_int) :: hdef_ic_size_1
-
-      integer(c_int) :: div_ic_size_0
-
-      integer(c_int) :: div_ic_size_1
-
-      integer(c_int) :: dwdx_size_0
-
-      integer(c_int) :: dwdx_size_1
-
-      integer(c_int) :: dwdy_size_0
-
-      integer(c_int) :: dwdy_size_1
-
-      integer(c_int) :: rc  ! Stores the return code
-      ! ptrs
-
-      type(c_ptr) :: hdef_ic_ptr
-
-      type(c_ptr) :: div_ic_ptr
-
-      type(c_ptr) :: dwdx_ptr
-
-      type(c_ptr) :: dwdy_ptr
-
-      hdef_ic_ptr = c_null_ptr
-
-      div_ic_ptr = c_null_ptr
-
-      dwdx_ptr = c_null_ptr
-
-      dwdy_ptr = c_null_ptr
-
-      !$acc host_data use_device(w)
-      !$acc host_data use_device(vn)
-      !$acc host_data use_device(exner)
-      !$acc host_data use_device(theta_v)
-      !$acc host_data use_device(rho)
-      !$acc host_data use_device(hdef_ic) if(associated(hdef_ic))
-      !$acc host_data use_device(div_ic) if(associated(div_ic))
-      !$acc host_data use_device(dwdx) if(associated(dwdx))
-      !$acc host_data use_device(dwdy) if(associated(dwdy))
-
-      w_size_0 = SIZE(w, 1)
-      w_size_1 = SIZE(w, 2)
-
-      vn_size_0 = SIZE(vn, 1)
-      vn_size_1 = SIZE(vn, 2)
-
-      exner_size_0 = SIZE(exner, 1)
-      exner_size_1 = SIZE(exner, 2)
-
-      theta_v_size_0 = SIZE(theta_v, 1)
-      theta_v_size_1 = SIZE(theta_v, 2)
-
-      rho_size_0 = SIZE(rho, 1)
-      rho_size_1 = SIZE(rho, 2)
-
-      if (associated(hdef_ic)) then
-         hdef_ic_ptr = c_loc(hdef_ic)
-         hdef_ic_size_0 = SIZE(hdef_ic, 1)
-         hdef_ic_size_1 = SIZE(hdef_ic, 2)
-      end if
-
-      if (associated(div_ic)) then
-         div_ic_ptr = c_loc(div_ic)
-         div_ic_size_0 = SIZE(div_ic, 1)
-         div_ic_size_1 = SIZE(div_ic, 2)
-      end if
-
-      if (associated(dwdx)) then
-         dwdx_ptr = c_loc(dwdx)
-         dwdx_size_0 = SIZE(dwdx, 1)
-         dwdx_size_1 = SIZE(dwdx, 2)
-      end if
-
-      if (associated(dwdy)) then
-         dwdy_ptr = c_loc(dwdy)
-         dwdy_size_0 = SIZE(dwdy, 1)
-         dwdy_size_1 = SIZE(dwdy, 2)
-      end if
-
-      rc = diffusion_run_wrapper(w=c_loc(w), &
-                                 w_size_0=w_size_0, &
-                                 w_size_1=w_size_1, &
-                                 vn=c_loc(vn), &
-                                 vn_size_0=vn_size_0, &
-                                 vn_size_1=vn_size_1, &
-                                 exner=c_loc(exner), &
-                                 exner_size_0=exner_size_0, &
-                                 exner_size_1=exner_size_1, &
-                                 theta_v=c_loc(theta_v), &
-                                 theta_v_size_0=theta_v_size_0, &
-                                 theta_v_size_1=theta_v_size_1, &
-                                 rho=c_loc(rho), &
-                                 rho_size_0=rho_size_0, &
-                                 rho_size_1=rho_size_1, &
-                                 hdef_ic=hdef_ic_ptr, &
-                                 hdef_ic_size_0=hdef_ic_size_0, &
-                                 hdef_ic_size_1=hdef_ic_size_1, &
-                                 div_ic=div_ic_ptr, &
-                                 div_ic_size_0=div_ic_size_0, &
-                                 div_ic_size_1=div_ic_size_1, &
-                                 dwdx=dwdx_ptr, &
-                                 dwdx_size_0=dwdx_size_0, &
-                                 dwdx_size_1=dwdx_size_1, &
-                                 dwdy=dwdy_ptr, &
-                                 dwdy_size_0=dwdy_size_0, &
-                                 dwdy_size_1=dwdy_size_1, &
-                                 dtime=dtime, &
-                                 linit=linit)
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-   end subroutine diffusion_run
 
    subroutine grid_init_diffusion(cell_starts, &
                                   cell_ends, &
