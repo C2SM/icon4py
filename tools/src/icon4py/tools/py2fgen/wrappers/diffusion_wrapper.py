@@ -78,10 +78,10 @@ def profile_disable():
 
 
 def diffusion_init(
-    vct_a: gtx.Field[gtx.Dims[dims.KHalfDim], gtx.float64],
-    vct_b: gtx.Field[gtx.Dims[dims.KHalfDim], gtx.float64],
+    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
+    vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     theta_ref_mc: fa.CellKField[wpfloat],
-    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
@@ -226,9 +226,7 @@ def diffusion_init(
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
-    nlev = (
-        wgtfac_c.domain[dims.KDim].unit_range.stop - 1
-    )  # TODO(havogt): because of crazy KHalfDim hacks this actually refers to KHalfDim
+    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
     cell_k_domain = {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
     c2e2c_size = geofac_grg_x.domain[dims.C2E2CODim].unit_range.stop - 1
     cell_c2e2c_k_domain = {
@@ -285,15 +283,15 @@ def diffusion_init(
 
 
 def diffusion_run(
-    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn: fa.EdgeKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     rho: fa.CellKField[wpfloat],
-    hdef_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64]],
-    div_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64]],
-    dwdx: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64]],
-    dwdy: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64]],
+    hdef_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    div_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    dwdx: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    dwdy: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
     dtime: gtx.float64,
     linit: bool,
 ):
@@ -306,7 +304,9 @@ def diffusion_run(
         rho=rho,
     )
 
-    backend = diffusion_wrapper_state["granule"]._backend
+    backend = (
+        config_settings.icon4py_backend
+    )  # TODO(havogt): construction on each call is a performance problem
     if hdef_ic is None:
         hdef_ic = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
     if div_ic is None:
@@ -375,12 +375,12 @@ def grid_init_diffusion(
     vertex_ends = vertex_ends.ndarray
     edge_starts = edge_starts.ndarray
     edge_ends = edge_ends.ndarray
-    c_owner_mask = c_owner_mask.ndarray
-    e_owner_mask = e_owner_mask.ndarray
-    v_owner_mask = v_owner_mask.ndarray
-    c_glb_index = c_glb_index.ndarray
-    e_glb_index = e_glb_index.ndarray
-    v_glb_index = v_glb_index.ndarray
+    c_owner_mask = c_owner_mask.ndarray if c_owner_mask is not None else None
+    e_owner_mask = e_owner_mask.ndarray if e_owner_mask is not None else None
+    v_owner_mask = v_owner_mask.ndarray if v_owner_mask is not None else None
+    c_glb_index = c_glb_index.ndarray if c_glb_index is not None else None
+    e_glb_index = e_glb_index.ndarray if e_glb_index is not None else None
+    v_glb_index = v_glb_index.ndarray if v_glb_index is not None else None
 
     if on_gpu:
         cp = xp
@@ -390,12 +390,12 @@ def grid_init_diffusion(
         vertex_ends = cp.asnumpy(vertex_ends)
         edge_starts = cp.asnumpy(edge_starts)
         edge_ends = cp.asnumpy(edge_ends)
-        c_owner_mask = cp.asnumpy(c_owner_mask)
-        e_owner_mask = cp.asnumpy(e_owner_mask)
-        v_owner_mask = cp.asnumpy(v_owner_mask)
-        c_glb_index = cp.asnumpy(c_glb_index)
-        e_glb_index = cp.asnumpy(e_glb_index)
-        v_glb_index = cp.asnumpy(v_glb_index)
+        c_owner_mask = cp.asnumpy(c_owner_mask) if c_owner_mask is not None else None
+        e_owner_mask = cp.asnumpy(e_owner_mask) if e_owner_mask is not None else None
+        v_owner_mask = cp.asnumpy(v_owner_mask) if v_owner_mask is not None else None
+        c_glb_index = cp.asnumpy(c_glb_index) if c_glb_index is not None else None
+        e_glb_index = cp.asnumpy(e_glb_index) if e_glb_index is not None else None
+        v_glb_index = cp.asnumpy(v_glb_index) if v_glb_index is not None else None
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 

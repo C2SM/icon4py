@@ -69,6 +69,10 @@ class GT4PyBackend(Enum):
 
 @dataclasses.dataclass
 class Icon4PyConfig:
+    parallel_run: bool = dataclasses.field(
+        default_factory=lambda: env_flag_to_bool("ICON4PY_PARALLEL", True)
+    )
+
     @cached_property
     def icon4py_backend(self) -> str:
         backend = os.environ.get("ICON4PY_BACKEND", "CPU")
@@ -126,10 +130,6 @@ class Icon4PyConfig:
             }
         device = device_map[self.icon4py_backend]
         return device
-
-    @cached_property
-    def parallel_run(self) -> bool:
-        return env_flag_to_bool("ICON4PY_PARALLEL", True)
 
 
 config = Icon4PyConfig()
