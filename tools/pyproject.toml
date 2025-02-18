@@ -106,6 +106,7 @@ filename = "src/icon4py/tools/__init__.py"
 # -- ruff --
 [tool.ruff]
 extend = "../pyproject.toml"
+extend-exclude = ["tests/py2fgen/references/*"]
 
 [tool.ruff.lint.isort]
 known-first-party = ['icon4py']

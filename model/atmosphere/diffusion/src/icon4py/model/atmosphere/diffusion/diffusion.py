@@ -143,6 +143,7 @@ class DiffusionConfig:
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+        ltkeshs: bool = True,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
@@ -150,39 +151,39 @@ class DiffusionConfig:
         self.diffusion_type: int = diffusion_type
 
         #: If True, apply diffusion on the vertical wind field
-        #: Called `lhdiff_w` in mo_diffusion_nml.f90
+        #: Called 'lhdiff_w' in mo_diffusion_nml.f90
         self.apply_to_vertical_wind: bool = hdiff_w
 
         #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
-        #: Called `lhdiff_vn` in mo_diffusion_nml.f90
+        #: Called 'lhdiff_vn' in mo_diffusion_nml.f90
         self.apply_to_horizontal_wind = hdiff_vn
 
         #:  If True, apply horizontal diffusion to temperature field
-        #: Called `lhdiff_temp` in mo_diffusion_nml.f90
+        #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
         self.apply_to_temperature: bool = hdiff_temp
 
         #: If True, compute 3D Smagorinsky diffusion coefficient
-        #: Called `lsmag_3d` in mo_diffusion_nml.f90
+        #: Called 'lsmag_3d' in mo_diffusion_nml.f90
         self.compute_3d_smag_coeff: bool = smag_3d
 
         #: Options for discretizing the Smagorinsky momentum diffusion
-        #: Called `itype_vn_diffu` in mo_diffusion_nml.f90
+        #: Called 'itype_vn_diffu' in mo_diffusion_nml.f90
         self.type_vn_diffu: int = type_vn_diffu
 
         #: Options for discretizing the Smagorinsky temperature diffusion
-        #: Called `itype_t_diffu` inmo_diffusion_nml.f90
-        self.type_t_diffu = type_t_diffu
+        #: Called 'itype_t_diffu' in mo_diffusion_nml.f90
+        self.type_t_diffu: int = type_t_diffu
 
         #: Ratio of e-folding time to (2*)time step
-        #: Called `hdiff_efdt_ratio` inmo_diffusion_nml.f90
+        #: Called 'hdiff_efdt_ratio' in mo_diffusion_nml.f90
         self.hdiff_efdt_ratio: float = hdiff_efdt_ratio
 
         #: Ratio of e-folding time to time step for w diffusion (NH only)
-        #: Called `hdiff_w_efdt_ratio` inmo_diffusion_nml.f90.
+        #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
         self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
 
         #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
-        #: Called `hdiff_smag_fac` in mo_diffusion_nml.f90
+        #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
         self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
 
         #: If True, apply truly horizontal temperature diffusion over steep slopes
@@ -224,16 +225,20 @@ class DiffusionConfig:
         #:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called `nudge_max_coeff` in mo_interpol_nml.f90
+        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90
         self.nudge_max_coeff: float = max_nudging_coeff
 
         #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
-        #: Called `nudge_efold_width` in mo_interpol_nml.f90
+        #: Called 'nudge_efold_width' in mo_interpol_nml.f90
         self.nudge_efold_width: float = nudging_decay_rate
 
         #: Type of shear forcing used in turbulence
-        #: Called itype_shear in `mo_turbdiff_nml.f90
+        #: Called 'itype_shear' in mo_turbdiff_nml.f90
         self.shear_type = shear_type
+
+        #: Consider separate horizontal shear production in TKE-equation.
+        #: Called 'ltkeshs' in mo_turbdiff_nml.f90
+        self.ltkeshs = ltkeshs
 
         self._validate()
 
@@ -693,6 +698,7 @@ class Diffusion:
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+            or self.config.ltkeshs
         ):
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"

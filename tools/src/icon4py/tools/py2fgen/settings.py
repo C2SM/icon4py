@@ -69,6 +69,10 @@ class GT4PyBackend(Enum):
 
 @dataclasses.dataclass
 class Icon4PyConfig:
+    parallel_run: bool = dataclasses.field(
+        default_factory=lambda: env_flag_to_bool("ICON4PY_PARALLEL", True)
+    )
+
     @cached_property
     def icon4py_backend(self) -> str:
         backend = os.environ.get("ICON4PY_BACKEND", "CPU")
@@ -88,7 +92,7 @@ class Icon4PyConfig:
     @cached_property
     def array_ns(self) -> ModuleType:
         if self.device == Device.GPU:
-            import cupy as cp  # type: ignore[import-not-found]
+            import cupy as cp  # type: ignore # either `import-not-found` or `import-untyped`
 
             return cp
         else:
@@ -127,17 +131,8 @@ class Icon4PyConfig:
         device = device_map[self.icon4py_backend]
         return device
 
-    @cached_property
-    def limited_area(self) -> bool:
-        return env_flag_to_bool("ICON4PY_LAM", False)
-
-    @cached_property
-    def parallel_run(self) -> bool:
-        return env_flag_to_bool("ICON4PY_PARALLEL", False)
-
 
 config = Icon4PyConfig()
 backend = config.gt4py_runner
 dace_orchestration = config.icon4py_dace_orchestration
 device = config.device
-limited_area = config.limited_area

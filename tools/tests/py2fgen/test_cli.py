@@ -68,11 +68,10 @@ def run_test_case(
     compiler="gfortran",
     extra_compiler_flags=(),
     expected_error_code=0,
-    limited_area=False,
     env_vars=None,
 ):
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
-        invoke_cli(cli, module, function, plugin_name, backend, limited_area)
+        invoke_cli(cli, module, function, plugin_name, backend)
         compile_and_run_fortran(
             plugin_name,
             samples_path,
@@ -85,10 +84,8 @@ def run_test_case(
         )
 
 
-def invoke_cli(cli, module, function, plugin_name, backend, limited_area):
+def invoke_cli(cli, module, function, plugin_name, backend):
     cli_args = [module, function, plugin_name, "-b", backend, "-d"]
-    if limited_area:
-        cli_args.append("--limited-area")
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 
@@ -118,7 +115,7 @@ def compile_and_run_fortran(
         if expected_error_code == 0:
             assert "passed" in fortran_result.stdout, fortran_result.stderr
         else:
-            assert "failed" in fortran_result.stdout
+            assert "failed" in fortran_result.stdout, fortran_result.stderr
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
 
@@ -241,7 +238,6 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
         test_temp_dir,
         os.environ["NVFORTRAN_COMPILER"],
         ("-acc", "-Minfo=acc"),
-        limited_area=True,
         env_vars={"ICON4PY_BACKEND": "GPU"},
     )
 
@@ -257,7 +253,6 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, t
         samples_path,
         "test_diffusion",
         test_temp_dir,
-        limited_area=True,
     )
 
 
@@ -272,7 +267,6 @@ def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test
         samples_path,
         "test_dycore",
         test_temp_dir,
-        limited_area=True,
     )
 
 
@@ -289,6 +283,5 @@ def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path, 
         test_temp_dir,
         os.environ["NVFORTRAN_COMPILER"],
         ("-acc", "-Minfo=acc"),
-        limited_area=True,
         env_vars={"ICON4PY_BACKEND": "GPU"},
     )
