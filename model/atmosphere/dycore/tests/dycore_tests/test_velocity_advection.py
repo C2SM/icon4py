@@ -726,7 +726,7 @@ def test_velocity_fused_15_18(
 
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
-    dtime = 2.0
+    dtime = 5.0
     start_cell_lateral_boundary = (
         icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
         if istep_init == 1
