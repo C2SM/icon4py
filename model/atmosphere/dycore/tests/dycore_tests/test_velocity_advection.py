@@ -23,7 +23,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
-from icon4py.model.testing.datatest_fixtures import savepoint_velocity_exit
+from icon4py.model.testing.datatest_fixtures import savepoint_velocity_exit, savepoint_velocity_19_20_init
 
 from . import utils
 import gt4py.next as gtx
@@ -623,7 +623,7 @@ def test_velocity_fused_8_13(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    k = data_alloc.index_field(dim=dims.KHalfDim, grid=icon_grid, backend=backend)
+    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
@@ -660,7 +660,7 @@ def test_velocity_fused_8_13(
             "Koff": dims.KDim,
         },
     )
-    assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy())
+    assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
     assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
     assert helpers.dallclose(z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy())
 
@@ -791,9 +791,8 @@ def test_velocity_fused_19_20(
     grid_savepoint,
     savepoint_velocity_19_20_init,
     savepoint_velocity_19_20_exit,
-    savepoint_velocity_15_18_init,
     interpolation_savepoint,
-    savepoint_nonhydro_init,
+    #savepoint_nonhydro_init,
     metrics_savepoint,
     backend,
     savepoint_velocity_init,
@@ -808,7 +807,7 @@ def test_velocity_fused_19_20(
     vt = savepoint_velocity_19_20_init.vt()
     z_w_con_c_full = savepoint_velocity_19_20_init.z_w_con_c_full()
     vn_ie = savepoint_velocity_19_20_init.vn_ie()
-    levelmask = savepoint_velocity_15_18_init.levmask()
+    levelmask = savepoint_velocity_19_20_init.levelmask()
     ddt_vn_apc = savepoint_velocity_19_20_init.ddt_vn_apc()
 
     geofac_rot = interpolation_savepoint.geofac_rot()
@@ -832,7 +831,8 @@ def test_velocity_fused_19_20(
     start_edge_nudging_level_2 =icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    d_time = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
+    #d_time = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
+    d_time=5.0
     extra_diffu = True
     nrdmax = grid_savepoint.nrdmax()
 
