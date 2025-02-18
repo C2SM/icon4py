@@ -2129,12 +2129,13 @@ class IconSerialDataProvider:
         )
 
     def savepoint_velocity_19_20_init(
-        self, istep: int, vn_only: bool, date: str, jstep: int
+        self, istep: int, vn_only: bool, date: str, substep_init: int
     ) -> IconVelocityInit19to20Savepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-init"]
             .istep[istep]
             .date[date]
+            .dyn_timestep[substep_init]
             .as_savepoint()
         )
         return IconVelocityInit19to20Savepoint(
@@ -2156,13 +2157,13 @@ class IconSerialDataProvider:
         )
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
-        savepoint = self.serializer.savepoint["interpolation_state"].as_savepoint()
+        savepoint = self.serializer.savepoint["interpolation-state"].as_savepoint()
         return InterpolationSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
     def from_metrics_savepoint(self) -> MetricSavepoint:
-        savepoint = self.serializer.savepoint["metric_state"].as_savepoint()
+        savepoint = self.serializer.savepoint["metric-state"].as_savepoint()
         return MetricSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
@@ -2242,12 +2243,13 @@ class IconSerialDataProvider:
         )
 
     def savepoint_velocity_19_20_exit(
-        self, istep: int, vn_only: bool, date: str, jstep: int
+        self, istep: int, vn_only: bool, date: str, substep_init: int
     ) -> IconVelocityExit19to20Savepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-exit"]
             .istep[istep]
             .date[date]
+            .dyn_timestep[substep_init]
             .as_savepoint()
         )
         return IconVelocityExit19to20Savepoint(

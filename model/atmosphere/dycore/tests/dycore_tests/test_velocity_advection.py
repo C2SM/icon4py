@@ -774,6 +774,8 @@ def test_velocity_fused_15_18(
         # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
+@pytest.mark.parametrize("istep_init", [1, 2])
+@pytest.mark.parametrize("substep_init", [1, 1])
 def test_velocity_fused_19_20(
     icon_grid,
     grid_savepoint,
@@ -783,6 +785,8 @@ def test_velocity_fused_19_20(
     metrics_savepoint,
     backend,
     savepoint_velocity_init,
+    istep_init,
+    substep_init,
     step_date_init,
     step_date_exit,
 ):
