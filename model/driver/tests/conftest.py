@@ -10,8 +10,6 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from icon4py.model.testing.helpers import backend
-
 
 # Make sure custom icon4py pytest hooks are loaded
 try:
@@ -92,7 +90,6 @@ __all__ = [
     "stretch_factor",
     "top_height_limit_for_maximal_layer_thickness",
     "vn_only",
-    "backend",
 ]
 
 
