@@ -182,7 +182,7 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811
+def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_init):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module.
 
@@ -190,13 +190,13 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, 
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.from_savepoint_velocity_init(
-        istep=istep_init, vn_only=vn_only, date=step_date_init, jstep=jstep_init
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
 @pytest.fixture
 def savepoint_velocity_1_7_init(
-    data_provider, step_date_init, istep_init, vn_only, jstep_init
+    data_provider, step_date_init, istep_init, vn_only, substep_init
 ):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 1 to 7.
@@ -205,7 +205,7 @@ def savepoint_velocity_1_7_init(
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.savepoint_velocity_1_7_init(
-        istep=istep_init, vn_only=vn_only, date=step_date_init, jstep=jstep_init
+        istep=istep_init, vn_only=vn_only, date=step_date_init, substep_init=substep_init
     )
 
 
@@ -268,21 +268,22 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_ini
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, vn_only, jstep_exit):  # F811
+def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_exit):  # F811
     """
-    Load data from ICON savepoint at exist of solve_nonhydro module.
-
-    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
-    fixture, passing 'step_data=<iso_string>'
+    Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
+    metadata to select a unique savepoint:
+    - date: <iso_string> of the simulation timestep
+    - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
+    - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_exit(
-        istep=istep_exit, vn_only=vn_only, date=step_date_exit, jstep=jstep_exit
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
 @pytest.fixture
 def savepoint_velocity_1_7_exit(
-    data_provider, step_date_exit, istep_exit, vn_only, jstep_exit
+    data_provider, step_date_exit, istep_init, vn_only, substep_init
 ):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 1 to 7.
@@ -291,7 +292,7 @@ def savepoint_velocity_1_7_exit(
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.savepoint_velocity_1_7_exit(
-        istep=istep_exit, vn_only=vn_only, date=step_date_exit, jstep=jstep_exit
+        istep=istep_init, vn_only=vn_only, date=step_date_exit, substep_init=substep_init
     )
 
 

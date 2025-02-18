@@ -470,7 +470,8 @@ def test_velocity_corrector_step(
         # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
-@pytest.mark.parametrize("istep", [1])
+@pytest.mark.parametrize("istep_init", [1, 2])
+@pytest.mark.parametrize("substep_init", [1, 1])
 def test_velocity_fused_1_7(
     icon_grid,
     grid_savepoint,
@@ -481,7 +482,8 @@ def test_velocity_fused_1_7(
     savepoint_velocity_init,
     step_date_init,
     step_date_exit,
-    istep,
+    substep_init,
+    istep_init,
     backend,
 ):
     edge_domain = h_grid.domain(dims.EdgeDim)
@@ -528,51 +530,6 @@ def test_velocity_fused_1_7(
     )
     end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    if istep == 2:
-        fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7.with_backend(
-            backend
-        )(
-            vn=vn,
-            rbf_vec_coeff_e=rbf_vec_coeff_e,
-            wgtfac_e=wgtfac_e,
-            ddxn_z_full=ddxn_z_full,
-            ddxt_z_full=ddxt_z_full,
-            z_w_concorr_me=z_w_concorr_me,
-            wgtfacq_e=wgtfacq_e,
-            nflatlev=gtx.int32(nflatlev),
-            c_intp=c_intp,
-            w=w,
-            inv_dual_edge_length=inv_dual_edge_length,
-            inv_primal_edge_length=inv_primal_edge_length,
-            tangent_orientation=tangent_orientation,
-            z_vt_ie=z_vt_ie,
-            vt=vt,
-            vn_ie=vn_ie,
-            z_kin_hor_e=z_kin_hor_e,
-            z_v_grad_w=z_v_grad_w,
-            k=k,
-            istep=gtx.int32(1),
-            nlev=gtx.int32(icon_grid.num_levels),
-            lvn_only=lvn_only,
-            edge=edge,
-            vertex=vertex,
-            lateral_boundary_7=lateral_boundary_7,
-            halo_1=halo_1,
-            start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
-            end_vertex_halo=end_vertex_halo,
-            horizontal_start=horizontal_start,
-            horizontal_end=horizontal_end,
-            vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(icon_grid.num_levels + 1),
-            offset_provider={
-                "E2C": icon_grid.get_offset_provider("E2C"),
-                "E2V": icon_grid.get_offset_provider("E2V"),
-                "V2C": icon_grid.get_offset_provider("V2C"),
-                "E2C2E": icon_grid.get_offset_provider("E2C2E"),
-                "Koff": dims.KDim,
-            },
-        )
-
     fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7.with_backend(
         backend
     )(
@@ -595,7 +552,7 @@ def test_velocity_fused_1_7(
         z_kin_hor_e=z_kin_hor_e,
         z_v_grad_w=z_v_grad_w,
         k=k,
-        istep=gtx.int32(istep),
+        istep=gtx.int32(istep_init),
         nlev=gtx.int32(icon_grid.num_levels),
         lvn_only=lvn_only,
         edge=edge,
