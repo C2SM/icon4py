@@ -1,0 +1,11 @@
+{
+    "gh200": {
+        "arch": "aarch64",
+        "cpu": "GH200 (72 cores)",
+        "machine": "gh200",
+        "num_cpu": "288",
+        "os": "Linux 5.14.21",
+        "ram": "854 GB"
+    },
+    "version": 1
+}
