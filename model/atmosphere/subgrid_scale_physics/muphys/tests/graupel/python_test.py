@@ -9,7 +9,6 @@ import gt4py.next as gtx
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import saturation_adjustment
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.implementations.graupel import graupel_run
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.constants import graupel_ct, thermodyn
-
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -83,11 +82,25 @@ class Data:
         self.prg_gsp   = np.zeros(self.ncells, np.float64)
         self.pre_gsp   = np.zeros(self.ncells, np.float64)
         # allocate dz:
-        self.dz        = np.zeros((self.ncells, self.nlev), np.float64)
-        self.mask_out  = np.full((self.ncells, self.nlev), True)
+#        self.dz        = np.zeros((self.ncells, self.nlev), np.float64)
         # calc dz:
+        self.dz = calc_dz(self.nlev,self.z)
+        self.mask_out = np.full( (self.ncells, self.nlev), True )
+
+
 #        py_graupel.calc_dz(z=self.z, dz=self.dz, ncells=self.ncells, nlev=self.nlev)
 
+def calc_dz(
+    ksize,
+    z
+):
+    dz = np.zeros(z.shape,np.float64)
+    zh = 1.5*z[ksize-1,:] - 0.5*z[ksize-2,:]
+    for k in range(ksize-1,-1,-1):
+        zh_new = 2.0 * z[k,:] - zh
+        dz[k,:] = -zh + zh_new
+        zh = zh_new
+    return dz
 
 def write_fields(
     output_filename,
@@ -159,6 +172,12 @@ qr_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qr_out)
 qs_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qs_out)
 qi_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qi_out)
 qg_out = gtx.as_field((dims.CellDim, dims.KDim,), data.qg_out)
+pflx_out   = gtx.as_field((dims.CellDim, dims.KDim,), data.pflx_out)
+pr_out = gtx.as_field((dims.CellDim, dims.KDim,), np.zeros((data.ncells, data.nlev)))
+ps_out = gtx.as_field((dims.CellDim, dims.KDim,), np.zeros((data.ncells, data.nlev)))
+pi_out = gtx.as_field((dims.CellDim, dims.KDim,), np.zeros((data.ncells, data.nlev)))
+pg_out = gtx.as_field((dims.CellDim, dims.KDim,), np.zeros((data.ncells, data.nlev)))
+pre_out= gtx.as_field((dims.CellDim, dims.KDim,), np.zeros((data.ncells, data.nlev)))
 mask_out = gtx.as_field((dims.CellDim, dims.KDim,), data.mask_out)
 
 # if args.with_sat_adj:
@@ -209,11 +228,11 @@ saturation_adjustment( te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpo
 #     pre_gsp=data.pre_gsp,
 # )
 
-ksize = data.dz.shape[1]
+ksize = data.dz.shape[0]
 k = gtx.as_field( (dims.KDim, ), np.arange(0,ksize,dtype=np.int32) )
 graupel_run( k = k,
              last_lev = ksize-1,
-             dz  = gtx.as_field((dims.CellDim, dims.KDim,), data.dz),
+             dz  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.dz[:,:])),
              te  = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.t[0,:,:])),
              p   = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.p[0,:,:])),
              rho = gtx.as_field((dims.CellDim, dims.KDim,), np.transpose(data.rho[0,:,:])),
@@ -232,7 +251,20 @@ graupel_run( k = k,
              qs_out = qs_out,
              qi_out = qi_out,
              qg_out = qg_out,
-             offset_provider={"Koff": K})
+             pflx   = pflx_out,
+             pr     = pr_out,
+             ps     = ps_out,
+             pi     = pi_out,
+             pg     = pg_out,
+             pre    = pre_out,
+             offset_provider={"Koff": K}
+             )
+
+data.prr_gsp = np.transpose(pr_out[dims.KDim(ksize-1)].asnumpy())
+data.prs_gsp = np.transpose(ps_out[dims.KDim(ksize-1)].asnumpy())
+data.pri_gsp = np.transpose(pi_out[dims.KDim(ksize-1)].asnumpy())
+data.prg_gsp = np.transpose(pg_out[dims.KDim(ksize-1)].asnumpy())
+data.pre_gsp = np.transpose(pre_out[dims.KDim(ksize-1)].asnumpy())
 
 # if args.with_sat_adj:
 #     py_graupel.saturation_adjustment(
@@ -263,6 +295,6 @@ write_fields(
     pri_gsp=data.pri_gsp,
     prs_gsp=data.prs_gsp,
     prg_gsp=data.prg_gsp,
-    pflx=np.transpose(data.pflx_out),
+    pflx=np.transpose( pflx_out.asnumpy() ),
     pre_gsp=data.pre_gsp,
 )

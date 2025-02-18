@@ -42,16 +42,6 @@ def _precip(
     update2 = vc * prefactor * power((rho_x+offset), exponent)                # vt
     return update0, update1, update2
 
-@gtx.scan_operator(axis=K, forward=True, init=0.0)
-def _precipitation_flux(
-    state:     ta.wpfloat,
-    pr:        ta.wpfloat,
-) -> ta.wpfloat:
-    pflx = state
-    pflx    = pflx + pr  # pflx[oned_vec_index] = pflx[oned_vec_index] + q[lqr].p[iv];
-
-    return pflx
-
 @gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0))
 def _temperature_update(
     state:     tuple[ta.wpfloat, ta.wpfloat],
@@ -262,7 +252,9 @@ def _precipitation_effects(
     rho:    fa.CellKField[ta.wpfloat],             # density
     dz:     fa.CellKField[ta.wpfloat],
     dt:     ta.wpfloat,
-) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
+) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],\
+           fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],\
+           fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
 
     # Store current fields for later temperature update
     qliq    = qc + qr
@@ -291,11 +283,9 @@ def _precipitation_effects(
     qice      = qs + qi + qg
     p_sig     = ps + pi + pg
     t_kp1     = concat_where( k < last_lev, t(Koff[1]), t )
-    pflx      = _precipitation_flux( pr )   # Integrate the rain
-    pflx      = pflx + p_sig    # Add it snow, ice and graupel which are also precipitating
-#    t, _      = _temperature_update( t, t_kp1, ei_old, pr, pflx, qv, qliq, qice, rho, dz, dt )
+    t, eflx   = _temperature_update( t, t_kp1, ei_old, pr, p_sig, qv, qliq, qice, rho, dz, dt )
     # TODO: here we have to return a single layer for pre_gsp
-    return qr, qs, qi, qg, t, pflx
+    return qr, qs, qi, qg, t, p_sig+pr, pr, ps, pi, pg, eflx/dt
 
 @gtx.field_operator
 def _output_calculation(
@@ -328,11 +318,15 @@ def _graupel_run(
     qge:       fa.CellKField[ta.wpfloat],             # Specific graupel water content
     dt:        ta.wpfloat,
     qnc:       ta.wpfloat,
-) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:
+) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat], \
+           fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat], \
+           fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat], \
+           fa.CellKField[ta.wpfloat]]:
     mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse )
     qv, qc, qr, qs, qi, qg, t = _q_t_update( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
-    qr, qs, qi, qg, t, pflx = _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
-    return t, qv, qc, qr, qs, qi, qg
+    qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = \
+        _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+    return t, qv, qc, qr, qs, qi, qg, pflx, pr, ps, pi, pg, pre
 
 # TODO : program  needs to be called with offset_provider={"Koff": K}
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -358,5 +352,12 @@ def graupel_run(
     qs_out:    fa.CellKField[ta.wpfloat],             # Revised snow water
     qi_out:    fa.CellKField[ta.wpfloat],             # Revised ice water
     qg_out:    fa.CellKField[ta.wpfloat],             # Revised graupel water
+    pflx:      fa.CellKField[ta.wpfloat],             # Total precipitation flux
+    pr:        fa.CellKField[ta.wpfloat],             # Precipitation of rain
+    ps:        fa.CellKField[ta.wpfloat],             # Precipitation of snow
+    pi:        fa.CellKField[ta.wpfloat],             # Precipitation of ice
+    pg:        fa.CellKField[ta.wpfloat],             # Precipitation of graupel
+    pre:       fa.CellKField[ta.wpfloat],             # Precipitation of graupel
 ):
-    _graupel_run(k, last_lev, dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc, out=(t_out, qv_out, qc_out, qr_out, qs_out, qi_out, qg_out) )
+    _graupel_run(k, last_lev, dz, te, p, rho, qve, qce, qre, qse, qie, qge, dt, qnc, \
+                 out=(t_out, qv_out, qc_out, qr_out, qs_out, qi_out, qg_out, pflx, pr, ps, pi, pg, pre) )
