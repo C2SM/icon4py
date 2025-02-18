@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -24,12 +24,15 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     libffi-dev \
     libhdf5-dev \
     liblzma-dev \
-    python-openssl \
+    python3-openssl \
     libreadline-dev \
     git \
     rustc \
-    htop && \
+    htop \
+    libc6-dbg && \
     rm -rf /var/lib/apt/lists/*
+
+RUN wget -P /tmp https://github.com/CodSpeedHQ/valgrind-codspeed/releases/download/3.24.0-0codspeed1/valgrind_3.24.0-0codspeed1_ubuntu-22.04_arm64.deb && apt install -y /tmp/valgrind_3.24.0-0codspeed1_ubuntu-22.04_arm64.deb && rm /tmp/valgrind_3.24.0-0codspeed1_ubuntu-22.04_arm64.deb && which valgrind && valgrind --version
 
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=24.11
@@ -54,7 +57,8 @@ ENV CUDA_PATH=${HPC_SDK_PATH}/cuda \
 
 ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
     MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
-    LD_LIBRARY_PATH=${CUDA_PATH}/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
+    LD_LIBRARY_PATH=${HPC_SDK_PATH}/comm_libs/mpi/lib:${CUDA_PATH}/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH} \
+    CPATH=${HPC_SDK_PATH}/comm_libs/mpi/include:${CPATH}
 
 # Install Boost
 RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz && \
