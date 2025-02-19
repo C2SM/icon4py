@@ -26,12 +26,34 @@ include:
       --file $BENCHER_RESULTS_JSON \
       "pytest --benchmark-json $BENCHER_RESULTS_JSON -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
     - |
-      jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py_bencher_baseline_TEST\", \"namespace\": \"alps\"}} + ." $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
-    # - |
-    #   curl -X POST \
-    #   -H "Content-Type: application/json" \
-    #   -d "./${BENCHER_RESULTS_JSON}" \
-    #   "${CSCS_LOGSTASH_URL}"
+      cat <<EOF > flatten.py
+      import argparse
+      import json
+      from flatten_json import flatten
+
+      parser = argparse.ArgumentParser(description="Flatten a JSON file.")
+      parser.add_argument("input_file", help="input JSON file")
+      parser.add_argument("output_file", help="output JSON file")
+
+      args = parser.parse_args()
+
+      with open(args.input_file, "r") as file:
+          data = json.load(file)
+
+      flat_data = flatten(data, separator=".")
+
+      with open(args.output_file, "w") as file:
+          json.dump(flat_data, file, indent=2)
+      EOF
+    - pip install argparse json flatten_json
+    - python flatten.py $BENCHER_RESULTS_JSON $BENCHER_RESULTS_JSON
+    - |
+      jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py.bencher.baseline.test\", \"namespace\": \"alps\"}} + ." $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
+    - |
+      curl -X POST \
+      -H "Content-Type: application/json" \
+      -d @"./${BENCHER_RESULTS_JSON}" \
+      "${CSCS_LOGSTASH_URL}"
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
