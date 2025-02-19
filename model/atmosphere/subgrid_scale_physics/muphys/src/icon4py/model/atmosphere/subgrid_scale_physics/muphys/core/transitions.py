@@ -370,7 +370,7 @@ def _vapor_x_ice(
     AMI    = 130.0                 # Formfactor for mass-size relation of cold ice
     B_EXP  = -0.67                 # exp. for conv. (-1 + 0.33) of ice mass to sfc area
     A_FACT = 4.0 * AMI**(-1.0/3.0)
-
+#   A_FACT = (1.0/5.065797019100886) * 4.0
     # TO-DO: see if this can be folded into the WHERE statement
     result  = (A_FACT * eta) * rho * qi * power(mi, B_EXP) * dvsi
     result  = where( result > 0.0, minimum(result, dvsi/dt), maximum(maximum(result, dvsi/dt), -qi/dt) )

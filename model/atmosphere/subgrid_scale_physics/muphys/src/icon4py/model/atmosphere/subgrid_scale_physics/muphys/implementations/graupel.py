@@ -149,7 +149,6 @@ def _q_t_update(
     sx2x_r_g = where( (t < t_d.tmelt) & is_sig_present, _rain_to_graupel( t, rho, qc, qr, qi, qs, m_ice, dvsw, dt ), 0.0 )
 
     sx2x_v_i = where( t < t_d.tmelt, sx2x_v_i + _ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt ), 0.0 )
-
     sx2x_c_r = where( t >= t_d.tmelt, sx2x_c_r + sx2x_c_s + sx2x_c_g, sx2x_c_r )
 
     dvsw0    = where( is_sig_present, qv - _qsat_rho( t, rho ), 0.0 )  # TODO: new qsat_rho_tmelt, TODO: use dvsw ??
@@ -237,8 +236,8 @@ def _q_t_update(
     qtot = qv + qice + qliq
 
     cv   = t_d.cvd + (t_d.cvv - t_d.cvd) * qtot + (t_d.clw - t_d.cvv) * qliq + (g_ct.ci - t_d.cvv) * qice
-    t = where( mask, t + dt * ( (dqdt_c + dqdt_r) * (g_ct.lvc - (t_d.clw - t_d.cvv)*t) + (dqdt_i + dqdt_s + dqdt_g) * (g_ct.lsc - (g_ct.ci - t_d.cvv)*t ) ) / cv, t )
-
+    t = where( mask, t + dt * ( (dqdt_c + dqdt_r) * (g_ct.lvc - (t_d.clw - t_d.cvv)*t) + \
+                                (dqdt_i + dqdt_s + dqdt_g) * (g_ct.lsc - (g_ct.ci - t_d.cvv)*t ) ) / cv, t )
     return qv, qc, qr, qs, qi, qg, t
 
 @gtx.field_operator

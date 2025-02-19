@@ -20,7 +20,7 @@ def _deposition_auto_conversion(
     M0_S     = 3.0e-9                                    # Initial mass of snow crystals
     B_DEP    = 0.666666666666666667                      # Exponent
     XCRIT    = 1.0                                       # Critical threshold parameter
-    
+
     return where( (qi > g_ct.qmin), maximum(0.0, ice_dep) * B_DEP / (power((M0_S/m_ice), B_DEP) - XCRIT), 0.0)
 
 
@@ -59,7 +59,7 @@ def _fall_speed_scalar(
     density:      gtx.Field[[], ta.wpfloat],                            # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
-    exponent:     ta.wpfloat, 
+    exponent:     ta.wpfloat,
 ) -> gtx.Field[[], ta.wpfloat]:                          # Fall speed
 
     return prefactor * power((density+offset), exponent)
@@ -69,7 +69,7 @@ def _fall_speed(
     density:      fa.CellKField[ta.wpfloat],             # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
-    exponent:     ta.wpfloat, 
+    exponent:     ta.wpfloat,
 ) -> fa.CellKField[ta.wpfloat]:                          # Fall speed
 
     return prefactor * power((density+offset), exponent)
@@ -79,7 +79,7 @@ def fall_speed_scalar(
     density:      gtx.Field[[], ta.wpfloat],                            # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
-    exponent:     ta.wpfloat,              
+    exponent:     ta.wpfloat,
     fall_speed:   gtx.Field[[], ta.wpfloat],                            # output
 ):
     _fall_speed_scalar(density, prefactor, offset, exponent, out=fall_speed)
@@ -89,7 +89,7 @@ def fall_speed(
     density:      fa.CellKField[ta.wpfloat],             # Density of species
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
-    exponent:     ta.wpfloat,              
+    exponent:     ta.wpfloat,
     fall_speed:   fa.CellKField[ta.wpfloat],             # output
 ):
     _fall_speed(density, prefactor, offset, exponent, out=fall_speed)
@@ -112,7 +112,7 @@ def ice_deposition_nucleation(
     qi:	       fa.CellKField[ta.wpfloat],             # Specific humidity of ice
     ni:	       fa.CellKField[ta.wpfloat],             # Ice crystal number
     dvsi:      fa.CellKField[ta.wpfloat],             # Vapor excess with respect to ice sat
-    dt:	       ta.wpfloat,                           # Time step 
+    dt:	       ta.wpfloat,                           # Time step
     vapor_deposition_rate: fa.CellKField[ta.wpfloat]  # output
 ):
     _ice_deposition_nucleation( t, qc, qi, ni, dvsi, dt, out=vapor_deposition_rate )
@@ -123,7 +123,7 @@ def _ice_mass(
     ni:        fa.CellKField[ta.wpfloat],             # Ice crystal number
 ) -> fa.CellKField[ta.wpfloat]:                       # Ice mass
     MI_MAX = 1.0e-9
-    return maximum(g_ct.m0_ice*ni, minimum(qi/ni, MI_MAX))
+    return maximum(g_ct.m0_ice, minimum(qi/ni, MI_MAX))
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def ice_mass(
