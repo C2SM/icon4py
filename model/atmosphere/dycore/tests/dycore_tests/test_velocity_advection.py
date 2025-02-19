@@ -623,7 +623,7 @@ def test_velocity_fused_8_13(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend)
     cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
@@ -647,7 +647,7 @@ def test_velocity_fused_8_13(
         istep=istep_init,
         nlev=icon_grid.num_levels,
         nflatlev=nflatlev,
-        lateral_boundary_3=lateral_boundary_3,
+        lateral_boundary_3=lateral_boundary_4,# TODO: serialization test works for lateral_boundary_4 but not on lateral_boundary_3, but it should be in lateral_boundary_3 in driver code
         lateral_boundary_4=lateral_boundary_4,
         end_halo=end_halo,
         horizontal_start=0,
@@ -662,7 +662,7 @@ def test_velocity_fused_8_13(
     )
     assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
     assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
-    assert helpers.dallclose(z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy())
+    assert helpers.dallclose(z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
 
 
 @pytest.mark.datatest

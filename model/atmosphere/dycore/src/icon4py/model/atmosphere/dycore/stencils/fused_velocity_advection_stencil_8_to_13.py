@@ -111,6 +111,7 @@ def _fused_velocity_advection_stencil_8_to_13_corrector(
         z_w_con_c,
     )
 
+
     z_w_con_c = where(k == nlev, 0.0, z_w_con_c)
 
     z_w_con_c = where(
