@@ -427,8 +427,10 @@ def _vapor_x_snow(
     result = where( (qs > g_ct.qmin) & (t < t_d.tmelt) & (result > 0.0), minimum(result, dvsi/dt - ice_dep), result )
     result = where( (qs > g_ct.qmin) & (t < t_d.tmelt) & (qs <= QS_LIM), minimum(result, 0.0), result )
     # ELSE section
-    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t > (t_d.tmelt - g_ct.tx*dvsw0)), (C1_VS/p + C2_VS) * minimum(0.0, dvsw0) * power(qs*rho, B_VS), result)
-    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t <= (t_d.tmelt - g_ct.tx*dvsw0)), (C3_VS + C4_VS*p) * dvsw * power(qs*rho, B_VS), result)
+    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t > (t_d.tmelt - g_ct.tx*dvsw0)), \
+                    (C1_VS/p + C2_VS) * minimum(0.0, dvsw0) * power(qs*rho, B_VS), result)
+    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t <= (t_d.tmelt - g_ct.tx*dvsw0)), \
+                    (C3_VS + C4_VS*p) * dvsw * power(qs*rho, B_VS), result)
     return where( (qs > g_ct.qmin), maximum(result, -qs/dt), 0.0)
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
