@@ -854,6 +854,7 @@ def test_run_solve_nonhydro_single_step(
 
 
 @pytest.mark.embedded_remap_error
+@pytest.mark.requires_concat_where
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
