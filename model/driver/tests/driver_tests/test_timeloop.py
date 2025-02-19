@@ -127,6 +127,7 @@ def test_run_timeloop_single_step(
     savepoint_velocity_init,
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
+    vn_only,
     backend,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
