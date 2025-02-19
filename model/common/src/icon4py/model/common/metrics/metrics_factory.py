@@ -36,6 +36,7 @@ from icon4py.model.common.metrics import (
     compute_zdiff_gradp_dsl,
     metric_fields as mf,
     metrics_attributes as attrs,
+    reference_atmosphere,
 )
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
@@ -275,7 +276,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_theta_exner_ref_mc)
 
         compute_d2dexdz2_fac_mc = factory.ProgramFieldProvider(
-            func=mf.compute_d2dexdz2_fac_mc.with_backend(self._backend),
+            func=reference_atmosphere.compute_d2dexdz2_fac_mc.with_backend(self._backend),
             deps={
                 "theta_ref_mc": attrs.THETA_REF_MC,
                 "inv_ddqz_z_full": attrs.INV_DDQZ_Z_FULL,

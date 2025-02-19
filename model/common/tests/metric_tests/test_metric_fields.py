@@ -28,7 +28,6 @@ from icon4py.model.common.metrics.metric_fields import (
     _compute_pg_edgeidx_vertidx,
     compute_bdy_halo_c,
     compute_coeff_dwdz,
-    compute_d2dexdz2_fac_mc,
     compute_ddqz_z_full_and_inverse,
     compute_ddqz_z_half,
     compute_ddxn_z_full,
@@ -230,38 +229,6 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
 
     assert testing_helpers.dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
     assert testing_helpers.dallclose(coeff2_dwdz_full.asnumpy(), coeff2_dwdz_ref.asnumpy())
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
-    z_mc = metrics_savepoint.z_mc()
-    d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
-    d2dexdz2_fac2_mc_ref = metrics_savepoint.d2dexdz2_fac2_mc()
-
-    d2dexdz2_fac1_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    d2dexdz2_fac2_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-
-    compute_d2dexdz2_fac_mc.with_backend(backend=backend)(
-        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
-        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
-        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
-        z_mc=z_mc,
-        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc,
-        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc,
-        cpd=constants.CPD,
-        grav=constants.GRAV,
-        del_t_bg=constants.DEL_T_BG,
-        h_scal_bg=constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
-        horizontal_start=gtx.int32(0),
-        horizontal_end=gtx.int32(icon_grid.num_cells),
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={},
-    )
-
-    assert testing_helpers.dallclose(d2dexdz2_fac1_mc.asnumpy(), d2dexdz2_fac1_mc_ref.asnumpy())
-    assert testing_helpers.dallclose(d2dexdz2_fac2_mc.asnumpy(), d2dexdz2_fac2_mc_ref.asnumpy())
 
 
 # TODO (halungge) does this test the right thing? final assert and test name do not match...
