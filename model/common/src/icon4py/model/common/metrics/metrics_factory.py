@@ -264,7 +264,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             params={
                 "t0sl_bg": constants.SEA_LEVEL_TEMPERATURE,
                 "del_t_bg": constants.DELTA_TEMPERATURE,
-                "h_scal_bg": constants._H_SCAL_BG,
+                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
                 "grav": constants.GRAV,
                 "rd": constants.RD,
                 "p0sl_bg": constants.SEAL_LEVEL_PRESSURE,
@@ -300,9 +300,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 "cpd": constants.CPD,
                 "grav": constants.GRAV,
                 "del_t_bg": constants.DEL_T_BG,
-                "h_scal_bg": constants._H_SCAL_BG,
-                "igradp_method": self._config["igradp_method"],
-                "igradp_constant": self._config["igradp_constant"],
+                "h_scal_bg": constants.HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE,
             },
         )
         self.register_provider(compute_d2dexdz2_fac_mc)
