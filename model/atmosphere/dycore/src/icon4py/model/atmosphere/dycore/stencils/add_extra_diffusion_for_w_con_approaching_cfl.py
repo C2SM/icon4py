@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _add_extra_diffusion_for_w_con_approaching_cfl(
-    levmask: gtx.Field[gtx.Dims[dims.KDim], bool],
+    levmask: fa.KField[bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     z_w_con_c: fa.CellKField[vpfloat],
