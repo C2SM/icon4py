@@ -403,6 +403,7 @@ def test_verify_diffusion_init_against_savepoint(
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -428,8 +429,6 @@ def test_run_diffusion_single_step(
 ):
     if orchestration and not helpers.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
-    if helpers.is_embedded(backend):
-        pytest.xfail("Embedded backend currently fails in remap function.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
@@ -664,6 +663,7 @@ def test_run_diffusion_multiple_steps(
 
 
 @pytest.mark.datatest
+@pytest.mark.embedded_remap_error
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("linit", [True])
 @pytest.mark.parametrize("orchestration", [False, True])
@@ -683,8 +683,6 @@ def test_run_diffusion_initial_step(
 ):
     if orchestration and not helpers.is_dace(backend):
         pytest.skip("Orchestration test requires a dace backend.")
-    if helpers.is_embedded(backend):
-        pytest.xfail("Embedded backend currently fails in remap function.")
     grid = get_grid_for_experiment(experiment, backend)
     cell_geometry = get_cell_geometry_for_experiment(experiment, backend)
     edge_geometry = get_edge_geometry_for_experiment(experiment, backend)
