@@ -29,17 +29,23 @@ def _precip(
     q:         ta.wpfloat,             # specific mass of hydrometeor
     q_kp1:     ta.wpfloat,             # specific mass in next lower cell
     rho:       ta.wpfloat,             # density
+    mask:      bool                    # k-level located in cloud
 ) -> tuple[ta.wpfloat,ta.wpfloat,ta.wpfloat]:   # updates
     _, flx, vt = state
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0*flx
 #    flx_partial = minimum(rho_x * vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent), flx_eff)
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x+offset), exponent), flx_eff)
-    update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)   # q update
-    update1 = (update0 * rho * vt + flx_partial) * 0.5                       # flux
-    rho_x   = (update0 + q_kp1) * 0.5 * rho
+    if( mask ):
+        update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)    # q update
+        update1 = (update0 * rho * vt + flx_partial) * 0.5                        # flux
+        rho_x   = (update0 + q_kp1) * 0.5 * rho
 #    update2 = vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent)           # vt
-    update2 = vc * prefactor * power((rho_x+offset), exponent)                # vt
+        update2 = vc * prefactor * power((rho_x+offset), exponent)                # vt
+    else:
+        update0  = q
+        update1  = 0.0
+        update2  = 0.0
     return update0, update1, update2
 
 @gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0))
@@ -123,8 +129,8 @@ def _q_t_update(
     sx2x_i_c = -minimum(sx2x_c_i, 0.0)
     sx2x_c_i = maximum(sx2x_c_i, 0.0)
 
-    sx2x_c_s = _cloud_to_snow( t, qc, qs, n_snow, l_snow )
-    sx2x_c_g = _cloud_to_graupel( t, rho, qc, qg )
+    sx2x_c_s = where( t < t_d.tmelt, _cloud_to_snow( t, qc, qs, n_snow, l_snow ), 0.0 )
+    sx2x_c_g = where( t < t_d.tmelt, _cloud_to_graupel( t, rho, qc, qg ), 0.0 )
 
     n_ice    = where( t < t_d.tmelt, _ice_number( t, rho ), 0.0 )
     m_ice    = where( t < t_d.tmelt, _ice_mass( qi, n_ice ), 0.0 )
@@ -135,7 +141,8 @@ def _q_t_update(
     sx2x_i_v = where( (t < t_d.tmelt) & is_sig_present, -minimum( sx2x_v_i, 0.0 ) , 0.0 )
     sx2x_v_i = where( (t < t_d.tmelt) & is_sig_present, maximum( sx2x_v_i, 0.0 ) , 0.0 )#    ice_dep  = where( (t < t_d.tmelt) & is_sig_present, minimum( sx2x_v_i, dvsi/dt ) , 0.0 )
 
-    ice_dep  = minimum( sx2x_v_i, dvsi / dt)
+    ice_dep  = where( t < t_d.tmelt, minimum( sx2x_v_i, dvsi / dt), 0.0 )
+    # TODO: _deposition_auto_conversion yields roundoff differences in q
     sx2x_i_s = where( (t < t_d.tmelt) & is_sig_present, _deposition_auto_conversion( qi, m_ice, ice_dep ) + _ice_to_snow( qi, n_snow, l_snow, x_ice ), 0.0 )
     sx2x_i_g = where( (t < t_d.tmelt) & is_sig_present, _ice_to_graupel( rho, qr, qg, qi, x_ice ), 0.0 )
     sx2x_s_g = where( (t < t_d.tmelt) & is_sig_present, _snow_to_graupel( t, rho, qc, qs ), 0.0 )
@@ -271,13 +278,13 @@ def _precipitation_effects(
     vc_g = where( kmin_g, _vel_scale_factor_default( xrho ), 0.0 )
 
     q_kp1     = concat_where( k < last_lev, qr(Koff[1]), qr )
-    qr, pr, _ = _precip( idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, qr, q_kp1, rho )
+    qr, pr, _ = _precip( idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, qr, q_kp1, rho, True )
     q_kp1     = concat_where( k < last_lev, qi(Koff[1]), qi )
-    qi, pi, _ = _precip( idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, qi, q_kp1, rho )
+    qi, pi, _ = _precip( idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, qi, q_kp1, rho, True )
     q_kp1     = concat_where( k < last_lev, qs(Koff[1]), qs )
-    qs, ps, _ = _precip( idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, qs, q_kp1, rho )
+    qs, ps, _ = _precip( idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, qs, q_kp1, rho, True )
     q_kp1     = concat_where( k < last_lev, qg(Koff[1]), qg )
-    qg, pg, _ = _precip( idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, qg, q_kp1, rho )
+    qg, pg, _ = _precip( idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, qg, q_kp1, rho, True )
 
     qliq      = qc + qr
     qice      = qs + qi + qg
@@ -324,8 +331,16 @@ def _graupel_run(
            fa.CellKField[ta.wpfloat]]:
     mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse )
     qv, qc, qr, qs, qi, qg, t = _q_t_update( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
-    qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = \
-        _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+#    qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = \
+#        _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+    qro, qso, qio, qgo, to, pflxo, pro, pso, pio, pgo, preo = \
+            _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+    pflx = where( pflxo == 0.0, pflxo, 0.0 )
+    pr   = where( pro == 0.0, pro, 0.0 )
+    ps   = where( pso == 0.0, pso, 0.0 )
+    pi   = where( pio == 0.0, pio, 0.0 )
+    pg   = where( pro == 0.0, pro, 0.0 )
+    pre  = where( preo == 0.0, preo, 0.0 )
     return t, qv, qc, qr, qs, qi, qg, pflx, pr, ps, pi, pg, pre
 
 # TODO : program  needs to be called with offset_provider={"Koff": K}
