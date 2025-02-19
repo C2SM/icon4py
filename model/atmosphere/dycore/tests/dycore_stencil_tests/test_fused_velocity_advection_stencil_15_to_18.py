@@ -213,12 +213,11 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         nrdmax = 5
         extra_diffu = True
 
-        cell_lower_bound = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        cell_upper_bound = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
-
         lvn_only = False
 
         cell_domain = h_grid.domain(dims.CellDim)
+        cell_lower_bound = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        cell_upper_bound = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
         horizontal_end = grid.end_index(cell_domain(h_grid.Zone.HALO))
         vertical_start = 0
