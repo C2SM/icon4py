@@ -62,7 +62,7 @@ def _cloud_to_rain(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def cloud_to_rain(
     t:        fa.CellKField[ta.wpfloat],             # Temperature
-    qc:       fa.CellKField[ta.wpfloat],             # Cloud specific mass 
+    qc:       fa.CellKField[ta.wpfloat],             # Cloud specific mass
     qr:       fa.CellKField[ta.wpfloat],             # Rain water specific mass
     nc:       ta.wpfloat,                            # Cloud water number concentration
     conversion_rate:  fa.CellKField[ta.wpfloat],     # output
@@ -148,10 +148,10 @@ def _ice_to_graupel(
     qi:           fa.CellKField[ta.wpfloat],             # Ice specific mass
     sticking_eff: fa.CellKField[ta.wpfloat],             # Sticking efficiency
 ) -> fa.CellKField[ta.wpfloat]:                          # Aggregation of ice by graupel
-    A_CT     = 1.72                                     # (15/32)*(PI**0.5)*(EIR/RHOW)*V0R*AR**(1/8)    
+    A_CT     = 1.72                                     # (15/32)*(PI**0.5)*(EIR/RHOW)*V0R*AR**(1/8)
     B_CT     = 0.875                                    # Exponent = 7/8
     C_AGG_CT = 2.46
-    B_AGG_CT = 0.94878                                  # Exponent 
+    B_AGG_CT = 0.94878                                  # Exponent
     result = where( (qi > g_ct.qmin) & (qg > g_ct.qmin), sticking_eff * qi * C_AGG_CT * power(rho*qg, B_AGG_CT), 0. )
     result = where( (qi > g_ct.qmin) & (qr > g_ct.qmin), result + A_CT*qi*power(rho*qr, B_CT), result )
     return result
@@ -178,7 +178,7 @@ def _ice_to_snow(
     C_IAU    = 1.0e-3                                   # Coefficient of auto conversion
     C_AGG    = 2.61*g_ct.v0s                                 # Coeff of aggregation (2.610 = pi*gam(v1s+3)/4)
     B_AGG    = -(g_ct.v1s + 3.0)                             # Aggregation exponent
-    
+
     return where( (qi > g_ct.qmin), sticking_eff * (C_IAU * maximum(0.0, (qi-QI0)) + qi * (C_AGG * ns) * power(lam, B_AGG)), 0. )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -215,7 +215,7 @@ def _rain_to_graupel(
     B2        = 1.625              # TBD
     QS_CRIT   = 1.0e-7             # TBD
 
-    maskinner = ( (dvsw+qc <= 0.0) | (qr > C4 * qc) ) 
+    maskinner = ( (dvsw+qc <= 0.0) | (qr > C4 * qc) )
     mask   = (qr > g_ct.qmin) & (t < TFRZ_RAIN)
     result = where( mask & (t > g_ct.tfrz_hom) & maskinner, (exp(C2*(TFRZ_RAIN-t))-C3) * (A1 * power((qr * rho), B1)), 0. )
     result = where( mask & (t <= g_ct.tfrz_hom), qr/dt, result )
@@ -242,7 +242,7 @@ def _rain_to_vapor(
     t:         fa.CellKField[ta.wpfloat],             # Temperature
     rho:       fa.CellKField[ta.wpfloat],             # Ambient density
     qc:        fa.CellKField[ta.wpfloat],             # Cloud-specific humidity
-    qr:        fa.CellKField[ta.wpfloat],             # Rain-specific humidity 
+    qr:        fa.CellKField[ta.wpfloat],             # Rain-specific humidity
     dvsw:      fa.CellKField[ta.wpfloat],             # qv-qsat_water (T)
     dt:        ta.wpfloat,                           # time step
 ) -> fa.CellKField[ta.wpfloat]:                       # Conversion rate from graupel to rain
@@ -258,7 +258,7 @@ def _rain_to_vapor(
 
     # TO-DO: move as much as possible into WHERE statement
     tc = t - t_d.tmelt
-    evap_max = (C1_RV + tc * (C2_RV + C3_RV*tc)) * (-dvsw) / dt 
+    evap_max = (C1_RV + tc * (C2_RV + C3_RV*tc)) * (-dvsw) / dt
     return where( (qr > g_ct.qmin) & (dvsw+qc <= 0.0), minimum(A1_RV * (A2_RV+A3_RV*power(qr*rho,B1_RV)) * (-dvsw) * power(qr*rho,B2_RV), evap_max), 0. )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -369,7 +369,7 @@ def _vapor_x_ice(
 ) -> fa.CellKField[ta.wpfloat]:                       # Rate of vapor deposition to ice
     AMI    = 130.0                 # Formfactor for mass-size relation of cold ice
     B_EXP  = -0.67                 # exp. for conv. (-1 + 0.33) of ice mass to sfc area
-    A_FACT = 4.0 * AMI**(-1.0/3.0)  
+    A_FACT = 4.0 * AMI**(-1.0/3.0)
 
     # TO-DO: see if this can be folded into the WHERE statement
     result  = (A_FACT * eta) * rho * qi * power(mi, B_EXP) * dvsi
@@ -417,12 +417,12 @@ def _vapor_x_snow(
     C4_VS  = -0.146293E-6
 
     # See if this can be incorporated into WHERE statement
-    mask = (CNX * ns * eta / rho) * (A0_VS + A1_VS * power(lam, A2_VS)) * dvsi / (lam * lam + EPS)
+    result = (CNX * ns * eta / rho) * (A0_VS + A1_VS * power(lam, A2_VS)) * dvsi / (lam * lam + EPS)
 
     # GZ: This mask>0 limitation, which was missing in the original graupel scheme,
     # is crucial for numerical stability in the tropics!
     # a meaningful distinction between cloud ice and snow
-    result = where( (qs > g_ct.qmin) & (t < t_d.tmelt) & (mask > 0.0), minimum(mask, dvsi/dt - ice_dep), 0.0 ) 
+    result = where( (qs > g_ct.qmin) & (t < t_d.tmelt) & (result > 0.0), minimum(result, dvsi/dt - ice_dep), 0.0 )
     result = where( (qs > g_ct.qmin) & (t < t_d.tmelt) & (qs <= QS_LIM), minimum(result, 0.0), result )
     # ELSE section
     result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t > (t_d.tmelt - g_ct.tx*dvsw0)), (C1_VS/p + C2_VS) * minimum(0.0, dvsw0) * power(qs*rho, B_VS), result)
