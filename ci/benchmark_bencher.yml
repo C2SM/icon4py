@@ -9,6 +9,7 @@ include:
     - cargo install --git https://github.com/finkandreas/bencher --branch main --locked --force bencher_cli
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
     - source .venv/bin/activate
+    - uv pip install git+https://github.com/iomaganaris/pytest-memray.git@pytest_json
     - PR_ID=$(echo "${CI_COMMIT_BRANCH}" | grep -o 'pr[0-9]*' | grep -o '[0-9]*')
     - FEATURE_BRANCH=$(curl -s https://api.github.com/repos/C2SM/icon4py/pulls/$PR_ID | jq -r '.head.ref')
     - export GITHUB_EVENT_NAME=pull_request
@@ -16,8 +17,27 @@ include:
     - export GITHUB_SHA=$CI_COMMIT_SHA
     - export GITHUB_ACTIONS=true
     - export GITHUB_EVENT_PATH=$CI_PROJECT_DIR/event.json
+    - BENCHER_RESULTS_JSON="results_${CI_COMMIT_SHA}_${BACKEND}_${GRID}.json"
+    - PYTESTS_RESULTS_JSON="pytest_${BENCHER_RESULTS_JSON}"
+    - RUNTIME_BENCHER_RESULTS_JSON="runtime_${BENCHER_RESULTS_JSON}"
+    - MEMRAY_BENCHER_RESULTS_JSON="memray_${BENCHER_RESULTS_JSON}"
     - |
       echo "{\"pull_request\": {\"head\": {\"repo\": {\"full_name\": \"C2SM/icon4py\"}}}, \"repository\": {\"full_name\": \"C2SM/icon4py\"}, \"number\": $PR_ID}" > $CI_PROJECT_DIR/event.json
+    # Run pytest benchmark to gather runtime statistics
+    - pytest --benchmark-json ${PYTESTS_RESULTS_JSON} -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model
+    # Run pytest benchmark to gather memory high watermark by memray (cannot be combined with runtime due to memray runtime overhead)
+    - pytest --benchmark-json ${MEMRAY_BENCHER_RESULTS_JSON} -v --benchmark-only --memray --backend=$BACKEND --grid=$GRID ./model
+    # Combine runtime and memory statistics in Bencher Metric Format
+    - jq -n '[inputs.benchmarks[] | {(.fullname): {latency: {value: .stats.median, lower_bound: .stats.min, upper_bound: .stats.max}}}] | add' $PYTESTS_RESULTS_JSON > $RUNTIME_BENCHER_RESULTS_JSON
+    - |
+      jq --slurpfile mem <(jq -n '[inputs.benchmarks[] | {(.fullname): {memory_high_watermark: {value: .extra_info.memory_high_watermark}}}] | add' ${MEMRAY_BENCHER_RESULTS_JSON}) '
+        with_entries(
+          if $mem[0][.key] != null then
+            .value.memory_high_watermark = $mem[0][.key].memory_high_watermark
+          else
+            .
+          end
+        )' $RUNTIME_BENCHER_RESULTS_JSON > $BENCHER_RESULTS_JSON
     - |
       bencher run \
       --project "$BENCHER_PROJECT" \
@@ -29,9 +49,8 @@ include:
       --start-point-reset \
       --testbed "ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}" \
       --err \
-      --adapter python_pytest \
-      --file results.json \
-      "pytest --benchmark-json results.json -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
+      --adapter json \
+      --file $BENCHER_RESULTS_JSON
     - |
       if [[ "$PR_ID" != "" && "$BACKEND" == "gtfn_cpu" && "$GRID" == "icon_grid" ]]; then
         COMMENT_BODY="[Bencher Dashboard](https://bencher.dev/perf/icon4py)"
