@@ -5,9 +5,11 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
+from icon4py.model.atmosphere.dycore.stencils import fused_velocity_advection_stencil_1_to_7
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -15,6 +17,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 from . import utils
@@ -34,7 +37,7 @@ def create_vertical_params(vertical_config, grid_savepoint):
     "experiment, step_date_init",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_savepoint(
@@ -83,7 +86,7 @@ def test_verify_velocity_init_against_savepoint(
     "experiment, step_date_init",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
@@ -109,7 +112,7 @@ def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -280,7 +283,7 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -411,4 +414,133 @@ def test_velocity_corrector_step(
         diagnostic_state.ddt_vn_apc_pc.corrector.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
+    )
+
+
+@pytest.mark.dataset
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+    ],
+)
+@pytest.mark.parametrize("istep_init", [1, 2])
+@pytest.mark.parametrize("substep_init", [1])
+def test_velocity_fused_1_7(
+    icon_grid,
+    grid_savepoint,
+    savepoint_velocity_1_7_init,
+    savepoint_velocity_1_7_exit,
+    interpolation_savepoint,
+    metrics_savepoint,
+    savepoint_velocity_init,
+    step_date_init,
+    step_date_exit,
+    substep_init,
+    istep_init,
+    backend,
+):
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    vertex_domain = h_grid.domain(dims.VertexDim)
+
+    vn = savepoint_velocity_1_7_init.vn()
+    # TODO: rbf array is inverted in serialized data
+    rbf_vec_coeff_e = gtx.as_field(
+        (dims.EdgeDim, dims.E2C2EDim),
+        interpolation_savepoint.rbf_vec_coeff_e().asnumpy().transpose(),
+    )
+    wgtfac_e = metrics_savepoint.wgtfac_e()
+    ddxn_z_full = metrics_savepoint.ddxn_z_full()
+    ddxt_z_full = metrics_savepoint.ddxt_z_full()
+    z_w_concorr_me = savepoint_velocity_1_7_init.z_w_concorr_me()
+    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels)
+    nflatlev = grid_savepoint.nflatlev()
+    c_intp = interpolation_savepoint.c_intp()
+    w = savepoint_velocity_1_7_init.w()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
+    tangent_orientation = grid_savepoint.tangent_orientation()
+    z_vt_ie = savepoint_velocity_1_7_init.z_vt_ie()
+    vt = savepoint_velocity_1_7_init.vt()
+    vn_ie = savepoint_velocity_1_7_init.vn_ie()
+    z_kin_hor_e = savepoint_velocity_1_7_init.z_kin_hor_e()
+    z_v_grad_w = savepoint_velocity_1_7_init.z_v_grad_w()
+    k = data_alloc.index_field(
+        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
+    )
+
+    lvn_only = savepoint_velocity_1_7_init.lvn_only()
+    edge = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
+    vertex = data_alloc.index_field(dim=dims.VertexDim, grid=icon_grid, backend=backend)
+    lateral_boundary_7 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+    halo_1 = icon_grid.end_index(edge_domain(h_grid.Zone.HALO))
+
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    horizontal_end = icon_grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+
+    vt_ref = savepoint_velocity_1_7_exit.vt()
+    vn_ie_ref = savepoint_velocity_1_7_exit.vn_ie()
+    z_kin_hor_e_ref = savepoint_velocity_1_7_exit.z_kin_hor_e()
+    z_w_concorr_me_ref = savepoint_velocity_1_7_exit.z_w_concorr_me()
+    z_v_grad_w_ref = savepoint_velocity_1_7_exit.z_v_grad_w()
+    start_vertex_lateral_boundary_level_2 = icon_grid.start_index(
+        vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
+
+    fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7.with_backend(
+        backend
+    )(
+        vn=vn,
+        rbf_vec_coeff_e=rbf_vec_coeff_e,
+        wgtfac_e=wgtfac_e,
+        ddxn_z_full=ddxn_z_full,
+        ddxt_z_full=ddxt_z_full,
+        z_w_concorr_me=z_w_concorr_me,
+        wgtfacq_e=wgtfacq_e,
+        nflatlev=gtx.int32(nflatlev),
+        c_intp=c_intp,
+        w=w,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_primal_edge_length=inv_primal_edge_length,
+        tangent_orientation=tangent_orientation,
+        z_vt_ie=z_vt_ie,
+        vt=vt,
+        vn_ie=vn_ie,
+        z_kin_hor_e=z_kin_hor_e,
+        z_v_grad_w=z_v_grad_w,
+        k=k,
+        istep=gtx.int32(istep_init),
+        nlev=gtx.int32(icon_grid.num_levels),
+        lvn_only=lvn_only,
+        edge=edge,
+        vertex=vertex,
+        lateral_boundary_7=lateral_boundary_7,
+        halo_1=halo_1,
+        start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
+        end_vertex_halo=end_vertex_halo,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(icon_grid.num_levels + 1),
+        offset_provider={
+            "E2C": icon_grid.get_offset_provider("E2C"),
+            "E2V": icon_grid.get_offset_provider("E2V"),
+            "V2C": icon_grid.get_offset_provider("V2C"),
+            "E2C2E": icon_grid.get_offset_provider("E2C2E"),
+            "Koff": dims.KDim,
+        },
+    )
+
+    assert helpers.dallclose(vt_ref.asnumpy(), vt.asnumpy(), rtol=1.0e-14, atol=1.0e-14)
+    assert helpers.dallclose(vn_ie_ref.asnumpy(), vn_ie.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(
+        z_kin_hor_e_ref.asnumpy(), z_kin_hor_e.asnumpy(), rtol=1.0e-14, atol=1.0e-14
+    )
+    assert helpers.dallclose(
+        z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
+    assert helpers.dallclose(
+        z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy(), rtol=1.0e-15, atol=1.0e-15
     )

@@ -46,22 +46,22 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
-        connectivities,
-        vn,
-        rbf_vec_coeff_e,
-        wgtfac_e,
-        ddxn_z_full,
-        ddxt_z_full,
-        z_w_concorr_me,
-        wgtfacq_e,
-        nflatlev,
-        z_vt_ie,
-        vt,
-        vn_ie,
-        z_kin_hor_e,
-        k,
-        nlev,
-        lvn_only,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        vn: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
+        wgtfac_e: np.ndarray,
+        ddxn_z_full: np.ndarray,
+        ddxt_z_full: np.ndarray,
+        z_w_concorr_me: np.ndarray,
+        wgtfacq_e: np.ndarray,
+        nflatlev: int,
+        z_vt_ie: np.ndarray,
+        vt: np.ndarray,
+        vn_ie: np.ndarray,
+        z_kin_hor_e: np.ndarray,
+        k: np.ndarray,
+        nlev: int,
+        lvn_only: bool,
     ):
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
@@ -114,33 +114,39 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
     def reference(
         cls,
         grid,
-        vn,
-        rbf_vec_coeff_e,
-        wgtfac_e,
-        ddxn_z_full,
-        ddxt_z_full,
-        z_w_concorr_me,
-        wgtfacq_e,
-        nflatlev,
-        c_intp,
-        w,
-        inv_dual_edge_length,
-        inv_primal_edge_length,
-        tangent_orientation,
-        z_vt_ie,
-        vt,
-        vn_ie,
-        z_kin_hor_e,
-        z_v_grad_w,
-        k,
-        istep,
-        nlev,
-        lvn_only,
-        edge,
-        lateral_boundary_7,
-        halo_1,
-        **kwargs,
-    ):
+        vn: np.ndarray,
+        rbf_vec_coeff_e: np.ndarray,
+        wgtfac_e: np.ndarray,
+        ddxn_z_full: np.ndarray,
+        ddxt_z_full: np.ndarray,
+        z_w_concorr_me: np.ndarray,
+        wgtfacq_e: np.ndarray,
+        nflatlev: np.ndarray,
+        c_intp: np.ndarray,
+        w: np.ndarray,
+        inv_dual_edge_length: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        tangent_orientation: np.ndarray,
+        z_vt_ie: np.ndarray,
+        vt: np.ndarray,
+        vn_ie: np.ndarray,
+        z_kin_hor_e: np.ndarray,
+        z_v_grad_w: np.ndarray,
+        k: np.ndarray,
+        istep: int,
+        nlev: int,
+        lvn_only: bool,
+        edge: np.ndarray,
+        vertex: np.ndarray,
+        lateral_boundary_7: int,
+        halo_1: int,
+        start_vertex_lateral_boundary_level_2: int,
+        end_vertex_halo: int,
+        horizontal_start: int,
+        horizontal_end: int,
+        vertical_start: int,
+        vertical_end: int,
+    ) -> dict:
         k_nlev = k[:-1]
 
         if istep == 1:
@@ -174,6 +180,8 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition_mask = (lateral_boundary_7 <= edge) & (edge < halo_1) & (k_nlev < nlev)
 
         z_w_v = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
+        if istep == 2:
+            z_w_v[:start_vertex_lateral_boundary_level_2, :] = 0.0
 
         if not lvn_only:
             z_v_grad_w = np.where(
@@ -219,11 +227,13 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         z_v_grad_w = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
 
-        k = data_alloc.index_field(grid=grid, dim=dims.KDim, extend={dims.KDim: 1})
-
-        edge = data_alloc.zero_field(grid, dims.EdgeDim, dtype=gtx.int32)
-        for e in range(grid.num_edges):
-            edge[e] = e
+        k = data_alloc.index_field(
+            dim=dims.KDim,
+            grid=grid,
+            extend={dims.KDim: 1},
+        )
+        edge = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
+        vertex = data_alloc.index_field(dim=dims.VertexDim, grid=grid)
 
         nlev = grid.num_levels
         nflatlev = 13
@@ -232,10 +242,26 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         lvn_only = False
 
         edge_domain = h_grid.domain(dims.EdgeDim)
+        vertex_domain = h_grid.domain(dims.VertexDim)
         # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
-        lateral_boundary_7 = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-        halo_1 = grid.end_index(edge_domain(h_grid.Zone.HALO))
-
+        lateral_boundary_7 = (
+            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        halo_1 = (
+            grid.end_index(edge_domain(h_grid.Zone.HALO))
+            if hasattr(grid, "end_index")
+            else grid.num_edges
+        )
+        start_vertex_lateral_boundary_level_2 = (
+            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        end_vertex_halo = (
+            grid.end_index(vertex_domain(h_grid.Zone.HALO)) if hasattr(grid, "end_index") else 0
+        )
         horizontal_start = 0
         horizontal_end = grid.num_edges
         vertical_start = 0
@@ -265,8 +291,11 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
             nlev=nlev,
             lvn_only=lvn_only,
             edge=edge,
+            vertex=vertex,
             lateral_boundary_7=lateral_boundary_7,
             halo_1=halo_1,
+            start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
+            end_vertex_halo=end_vertex_halo,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=vertical_start,

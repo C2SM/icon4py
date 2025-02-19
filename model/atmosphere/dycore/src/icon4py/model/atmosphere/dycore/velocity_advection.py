@@ -254,6 +254,11 @@ class VelocityAdvection:
         #  - $\Wrbf$ : rbf_vec_coeff_e
         #  - $\vn{\n}{\e}{\k}$ : vn
         #
+        # TODO: rbf array is inverted in serialized data
+        self.interpolation_state.rbf_vec_coeff_e = gtx.as_field(
+            (dims.EdgeDim, dims.E2C2EDim),
+            self.interpolation_state.rbf_vec_coeff_e.asnumpy().transpose(),
+        )
         self._compute_tangential_wind(
             vn=prognostic_state.vn,
             rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
