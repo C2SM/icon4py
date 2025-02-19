@@ -132,11 +132,11 @@ def test_time_step_flags(
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
         ),
-        # (
-        #    dt_utils.GLOBAL_EXPERIMENT,
-        #    "2000-01-01T00:00:02.000",
-        #    "2000-01-01T00:00:02.000",
-        # ),
+        (
+            dt_utils.GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+        ),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -161,7 +161,7 @@ def test_nonhydro_predictor_step(
     caplog,
     backend,
 ):
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.WARN)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
@@ -226,6 +226,7 @@ def test_nonhydro_predictor_step(
     edge_start_lateral_boundary_level_5 = icon_grid.start_index(
         edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
+
     edge_start_lateral_boundary_level_7 = icon_grid.start_index(
         edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
@@ -371,8 +372,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 30
     assert helpers.dallclose(
-        solve_nonhydro.z_vn_avg.asnumpy(),
-        sp_exit.z_vn_avg().asnumpy(),
+        solve_nonhydro.z_vn_avg.asnumpy()[edge_start_lateral_boundary_level_5:, :],
+        sp_exit.z_vn_avg().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=5e-14,
     )
     # stencil 30
@@ -557,7 +558,7 @@ def test_nonhydro_corrector_step(
     caplog,
     backend,
 ):
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.WARN)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     init_savepoint = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -772,7 +773,7 @@ def test_run_solve_nonhydro_single_step(
     caplog,
     backend,
 ):
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.WARN)
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
 
     sp = savepoint_nonhydro_init

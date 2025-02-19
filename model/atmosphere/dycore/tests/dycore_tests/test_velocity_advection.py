@@ -5,6 +5,8 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import logging
+
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
@@ -18,6 +20,9 @@ from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 from . import utils
+
+
+log = logging.getLogger(__name__)
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
@@ -104,7 +109,7 @@ def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit, substep_init", [(1, 1, 1)])
+@pytest.mark.parametrize("istep_init, substep_init, istep_exit, substep_exit ", [(1, 1, 1, 1)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -118,6 +123,8 @@ def test_velocity_predictor_step(
     istep_exit,
     step_date_init,
     step_date_exit,
+    substep_init,
+    substep_exit,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -129,7 +136,9 @@ def test_velocity_predictor_step(
     interpolation_savepoint,
     savepoint_velocity_exit,
     backend,
+    caplog,
 ):
+    caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
@@ -210,6 +219,7 @@ def test_velocity_predictor_step(
     icon_result_z_w_concorr_mc = savepoint_velocity_exit.z_w_concorr_mc().asnumpy()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
+    # FIX
     # stencil 01
     assert helpers.dallclose(diagnostic_state.vt.asnumpy(), icon_result_vt, atol=1.0e-14)
     # stencil 02,05

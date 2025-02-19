@@ -622,10 +622,7 @@ class InterpolationSavepoint(IconSavepoint):
         )
 
     def rbf_vec_coeff_e(self):
-        buffer = np.squeeze(
-            self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
-        ).transpose()
-        return gtx.as_field((dims.EdgeDim, dims.E2C2EDim), buffer, allocator=self.backend)
+        return self._get_field("rbf_vec_coeff_e", dims.EdgeDim, dims.E2C2EDim)
 
     @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
@@ -1229,7 +1226,7 @@ class IconNonHydroExitSavepoint(IconSavepoint):
         return self._get_field("z_flxdiv_theta", dims.CellDim, dims.KDim)
 
     def z_contr_w_fl_l(self):
-        return self._get_field("z_contr_w_fl", dims.CellDim, dims.KDim)
+        return self._get_field("z_contr_w_fl_l", dims.CellDim, dims.KDim)
 
     def vn_ie(self):
         return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)
@@ -1598,6 +1595,7 @@ class IconGscpSatadEntrySavepoint(IconSavepoint):
         return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
 
 
+# microphysics
 class IconGscpSatadExitSavepoint(IconSavepoint):
     def temperature(self):
         return self._get_field("ser_out_satad_temperature", dims.CellDim, dims.KDim)
@@ -1857,7 +1855,7 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_velocity_init(
-        self, istep: int, date: str, substep: int = 1
+        self, istep: int, date: str, substep: int
     ) -> IconVelocityInitSavepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-init"]
