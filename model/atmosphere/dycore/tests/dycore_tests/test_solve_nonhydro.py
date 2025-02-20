@@ -717,6 +717,7 @@ def test_nonhydro_corrector_step(
     )
 
 
+@pytest.mark.requires_concat_where
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
