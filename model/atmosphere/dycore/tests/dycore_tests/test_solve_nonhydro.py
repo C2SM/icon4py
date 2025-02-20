@@ -1053,12 +1053,7 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
         # ),
     ],
 )
-@pytest.mark.parametrize("istep", [1, 2])
 def test_run_solve_nonhydro_15_to_28(
-    istep_init,
-    istep_exit,
-    jstep_init,
-    jstep_exit,
     step_date_init,
     step_date_exit,
     experiment,
@@ -1075,7 +1070,8 @@ def test_run_solve_nonhydro_15_to_28(
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
     at_initial_timestep,
-    istep,
+    istep_init,
+    substep,
     savepoint_nonhydro_15_28_init,
     savepoint_nonhydro_15_28_exit,
     backend,
@@ -1101,8 +1097,6 @@ def test_run_solve_nonhydro_15_to_28(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    nflatlev = vertical_params.nflatlev
-    nflat_gradp = vertical_params.nflat_gradp
     vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
@@ -1210,7 +1204,7 @@ def test_run_solve_nonhydro_15_to_28(
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
         scal_divdamp_o2=scal_divdamp_o2,
-        istep=istep,
+        istep=istep_init,
         start_edge_halo_level_2=start_edge_halo_level_2,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary=start_edge_lateral_boundary,
@@ -1227,8 +1221,8 @@ def test_run_solve_nonhydro_15_to_28(
         kstart_dd3d=nonhydro_params.kstart_dd3d,
         COMBINED=solve_nh.DivergenceDampingOrder.COMBINED,
         FOURTH_ORDER=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
-        nflatlev=nflatlev,
-        nflat_gradp=nflat_gradp,
+        nflatlev=vertical_params.nflatlev,
+        nflat_gradp=vertical_params.nflat_gradp,
         offset_provider={
             "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
             "E2EC": icon_grid.get_offset_provider("E2EC"),
