@@ -223,6 +223,22 @@ def _compute_d2dexdz2_fac_mc(
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
+    """
+    Compute vertical derivative of d_exner_dz/theta_ref for full level mass points.
+
+    Args:
+        theta_ref_mc:
+        inv_ddqz_z_full:
+        exner_ref_mc:
+        z_mc:
+        cpd:
+        grav:
+        del_t_bg:
+        h_scal_bg:
+
+    Returns:
+
+    """
     del_t_bg = astype(del_t_bg, vpfloat)
     cpd = astype(cpd, vpfloat)
     grav = astype(grav, vpfloat)
