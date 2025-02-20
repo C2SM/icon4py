@@ -246,18 +246,18 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid, a
 def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, backend):
     xp = data_alloc.import_array_ns(backend)
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
-    c_bln_avg = interpolation_savepoint.c_bln_avg().asnumpy()
-    geofac_div = interpolation_savepoint.geofac_div().asnumpy()
-    owner_mask = grid_savepoint.e_owner_mask().asnumpy()
-    primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().asnumpy()
-    primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().asnumpy()
-    primal_cart_normal_z = grid_savepoint.primal_cart_normal_z().asnumpy()
-    e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.E2CDim])
-    c2e = data_alloc.as_numpy(icon_grid.connectivities[dims.C2EDim])
-    c2e2c = data_alloc.as_numpy(icon_grid.connectivities[dims.C2E2CDim])
-    e2c2e = data_alloc.as_numpy(icon_grid.connectivities[dims.E2C2EDim])
-    horizontal_start_p3 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
-    horizontal_start_p4 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    c_bln_avg = interpolation_savepoint.c_bln_avg().ndarray
+    geofac_div = interpolation_savepoint.geofac_div().ndarray
+    owner_mask = grid_savepoint.e_owner_mask().ndarray
+    primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().ndarray
+    primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().ndarray
+    primal_cart_normal_z = grid_savepoint.primal_cart_normal_z().ndarray
+    e2c = icon_grid.connectivities[dims.E2CDim]
+    c2e = icon_grid.connectivities[dims.C2EDim]
+    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
+    e2c2e = icon_grid.connectivities[dims.E2C2EDim]
+    horizontal_start_1 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+    horizontal_start_2 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
 
     e_flx_avg = functools.partial(compute_e_flx_avg, array_ns=xp)(
         c_bln_avg,
@@ -270,10 +270,10 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
         c2e,
         c2e2c,
         e2c2e,
-        horizontal_start_p3,
-        horizontal_start_p4,
+        horizontal_start_1,
+        horizontal_start_2,
     )
-    assert test_helpers.dallclose(e_flx_avg, e_flx_avg_ref)
+    assert test_helpers.dallclose(data_alloc.as_numpy(e_flx_avg), e_flx_avg_ref)
 
 
 @pytest.mark.cpu_only
