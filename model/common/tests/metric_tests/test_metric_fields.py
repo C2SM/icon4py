@@ -35,7 +35,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_flat_idx,
     compute_hmask_dd3d,
     compute_mask_prog_halo_c,
-    compute_pg_edgeidx_mask,
+    compute_pressure_gradient_downward_extrapolation_mask_distance,
     compute_rayleigh_w,
     compute_scalfac_dd3d,
     compute_theta_exner_ref_mc,
@@ -556,21 +556,16 @@ def test_compute_pg_exdist_dsl(
     c_lin_e = interpolation_savepoint.c_lin_e()
     z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
 
-    k_lev = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend)
-    e_lev = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, backend=backend)
+    k = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend)
+    edges = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, backend=backend)
+
     flat_idx = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, backend=backend
     )
-    pg_edgeidx = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, backend=backend
-    )
-    pg_vertidx = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, backend=backend
-    )
-    pg_edgeidx_dsl = data_alloc.zero_field(
+    edge_mask = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, backend=backend
     )
-    pg_exdist_dsl = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
+    ex_distance = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
 
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
@@ -582,7 +577,7 @@ def test_compute_pg_exdist_dsl(
         z_mc=z_mc,
         c_lin_e=c_lin_e,
         z_ifc=z_ifc,
-        k_lev=k_lev,
+        k_lev=k,
         flat_idx=flat_idx,
         horizontal_start=horizontal_start_edge,
         horizontal_end=icon_grid.num_edges,
@@ -597,20 +592,18 @@ def test_compute_pg_exdist_dsl(
         (dims.EdgeDim,), xp.max(flat_idx.asnumpy(), axis=1), dtype=gtx.int32, allocator=backend
     )
 
-    compute_pg_edgeidx_mask.with_backend(backend)(
+    compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(backend)(
         z_mc=z_mc,
         z_ifc_sliced=z_ifc_sliced,
         c_lin_e=c_lin_e,
         e_owner_mask=grid_savepoint.e_owner_mask(),
         flat_idx_max=flat_idx_max,
-        e_lev=e_lev,
-        k_lev=k_lev,
-        pg_edgeidx=pg_edgeidx,
-        pg_vertidx=pg_vertidx,
-        pg_edgeidx_dsl=pg_edgeidx_dsl,
-        pg_exdist_dsl=pg_exdist_dsl,
-        h_start_zaux2=start_edge_nudging,
-        h_end_zaux2=icon_grid.num_edges,
+        e_lev=edges,
+        k_lev=k,
+        pg_edgeidx_dsl=edge_mask,
+        pg_exdist_dsl=ex_distance,
+        horizontal_start_distance=start_edge_nudging,
+        horizontal_end_distance=icon_grid.num_edges,
         horizontal_start=start_edge_nudging_2,
         horizontal_end=icon_grid.num_edges,
         vertical_start=int(0),
@@ -621,8 +614,8 @@ def test_compute_pg_exdist_dsl(
         },
     )
 
-    assert testing_helpers.dallclose(pg_exdist_ref.asnumpy(), pg_exdist_dsl.asnumpy(), rtol=1.0e-9)
-    assert testing_helpers.dallclose(pg_edgeidx_dsl_ref.asnumpy(), pg_edgeidx_dsl.asnumpy())
+    assert testing_helpers.dallclose(pg_exdist_ref.asnumpy(), ex_distance.asnumpy(), rtol=1.0e-9)
+    assert testing_helpers.dallclose(pg_edgeidx_dsl_ref.asnumpy(), edge_mask.asnumpy())
 
 
 @pytest.mark.datatest

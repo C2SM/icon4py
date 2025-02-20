@@ -38,6 +38,7 @@ from icon4py.model.common.metrics import (
     metrics_attributes as attrs,
     reference_atmosphere,
 )
+from icon4py.model.common.metrics.metrics_attributes import CELL_HEIGHT_ON_INTERFACE_LEVEL
 from icon4py.model.common.states import factory, model
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -111,7 +112,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(
             factory.PrecomputedFieldProvider(
                 {
-                    "height_on_interface_levels": interface_model_height,
+                    attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL: interface_model_height,
                     "z_ifc_sliced": z_ifc_sliced,
                     "vct_a": vct_a,
                     "c_refin_ctrl": c_refin_ctrl,
@@ -143,7 +144,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={"z_mc": attrs.Z_MC},
-            deps={"z_ifc": "height_on_interface_levels"},
+            deps={"z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL},
         )
         self.register_provider(height)
 
@@ -161,7 +162,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             },
             fields={"ddqz_z_half": attrs.DDQZ_Z_HALF},
             deps={
-                "z_ifc": "height_on_interface_levels",
+                "z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "z_mc": attrs.Z_MC,
                 "k": "k_lev",
             },
@@ -171,7 +172,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
         ddqz_z_full_and_inverse = factory.ProgramFieldProvider(
             func=mf.compute_ddqz_z_full_and_inverse.with_backend(self._backend),
-            deps={"z_ifc": "height_on_interface_levels"},
+            deps={"z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL},
             domain={
                 dims.CellDim: (
                     cell_domain(h_grid.Zone.LOCAL),
@@ -230,7 +231,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=mf.compute_coeff_dwdz.with_backend(self._backend),
             deps={
                 "ddqz_z_full": attrs.DDQZ_Z_FULL,
-                "z_ifc": "height_on_interface_levels",
+                "z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL,
             },
             domain={
                 dims.CellDim: (
@@ -309,7 +310,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_cell_to_vertex_interpolation = factory.ProgramFieldProvider(
             func=compute_cell_2_vertex_interpolation.with_backend(self._backend),
             deps={
-                "cell_in": "height_on_interface_levels",
+                "cell_in": CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "c_int": interpolation_attributes.CELL_AW_VERTS,
             },
             domain={
@@ -329,7 +330,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_ddxt_z_half_e = factory.ProgramFieldProvider(
             func=mf.compute_ddxt_z_half_e.with_backend(self._backend),
             deps={
-                "cell_in": "height_on_interface_levels",
+                "cell_in": CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "c_int": interpolation_attributes.CELL_AW_VERTS,
                 "inv_primal_edge_length": f"inverse_of_{geometry_attrs.EDGE_LENGTH}",
                 "tangent_orientation": geometry_attrs.TANGENT_ORIENTATION,
@@ -351,7 +352,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_ddxn_z_half_e = factory.ProgramFieldProvider(
             func=mf.compute_ddxn_z_half_e.with_backend(self._backend),
             deps={
-                "z_ifc": "height_on_interface_levels",
+                "z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "inv_dual_edge_length": f"inverse_of_{geometry_attrs.DUAL_EDGE_LENGTH}",
             },
             domain={
@@ -396,7 +397,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             fields=(attrs.VWIND_IMPL_WGT,),
             deps={
                 "vct_a": "vct_a",
-                "z_ifc": "height_on_interface_levels",
+                "z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "z_ddxn_z_half_e": attrs.DDXN_Z_HALF_E,
                 "z_ddxt_z_half_e": attrs.DDXT_Z_HALF_E,
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
@@ -451,7 +452,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_wgtfac_c_np = factory.ProgramFieldProvider(
             func=compute_wgtfac_c.compute_wgtfac_c.with_backend(self._backend),
             deps={
-                "z_ifc": "height_on_interface_levels",
+                "z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "k": "k_lev",
             },
             domain={
@@ -493,7 +494,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
-                "z_ifc": "height_on_interface_levels",
+                "z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "k_lev": "k_lev",
             },
             connectivities={"e2c": dims.E2CDim},
@@ -506,34 +507,23 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_flat_idx_max_np)
 
-        compute_pg_edgeidx_vertidx = factory.ProgramFieldProvider(
-            func=mf.compute_pg_edgeidx_vertidx.with_backend(self._backend),
+        compute_pg_idx_exdist = factory.ProgramFieldProvider(
+            func=mf.compute_pressure_gradient_downward_extrapolation_mask_distance.with_backend(
+                self._backend
+            ),
             deps={
+                "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
-                "z_ifc": "height_on_interface_levels",
                 "z_ifc_sliced": "z_ifc_sliced",
                 "e_owner_mask": "e_owner_mask",
                 "flat_idx_max": attrs.FLAT_IDX_MAX,
                 "e_lev": "e_lev",
                 "k_lev": "k_lev",
             },
-            domain={
-                dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.NUDGING),
-                    edge_domain(h_grid.Zone.END),
-                ),
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
-                ),
+            params={
+                "horizontal_start_distance": self._grid.end_index(edge_domain(h_grid.Zone.NUDGING)),
+                "horizontal_end_distance": self._grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
             },
-            fields={attrs.PG_EDGEIDX: attrs.PG_EDGEIDX, attrs.PG_VERTIDX: attrs.PG_VERTIDX},
-        )
-        self.register_provider(compute_pg_edgeidx_vertidx)
-
-        compute_pg_edgeidx_dsl = factory.ProgramFieldProvider(
-            func=mf.compute_pg_edgeidx_mask.with_backend(self._backend),
-            deps={"pg_edgeidx": attrs.PG_EDGEIDX, "pg_vertidx": attrs.PG_VERTIDX},
             domain={
                 dims.EdgeDim: (
                     edge_domain(h_grid.Zone.NUDGING_LEVEL_2),
@@ -544,38 +534,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"pg_edgeidx_dsl": attrs.PG_EDGEIDX_DSL},
+            fields={"pg_edgeidx_dsl": attrs.PG_EDGEIDX_DSL, "pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
         )
-        self.register_provider(compute_pg_edgeidx_dsl)
-
-        compute_pg_exdist_dsl = factory.ProgramFieldProvider(
-            func=mf.compute_pg_exdist_dsl.with_backend(self._backend),
-            deps={
-                "z_ifc_sliced": "z_ifc_sliced",
-                "z_mc": attrs.Z_MC,
-                "c_lin_e": interpolation_attributes.C_LIN_E,
-                "e_owner_mask": "e_owner_mask",
-                "flat_idx_max": attrs.FLAT_IDX_MAX,
-                "k_lev": "k_lev",
-                "e_lev": "e_lev",
-            },
-            domain={
-                dims.EdgeDim: (
-                    edge_domain(h_grid.Zone.NUDGING),
-                    edge_domain(h_grid.Zone.END),
-                ),
-                dims.KDim: (
-                    vertical_domain(v_grid.Zone.TOP),
-                    vertical_domain(v_grid.Zone.BOTTOM),
-                ),
-            },
-            params={
-                "h_start_zaux2": self._grid.end_index(edge_domain(h_grid.Zone.NUDGING)),
-                "h_end_zaux2": self._grid.end_index(edge_domain(h_grid.Zone.LOCAL)),
-            },
-            fields={"pg_exdist_dsl": attrs.PG_EDGEDIST_DSL},
-        )
-        self.register_provider(compute_pg_exdist_dsl)
+        self.register_provider(compute_pg_idx_exdist)
 
         compute_mask_bdy_halo_c = factory.ProgramFieldProvider(
             func=mf.compute_mask_bdy_halo_c.with_backend(self._backend),
@@ -621,7 +582,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "z_mc": attrs.Z_MC,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
-                "z_ifc": "height_on_interface_levels",
+                "z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "flat_idx": attrs.FLAT_IDX_MAX,
                 "z_ifc_sliced": "z_ifc_sliced",
             },
@@ -663,7 +624,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             func=functools.partial(compute_wgtfacq.compute_wgtfacq_c_dsl, array_ns=self._xp),
             domain=(dims.CellDim, dims.KDim),
             fields=(attrs.WGTFACQ_C,),
-            deps={"z_ifc": "height_on_interface_levels"},
+            deps={"z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL},
             params={"nlev": self._grid.num_levels},
         )
 
@@ -672,7 +633,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         compute_wgtfacq_e = factory.NumpyFieldsProvider(
             func=functools.partial(compute_wgtfacq.compute_wgtfacq_e_dsl, array_ns=self._xp),
             deps={
-                "z_ifc": "height_on_interface_levels",
+                "z_ifc": CELL_HEIGHT_ON_INTERFACE_LEVEL,
                 "c_lin_e": interpolation_attributes.C_LIN_E,
                 "wgtfacq_c_dsl": attrs.WGTFACQ_C,
             },
