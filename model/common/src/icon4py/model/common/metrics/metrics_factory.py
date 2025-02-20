@@ -532,7 +532,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_pg_edgeidx_vertidx)
 
         compute_pg_edgeidx_dsl = factory.ProgramFieldProvider(
-            func=mf.compute_pg_edgeidx_dsl.with_backend(self._backend),
+            func=mf.compute_pg_edgeidx_mask.with_backend(self._backend),
             deps={"pg_edgeidx": attrs.PG_EDGEIDX, "pg_vertidx": attrs.PG_VERTIDX},
             domain={
                 dims.EdgeDim: (

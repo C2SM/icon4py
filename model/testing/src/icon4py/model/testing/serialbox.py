@@ -679,7 +679,7 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("ddqz_z_full", dims.CellDim, dims.KDim)
 
     def ipeidx_dsl(self):
-        return self._get_field("ipeidx_dsl", dims.EdgeDim, dims.KDim, dtype=bool)
+        return self._get_field("pg_edgeidx_dsl", dims.EdgeDim, dims.KDim, dtype=bool)
 
     def mask_prog_halo_c(self):
         return self._get_field("mask_prog_halo_c", dims.CellDim, dtype=bool)

@@ -24,8 +24,6 @@ from icon4py.model.common.metrics.compute_vwind_impl_wgt import (
     compute_vwind_impl_wgt,
 )
 from icon4py.model.common.metrics.metric_fields import (
-    _compute_flat_idx,
-    _compute_pg_edgeidx_vertidx,
     compute_bdy_halo_c,
     compute_coeff_dwdz,
     compute_ddqz_z_full_and_inverse,
@@ -34,10 +32,10 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_ddxn_z_half_e,
     compute_ddxt_z_half_e,
     compute_exner_exfac,
+    compute_flat_idx,
     compute_hmask_dd3d,
     compute_mask_prog_halo_c,
-    compute_pg_edgeidx_dsl,
-    compute_pg_exdist_dsl,
+    compute_pg_edgeidx_mask,
     compute_rayleigh_w,
     compute_scalfac_dd3d,
     compute_theta_exner_ref_mc,
@@ -541,7 +539,6 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
     assert testing_helpers.dallclose(wgtfac_e.asnumpy(), wgtfac_e_ref.asnumpy())
 
 
-@pytest.mark.cpu_only
 @pytest.mark.embedded_remap_error
 @pytest.mark.skip_value_error
 @pytest.mark.datatest
@@ -549,102 +546,79 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
 def test_compute_pg_exdist_dsl(
     metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
+    xp = data_alloc.import_array_ns(backend)
     pg_exdist_ref = metrics_savepoint.pg_exdist()
+    pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
+
     nlev = icon_grid.num_levels
-    k_lev = gtx.as_field((dims.KDim,), np.arange(nlev, dtype=gtx.int32), allocator=backend)
+    z_mc = metrics_savepoint.z_mc()
+    z_ifc = metrics_savepoint.z_ifc()
+    c_lin_e = interpolation_savepoint.c_lin_e()
+    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
+
+    k_lev = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1}, backend=backend)
+    e_lev = data_alloc.index_field(icon_grid, dim=dims.EdgeDim, backend=backend)
+    flat_idx = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, backend=backend
+    )
     pg_edgeidx = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, backend=backend
     )
     pg_vertidx = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, dtype=gtx.int32, backend=backend
     )
+    pg_edgeidx_dsl = data_alloc.zero_field(
+        icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, backend=backend
+    )
     pg_exdist_dsl = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
-    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
-    flat_idx = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
-    z_ifc = metrics_savepoint.z_ifc()
-    z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.ndarray[:, nlev], allocator=backend)
+
     start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
     start_edge_nudging_2 = icon_grid.start_index(edge_domain(horizontal.Zone.NUDGING_LEVEL_2))
     horizontal_start_edge = icon_grid.start_index(
         edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
 
-    e_lev = gtx.as_field(
-        (dims.EdgeDim,), np.arange(icon_grid.num_edges, dtype=gtx.int32), allocator=backend
-    )
-
-    average_cell_kdim_level_up.with_backend(backend)(
-        z_ifc, out=z_mc, offset_provider={"Koff": icon_grid.get_offset_provider("Koff")}
-    )
-
-    _compute_flat_idx(
+    compute_flat_idx.with_backend(backend)(
         z_mc=z_mc,
-        c_lin_e=interpolation_savepoint.c_lin_e(),
+        c_lin_e=c_lin_e,
         z_ifc=z_ifc,
         k_lev=k_lev,
-        out=flat_idx,
-        domain={
-            dims.EdgeDim: (horizontal_start_edge, icon_grid.num_edges),
-            dims.KDim: (gtx.int32(0), icon_grid.num_levels),
-        },
+        flat_idx=flat_idx,
+        horizontal_start=horizontal_start_edge,
+        horizontal_end=icon_grid.num_edges,
+        vertical_start=gtx.int32(0),
+        vertical_end=icon_grid.num_levels,
         offset_provider={
             "E2C": icon_grid.get_offset_provider("E2C"),
             "Koff": icon_grid.get_offset_provider("Koff"),
         },
     )
-    flat_idx_np = np.amax(flat_idx.asnumpy(), axis=1)
-    flat_idx_max = gtx.as_field((dims.EdgeDim,), flat_idx_np, dtype=gtx.int32, allocator=backend)
+    flat_idx_max = gtx.as_field(
+        (dims.EdgeDim,), xp.max(flat_idx.asnumpy(), axis=1), dtype=gtx.int32, allocator=backend
+    )
 
-    compute_pg_exdist_dsl.with_backend(backend)(
-        z_ifc_sliced=z_ifc_sliced,
+    compute_pg_edgeidx_mask.with_backend(backend)(
         z_mc=z_mc,
-        c_lin_e=interpolation_savepoint.c_lin_e(),
+        z_ifc_sliced=z_ifc_sliced,
+        c_lin_e=c_lin_e,
         e_owner_mask=grid_savepoint.e_owner_mask(),
         flat_idx_max=flat_idx_max,
-        k_lev=k_lev,
-        e_lev=e_lev,
-        pg_exdist_dsl=pg_exdist_dsl,
-        h_start_zaux2=start_edge_nudging,
-        h_end_zaux2=icon_grid.num_edges,
-        horizontal_start=start_edge_nudging,
-        horizontal_end=icon_grid.num_edges,
-        vertical_start=0,
-        vertical_end=nlev,
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
-    )
-
-    _compute_pg_edgeidx_vertidx(
-        c_lin_e=interpolation_savepoint.c_lin_e(),
-        z_ifc=z_ifc,
-        z_ifc_sliced=z_ifc_sliced,
-        e_owner_mask=grid_savepoint.e_owner_mask(),
-        flat_idx_max=gtx.as_field((dims.EdgeDim,), flat_idx_np, dtype=gtx.int32, allocator=backend),
         e_lev=e_lev,
         k_lev=k_lev,
-        pg_edgeidx=pg_edgeidx,
-        pg_vertidx=pg_vertidx,
-        out=(pg_edgeidx, pg_vertidx),
-        domain={dims.EdgeDim: (start_edge_nudging, icon_grid.num_edges), dims.KDim: (0, nlev)},
-        offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "Koff": icon_grid.get_offset_provider("Koff"),
-        },
-    )
-
-    pg_edgeidx_dsl = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, dtype=bool, backend=backend
-    )
-    pg_edgeidx_dsl_ref = metrics_savepoint.pg_edgeidx_dsl()
-
-    compute_pg_edgeidx_dsl.with_backend(backend)(
         pg_edgeidx=pg_edgeidx,
         pg_vertidx=pg_vertidx,
         pg_edgeidx_dsl=pg_edgeidx_dsl,
+        pg_exdist_dsl=pg_exdist_dsl,
+        h_start_zaux2=start_edge_nudging,
+        h_end_zaux2=icon_grid.num_edges,
         horizontal_start=start_edge_nudging_2,
         horizontal_end=icon_grid.num_edges,
         vertical_start=int(0),
         vertical_end=icon_grid.num_levels,
-        offset_provider={},
+        offset_provider={
+            "E2C": icon_grid.get_offset_provider("E2C"),
+            "Koff": icon_grid.get_offset_provider("Koff"),
+        },
     )
 
     assert testing_helpers.dallclose(pg_exdist_ref.asnumpy(), pg_exdist_dsl.asnumpy(), rtol=1.0e-9)
