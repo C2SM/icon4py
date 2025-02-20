@@ -132,6 +132,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         ddqz_z_half,
         area,
         geofac_n2s,
+        z_w_con_c_full,
         cell,
         k,
         scalfac_exdiff,
@@ -145,6 +146,10 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         extra_diffu,
         **kwargs,
     ):
+        # We need to store the initial return field, because we only compute on a subdomain.
+        z_w_con_c_full_ret = z_w_con_c_full.copy()
+        ddt_w_adv_ret = ddt_w_adv.copy()
+
         z_w_con_c_full = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
 
         if not lvn_only:
@@ -175,7 +180,20 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
                 extra_diffu,
             )
 
-        return dict(z_w_con_c_full=z_w_con_c_full, ddt_w_adv=ddt_w_adv)
+        # Apply the slicing.
+        horizontal_start = kwargs["horizontal_start"]
+        horizontal_end = kwargs["horizontal_end"]
+        vertical_start = kwargs["vertical_start"]
+        vertical_end = kwargs["vertical_end"]
+
+        z_w_con_c_full_ret[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ] = z_w_con_c_full[horizontal_start:horizontal_end, vertical_start:vertical_end]
+        ddt_w_adv_ret[horizontal_start:horizontal_end, vertical_start:vertical_end] = ddt_w_adv[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ]
+
+        return dict(z_w_con_c_full=z_w_con_c_full_ret, ddt_w_adv=ddt_w_adv_ret)
 
     @pytest.fixture
     def input_data(self, grid: base_grid.BaseGrid) -> dict:
