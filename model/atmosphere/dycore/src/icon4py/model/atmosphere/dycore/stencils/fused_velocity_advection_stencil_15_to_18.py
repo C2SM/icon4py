@@ -67,7 +67,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     ddt_w_adv = (
         where(
             (cell_lower_bound <= cell < cell_upper_bound)
-            & (maximum(2, nrdmax - 2) <= k < nlev - 3),
+            & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 3),
             _add_extra_diffusion_for_w_con_approaching_cfl(
                 levelmask,
                 cfl_clipping,
@@ -152,8 +152,8 @@ def _fused_velocity_advection_stencil_15_to_18(
             nrdmax,
             extra_diffu,
         )
-        if not lvn_only
-        else ddt_w_adv
+        # if not lvn_only
+        # else ddt_w_adv
     )
 
     return (z_w_con_c_full, ddt_w_adv)

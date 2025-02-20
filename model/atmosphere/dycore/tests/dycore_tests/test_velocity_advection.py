@@ -720,9 +720,9 @@ def test_velocity_fused_15_18(
     nrdmax = grid_savepoint.nrdmax()
     extra_diffu = True
 
-    cell_domain = h_grid.domain(dims.EdgeDim)
+    cell_domain = h_grid.domain(dims.CellDim)
     cell_lower_bound = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-    cell_upper_bound = icon_grid.start_index(cell_domain(h_grid.Zone.LOCAL))
+    cell_upper_bound = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
@@ -772,8 +772,8 @@ def test_velocity_fused_15_18(
         },
     )
 
-    assert helpers.dallclose(z_w_con_c_full_ref.asnumpy(), z_w_con_c_full.asnumpy())
-    assert helpers.dallclose(ddt_w_adv_ref.asnumpy(), ddt_w_adv.asnumpy())
+    assert helpers.dallclose(z_w_con_c_full_ref.asnumpy(), z_w_con_c_full.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(ddt_w_adv_ref.asnumpy(), ddt_w_adv.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
 
 
 @pytest.mark.datatest

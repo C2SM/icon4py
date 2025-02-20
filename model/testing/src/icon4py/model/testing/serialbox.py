@@ -385,8 +385,7 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_connectivity_array("c2v", dims.CellDim)
 
     def nrdmax(self):
-        return self.serializer.read("nrdmax", self.savepoint)[0]
-        #return self._read_int32_shift1("nrdmax")
+        return self._read_int32_shift1("nrdmax")[0]
 
     def refin_ctrl(self, dim: gtx.Dimension):
         field_name = "refin_ctl"
@@ -1223,7 +1222,7 @@ class IconVelocityInit15to18Savepoint(IconSavepoint):
         return self._get_field("z_v_grad_w", dims.EdgeDim, dims.KDim)
 
     def levmask(self):
-        return self._get_field("levelmask", dims.KDim, dtype=bool)
+        return self._get_field("levmask", dims.KDim, dtype=bool)
 
     def z_w_con_c_full(self):
         return self._get_field("z_w_con_c_full", dims.CellDim, dims.KDim)
