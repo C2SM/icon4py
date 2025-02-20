@@ -12,6 +12,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
@@ -91,20 +92,10 @@ class TestComputeZMc(testing_helpers.StencilTest):
 def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = data_alloc.zero_field(
-        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-    )
+
     nlevp1 = icon_grid.num_levels + 1
-    k_index = gtx.as_field((dims.KDim,), np.arange(nlevp1, dtype=gtx.int32), allocator=backend)
-    compute_z_mc.with_backend(backend)(
-        z_ifc,
-        z_mc,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=gtx.int32(icon_grid.num_levels),
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
-    )
+    k_index = data_alloc.index_field(icon_grid, dim=KDim, extend={KDim: 1})
+    z_mc = metrics_savepoint.z_mc()
     ddqz_z_half = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
@@ -422,18 +413,20 @@ def test_compute_ddxt_z_full(
 def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     exner_expol = 0.333 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.3333333333333
-
+    cell_index = data_alloc.index_field(icon_grid, dims.CellDim, dtype=gtx.int32)
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
+        cell=cell_index,
         exner_exfac=exner_exfac,
         exner_expol=exner_expol,
-        horizontal_start=horizontal_start,
-        horizontal_end=icon_grid.num_cells,
+        lateral_boundary_level_2=horizontal_start,
+        horizontal_start=gtx.int32(0),
+        horizontal_end=gtx.int32(icon_grid.num_cells),
         vertical_start=gtx.int32(0),
-        vertical_end=icon_grid.num_levels,
+        vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
@@ -447,11 +440,11 @@ def test_compute_vwind_impl_wgt(
 ):
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    tangent_orientation = grid_savepoint.tangent_orientation()
+    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxn_z_half_e = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
-    tangent_orientation = grid_savepoint.tangent_orientation()
-    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxt_z_half_e = data_alloc.zero_field(
         icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
     )
@@ -543,7 +536,7 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
 @pytest.mark.skip_value_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_pg_exdist_dsl(
+def test_compute_pressure_gradient_downward_extrapolation_mask_distance(
     metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
     xp = data_alloc.import_array_ns(backend)

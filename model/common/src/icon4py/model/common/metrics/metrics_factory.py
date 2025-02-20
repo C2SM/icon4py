@@ -102,6 +102,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         k_index = gtx.as_field((dims.KDim,), np.arange(self._grid.num_levels + 1, dtype=gtx.int32))
         e_lev = gtx.as_field((dims.EdgeDim,), np.arange(self._grid.num_edges, dtype=gtx.int32))
+        c_lev = gtx.as_field((dims.CellDim,), np.arange(self._grid.num_cells, dtype=gtx.int32))
         e_owner_mask = gtx.as_field(
             (dims.EdgeDim,), self._decomposition_info.owner_mask(dims.EdgeDim)
         )
@@ -121,6 +122,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     "c_owner_mask": c_owner_mask,
                     "k_lev": k_index,
                     "e_lev": e_lev,
+                    "c_lev": c_lev,
                 }
             )
         )
@@ -433,10 +435,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
             deps={
                 "ddxn_z_full": attrs.DDXN_Z_FULL,
                 "dual_edge_length": geometry_attrs.DUAL_EDGE_LENGTH,
+                "cell": "c_lev",
             },
             domain={
                 dims.CellDim: (
-                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2),
+                    cell_domain(h_grid.Zone.LOCAL),
                     cell_domain(h_grid.Zone.END),
                 ),
                 dims.KDim: (
@@ -445,7 +448,12 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                 ),
             },
             fields={attrs.EXNER_EXFAC: attrs.EXNER_EXFAC},
-            params={"exner_expol": self._config["exner_expol"]},
+            params={
+                "exner_expol": self._config["exner_expol"],
+                "lateral_boundary_level_2": self._grid.start_index(
+                    cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+                ),
+            },
         )
         self.register_provider(compute_exner_exfac)
 

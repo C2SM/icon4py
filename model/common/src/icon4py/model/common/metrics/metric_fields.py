@@ -35,6 +35,7 @@ from icon4py.model.common.dimension import (
     C2E2CODim,
     Koff,
 )
+from icon4py.model.common.field_type_aliases import CellKField
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
@@ -45,7 +46,6 @@ from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
     average_edge_kdim_level_up,
-    broadcast_cells_to_cell_k,
     difference_k_level_up,
     grad_fd_norm,
 )
@@ -99,7 +99,7 @@ def _compute_ddqz_z_half(
     z_mc: fa.CellKField[wpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-):  # -> Field[Dims[dims.CellDim, dims.KHalfDim], wpfloat]:
+) -> CellKField[wpfloat]:
     # TODO: change this to concat_where once it's merged
     ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
     ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
@@ -538,11 +538,17 @@ def compute_maxslp_maxhgtd(
 def _compute_exner_exfac(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
+    cell: fa.CellField[gtx.int32],
     exner_expol: wpfloat,
+    lateral_boundary_level_2: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     z_maxslp, z_maxhgtd = _compute_maxslp_maxhgtd(ddxn_z_full, dual_edge_length)
 
-    exner_exfac = exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2)
+    exner_exfac = where(
+        cell >= lateral_boundary_level_2,
+        exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2),
+        exner_expol,
+    )
     exner_exfac = maximum(0.0, exner_exfac)
     exner_exfac = where(
         z_maxslp > 1.5, maximum(-1.0 / 6.0, 1.0 / 9.0 * (1.5 - z_maxslp)), exner_exfac
@@ -555,8 +561,10 @@ def _compute_exner_exfac(
 def compute_exner_exfac(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
+    cell: fa.CellField[gtx.int32],
     exner_exfac: fa.CellKField[wpfloat],
     exner_expol: wpfloat,
+    lateral_boundary_level_2: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -578,11 +586,12 @@ def compute_exner_exfac(
         vertical_end: vertical end index
 
     """
-    broadcast_cells_to_cell_k(exner_expol, out=exner_exfac)
     _compute_exner_exfac(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
+        cell=cell,
         exner_expol=exner_expol,
+        lateral_boundary_level_2=lateral_boundary_level_2,
         out=exner_exfac,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
