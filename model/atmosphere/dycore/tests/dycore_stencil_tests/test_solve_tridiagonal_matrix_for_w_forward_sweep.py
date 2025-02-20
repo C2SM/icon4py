@@ -13,6 +13,7 @@ from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_for
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
@@ -24,16 +25,16 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        vwind_impl_wgt: np.array,
-        theta_v_ic: np.array,
-        ddqz_z_half: np.array,
-        z_alpha: np.array,
-        z_beta: np.array,
-        z_w_expl: np.array,
-        z_exner_expl: np.array,
-        z_q: np.array,
-        w: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        vwind_impl_wgt: np.ndarray,
+        theta_v_ic: np.ndarray,
+        ddqz_z_half: np.ndarray,
+        z_alpha: np.ndarray,
+        z_beta: np.ndarray,
+        z_w_expl: np.ndarray,
+        z_exner_expl: np.ndarray,
+        z_q: np.ndarray,
+        w: np.ndarray,
         dtime: wpfloat,
         cpd: wpfloat,
         **kwargs,
@@ -63,7 +64,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         return dict(z_q=z_q_ref, w=w_ref)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base_grid.BaseGrid):
         vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
         theta_v_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
