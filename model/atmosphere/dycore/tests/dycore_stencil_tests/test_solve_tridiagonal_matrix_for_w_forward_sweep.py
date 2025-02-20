@@ -19,6 +19,42 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
+    vwind_impl_wgt: np.array,
+    theta_v_ic: np.array,
+    ddqz_z_half: np.array,
+    z_alpha: np.array,
+    z_beta: np.array,
+    z_exner_expl: np.array,
+    z_w_expl: np.array,
+    z_q_ref: np.array,
+    w_ref: np.array,
+    dtime,
+    cpd,
+) -> tuple[np.array]:
+    z_q = np.copy(z_q_ref)
+    w = np.copy(w_ref)
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+
+    z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
+    z_a = np.zeros_like(z_gamma)
+    z_b = np.zeros_like(z_gamma)
+    z_c = np.zeros_like(z_gamma)
+    z_g = np.zeros_like(z_gamma)
+
+    k_size = w.shape[1]
+    for k in range(1, k_size):
+        z_a[:, k] = -z_gamma[:, k] * z_beta[:, k - 1] * z_alpha[:, k - 1]
+        z_c[:, k] = -z_gamma[:, k] * z_beta[:, k] * z_alpha[:, k + 1]
+        z_b[:, k] = 1.0 + z_gamma[:, k] * z_alpha[:, k] * (z_beta[:, k - 1] + z_beta[:, k])
+        z_g[:, k] = 1.0 / (z_b[:, k] + z_a[:, k] * z_q[:, k - 1])
+        z_q[:, k] = -z_c[:, k] * z_g[:, k]
+
+        w[:, k] = z_w_expl[:, k] - z_gamma[:, k] * (z_exner_expl[:, k - 1] - z_exner_expl[:, k])
+        w[:, k] = (w[:, k] - z_a[:, k] * w[:, k - 1]) * z_g[:, k]
+    return z_q, w
+
+
 class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
     PROGRAM = solve_tridiagonal_matrix_for_w_forward_sweep
     OUTPUTS = ("w", "z_q")
@@ -39,28 +75,19 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         cpd: wpfloat,
         **kwargs,
     ) -> dict:
-        z_q_ref = np.copy(z_q)
-        w_ref = np.copy(w)
-        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-
-        z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
-        z_a = np.zeros_like(z_gamma)
-        z_b = np.zeros_like(z_gamma)
-        z_c = np.zeros_like(z_gamma)
-        z_g = np.zeros_like(z_gamma)
-
-        k_size = w_ref.shape[1]
-        for k in range(1, k_size):
-            z_a[:, k] = -z_gamma[:, k] * z_beta[:, k - 1] * z_alpha[:, k - 1]
-            z_c[:, k] = -z_gamma[:, k] * z_beta[:, k] * z_alpha[:, k + 1]
-            z_b[:, k] = 1.0 + z_gamma[:, k] * z_alpha[:, k] * (z_beta[:, k - 1] + z_beta[:, k])
-            z_g[:, k] = 1.0 / (z_b[:, k] + z_a[:, k] * z_q_ref[:, k - 1])
-            z_q_ref[:, k] = -z_c[:, k] * z_g[:, k]
-
-            w_ref[:, k] = z_w_expl[:, k] - z_gamma[:, k] * (
-                z_exner_expl[:, k - 1] - z_exner_expl[:, k]
-            )
-            w_ref[:, k] = (w_ref[:, k] - z_a[:, k] * w_ref[:, k - 1]) * z_g[:, k]
+        z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
+            vwind_impl_wgt,
+            theta_v_ic,
+            ddqz_z_half,
+            z_alpha,
+            z_beta,
+            z_exner_expl,
+            z_w_expl,
+            z_q,
+            w,
+            dtime,
+            cpd,
+        )
         return dict(z_q=z_q_ref, w=w_ref)
 
     @pytest.fixture
