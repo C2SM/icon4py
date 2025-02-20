@@ -449,6 +449,7 @@ def test_velocity_fused_1_7(
     rbf_vec_coeff_e = gtx.as_field(
         (dims.EdgeDim, dims.E2C2EDim),
         interpolation_savepoint.rbf_vec_coeff_e().asnumpy().transpose(),
+        allocator=backend,
     )
     wgtfac_e = metrics_savepoint.wgtfac_e()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
@@ -489,49 +490,76 @@ def test_velocity_fused_1_7(
     )
     end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7.with_backend(
-        backend
-    )(
-        vn=vn,
-        rbf_vec_coeff_e=rbf_vec_coeff_e,
-        wgtfac_e=wgtfac_e,
-        ddxn_z_full=ddxn_z_full,
-        ddxt_z_full=ddxt_z_full,
-        z_w_concorr_me=z_w_concorr_me,
-        wgtfacq_e=wgtfacq_e,
-        nflatlev=gtx.int32(nflatlev),
-        c_intp=c_intp,
-        w=w,
-        inv_dual_edge_length=inv_dual_edge_length,
-        inv_primal_edge_length=inv_primal_edge_length,
-        tangent_orientation=tangent_orientation,
-        z_vt_ie=z_vt_ie,
-        vt=vt,
-        vn_ie=vn_ie,
-        z_kin_hor_e=z_kin_hor_e,
-        z_v_grad_w=z_v_grad_w,
-        k=k,
-        istep=gtx.int32(istep_init),
-        nlev=gtx.int32(icon_grid.num_levels),
-        lvn_only=lvn_only,
-        edge=edge,
-        vertex=vertex,
-        lateral_boundary_7=lateral_boundary_7,
-        halo_1=halo_1,
-        start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
-        end_vertex_halo=end_vertex_halo,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=gtx.int32(0),
-        vertical_end=gtx.int32(icon_grid.num_levels + 1),
-        offset_provider={
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2V": icon_grid.get_offset_provider("E2V"),
-            "V2C": icon_grid.get_offset_provider("V2C"),
-            "E2C2E": icon_grid.get_offset_provider("E2C2E"),
-            "Koff": dims.KDim,
-        },
-    )
+    if istep_init == 1:
+        fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7_predictor.with_backend(
+            backend
+        )(
+            vn=vn,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
+            wgtfac_e=wgtfac_e,
+            ddxn_z_full=ddxn_z_full,
+            ddxt_z_full=ddxt_z_full,
+            z_w_concorr_me=z_w_concorr_me,
+            wgtfacq_e=wgtfacq_e,
+            nflatlev=gtx.int32(nflatlev),
+            c_intp=c_intp,
+            w=w,
+            inv_dual_edge_length=inv_dual_edge_length,
+            inv_primal_edge_length=inv_primal_edge_length,
+            tangent_orientation=tangent_orientation,
+            z_vt_ie=z_vt_ie,
+            vt=vt,
+            vn_ie=vn_ie,
+            z_kin_hor_e=z_kin_hor_e,
+            z_v_grad_w=z_v_grad_w,
+            k=k,
+            nlev=gtx.int32(icon_grid.num_levels),
+            lvn_only=lvn_only,
+            edge=edge,
+            lateral_boundary_7=lateral_boundary_7,
+            halo_1=halo_1,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(icon_grid.num_levels + 1),
+            offset_provider={
+                "E2C": icon_grid.get_offset_provider("E2C"),
+                "E2V": icon_grid.get_offset_provider("E2V"),
+                "V2C": icon_grid.get_offset_provider("V2C"),
+                "E2C2E": icon_grid.get_offset_provider("E2C2E"),
+                "Koff": dims.KDim,
+            },
+        )
+    else:
+        fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7_corrector.with_backend(
+            backend
+        )(
+            c_intp=c_intp,
+            w=w,
+            inv_dual_edge_length=inv_dual_edge_length,
+            inv_primal_edge_length=inv_primal_edge_length,
+            tangent_orientation=tangent_orientation,
+            z_vt_ie=z_vt_ie,
+            vn_ie=vn_ie,
+            z_v_grad_w=z_v_grad_w,
+            edge=edge,
+            vertex=vertex,
+            lateral_boundary_7=lateral_boundary_7,
+            halo_1=halo_1,
+            start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
+            end_vertex_halo=end_vertex_halo,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(icon_grid.num_levels + 1),
+            offset_provider={
+                "E2C": icon_grid.get_offset_provider("E2C"),
+                "E2V": icon_grid.get_offset_provider("E2V"),
+                "V2C": icon_grid.get_offset_provider("V2C"),
+                "E2C2E": icon_grid.get_offset_provider("E2C2E"),
+                "Koff": dims.KDim,
+            },
+        )
 
     assert helpers.dallclose(vt_ref.asnumpy(), vt.asnumpy(), rtol=1.0e-14, atol=1.0e-14)
     assert helpers.dallclose(vn_ie_ref.asnumpy(), vn_ie.asnumpy(), rtol=1.0e-15, atol=1.0e-15)

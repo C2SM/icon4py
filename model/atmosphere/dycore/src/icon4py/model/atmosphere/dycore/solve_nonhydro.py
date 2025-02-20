@@ -1494,11 +1494,16 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
         self._exchange.exchange_and_wait(dims.EdgeDim, prognostic_states.next.vn, z_fields.z_rho_e)
 
+        rbf_vec_coeff_e = gtx.as_field(
+            (dims.EdgeDim, dims.E2C2EDim),
+            self._interpolation_state.rbf_vec_coeff_e.asnumpy().transpose(),
+            allocator=self._backend,
+        )
         self._compute_avg_vn_and_graddiv_vn_and_vt(
             e_flx_avg=self._interpolation_state.e_flx_avg,
             vn=prognostic_states.next.vn,
             geofac_grdiv=self._interpolation_state.geofac_grdiv,
-            rbf_vec_coeff_e=self._interpolation_state.rbf_vec_coeff_e,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
             z_vn_avg=self.z_vn_avg,
             z_graddiv_vn=z_fields.z_graddiv_vn,
             vt=diagnostic_state_nh.vt,
