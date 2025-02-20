@@ -733,7 +733,10 @@ def test_velocity_fused_15_18(
         else icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
     )
     end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
-
+    horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+    horizontal_end = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+    vertical_start = 0
+    vertical_end = icon_grid.num_levels
     fused_velocity_advection_stencil_15_to_18.fused_velocity_advection_stencil_15_to_18.with_backend(
         backend
     )(
@@ -764,6 +767,10 @@ def test_velocity_fused_15_18(
         extra_diffu=extra_diffu,
         start_cell_lateral_boundary=start_cell_lateral_boundary,
         end_cell_halo=end_cell_halo,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
         offset_provider={
             "C2E": icon_grid.get_offset_provider("C2E"),
             "C2CE": icon_grid.get_offset_provider("C2CE"),
@@ -792,7 +799,6 @@ def test_velocity_fused_19_20(
     savepoint_velocity_19_20_init,
     savepoint_velocity_19_20_exit,
     interpolation_savepoint,
-    #savepoint_nonhydro_init,
     metrics_savepoint,
     backend,
     savepoint_velocity_init,

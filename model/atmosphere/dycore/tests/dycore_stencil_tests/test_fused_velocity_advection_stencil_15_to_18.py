@@ -9,12 +9,12 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.utils.data_allocation as data_alloc
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_15_to_18 import (
     fused_velocity_advection_stencil_15_to_18,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
 from .test_add_extra_diffusion_for_w_con_approaching_cfl import (
@@ -148,9 +148,11 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         end_cell_halo,
         **kwargs,
     ):
-        z_w_con_c_full[
-            start_cell_lateral_boundary:end_cell_halo, :
-        ] = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
+        # We need to store the initial return field, because we only compute on a subdomain.
+        z_w_con_c_full_ret = z_w_con_c_full.copy()
+        ddt_w_adv_ret = ddt_w_adv.copy()
+
+        z_w_con_c_full = interpolate_contravariant_vertical_velocity_to_full_levels_numpy(z_w_con_c)
 
         if not lvn_only:
             ddt_w_adv = _fused_velocity_advection_stencil_16_to_18(
@@ -180,10 +182,23 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
                 extra_diffu,
             )
 
-        return dict(z_w_con_c_full=z_w_con_c_full, ddt_w_adv=ddt_w_adv)
+        # Apply the slicing.
+        horizontal_start = kwargs["horizontal_start"]
+        horizontal_end = kwargs["horizontal_end"]
+        vertical_start = kwargs["vertical_start"]
+        vertical_end = kwargs["vertical_end"]
+
+        z_w_con_c_full_ret[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ] = z_w_con_c_full[horizontal_start:horizontal_end, vertical_start:vertical_end]
+        ddt_w_adv_ret[horizontal_start:horizontal_end, vertical_start:vertical_end] = ddt_w_adv[
+            horizontal_start:horizontal_end, vertical_start:vertical_end
+        ]
+
+        return dict(z_w_con_c_full=z_w_con_c_full_ret, ddt_w_adv=ddt_w_adv_ret)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid) -> dict:
         z_w_con_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         w = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         coeff1_dwdz = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
@@ -235,6 +250,14 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
         lvn_only = False
 
+        cell_domain = h_grid.domain(dims.CellDim)
+        cell_lower_bound = grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        cell_upper_bound = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+        horizontal_end = grid.end_index(cell_domain(h_grid.Zone.HALO))
+        vertical_start = 0
+        vertical_end = nlev
+
         return dict(
             z_w_con_c=z_w_con_c,
             w=w,
@@ -263,4 +286,8 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
             z_w_con_c_full=z_w_con_c_full,
             start_cell_lateral_boundary=start_cell_lateral_boundary,
             end_cell_halo=end_cell_halo,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=vertical_start,
+            vertical_end=vertical_end,
         )
