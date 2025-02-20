@@ -23,7 +23,8 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
     OUTPUTS = ("w", "z_q")
 
     @staticmethod
-    def reference(grid,
+    def reference(
+        grid,
         vwind_impl_wgt: np.array,
         theta_v_ic: np.array,
         ddqz_z_half: np.array,
@@ -35,7 +36,7 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
         w: np.array,
         dtime: wpfloat,
         cpd: wpfloat,
-        **kwargs
+        **kwargs,
     ) -> dict:
         z_q_ref = np.copy(z_q)
         w_ref = np.copy(w)
@@ -55,7 +56,9 @@ class TestSolveTridiagonalMatrixForWForwardSweep(StencilTest):
             z_g[:, k] = 1.0 / (z_b[:, k] + z_a[:, k] * z_q_ref[:, k - 1])
             z_q_ref[:, k] = -z_c[:, k] * z_g[:, k]
 
-            w_ref[:, k] = z_w_expl[:, k] - z_gamma[:, k] * (z_exner_expl[:, k - 1] - z_exner_expl[:, k])
+            w_ref[:, k] = z_w_expl[:, k] - z_gamma[:, k] * (
+                z_exner_expl[:, k - 1] - z_exner_expl[:, k]
+            )
             w_ref[:, k] = (w_ref[:, k] - z_a[:, k] * w_ref[:, k - 1]) * z_g[:, k]
         return dict(z_q=z_q_ref, w=w_ref)
 
