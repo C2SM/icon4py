@@ -276,7 +276,6 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid, b
     assert test_helpers.dallclose(data_alloc.as_numpy(e_flx_avg), e_flx_avg_ref)
 
 
-@pytest.mark.cpu_only
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_grid, backend):
