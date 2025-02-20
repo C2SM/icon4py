@@ -1201,7 +1201,7 @@ class IconNonHydroExitSavepoint(IconSavepoint):
         return self._get_field("z_flxdiv_theta", dims.CellDim, dims.KDim)
 
     def z_contr_w_fl_l(self):
-        return self._get_field("z_contr_w_fl", dims.CellDim, dims.KDim)
+        return self._get_field("z_contr_w_fl_l", dims.CellDim, dims.KDim)
 
     def vn_ie(self):
         return self._get_field("vn_ie", dims.EdgeDim, dims.KDim)

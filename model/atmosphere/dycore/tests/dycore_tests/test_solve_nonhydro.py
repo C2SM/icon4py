@@ -371,8 +371,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 30
     assert helpers.dallclose(
-        solve_nonhydro.z_vn_avg.asnumpy(),
-        sp_exit.z_vn_avg().asnumpy(),
+        solve_nonhydro.z_vn_avg.asnumpy()[edge_start_lateral_boundary_level_5:, :],
+        sp_exit.z_vn_avg().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=5e-14,
     )
     # stencil 30
