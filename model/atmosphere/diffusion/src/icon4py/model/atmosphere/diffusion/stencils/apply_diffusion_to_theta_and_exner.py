@@ -43,6 +43,7 @@ def _apply_diffusion_to_theta_and_exner(
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v_in)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
+    # TODO (@halungge) this is only done conditionally on _apply_extra_diffusion
     z_temp = _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
         mask,
         zd_vertoffset,

@@ -24,10 +24,10 @@ class TestComputeHorizontalTracerFluxFromCubicCoefficients(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_out_e_hybrid_2: np.array,
-        p_mass_flx_e: np.array,
-        z_dreg_area: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_out_e_hybrid_2: np.ndarray,
+        p_mass_flx_e: np.ndarray,
+        z_dreg_area: np.ndarray,
         **kwargs,
     ) -> dict:
         p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
