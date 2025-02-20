@@ -330,16 +330,9 @@ def _graupel_run(
            fa.CellKField[ta.wpfloat]]:
     mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse )
     qv, qc, qr, qs, qi, qg, t = _q_t_update( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
-#    qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = \
-#        _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
-    qro, qso, qio, qgo, to, pflxo, pro, pso, pio, pgo, preo = \
-            _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
-    pflx = where( pflxo == 0.0, pflxo, 0.0 )
-    pr   = where( pro == 0.0, pro, 0.0 )
-    ps   = where( pso == 0.0, pso, 0.0 )
-    pi   = where( pio == 0.0, pio, 0.0 )
-    pg   = where( pro == 0.0, pro, 0.0 )
-    pre  = where( preo == 0.0, preo, 0.0 )
+    qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = \
+        _precipitation_effects( k, last_lev, kmin_r, kmin_i, kmin_s, kmin_g, qv, qc, qr, qs, qi, qg, t, rho, dz, dt )
+
     return t, qv, qc, qr, qs, qi, qg, pflx, pr, ps, pi, pg, pre
 
 # TODO : program  needs to be called with offset_provider={"Koff": K}
