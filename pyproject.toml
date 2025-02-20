@@ -22,12 +22,16 @@ classifiers = [
   'Topic :: Scientific/Engineering :: Physics'
 ]
 dependencies = [
+    "bottleneck==1.3.8",
+    "cartopy==0.22.0",
     "icon4py-atmosphere-advection>=0.0.6",
     "icon4py-atmosphere-diffusion>=0.0.6",
     "icon4py-atmosphere-dycore>=0.0.6",
     "icon4py-atmosphere-microphysics>=0.0.6",
     "icon4py-common>=0.0.6",
     "icon4py-driver>=0.0.6",
+    "numcodecs==0.12.1",
+    "pytest-codspeed>=3.2.0",
 ]
 description = 'ICON model in Python.'
 license = {text = "BSD-3 License"}
