@@ -41,7 +41,7 @@ simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[
 
 
 @pytest.mark.parametrize(
-    ("param", "expected"), ((simple_type, "value,"), (field_2d, ""), (field_1d, ""))
+    ("param", "expected"), ((simple_type, "value"), (field_2d, None), (field_1d, None))
 )
 def test_as_target(param, expected):
     assert expected == as_f90_value(param)
@@ -79,19 +79,27 @@ def test_cheader_generation_for_single_function():
     plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[foo])
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern int foo_wrapper(int one, double* two, int n_Cell, int n_K);"
+    assert header == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1);"
 
 
 def test_cheader_for_pointer_args():
     plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[bar])
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern int bar_wrapper(float* one, int two, int n_Cell, int n_K);"
+    assert header == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two);"
 
 
-def compare_ignore_whitespace(s1: str, s2: str):
+def compare_ignore_whitespace(actual: str, expected: str):
     no_whitespace = {ord(c): None for c in string.whitespace}
-    return s1.translate(no_whitespace) == s2.translate(no_whitespace)
+    if actual.translate(no_whitespace) != expected.translate(no_whitespace):
+        print("Expected:")
+        print(expected)
+        print("Actual:")
+        print("------------------------------")
+        print(actual)
+        print("------------------------------")
+        return False
+    return True
 
 
 @pytest.fixture
@@ -104,9 +112,9 @@ def dummy_plugin():
 
 
 def test_fortran_interface(dummy_plugin):
-    interface = generate_f90_interface(dummy_plugin, limited_area=True)
+    interface = generate_f90_interface(dummy_plugin)
     expected = """
-    module libtest_plugin
+module libtest_plugin
    use, intrinsic :: iso_c_binding
    implicit none
 
@@ -118,35 +126,33 @@ def test_fortran_interface(dummy_plugin):
 
       function foo_wrapper(one, &
                            two, &
-                           n_Cell, &
-                           n_K) bind(c, name="foo_wrapper") result(rc)
+                           two_size_0, &
+                           two_size_1) bind(c, name="foo_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
-
-         integer(c_int), value :: n_Cell
-
-         integer(c_int), value :: n_K
-
          integer(c_int) :: rc  ! Stores the return code
 
          integer(c_int), value, target :: one
 
-         real(c_double), dimension(*), target :: two
+         type(c_ptr), value, target :: two
+
+         integer(c_int), value :: two_size_0
+
+         integer(c_int), value :: two_size_1
 
       end function foo_wrapper
 
       function bar_wrapper(one, &
-                           two, &
-                           n_Cell, &
-                           n_K) bind(c, name="bar_wrapper") result(rc)
+                           one_size_0, &
+                           one_size_1, &
+                           two) bind(c, name="bar_wrapper") result(rc)
          import :: c_int, c_double, c_bool, c_ptr
-
-         integer(c_int), value :: n_Cell
-
-         integer(c_int), value :: n_K
-
          integer(c_int) :: rc  ! Stores the return code
 
-         real(c_float), dimension(*), target :: one
+         type(c_ptr), value, target :: one
+
+         integer(c_int), value :: one_size_0
+
+         integer(c_int), value :: one_size_1
 
          integer(c_int), value, target :: two
 
@@ -161,29 +167,26 @@ contains
                   rc)
       use, intrinsic :: iso_c_binding
 
-      integer(c_int) :: n_Cell
-
-      integer(c_int) :: n_K
-
       integer(c_int), value, target :: one
 
       real(c_double), dimension(:, :), target :: two
 
+      integer(c_int) :: two_size_0
+
+      integer(c_int) :: two_size_1
+
       integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
 
-      !$ACC host_data use_device( &
-      !$ACC two &
-      !$ACC )
+      !$acc host_data use_device(two)
 
-      n_Cell = SIZE(two, 1)
+      two_size_0 = SIZE(two, 1)
+      two_size_1 = SIZE(two, 2)
 
-      n_K = SIZE(two, 2)
-
-      rc = foo_wrapper(one, &
-                       two, &
-                       n_Cell, &
-                       n_K)
-
+      rc = foo_wrapper(one=one, &
+                       two=c_loc(two), &
+                       two_size_0=two_size_0, &
+                       two_size_1=two_size_1)
       !$acc end host_data
    end subroutine foo
 
@@ -192,29 +195,26 @@ contains
                   rc)
       use, intrinsic :: iso_c_binding
 
-      integer(c_int) :: n_Cell
-
-      integer(c_int) :: n_K
-
       real(c_float), dimension(:, :), target :: one
 
       integer(c_int), value, target :: two
 
+      integer(c_int) :: one_size_0
+
+      integer(c_int) :: one_size_1
+
       integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
 
-      !$ACC host_data use_device( &
-      !$ACC one &
-      !$ACC )
+      !$acc host_data use_device(one)
 
-      n_Cell = SIZE(one, 1)
+      one_size_0 = SIZE(one, 1)
+      one_size_1 = SIZE(one, 2)
 
-      n_K = SIZE(one, 2)
-
-      rc = bar_wrapper(one, &
-                       two, &
-                       n_Cell, &
-                       n_K)
-
+      rc = bar_wrapper(one=c_loc(one), &
+                       one_size_0=one_size_0, &
+                       one_size_1=one_size_1, &
+                       two=two)
       !$acc end host_data
    end subroutine bar
 
@@ -224,19 +224,18 @@ end module
 
 
 def test_python_wrapper(dummy_plugin):
-    interface = generate_python_wrapper(
-        dummy_plugin, "GPU", False, limited_area=True, profile=False
-    )
-    expected = """
-# imports for generated wrapper code
+    interface = generate_python_wrapper(dummy_plugin, "GPU", False, profile=False)
+    expected = """# imports for generated wrapper code
 import logging
 
 from libtest_plugin import ffi
 import cupy as cp
-from gt4py.next.iterator.embedded import np_as_located_field
+import gt4py.next as gtx
+from gt4py.next.type_system import type_specifications as ts
 from icon4py.tools.py2fgen.settings import config
 from icon4py.tools.py2fgen import wrapper_utils
-from icon4py.model.common import dimension as dims
+
+xp = config.array_ns
 
 # logger setup
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
@@ -248,17 +247,19 @@ from libtest import foo
 from libtest import bar
 
 
+Cell = gtx.Dimension("Cell", kind=gtx.DimensionKind.HORIZONTAL)
+K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
+
+
 @ffi.def_extern()
-def foo_wrapper(one, two, n_Cell, n_K):
+def foo_wrapper(one, two, two_size_0, two_size_1):
     try:
 
-        # Unpack pointers into Ndarrays
+        # Convert ptr to GT4Py fields
 
-        two = wrapper_utils.unpack_gpu(ffi, two, n_Cell, n_K)
-
-        # Allocate GT4Py Fields
-
-        two = np_as_located_field(dims.CellDim, dims.KDim)(two)
+        two = wrapper_utils.as_field(
+            ffi, xp, two, ts.ScalarKind.FLOAT64, {Cell: two_size_0, K: two_size_1}, False
+        )
 
         foo(one, two)
 
@@ -270,16 +271,14 @@ def foo_wrapper(one, two, n_Cell, n_K):
 
 
 @ffi.def_extern()
-def bar_wrapper(one, two, n_Cell, n_K):
+def bar_wrapper(one, one_size_0, one_size_1, two):
     try:
 
-        # Unpack pointers into Ndarrays
+        # Convert ptr to GT4Py fields
 
-        one = wrapper_utils.unpack_gpu(ffi, one, n_Cell, n_K)
-
-        # Allocate GT4Py Fields
-
-        one = np_as_located_field(dims.CellDim, dims.KDim)(one)
+        one = wrapper_utils.as_field(
+            ffi, xp, one, ts.ScalarKind.FLOAT32, {Cell: one_size_0, K: one_size_1}, False
+        )
 
         bar(one, two)
 
@@ -288,14 +287,15 @@ def bar_wrapper(one, two, n_Cell, n_K):
         return 1
 
     return 0
-    """
+
+"""
     assert compare_ignore_whitespace(interface, expected)
 
 
 def test_c_header(dummy_plugin):
     interface = generate_c_header(dummy_plugin)
     expected = """
-    extern int foo_wrapper(int one, double *two, int n_Cell, int n_K);
-    extern int bar_wrapper(float *one, int two, int n_Cell, int n_K);
+    extern int foo_wrapper(int one, double *two, int two_size_0, int two_size_1);
+    extern int bar_wrapper(float *one, int one_size_0, int one_size_1, int two);
     """
     assert compare_ignore_whitespace(interface, expected)
