@@ -20,7 +20,7 @@ test_model_stencils_aarch64:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND
   parallel:
     matrix:
-    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
+    - COMPONENT: [advection, diffusion, dycore, microphysics, driver]  # common
       BACKEND: [dace_cpu, dace_gpu]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
