@@ -1308,35 +1308,17 @@ class IconNonHydroInit_41_60_Savepoint(IconSavepoint):
     def mass_flx_ic(self):
         return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
 
-    def itime_scheme(self) -> int:
-        return self.serializer.read("itime_scheme", self.savepoint)[0]
-
-    def iau_wgt_dyn(self) -> float:
-        return self.serializer.read("iau_wgt_dyn", self.savepoint)[0]
-
-    def is_iau_active(self) -> bool:
-        return bool(self.serializer.read("is_iau_active", self.savepoint)[0])
-
     def lhdiff_rcf(self) -> bool:
         return bool(self.serializer.read("lhdiff_rcf", self.savepoint)[0])
 
-    def divdamp_type(self) -> int:
-        return self.serializer.read("divdamp_type", self.savepoint)[0]
-
     def lclean_mflx(self) -> bool:
         return bool(self.serializer.read("lclean_mflx", self.savepoint)[0])
-
-    def r_nsubsteps(self) -> float:
-        return self.serializer.read("r_nsubsteps", self.savepoint)[0]
 
     def idiv_method(self) -> int:
         return self.serializer.read("idiv_method", self.savepoint)[0]
 
     def l_open_ubc(self) -> bool:
         return bool(self.serializer.read("l_open_ubc", self.savepoint)[0])
-
-    def l_vert_nested(self) -> bool:
-        return bool(self.serializer.read("l_vert_nested", self.savepoint)[0])
 
     def jk_start(self) -> int:
         return self.serializer.read("jk_start", self.savepoint)[0]

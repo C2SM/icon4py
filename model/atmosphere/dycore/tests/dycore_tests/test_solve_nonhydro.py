@@ -1340,17 +1340,22 @@ def test_run_solve_nonhydro_41_to_60(
     exner_dyn_incr = savepoint_nonhydro_41_60_init.exner_dyn_incr()
     mass_flx_ic = savepoint_nonhydro_41_60_init.mass_flx_ic()
     vol_flx_ic = savepoint_nonhydro_41_60_init.vol_flx_ic()
-    itime_scheme = savepoint_nonhydro_41_60_init.itime_scheme()
-    iau_wgt_dyn = savepoint_nonhydro_41_60_init.iau_wgt_dyn()
-    is_iau_active = savepoint_nonhydro_41_60_init.is_iau_active()
+
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    params_config = solve_nh.NonHydrostaticConfig()
+
+    itime_scheme = params_config.itime_scheme
+    iau_wgt_dyn = params_config.iau_wgt_dyn
+    is_iau_active = params_config.is_iau_active
     lhdiff_rcf = savepoint_nonhydro_41_60_init.lhdiff_rcf()
-    divdamp_type = savepoint_nonhydro_41_60_init.divdamp_type()
+    divdamp_type = params_config.divdamp_type
     lclean_mflx = savepoint_nonhydro_41_60_init.lclean_mflx()
-    r_nsubsteps = savepoint_nonhydro_41_60_init.r_nsubsteps()
+    r_nsubsteps = params_config.ndyn_substeps_var
     idiv_method = savepoint_nonhydro_41_60_init.idiv_method()
     l_open_ubc = savepoint_nonhydro_41_60_init.l_open_ubc()
-    l_vert_nested = savepoint_nonhydro_41_60_init.l_vert_nested()
-    jk_start = savepoint_nonhydro_41_60_init.jk_start()
+    l_vert_nested = params_config.l_vert_nested
+    jk_start = icon_grid.num_levels - 1 # TODO: check - savepoint_nonhydro_41_60_init.jk_start()
 
     z_flxdiv_mass_ref = savepoint_nonhydro_41_60_exit.z_flxdiv_mass()
     z_flxdiv_theta_ref = savepoint_nonhydro_41_60_exit.z_flxdiv_theta()
