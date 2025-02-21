@@ -48,7 +48,6 @@ def _fused_velocity_advection_stencil_19_to_20(
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     d_time: wpfloat,
-    extra_diffu: bool,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
     start_vertex_lateral_boundary_level_2: gtx.int32,
@@ -102,8 +101,6 @@ def _fused_velocity_advection_stencil_19_to_20(
         ),
         ddt_vn_apc,
     )
-    # if extra_diffu
-    # else ddt_vn_apc
     return ddt_vn_apc
 
 
@@ -132,7 +129,6 @@ def fused_velocity_advection_stencil_19_to_20(
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     d_time: wpfloat,
-    extra_diffu: bool,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
     start_vertex_lateral_boundary_level_2: gtx.int32,
@@ -167,7 +163,6 @@ def fused_velocity_advection_stencil_19_to_20(
         cfl_w_limit,
         scalfac_exdiff,
         d_time,
-        extra_diffu,
         nlev,
         nrdmax,
         start_vertex_lateral_boundary_level_2,

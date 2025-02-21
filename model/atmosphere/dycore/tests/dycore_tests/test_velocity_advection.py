@@ -635,7 +635,6 @@ def test_velocity_fused_19_20(
 
     # d_time = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
     d_time = 5.0
-    extra_diffu = True
     nrdmax = grid_savepoint.nrdmax()
 
     ddt_vn_apc_ref = savepoint_velocity_19_20_exit.ddt_vn_apc()
@@ -669,7 +668,6 @@ def test_velocity_fused_19_20(
         cfl_w_limit=cfl_w_limit,
         scalfac_exdiff=scalfac_exdiff,
         d_time=d_time,
-        extra_diffu=extra_diffu,
         nlev=icon_grid.num_levels,
         nrdmax=nrdmax,
         start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
