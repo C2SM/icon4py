@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
 import pytest
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -44,7 +43,6 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     try:
         destination_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
-        advection_uri = None
         if experiment == dt_utils.GLOBAL_EXPERIMENT:
             uri = dt_utils.DATA_URIS_APE[processor_props.comm_size]
         elif experiment == dt_utils.JABW_EXPERIMENT:
@@ -55,20 +53,13 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             uri = dt_utils.DATA_URIS_WK[processor_props.comm_size]
         else:
             uri = dt_utils.DATA_URIS[processor_props.comm_size]
-            advection_uri = dt_utils.DATA_URIS_ADVECTION.get(processor_props.comm_size)
 
         data_file = ranked_data_path.joinpath(
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
             data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
-            if advection_uri:
-                advection_path = dt_utils.get_datapath_for_experiment(
-                    ranked_data_path, f"{experiment}/advection"
-                )
-                data.download_and_extract(
-                    advection_uri, ranked_data_path, advection_path, f"advection_{data_file}"
-                )
+
         if processor_props.comm:
             processor_props.comm.barrier()
     except KeyError as err:
@@ -81,14 +72,6 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 def data_provider(download_ser_data, ranked_data_path, experiment, processor_props, backend):
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
-
-
-@pytest.fixture
-def data_provider_advection(
-    download_ser_data, ranked_data_path, experiment, processor_props, backend
-):
-    data_path = dt_utils.get_datapath_for_experiment_advection(ranked_data_path, experiment)
-    return dt_utils.create_icon_serial_data_provider_advection(data_path, processor_props, backend)
 
 
 @pytest.fixture
@@ -154,7 +137,12 @@ def step_date_init():
 
 
 @pytest.fixture
-def substep():
+def substep_init():
+    return 1
+
+
+@pytest.fixture
+def substep_exit():
     return 1
 
 
@@ -187,7 +175,7 @@ def metrics_nonhydro_savepoint(data_provider):  # F811
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep):  # F811
+def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_init):  # F811
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
 
@@ -197,12 +185,12 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep):
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_init(
-        istep=istep_init, date=step_date_init, substep=substep
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
 @pytest.fixture
-def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_init, substep):
+def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_init):
     """
     Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
 
@@ -213,7 +201,7 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_ini
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_init(
-        istep=istep_init, date=step_date_init, jstep=jstep_init, substep=substep
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
@@ -233,7 +221,7 @@ def savepoint_nonhydro_15_28_init(data_provider, istep_init, step_date_init, sub
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep):  # F811
+def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_exit):  # F811
     """
     Load data from ICON savepoint at start of subroutine velocity_tendencies in mo_velocity_advection.f90.
 
@@ -243,12 +231,12 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep):
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_velocity_exit(
-        istep=istep_exit, date=step_date_exit, substep=substep
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
 @pytest.fixture
-def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exit, substep):
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_exit):
     """
     Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
     subroutine nh_solve in mo_solve_nonhydro.f90.
@@ -256,11 +244,10 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exi
     metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
     - istep: one of 1 ~ predictor, 2 ~ corrector of dycore integration scheme
-    - jstep: step count since last boundary interpolation (ranges from 0 to 2*ndyn_substeps-1)
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_exit(
-        istep=istep_exit, date=step_date_exit, jstep=jstep_exit, substep=substep
+        istep=istep_exit, date=step_date_exit, substep=substep_exit
     )
 
 
@@ -281,18 +268,17 @@ def savepoint_nonhydro_15_28_exit(data_provider, istep_init, step_date_exit, sub
 
 
 @pytest.fixture
-def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit, substep):
+def savepoint_nonhydro_step_final(data_provider, step_date_exit, substep_exit):
     """
     Load data from ICON savepoint at final exit of subroutine nh_solve in mo_solve_nonhydro.f90.
     (after predictor and corrector and 3 final stencils have run).
 
      metadata to select a unique savepoint:
     - date: <iso_string> of the simulation timestep
-    - jstep: step count since last boundary interpolation (ranges from 0 to 2*ndyn_substeps-1)
     - substep: dynamical substep
     """
-    return data_provider.from_savepoint_nonhydro_step_exit(
-        date=step_date_exit, jstep=jstep_exit, substep=substep
+    return data_provider.from_savepoint_nonhydro_step_final(
+        date=step_date_exit, substep=substep_exit
     )
 
 
@@ -337,22 +323,6 @@ def istep_init():
 @pytest.fixture
 def istep_exit():
     return 1
-
-
-@pytest.fixture
-def jstep_init():
-    return 0
-
-
-@pytest.fixture
-def jstep_exit():
-    return 0
-
-
-# TODO @halungge remove?
-@pytest.fixture
-def vn_only():
-    return False
 
 
 @pytest.fixture

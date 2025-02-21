@@ -261,7 +261,9 @@ class IntermediateFields:
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),
             z_exner_expl=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-            z_q=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
+            z_q=data_alloc.zero_field(
+                grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
+            ),
             z_contr_w_fl_l=data_alloc.zero_field(
                 grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
             ),

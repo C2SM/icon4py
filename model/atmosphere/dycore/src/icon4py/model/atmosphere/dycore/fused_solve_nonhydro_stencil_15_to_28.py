@@ -158,7 +158,9 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     (z_rho_e, z_theta_v_e) = (
         where(
             (start_edge_halo_level_2 <= horz_idx < end_edge_halo_level_2),
-            _init_two_edge_kdim_fields_with_zero_wp(),
+            (broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)), broadcast(
+                wpfloat("0.0"), (dims.EdgeDim, dims.KDim)
+            )),
             (z_rho_e, z_theta_v_e),
         )
         if iadv_rhotheta <= 2
@@ -168,7 +170,9 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     (z_rho_e, z_theta_v_e) = (
         where(
             (start_edge_lateral_boundary <= horz_idx < end_edge_halo),
-            _init_two_edge_kdim_fields_with_zero_wp(),
+            (broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)), broadcast(
+                wpfloat("0.0"), (dims.EdgeDim, dims.KDim)
+            )),
             (z_rho_e, z_theta_v_e),
         )
         if limited_area & (iadv_rhotheta <= 2)
