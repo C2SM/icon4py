@@ -1238,6 +1238,8 @@ class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
     def igradp_method(self) -> int:
         return self.serializer.read("igradp_method", self.savepoint)[0]
 
+class IconNonHydroInit_41_60_Savepoint(IconSavepoint):
+
 
 class IconNonHydroExitSavepoint(IconSavepoint):
     def z_exner_ex_pr(self):
@@ -1320,6 +1322,9 @@ class IconNonHydroExit_15_28_Savepoint(IconSavepoint):
     def z_graddiv_vn(self):
         return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
 
+class IconNonHydroExit_41_60_Savepoint(IconSavepoint):
+    def z_rho_e(self):
+        return self._get_field("z_rho_e", dims.EdgeDim, dims.KDim)
 
 class IconNonHydroFinalSavepoint(IconSavepoint):
     def theta_v_new(self):
@@ -1962,19 +1967,33 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_nonhydro_15_28_init(
-        self, istep: int, date: str, jstep: int, substep: int
+        self, istep: int, date: str, substep: int
     ) -> IconNonHydroInit_15_28_Savepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-15-28-init"]  # TODO
             .istep[istep]
             .date[date]
-            .jstep[jstep]
             .dyn_timestep[substep]
             .as_savepoint()
         )
         return IconNonHydroInit_15_28_Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
+
+    def from_savepoint_nonhydro_41_60_init(
+        self, istep: int, date: str, substep: int
+    ) -> IconNonHydroInit_41_60_Savepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-41-60-init"]  # TODO
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return IconNonHydroInit_41_60_Savepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
 
     def from_interpolation_savepoint(self) -> InterpolationSavepoint:
         savepoint = self.serializer.savepoint["interpolation_state"].as_savepoint()
@@ -2038,17 +2057,30 @@ class IconSerialDataProvider:
         )
 
     def from_savepoint_nonhydro_15_28_exit(
-        self, istep: int, date: str, jstep: int, substep: int
+        self, istep: int, date: str, substep: int
     ) -> IconNonHydroExit_15_28_Savepoint:
         savepoint = (
             self.serializer.savepoint["solve-nonhydro-15-28-exit"]  # TODO
             .istep[istep]
             .date[date]
-            .jstep[jstep]
             .dyn_timestep[substep]
             .as_savepoint()
         )
         return IconNonHydroExit_15_28_Savepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_nonhydro_41_60_exit(
+        self, istep: int, date: str, substep: int
+    ) -> IconNonHydroExit_41_60_Savepoint:
+        savepoint = (
+            self.serializer.savepoint["solve-nonhydro-41-60-exit"]  # TODO
+            .istep[istep]
+            .date[date]
+            .dyn_timestep[substep]
+            .as_savepoint()
+        )
+        return IconNonHydroExit_41_60_Savepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 

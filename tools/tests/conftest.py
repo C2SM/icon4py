@@ -36,6 +36,8 @@ from icon4py.model.testing.datatest_fixtures import (  # F401
     savepoint_nonhydro_exit,
     savepoint_nonhydro_init,
     savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_41_60_init,
+    savepoint_nonhydro_41_60_exit,
     step_date_exit,
     step_date_init,
     stretch_factor,

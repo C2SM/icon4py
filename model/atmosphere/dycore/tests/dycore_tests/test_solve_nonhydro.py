@@ -15,7 +15,7 @@ from icon4py.model.atmosphere.dycore import (
     dycore_states,
     dycore_utils,
     fused_solve_nonhydro_stencil_15_to_28,
-    solve_nonhydro as solve_nh,
+    solve_nonhydro as solve_nh, fused_solve_nonhydro_stencil_41_to_60,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -1053,12 +1053,7 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
         # ),
     ],
 )
-@pytest.mark.parametrize("istep", [1, 2])
 def test_run_solve_nonhydro_15_to_28(
-    istep_init,
-    istep_exit,
-    jstep_init,
-    jstep_exit,
     step_date_init,
     step_date_exit,
     experiment,
@@ -1075,7 +1070,8 @@ def test_run_solve_nonhydro_15_to_28(
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
     at_initial_timestep,
-    istep,
+    istep_init,
+    substep,
     savepoint_nonhydro_15_28_init,
     savepoint_nonhydro_15_28_exit,
     backend,
@@ -1101,8 +1097,6 @@ def test_run_solve_nonhydro_15_to_28(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    nflatlev = vertical_params.nflatlev
-    nflat_gradp = vertical_params.nflat_gradp
     vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
     horz_idx = data_alloc.index_field(dim=dims.EdgeDim, grid=icon_grid, backend=backend)
 
@@ -1198,8 +1192,8 @@ def test_run_solve_nonhydro_15_to_28(
         z_graddiv_vn=z_graddiv_vn,
         divdamp_fac=savepoint_nonhydro_init.divdamp_fac(),
         divdamp_fac_o2=savepoint_nonhydro_init.divdamp_fac_o2(),
-        wgt_nnow_vel=savepoint_nonhydro_init.wgt_nnow_vel(),
-        wgt_nnew_vel=savepoint_nonhydro_init.wgt_nnew_vel(),
+        wgt_nnow_vel=nonhydro_params.wgt_nnow_vel(),
+        wgt_nnew_vel=nonhydro_params.wgt_nnew_vel(),
         dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
         cpd=constants.CPD,
         iau_wgt_dyn=iau_wgt_dyn,
@@ -1210,7 +1204,7 @@ def test_run_solve_nonhydro_15_to_28(
         limited_area=grid_savepoint.get_metadata("limited_area").get("limited_area"),
         divdamp_order=divdamp_order,
         scal_divdamp_o2=scal_divdamp_o2,
-        istep=istep,
+        istep=istep_init,
         start_edge_halo_level_2=start_edge_halo_level_2,
         end_edge_halo_level_2=end_edge_halo_level_2,
         start_edge_lateral_boundary=start_edge_lateral_boundary,
@@ -1227,8 +1221,8 @@ def test_run_solve_nonhydro_15_to_28(
         kstart_dd3d=nonhydro_params.kstart_dd3d,
         COMBINED=solve_nh.DivergenceDampingOrder.COMBINED,
         FOURTH_ORDER=solve_nh.DivergenceDampingOrder.FOURTH_ORDER,
-        nflatlev=nflatlev,
-        nflat_gradp=nflat_gradp,
+        nflatlev=vertical_params.nflatlev,
+        nflat_gradp=vertical_params.nflat_gradp,
         offset_provider={
             "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
             "E2EC": icon_grid.get_offset_provider("E2EC"),
@@ -1243,3 +1237,215 @@ def test_run_solve_nonhydro_15_to_28(
     assert helpers.dallclose(z_gradh_exner.asnumpy(), z_gradh_exner_ref.asnumpy())
     assert helpers.dallclose(vn.asnumpy(), vn_ref.asnumpy())
     assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy())
+
+@pytest.mark.embedded_remap_error
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "istep_init, istep_exit, at_initial_timestep", [(1, 2, True)]
+)
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (
+            dt_utils.REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+        ),
+        # (
+        #     dt_utils.GLOBAL_EXPERIMENT,
+        #     "2000-01-01T00:00:02.000",
+        #     "2000-01-01T00:00:02.000",
+        # ),
+    ],
+)
+def test_run_solve_nonhydro_41_to_60(
+    jstep_init,
+    step_date_init,
+    step_date_exit,
+    experiment,
+    ndyn_substeps,
+    icon_grid,
+    savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    grid_savepoint,
+    metrics_savepoint,
+    interpolation_savepoint,
+    savepoint_nonhydro_exit,
+    savepoint_nonhydro_step_exit,
+    at_initial_timestep,
+    istep_init,
+    substep,
+    savepoint_nonhydro_41_60_init,
+    savepoint_nonhydro_41_60_exit,
+    backend,
+):
+    vert_idx = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
+    at_first_substep = jstep_init == 0
+    mass_fl_e = savepoint_nonhydro_41_60_init.mass_fl_e()
+    z_theta_v_fl_e = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
+    z_flxdiv_mass = savepoint_nonhydro_41_60_init.z_flxdiv_mass()
+    z_flxdiv_theta = savepoint_nonhydro_41_60_init.z_flxdiv_theta()
+    z_w_expl = savepoint_nonhydro_41_60_init.z_w_expl()
+    ddt_w_adv_ntl1 = savepoint_nonhydro_41_60_init.ddt_w_adv_ntl1()
+    ddt_w_adv_ntl2 = savepoint_nonhydro_41_60_init.ddt_w_adv_ntl2()
+    z_th_ddz_exner_c = savepoint_nonhydro_41_60_init.z_th_ddz_exner_c()
+    z_contr_w_fl_l = savepoint_nonhydro_41_60_init.z_contr_w_fl_l()
+    rho_ic = savepoint_nonhydro_41_60_init.rho_ic()
+    w_concorr_c = savepoint_nonhydro_41_60_init.w_concorr_c()
+    exner_nnow = savepoint_nonhydro_41_60_init.exner_nnow()
+    rho_nnow = savepoint_nonhydro_41_60_init.rho_nnow()
+    theta_v_nnow = savepoint_nonhydro_41_60_init.theta_v_nnow()
+    z_alpha = savepoint_nonhydro_41_60_init.z_alpha()
+    z_beta = savepoint_nonhydro_41_60_init.z_beta()
+    theta_v_ic = savepoint_nonhydro_41_60_init.theta_v_ic()
+    z_q = savepoint_nonhydro_41_60_init.z_q
+    w = savepoint_nonhydro_41_60_init.w()
+    z_rho_expl = savepoint_nonhydro_41_60_init.z_rho_expl()
+    z_exner_expl = savepoint_nonhydro_41_60_init.z_exner_expl()
+    exner_pr = savepoint_nonhydro_41_60_init.exner_pr()
+    ddt_exner_phy = savepoint_nonhydro_41_60_init.ddt_exner_phy()
+    rho_incr = savepoint_nonhydro_41_60_init.rho_incr()
+    exner_incr = savepoint_nonhydro_41_60_init.exner_incr()
+    z_raylfac = savepoint_nonhydro_41_60_init.z_raylfac()
+    rho = savepoint_nonhydro_41_60_init.rho()
+    exner = savepoint_nonhydro_41_60_init.exner()
+    theta_v = savepoint_nonhydro_41_60_init.theta_v()
+    z_dwdz_dd = savepoint_nonhydro_41_60_init.z_dwdz_dd()
+    exner_dyn_incr = savepoint_nonhydro_41_60_init.exner_dyn_incr()
+    mass_flx_ic = savepoint_nonhydro_41_60_init.mass_flx_ic()
+    itime_scheme = savepoint_nonhydro_41_60_init.itime_scheme()
+    iau_wgt_dyn = savepoint_nonhydro_41_60_init.iau_wgt_dyn()
+    is_iau_active = savepoint_nonhydro_41_60_init.is_iau_active()
+    lhdiff_rcf = savepoint_nonhydro_41_60_init.lhdiff_rcf()
+    divdamp_type = savepoint_nonhydro_41_60_init.divdamp_type()
+    lclean_mflx = savepoint_nonhydro_41_60_init.lclean_mflx()
+    r_nsubsteps = savepoint_nonhydro_41_60_init.r_nsubsteps()
+    idiv_method = savepoint_nonhydro_41_60_init.idiv_method()
+    l_open_ubc = savepoint_nonhydro_41_60_init.l_open_ubc()
+    l_vert_nested = savepoint_nonhydro_41_60_init.l_vert_nested()
+    jk_start = savepoint_nonhydro_41_60_init.jk_start()
+
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+
+    cell_domain = h_grid.domain(dims.CellDim)
+    start_cell_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+    end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+    lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
+
+    fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60.with_backend(
+        backend
+    )(
+        geofac_div=interpolation_savepoint.geofac_div(),
+        mass_fl_e=mass_fl_e,
+        z_theta_v_fl_e=z_theta_v_fl_e,
+        w_nnow=w,
+        ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+        ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+        z_th_ddz_exner_c=z_th_ddz_exner_c,
+        rho_ic=rho_ic,
+        w_concorr_c=w_concorr_c,
+        vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
+        exner_nnow=exner_nnow,
+        rho_nnow=rho_nnow,
+        theta_v_nnow=theta_v_nnow,
+        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+        vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
+        theta_v_ic=theta_v_ic,
+        exner_pr=exner_pr,
+        ddt_exner_phy=ddt_exner_phy,
+        rho_incr=rho_incr,
+        exner_incr=exner_incr,
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        z_raylfac=z_raylfac,
+        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+        vert_idx=vert_idx,
+        z_flxdiv_mass=z_flxdiv_mass,
+        z_flxdiv_theta=z_flxdiv_theta,
+        z_w_expl=z_w_expl,
+        z_contr_w_fl_l=z_contr_w_fl_l,
+        z_beta=z_beta,
+        z_alpha=z_alpha,
+        z_q=z_q,
+        w=w,
+        z_rho_expl=z_rho_expl,
+        z_exner_expl=z_exner_expl,
+        rho=rho,
+        exner=exner,
+        theta_v=theta_v,
+        z_dwdz_dd=z_dwdz_dd,
+        exner_dyn_incr=exner_dyn_incr,
+        mass_flx_ic=mass_flx_ic,
+        wgt_nnow_vel=nonhydro_params.wgt_nnow_vel,
+        wgt_nnew_vel=nonhydro_params.wgt_nnew_vel,
+        itime_scheme=itime_scheme,
+        lprep_adv=lprep_adv,
+        lclean_mflx=lclean_mflx,
+        r_nsubsteps=r_nsubsteps,
+        cvd_o_rd=constants.CVD_O_RD,
+        iau_wgt_dyn=iau_wgt_dyn,
+        dtime=savepoint_nonhydro_init.get_metadata("dtime").get("dtime"),
+        rd=constants.RD,
+        cvd=constants.CVD,
+        cpd=constants.CPD,
+        rayleigh_klemp=constants.RayleighType.KLEMP,
+        idiv_method=idiv_method,
+        l_open_ubc=l_open_ubc,
+        l_vert_nested=l_vert_nested,
+        is_iau_active=is_iau_active,
+        rayleigh_type=constants.RayleighType,
+        lhdiff_rcf=lhdiff_rcf,
+        divdamp_type=divdamp_type,
+        idyn_timestep=at_first_substep,
+        index_of_damping_layer=grid_savepoint.nrdmax(),
+        n_lev=icon_grid.num_levels,
+        jk_start=jk_start,
+        kstart_dd3d=nonhydro_params.kstart_dd3d,
+        kstart_moist=vertical_params.kstart_moist(),
+        istep=istep_init,
+        start_cell_nudging=start_cell_nudging,
+        end_cell_local=end_cell_local,
+        vertical_lower=0,
+        vertical_upper=icon_grid.num_levels+1,
+        offset_provider={
+            "C2E": icon_grid.get_offset_provider("C2E"),
+            "E2EC": icon_grid.get_offset_provider("E2EC"),
+            "E2C": icon_grid.get_offset_provider("E2C"),
+            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "Koff": dims.KDim,
+        },
+    )
+    z_flxdiv_mass,
+    z_flxdiv_theta,
+    z_w_expl,
+    z_contr_w_fl_l,
+    z_beta,
+    z_alpha,
+    z_q,
+    w,
+    z_rho_expl,
+    z_exner_expl,
+    rho,
+    exner,
+    theta_v,
+    z_dwdz_dd,
+    exner_dyn_incr,
+    mass_flx_ic,
+    assert helpers.dallclose(z_rho_e.asnumpy(), z_rho_e_ref.asnumpy())
+    assert helpers.dallclose(z_theta_v_e.asnumpy(), z_theta_v_e_ref.asnumpy())
+    assert helpers.dallclose(z_gradh_exner.asnumpy(), z_gradh_exner_ref.asnumpy())
+    assert helpers.dallclose(vn.asnumpy(), vn_ref.asnumpy())
+    assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy())
+

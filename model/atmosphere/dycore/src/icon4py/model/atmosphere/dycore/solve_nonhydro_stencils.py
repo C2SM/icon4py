@@ -80,7 +80,6 @@ from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 
 
-# TODO: abishekg7 move this to tests
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def init_test_fields(
     z_rho_e: fa.EdgeKField[float],
