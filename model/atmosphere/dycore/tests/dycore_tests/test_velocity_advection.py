@@ -14,6 +14,10 @@ from icon4py.model.atmosphere.dycore.stencils import (
     fused_velocity_advection_stencil_15_to_18,
     fused_velocity_advection_stencil_19_to_20,
 )
+from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import \
+    fused_velocity_advection_stencil_8_to_13_predictor, fused_velocity_advection_stencil_8_to_13_corrector
+
+
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -631,6 +635,165 @@ def test_velocity_fused_8_13(
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
     fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13.with_backend(
+        backend
+    )(
+        z_kin_hor_e=z_kin_hor_e,
+        e_bln_c_s=e_bln_c_s,
+        z_w_concorr_me=z_w_concorr_me,
+        wgtfac_c=wgtfac_c,
+        w=w,
+        z_w_concorr_mc=z_w_concorr_mc,
+        w_concorr_c=w_concorr_c,
+        z_ekinh=z_ekinh,
+        z_w_con_c=z_w_con_c,
+        k=k,
+        cell=cell,
+        istep=istep_init,
+        nlev=icon_grid.num_levels,
+        nflatlev=nflatlev,
+        lateral_boundary_3=lateral_boundary_4,# TODO: serialization test works for lateral_boundary_4 but not on lateral_boundary_3, but it should be in lateral_boundary_3 in driver code
+        lateral_boundary_4=lateral_boundary_4,
+        end_halo=end_halo,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels + 1,
+        offset_provider={
+            "C2E": icon_grid.get_offset_provider("C2E"),
+            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "Koff": dims.KDim,
+        },
+    )
+    assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+    ],
+)
+
+@pytest.mark.parametrize("substep_init", [1])
+@pytest.mark.parametrize("substep_exit", [1])
+def test_velocity_fused_8_13_predictor(
+    icon_grid,
+    grid_savepoint,
+    savepoint_velocity_8_13_init,
+    savepoint_velocity_8_13_exit,
+    metrics_savepoint,
+    interpolation_savepoint,
+    istep_init,
+    substep_init,
+    substep_exit,
+    step_date_init,
+    step_date_exit,
+    backend,
+):
+    cell_domain = h_grid.domain(dims.CellDim)
+    z_ekinh_ref = savepoint_velocity_8_13_exit.z_ekinh()
+    w_concorr_c_ref = savepoint_velocity_8_13_exit.w_concorr_c()
+    z_w_con_c_ref = savepoint_velocity_8_13_exit.z_w_con_c()
+
+    z_kin_hor_e = savepoint_velocity_8_13_init.z_kin_hor_e()
+    z_w_concorr_me = savepoint_velocity_8_13_init.z_w_concorr_me()
+    w = savepoint_velocity_8_13_init.w()
+    z_w_concorr_mc = savepoint_velocity_8_13_init.z_w_concorr_mc()
+    w_concorr_c = savepoint_velocity_8_13_init.w_concorr_c()
+    z_ekinh = savepoint_velocity_8_13_init.z_ekinh()
+    z_w_con_c = savepoint_velocity_8_13_init.z_w_con_c()
+
+    e_bln_c_s = data_alloc.flatten_first_two_dims(
+        dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+    )
+    wgtfac_c = metrics_savepoint.wgtfac_c()
+    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend)
+    cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
+    nflatlev = grid_savepoint.nflatlev()
+    lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+    lateral_boundary_3 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+    end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+
+    fused_velocity_advection_stencil_8_to_13_predictor.with_backend(
+        backend
+    )(
+        z_kin_hor_e=z_kin_hor_e,
+        e_bln_c_s=e_bln_c_s,
+        z_w_concorr_me=z_w_concorr_me,
+        wgtfac_c=wgtfac_c,
+        w=w,
+        z_w_concorr_mc=z_w_concorr_mc,
+        w_concorr_c=w_concorr_c,
+        z_ekinh=z_ekinh,
+        z_w_con_c=z_w_con_c,
+        k=k,
+        cell=cell,
+        istep=istep_init,
+        nlev=icon_grid.num_levels,
+        nflatlev=nflatlev,
+        lateral_boundary_3=lateral_boundary_4,# TODO: serialization test works for lateral_boundary_4 but not on lateral_boundary_3, but it should be in lateral_boundary_3 in driver code
+        lateral_boundary_4=lateral_boundary_4,
+        end_halo=end_halo,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=icon_grid.num_levels + 1,
+        offset_provider={
+            "C2E": icon_grid.get_offset_provider("C2E"),
+            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "Koff": dims.KDim,
+        },
+    )
+    assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+
+@pytest.mark.parametrize("istep_init", [2])
+@pytest.mark.parametrize("substep_init", [1])
+@pytest.mark.parametrize("substep_exit", [1])
+def test_velocity_fused_8_13_corrector(
+    icon_grid,
+    grid_savepoint,
+    savepoint_velocity_8_13_init,
+    savepoint_velocity_8_13_exit,
+    metrics_savepoint,
+    interpolation_savepoint,
+    istep_init,
+    substep_init,
+    substep_exit,
+    step_date_init,
+    step_date_exit,
+    backend,
+):
+    cell_domain = h_grid.domain(dims.CellDim)
+    z_ekinh_ref = savepoint_velocity_8_13_exit.z_ekinh()
+    w_concorr_c_ref = savepoint_velocity_8_13_exit.w_concorr_c()
+    z_w_con_c_ref = savepoint_velocity_8_13_exit.z_w_con_c()
+
+    z_kin_hor_e = savepoint_velocity_8_13_init.z_kin_hor_e()
+    z_w_concorr_me = savepoint_velocity_8_13_init.z_w_concorr_me()
+    w = savepoint_velocity_8_13_init.w()
+    z_w_concorr_mc = savepoint_velocity_8_13_init.z_w_concorr_mc()
+    w_concorr_c = savepoint_velocity_8_13_init.w_concorr_c()
+    z_ekinh = savepoint_velocity_8_13_init.z_ekinh()
+    z_w_con_c = savepoint_velocity_8_13_init.z_w_con_c()
+
+    e_bln_c_s = data_alloc.flatten_first_two_dims(
+        dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+    )
+    wgtfac_c = metrics_savepoint.wgtfac_c()
+    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend)
+    cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
+    nflatlev = grid_savepoint.nflatlev()
+    lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+    lateral_boundary_3 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+    end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+
+    fused_velocity_advection_stencil_8_to_13_corrector.with_backend(
         backend
     )(
         z_kin_hor_e=z_kin_hor_e,

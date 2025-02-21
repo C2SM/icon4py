@@ -2102,7 +2102,7 @@ class IconSerialDataProvider:
         )
 
     def savepoint_velocity_8_13_init(
-        self, istep: int, vn_only: bool, date: str, substep_init: int
+        self, istep: int,  date: str, substep_init: int
     ) -> IconVelocityInit8to13Savepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to14-init"]
@@ -2218,7 +2218,7 @@ class IconSerialDataProvider:
         )
 
     def savepoint_velocity_8_13_exit(
-        self, istep: int, vn_only: bool, date: str, substep_init: int
+        self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExit8to13Savepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-8to13-exit"]
