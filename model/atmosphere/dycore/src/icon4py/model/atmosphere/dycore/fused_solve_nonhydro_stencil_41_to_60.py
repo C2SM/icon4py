@@ -21,7 +21,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where, astype
 
 from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
     _stencils_42_44_45,
@@ -224,12 +224,12 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         ),
         (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
     )
-    z_alpha = where(vert_idx == n_lev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_alpha = where(vert_idx == n_lev, broadcast(vpfloat("0.0"), (CellDim, KDim)), z_alpha)
 
     w, z_contr_w_fl_l = (
         where(
             (vert_idx < int32(1)),
-            _init_two_cell_kdim_fields_with_zero_wp(),
+            (broadcast(wpfloat("0.0"), (CellDim, KDim)), broadcast(wpfloat("0.0"), (CellDim, KDim))),
             (w, z_contr_w_fl_l),
         )
         if not l_vert_nested
@@ -395,7 +395,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     exner_dyn_incr = (
         where(
             kstart_moist <= vert_idx,
-            _copy_cell_kdim_field_to_vp(field=exner_nnow),
+            astype(exner_nnow, vpfloat),
             exner_dyn_incr,
         )
         if idyn_timestep == 1
@@ -635,7 +635,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
             (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
         )
     )
-    z_alpha = where(vert_idx == n_lev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_alpha = where(vert_idx == n_lev, broadcast(vpfloat("0.0"), (CellDim, KDim)), z_alpha)
     # (z_w_expl, z_contr_w_fl_l) = where(
     #     (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx >= int32(1)),
     #     _mo_solve_nonhydro_stencil_43(
@@ -811,7 +811,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     )
 
     mass_flx_ic, vol_flx_ic = (
-        _init_two_cell_kdim_fields_with_zero_wp() if (lprep_adv & idyn_timestep) else mass_flx_ic,
+        (broadcast(wpfloat("0.0"), (CellDim, KDim)), broadcast(wpfloat("0.0"), (CellDim, KDim))) if (lprep_adv & idyn_timestep) else mass_flx_ic,
         vol_flx_ic,
     )
 
@@ -826,8 +826,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
             vol_flx_ic=vol_flx_ic,
             r_nsubsteps=r_nsubsteps,
         ),
-        mass_flx_ic,
-        vol_flx_ic,
+        (mass_flx_ic, vol_flx_ic),
     )
     return (
         z_flxdiv_mass,

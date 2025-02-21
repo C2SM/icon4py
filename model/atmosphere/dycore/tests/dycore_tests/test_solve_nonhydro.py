@@ -1441,9 +1441,7 @@ def test_run_solve_nonhydro_41_to_60(
         vertical_upper=icon_grid.num_levels + 1,
         offset_provider={
             "C2E": icon_grid.get_offset_provider("C2E"),
-            "E2EC": icon_grid.get_offset_provider("E2EC"),
-            "E2C": icon_grid.get_offset_provider("E2C"),
-            "E2C2EO": icon_grid.get_offset_provider("E2C2EO"),
+            "C2CE": icon_grid.get_offset_provider("C2CE"),
             "Koff": dims.KDim,
         },
     )

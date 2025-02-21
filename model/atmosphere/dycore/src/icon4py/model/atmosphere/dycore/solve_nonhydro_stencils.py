@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.fbuiltins import where, broadcast
 
 from icon4py.model.atmosphere.dycore.dycore_utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
@@ -78,6 +78,7 @@ from icon4py.model.atmosphere.dycore.stencils.update_density_exner_wind import (
 )
 from icon4py.model.atmosphere.dycore.stencils.update_wind import _update_wind
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.type_alias import vpfloat
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
@@ -633,7 +634,7 @@ def _stencils_42_44_45(
         ),
         (z_beta, z_alpha),
     )
-    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_q = where(k_field == 0, broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -775,7 +776,8 @@ def _stencils_43_44_45(
         ),
         (z_beta, z_alpha),
     )
-    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    # z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_q = where(k_field == 0, broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim)), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
