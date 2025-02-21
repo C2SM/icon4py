@@ -24,7 +24,29 @@ def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
     vn: fa.EdgeKField[wpfloat],
     vt: fa.EdgeKField[vpfloat],
 ) -> tuple[fa.EdgeKField[vpfloat], fa.EdgeKField[vpfloat]]:
-    """Formerly known as _mo_velocity_advection_stencil_02."""
+    """
+    Formerly known as _mo_velocity_advection_stencil_02.
+
+    # scidoc:
+    # Outputs:
+    #  - vn_ie :
+    #     $$
+    #     \vn{\n}{\e}{\k-1/2} = \Wlev \vn{\n}{\e}{\k} + (1 - \Wlev) \vn{\n}{\e}{\k-1}, \quad \k \in [1, \nlev)
+    #     $$
+    #     Interpolate the normal velocity from full to half levels.
+    #  - z_kin_hor_e :
+    #     $$
+    #     \kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right), \quad \k \in [1, \nlev)
+    #     $$
+    #     Compute the horizontal kinetic energy. Exclude the first full level.
+    #
+    # Inputs:
+    #  - $\Wlev$ : wgtfac_e
+    #  - $\vn{\n}{\e}{\k}$ : vn
+    #  - $\vt{\n}{\e}{\k}$ : vt
+    #
+
+    """
     # TODO: This stencil fusion with the one below is not optimal:
     # _compute_horizontal_kinetic_energy is wasting computation by assigning
     # vn_ie and vt_ie which are thrown away.

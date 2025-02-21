@@ -19,7 +19,26 @@ def _interpolate_to_surface(
     wgtfacq_c: fa.CellKField[vpfloat],
     interpolant: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_04."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_04.
+
+    # scidoc:
+    # Outputs:
+    #  - interpolation_to_surface :
+    #     $$
+    #     \exnerprime{\ntilde}{\c}{\k-1/2} = \Wlev \exnerprime{\ntilde}{\c}{\k} + (1 - \Wlev) \exnerprime{\ntilde}{\c}{\k-1}, \quad \k \in [\max(1,\nflatlev), \nlev) \\
+    #     \exnerprime{\ntilde}{\c}{\nlev-1/2} = \sum_{\k=\nlev-1}^{\nlev-3} \Wlev_{\k} \exnerprime{\ntilde}{\c}{\k}
+    #     $$
+    #     Interpolate the perturbation exner from full to half levels.
+    #     The ground level is based on quadratic extrapolation (with
+    #     hydrostatic assumption?).
+    # Inputs:
+    #  - $\Wlev$ : wgtfac_c
+    #  - $\Wlev_{\k}$ : wgtfacq_c
+    #  - $\exnerprime{\ntilde}{\c}{\k}$ : interpolant
+    #
+    
+    """
     interpolation_to_surface = (
         wgtfacq_c(Koff[-1]) * interpolant(Koff[-1])
         + wgtfacq_c(Koff[-2]) * interpolant(Koff[-2])

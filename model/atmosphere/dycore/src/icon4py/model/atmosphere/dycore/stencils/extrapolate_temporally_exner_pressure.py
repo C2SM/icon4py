@@ -21,7 +21,42 @@ def _extrapolate_temporally_exner_pressure(
     exner_ref_mc: fa.CellKField[vpfloat],
     exner_pr: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
-    """Formerly known as _mo_solve_nonhydro_stencil_02."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_02.
+
+    # TODO:
+    #  - The first operation on z_exner_ex_pr should be done in a generic
+    #    math (1+a)*x - a*y program
+    #  - In the stencil, _extrapolate_temporally_exner_pressure doesn't only
+    #    do what the name suggests: it also updates exner_pr, which is not
+    #    what the name implies.
+    
+
+    # scidoc:
+    # Outputs:
+    #  - z_exner_ex_pr :
+    #     $$
+    #     \exnerprime{\ntilde}{\c}{\k} = (1 + \WtimeExner) \exnerprime{\n}{\c}{\k} - \WtimeExner \exnerprime{\n-1}{\c}{\k}, \k \in [0, \nlev) \\
+    #     \exnerprime{\ntilde}{\c}{\nlev} = 0
+    #     $$
+    #     Compute the temporal extrapolation of perturbed exner function
+    #     using the time backward scheme (see the |ICONTutorial| page 74).
+    #     This variable has nlev+1 levels even though it is defined on full levels.
+    #  - exner_pr :
+    #     $$
+    #     \exnerprime{\n-1}{\c}{\k} = \exnerprime{\ntilde}{\c}{\k}
+    #     $$
+    #     Store the perturbed exner function from the previous time step.
+    #
+    # Inputs:
+    #  - $\WtimeExner$ : exner_exfac
+    #  - $\exnerprime{\n}{\c}{\k}$ : exner - exner_ref_mc
+    #  - $\exnerprime{\n-1}{\c}{\k}$ : exner_pr
+    #
+    
+
+
+    """
     exner_exfac_wp, exner_ref_mc_wp = astype((exner_exfac, exner_ref_mc), wpfloat)
 
     z_exner_ex_pr_wp = (wpfloat("1.0") + exner_exfac_wp) * (
