@@ -1320,9 +1320,6 @@ class IconNonHydroInit_41_60_Savepoint(IconSavepoint):
     def l_open_ubc(self) -> bool:
         return bool(self.serializer.read("l_open_ubc", self.savepoint)[0])
 
-    def jk_start(self) -> int:
-        return self.serializer.read("jk_start", self.savepoint)[0]
-
 
 class IconNonHydroExitSavepoint(IconSavepoint):
     def z_exner_ex_pr(self):
