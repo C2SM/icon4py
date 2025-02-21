@@ -77,7 +77,7 @@ def test_dycore_wrapper_granule_inputs(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     caplog,
     icon_grid,
     at_initial_timestep,
@@ -733,7 +733,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     caplog,
     icon_grid,
     at_initial_timestep,
@@ -742,7 +742,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 
     # savepoints
     sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_exit
+    sp_step_exit = savepoint_nonhydro_step_final
 
     # non hydrostatic config parameters
     itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
@@ -1177,14 +1177,14 @@ def test_granule_solve_nonhydro_multi_step_regional(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     experiment,
     ndyn_substeps,
     at_initial_timestep,
 ):
     # savepoints
     sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_exit
+    sp_step_exit = savepoint_nonhydro_step_final
 
     # non hydrostatic config parameters
     itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
