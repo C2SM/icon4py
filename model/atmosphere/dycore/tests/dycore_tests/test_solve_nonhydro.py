@@ -15,7 +15,8 @@ from icon4py.model.atmosphere.dycore import (
     dycore_states,
     dycore_utils,
     fused_solve_nonhydro_stencil_15_to_28,
-    solve_nonhydro as solve_nh, fused_solve_nonhydro_stencil_41_to_60,
+    fused_solve_nonhydro_stencil_41_to_60,
+    solve_nonhydro as solve_nh,
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -1238,11 +1239,10 @@ def test_run_solve_nonhydro_15_to_28(
     assert helpers.dallclose(vn.asnumpy(), vn_ref.asnumpy())
     assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy())
 
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "istep_init, istep_exit, at_initial_timestep", [(1, 2, True)]
-)
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 2, True)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -1293,6 +1293,7 @@ def test_run_solve_nonhydro_41_to_60(
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
     at_first_substep = jstep_init == 0
+
     mass_fl_e = savepoint_nonhydro_41_60_init.mass_fl_e()
     z_theta_v_fl_e = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
     z_flxdiv_mass = savepoint_nonhydro_41_60_init.z_flxdiv_mass()
@@ -1325,6 +1326,7 @@ def test_run_solve_nonhydro_41_to_60(
     z_dwdz_dd = savepoint_nonhydro_41_60_init.z_dwdz_dd()
     exner_dyn_incr = savepoint_nonhydro_41_60_init.exner_dyn_incr()
     mass_flx_ic = savepoint_nonhydro_41_60_init.mass_flx_ic()
+    vol_flx_ic = savepoint_nonhydro_41_60_init.vol_flx_ic()
     itime_scheme = savepoint_nonhydro_41_60_init.itime_scheme()
     iau_wgt_dyn = savepoint_nonhydro_41_60_init.iau_wgt_dyn()
     is_iau_active = savepoint_nonhydro_41_60_init.is_iau_active()
@@ -1336,6 +1338,24 @@ def test_run_solve_nonhydro_41_to_60(
     l_open_ubc = savepoint_nonhydro_41_60_init.l_open_ubc()
     l_vert_nested = savepoint_nonhydro_41_60_init.l_vert_nested()
     jk_start = savepoint_nonhydro_41_60_init.jk_start()
+
+    z_flxdiv_mass_ref = savepoint_nonhydro_41_60_exit.z_flxdiv_mass()
+    z_flxdiv_theta_ref = savepoint_nonhydro_41_60_exit.z_flxdiv_theta()
+    z_w_expl_ref = savepoint_nonhydro_41_60_exit.z_w_expl()
+    z_contr_w_fl_l_ref = savepoint_nonhydro_41_60_exit.z_contr_w_fl_l()
+    z_beta_ref = savepoint_nonhydro_41_60_exit.z_beta()
+    z_alpha_ref = savepoint_nonhydro_41_60_exit.z_alpha()
+    z_q_ref = savepoint_nonhydro_41_60_exit.z_q()
+    w_ref = savepoint_nonhydro_41_60_exit.w()
+    z_rho_expl_ref = savepoint_nonhydro_41_60_exit.z_rho_expl()
+    z_exner_expl_ref = savepoint_nonhydro_41_60_exit.z_rho_expl()
+    rho_ref = savepoint_nonhydro_41_60_exit.rho()
+    exner_ref = savepoint_nonhydro_41_60_exit.exner()
+    theta_v_ref = savepoint_nonhydro_41_60_exit.theta_v()
+    z_dwdz_dd_ref = savepoint_nonhydro_41_60_exit.z_dwdz_dd()
+    exner_dyn_incr_ref = savepoint_nonhydro_41_60_exit.exner_dyn_incr()
+    mass_flx_ic_ref = savepoint_nonhydro_41_60_exit.mass_flx_ic()
+    vol_flx_ic_ref = savepoint_nonhydro_41_60_exit.vol_flx_ic()
 
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -1418,7 +1438,7 @@ def test_run_solve_nonhydro_41_to_60(
         start_cell_nudging=start_cell_nudging,
         end_cell_local=end_cell_local,
         vertical_lower=0,
-        vertical_upper=icon_grid.num_levels+1,
+        vertical_upper=icon_grid.num_levels + 1,
         offset_provider={
             "C2E": icon_grid.get_offset_provider("C2E"),
             "E2EC": icon_grid.get_offset_provider("E2EC"),
@@ -1427,25 +1447,21 @@ def test_run_solve_nonhydro_41_to_60(
             "Koff": dims.KDim,
         },
     )
-    z_flxdiv_mass,
-    z_flxdiv_theta,
-    z_w_expl,
-    z_contr_w_fl_l,
-    z_beta,
-    z_alpha,
-    z_q,
-    w,
-    z_rho_expl,
-    z_exner_expl,
-    rho,
-    exner,
-    theta_v,
-    z_dwdz_dd,
-    exner_dyn_incr,
-    mass_flx_ic,
-    assert helpers.dallclose(z_rho_e.asnumpy(), z_rho_e_ref.asnumpy())
-    assert helpers.dallclose(z_theta_v_e.asnumpy(), z_theta_v_e_ref.asnumpy())
-    assert helpers.dallclose(z_gradh_exner.asnumpy(), z_gradh_exner_ref.asnumpy())
-    assert helpers.dallclose(vn.asnumpy(), vn_ref.asnumpy())
-    assert helpers.dallclose(z_graddiv_vn.asnumpy(), z_graddiv_vn_ref.asnumpy())
 
+    assert helpers.dallclose(z_flxdiv_mass.asnumpy(), z_flxdiv_mass_ref.asnumpy())
+    assert helpers.dallclose(z_flxdiv_theta.asnumpy(), z_flxdiv_theta_ref.asnumpy())
+    assert helpers.dallclose(z_w_expl.asnumpy(), z_w_expl_ref.asnumpy())
+    assert helpers.dallclose(z_contr_w_fl_l.asnumpy(), z_contr_w_fl_l_ref.asnumpy())
+    assert helpers.dallclose(z_beta.asnumpy(), z_beta_ref.asnumpy())
+    assert helpers.dallclose(z_alpha.asnumpy(), z_alpha_ref.asnumpy())
+    assert helpers.dallclose(z_q.asnumpy(), z_q_ref.asnumpy())
+    assert helpers.dallclose(w.asnumpy(), w_ref.asnumpy())
+    assert helpers.dallclose(z_rho_expl.asnumpy(), z_rho_expl_ref.asnumpy())
+    assert helpers.dallclose(z_exner_expl.asnumpy(), z_exner_expl_ref.asnumpy())
+    assert helpers.dallclose(rho.asnumpy(), rho_ref.asnumpy())
+    assert helpers.dallclose(exner.asnumpy(), exner_ref.asnumpy())
+    assert helpers.dallclose(theta_v.asnumpy(), theta_v_ref.asnumpy())
+    assert helpers.dallclose(z_dwdz_dd.asnumpy(), z_dwdz_dd_ref.asnumpy())
+    assert helpers.dallclose(exner_dyn_incr.asnumpy(), exner_dyn_incr_ref.asnumpy())
+    assert helpers.dallclose(mass_flx_ic.asnumpy(), mass_flx_ic_ref.asnumpy())
+    assert helpers.dallclose(vol_flx_ic.asnumpy(), vol_flx_ic_ref.asnumpy())

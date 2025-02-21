@@ -23,30 +23,50 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
-from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import _stencils_43_44_45, _stencils_42_44_45
-from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import \
-    _add_analysis_increments_from_data_assimilation
-from icon4py.model.atmosphere.dycore.stencils.apply_rayleigh_damping_mechanism import _apply_rayleigh_damping_mechanism
-from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import \
-    _compute_divergence_of_fluxes_of_rho_and_theta
-from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping import \
-    _compute_dwdz_for_divergence_damping
-from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_exner import \
-    _compute_explicit_part_for_rho_and_exner
-from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_variables import \
-    _compute_results_for_thermodynamic_variables
-from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import \
-    _init_cell_kdim_field_with_zero_vp
-from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_wp import \
-    _init_two_cell_kdim_fields_with_zero_wp
-from icon4py.model.atmosphere.dycore.stencils.set_lower_boundary_condition_for_w_and_contravariant_correction import \
-    _set_lower_boundary_condition_for_w_and_contravariant_correction
-from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_back_substitution import \
-    _solve_tridiagonal_matrix_for_w_back_substitution_scan
-from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import \
-    _solve_tridiagonal_matrix_for_w_forward_sweep
-from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import _update_mass_volume_flux
+from icon4py.model.atmosphere.dycore.solve_nonhydro_stencils import (
+    _stencils_42_44_45,
+    _stencils_43_44_45,
+)
+from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
+    _add_analysis_increments_from_data_assimilation,
+)
+from icon4py.model.atmosphere.dycore.stencils.apply_rayleigh_damping_mechanism import (
+    _apply_rayleigh_damping_mechanism,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import (
+    _compute_divergence_of_fluxes_of_rho_and_theta,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping import (
+    _compute_dwdz_for_divergence_damping,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_exner import (
+    _compute_explicit_part_for_rho_and_exner,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_variables import (
+    _compute_results_for_thermodynamic_variables,
+)
+from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
+    _copy_cell_kdim_field_to_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
+    _init_cell_kdim_field_with_zero_vp,
+)
+from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_wp import (
+    _init_two_cell_kdim_fields_with_zero_wp,
+)
+from icon4py.model.atmosphere.dycore.stencils.set_lower_boundary_condition_for_w_and_contravariant_correction import (
+    _set_lower_boundary_condition_for_w_and_contravariant_correction,
+)
+from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_back_substitution import (
+    _solve_tridiagonal_matrix_for_w_back_substitution_scan,
+)
+from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
+    _solve_tridiagonal_matrix_for_w_forward_sweep,
+)
+from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
+    _update_mass_volume_flux,
+)
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -108,16 +128,35 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     jk_start: int32,
     kstart_dd3d: int32,
     kstart_moist: int32,
-):
+) -> tuple[
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+]:
     vert_idx_1d = vert_idx
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
-    z_flxdiv_mass, z_flxdiv_theta = _compute_divergence_of_fluxes_of_rho_and_theta(
-                geofac_div=geofac_div,
-                mass_fl_e=mass_fl_e,
-                z_theta_v_fl_e=z_theta_v_fl_e,
-            ) if idiv_method == 1 else (z_flxdiv_mass, z_flxdiv_theta)
-
+    z_flxdiv_mass, z_flxdiv_theta = (
+        _compute_divergence_of_fluxes_of_rho_and_theta(
+            geofac_div=geofac_div,
+            mass_fl_e=mass_fl_e,
+            z_theta_v_fl_e=z_theta_v_fl_e,
+        )
+        if idiv_method == 1
+        else (z_flxdiv_mass, z_flxdiv_theta)
+    )
 
     # (z_w_expl, z_contr_w_fl_l) = where(
     #     (horizontal_lower_0 <= horz_idx < horizontal_upper_0) & (vert_idx >= int32(1)),
@@ -185,8 +224,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         ),
         (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
     )
-    z_alpha = where(vert_idx == n_lev,
-                    _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_alpha = where(vert_idx == n_lev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
 
     w, z_contr_w_fl_l = (
         where(
@@ -244,7 +282,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     (w, z_contr_w_fl_l) = where(
         (vert_idx == n_lev),
         _set_lower_boundary_condition_for_w_and_contravariant_correction(w_concorr_c=w_concorr_c),
-        (w, z_contr_w_fl_l)
+        (w, z_contr_w_fl_l),
     )
 
     (z_rho_expl, z_exner_expl) = where(
@@ -260,16 +298,21 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             theta_v_ic=theta_v_ic,
             ddt_exner_phy=ddt_exner_phy,
             dtime=dtime,
-        ), (z_rho_expl, z_exner_expl)
+        ),
+        (z_rho_expl, z_exner_expl),
     )
 
-    z_rho_expl, z_exner_expl = _add_analysis_increments_from_data_assimilation(
-                z_rho_expl=z_rho_expl,
-                z_exner_expl=z_exner_expl,
-                rho_incr=rho_incr,
-                exner_incr=exner_incr,
-                iau_wgt_dyn=iau_wgt_dyn,
-            ) if is_iau_active else (z_rho_expl, z_exner_expl)
+    z_rho_expl, z_exner_expl = (
+        _add_analysis_increments_from_data_assimilation(
+            z_rho_expl=z_rho_expl,
+            z_exner_expl=z_exner_expl,
+            rho_incr=rho_incr,
+            exner_incr=exner_incr,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )
+        if is_iau_active
+        else (z_rho_expl, z_exner_expl)
+    )
 
     z_q, w = where(
         int32(1) <= vert_idx,
@@ -297,14 +340,14 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         ),
         w,
     )
-    #w_1 = _set_w_level_1(w, vert_idx_1d)
+    # w_1 = _set_w_level_1(w, vert_idx_1d)
 
     w = (
         where(
             (int32(1) <= vert_idx < (index_of_damping_layer + int32(1))),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=z_raylfac,
-                w_1=w[KDim(0)],# w_1,
+                w_1=w[KDim(0)],  # w_1,
                 w=w,
             ),
             w,
@@ -435,17 +478,32 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     n_lev: int32,
     jk_start: int32,
     idyn_timestep: int32,
-):
+) -> tuple[
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+]:
     vert_idx_1d = vert_idx
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
     # verified for e-9
     z_flxdiv_mass, z_flxdiv_theta = _compute_divergence_of_fluxes_of_rho_and_theta(
-                geofac_div=geofac_div,
-                mass_fl_e=mass_fl_e,
-                z_theta_v_fl_e=z_theta_v_fl_e,
-            )
-
+        geofac_div=geofac_div,
+        mass_fl_e=mass_fl_e,
+        z_theta_v_fl_e=z_theta_v_fl_e,
+    )
 
     # (z_w_expl, z_contr_w_fl_l) = (
     #     where(
@@ -513,68 +571,71 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     #     else (z_alpha, z_q)
     # )
 
-    (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = where(
-        (vert_idx < n_lev),
-        _stencils_42_44_45(
-            z_w_expl=z_w_expl,
-            w_nnow=w_nnow,
-            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-            ddt_w_adv_ntl2=ddt_w_adv_ntl2,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
-            z_beta=z_beta,
-            exner_nnow=exner_nnow,
-            rho_nnow=rho_nnow,
-            theta_v_nnow=theta_v_nnow,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            z_alpha=z_alpha,
-            vwind_impl_wgt=vwind_impl_wgt,
-            theta_v_ic=theta_v_ic,
-            z_q=z_q,
-            k_field=vert_idx_1d,
-            rd=rd,
-            cvd=cvd,
-            dtime=dtime,
-            cpd=cpd,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
-            nlev=n_lev,
-        ),
-        (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
-    ) if itime_scheme == 4 else where(
-        (vert_idx < n_lev),
-        _stencils_43_44_45(
-            z_w_expl=z_w_expl,
-            w_nnow=w_nnow,
-            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
-            z_beta=z_beta,
-            exner_nnow=exner_nnow,
-            rho_nnow=rho_nnow,
-            theta_v_nnow=theta_v_nnow,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            z_alpha=z_alpha,
-            vwind_impl_wgt=vwind_impl_wgt,
-            theta_v_ic=theta_v_ic,
-            z_q=z_q,
-            k_field=vert_idx_1d,
-            rd=rd,
-            cvd=cvd,
-            dtime=dtime,
-            cpd=cpd,
-            nlev=n_lev,
-        ),
-        (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
+    (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q) = (
+        where(
+            (vert_idx < n_lev),
+            _stencils_42_44_45(
+                z_w_expl=z_w_expl,
+                w_nnow=w_nnow,
+                ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+                ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+                z_th_ddz_exner_c=z_th_ddz_exner_c,
+                z_contr_w_fl_l=z_contr_w_fl_l,
+                rho_ic=rho_ic,
+                w_concorr_c=w_concorr_c,
+                vwind_expl_wgt=vwind_expl_wgt,
+                z_beta=z_beta,
+                exner_nnow=exner_nnow,
+                rho_nnow=rho_nnow,
+                theta_v_nnow=theta_v_nnow,
+                inv_ddqz_z_full=inv_ddqz_z_full,
+                z_alpha=z_alpha,
+                vwind_impl_wgt=vwind_impl_wgt,
+                theta_v_ic=theta_v_ic,
+                z_q=z_q,
+                k_field=vert_idx_1d,
+                rd=rd,
+                cvd=cvd,
+                dtime=dtime,
+                cpd=cpd,
+                wgt_nnow_vel=wgt_nnow_vel,
+                wgt_nnew_vel=wgt_nnew_vel,
+                nlev=n_lev,
+            ),
+            (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
+        )
+        if itime_scheme == 4
+        else where(
+            (vert_idx < n_lev),
+            _stencils_43_44_45(
+                z_w_expl=z_w_expl,
+                w_nnow=w_nnow,
+                ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+                z_th_ddz_exner_c=z_th_ddz_exner_c,
+                z_contr_w_fl_l=z_contr_w_fl_l,
+                rho_ic=rho_ic,
+                w_concorr_c=w_concorr_c,
+                vwind_expl_wgt=vwind_expl_wgt,
+                z_beta=z_beta,
+                exner_nnow=exner_nnow,
+                rho_nnow=rho_nnow,
+                theta_v_nnow=theta_v_nnow,
+                inv_ddqz_z_full=inv_ddqz_z_full,
+                z_alpha=z_alpha,
+                vwind_impl_wgt=vwind_impl_wgt,
+                theta_v_ic=theta_v_ic,
+                z_q=z_q,
+                k_field=vert_idx_1d,
+                rd=rd,
+                cvd=cvd,
+                dtime=dtime,
+                cpd=cpd,
+                nlev=n_lev,
+            ),
+            (z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q),
+        )
     )
-    z_alpha = where(vert_idx == n_lev,
-                    _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_alpha = where(vert_idx == n_lev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
     # (z_w_expl, z_contr_w_fl_l) = where(
     #     (horizontal_lower <= horz_idx < horizontal_upper) & (vert_idx >= int32(1)),
     #     _mo_solve_nonhydro_stencil_43(
@@ -654,7 +715,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     (w, z_contr_w_fl_l) = where(
         (vert_idx == n_lev),
         _set_lower_boundary_condition_for_w_and_contravariant_correction(w_concorr_c=w_concorr_c),
-        (w, z_contr_w_fl_l)
+        (w, z_contr_w_fl_l),
     )
 
     (z_rho_expl, z_exner_expl) = where(
@@ -670,18 +731,21 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
             theta_v_ic=theta_v_ic,
             ddt_exner_phy=ddt_exner_phy,
             dtime=dtime,
-        ), (z_rho_expl, z_exner_expl)
+        ),
+        (z_rho_expl, z_exner_expl),
     )
 
-    z_rho_expl, z_exner_expl = \
+    z_rho_expl, z_exner_expl = (
         _add_analysis_increments_from_data_assimilation(
-                z_rho_expl=z_rho_expl,
-                z_exner_expl=z_exner_expl,
-                rho_incr=rho_incr,
-                exner_incr=exner_incr,
-                iau_wgt_dyn=iau_wgt_dyn,
-            ) if is_iau_active else (z_rho_expl, z_exner_expl)
-
+            z_rho_expl=z_rho_expl,
+            z_exner_expl=z_exner_expl,
+            rho_incr=rho_incr,
+            exner_incr=exner_incr,
+            iau_wgt_dyn=iau_wgt_dyn,
+        )
+        if is_iau_active
+        else (z_rho_expl, z_exner_expl)
+    )
 
     z_q, w = where(
         (int32(1) <= vert_idx),
@@ -709,14 +773,14 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         ),
         w,
     )
-    #w_1 = _set_w_level_1(w, vert_idx_1d)
+    # w_1 = _set_w_level_1(w, vert_idx_1d)
 
     w = (
         where(
             (int32(1) <= vert_idx < (index_of_damping_layer + int32(1))),
             _apply_rayleigh_damping_mechanism(
                 z_raylfac=z_raylfac,
-                w_1=w[KDim(0)], #w_1,
+                w_1=w[KDim(0)],  # w_1,
                 w=w,
             ),
             w,
@@ -746,8 +810,10 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         (rho, exner, theta_v),
     )
 
-    mass_flx_ic, vol_flx_ic = _init_two_cell_kdim_fields_with_zero_wp() if (lprep_adv & idyn_timestep) else mass_flx_ic, vol_flx_ic
-
+    mass_flx_ic, vol_flx_ic = (
+        _init_two_cell_kdim_fields_with_zero_wp() if (lprep_adv & idyn_timestep) else mass_flx_ic,
+        vol_flx_ic,
+    )
 
     mass_flx_ic, vol_flx_ic = where(
         (int32(1) <= vert_idx),
@@ -760,7 +826,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
             vol_flx_ic=vol_flx_ic,
             r_nsubsteps=r_nsubsteps,
         ),
-        mass_flx_ic, vol_flx_ic
+        mass_flx_ic,
+        vol_flx_ic,
     )
     return (
         z_flxdiv_mass,
@@ -777,7 +844,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         exner,
         theta_v,
         mass_flx_ic,
-        vol_flx_ic
+        vol_flx_ic,
     )
 
 
@@ -848,7 +915,23 @@ def _fused_solve_nonhydro_stencil_41_to_60(
     kstart_dd3d: int32,
     kstart_moist: int32,
     istep: int32,
-):
+) -> tuple[
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+    dims.CellDim,
+]:
     (
         z_flxdiv_mass,
         z_flxdiv_theta,
@@ -958,66 +1041,69 @@ def _fused_solve_nonhydro_stencil_41_to_60(
         exner,
         theta_v,
         mass_flx_ic,
-        vol_flx_ic
+        vol_flx_ic,
     ) = (
-        _fused_solve_nonhydro_stencil_41_to_60_corrector(
-            geofac_div=geofac_div,
-            mass_fl_e=mass_fl_e,
-            z_theta_v_fl_e=z_theta_v_fl_e,
-            z_w_expl=z_w_expl,
-            w_nnow=w_nnow,
-            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
-            ddt_w_adv_ntl2=ddt_w_adv_ntl2,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            z_contr_w_fl_l=z_contr_w_fl_l,
-            rho_ic=rho_ic,
-            w_concorr_c=w_concorr_c,
-            vwind_expl_wgt=vwind_expl_wgt,
-            z_beta=z_beta,
-            exner_nnow=exner_nnow,
-            rho_nnow=rho_nnow,
-            theta_v_nnow=theta_v_nnow,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            z_alpha=z_alpha,
-            vwind_impl_wgt=vwind_impl_wgt,
-            theta_v_ic=theta_v_ic,
-            z_q=z_q,
-            w=w,
-            z_rho_expl=z_rho_expl,
-            z_exner_expl=z_exner_expl,
-            exner_pr=exner_pr,
-            ddt_exner_phy=ddt_exner_phy,
-            rho_incr=rho_incr,
-            exner_incr=exner_incr,
-            ddqz_z_half=ddqz_z_half,
-            z_raylfac=z_raylfac,
-            exner_ref_mc=exner_ref_mc,
-            rho=rho,
-            exner=exner,
-            theta_v=theta_v,
-            vert_idx=vert_idx,
-            mass_flx_ic=mass_flx_ic,
-            vol_flx_ic=vol_flx_ic,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
-            itime_scheme=itime_scheme,
-            lprep_adv=lprep_adv,
-            r_nsubsteps=r_nsubsteps,
-            cvd_o_rd=cvd_o_rd,
-            iau_wgt_dyn=iau_wgt_dyn,
-            dtime=dtime,
-            rd=rd,
-            cvd=cvd,
-            cpd=cpd,
-            rayleigh_klemp=rayleigh_klemp,
-            is_iau_active=is_iau_active,
-            rayleigh_type=rayleigh_type,
-            index_of_damping_layer=index_of_damping_layer,
-            n_lev=n_lev,
-            jk_start=jk_start,
-            idyn_timestep=idyn_timestep,
+        (
+            _fused_solve_nonhydro_stencil_41_to_60_corrector(
+                geofac_div=geofac_div,
+                mass_fl_e=mass_fl_e,
+                z_theta_v_fl_e=z_theta_v_fl_e,
+                z_w_expl=z_w_expl,
+                w_nnow=w_nnow,
+                ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+                ddt_w_adv_ntl2=ddt_w_adv_ntl2,
+                z_th_ddz_exner_c=z_th_ddz_exner_c,
+                z_contr_w_fl_l=z_contr_w_fl_l,
+                rho_ic=rho_ic,
+                w_concorr_c=w_concorr_c,
+                vwind_expl_wgt=vwind_expl_wgt,
+                z_beta=z_beta,
+                exner_nnow=exner_nnow,
+                rho_nnow=rho_nnow,
+                theta_v_nnow=theta_v_nnow,
+                inv_ddqz_z_full=inv_ddqz_z_full,
+                z_alpha=z_alpha,
+                vwind_impl_wgt=vwind_impl_wgt,
+                theta_v_ic=theta_v_ic,
+                z_q=z_q,
+                w=w,
+                z_rho_expl=z_rho_expl,
+                z_exner_expl=z_exner_expl,
+                exner_pr=exner_pr,
+                ddt_exner_phy=ddt_exner_phy,
+                rho_incr=rho_incr,
+                exner_incr=exner_incr,
+                ddqz_z_half=ddqz_z_half,
+                z_raylfac=z_raylfac,
+                exner_ref_mc=exner_ref_mc,
+                rho=rho,
+                exner=exner,
+                theta_v=theta_v,
+                vert_idx=vert_idx,
+                mass_flx_ic=mass_flx_ic,
+                vol_flx_ic=vol_flx_ic,
+                wgt_nnow_vel=wgt_nnow_vel,
+                wgt_nnew_vel=wgt_nnew_vel,
+                itime_scheme=itime_scheme,
+                lprep_adv=lprep_adv,
+                r_nsubsteps=r_nsubsteps,
+                cvd_o_rd=cvd_o_rd,
+                iau_wgt_dyn=iau_wgt_dyn,
+                dtime=dtime,
+                rd=rd,
+                cvd=cvd,
+                cpd=cpd,
+                rayleigh_klemp=rayleigh_klemp,
+                is_iau_active=is_iau_active,
+                rayleigh_type=rayleigh_type,
+                index_of_damping_layer=index_of_damping_layer,
+                n_lev=n_lev,
+                jk_start=jk_start,
+                idyn_timestep=idyn_timestep,
+            )
         )
-    ) if istep > 1 else (
+        if istep > 1
+        else (
             z_flxdiv_mass,
             z_flxdiv_theta,
             z_w_expl,
@@ -1032,8 +1118,9 @@ def _fused_solve_nonhydro_stencil_41_to_60(
             exner,
             theta_v,
             mass_flx_ic,
-            vol_flx_ic
+            vol_flx_ic,
         )
+    )
 
     return (
         z_flxdiv_mass,
@@ -1052,7 +1139,7 @@ def _fused_solve_nonhydro_stencil_41_to_60(
         z_dwdz_dd,
         exner_dyn_incr,
         mass_flx_ic,
-        vol_flx_ic
+        vol_flx_ic,
     )
 
 
@@ -1098,6 +1185,7 @@ def fused_solve_nonhydro_stencil_41_to_60(
     z_dwdz_dd: Field[[CellDim, KDim], vpfloat],
     exner_dyn_incr: Field[[CellDim, KDim], vpfloat],
     mass_flx_ic: Field[[CellDim, KDim], wpfloat],
+    vol_flx_ic: Field[[CellDim, KDim], wpfloat],
     wgt_nnow_vel: wpfloat,
     wgt_nnew_vel: wpfloat,
     itime_scheme: int32,
@@ -1171,6 +1259,7 @@ def fused_solve_nonhydro_stencil_41_to_60(
         z_dwdz_dd,
         exner_dyn_incr,
         mass_flx_ic,
+        vol_flx_ic,
         wgt_nnow_vel,
         wgt_nnew_vel,
         itime_scheme,
@@ -1215,6 +1304,7 @@ def fused_solve_nonhydro_stencil_41_to_60(
             z_dwdz_dd,
             exner_dyn_incr,
             mass_flx_ic,
+            vol_flx_ic,
         ),
         domain={
             CellDim: (start_cell_nudging, end_cell_local),
@@ -1307,6 +1397,7 @@ def fused_solve_nonhydro_stencil_41_to_60(
             z_dwdz_dd,
             exner_dyn_incr,
             mass_flx_ic,
+            vol_flx_ic,
         ),
         domain={
             CellDim: (start_cell_nudging, end_cell_local),
