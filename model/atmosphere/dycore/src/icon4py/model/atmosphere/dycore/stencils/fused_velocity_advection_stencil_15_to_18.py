@@ -214,6 +214,4 @@ def fused_velocity_advection_stencil_15_to_18(
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
         },
-
-
     )
