@@ -439,12 +439,15 @@ class SolveNonhydro:
         self._exchange = exchange
         self._backend = backend
 
+        #---> IBM
+        self._ibm = ibm.ImmersedBoundaryMethod(grid)
         self._plot = plots.Plot(
             savepoint_path="testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data",
             grid_file_path="testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res250m.nc",
+            n_levels_to_plot=4,
             backend = self._backend,
             )
-        self._ibm = ibm.ImmersedBoundaryMethod(grid)
+        #<--- IBM
 
         self._grid = grid
         self._config = config
@@ -875,8 +878,23 @@ class SolveNonhydro:
 
         #---> IBM
         if at_initial_timestep and at_first_substep:
+            if ibm.DEBUG_LEVEL >= 3:
+                # save prognostic state for testing
+                import pickle
+                with open("testdata/prognostic_state_initial.pkl", "wb") as f:
+                    pickle.dump(prognostic_states.current, f)
             log.info(" ***IBM fixing initial conditions")
-            self._ibm.set_boundary_conditions_vn(prognostic_states.current.vn)
+            self._ibm.set_dirichlet_value_vn(prognostic_states.current.vn)
+            self._ibm.set_dirichlet_value_w(prognostic_states.current.w)
+            self._ibm.set_dirichlet_value_rho(prognostic_states.current.rho)
+            self._ibm.set_dirichlet_value_exner(prognostic_states.current.exner)
+            self._ibm.set_dirichlet_value_theta_v(prognostic_states.current.theta_v)
+            # plots
+            self._plot.plot_data(prognostic_states.current.vn,      label=f"IC_vvec_edge")
+            self._plot.plot_data(prognostic_states.current.w,       label=f"IC_w")
+            self._plot.plot_data(prognostic_states.current.rho,     label=f"IC_rho")
+            self._plot.plot_data(prognostic_states.current.exner,   label=f"IC_exner")
+            self._plot.plot_data(prognostic_states.current.theta_v, label=f"IC_theta_v")
         #<--- IBM
 
         self.run_predictor_step(
@@ -896,10 +914,12 @@ class SolveNonhydro:
         field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
         field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         log.info(f" ***after_predictor MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
-        # # plots
-        # self._plot.plot_data(prognostic_states.next.w,  5, label=f"after_predictor_w")
-        # #self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_predictor_vvec_cell")
-        # self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_predictor_vvec_edge")
+        # plots
+        self._plot.plot_data(prognostic_states.next.vn,      label=f"after_predictor_vvec_edge")
+        self._plot.plot_data(prognostic_states.next.w,       label=f"after_predictor_w")
+        self._plot.plot_data(prognostic_states.next.rho,     label=f"after_predictor_rho")
+        self._plot.plot_data(prognostic_states.next.exner,   label=f"after_predictor_exner")
+        self._plot.plot_data(prognostic_states.next.theta_v, label=f"after_predictor_theta_v")
         #<--- IBM
 
         self.run_corrector_step(
@@ -923,9 +943,11 @@ class SolveNonhydro:
         field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         log.info(f" ***after_corrector MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
         # plots
-        self._plot.plot_data(prognostic_states.next.w,  5, label=f"after_corrector_w")
-        #self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_corrector_vvec_cell")
-        self._plot.plot_data(prognostic_states.next.vn, 5, label=f"after_corrector_vvec_edge")
+        self._plot.plot_data(prognostic_states.next.vn,      label=f"after_corrector_vvec_edge")
+        self._plot.plot_data(prognostic_states.next.w,       label=f"after_corrector_w")
+        self._plot.plot_data(prognostic_states.next.rho,     label=f"after_corrector_rho")
+        self._plot.plot_data(prognostic_states.next.exner,   label=f"after_corrector_exner")
+        self._plot.plot_data(prognostic_states.next.theta_v, label=f"after_corrector_theta_v")
         #<--- IBM
 
         if self._grid.limited_area:
@@ -1235,6 +1257,10 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,  # UBOUND(p_ccpr,2)
                 offset_provider=self._grid.offset_providers,
             )
+            #---> IBM
+            self._ibm.set_bcs_green_gauss_gradient(self.z_grad_rth_1, self.z_grad_rth_2)
+            self._ibm.set_bcs_green_gauss_gradient(self.z_grad_rth_3, self.z_grad_rth_4)
+            #<--- IBM
         if self._config.iadv_rhotheta <= 2:
             self._init_two_edge_kdim_fields_with_zero_wp(
                 edge_kdim_field_with_zero_wp_1=z_fields.z_rho_e,
@@ -1287,6 +1313,15 @@ class SolveNonhydro:
                     vertical_end=self._grid.num_levels,
                     offset_provider=self._grid.offset_providers,
                 )
+
+                # #---> IBM
+                # self._plot.plot_data(self.z_grad_rth_1, label=f"inside_predictor_miura_ddx_rho")
+                # self._plot.plot_data(self.z_grad_rth_2, label=f"inside_predictor_miura_ddy_rho")
+                # self._plot.plot_data(self.z_grad_rth_3, label=f"inside_predictor_miura_ddx_theta_v")
+                # self._plot.plot_data(self.z_grad_rth_4, label=f"inside_predictor_miura_ddy_theta_v")
+                # self._plot.plot_data(z_fields.z_rho_e, label=f"inside_predictor_miura_rho_e")
+                # self._plot.plot_data(z_fields.z_theta_v_e, label=f"inside_predictor_miura_theta_v_e")
+                # #<--- IBM
 
         # scidoc:
         # Outputs:
@@ -1536,7 +1571,7 @@ class SolveNonhydro:
             )
 
         #---> IBM
-        self._ibm.set_boundary_conditions_vn(prognostic_states.next.vn)
+        self._ibm.set_dirichlet_value_vn(prognostic_states.next.vn)
         #<--- IBM
 
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
@@ -1620,6 +1655,11 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels + 1,
             offset_provider=self._grid.offset_providers,
         )
+
+        #---> IBM
+        self._ibm.set_bcs_flux(diagnostic_state_nh.mass_fl_e)
+        self._ibm.set_bcs_flux(self.z_theta_v_fl_e)
+        #<--- IBM
 
         self._compute_divergence_of_fluxes_of_rho_and_theta(
             geofac_div=self._interpolation_state.geofac_div,
@@ -1712,7 +1752,7 @@ class SolveNonhydro:
             )
 
         #---> IBM
-        self._ibm.set_boundary_conditions_w(
+        self._ibm.set_bcs_w_matrix(
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_w_expl=z_fields.z_w_expl,
         )
@@ -1785,6 +1825,12 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
+
+        # #---> IBM
+        # self._ibm.set_dirichlet_value_rho(prognostic_states.next.rho)
+        # self._ibm.set_dirichlet_value_exner(prognostic_states.next.exner)
+        # self._ibm.set_dirichlet_value_theta_v(prognostic_states.next.theta_v)
+        # #<--- IBM
 
         # compute dw/dz for divergence damping term
         if self._config.divdamp_type >= 3:
@@ -2047,7 +2093,7 @@ class SolveNonhydro:
             )
 
         #---> IBM
-        self._ibm.set_boundary_conditions_vn(prognostic_states.next.vn)
+        self._ibm.set_dirichlet_value_vn(prognostic_states.next.vn)
         #<--- IBM
 
         log.debug("exchanging prognostic field 'vn'")
@@ -2105,6 +2151,11 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
+
+        #---> IBM
+        self._ibm.set_bcs_flux(diagnostic_state_nh.mass_fl_e)
+        self._ibm.set_bcs_flux(self.z_theta_v_fl_e)
+        #<--- IBM
 
         # verified for e-9
         #log.debug(f"corrector: start stencil 41")
@@ -2240,7 +2291,7 @@ class SolveNonhydro:
 
 
         #---> IBM
-        self._ibm.set_boundary_conditions_w(
+        self._ibm.set_bcs_w_matrix(
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_w_expl=z_fields.z_w_expl,
         )
@@ -2315,6 +2366,12 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
+
+        # #---> IBM
+        # self._ibm.set_dirichlet_value_rho(prognostic_states.next.rho)
+        # self._ibm.set_dirichlet_value_exner(prognostic_states.next.exner)
+        # self._ibm.set_dirichlet_value_theta_v(prognostic_states.next.theta_v)
+        # #<--- IBM
 
         if lprep_adv:
             if at_first_substep:

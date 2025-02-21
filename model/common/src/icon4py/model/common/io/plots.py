@@ -20,6 +20,8 @@ pil_logger = logging.getLogger('PIL')
 # override the logger logging level to INFO
 pil_logger.setLevel(logging.INFO)
 
+DO_PLOTS = True
+
 # flake8: noqa
 log = logging.getLogger(__name__)
 
@@ -188,8 +190,10 @@ class Plot:
             self,
             savepoint_path: str = "",
             grid_file_path: str = "",
+            n_levels_to_plot: int = 2,
             backend: gtx.backend.Backend = gtx.gtfn_cpu,
         ):
+        self._n_levels_to_plot = n_levels_to_plot
         data_provider = sb.IconSerialDataProvider(
             backend=backend,
             fname_prefix="icon_pydycore",
@@ -227,17 +231,20 @@ class Plot:
             os.makedirs(PLOT_IMGS_DIR)
         self.plot_counter = 0
 
-    def plot_data(self, data, nlev: int, label: str = ''):
-        axs = self._plot_data(self.tri, data, nlev, f"{PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}")
-        self.plot_counter += 1
-        return axs
+    def plot_data(self, data, nlev: int = -1, label: str = "", fig_num: int = 1) -> mpl.axes.Axes:
+        if DO_PLOTS:
+            if nlev == -1:
+                nlev = self._n_levels_to_plot
+            axs = self._plot_data(self.tri, data, nlev, f"{PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}", fig_num)
+            self.plot_counter += 1
+            return axs
 
 
-    def _plot_data(self, tri: mpl.tri.Triangulation, data, nlev: int, file_name: str = '') -> None:
+    def _plot_data(self, tri: mpl.tri.Triangulation, data, nlev: int, file_name: str, fig_num: int) -> None:
         """
         Plot data on a triangulation.
         """
-        nax_per_col = 10
+        nax_per_col = 2
 
         if "vvec_cell" in file_name:
             # quiver-plot *v* at cell centres
@@ -281,27 +288,32 @@ class Plot:
 
         cmin = data.min()
         cmax = data.max()
-        nlevels = 5
-        if cmin < 0 and cmax > 0:
+        if cmin < 0 and cmax > 0 and np.abs(cmax + cmin) < cmax/3:
             cmap = "seismic"
-            norm = colors.TwoSlopeNorm(vmin=cmin, vcenter=0, vmax=cmax)
+            norm = lambda cmin, cmax: colors.TwoSlopeNorm(vmin=min(-1e-9, cmin), vcenter=0, vmax=max(1e-9,cmax))
+            #nlevels = 5
             #levels = np.r_[np.linspace(cmin,0,nlevels//2)[0:-1], np.linspace(0,cmax,nlevels//2)]
             #cbarticks=[levels[i] for i in [0,nlevels//2-1,nlevels-2]]
         else:
-            cmap = "YlOrRd"
-            norm = colors.Normalize()
+            if cmax > -cmin:
+                #cmap = "YlOrRd"
+                cmap = "gist_rainbow"
+            else:
+                #cmap = "YlOrRd_r"
+                cmap = "gist_rainbow_r"
+            norm = lambda cmin, cmax: colors.Normalize(vmin=min(-1e-9, cmin), vmax=max(1e-9,cmax))
 
 
         match data.shape[0]:
             case self.grid.num_cells:
-                plot_lev = lambda data, i: axs[i].tripcolor(tri, data[:, -1-i], edgecolor='none', shading='flat', cmap=cmap, norm=norm)
+                plot_lev = lambda data, i: axs[i].tripcolor(tri, data[:, -1-i], edgecolor='none', shading='flat', cmap=cmap, norm=norm(data[:, -1-i].min(), data[:, -1-i].max()))
             case self.grid.num_edges:
-                plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=4**2, cmap=cmap, norm=norm)
+                plot_lev = lambda data, i: axs[i].scatter(tri.edge_x, tri.edge_y, c=data[:, -1-i], s=6**2, cmap=cmap, norm=norm(data[:, -1-i].min(), data[:, -1-i].max()))
             case self.grid.num_vertices:
-                plot_lev = lambda data, i: axs[i].scatter(tri.x, tri.y, c=data[:, -1-i], s=4**2, cmap=cmap, norm=norm)
+                plot_lev = lambda data, i: axs[i].scatter(tri.x, tri.y, c=data[:, -1-i], s=6**2, cmap=cmap, norm=norm(data[:, -1-i].min(), data[:, -1-i].max()))
             case _: raise ValueError("Invalid data shape")
 
-        fig = plt.figure(1, figsize=(14,min(13,4*nlev))); plt.clf()
+        fig = plt.figure(fig_num, figsize=(14,min(13,4*nlev))); plt.clf()
         axs = fig.subplots(nrows=min(nax_per_col, nlev), ncols=max(1,int(np.ceil(nlev/nax_per_col))), sharex=True, sharey=True)
         if nlev > 1:
             axs = axs.flatten()
@@ -358,12 +370,12 @@ if __name__ == "__main__":
     import pickle
 
     main_dir = os.getcwd() + "/"
-    state_fname = 'testdata/prognostic_states.torus_small.pkl'
+    state_fname = 'testdata/prognostic_state_initial.pkl'
     savepoint_path = 'testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data'
-    grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res100m.nc"
+    grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res250m.nc"
 
     with open(main_dir + state_fname, "rb") as ifile:
-        prognostic_states = pickle.load(ifile)
+        prognostic_state = pickle.load(ifile)
 
     plot = Plot(
         savepoint_path = main_dir + savepoint_path,
@@ -371,11 +383,12 @@ if __name__ == "__main__":
         backend = gtx.gtfn_cpu,
         )
 
-    #plot.plot_data(prognostic_states.current.vn, 2, label=f"vn")
-    axs = plot.plot_data(prognostic_states.current.w,  2, label=f"w")
-    axs = plot.plot_data(prognostic_states.current.vn, 2, label=f"vvec_cell")
-    axs = plot.plot_data(prognostic_states.current.vn, 2, label=f"vvec_edge")
-    #plot.plot_grid(axs[0])
+    # #plot.plot_data(prognostic_state.vn, 2, label=f"vn")
+    # axs = plot.plot_data(prognostic_state.rho,     2, label=f"rho")
+    # axs = plot.plot_data(prognostic_state.theta_v, 2, label=f"theta_v")
+    # axs = plot.plot_data(prognostic_state.vn, 2, label=f"vvec_cell")
+    # axs = plot.plot_data(prognostic_state.vn, 2, label=f"vvec_edge")
+    # #plot.plot_grid(axs[0])
 
     ## --> check grid file
     #grid_file_path = "testdata/debugs/Torus_Triangles_1000m_x_1000m_res250m_fixed.nc"
@@ -412,26 +425,3 @@ if __name__ == "__main__":
     # plot.tri.y = grid.cartesian_y_vertices.values
     # plot.tri.edge_x = grid.edge_middle_cartesian_x.values
     # plot.tri.edge_y = grid.edge_middle_cartesian_y.values
-
-
-    ## --> check Davids
-    #data_provider = sb.IconSerialDataProvider("icon_pydycore", "testdata/davids/torus_convergence_1/ser_data/")
-    #grid_savepoint = data_provider.from_savepoint_grid('aa', 0, 2)
-    #vlon = grid_savepoint.verts_vertex_lon().ndarray
-    #vlat = grid_savepoint.verts_vertex_lat().ndarray
-    #clon = grid_savepoint.cell_center_lon().ndarray
-    #clat = grid_savepoint.cell_center_lat().ndarray
-    #vx = grid_savepoint.verts_vertex_x().ndarray
-    #vy = grid_savepoint.verts_vertex_y().ndarray
-    #cx = grid_savepoint.cell_center_x().ndarray
-    #cy = grid_savepoint.cell_center_y().ndarray
-    #plt.figure(1); plt.clf(); plt.show(block=False)
-    #plt.plot(vlon, vlat, 'vr')
-    #plt.plot(clon, clat, 'ob')
-    #plt.draw()
-    #plt.figure(2); plt.clf(); plt.show(block=False)
-    #plt.plot(vx, vy, 'vr')
-    #plt.plot(cx, cy, 'ob')
-    #plt.axis('equal')
-    #plt.draw()
-    ## <--

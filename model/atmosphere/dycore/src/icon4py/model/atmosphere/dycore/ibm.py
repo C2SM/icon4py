@@ -33,15 +33,14 @@ class ImmersedBoundaryMethod:
         """
         Initialize the immersed boundary method.
         """
-        self._validate_config()
 
-        self.cell_mask = self._make_cell_mask(grid)
-        self.edge_mask = self._make_edge_mask(grid)
+        self._make_masks(grid)
 
-        self._dir_value_vn = 0.0
-        self._dir_value_w = 0.0
-        self._dir_value_theta_v = -313
-        self._dir_value_p = -717
+        self._dirichlet_value_vn      = 0.0
+        self._dirichlet_value_w       = 0.0
+        self._dirichlet_value_rho     = -313.0
+        self._dirichlet_value_exner   = -313.0
+        self._dirichlet_value_theta_v = -313.0
 
         if DEBUG_LEVEL >= 2:
             self._delta_file_vn = open("ibm_delta_vn.csv", "a")
@@ -51,96 +50,155 @@ class ImmersedBoundaryMethod:
 
         log.info("IBM initialized")
 
-    def _validate_config(self):
-        log.info("IBM config validated")
-        pass
-
-    def _make_cell_mask(self, grid: icon_grid.IconGrid) -> fa.CellKField[bool]:
-        cell_mask_np = np.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
-        cell_mask_np[[5,16], -3:] = True
-        return gtx.as_field((CellDim, KDim), cell_mask_np)
+    def _make_masks(self, grid: icon_grid.IconGrid):
+        """
+        Create masks for the immersed boundary method.
+        """
+        half_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
+        half_cell_mask_np[[5,16], -3:] = True
+        full_cell_mask_np = half_cell_mask_np[:, :-1]
+        self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
+        self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
     
-    def _make_edge_mask(self, grid: icon_grid.IconGrid) -> fa.EdgeKField[bool]:
-        if not hasattr(self, "cell_mask"):
-            raise ValueError("Cell mask must be set before edge mask.")
-        cell_mask_np = self.cell_mask.ndarray
         c2e = grid.connectivities[dims.C2EDim]
-        edge_mask_np = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
+        full_edge_mask_np = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
         for k in range(grid.num_levels):
-            edge_mask_np[c2e[np.where(cell_mask_np[:,k])], k] = True
-        return gtx.as_field((EdgeDim, KDim), edge_mask_np)
+            full_edge_mask_np[c2e[np.where(full_cell_mask_np[:,k])], k] = True
+        self.full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
 
-    def set_boundary_conditions_vn(
+        c2e2c = grid.connectivities[dims.C2E2CDim]
+        neigh_full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
+        for k in range(grid.num_levels):
+            neigh_full_cell_mask_np[c2e2c[np.where(full_cell_mask_np[:,k])], k] = True
+        self.neigh_full_cell_mask = gtx.as_field((CellDim, KDim), neigh_full_cell_mask_np)
+
+    def set_dirichlet_value_vn(
         self,
         vn: fa.EdgeKField[float],
     ):
-        if DEBUG_LEVEL >= 1:
-            vn0 = vn.ndarray.copy()
-
-        self._set_bcs_edges(
-            mask=self.edge_mask,
-            dir_value=self._dir_value_vn,
+        self.set_bcs_edges(
+            mask=self.full_edge_mask,
+            dir_value=self._dirichlet_value_vn,
             field=vn,
-            out=(vn),
+            out=vn,
             offset_provider={},
         )
 
-        if DEBUG_LEVEL >= 1:
-            vn1 = vn.ndarray
-            log.info(f"IBM max delta vn: {np.abs(vn1 - vn0).max()}")
+    def set_dirichlet_value_w(
+        self,
+        w: fa.CellKField[float],
+    ):
+        self.set_bcs_cells(
+            mask=self.half_cell_mask,
+            dir_value=self._dirichlet_value_w,
+            field=w,
+            out=w,
+            offset_provider={},
+        )
 
-    def set_boundary_conditions_w(
+    def set_dirichlet_value_rho(
+        self,
+        rho: fa.CellKField[float],
+    ):
+        self.set_bcs_cells(
+            mask=self.full_cell_mask,
+            dir_value=self._dirichlet_value_rho,
+            field=rho,
+            out=rho,
+            offset_provider={},
+        )
+
+    def set_dirichlet_value_exner(
+        self,
+        exner: fa.CellKField[float],
+    ):
+        self.set_bcs_cells(
+            mask=self.full_cell_mask,
+            dir_value=self._dirichlet_value_exner,
+            field=exner,
+            out=exner,
+            offset_provider={},
+        )
+
+    def set_dirichlet_value_theta_v(
+        self,
+        theta_v: fa.CellKField[float],
+    ):
+        self.set_bcs_cells(
+            mask=self.full_cell_mask,
+            dir_value=self._dirichlet_value_theta_v,
+            field=theta_v,
+            out=theta_v,
+            offset_provider={},
+        )
+
+    def set_bcs_w_matrix(
         self,
         theta_v_ic: fa.CellKField[float],
         z_w_expl: fa.CellKField[float],
     ):
-
         # Set $theta_v_{k+1/2} = 0$ as a 'hack' for setting $\gamma_{k+1/2} = 0$
         # in the tridiagonal solver. This results in:
         #  $a_{k+1/2} = 0$
         #  $b_{k+1/2} = 1$
         #  $c_{k+1/2} = 0$
         #  $d_{k+1/2} = z_w_expl_{k+1/2}$
-        # and should work as theta_v_ic is not used anymore after this point.
-        self._set_bcs_cells(
-            mask=self.cell_mask,
+        # and should work as theta_v_ic is not used anymore after this point,
+        # nor are a, b, and c. Only alfa and beta are used in the equation for
+        # exner, but those are not affected by this hack.
+        self.set_bcs_cells(
+            mask=self.half_cell_mask,
             dir_value=0.,
             field=theta_v_ic,
-            out=(theta_v_ic),
+            out=theta_v_ic,
             offset_provider={},
         )
         # Then set the Dirichlet value for $w$.
-        self._set_bcs_cells(
-            mask=self.cell_mask,
-            dir_value=self._dir_value_w,
+        self.set_bcs_cells(
+            mask=self.half_cell_mask,
+            dir_value=self._dirichlet_value_w,
             field=z_w_expl,
-            out=(z_w_expl),
+            out=z_w_expl,
             offset_provider={},
         )
 
-
-    def set_boundary_conditions_p(
+    def set_bcs_flux(
         self,
-        p: fa.CellKField[float],
+        flux: fa.EdgeKField[float],
     ):
-        if DEBUG_LEVEL >= 1:
-            p0 = p.ndarray.copy()
-
-        self._set_bcs_cells(
-            mask=self.cell_mask,
-            dir_value=self._dir_value_p,
-            field=p,
-            out=(p),
+        # Set the flux to zero at the boundaries.
+        self.set_bcs_edges(
+            mask=self.full_edge_mask,
+            dir_value=0,
+            field=flux,
+            out=flux,
             offset_provider={},
         )
 
-        if DEBUG_LEVEL >= 1:
-            p1 = p.ndarray
-            log.info(f"IBM max delta p: {np.abs(p1 - p0 ).max()}")
+    def set_bcs_green_gauss_gradient(
+        self,
+        grad_x: fa.CellKField[float],
+        grad_y: fa.CellKField[float],
+    ):
+        # Zero the gradients in masked cells and their neighbors.
+        self.set_bcs_cells(
+            mask=self.neigh_full_cell_mask,
+            dir_value=0.,
+            field=grad_x,
+            out=grad_x,
+            offset_provider={},
+        )
+        self.set_bcs_cells(
+            mask=self.neigh_full_cell_mask,
+            dir_value=0.,
+            field=grad_y,
+            out=grad_y,
+            offset_provider={},
+        )
 
 
     @gtx.field_operator
-    def _set_bcs_cells(
+    def set_bcs_cells(
         mask: fa.CellKField[bool],
         dir_value: float,
         field: fa.CellKField[float],
@@ -152,7 +210,7 @@ class ImmersedBoundaryMethod:
         return field
 
     @gtx.field_operator
-    def _set_bcs_edges(
+    def set_bcs_edges(
         mask: fa.EdgeKField[bool],
         dir_value: float,
         field: fa.EdgeKField[float],
@@ -175,13 +233,13 @@ class ImmersedBoundaryMethod:
         if DEBUG_LEVEL < 2:
             return
 
-        edge_mask = self.edge_mask.ndarray
-        cell_mask = self.cell_mask.ndarray
+        edge_mask = self.full_edge_mask.ndarray
+        cell_mask = self.half_cell_mask.ndarray
         vn = prognostic_state.vn.ndarray
         w  = prognostic_state.w.ndarray
 
-        delta_vn = np.abs(vn[edge_mask] - self._dir_value_vn)
-        delta_w  = np.abs(w [cell_mask] - self._dir_value_w )
+        delta_vn = np.abs(vn[edge_mask] - self._dirichlet_value_vn)
+        delta_w  = np.abs(w [cell_mask] - self._dirichlet_value_w )
 
         log.info(f"IBM delta on vn: min {delta_vn.min():10.3e} max {delta_vn.max():10.3e}")
         log.info(f"IBM delta on w : min {delta_w .min():10.3e} max {delta_w .max():10.3e}")
