@@ -162,6 +162,13 @@ def step_date_exit():
     """
     return "2021-06-20T12:00:10.000"
 
+@pytest.fixture
+def substep_init():
+    return 1
+
+@pytest.fixture
+def substep_exit():
+    return 1
 
 @pytest.fixture
 def interpolation_savepoint(data_provider):  # F811

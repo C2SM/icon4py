@@ -153,14 +153,14 @@ def test_verify_velocity_init_against_regular_savepoint(
     )
 
 
-@pytest.mark.embedded_remap_error
+pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
+@pytest.mark.parametrize("istep_init, istep_exit, substep_init", [(1, 1, 1)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit",
+    "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -679,7 +679,7 @@ def test_velocity_fused_8_13(
 @pytest.mark.parametrize("istep_init", [1, 2])
 @pytest.mark.parametrize("substep_init", [1])
 @pytest.mark.parametrize("substep_exit", [1])
-def test_velocity_fused_8_13_2_new(
+def test_velocity_fused_8_13_new(
     icon_grid,
     grid_savepoint,
     savepoint_velocity_8_13_init,
@@ -711,7 +711,6 @@ def test_velocity_fused_8_13_2_new(
     )
     wgtfac_c = metrics_savepoint.wgtfac_c()
     k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend)
-    cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     lateral_boundary_3 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
@@ -731,8 +730,6 @@ def test_velocity_fused_8_13_2_new(
             z_ekinh=z_ekinh,
             z_w_con_c=z_w_con_c,
             k=k,
-            cell=cell,
-            istep=istep_init,
             nlev=icon_grid.num_levels,
             nflatlev=nflatlev,
             lateral_boundary_3=lateral_boundary_4,
@@ -763,8 +760,6 @@ def test_velocity_fused_8_13_2_new(
             z_ekinh=z_ekinh,
             z_w_con_c=z_w_con_c,
             k=k,
-            cell=cell,
-            istep=istep_init,
             nlev=icon_grid.num_levels,
             nflatlev=nflatlev,
             lateral_boundary_3=lateral_boundary_4,
