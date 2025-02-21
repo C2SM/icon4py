@@ -1439,7 +1439,7 @@ class IconNonHydroExitSavepoint(IconSavepoint):
     def vt(self):
         return self._get_field("vt", dims.EdgeDim, dims.KDim)
 
-   def z_flxdiv_mass(self):
+    def z_flxdiv_mass(self):
         return self._get_field("z_flxdiv_mass", dims.CellDim, dims.KDim)
 
     def z_w_expl(self):
@@ -1465,6 +1465,7 @@ class IconNonHydroExitSavepoint(IconSavepoint):
 
     def z_theta_v_fl_e(self):
         return self._get_field("z_theta_v_fl_e", dims.EdgeDim, dims.KDim)
+
 
 class IconNonHydroExit_15_28_Savepoint(IconSavepoint):
     def z_rho_e(self):

@@ -201,7 +201,7 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_i
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_init(
-        istep=istep_init, date=step_date_init, jstep=jstep_init, substep=substep
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 

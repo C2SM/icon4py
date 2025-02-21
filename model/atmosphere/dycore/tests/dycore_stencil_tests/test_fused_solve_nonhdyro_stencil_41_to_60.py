@@ -59,7 +59,7 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
         "z_dwdz_dd",
         "exner_dyn_incr",
         "mass_flx_ic",
-        "vol_flx_ic"
+        "vol_flx_ic",
     )
 
     # flake8: noqa: C901
