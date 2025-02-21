@@ -1189,26 +1189,8 @@ class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
     def z_graddiv_vn(self):
         return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
 
-    def iau_wgt_dyn(self):
-        return self._get_field("iau_wgt_dyn", dims.EdgeDim, dims.KDim)
-
-    def itime_scheme(self) -> int:
-        return self.serializer.read("itime_scheme", self.savepoint)[0]
-
-    def divdamp_order(self) -> int:
-        return self.serializer.read("divdamp_order", self.savepoint)[0]
-
     def scal_divdamp_o2(self) -> float:
         return self.serializer.read("scal_divdamp_o2", self.savepoint)[0]
-
-    def iadv_rhotheta(self) -> int:
-        return self.serializer.read("iadv_rhotheta", self.savepoint)[0]
-
-    def is_iau_active(self) -> bool:
-        return bool(self.serializer.read("is_iau_active", self.savepoint)[0])
-
-    def igradp_method(self) -> int:
-        return self.serializer.read("igradp_method", self.savepoint)[0]
 
 
 class IconNonHydroExitSavepoint(IconSavepoint):

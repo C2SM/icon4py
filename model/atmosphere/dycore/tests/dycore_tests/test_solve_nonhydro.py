@@ -1135,22 +1135,24 @@ def test_run_solve_nonhydro_15_to_28(
     z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
     vn = savepoint_nonhydro_15_28_init.vn()
     z_graddiv_vn = savepoint_nonhydro_15_28_init.z_graddiv_vn()
-    iau_wgt_dyn = savepoint_nonhydro_15_28_init.iau_wgt_dyn()
-    itime_scheme = savepoint_nonhydro_15_28_init.itime_scheme()
-    divdamp_order = savepoint_nonhydro_15_28_init.divdamp_order()
+    # TODO: check which of these params can be imported from _mch_ch_r04b09_dsl_nonhydrostatic_config
+    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config)
+    params_config = solve_nh.NonHydrostaticConfig()
+
+    iau_wgt_dyn = params_config.iau_wgt_dyn
+    itime_scheme = params_config.itime_scheme
+    divdamp_order = params_config.divdamp_order
     scal_divdamp_o2 = savepoint_nonhydro_15_28_init.scal_divdamp_o2()
-    iadv_rhotheta = savepoint_nonhydro_15_28_init.iadv_rhotheta()
-    is_iau_active = savepoint_nonhydro_15_28_init.is_iau_active()
-    igradp_method = savepoint_nonhydro_15_28_init.igradp_method()
+    iadv_rhotheta = params_config.iadv_rhotheta
+    is_iau_active = params_config.is_iau_active
+    igradp_method = params_config.igradp_method
 
     z_rho_e_ref = savepoint_nonhydro_15_28_exit.z_rho_e()
     z_theta_v_e_ref = savepoint_nonhydro_15_28_exit.z_theta_v_e()
     z_gradh_exner_ref = savepoint_nonhydro_15_28_exit.z_gradh_exner()
     vn_ref = savepoint_nonhydro_15_28_exit.vn()
     z_graddiv_vn_ref = savepoint_nonhydro_15_28_exit.z_graddiv_vn()
-
-    config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
-    nonhydro_params = solve_nh.NonHydrostaticParams(config)
 
     fused_solve_nonhydro_stencil_15_to_28.fused_solve_nonhydro_stencil_15_to_28.with_backend(
         backend
