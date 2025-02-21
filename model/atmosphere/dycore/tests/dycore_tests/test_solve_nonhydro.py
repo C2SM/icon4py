@@ -1135,7 +1135,6 @@ def test_run_solve_nonhydro_15_to_28(
     z_gradh_exner = savepoint_nonhydro_15_28_init.z_gradh_exner()
     vn = savepoint_nonhydro_15_28_init.vn()
     z_graddiv_vn = savepoint_nonhydro_15_28_init.z_graddiv_vn()
-    # TODO: check which of these params can be imported from _mch_ch_r04b09_dsl_nonhydrostatic_config
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     params_config = solve_nh.NonHydrostaticConfig()
@@ -1143,7 +1142,7 @@ def test_run_solve_nonhydro_15_to_28(
     iau_wgt_dyn = params_config.iau_wgt_dyn
     itime_scheme = params_config.itime_scheme
     divdamp_order = params_config.divdamp_order
-    scal_divdamp_o2 = savepoint_nonhydro_15_28_init.scal_divdamp_o2()
+    scal_divdamp_o2 = params_config.divdamp_fac_o2 * grid_savepoint.mean_cell_area()
     iadv_rhotheta = params_config.iadv_rhotheta
     is_iau_active = params_config.is_iau_active
     igradp_method = params_config.igradp_method

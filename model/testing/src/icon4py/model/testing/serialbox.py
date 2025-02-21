@@ -1189,9 +1189,6 @@ class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
     def z_graddiv_vn(self):
         return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
 
-    def scal_divdamp_o2(self) -> float:
-        return self.serializer.read("scal_divdamp_o2", self.savepoint)[0]
-
 
 class IconNonHydroExitSavepoint(IconSavepoint):
     def z_exner_ex_pr(self):
