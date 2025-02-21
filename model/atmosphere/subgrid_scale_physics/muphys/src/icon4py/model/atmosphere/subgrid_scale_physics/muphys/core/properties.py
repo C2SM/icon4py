@@ -103,7 +103,8 @@ def _ice_deposition_nucleation(
     dvsi:      fa.CellKField[ta.wpfloat],             # Vapor excess with respect to ice sat
     dt:        ta.wpfloat,                           # Time step
 ) -> fa.CellKField[ta.wpfloat]:                       # Rate of vapor deposition for new ice
-    return where( ( (qi <= g_ct.qmin) & ((t < g_ct.tfrz_het2) & (dvsi > 0.0)) ) | ( (t <= g_ct.tfrz_het1) & (qc > g_ct.qmin) ), minimum(g_ct.m0_ice * ni, maximum(0.0, dvsi)) / dt, 0.0 )
+    return where( ( (qi <= g_ct.qmin) & ( ((t < g_ct.tfrz_het2) & (dvsi > 0.0)) | ( (t <= g_ct.tfrz_het1) & (qc > g_ct.qmin) )) ), \
+                  minimum(g_ct.m0_ice * ni, maximum(0.0, dvsi)) / dt, 0.0 )
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def ice_deposition_nucleation(
