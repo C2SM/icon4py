@@ -169,6 +169,9 @@ class TimeLoop:
                 initial_divdamp_fac_o2,
                 do_prep_adv,
             )
+            from cupy import cuda
+
+            cuda.runtime.deviceSynchronize()
             timer.capture()
 
             self._is_first_step_in_simulation = False
