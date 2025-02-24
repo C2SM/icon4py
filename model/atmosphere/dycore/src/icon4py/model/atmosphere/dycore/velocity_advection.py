@@ -16,6 +16,7 @@ from gt4py.next import backend as gtx_backend
 
 import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
 from icon4py.model.atmosphere.dycore import dycore_states
+from icon4py.model.atmosphere.dycore.stencils import fused_velocity_advection_stencil_8_to_13
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
@@ -107,6 +108,13 @@ class VelocityAdvection:
         self._fused_stencils_11_to_13 = velocity_stencils.fused_stencils_11_to_13.with_backend(
             self._backend
         )
+
+        self._fused_velocity_advection_stencil_8_to_13_predictor = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_predictor.with_backend(
+            self._backend
+        )
+        self._fused_velocity_advection_stencil_8_to_13_corrector = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_corrector.with_backend(
+            self._backend
+        )
         self._fused_stencil_14 = velocity_stencils.fused_stencil_14.with_backend(self._backend)
         self._interpolate_contravariant_vertical_velocity_to_full_levels = (
             interpolate_contravariant_vertical_velocity_to_full_levels.with_backend(self._backend)
@@ -158,6 +166,10 @@ class VelocityAdvection:
         self.k_field = data_alloc.index_field(
             self.grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
+        self.cell_field = data_alloc.index_field(
+            self.grid, dims.CellDim,  backend=self._backend
+        )
+
 
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -400,16 +412,6 @@ class VelocityAdvection:
         #  - $\Whor$ : e_bln_c_s
         #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
         #
-        self._interpolate_to_cell_center(
-            interpolant=z_kin_hor_e,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            interpolation=self.z_ekinh,
-            horizontal_start=self._start_cell_lateral_boundary_level_4,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
 
         # scidoc:
         # Outputs:
@@ -429,21 +431,6 @@ class VelocityAdvection:
         #  - $\Whor$ : e_bln_c_s
         #  - $\Wlev$ : wgtfac_c
         #
-        self._fused_stencils_9_10(
-            z_w_concorr_me=z_w_concorr_me,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            local_z_w_concorr_mc=self.z_w_concorr_mc,
-            wgtfac_c=self.metric_state.wgtfac_c,
-            w_concorr_c=diagnostic_state.w_concorr_c,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
-            nlev=self.grid.num_levels,
-            horizontal_start=self._start_cell_lateral_boundary_level_4,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
 
         # scidoc:
         # Outputs:
@@ -469,18 +456,28 @@ class VelocityAdvection:
         #  - $\w{\n}{\c}{\k\pm1/2}$ : w
         #  - $\wcc{\n}{\c}{\k\pm1/2}$ : w_concorr_c
         #
-        self._fused_stencils_11_to_13(
+
+        self._fused_velocity_advection_stencil_8_to_13_predictor(
+            z_kin_hor_e=z_kin_hor_e,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            z_w_concorr_me=z_w_concorr_me,
+            wgtfac_c=self.metric_state.wgtfac_c,
             w=prognostic_state.w,
+            z_w_concorr_mc=self.z_w_concorr_mc,
             w_concorr_c=diagnostic_state.w_concorr_c,
-            local_z_w_con_c=self.z_w_con_c,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
-            nlev=self.grid.num_levels,
-            horizontal_start=self._start_cell_lateral_boundary_level_4,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
-            offset_provider={},
+            z_ekinh=self.z_ekinh,
+            z_w_con_c = self.z_w_con_c,
+            k = self.k_field,
+            nlev = self.grid.num_levels,
+            nflatlev = self.vertical_params.nflatlev,
+            lateral_boundary_3 = self._start_cell_lateral_boundary_level_4,
+            lateral_boundary_4 = self._start_cell_lateral_boundary_level_4,
+            end_halo = self._end_cell_halo,
+            horizontal_start = self._start_cell_lateral_boundary_level_4,
+            horizontal_end = self._end_cell_halo,
+            vertical_start = 0,
+            vertical_end = self.grid.num_levels + 1,
+            offset_provider=self.grid.offset_providers,
         )
 
         self._fused_stencil_14(
@@ -696,25 +693,23 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        self._interpolate_to_cell_center(
-            interpolant=z_kin_hor_e,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            interpolation=self.z_ekinh,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
 
-        self._fused_stencils_11_to_13(
+        self._fused_velocity_advection_stencil_8_to_13_corrector(
+            z_kin_hor_e=z_kin_hor_e,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            wgtfac_c=self.metric_state.wgtfac_c,
             w=prognostic_state.w,
+            z_w_concorr_mc=self.z_w_concorr_mc,
             w_concorr_c=diagnostic_state.w_concorr_c,
-            local_z_w_con_c=self.z_w_con_c,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
+            z_ekinh=self.z_ekinh,
+            z_w_con_c=self.z_w_con_c,
+            k=self.k_field,
             nlev=self.grid.num_levels,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
+            nflatlev=self.vertical_params.nflatlev,
+            lateral_boundary_3=self._start_cell_lateral_boundary_level_4,
+            lateral_boundary_4=self._start_cell_lateral_boundary_level_4,
+            end_halo=self._end_cell_halo,
+            horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
