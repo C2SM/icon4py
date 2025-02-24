@@ -85,8 +85,8 @@ def _fused_velocity_advection_stencil_19_to_20(
             ),
             ddt_vn_apc,
         )
-        if extra_diffu
-        else ddt_vn_apc
+        # if extra_diffu
+        # else ddt_vn_apc
     )
 
     return ddt_vn_apc
