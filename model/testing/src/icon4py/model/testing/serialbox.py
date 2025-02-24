@@ -1121,28 +1121,22 @@ class IconNonHydroInitSavepoint(IconSavepoint):
 
 class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
     def p_vn(self):
-        return self._get_field("p_vn", dims.EdgeDim, dims.KDim)
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
     def p_vt(self):
-        return self._get_field("p_vt", dims.EdgeDim, dims.KDim)
+        return self._get_field("vt", dims.EdgeDim, dims.KDim)
 
-    def z_rth_pr_1(self):
-        return self._get_field("z_rth_pr_1", dims.CellDim, dims.KDim)
-
-    def z_rth_pr_2(self):
-        return self._get_field("z_rth_pr_2", dims.CellDim, dims.KDim)
+    def z_rth_pr(self, ind: TwoIndex):
+        return self._get_field_component("z_rth_pr", ind, (dims.CellDim, dims.KDim))
 
     def z_exner_ex_pr(self):
         return self._get_field("z_exner_ex_pr", dims.CellDim, dims.KDim)
 
-    def z_dexner_dz_c_1(self):
-        return self._get_field("z_dexner_dz_c_1", dims.CellDim, dims.KDim)
-
-    def z_dexner_dz_c_2(self):
-        return self._get_field("z_dexner_dz_c_2", dims.CellDim, dims.KDim)
+    def z_dexner_dz_c(self, ntnd: TimeIndex):
+        return self._get_field_component("z_dexner_dz_c", ntnd, (dims.CellDim, dims.KDim))
 
     def theta_v(self):
-        return self._get_field("theta_v", dims.CellDim, dims.KDim)
+        return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
 
     def theta_v_ic(self):
         return self._get_field("theta_v_ic", dims.CellDim, dims.KDim)
@@ -1150,17 +1144,14 @@ class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
     def z_dwdz_dd(self):
         return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
 
-    def ddt_vn_apc_ntl2(self):
-        return self._get_field("ddt_vn_apc_ntl2", dims.EdgeDim, dims.KDim)
-
-    def ddt_vn_apc_ntl1(self):
-        return self._get_field("ddt_vn_apc_ntl1", dims.EdgeDim, dims.KDim)
+    def ddt_vn_apc_ntl(self, ntnd):
+        return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
 
     def ddt_vn_phy(self):
         return self._get_field("ddt_vn_phy", dims.EdgeDim, dims.KDim)
 
-    def vn_incr(self):
-        return self._get_field("vn_incr", dims.EdgeDim, dims.KDim)
+    def vn_incr(self): # TODO should be vn_incr
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
     def bdy_divdamp(self):
         return self._get_field("bdy_divdamp", dims.KDim)
@@ -1184,7 +1175,7 @@ class IconNonHydroInit_15_28_Savepoint(IconSavepoint):
         return self._get_field("z_gradh_exner", dims.EdgeDim, dims.KDim)
 
     def vn(self):
-        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+        return self._get_field("vn_now", dims.EdgeDim, dims.KDim)
 
     def z_graddiv_vn(self):
         return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
@@ -1322,10 +1313,10 @@ class IconNonHydroExit_15_28_Savepoint(IconSavepoint):
         return self._get_field("z_theta_v_e", dims.EdgeDim, dims.KDim)
 
     def z_gradh_exner(self):
-        return self._get_field("z_gradh_exner", dims.EdgeDim, dims.KDim)
+        return self._get_field("z_gradd_exner", dims.EdgeDim, dims.KDim)
 
     def vn(self):
-        return self._get_field("vn", dims.EdgeDim, dims.KDim)
+        return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
 
     def z_graddiv_vn(self):
         return self._get_field("z_graddiv_vn", dims.EdgeDim, dims.KDim)
@@ -1973,7 +1964,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, substep: int
     ) -> IconNonHydroInit_15_28_Savepoint:
         savepoint = (
-            self.serializer.savepoint["solve-nonhydro-15-28-init"]  # TODO
+            self.serializer.savepoint["solve-nonhydro-14to28-init"]  # TODO
             .istep[istep]
             .date[date]
             .dyn_timestep[substep]
@@ -2044,7 +2035,7 @@ class IconSerialDataProvider:
         self, istep: int, date: str, substep: int
     ) -> IconNonHydroExit_15_28_Savepoint:
         savepoint = (
-            self.serializer.savepoint["solve-nonhydro-15-28-exit"]  # TODO
+            self.serializer.savepoint["solve-nonhydro-14to28-exit"]  # TODO
             .istep[istep]
             .date[date]
             .dyn_timestep[substep]

@@ -206,7 +206,7 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, substep_i
 
 
 @pytest.fixture
-def savepoint_nonhydro_15_28_init(data_provider, istep_init, step_date_init, substep):
+def savepoint_nonhydro_15_28_init(data_provider, istep_init, step_date_init, substep_init):
     """
     Load data from ICON savepoint at init of subroutine nh_solve in mo_solve_nonhydro.f90 of solve_nonhydro module.
 
@@ -216,7 +216,7 @@ def savepoint_nonhydro_15_28_init(data_provider, istep_init, step_date_init, sub
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_15_28_init(
-        istep=istep_init, date=step_date_init, substep_init=substep
+        istep=istep_init, date=step_date_init, substep=substep_init
     )
 
 
@@ -252,7 +252,7 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, substep_e
 
 
 @pytest.fixture
-def savepoint_nonhydro_15_28_exit(data_provider, istep_init, step_date_exit, substep):
+def savepoint_nonhydro_15_28_exit(data_provider, istep_init, step_date_exit, substep_exit):
     """
     Load data from ICON savepoint at the end of either predictor or corrector step (istep loop) of
     subroutine nh_solve in mo_solve_nonhydro.f90.
@@ -263,7 +263,7 @@ def savepoint_nonhydro_15_28_exit(data_provider, istep_init, step_date_exit, sub
     - substep: dynamical substep
     """
     return data_provider.from_savepoint_nonhydro_15_28_exit(
-        istep=istep_init, date=step_date_exit, substep_init=substep
+        istep=istep_init, date=step_date_exit, substep=substep_exit
     )
 
 

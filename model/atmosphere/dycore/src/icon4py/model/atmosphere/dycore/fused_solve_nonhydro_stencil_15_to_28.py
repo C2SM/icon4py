@@ -208,7 +208,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     )
 
     z_gradh_exner = where(
-        (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx < nflatlev),
+        (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx <= nflatlev),
         _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
         ),
