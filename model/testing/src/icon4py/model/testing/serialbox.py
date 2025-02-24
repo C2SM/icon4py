@@ -1122,14 +1122,20 @@ class IconVelocityInitSavepoint(IconSavepoint):
     def cfl_w_limit(self) -> float:
         return self.serializer.read("cfl_w_limit", self.savepoint)[0]
 
-    def ddt_vn_apc_pc(self, ntnd):
-        return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
+    def vn_only(self) -> bool:
+        return bool(self.serializer.read("vn_only", self.savepoint)[0])
 
-    def ddt_w_adv_pc(self, ntnd):
-        return self._get_field_component("ddt_w_adv_pc", ntnd, (dims.CellDim, dims.KDim))
+    def max_vcfl_dyn(self):
+        return self.serializer.read("max_vcfl_dyn", self.savepoint)[0]
 
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
+
+    def ddt_vn_apc_pc(self, ntnd: TimeIndex):
+        return self._get_field_component("ddt_vn_apc_pc", ntnd, (dims.EdgeDim, dims.KDim))
+
+    def ddt_w_adv_pc(self, ntnd: TimeIndex):
+        return self._get_field_component("ddt_w_adv_pc", ntnd, (dims.CellDim, dims.KDim))
 
     def vn(self):
         return self._get_field("vn", dims.EdgeDim, dims.KDim)
@@ -1154,6 +1160,8 @@ class IconVelocityInitSavepoint(IconSavepoint):
 
     def w_concorr_c(self):
         return self._get_field("w_concorr_c", dims.CellDim, dims.KDim)
+
+
 
 
 class IconVelocityInit1to7Savepoint(IconSavepoint):

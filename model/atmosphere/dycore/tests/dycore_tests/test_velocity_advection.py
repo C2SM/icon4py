@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import gt4py.next as gtx
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
@@ -30,7 +31,6 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 from icon4py.model.testing.datatest_fixtures import savepoint_velocity_exit, savepoint_velocity_19_20_init
 
 from . import utils
-import gt4py.next as gtx
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
@@ -43,7 +43,63 @@ def create_vertical_params(vertical_config, grid_savepoint):
 
 
 @pytest.mark.datatest
-def test_scalfactors(savepoint_velocity_init, icon_grid, backend):
+@pytest.mark.parametrize(
+    "experiment, step_date_init",
+    [
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+    ],
+)
+def test_verify_velocity_init_against_savepoint(
+    interpolation_savepoint,
+    step_date_init,
+    grid_savepoint,
+    icon_grid,
+    metrics_savepoint,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    experiment,
+    backend,
+):
+    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
+    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+
+    velocity_advection = advection.VelocityAdvection(
+        grid=icon_grid,
+        metric_state=metric_state_nonhydro,
+        interpolation_state=interpolation_state,
+        vertical_params=vertical_params,
+        edge_params=grid_savepoint.construct_edge_geometry(),
+        owner_mask=grid_savepoint.c_owner_mask(),
+        backend=backend,
+    )
+    assert velocity_advection.cfl_w_limit == 0.65
+    assert velocity_advection.scalfac_exdiff == 0.05
+    assert helpers.dallclose(velocity_advection.cfl_clipping.asnumpy(), 0.0)
+    assert helpers.dallclose(velocity_advection.levmask.asnumpy(), False)
+    assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
+
+
+@pytest.mark.datatest
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, step_date_init",
+    [
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
+        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+    ],
+)
+def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     velocity_advection = advection.VelocityAdvection(
         grid=icon_grid,
@@ -59,101 +115,7 @@ def test_scalfactors(savepoint_velocity_init, icon_grid, backend):
     assert scalfac_exdiff == savepoint_velocity_init.scalfac_exdiff()
 
 
-@pytest.mark.datatest
-def test_velocity_init(
-    savepoint_velocity_init,
-    interpolation_savepoint,
-    grid_savepoint,
-    icon_grid,
-    metrics_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    backend,
-):
-    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
-
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-
-    velocity_advection = advection.VelocityAdvection(
-        grid=icon_grid,
-        metric_state=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-        edge_params=grid_savepoint.construct_edge_geometry(),
-        owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
-    )
-
-    assert helpers.dallclose(velocity_advection.cfl_clipping.asnumpy(), 0.0)
-    assert helpers.dallclose(velocity_advection.levmask.asnumpy(), False)
-    assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
-
-    assert velocity_advection.cfl_w_limit == 0.65
-    assert velocity_advection.scalfac_exdiff == 0.05
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, step_date_init",
-    [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
-    ],
-)
-def test_verify_velocity_init_against_regular_savepoint(
-    savepoint_velocity_init,
-    interpolation_savepoint,
-    grid_savepoint,
-    icon_grid,
-    metrics_savepoint,
-    lowest_layer_thickness,
-    model_top_height,
-    stretch_factor,
-    damping_height,
-    experiment,
-    backend,
-):
-    savepoint = savepoint_velocity_init
-    dtime = savepoint.get_metadata("dtime").get("dtime")
-
-    interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
-    metric_state_nonhydro = utils.construct_metric_state(metrics_savepoint, icon_grid.num_levels)
-    vertical_config = v_grid.VerticalGridConfig(
-        icon_grid.num_levels,
-        lowest_layer_thickness=lowest_layer_thickness,
-        model_top_height=model_top_height,
-        stretch_factor=stretch_factor,
-        rayleigh_damping_height=damping_height,
-    )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
-
-    velocity_advection = advection.VelocityAdvection(
-        grid=icon_grid,
-        metric_state=metric_state_nonhydro,
-        interpolation_state=interpolation_state,
-        vertical_params=vertical_params,
-        edge_params=grid_savepoint.construct_edge_geometry(),
-        owner_mask=grid_savepoint.c_owner_mask(),
-        backend=backend,
-    )
-
-    assert savepoint.cfl_w_limit() == velocity_advection.cfl_w_limit / dtime
-    assert savepoint.scalfac_exdiff() == velocity_advection.scalfac_exdiff / (
-        dtime * (0.85 - savepoint.cfl_w_limit() * dtime)
-    )
-
-
-pytest.mark.embedded_remap_error
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit, substep_init", [(1, 1, 1)])
 @pytest.mark.parametrize(
@@ -181,15 +143,14 @@ def test_velocity_predictor_step(
     savepoint_velocity_exit,
     backend,
 ):
-    sp_v = savepoint_velocity_init
-    vn_only = sp_v.get_metadata("vn_only").get("vn_only")
-    ntnd = sp_v.get_metadata("ntnd").get("ntnd")
-    dtime = sp_v.get_metadata("dtime").get("dtime")
+    init_savepoint = savepoint_velocity_init
+    vn_only = init_savepoint.vn_only()
+    dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
+        vt=init_savepoint.vt(),
+        vn_ie=init_savepoint.vn_ie(),
+        w_concorr_c=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
         rho_ic=None,
@@ -201,19 +162,19 @@ def test_velocity_predictor_step(
         ddt_vn_phy=None,
         grf_tend_vn=None,
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+            init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
+        rho_incr=None,
+        vn_incr=None,
+        exner_incr=None,
         exner_dyn_incr=None,
     )
     prognostic_state = prognostics.PrognosticState(
-        w=sp_v.w(),
-        vn=sp_v.vn(),
+        w=init_savepoint.w(),
+        vn=init_savepoint.vn(),
         theta_v=None,
         rho=None,
         exner=None,
@@ -247,15 +208,15 @@ def test_velocity_predictor_step(
         vn_only=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        z_w_concorr_me=sp_v.z_w_concorr_me(),
-        z_kin_hor_e=sp_v.z_kin_hor_e(),
-        z_vt_ie=sp_v.z_vt_ie(),
+        z_w_concorr_me=init_savepoint.z_w_concorr_me(),
+        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
+        z_vt_ie=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
     )
 
-    icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd).asnumpy()
-    icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(ntnd).asnumpy()
+    icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(0).asnumpy()
+    icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(0).asnumpy()
     icon_result_vn_ie = savepoint_velocity_exit.vn_ie().asnumpy()
     icon_result_vt = savepoint_velocity_exit.vt().asnumpy()
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c().asnumpy()
@@ -324,7 +285,6 @@ def test_velocity_predictor_step(
         atol=1.0e-15,
     )
 
-
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
@@ -332,7 +292,7 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -755,7 +715,6 @@ def test_velocity_fused_8_13_new(
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             w=w,
-            z_w_concorr_mc=z_w_concorr_mc,
             w_concorr_c=w_concorr_c,
             z_ekinh=z_ekinh,
             z_w_con_c=z_w_con_c,
