@@ -16,6 +16,7 @@ import click
 import numpy as np
 from cupy import cuda
 from devtools import Timer
+from gt4py.next import metrics
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.atmosphere.diffusion import (
@@ -68,7 +69,7 @@ class TimeLoop:
 
         self._timer_solve_nonhydro = Timer("nh_solve", dp=6)
         self._timer_diffusion = Timer("diffusion", dp=6)
-        self.detailed_timers = True
+        self.detailed_timers = False
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -194,6 +195,7 @@ class TimeLoop:
         if self.detailed_timers:
             self._timer_solve_nonhydro.summary(True)
             self._timer_diffusion.summary(True)
+        metrics.summary()
 
     def _integrate_one_time_step(
         self,
