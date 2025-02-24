@@ -54,23 +54,42 @@ class ImmersedBoundaryMethod:
         """
         Create masks for the immersed boundary method.
         """
+
+        full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
         half_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
-        half_cell_mask_np[[5,16], -3:] = True
-        full_cell_mask_np = half_cell_mask_np[:, :-1]
-        self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
-        self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
+        full_edge_mask_np = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
+        neigh_full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
+
+        full_cell_mask_np = self._mask_test_cells(grid, full_cell_mask_np)
+
+        half_cell_mask_np[:, :-1] = full_cell_mask_np
+        half_cell_mask_np[:, -1]  = full_cell_mask_np[:, -1]
     
         c2e = grid.connectivities[dims.C2EDim]
-        full_edge_mask_np = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
         for k in range(grid.num_levels):
             full_edge_mask_np[c2e[np.where(full_cell_mask_np[:,k])], k] = True
-        self.full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
 
         c2e2c = grid.connectivities[dims.C2E2CDim]
-        neigh_full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
         for k in range(grid.num_levels):
             neigh_full_cell_mask_np[c2e2c[np.where(full_cell_mask_np[:,k])], k] = True
+
+        self.full_cell_mask = gtx.as_field((CellDim, KDim), full_cell_mask_np)
+        self.half_cell_mask = gtx.as_field((CellDim, KDim), half_cell_mask_np)
+        self.full_edge_mask = gtx.as_field((EdgeDim, KDim), full_edge_mask_np)
         self.neigh_full_cell_mask = gtx.as_field((CellDim, KDim), neigh_full_cell_mask_np)
+
+    def _mask_test_cells(self, grid: icon_grid.IconGrid, full_cell_mask_np: np.ndarray) -> np.ndarray:
+        """
+        Create a test mask.
+        """
+        full_cell_mask_np[[5,16], -2:] = True
+        return full_cell_mask_np
+    
+    def _mask_gaussian_hill(self, grid: icon_grid.IconGrid, full_cell_mask_np: np.ndarray) -> np.ndarray:
+        """
+        Create a Gaussian hill mask.
+        """
+        return full_cell_mask_np
 
     def set_dirichlet_value_vn(
         self,
