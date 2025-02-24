@@ -38,9 +38,9 @@ class ImmersedBoundaryMethod:
 
         self._dirichlet_value_vn      = 0.0
         self._dirichlet_value_w       = 0.0
-        self._dirichlet_value_rho     = -313.0
-        self._dirichlet_value_exner   = -313.0
-        self._dirichlet_value_theta_v = -313.0
+        self._dirichlet_value_rho     = 1.0
+        self._dirichlet_value_exner   = 1.0
+        self._dirichlet_value_theta_v = 301.0
 
         if DEBUG_LEVEL >= 2:
             self._delta_file_vn = open("ibm_delta_vn.csv", "a")

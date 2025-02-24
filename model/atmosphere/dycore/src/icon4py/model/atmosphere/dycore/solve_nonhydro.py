@@ -914,12 +914,12 @@ class SolveNonhydro:
         field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
         field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         log.info(f" ***after_predictor MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
-        # plots
-        self._plot.plot_data(prognostic_states.next.vn,      label=f"after_predictor_vvec_edge")
-        self._plot.plot_data(prognostic_states.next.w,       label=f"after_predictor_w")
-        self._plot.plot_data(prognostic_states.next.rho,     label=f"after_predictor_rho")
-        self._plot.plot_data(prognostic_states.next.exner,   label=f"after_predictor_exner")
-        self._plot.plot_data(prognostic_states.next.theta_v, label=f"after_predictor_theta_v")
+        # # plots
+        # self._plot.plot_data(prognostic_states.next.vn,      label=f"after_predictor_vvec_edge")
+        # self._plot.plot_data(prognostic_states.next.w,       label=f"after_predictor_w")
+        # self._plot.plot_data(prognostic_states.next.rho,     label=f"after_predictor_rho")
+        # self._plot.plot_data(prognostic_states.next.exner,   label=f"after_predictor_exner")
+        # self._plot.plot_data(prognostic_states.next.theta_v, label=f"after_predictor_theta_v")
         #<--- IBM
 
         self.run_corrector_step(
