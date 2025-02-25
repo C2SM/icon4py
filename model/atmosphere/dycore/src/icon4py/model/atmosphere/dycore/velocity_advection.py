@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils import (
     fused_velocity_advection_stencil_1_to_7,
     fused_velocity_advection_stencil_8_to_13,
+    fused_velocity_advection_stencil_15_to_18,
     fused_velocity_advection_stencil_19_to_20,
 )
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
@@ -74,6 +75,18 @@ class VelocityAdvection:
         self._fused_velocity_advection_stencil_1_to_7_corrector = fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7_corrector.with_backend(
             self._backend
         )
+
+        self._fused_velocity_advection_stencil_8_to_13_predictor = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_predictor.with_backend(
+            self._backend
+        )
+        self._fused_velocity_advection_stencil_8_to_13_corrector = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_corrector.with_backend(
+            self._backend
+        )
+
+        self._fused_velocity_advection_stencil_15_to_18 = fused_velocity_advection_stencil_15_to_18.fused_velocity_advection_stencil_15_to_18.with_backend(
+            self._backend
+        )
+
         self._fused_velocity_advection_stencil_19_to_20 = fused_velocity_advection_stencil_19_to_20.fused_velocity_advection_stencil_19_to_20.with_backend(
             self._backend
         )
@@ -85,13 +98,6 @@ class VelocityAdvection:
             self._backend
         )
         self._fused_stencils_11_to_13 = velocity_stencils.fused_stencils_11_to_13.with_backend(
-            self._backend
-        )
-
-        self._fused_velocity_advection_stencil_8_to_13_predictor = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_predictor.with_backend(
-            self._backend
-        )
-        self._fused_velocity_advection_stencil_8_to_13_corrector = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_corrector.with_backend(
             self._backend
         )
 
@@ -415,53 +421,40 @@ class VelocityAdvection:
         # Inputs:
         #  - $(\w{\n}{\c}{\k\pm1/2} - \wcc{\n}{\c}{\k\pm1/2})$ : z_w_con_c
         #
-        self._interpolate_contravariant_vertical_velocity_to_full_levels(
+        self._fused_velocity_advection_stencil_15_to_18(
             z_w_con_c=self.z_w_con_c,
+            w=prognostic_state.w,
+            coeff1_dwdz=self.metric_state.coeff1_dwdz,
+            coeff2_dwdz=self.metric_state.coeff2_dwdz,
+            ddt_w_adv=diagnostic_state.ddt_w_adv_pc.predictor,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            z_v_grad_w=self.z_v_grad_w,
+            levelmask=self.levmask,
+            cfl_clipping=self.cfl_clipping,
+            owner_mask=self.c_owner_mask,
+            ddqz_z_half=self.metric_state.ddqz_z_half,
+            area=cell_areas,
+            geofac_n2s=self.interpolation_state.geofac_n2s,
             z_w_con_c_full=self.z_w_con_c_full,
+            cell=self.cell_field,
+            k=self.k_field,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+            cell_lower_bound=self._start_cell_nudging,
+            cell_upper_bound=self._end_cell_local,
+            nlev=gtx.int32(self.grid.num_levels),
+            nrdmax=self.vertical_params.nrdmax,
+            lvn_only=vn_only,
+            extra_diffu=True,
+            start_cell_lateral_boundary=self._start_cell_lateral_boundary_level_4,
+            end_cell_halo=self._end_cell_halo,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,
+            vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
-
-        if not vn_only:
-            self._fused_stencils_16_to_17(
-                w=prognostic_state.w,
-                local_z_v_grad_w=self.z_v_grad_w,
-                e_bln_c_s=self.interpolation_state.e_bln_c_s,
-                local_z_w_con_c=self.z_w_con_c,
-                coeff1_dwdz=self.metric_state.coeff1_dwdz,
-                coeff2_dwdz=self.metric_state.coeff2_dwdz,
-                ddt_w_adv=diagnostic_state.ddt_w_adv_pc.predictor,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=1,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
-
-            self._add_extra_diffusion_for_w_con_approaching_cfl(
-                levmask=self.levmask,
-                cfl_clipping=self.cfl_clipping,
-                owner_mask=self.c_owner_mask,
-                z_w_con_c=self.z_w_con_c,
-                ddqz_z_half=self.metric_state.ddqz_z_half,
-                area=cell_areas,
-                geofac_n2s=self.interpolation_state.geofac_n2s,
-                w=prognostic_state.w,
-                ddt_w_adv=diagnostic_state.ddt_w_adv_pc.predictor,
-                scalfac_exdiff=scalfac_exdiff,
-                cfl_w_limit=cfl_w_limit,
-                dtime=dtime,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(
-                    max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
-                ),
-                vertical_end=gtx.int32(self.grid.num_levels - 3),
-                offset_provider=self.grid.offset_providers,
-            )
 
         self.levelmask = self.levmask
 
@@ -611,51 +604,40 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        self._interpolate_contravariant_vertical_velocity_to_full_levels(
+        self._fused_velocity_advection_stencil_15_to_18(
             z_w_con_c=self.z_w_con_c,
-            z_w_con_c_full=self.z_w_con_c_full,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._fused_stencils_16_to_17(
             w=prognostic_state.w,
-            local_z_v_grad_w=self.z_v_grad_w,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            local_z_w_con_c=self.z_w_con_c,
             coeff1_dwdz=self.metric_state.coeff1_dwdz,
             coeff2_dwdz=self.metric_state.coeff2_dwdz,
             ddt_w_adv=diagnostic_state.ddt_w_adv_pc.corrector,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=1,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._add_extra_diffusion_for_w_con_approaching_cfl(
-            levmask=self.levmask,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            z_v_grad_w=self.z_v_grad_w,
+            levelmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
-            z_w_con_c=self.z_w_con_c,
             ddqz_z_half=self.metric_state.ddqz_z_half,
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
-            w=prognostic_state.w,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc.corrector,
+            z_w_con_c_full=self.z_w_con_c_full,
+            cell=self.cell_field,
+            k=self.k_field,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
-            vertical_end=gtx.int32(self.grid.num_levels - 4),
+            cell_lower_bound=self._start_cell_nudging,
+            cell_upper_bound=self._end_cell_local,
+            nlev=gtx.int32(self.grid.num_levels),
+            nrdmax=self.vertical_params.nrdmax,
+            lvn_only=False,
+            extra_diffu=True,
+            start_cell_lateral_boundary=self._start_cell_lateral_boundary_level_4,
+            end_cell_halo=self._end_cell_halo,
+            horizontal_start=self._start_cell_lateral_boundary_level_4,
+            horizontal_end=self._end_cell_halo,
+            vertical_start=0,
+            vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
-
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 

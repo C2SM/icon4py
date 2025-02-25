@@ -35,7 +35,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
-    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
+    levelmask: fa.KField[bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     ddqz_z_half: fa.CellKField[vpfloat],
@@ -67,7 +67,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     ddt_w_adv = (
         where(
             (cell_lower_bound <= cell < cell_upper_bound)
-            & (maximum(2, nrdmax - 2) <= k < nlev - 3),
+            & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 3),
             _add_extra_diffusion_for_w_con_approaching_cfl(
                 levelmask,
                 cfl_clipping,
@@ -100,7 +100,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
-    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
+    levelmask: fa.KField[bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     ddqz_z_half: fa.CellKField[vpfloat],
@@ -108,6 +108,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
     cell: fa.CellField[gtx.int32],
     k: fa.KField[gtx.int32],
+    z_w_con_c_full: fa.CellKField[wpfloat],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
@@ -117,8 +118,14 @@ def _fused_velocity_advection_stencil_15_to_18(
     nrdmax: gtx.int32,
     lvn_only: bool,
     extra_diffu: bool,
+    start_cell_lateral_boundary: gtx.int32,
+    end_cell_halo: gtx.int32,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
-    z_w_con_c_full = _interpolate_contravariant_vertical_velocity_to_full_levels(z_w_con_c)
+    z_w_con_c_full = where(
+        start_cell_lateral_boundary <= cell < end_cell_halo,
+        _interpolate_contravariant_vertical_velocity_to_full_levels(z_w_con_c),
+        z_w_con_c_full,
+    )
     ddt_w_adv = (
         _fused_velocity_advection_stencil_16_to_18(
             z_w_con_c,
@@ -145,8 +152,8 @@ def _fused_velocity_advection_stencil_15_to_18(
             nrdmax,
             extra_diffu,
         )
-        if not lvn_only
-        else ddt_w_adv
+        # if not lvn_only
+        # else ddt_w_adv
     )
 
     return (z_w_con_c_full, ddt_w_adv)
@@ -161,7 +168,7 @@ def fused_velocity_advection_stencil_15_to_18(
     ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
-    levelmask: gtx.Field[gtx.Dims[dims.KDim], bool],
+    levelmask: fa.KField[bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     ddqz_z_half: fa.CellKField[vpfloat],
@@ -179,6 +186,12 @@ def fused_velocity_advection_stencil_15_to_18(
     nrdmax: gtx.int32,
     lvn_only: bool,
     extra_diffu: bool,
+    start_cell_lateral_boundary: gtx.int32,
+    end_cell_halo: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _fused_velocity_advection_stencil_15_to_18(
         z_w_con_c,
@@ -196,6 +209,7 @@ def fused_velocity_advection_stencil_15_to_18(
         geofac_n2s,
         cell,
         k,
+        z_w_con_c_full,
         scalfac_exdiff,
         cfl_w_limit,
         dtime,
@@ -205,5 +219,11 @@ def fused_velocity_advection_stencil_15_to_18(
         nrdmax,
         lvn_only,
         extra_diffu,
+        start_cell_lateral_boundary,
+        end_cell_halo,
         out=(z_w_con_c_full, ddt_w_adv),
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

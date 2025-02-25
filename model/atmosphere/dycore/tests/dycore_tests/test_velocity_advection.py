@@ -11,6 +11,7 @@ import pytest
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
 from icon4py.model.atmosphere.dycore.stencils import (
     fused_velocity_advection_stencil_1_to_7,
+    fused_velocity_advection_stencil_15_to_18,
     fused_velocity_advection_stencil_19_to_20,
 )
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import (
@@ -686,6 +687,134 @@ def test_velocity_fused_8_13_new(
     )
     assert helpers.dallclose(
         z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+    ],
+)
+@pytest.mark.parametrize("istep_init", [1, 2])
+@pytest.mark.parametrize("substep_init", [1])
+@pytest.mark.parametrize("substep_exit", [1])
+def test_velocity_fused_15_18(
+    icon_grid,
+    grid_savepoint,
+    savepoint_velocity_15_18_init,
+    savepoint_velocity_15_18_exit,
+    savepoint_velocity_8_13_exit,
+    interpolation_savepoint,
+    metrics_savepoint,
+    savepoint_velocity_exit,
+    backend,
+    savepoint_velocity_init,
+    step_date_init,
+    step_date_exit,
+    substep_init,
+    substep_exit,
+    istep_init,
+):
+    import numpy as np
+
+    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
+    cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
+    ddqz_z_half = metrics_savepoint.ddqz_z_half()
+    # calculate cfl_clipping
+    z_w_con_c_8_13 = savepoint_velocity_8_13_exit.z_w_con_c().asnumpy()
+    cfl_clipping_np = np.abs(z_w_con_c_8_13) > (cfl_w_limit * ddqz_z_half.asnumpy())
+    cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np)
+    z_w_con_c = savepoint_velocity_15_18_init.z_w_con_c()
+    w = savepoint_velocity_15_18_init.w()
+    ddt_w_adv = savepoint_velocity_15_18_init.ddt_w_adv()
+    z_v_grad_w = savepoint_velocity_15_18_init.z_v_grad_w()
+    levmask = savepoint_velocity_15_18_init.levmask()
+    z_w_con_c_full = savepoint_velocity_15_18_init.z_w_con_c_full()
+    lvn_only = savepoint_velocity_15_18_init.lvn_only()
+
+    coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
+    coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
+    e_bln_c_s = data_alloc.flatten_first_two_dims(
+        dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+    )
+    owner_mask = grid_savepoint.c_owner_mask()
+    area = grid_savepoint.cell_areas()
+    geofac_n2s = interpolation_savepoint.geofac_n2s()
+
+    z_w_con_c_full_ref = savepoint_velocity_15_18_exit.z_w_con_c_full()
+    ddt_w_adv_ref = savepoint_velocity_15_18_exit.ddt_w_adv()
+
+    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, backend=backend)
+    cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
+
+    nrdmax = grid_savepoint.nrdmax()
+    extra_diffu = True
+
+    cell_domain = h_grid.domain(dims.CellDim)
+    cell_lower_bound = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+    cell_upper_bound = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+
+    dtime = 5.0
+    start_cell_lateral_boundary = (
+        icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+        if istep_init == 1
+        else icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+    )
+    end_cell_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+    horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+    horizontal_end = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
+    vertical_start = 0
+    vertical_end = icon_grid.num_levels
+    fused_velocity_advection_stencil_15_to_18.fused_velocity_advection_stencil_15_to_18.with_backend(
+        backend
+    )(
+        z_w_con_c=z_w_con_c,
+        w=w,
+        coeff1_dwdz=coeff1_dwdz,
+        coeff2_dwdz=coeff2_dwdz,
+        ddt_w_adv=ddt_w_adv,
+        e_bln_c_s=e_bln_c_s,
+        z_v_grad_w=z_v_grad_w,
+        levelmask=levmask,
+        cfl_clipping=cfl_clipping,
+        owner_mask=owner_mask,
+        ddqz_z_half=ddqz_z_half,
+        area=area,
+        geofac_n2s=geofac_n2s,
+        z_w_con_c_full=z_w_con_c_full,
+        cell=cell,
+        k=k,
+        scalfac_exdiff=scalfac_exdiff,
+        cfl_w_limit=cfl_w_limit,
+        dtime=dtime,
+        cell_lower_bound=cell_lower_bound,
+        cell_upper_bound=cell_upper_bound,
+        nlev=icon_grid.num_levels,
+        nrdmax=nrdmax,
+        lvn_only=lvn_only,
+        extra_diffu=extra_diffu,
+        start_cell_lateral_boundary=start_cell_lateral_boundary,
+        end_cell_halo=end_cell_halo,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
+        offset_provider={
+            "C2E": icon_grid.get_offset_provider("C2E"),
+            "C2CE": icon_grid.get_offset_provider("C2CE"),
+            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+            "Koff": dims.KDim,
+        },
+    )
+
+    assert helpers.dallclose(
+        z_w_con_c_full_ref.asnumpy(), z_w_con_c_full.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
+    assert helpers.dallclose(
+        ddt_w_adv_ref.asnumpy(), ddt_w_adv.asnumpy(), rtol=1.0e-15, atol=1.0e-15
     )
 
 
