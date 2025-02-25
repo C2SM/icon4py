@@ -21,7 +21,27 @@ def _compute_contravariant_correction(
     ddxt_z_full: fa.EdgeKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_35 or mo_velocity_advection_stencil_04."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_35 or mo_velocity_advection_stencil_04.
+
+    # scidoc:
+    # Outputs:
+    #  - z_w_concorr_me :
+    #     $$
+    #     \wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \quad \k \in [\nflatlev, \nlev)
+    #     $$
+    #     Compute the contravariant correction to the vertical wind due to
+    #     terrain-following coordinate. $\pdxn{}$ and $\pdxt{}$ are the
+    #     horizontal derivatives along the normal and tangent directions
+    #     respectively (eq. 17 in |ICONdycorePaper|).
+    #
+    # Inputs:
+    #  - $\vn{\n}{\e}{\k}$ : vn
+    #  - $\pdxn{z}$ : ddxn_z_full
+    #  - $\pdxt{z}$ : ddxt_z_full
+    #
+
+    """
     ddxn_z_full_wp = astype(ddxn_z_full, wpfloat)
 
     z_w_concorr_me_wp = vn * ddxn_z_full_wp + astype(vt * ddxt_z_full, wpfloat)

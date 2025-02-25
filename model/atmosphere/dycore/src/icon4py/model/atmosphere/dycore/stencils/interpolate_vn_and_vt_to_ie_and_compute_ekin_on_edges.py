@@ -29,7 +29,36 @@ def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
-    """Formerly known as _mo_solve_nonhydro_stencil_36."""
+    """
+    Formerly known as _mo_solve_nonhydro_stencil_36.
+
+    # scidoc:
+    # Outputs:
+    #   - vn_ie :
+    #     $$
+    #     \vn{\n}{\e}{-1/2} = \vn{\n}{\e}{0}
+    #     $$
+    #     Set the normal wind at model top equal to the normal wind at the
+    #     first full level.
+    #  - z_vt_ie :
+    #     $$
+    #     \vt{\n}{\e}{-1/2} = \vt{\n}{\e}{0}
+    #     $$
+    #     Set the tangential wind at model top equal to the tangential wind
+    #     at the first full level.
+    #  - z_kin_hor_e :
+    #     $$
+    #     \kinehori{\n}{\e}{0} = \frac{1}{2} \left( \vn{\n}{\e}{0}^2 + \vt{\n}{\e}{0}^2 \right)
+    #     $$
+    #     Compute the horizontal kinetic energy on the first full level.
+    #
+    # Inputs:
+    #  - $\vn{\n}{\e}{\k}$ : vn
+    #  - $\vt{\n}{\e}{\k}$ : vt
+    #  - $$ : wgtfac_e
+    #
+    """
+
     z_vt_ie = _interpolate_vt_to_interface_edges(wgtfac_e=wgtfac_e, vt=vt)
     vn_ie, z_kin_hor_e = _interpolate_vn_to_ie_and_compute_ekin_on_edges(
         wgtfac_e=wgtfac_e, vn=vn, vt=vt
