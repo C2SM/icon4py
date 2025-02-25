@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -30,13 +31,13 @@ class TestApplyHorizontalDensityIncrement(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_rhodz_new: np.array,
-        p_mflx_contra_v: np.array,
-        deepatmo_divzl: np.array,
-        deepatmo_divzu: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_rhodz_new: np.ndarray,
+        p_mflx_contra_v: np.ndarray,
+        deepatmo_divzl: np.ndarray,
+        deepatmo_divzu: np.ndarray,
         p_dtime: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         tmp = p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
         rhodz_ast2 = np.maximum(0.1 * p_rhodz_new, p_rhodz_new) - p_dtime * tmp

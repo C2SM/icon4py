@@ -27,7 +27,7 @@ def compute_c_lin_e(
     edge_cell_length: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -97,7 +97,7 @@ def compute_geofac_n2s(
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -268,7 +268,7 @@ def compute_geofac_grdiv(
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -440,7 +440,7 @@ def _compute_c_bln_avg(
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -643,7 +643,9 @@ def compute_mass_conserving_bilinear_cell_average_weight(
     )
 
 
-def create_inverse_neighbor_index(source_offset, inverse_offset, array_ns: ModuleType):
+def create_inverse_neighbor_index(
+    source_offset, inverse_offset, array_ns: ModuleType
+) -> data_alloc.NDArray:
     """
     The inverse neighbor index determines the position of an central element c_1
     in the neighbor table of its neighbors:
@@ -652,7 +654,7 @@ def create_inverse_neighbor_index(source_offset, inverse_offset, array_ns: Modul
     map  c_1 -> (e_1, e_2,e_3) then in the inverse lookup table e2c the
     neighborhoods of e_1, e_2, e_3 will all contain c_1 in some position.
     Then inverse neighbor index tells what position that is. It essentially says
-    "I am neighbor number x \in (0,1) of my neighboring edges"
+    "I am neighbor number x \\in (0,1) of my neighboring edges"
 
 
     Args:
@@ -687,8 +689,8 @@ def compute_e_flx_avg(
     c2e: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
-    horizontal_start_p3: np.int32,
-    horizontal_start_p4: np.int32,
+    horizontal_start_p3: gtx.int32,
+    horizontal_start_p4: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -969,7 +971,7 @@ def compute_pos_on_tplane_e_x_y(
     e2c: data_alloc.NDArray,
     e2v: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
