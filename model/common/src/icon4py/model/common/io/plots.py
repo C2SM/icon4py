@@ -10,6 +10,7 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+import pickle
 import numpy as np
 import xarray as xr
 
@@ -32,6 +33,7 @@ DOMAIN_LENGTH = 2000.0 # TODO: get from grid file
 DOMAIN_HEIGHT = 2078.46096908265 # TODO: get from grid file
 X_BOUNDARY_RAD = np.pi
 Y_BOUNDARY_RAD = 15/2*np.pi/180 # Hardcoded in the grid generation script (could get from vertex lat)
+NUM_AXES_PER_COLUMN = 2
 PLOT_X_LIMS = (-X_BOUNDARY_RAD*1.02, X_BOUNDARY_RAD*1.02)
 PLOT_Y_LIMS = (-Y_BOUNDARY_RAD*1.02, Y_BOUNDARY_RAD*1.02)
 PLOT_IMGS_DIR = "imgs"
@@ -231,11 +233,19 @@ class Plot:
             os.makedirs(PLOT_IMGS_DIR)
         self.plot_counter = 0
 
+    def save_state(self, state, label: str = "") -> None:
+        file_name = f"{PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}.pkl"
+        with open(file_name, "wb") as f:
+            pickle.dump(state, f)
+        self.plot_counter += 1
+
+
     def plot_data(self, data, nlev: int = -1, label: str = "", fig_num: int = 1) -> mpl.axes.Axes:
         if DO_PLOTS:
             if nlev == -1:
                 nlev = self._n_levels_to_plot
-            axs = self._plot_data(self.tri, data, nlev, f"{PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}", fig_num)
+            file_name = f"{PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}"
+            axs = self._plot_data(self.tri, data, nlev, file_name, fig_num)
             self.plot_counter += 1
             return axs
 
@@ -244,7 +254,6 @@ class Plot:
         """
         Plot data on a triangulation.
         """
-        nax_per_col = 2
 
         if "vvec_cell" in file_name:
             # quiver-plot *v* at cell centres
@@ -314,7 +323,7 @@ class Plot:
             case _: raise ValueError("Invalid data shape")
 
         fig = plt.figure(fig_num, figsize=(14,min(13,4*nlev))); plt.clf()
-        axs = fig.subplots(nrows=min(nax_per_col, nlev), ncols=max(1,int(np.ceil(nlev/nax_per_col))), sharex=True, sharey=True)
+        axs = fig.subplots(nrows=min(NUM_AXES_PER_COLUMN, nlev), ncols=max(1,int(np.ceil(nlev/NUM_AXES_PER_COLUMN))), sharex=True, sharey=True)
         if nlev > 1:
             axs = axs.flatten()
         else:
@@ -338,7 +347,7 @@ class Plot:
             axs[i].set_aspect('equal')
             #axs[i].set_xlim(X_LIMS)
             #axs[i].set_ylim(Y_LIMS)
-            #axs[i].set_xlabel(f"Level {-i}")
+            axs[i].set_title(f"Level {-i}")
 
         fig.subplots_adjust(wspace=0.02, hspace=0.1)
         plt.draw()
@@ -367,15 +376,10 @@ class Plot:
 if __name__ == "__main__":
     # example usage and testing
 
-    import pickle
-
     main_dir = os.getcwd() + "/"
     state_fname = 'testdata/prognostic_state_initial.pkl'
     savepoint_path = 'testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data'
-    grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res250m.nc"
-
-    with open(main_dir + state_fname, "rb") as ifile:
-        prognostic_state = pickle.load(ifile)
+    grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res100m.nc"
 
     plot = Plot(
         savepoint_path = main_dir + savepoint_path,
@@ -383,6 +387,13 @@ if __name__ == "__main__":
         backend = gtx.gtfn_cpu,
         )
 
+    import xarray as xr
+    ds = xr.open_dataset(main_dir + savepoint_path + "/../torus_exclaim_insta_DOM01_ML_0002.nc")
+    axs = plot.plot_data(ds.z_ifc.values.T, 4, label=f"xarray")
+
+
+    # with open(main_dir + state_fname, "rb") as ifile:
+    #     prognostic_state = pickle.load(ifile)
     # #plot.plot_data(prognostic_state.vn, 2, label=f"vn")
     # axs = plot.plot_data(prognostic_state.rho,     2, label=f"rho")
     # axs = plot.plot_data(prognostic_state.theta_v, 2, label=f"theta_v")

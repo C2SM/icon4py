@@ -440,11 +440,17 @@ class SolveNonhydro:
         self._backend = backend
 
         #---> IBM
-        self._ibm = ibm.ImmersedBoundaryMethod(grid)
+        savepoint_path = "testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data"
+        grid_file_path = "testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res100m.nc"
+        self._ibm = ibm.ImmersedBoundaryMethod(
+            grid=grid,
+            grid_file_path=grid_file_path,
+            vertical_params=vertical_params,
+            )
         self._plot = plots.Plot(
-            savepoint_path="testdata/ser_icondata/mpitask1/gauss3d_torus/ser_data",
-            grid_file_path="testdata/grids/gauss3d_torus/Torus_Triangles_2000m_x_2000m_res250m.nc",
-            n_levels_to_plot=4,
+            savepoint_path=savepoint_path,
+            grid_file_path=grid_file_path,
+            n_levels_to_plot=8,
             backend = self._backend,
             )
         #<--- IBM
@@ -889,12 +895,12 @@ class SolveNonhydro:
             self._ibm.set_dirichlet_value_rho(prognostic_states.current.rho)
             self._ibm.set_dirichlet_value_exner(prognostic_states.current.exner)
             self._ibm.set_dirichlet_value_theta_v(prognostic_states.current.theta_v)
-            # plots
-            self._plot.plot_data(prognostic_states.current.vn,      label=f"IC_vvec_edge")
-            self._plot.plot_data(prognostic_states.current.w,       label=f"IC_w")
-            self._plot.plot_data(prognostic_states.current.rho,     label=f"IC_rho")
-            self._plot.plot_data(prognostic_states.current.exner,   label=f"IC_exner")
-            self._plot.plot_data(prognostic_states.current.theta_v, label=f"IC_theta_v")
+            # # plots
+            # self._plot.plot_data(prognostic_states.current.vn,      label=f"IC_vvec_edge")
+            # self._plot.plot_data(prognostic_states.current.w,       label=f"IC_w")
+            # self._plot.plot_data(prognostic_states.current.rho,     label=f"IC_rho")
+            # self._plot.plot_data(prognostic_states.current.exner,   label=f"IC_exner")
+            # self._plot.plot_data(prognostic_states.current.theta_v, label=f"IC_theta_v")
         #<--- IBM
 
         self.run_predictor_step(
@@ -907,13 +913,13 @@ class SolveNonhydro:
         )
 
         #---> IBM
-        # check
-        self._ibm.check_boundary_conditions(prognostic_states.next)
-        # log messages
-        vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
-        field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
-        field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
-        log.info(f" ***after_predictor MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
+        # # check
+        # self._ibm.check_boundary_conditions(prognostic_states.next)
+        # # log messages
+        # vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
+        # field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
+        # field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
+        # log.info(f" ***after_predictor MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
         # # plots
         # self._plot.plot_data(prognostic_states.next.vn,      label=f"after_predictor_vvec_edge")
         # self._plot.plot_data(prognostic_states.next.w,       label=f"after_predictor_w")
@@ -935,19 +941,19 @@ class SolveNonhydro:
         )
 
         #---> IBM
-        # check
-        self._ibm.check_boundary_conditions(prognostic_states.next)
-        # log messages
-        vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
-        field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
-        field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
-        log.info(f" ***after_corrector MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
-        # plots
-        self._plot.plot_data(prognostic_states.next.vn,      label=f"after_corrector_vvec_edge")
-        self._plot.plot_data(prognostic_states.next.w,       label=f"after_corrector_w")
-        self._plot.plot_data(prognostic_states.next.rho,     label=f"after_corrector_rho")
-        self._plot.plot_data(prognostic_states.next.exner,   label=f"after_corrector_exner")
-        self._plot.plot_data(prognostic_states.next.theta_v, label=f"after_corrector_theta_v")
+        # # check
+        # self._ibm.check_boundary_conditions(prognostic_states.next)
+        # # log messages
+        # vn = prognostic_states.next.vn.ndarray; w  = prognostic_states.next.w.ndarray
+        # field0=np.abs(vn); idxs0 = np.unravel_index(np.argmax(field0), field0.shape); idxs0 = (int(idxs0[0]), int(idxs0[1]))
+        # field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
+        # log.info(f" ***after_corrector MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
+        # # plots
+        # self._plot.plot_data(prognostic_states.next.vn,      label=f"after_corrector_vvec_edge")
+        # self._plot.plot_data(prognostic_states.next.w,       label=f"after_corrector_w")
+        # self._plot.plot_data(prognostic_states.next.rho,     label=f"after_corrector_rho")
+        # self._plot.plot_data(prognostic_states.next.exner,   label=f"after_corrector_exner")
+        # self._plot.plot_data(prognostic_states.next.theta_v, label=f"after_corrector_theta_v")
         #<--- IBM
 
         if self._grid.limited_area:
@@ -993,6 +999,18 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider={},
         )
+
+        #---> IBM
+        if at_last_substep:
+            # # plots
+            # self._plot.plot_data(prognostic_states.next.vn,      label=f"end_of_timestep_vvec_edge")
+            # self._plot.plot_data(prognostic_states.next.w,       label=f"end_of_timestep_w")
+            # self._plot.plot_data(prognostic_states.next.rho,     label=f"end_of_timestep_rho")
+            # self._plot.plot_data(prognostic_states.next.exner,   label=f"end_of_timestep_exner")
+            # self._plot.plot_data(prognostic_states.next.theta_v, label=f"end_of_timestep_theta_v")
+            # save state
+            self._plot.save_state(prognostic_states.next, "end_of_timestep")
+        #<--- IBM
 
     # flake8: noqa: C901
     def run_predictor_step(
@@ -1257,10 +1275,12 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,  # UBOUND(p_ccpr,2)
                 offset_provider=self._grid.offset_providers,
             )
+
             #---> IBM
             self._ibm.set_bcs_green_gauss_gradient(self.z_grad_rth_1, self.z_grad_rth_2)
             self._ibm.set_bcs_green_gauss_gradient(self.z_grad_rth_3, self.z_grad_rth_4)
             #<--- IBM
+
         if self._config.iadv_rhotheta <= 2:
             self._init_two_edge_kdim_fields_with_zero_wp(
                 edge_kdim_field_with_zero_wp_1=z_fields.z_rho_e,
@@ -1826,12 +1846,6 @@ class SolveNonhydro:
             offset_provider=self._grid.offset_providers,
         )
 
-        # #---> IBM
-        # self._ibm.set_dirichlet_value_rho(prognostic_states.next.rho)
-        # self._ibm.set_dirichlet_value_exner(prognostic_states.next.exner)
-        # self._ibm.set_dirichlet_value_theta_v(prognostic_states.next.theta_v)
-        # #<--- IBM
-
         # compute dw/dz for divergence damping term
         if self._config.divdamp_type >= 3:
             self._compute_dwdz_for_divergence_damping(
@@ -2366,12 +2380,6 @@ class SolveNonhydro:
             vertical_end=self._grid.num_levels,
             offset_provider=self._grid.offset_providers,
         )
-
-        # #---> IBM
-        # self._ibm.set_dirichlet_value_rho(prognostic_states.next.rho)
-        # self._ibm.set_dirichlet_value_exner(prognostic_states.next.exner)
-        # self._ibm.set_dirichlet_value_theta_v(prognostic_states.next.theta_v)
-        # #<--- IBM
 
         if lprep_adv:
             if at_first_substep:
