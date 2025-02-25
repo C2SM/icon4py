@@ -323,11 +323,11 @@ class FieldOperatorProvider(FieldProvider):
             for k, v in self._dependencies.items()
         }
 
+        offset_providers = self._get_offset_providers(grid_provider.grid)
+        providers = {k: _to_backend(v, compute_backend) for k, v in offset_providers.items()}
         out_fields = self._unravel_output_fields()
 
-        self._func(
-            **deps, out=out_fields, offset_provider=self._get_offset_providers(grid_provider.grid)
-        )
+        self._func(**deps, out=out_fields, offset_provider=providers)
         # transfer to target backend, the fields might have been computed on a compute backend
         for f in self._fields.values():
             data_alloc.as_field(f, backend=factory.backend)
@@ -338,7 +338,7 @@ class FieldOperatorProvider(FieldProvider):
             out_fields = out_fields[0]
         return out_fields
 
-    # TODO: do we need that here?
+    # TODO: do we need that here? GT4Py issue
     def _get_offset_providers(self, grid: icon_grid.IconGrid) -> dict[str, gtx.FieldOffset]:
         offset_providers = {}
         for dim in self._dims:
@@ -357,6 +357,7 @@ class FieldOperatorProvider(FieldProvider):
                     if isinstance(v, gtx.Dimension) and v.kind == gtx.DimensionKind.VERTICAL
                 }
                 offset_providers.update(vertical_offsets)
+                # used for different compute backend in function call
         return offset_providers
 
     def _allocate(
@@ -657,3 +658,15 @@ def _func_name(callable_: Callable[..., Any]) -> str:
         return callable_.func.__name__
     else:
         return callable_.__name__
+
+
+def _to_backend(
+    provider: gtx.FieldOffset, backend: Optional[gtx_backend.Backend]
+) -> gtx.NeighborTableOffsetProvider:
+    return gtx.NeighborTableOffsetProvider(
+        table=data_alloc.to_backend(provider.table, backend),
+        neighbor_axis=provider.neighbor_axis,
+        has_skip_values=provider.has_skip_values,
+        max_neighbors=provider.max_neighbors,
+        origin_axis=provider.origin_axis,
+    )
