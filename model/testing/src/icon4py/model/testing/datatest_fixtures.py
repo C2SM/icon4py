@@ -203,6 +203,18 @@ def savepoint_velocity_1_7_init(data_provider, step_date_init, istep_init, subst
 
 
 @pytest.fixture
+def savepoint_velocity_8_13_init(data_provider, step_date_init, istep_init, substep_init):  # F811
+    """
+    Load data from ICON savepoint at start of velocity_advection module for combined stencils 8 to 13.
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.savepoint_velocity_8_13_init(
+        istep=istep_init, date=step_date_init, substep_init=substep_init
+    )
+
+
+@pytest.fixture
 def savepoint_velocity_19_20_init(data_provider, step_date_init, istep_init, substep_init):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 19 to 20.
@@ -254,6 +266,18 @@ def savepoint_velocity_1_7_exit(data_provider, step_date_exit, istep_init, subst
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.savepoint_velocity_1_7_exit(
+        istep=istep_init, date=step_date_exit, substep_init=substep_init
+    )
+
+
+@pytest.fixture
+def savepoint_velocity_8_13_exit(data_provider, step_date_exit, istep_init, substep_init):  # F811
+    """
+    Load data from ICON savepoint at exist of velocity_advection module for combined stencils 8 to 13.
+    date of the timestamp to be selected can be set seperately by overriding the 'step_data'
+    fixture, passing 'step_data=<iso_string>'
+    """
+    return data_provider.savepoint_velocity_8_13_exit(
         istep=istep_init, date=step_date_exit, substep_init=substep_init
     )
 
