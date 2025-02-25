@@ -18,6 +18,27 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
+    vn_nnow: np.array,
+    ddt_vn_apc_ntl1: np.array,
+    ddt_vn_apc_ntl2: np.array,
+    ddt_vn_phy: np.array,
+    z_theta_v_e: np.array,
+    z_gradh_exner: np.array,
+    dtime,
+    wgt_nnow_vel,
+    wgt_nnew_vel,
+    cpd,
+) -> np.array:
+    vn_nnew = vn_nnow + dtime * (
+        wgt_nnow_vel * ddt_vn_apc_ntl1
+        + wgt_nnew_vel * ddt_vn_apc_ntl2
+        + ddt_vn_phy
+        - cpd * z_theta_v_e * z_gradh_exner
+    )
+    return vn_nnew
+
+
 class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest):
     PROGRAM = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels
     OUTPUTS = ("vn_nnew",)
@@ -37,11 +58,17 @@ class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest)
         cpd,
         **kwargs,
     ) -> dict:
-        vn_nnew = vn_nnow + dtime * (
-            wgt_nnow_vel * ddt_vn_apc_ntl1
-            + wgt_nnew_vel * ddt_vn_apc_ntl2
-            + ddt_vn_phy
-            - cpd * z_theta_v_e * z_gradh_exner
+        vn_nnew = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
+            vn_nnow,
+            ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2,
+            ddt_vn_phy,
+            z_theta_v_e,
+            z_gradh_exner,
+            dtime,
+            wgt_nnow_vel,
+            wgt_nnew_vel,
+            cpd,
         )
         return dict(vn_nnew=vn_nnew)
 
