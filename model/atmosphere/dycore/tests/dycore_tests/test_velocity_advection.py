@@ -17,7 +17,7 @@ from icon4py.model.atmosphere.dycore.stencils import (
 )
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import \
     fused_velocity_advection_stencil_8_to_13_predictor, fused_velocity_advection_stencil_8_to_13_corrector
-
+from icon4py.model.atmosphere.dycore.velocity_advection import VelocityAdvection
 
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
@@ -757,6 +757,7 @@ def test_velocity_fused_15_18(
     grid_savepoint,
     savepoint_velocity_15_18_init,
     savepoint_velocity_15_18_exit,
+    savepoint_velocity_8_13_exit,
     interpolation_savepoint,
     metrics_savepoint,
     savepoint_velocity_exit,
@@ -768,6 +769,21 @@ def test_velocity_fused_15_18(
     substep_exit,
     istep_init,
 ):
+    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
+    cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
+    ddqz_z_half = metrics_savepoint.ddqz_z_half()
+    # calculate cfl_clipping for corrector
+    if istep_init == 2:
+        import numpy as np
+        z_w_con_c_8_13 = savepoint_velocity_8_13_exit.z_w_con_c().asnumpy()
+        cfl_clipping_np = np.where(
+            abs(z_w_con_c_8_13) > cfl_w_limit * ddqz_z_half.asnumpy(),
+            True,
+            False,
+        )
+        cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np)
+    else:
+        cfl_clipping = savepoint_velocity_exit.cfl_clipping()
     z_w_con_c = savepoint_velocity_15_18_init.z_w_con_c()
     w = savepoint_velocity_15_18_init.w()
     ddt_w_adv = savepoint_velocity_15_18_init.ddt_w_adv()
@@ -781,9 +797,7 @@ def test_velocity_fused_15_18(
     e_bln_c_s = data_alloc.flatten_first_two_dims(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
-    cfl_clipping = savepoint_velocity_exit.cfl_clipping()
     owner_mask = grid_savepoint.c_owner_mask()
-    ddqz_z_half = metrics_savepoint.ddqz_z_half()
     area = grid_savepoint.cell_areas()
     geofac_n2s = interpolation_savepoint.geofac_n2s()
 
@@ -800,8 +814,6 @@ def test_velocity_fused_15_18(
     cell_lower_bound = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
     cell_upper_bound = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
-    scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
-    cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     dtime = 5.0
     start_cell_lateral_boundary = (
         icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
