@@ -50,6 +50,8 @@ include:
     - |
       jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py.bencher.baseline.test\", \"namespace\": \"alps\"}} + ." $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
     - |
+      jq ". + {\"bencher.testbed\": \"ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}\"}" $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
+    - |
       curl -X POST \
       -H "Content-Type: application/json" \
       -d @"./${BENCHER_RESULTS_JSON}" \
