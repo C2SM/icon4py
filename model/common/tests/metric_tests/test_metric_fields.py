@@ -12,7 +12,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid import horizontal
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
@@ -94,7 +93,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     z_ifc = metrics_savepoint.z_ifc()
 
     nlevp1 = icon_grid.num_levels + 1
-    k_index = data_alloc.index_field(icon_grid, dim=KDim, extend={KDim: 1})
+    k_index = data_alloc.index_field(icon_grid, dim=dims.KDim, extend={dims.KDim: 1})
     z_mc = metrics_savepoint.z_mc()
     ddqz_z_half = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
@@ -413,7 +412,7 @@ def test_compute_ddxt_z_full(
 def test_compute_exner_exfac(grid_savepoint, experiment, icon_grid, metrics_savepoint, backend):
     horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     exner_expol = 0.333 if experiment == dt_utils.REGIONAL_EXPERIMENT else 0.3333333333333
-    cell_index = data_alloc.index_field(icon_grid, dims.CellDim, dtype=gtx.int32)
+    cell_index = data_alloc.index_field(icon_grid, dims.CellDim)
     exner_exfac = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, backend=backend)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(

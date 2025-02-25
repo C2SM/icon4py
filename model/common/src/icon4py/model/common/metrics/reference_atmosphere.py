@@ -226,17 +226,22 @@ def _compute_d2dexdz2_fac_mc(
     """
     Compute vertical derivative of d_exner_dz/theta_ref for full level mass points.
 
+    (d2dexdz2_fac1_mc and d2dexdz2_fac2_mc factors in mo_vertical_grid.f90)
+
     Args:
-        theta_ref_mc:
-        inv_ddqz_z_full:
-        exner_ref_mc:
-        z_mc:
-        cpd:
-        grav:
-        del_t_bg:
-        h_scal_bg:
+        theta_ref_mc: reference Potential temperature, full level mass points
+        inv_ddqz_z_full: inverse layer thickness (for runtime optimization)
+        exner_ref_mc: reference Exner pressure, full level mass points
+        z_mc: geometric height defined on full levels
+        cpd: Specific heat at constant pressure [J/K/kg]
+        grav: average gravitational acceleration
+        del_t_bg: difference between sea level temperature and asymptotic stratospheric temperature
+        h_scal_bg: height scale for reference atmosphere [m]
 
     Returns:
+        fac1: first vertical derivative of reference Exner pressure, full level mass points, divided by theta_ref
+        fac2: vertical derivative of d_exner_dz/theta_ref, full level mass points
+
 
     """
     del_t_bg = astype(del_t_bg, vpfloat)
@@ -273,28 +278,6 @@ def compute_d2dexdz2_fac_mc(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """
-    Compute d2dexdz2_fac1_mc and d2dexdz2_fac2_mc factors.
-
-    See mo_vertical_grid.f90
-
-    Args:
-        theta_ref_mc: reference Potential temperature, full level mass points
-        inv_ddqz_z_full: inverse layer thickness (for runtime optimization)
-        exner_ref_mc: reference Exner pressure, full level mass points
-        z_mc: geometric height defined on full levels
-        d2dexdz2_fac1_mc: (output) first vertical derivative of reference Exner pressure, full level mass points, divided by theta_ref
-        d2dexdz2_fac2_mc: (output) vertical derivative of d_exner_dz/theta_ref, full level mass points
-        cpd: Specific heat at constant pressure [J/K/kg]
-        grav: average gravitational acceleration
-        del_t_bg: difference between sea level temperature and asymptotic stratospheric temperature
-        h_scal_bg: height scale for reference atmosphere [m]
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-
     _compute_d2dexdz2_fac_mc(
         theta_ref_mc=theta_ref_mc,
         inv_ddqz_z_full=inv_ddqz_z_full,

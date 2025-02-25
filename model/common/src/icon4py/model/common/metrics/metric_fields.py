@@ -35,7 +35,6 @@ from icon4py.model.common.dimension import (
     C2E2CODim,
     Koff,
 )
-from icon4py.model.common.field_type_aliases import CellKField
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
@@ -99,7 +98,7 @@ def _compute_ddqz_z_half(
     z_mc: fa.CellKField[wpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-) -> CellKField[wpfloat]:
+) -> fa.CellKField[wpfloat]:
     # TODO: change this to concat_where once it's merged
     ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
     ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
@@ -801,19 +800,19 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     See pg_edgeidx and pg_exdist in mo_vertical_grid.f90
 
     Args:
-        z_mc:
-        c_lin_e:
-        z_ifc_sliced:
-        e_owner_mask:
-        flat_idx_max:
-        e_lev:
-        k_lev:
-        horizontal_start_distance:
-        horizontal_end_distance:
+        z_mc: height of cells [m]
+        c_lin_e:  interpolation coefficient from cells to edges
+        z_ifc_sliced: ground level height of cells [m]
+        e_owner_mask: mask edges owned by PE.
+        flat_idx_max: level from where edge levels start to become flat
+        e_lev: edge indices
+        k_lev: k-level indices
+        horizontal_start_distance: start index in edge fields from where extrapolation distance is computed
+        horizontal_end_distance: end index in edge fields until where extrapolation distance is computed
 
     Returns:
-        edge index mask for points requiring downward extraplation
-        extrapolation distance
+        pg_edge_mask: edge index mask for points requiring downward extrapolation
+        pg_exdist_dsl: extrapolation distance
 
     """
 
@@ -821,8 +820,8 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     downward_distance = _compute_downward_extrapolation_distance(z_ifc_sliced)
-    z_aux3 = where(
-        (e_lev >= horizontal_start_distance) & (e_lev < horizontal_end_distance),
+    extrapolation_distance = where(
+        horizontal_start_distance <= e_lev < horizontal_end_distance,
         downward_distance,
         0.0,
     )
@@ -832,11 +831,11 @@ def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     pg_vertidx = where(
         (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask, k_lev, 0
     )
-    pg_edge_mask = where((pg_edgeidx > 0) & (pg_vertidx > 0), True, False)
+    pg_edge_mask = (pg_edgeidx > 0) & (pg_vertidx > 0)
 
     pg_exdist_dsl = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux3) & e_owner_mask,
-        z_me - z_aux3,
+        (k_lev >= (flat_idx_max + 1)) & (z_me < extrapolation_distance) & e_owner_mask,
+        z_me - extrapolation_distance,
         0.0,
     )
 

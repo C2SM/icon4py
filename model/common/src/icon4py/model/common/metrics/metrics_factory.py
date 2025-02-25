@@ -9,7 +9,6 @@ import functools
 import math
 
 import gt4py.next as gtx
-import numpy as np
 from gt4py.next import backend as gtx_backend
 
 from icon4py.model.common import constants, dimension as dims
@@ -99,9 +98,11 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         z_ifc_sliced = gtx.as_field(
             (dims.CellDim,), interface_model_height.asnumpy()[:, self._grid.num_levels]
         )
-        k_index = gtx.as_field((dims.KDim,), np.arange(self._grid.num_levels + 1, dtype=gtx.int32))
-        e_lev = gtx.as_field((dims.EdgeDim,), np.arange(self._grid.num_edges, dtype=gtx.int32))
-        c_lev = gtx.as_field((dims.CellDim,), np.arange(self._grid.num_cells, dtype=gtx.int32))
+        k_index = data_alloc.index_field(
+            self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
+        )
+        e_lev = data_alloc.index_field(self._grid, dims.EdgeDim, backend=self._backend)
+        c_lev = data_alloc.index_field(self._grid, dims.CellDim, backend=self._backend)
         e_owner_mask = gtx.as_field(
             (dims.EdgeDim,), self._decomposition_info.owner_mask(dims.EdgeDim)
         )
