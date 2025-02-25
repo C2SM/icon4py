@@ -948,9 +948,6 @@ class IconDiffusionExitSavepoint(IconSavepoint):
     def exner(self):
         return self._get_field("exner", dims.CellDim, dims.KDim)
 
-    def z_temp(self):
-        return self._get_field("z_temp", dims.CellDim, dims.KDim)
-
     def div_ic(self):
         return self._get_field("div_ic", dims.CellDim, dims.KDim)
 
@@ -1029,10 +1026,10 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
 
     def mass_flx_me(self):
-        return self._get_field("prep_adv_mass_flx_me", dims.EdgeDim, dims.KDim)
+        return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
 
     def mass_flx_ic(self):
-        return self._get_field("prep_adv_mass_flx_ic", dims.CellDim, dims.KDim)
+        return self._get_field("mass_flx_ic", dims.CellDim, dims.KDim)
 
     def rho_ic(self):
         return self._get_field("rho_ic", dims.CellDim, dims.KDim)
@@ -1059,7 +1056,7 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("theta_v_ic", dims.CellDim, dims.KDim)
 
     def vn_traj(self):
-        return self._get_field("prep_adv_vn_traj", dims.EdgeDim, dims.KDim)
+        return self._get_field("vn_traj", dims.EdgeDim, dims.KDim)
 
     def z_dwdz_dd(self):
         return self._get_field("z_dwdz_dd", dims.CellDim, dims.KDim)
@@ -1184,10 +1181,10 @@ class IconNonHydroExitSavepoint(IconSavepoint):
         return self._get_field("mass_fl_e", dims.EdgeDim, dims.KDim)
 
     def mass_flx_me(self):
-        return self._get_field("prep_adv_mass_flx_me", dims.EdgeDim, dims.KDim)
+        return self._get_field("mass_flx_me", dims.EdgeDim, dims.KDim)
 
     def vn_traj(self):
-        return self._get_field("prep_adv_vn_traj", dims.EdgeDim, dims.KDim)
+        return self._get_field("vn_traj", dims.EdgeDim, dims.KDim)
 
     def exner_dyn_incr(self):
         return self._get_field("exner_dyn_incr", dims.CellDim, dims.KDim)
