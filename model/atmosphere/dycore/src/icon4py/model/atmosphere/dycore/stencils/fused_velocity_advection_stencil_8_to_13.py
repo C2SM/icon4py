@@ -6,21 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next import domain
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import where
-from gt4py.next.ffront.fbuiltins import astype
-from gt4py.next.ffront.fbuiltins import broadcast
+from gt4py.next.ffront.fbuiltins import astype, broadcast, where
 
-from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
-    _copy_cell_kdim_field_to_vp,
-)
 from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
-)
-from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
-    _init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
@@ -70,9 +61,7 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
     )
 
     z_w_con_c = where(
-        k < nlev,
-        astype(w, vpfloat),
-        broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
+        k < nlev, astype(w, vpfloat), broadcast(vpfloat("0.0"), (dims.CellDim, dims.KDim))
     )
 
     z_w_con_c = where(
@@ -112,7 +101,6 @@ def _fused_velocity_advection_stencil_8_to_13_corrector(
         astype(w, vpfloat),
         z_w_con_c,
     )
-
 
     z_w_con_c = where(k == nlev, 0.0, z_w_con_c)
 
@@ -199,6 +187,7 @@ def _restricted_set_zero(
     z_w_con_c = where(k == nlev, 0.0, z_w_con_c)
     return z_w_con_c
 
+
 @program(grid_type=GridType.UNSTRUCTURED)
 def fused_velocity_advection_stencil_8_to_13_predictor(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
@@ -249,7 +238,7 @@ def fused_velocity_advection_stencil_8_to_13_predictor(
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_end - 1, vertical_end),
-        }
+        },
     )
 
 
@@ -300,7 +289,5 @@ def fused_velocity_advection_stencil_8_to_13_corrector(
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_end - 1, vertical_end),
-        }
+        },
     )
-
-

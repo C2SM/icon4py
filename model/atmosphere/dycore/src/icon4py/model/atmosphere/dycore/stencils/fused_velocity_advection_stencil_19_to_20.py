@@ -60,49 +60,50 @@ def _fused_velocity_advection_stencil_19_to_20(
     zeta = where(
         start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo,
         _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot),
-        0.,
+        0.0,
     )
 
     ddt_vn_apc = where(
-            start_edge_nudging_level_2 <= edge < end_edge_local,
-            _compute_advective_normal_wind_tendency(
-                z_kin_hor_e,
-                coeff_gradekin,
-                z_ekinh,
-                zeta,
-                vt,
-                f_e,
-                c_lin_e,
-                z_w_con_c_full,
-                vn_ie,
-                ddqz_z_full_e,
-            ),
-            ddt_vn_apc,
-        )
+        start_edge_nudging_level_2 <= edge < end_edge_local,
+        _compute_advective_normal_wind_tendency(
+            z_kin_hor_e,
+            coeff_gradekin,
+            z_ekinh,
+            zeta,
+            vt,
+            f_e,
+            c_lin_e,
+            z_w_con_c_full,
+            vn_ie,
+            ddqz_z_full_e,
+        ),
+        ddt_vn_apc,
+    )
 
     k = broadcast(k, (dims.EdgeDim, dims.KDim))
     ddt_vn_apc = where(
-        (start_edge_nudging_level_2 <= edge < end_edge_local) & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 4),
-            _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-                levelmask,
-                c_lin_e,
-                z_w_con_c_full,
-                ddqz_z_full_e,
-                area_edge,
-                tangent_orientation,
-                inv_primal_edge_length,
-                zeta,
-                geofac_grdiv,
-                vn,
-                ddt_vn_apc,
-                cfl_w_limit,
-                scalfac_exdiff,
-                d_time,
-            ),
-            ddt_vn_apc
-        )
-        # if extra_diffu
-        # else ddt_vn_apc
+        (start_edge_nudging_level_2 <= edge < end_edge_local)
+        & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 4),
+        _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
+            levelmask,
+            c_lin_e,
+            z_w_con_c_full,
+            ddqz_z_full_e,
+            area_edge,
+            tangent_orientation,
+            inv_primal_edge_length,
+            zeta,
+            geofac_grdiv,
+            vn,
+            ddt_vn_apc,
+            cfl_w_limit,
+            scalfac_exdiff,
+            d_time,
+        ),
+        ddt_vn_apc,
+    )
+    # if extra_diffu
+    # else ddt_vn_apc
     return ddt_vn_apc
 
 

@@ -16,10 +16,6 @@ import numpy as np
 from gt4py.next import common as gtx_common
 from gt4py.next.type_system import type_specifications as ts
 
-from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
-    BUILTIN_TO_NUMPY_TYPE,
-)
-
 
 if TYPE_CHECKING:
     import cffi

@@ -166,10 +166,7 @@ class VelocityAdvection:
         self.k_field = data_alloc.index_field(
             self.grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self.cell_field = data_alloc.index_field(
-            self.grid, dims.CellDim,  backend=self._backend
-        )
-
+        self.cell_field = data_alloc.index_field(self.grid, dims.CellDim, backend=self._backend)
 
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -466,17 +463,17 @@ class VelocityAdvection:
             z_w_concorr_mc=self.z_w_concorr_mc,
             w_concorr_c=diagnostic_state.w_concorr_c,
             z_ekinh=self.z_ekinh,
-            z_w_con_c = self.z_w_con_c,
-            k = self.k_field,
-            nlev = self.grid.num_levels,
-            nflatlev = self.vertical_params.nflatlev,
-            lateral_boundary_3 = self._start_cell_lateral_boundary_level_4,
-            lateral_boundary_4 = self._start_cell_lateral_boundary_level_4,
-            end_halo = self._end_cell_halo,
-            horizontal_start = self._start_cell_lateral_boundary_level_4,
-            horizontal_end = self._end_cell_halo,
-            vertical_start = 0,
-            vertical_end = self.grid.num_levels + 1,
+            z_w_con_c=self.z_w_con_c,
+            k=self.k_field,
+            nlev=self.grid.num_levels,
+            nflatlev=self.vertical_params.nflatlev,
+            lateral_boundary_3=self._start_cell_lateral_boundary_level_4,
+            lateral_boundary_4=self._start_cell_lateral_boundary_level_4,
+            end_halo=self._end_cell_halo,
+            horizontal_start=self._start_cell_lateral_boundary_level_4,
+            horizontal_end=self._end_cell_halo,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
         )
 
@@ -692,7 +689,6 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
-
 
         self._fused_velocity_advection_stencil_8_to_13_corrector(
             z_kin_hor_e=z_kin_hor_e,

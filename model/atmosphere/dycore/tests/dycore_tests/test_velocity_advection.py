@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
@@ -15,10 +16,10 @@ from icon4py.model.atmosphere.dycore.stencils import (
     fused_velocity_advection_stencil_15_to_18,
     fused_velocity_advection_stencil_19_to_20,
 )
-from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import \
-    fused_velocity_advection_stencil_8_to_13_predictor, fused_velocity_advection_stencil_8_to_13_corrector
-from icon4py.model.atmosphere.dycore.velocity_advection import VelocityAdvection
-
+from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import (
+    fused_velocity_advection_stencil_8_to_13_corrector,
+    fused_velocity_advection_stencil_8_to_13_predictor,
+)
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
     horizontal as h_grid,
@@ -28,7 +29,6 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
-from icon4py.model.testing.datatest_fixtures import savepoint_velocity_exit, savepoint_velocity_19_20_init
 
 from . import utils
 
@@ -285,6 +285,7 @@ def test_velocity_predictor_step(
         atol=1.0e-15,
     )
 
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
@@ -292,7 +293,7 @@ def test_velocity_predictor_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        # (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -540,9 +541,15 @@ def test_velocity_fused_1_7(
 
     assert helpers.dallclose(vt_ref.asnumpy(), vt.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
     assert helpers.dallclose(vn_ie_ref.asnumpy(), vn_ie.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
-    assert helpers.dallclose(z_kin_hor_e_ref.asnumpy(), z_kin_hor_e.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
-    assert helpers.dallclose(z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
-    assert helpers.dallclose(z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy(), rtol=1.0e-12, atol=1.0e-12)
+    assert helpers.dallclose(
+        z_kin_hor_e_ref.asnumpy(), z_kin_hor_e.asnumpy(), rtol=1.0e-12, atol=1.0e-12
+    )
+    assert helpers.dallclose(
+        z_w_concorr_me_ref.asnumpy(), z_w_concorr_me.asnumpy(), rtol=1.0e-12, atol=1.0e-12
+    )
+    assert helpers.dallclose(
+        z_v_grad_w_ref.asnumpy(), z_v_grad_w.asnumpy(), rtol=1.0e-12, atol=1.0e-12
+    )
 
 
 @pytest.mark.datatest
@@ -587,7 +594,9 @@ def test_velocity_fused_8_13(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend)
+    k = data_alloc.index_field(
+        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
+    )
     cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
     nflatlev = grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
@@ -611,7 +620,7 @@ def test_velocity_fused_8_13(
         istep=istep_init,
         nlev=icon_grid.num_levels,
         nflatlev=nflatlev,
-        lateral_boundary_3=lateral_boundary_4,# TODO: serialization test works for lateral_boundary_4 but not on lateral_boundary_3, but it should be in lateral_boundary_3 in driver code
+        lateral_boundary_3=lateral_boundary_4,  # TODO: serialization test works for lateral_boundary_4 but not on lateral_boundary_3, but it should be in lateral_boundary_3 in driver code
         lateral_boundary_4=lateral_boundary_4,
         end_halo=end_halo,
         horizontal_start=0,
@@ -625,8 +634,13 @@ def test_velocity_fused_8_13(
         },
     )
     assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
-    assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
-    assert helpers.dallclose(z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(
+        w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
+    assert helpers.dallclose(
+        z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -670,16 +684,16 @@ def test_velocity_fused_8_13_new(
         dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
     )
     wgtfac_c = metrics_savepoint.wgtfac_c()
-    k = data_alloc.index_field(dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend)
+    k = data_alloc.index_field(
+        dim=dims.KDim, grid=icon_grid, extend={dims.KDim: 1}, backend=backend
+    )
     nflatlev = grid_savepoint.nflatlev()
     lateral_boundary_4 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
     lateral_boundary_3 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
-    if istep_init==1:
-        fused_velocity_advection_stencil_8_to_13_predictor.with_backend(
-            backend
-        )(
+    if istep_init == 1:
+        fused_velocity_advection_stencil_8_to_13_predictor.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=z_w_concorr_me,
@@ -707,9 +721,7 @@ def test_velocity_fused_8_13_new(
             },
         )
     else:
-        fused_velocity_advection_stencil_8_to_13_corrector.with_backend(
-            backend
-        )(
+        fused_velocity_advection_stencil_8_to_13_corrector.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=z_w_concorr_me,
@@ -737,8 +749,12 @@ def test_velocity_fused_8_13_new(
         )
 
     assert helpers.dallclose(z_ekinh_ref.asnumpy(), z_ekinh.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
-    assert helpers.dallclose(w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
-    assert helpers.dallclose(z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(
+        w_concorr_c_ref.asnumpy(), w_concorr_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
+    assert helpers.dallclose(
+        z_w_con_c_ref.asnumpy(), z_w_con_c.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
 
 
 @pytest.mark.datatest
@@ -772,18 +788,10 @@ def test_velocity_fused_15_18(
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
-    # calculate cfl_clipping for corrector
-    if istep_init == 2:
-        import numpy as np
-        z_w_con_c_8_13 = savepoint_velocity_8_13_exit.z_w_con_c().asnumpy()
-        cfl_clipping_np = np.where(
-            abs(z_w_con_c_8_13) > cfl_w_limit * ddqz_z_half.asnumpy(),
-            True,
-            False,
-        )
-        cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np)
-    else:
-        cfl_clipping = savepoint_velocity_exit.cfl_clipping()
+    # calculate cfl_clipping
+    z_w_con_c_8_13 = savepoint_velocity_8_13_exit.z_w_con_c().asnumpy()
+    cfl_clipping_np = np.abs(z_w_con_c_8_13) > (cfl_w_limit * ddqz_z_half.asnumpy())
+    cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np)
     z_w_con_c = savepoint_velocity_15_18_init.z_w_con_c()
     w = savepoint_velocity_15_18_init.w()
     ddt_w_adv = savepoint_velocity_15_18_init.ddt_w_adv()
@@ -867,8 +875,12 @@ def test_velocity_fused_15_18(
         },
     )
 
-    assert helpers.dallclose(z_w_con_c_full_ref.asnumpy(), z_w_con_c_full.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
-    assert helpers.dallclose(ddt_w_adv_ref.asnumpy(), ddt_w_adv.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(
+        z_w_con_c_full_ref.asnumpy(), z_w_con_c_full.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
+    assert helpers.dallclose(
+        ddt_w_adv_ref.asnumpy(), ddt_w_adv.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )
 
 
 @pytest.mark.datatest
@@ -920,13 +932,15 @@ def test_velocity_fused_19_20(
     edge_domain = h_grid.domain(dims.EdgeDim)
     vertex_domain = h_grid.domain(dims.VertexDim)
 
-    start_vertex_lateral_boundary_level_2 =icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    start_vertex_lateral_boundary_level_2 = icon_grid.start_index(
+        vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
     end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
-    start_edge_nudging_level_2 =icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+    start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-    #d_time = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
-    d_time=5.0
+    # d_time = savepoint_nonhydro_init.get_metadata("dtime").get("dtime")
+    d_time = 5.0
     extra_diffu = True
     nrdmax = grid_savepoint.nrdmax()
 
@@ -982,4 +996,6 @@ def test_velocity_fused_19_20(
         },
     )
 
-    assert helpers.dallclose(ddt_vn_apc_ref.asnumpy(), ddt_vn_apc.asnumpy(), rtol=1.0e-15, atol=1.0e-15)
+    assert helpers.dallclose(
+        ddt_vn_apc_ref.asnumpy(), ddt_vn_apc.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+    )

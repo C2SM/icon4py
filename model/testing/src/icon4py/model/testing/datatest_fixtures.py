@@ -162,13 +162,16 @@ def step_date_exit():
     """
     return "2021-06-20T12:00:10.000"
 
+
 @pytest.fixture
 def substep_init():
     return 1
 
+
 @pytest.fixture
 def substep_exit():
     return 1
+
 
 @pytest.fixture
 def interpolation_savepoint(data_provider):  # F811
@@ -217,9 +220,7 @@ def savepoint_velocity_1_7_init(
 
 
 @pytest.fixture
-def savepoint_velocity_8_13_init(
-    data_provider, step_date_init, istep_init, substep_init
-):  # F811
+def savepoint_velocity_8_13_init(data_provider, step_date_init, istep_init, substep_init):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 8 to 13.
 
@@ -304,9 +305,7 @@ def savepoint_velocity_1_7_exit(
 
 
 @pytest.fixture
-def savepoint_velocity_8_13_exit(
-    data_provider, step_date_exit, istep_init, substep_init
-):  # F811
+def savepoint_velocity_8_13_exit(data_provider, step_date_exit, istep_init, substep_init):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 8 to 13.
 
