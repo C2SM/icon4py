@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -19,8 +20,8 @@ from icon4py.model.testing.helpers import StencilTest
 
 
 def calculate_diagnostics_for_turbulence_numpy(
-    wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic
-) -> tuple[np.array, np.array]:
+    wgtfac_c: np.ndarray, div: np.ndarray, kh_c: np.ndarray, div_ic, hdef_ic
+) -> tuple[np.ndarray, np.ndarray]:
     kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
     div_offset_1 = np.roll(div, shift=1, axis=1)
     div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
@@ -33,7 +34,14 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
     OUTPUTS = ("div_ic", "hdef_ic")
 
     @staticmethod
-    def reference(grid, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        wgtfac_c: np.ndarray,
+        div: np.ndarray,
+        kh_c: np.ndarray,
+        div_ic: np.ndarray,
+        hdef_ic: np.ndarray,
+    ) -> dict:
         div_ic, hdef_ic = calculate_diagnostics_for_turbulence_numpy(
             wgtfac_c, div, kh_c, div_ic, hdef_ic
         )

@@ -42,10 +42,11 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         "z_w_concorr_me",
         "z_v_grad_w",
     )
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
-        grid,
+        connectivities,
         vn,
         rbf_vec_coeff_e,
         wgtfac_e,
@@ -68,21 +69,21 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition1 = k_nlev < nlev
         vt = np.where(
             condition1,
-            compute_tangential_wind_numpy(grid, vn, rbf_vec_coeff_e),
+            compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
             vt,
         )
 
         condition2 = (1 <= k_nlev) & (k_nlev < nlev)
         vn_ie[:, :-1], z_kin_hor_e = np.where(
             condition2,
-            interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(grid, wgtfac_e, vn, vt),
+            interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(wgtfac_e, vn, vt),
             (vn_ie[:, :nlev], z_kin_hor_e),
         )
 
         if not lvn_only:
             z_vt_ie = np.where(
                 condition2,
-                interpolate_vt_to_interface_edges_numpy(grid, wgtfac_e, vt),
+                interpolate_vt_to_interface_edges_numpy(wgtfac_e, vt),
                 z_vt_ie,
             )
 
@@ -96,7 +97,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition4 = k == nlev
         vn_ie = np.where(
             condition4,
-            extrapolate_at_top_numpy(grid, wgtfacq_e, vn),
+            extrapolate_at_top_numpy(wgtfacq_e, vn),
             vn_ie,
         )
 
@@ -199,7 +200,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid: base_grid.BaseGrid):
+    def input_data(self, grid: base_grid.BaseGrid) -> dict:
         c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
@@ -218,7 +219,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         z_v_grad_w = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
 
-        k = data_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
+        k = data_alloc.index_field(grid=grid, dim=dims.KDim, extend={dims.KDim: 1})
 
         edge = data_alloc.zero_field(grid, dims.EdgeDim, dtype=gtx.int32)
         for e in range(grid.num_edges):
@@ -232,16 +233,8 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
-        lateral_boundary_7 = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-            if hasattr(grid, "start_index")
-            else 0
-        )
-        halo_1 = (
-            grid.end_index(edge_domain(h_grid.Zone.HALO))
-            if hasattr(grid, "end_index")
-            else grid.num_edges
-        )
+        lateral_boundary_7 = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+        halo_1 = grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         horizontal_start = 0
         horizontal_end = grid.num_edges

@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_density_horizo
     integrate_tracer_density_horizontally,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -29,18 +31,18 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_mass_flx_e: np.array,
-        geofac_div: np.array,
-        z_rhofluxdiv_c: np.array,
-        z_tracer_mflx: np.array,
-        z_rho_now: np.array,
-        z_tracer_now: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        p_mass_flx_e: np.ndarray,
+        geofac_div: np.ndarray,
+        z_rhofluxdiv_c: np.ndarray,
+        z_tracer_mflx: np.ndarray,
+        z_rho_now: np.ndarray,
+        z_tracer_now: np.ndarray,
         z_dtsub: float,
         nsub: gtx.int32,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
-        c2e = grid.connectivities[dims.C2EDim]
+        c2e = connectivities[dims.C2EDim]
         p_mass_flx_e_c2e = p_mass_flx_e[c2e]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         z_tracer_mflx_c2e = z_tracer_mflx[c2e]
@@ -60,7 +62,7 @@ class TestIntegrateTracerDensityHorizontally(helpers.StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         p_mass_flx_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         geofac_div = data_alloc.random_field(grid, dims.CellDim, dims.C2EDim)
         z_rhofluxdiv_c = data_alloc.random_field(grid, dims.CellDim, dims.KDim)

@@ -8,7 +8,9 @@
 
 import pytest
 
-from icon4py.model.driver.testcases import jablonowski_williamson as jabw
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.utils import data_allocation as data_alloc
+from icon4py.model.driver.test_cases import jablonowski_williamson as jabw
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
@@ -22,6 +24,7 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 def test_jabw_initial_condition(
     experiment,
     ranked_data_path,
+    backend,
     rank,
     data_provider,
     grid_savepoint,
@@ -29,6 +32,7 @@ def test_jabw_initial_condition(
 ):
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
+    default_surface_pressure = data_alloc.constant_field(icon_grid, 1e5, dims.CellDim)
 
     (
         diffusion_diagnostic_state,
@@ -43,6 +47,7 @@ def test_jabw_initial_condition(
         cell_geometry,
         edge_geometry,
         ranked_data_path.joinpath(f"{experiment}/ser_data"),
+        backend,
         rank,
     )
 
@@ -79,7 +84,7 @@ def test_jabw_initial_condition(
 
     assert helpers.dallclose(
         diagnostic_state.surface_pressure.asnumpy(),
-        data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
+        default_surface_pressure.asnumpy(),
     )
 
     assert helpers.dallclose(

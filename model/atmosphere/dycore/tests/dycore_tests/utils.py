@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro as solve_nh
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import vertical as v_grid
@@ -27,10 +28,10 @@ def construct_interpolation_state(
         pos_on_tplane_e_1=savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=data_alloc.as_1D_sparse_field(savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.e_bln_c_s()),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=savepoint.geofac_div()),
         geofac_n2s=savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
@@ -107,7 +108,8 @@ def _exclaim_ape_nonhydrostatic_config(ndyn: int):
 
 
 def create_vertical_params(
-    vertical_config: v_grid.VerticalGridConfig, sp: sb.IconSerialDataProvider
+    vertical_config: v_grid.VerticalGridConfig,
+    sp: sb.IconGridSavepoint,
 ):
     return v_grid.VerticalGrid(
         config=vertical_config,

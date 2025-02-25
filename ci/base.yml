@@ -26,7 +26,7 @@ variables:
     DOCKERFILE: ci/docker/base.Dockerfile
     # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
     CSCS_REBUILD_POLICY: if-not-exists
-    DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
+    DOCKER_BUILD_ARGS: '["ARCH=$ARCH", "HPC_SDK_VERSION=$HPC_SDK_VERSION", "HPC_SDK_NAME=$HPC_SDK_NAME", "PYVERSION=$PYVERSION"]'
 # build_baseimage_x86_64:
 #   extends: [.container-builder-cscs-zen2, .build_baseimage]
 #   variables:
@@ -37,7 +37,8 @@ build_baseimage_aarch64:
   variables:
     HPC_SDK_VERSION: 24.11
     HPC_SDK_NAME: "nvhpc_2024_2411_Linux_${ARCH}_cuda_12.6"
-    # TODO(edopao): use santis config once available in remote CSCS GitLab config
+    # TODO(edopao): use santis config until a gh200 machine is available in a kubernetes cluster
+    # CI-Ext is awaiting task to be done: https://jira.cscs.ch/browse/SD-60293
     F7T_URL: 'https://api.cscs.ch/cw/firecrest/v1'
     FIRECREST_SYSTEM: 'santis'
 
@@ -55,7 +56,8 @@ build_image_aarch64:
   extends: [.container-builder-cscs-gh200, .build_image]
   needs: [build_baseimage_aarch64]
   variables:
-    # TODO(edopao): use santis config once available in remote CSCS GitLab config
+    # TODO(edopao): use santis config until a gh200 machine is available in a kubernetes cluster
+    # CI-Ext is awaiting task to be done: https://jira.cscs.ch/browse/SD-60293
     F7T_URL: 'https://api.cscs.ch/cw/firecrest/v1'
     FIRECREST_SYSTEM: 'santis'
 
@@ -85,10 +87,10 @@ build_image_aarch64:
 #     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/22.11"
 #     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda11"
 .test_template_aarch64:
-  extends: [.container-runner-daint-gh200, .test_template]
+  extends: [.container-runner-santis-gh200, .test_template]
   needs: [build_image_aarch64]
   variables:
-    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
+    CSCS_ADDITIONAL_MOUNTS: '["/capstor/store/cscs/userlab/d126/icon4py/ci/testdata:$TEST_DATA_PATH"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.11"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
@@ -97,6 +99,3 @@ build_image_aarch64:
     # when high test parallelism is used.
     NUM_PROCESSES: 16
     ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS: "cuda12"
-    # TODO(edopao): use santis config once available in remote CSCS GitLab config
-    F7T_URL: 'https://api.cscs.ch/cw/firecrest/v1'
-    FIRECREST_SYSTEM: 'santis'

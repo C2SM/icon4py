@@ -358,7 +358,7 @@ class FieldOperatorProvider(FieldProvider):
 
     def _allocate(
         self,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid: GridProvider,
         dtype: state_utils.ScalarType = ta.wpfloat,
     ) -> dict[str, state_utils.FieldType]:
@@ -417,9 +417,9 @@ class ProgramFieldProvider(FieldProvider):
 
     def _allocate(
         self,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid: base_grid.BaseGrid,  # TODO @halungge: change to vertical grid
-        dtype: state_utils.ScalarType = ta.wpfloat,
+        dtype: dict[str, state_utils.ScalarType],
     ) -> dict[str, state_utils.FieldType]:
         def _map_size(dim: gtx.Dimension, grid: base_grid.BaseGrid) -> int:
             if dim == dims.KHalfDim:
@@ -433,7 +433,7 @@ class ProgramFieldProvider(FieldProvider):
 
         allocate = gtx.constructors.zeros.partial(allocator=backend)
         field_domain = {_map_dim(dim): (0, _map_size(dim, grid)) for dim in self._dims}
-        return {k: allocate(field_domain, dtype=dtype) for k in self._fields.keys()}
+        return {k: allocate(field_domain, dtype=dtype[k]) for k in self._fields.keys()}
 
     # TODO (@halungge) this can be simplified when completely disentangling vertical and horizontal grid.
     #   the IconGrid should then only contain horizontal connectivities and no longer any Koff which should be moved to the VerticalGrid
@@ -485,7 +485,7 @@ class ProgramFieldProvider(FieldProvider):
         self,
         field_name: str,
         factory: FieldSource,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid_provider: GridProvider,
     ):
         if any([f is None for f in self.fields.values()]):
@@ -495,14 +495,14 @@ class ProgramFieldProvider(FieldProvider):
     def _compute(
         self,
         factory: FieldSource,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid_provider: GridProvider,
     ) -> None:
         try:
             metadata = {v: factory.get(v, RetrievalType.METADATA) for k, v in self._output.items()}
-            dtype = metadata["dtype"]
+            dtype = {v: metadata[v]["dtype"] for v in self._output.values()}
         except (ValueError, KeyError):
-            dtype = ta.wpfloat
+            dtype = {v: ta.wpfloat for v in self._output.values()}
 
         self._fields = self._allocate(backend, grid_provider.grid, dtype=dtype)
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
@@ -561,7 +561,7 @@ class NumpyFieldsProvider(FieldProvider):
         self,
         field_name: str,
         factory: FieldSource,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid: GridProvider,
     ) -> state_utils.FieldType:
         if any([f is None for f in self.fields.values()]):
@@ -571,7 +571,7 @@ class NumpyFieldsProvider(FieldProvider):
     def _compute(
         self,
         factory: FieldSource,
-        backend: gtx_backend.Backend,
+        backend: Optional[gtx_backend.Backend],
         grid_provider: GridProvider,
     ) -> None:
         self._validate_dependencies()
@@ -642,7 +642,6 @@ def _check_union(
     union: Union,
 ) -> bool:
     members = get_args(union)
-    # fix for unions with only one member, which implicitly are not Union but fallback to the type
     # fix for unions with only one member, which implicitly are not Union but fallback to the type
     if not members:
         members = (union,)

@@ -6,12 +6,12 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-from typing import Final
+from typing import Final, Optional
 
 import gt4py.next as gtx
 import numpy as np
 from gt4py.eve.utils import FrozenNamespace
-from gt4py.next import backend, broadcast
+from gt4py.next import backend as gtx_backend, broadcast
 from gt4py.next.ffront.fbuiltins import (
     abs,
     exp,
@@ -226,7 +226,7 @@ class SaturationAdjustment:
         grid: icon_grid.IconGrid,
         vertical_params: v_grid.VerticalGrid,
         metric_state: MetricStateSaturationAdjustment,
-        backend: backend.Backend,
+        backend: Optional[gtx_backend.Backend],
     ):
         self._backend = backend
         self.config = config
@@ -244,65 +244,65 @@ class SaturationAdjustment:
 
     def _allocate_tendencies(self):
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
-        self._temperature1 = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self._temperature1 = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         #: it was originally named as twork in ICON. New temperature before iteration.
-        self._temperature2 = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self._temperature2 = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         #: A mask that indicates whether the grid cell is subsaturated or not.
-        self._subsaturated_mask = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
+        self._subsaturated_mask = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, dtype=bool, backend=self._backend
         )
         #: A mask that indicates whether next Newton iteration is required.
-        self._newton_iteration_mask = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, dtype=bool, backend=self._backend
+        self._newton_iteration_mask = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, dtype=bool, backend=self._backend
         )
         #: latent heat vaporization / dry air heat capacity at constant volume
-        self._lwdocvd = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self._lwdocvd = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._k_field = data_alloc.allocate_indices(
-            dims.KDim, grid=self.grid, is_halfdim=True, dtype=gtx.int32, backend=self._backend
+        self._k_field = data_alloc.index_field(
+            self.grid, dims.KDim, extend={dims.KDim: 1}, dtype=gtx.int32, backend=self._backend
         )
-        # TODO (Chia Rui): remove local pressure and pressire_ifc when scan operator can be called along with pressure tendency computation
-        self._pressure = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        # TODO (Chia Rui): remove local pressure and pressure_ifc when scan operator can be called along with pressure tendency computation
+        self._pressure = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._pressure_ifc = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
+        self._pressure_ifc = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self._pressure_ifc = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
+        self._pressure_ifc = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self._new_exner = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self._new_exner = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self._new_virtual_temperature = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self._new_virtual_temperature = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         # TODO (Chia Rui): remove the tendency terms below when architecture of the entire phyiscs component is ready to use.
-        self.temperature_tendency = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.temperature_tendency = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.qv_tendency = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.qv_tendency = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.qc_tendency = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.qc_tendency = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.virtual_temperature_tendency = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.virtual_temperature_tendency = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.exner_tendency = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.exner_tendency = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.pressure_tendency = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, backend=self._backend
+        self.pressure_tendency = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.pressure_ifc_tendency = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self.grid, is_halfdim=True, backend=self._backend
+        self.pressure_ifc_tendency = data_alloc.zero_field(
+            self.grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
 
         self.compute_subsaturated_case_and_initialize_newton_iterations = (

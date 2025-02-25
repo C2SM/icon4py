@@ -25,6 +25,9 @@ def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
     vt: fa.EdgeKField[vpfloat],
 ) -> tuple[fa.EdgeKField[vpfloat], fa.EdgeKField[vpfloat]]:
     """Formerly known as _mo_velocity_advection_stencil_02."""
+    # TODO: This stencil fusion with the one below is not optimal:
+    # _compute_horizontal_kinetic_energy is wasting computation by assigning
+    # vn_ie and vt_ie which are thrown away.
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
 
     vn_ie_wp = wgtfac_e_wp * vn + (wpfloat("1.0") - wgtfac_e_wp) * vn(Koff[-1])

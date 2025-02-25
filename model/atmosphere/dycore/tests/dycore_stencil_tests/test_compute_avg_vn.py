@@ -19,10 +19,16 @@ from icon4py.model.testing.helpers import StencilTest
 class TestComputeAvgVn(StencilTest):
     PROGRAM = compute_avg_vn
     OUTPUTS = ("z_vn_avg",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
-    def reference(grid, e_flx_avg: np.array, vn: np.array, **kwargs) -> dict:
-        e2c2eO = grid.connectivities[dims.E2C2EODim]
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        e_flx_avg: np.ndarray,
+        vn: np.ndarray,
+        **kwargs,
+    ) -> dict:
+        e2c2eO = connectivities[dims.E2C2EODim]
         geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
         z_vn_avg = np.sum(
             np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * geofac_grdiv, 0), axis=1

@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import dataclasses
-import enum
 import functools
 import logging
 import uuid
@@ -22,29 +21,19 @@ from icon4py.model.common.grid import base, horizontal as h_grid
 log = logging.getLogger(__name__)
 
 
-class GeometryType(enum.Enum):
-    """Define geometries of the horizontal domain supported by the ICON grid.
-
-    Values are the same as mo_grid_geometry_info.f90.
-    """
-
-    SPHERE = 1
-    TORUS = 2
-
-
 @dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
     root: int
     level: int
-    geometry_type: Final[GeometryType] = GeometryType.SPHERE
+    geometry_type: Final[base.GeometryType] = base.GeometryType.ICOSAHEDRON
     radius = constants.EARTH_RADIUS
 
     @functools.cached_property
     def num_cells(self):
         match self.geometry_type:
-            case GeometryType.SPHERE:
+            case base.GeometryType.ICOSAHEDRON:
                 return compute_icosahedron_num_cells(self.root, self.level)
-            case GeometryType.TORUS:
+            case base.GeometryType.TORUS:
                 return compute_torus_num_cells(1000, 1000)
             case _:
                 NotImplementedError(f"Unknown gemoetry type {self.geometry_type}")
@@ -159,6 +148,10 @@ class IconGrid(base.BaseGrid):
         return self.global_properties.num_cells if self.global_properties else self.num_cells
 
     @property
+    def geometry_type(self) -> base.GeometryType:
+        return self.global_properties.geometry_type
+
+    @property
     def num_vertices(self):
         return self.config.num_vertices if self.config else 0
 
@@ -220,7 +213,6 @@ class IconGrid(base.BaseGrid):
         if domain.local:
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
-        # ndarray.item() does not respect the dtype of the array, returns a copy of the value _as the default python type_
         return gtx.int32(self._start_indices[domain.dim][domain()])
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
@@ -233,5 +225,4 @@ class IconGrid(base.BaseGrid):
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])
-        # ndarray.item() does not respect the dtype of the array, returns a copy of the value _as the default python builtin type_
-        return gtx.int32(self._end_indices[domain.dim][domain()].item())
+        return gtx.int32(self._end_indices[domain.dim][domain()])

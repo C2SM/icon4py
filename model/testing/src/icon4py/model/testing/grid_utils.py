@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import pathlib
+from typing import Optional
 
 import gt4py.next as gtx
 import gt4py.next.backend as gtx_backend
@@ -20,7 +21,7 @@ from icon4py.model.common.grid import (
     vertical as v_grid,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import data_handling, datatest_utils as dt_utils
+from icon4py.model.testing import data_handling, datatest_utils as dt_utils, helpers
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -35,7 +36,7 @@ grid_geometries = {}
 
 
 def get_grid_manager_for_experiment(
-    experiment: str, backend: gtx_backend.Backend = None
+    experiment: str, backend: Optional[gtx_backend.Backend] = None
 ) -> gm.GridManager:
     if experiment == dt_utils.GLOBAL_EXPERIMENT:
         return _download_and_load_gridfile(
@@ -54,7 +55,7 @@ def get_grid_manager_for_experiment(
 
 
 def get_grid_manager(
-    grid_file: str, num_levels: int, backend: gtx_backend.Backend
+    grid_file: str, num_levels: int, backend: Optional[gtx_backend.Backend]
 ) -> gm.GridManager:
     return _download_and_load_gridfile(grid_file, num_levels=num_levels, backend=backend)
 
@@ -85,7 +86,7 @@ def _download_grid_file(file_path: str) -> pathlib.Path:
 
 
 def _run_grid_manager_for_file(
-    file: str, num_levels: int, backend: gtx_backend.Backend
+    file: str, num_levels: int, backend: Optional[gtx_backend.Backend]
 ) -> gm.GridManager:
     """
     Load a grid file.
@@ -110,7 +111,7 @@ def _run_grid_manager_for_file(
 
 
 def _download_and_load_gridfile(
-    file_path: str, num_levels: int, backend: gtx_backend.Backend
+    file_path: str, num_levels: int, backend: Optional[gtx_backend.Backend]
 ) -> gm.GridManager:
     grid_file = _download_grid_file(file_path)
     gm = _run_grid_manager_for_file(str(grid_file), num_levels, backend)
@@ -129,16 +130,17 @@ def get_num_levels(experiment: str):
 
 
 def get_grid_geometry(
-    backend: gtx_backend.Backend, experiment: str, grid_file: str
+    backend: Optional[gtx_backend.Backend], experiment: str, grid_file: str
 ) -> geometry.GridGeometry:
     on_gpu = data_alloc.is_cupy_device(backend)
     xp = data_alloc.array_ns(on_gpu)
     num_levels = get_num_levels(experiment)
-    register_name = experiment.join(backend.name)
+    backend_name = helpers.extract_backend_name(backend)
+    register_name = experiment.join(backend_name)
 
     def construct_decomposition_info(grid: icon.IconGrid) -> definitions.DecompositionInfo:
         def _add_dimension(dim: gtx.Dimension):
-            indices = data_alloc.allocate_indices(dim, grid)
+            indices = data_alloc.index_field(grid, dim)
             owner_mask = xp.ones((grid.size[dim],), dtype=bool)
             decomposition_info.with_dimension(dim, indices.ndarray, owner_mask)
 
@@ -150,7 +152,7 @@ def get_grid_geometry(
         return decomposition_info
 
     def construct_grid_geometry(grid_file: str):
-        gm = _run_grid_manager_for_file(grid_file, backend=backend, num_levels=num_levels)
+        gm = _download_and_load_gridfile(grid_file, num_levels=num_levels, backend=backend)
         grid = gm.grid
         decomposition_info = construct_decomposition_info(grid)
         geometry_source = geometry.GridGeometry(
@@ -159,7 +161,5 @@ def get_grid_geometry(
         return geometry_source
 
     if not grid_geometries.get(register_name):
-        grid_geometries[register_name] = construct_grid_geometry(
-            str(resolve_full_grid_file_name(grid_file))
-        )
+        grid_geometries[register_name] = construct_grid_geometry(grid_file)
     return grid_geometries[register_name]
