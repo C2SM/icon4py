@@ -42,7 +42,8 @@ def _compute_2nd_order_divergence_of_flux(
     divergence_wp = neighbor_sum(geofac_div(C2CE) * vn(C2E), axis=C2EDim)
     divergence_wp = divergence_wp + astype(dwdz, wpfloat)
     hexagon_area = neighbor_sum(area(V2C), axis=V2CDim)
-    divergence_wp = -divergence_wp * area
+    # divergence_wp = -divergence_wp * area
+    divergence_wp = divergence_wp * area
     divergence_at_vertex_wp = neighbor_sum(divergence_wp(V2C) / hexagon_area, axis=V2CDim)
     divergence_at_cell_wp = neighbor_sum(divergence_at_vertex_wp(C2V), axis=C2VDim) / 3.0
     return astype(divergence_at_cell_wp, vpfloat)

@@ -136,6 +136,7 @@ def read_icon_grid(
 
 def model_initialization_div_converge(
     icon_grid: IconGrid,
+    cell_param: CellParams,
     edge_param: EdgeParams,
     path: Path,
     rank=0,
@@ -174,6 +175,12 @@ def model_initialization_div_converge(
     geopot = data_provider.from_metrics_savepoint().geopot().ndarray
 
     primal_normal_x = edge_param.primal_normal[0].ndarray
+    primal_normal_y = edge_param.primal_normal[1].ndarray
+
+    cell_lat = cell_param.cell_center_lat.ndarray
+    cell_lon = cell_param.cell_center_lon.ndarray
+    edge_lat = edge_param.edge_center[0].ndarray
+    edge_lon = edge_param.edge_center[1].ndarray
 
     cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
@@ -192,136 +199,61 @@ def model_initialization_div_converge(
     )
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
-    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
-    exner_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    rho_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    temperature_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    pressure_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    theta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-    eta_v_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
-
-    # mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
-    # mask_array_edge_start_plus1_to_edge_end[0:grid_idx_edge_start_plus1] = False
-    # mask = xp.repeat(
-    #     xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1
-    # )
     mask = xp.ones((num_edges, num_levels), dtype=bool)
     mask[0:grid_idx_edge_start_plus1, :] = False
-    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
-
-    # Define test case parameters
-    # The topography can only be read from serialized data for now, then these
-    # variables should be defined here and used to compute the idealized
-    # topography:
-    # - mount_lon
-    # - mount_lat
-    # - mount_height
-    # - mount_width
-    nh_t0 = 300.0
-    nh_u0 = xp.full((num_edges, num_levels), fill_value=20.0, dtype=float)
-    nh_brunt_vais = 0.01
-    log.info("Topography can only be read from serialized data for now.")
+    if grid_idx_edge_start_plus1 > 0:
+        raise ValueError(f"grid_idx_edge_start_plus1 must be zero but its value is  {grid_idx_edge_start_plus1}")
+    # primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
+    # primal_normal_y = xp.repeat(xp.expand_dims(primal_normal_y, axis=-1), num_levels, axis=1)
 
     # Horizontal wind field
-    u = xp.where(mask, nh_u0, 0.0)
-    vn_ndarray = xp.zeros_like(u)
+    vn_ndarray = xp.zeros((num_edges, num_levels), dtype=float)
+    u_factor = 0.25 * xp.sqrt(0.5*105.0/math.pi)
+    v_factor = -0.5 * xp.sqrt(0.5*15.0/math.pi)
+    v_scale = 90.0 / 7.5
+    u_edge = u_factor * xp.cos(2.0 * edge_lon) * xp.cos(edge_lat * v_scale) * xp.cos(edge_lat * v_scale) * xp.sin(edge_lat * v_scale)
+    v_edge = v_factor * xp.cos(edge_lon) * xp.cos(edge_lat * v_scale) * xp.sin(edge_lat * v_scale)
     for k in range(num_levels):
-        vn_ndarray[:, k] = u[:, k] * primal_normal_x[:, k]
-        # log.info(f"EEEEEEEEEEEE {vn_ndarray[0:3, k]} -- {u[0:3, k] * primal_normal_x[0:3, k]} -- {u[0:3, k]} -- {primal_normal_x[0:3, k]}")
+        vn_ndarray[:, k] = u_edge[:] * primal_normal_x[:] + v_edge[:] * primal_normal_y[:]
     log.info("Wind profile assigned.")
 
-    # Vertical temperature profile
-    for k_index in range(num_levels - 1, -1, -1):
-        z_help = (nh_brunt_vais / GRAV) ** 2 * geopot[:, k_index]
-        # profile of theta is explicitly given
-        theta_v_ndarray[:, k_index] = nh_t0 * xp.exp(z_help)
-
-    # Lower boundary condition for exner pressure
-    if nh_brunt_vais != 0.0:
-        z_help = (nh_brunt_vais / GRAV) ** 2 * geopot[:, num_levels - 1]
-        exner_ndarray[:, num_levels - 1] = (GRAV / nh_brunt_vais) ** 2 / nh_t0 / CPD * (
-            xp.exp(-z_help) - 1.0
-        ) + 1.0
-    else:
-        exner_ndarray[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / CPD / nh_t0
-    log.info("Vertical computations completed.")
-
-    # Compute hydrostatically balanced exner, by integrating the (discretized!)
-    # 3rd equation of motion under the assumption thetav=const.
-    rho_ndarray, exner_ndarray = hydrostatic_adjustment_constant_thetav_ndarray(
-        wgtfac_c,
-        ddqz_z_half,
-        exner_ref_mc,
-        d_exner_dz_ref_ic,
-        theta_ref_mc,
-        theta_ref_ic,
-        rho_ndarray,
-        exner_ndarray,
-        theta_v_ndarray,
-        num_levels,
-    )
-    log.info("Hydrostatic adjustment computation completed.")
-
-    eta_v = as_field((CellDim, KDim), eta_v_ndarray)
-    eta_v_e = _allocate(EdgeDim, KDim, grid=icon_grid)
-    cell_2_edge_interpolation(
-        eta_v,
-        cell_2_edge_coeff,
-        eta_v_e,
-        grid_idx_edge_start_plus1,
-        grid_idx_edge_end,
-        0,
-        num_levels,
-        offset_provider=icon_grid.offset_providers,
-    )
-    log.info("Cell-to-edge eta_v computation completed.")
-
+    zero_ndarray = xp.zeros((num_cells, num_levels), dtype=float)
+    w_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
     vn = as_field((EdgeDim, KDim), vn_ndarray)
     w = as_field((CellDim, KDim), w_ndarray)
-    exner = as_field((CellDim, KDim), exner_ndarray)
-    rho = as_field((CellDim, KDim), rho_ndarray)
-    temperature = as_field((CellDim, KDim), temperature_ndarray)
-    pressure = as_field((CellDim, KDim), pressure_ndarray)
-    theta_v = as_field((CellDim, KDim), theta_v_ndarray)
+    exner = as_field((CellDim, KDim), zero_ndarray)
+    rho = as_field((CellDim, KDim), zero_ndarray)
+    temperature = as_field((CellDim, KDim), zero_ndarray)
+    pressure = as_field((CellDim, KDim), zero_ndarray)
+    theta_v = as_field((CellDim, KDim), zero_ndarray)
     pressure_ifc_ndarray = xp.zeros((num_cells, num_levels + 1), dtype=float)
     pressure_ifc = as_field((CellDim, KDim), pressure_ifc_ndarray)
 
     vn_next = as_field((EdgeDim, KDim), vn_ndarray)
     w_next = as_field((CellDim, KDim), w_ndarray)
-    exner_next = as_field((CellDim, KDim), exner_ndarray)
-    rho_next = as_field((CellDim, KDim), rho_ndarray)
-    theta_v_next = as_field((CellDim, KDim), theta_v_ndarray)
+    exner_next = as_field((CellDim, KDim), zero_ndarray)
+    rho_next = as_field((CellDim, KDim), zero_ndarray)
+    theta_v_next = as_field((CellDim, KDim), zero_ndarray)
 
-    u = _allocate(CellDim, KDim, grid=icon_grid)
-    v = _allocate(CellDim, KDim, grid=icon_grid)
-
-    edge_2_cell_vector_rbf_interpolation(
-        vn,
-        rbf_vec_coeff_c1,
-        rbf_vec_coeff_c2,
-        u,
-        v,
-        grid_idx_cell_start_plus1,
-        grid_idx_cell_end,
-        0,
-        num_levels,
-        offset_provider=icon_grid.offset_providers,
-    )
-    log.info("U, V computation completed.")
-
-    exner_pr = _allocate(CellDim, KDim, grid=icon_grid)
-    init_exner_pr(
-        exner,
-        data_provider.from_metrics_savepoint().exner_ref_mc(),
-        exner_pr,
-        int32(0),
-        int32(num_cells),
-        int32(0),
-        int32(num_levels),
-        offset_provider={},
-    )
+    exner_pr = as_field((CellDim, KDim), zero_ndarray)
     log.info("exner_pr initialization completed.")
 
+    debug_mask1 = xp.where((edge_lon > 0.0) & (edge_lat > 0.045) & (edge_lat < 0.055))
+    debug_mask2 = xp.where((edge_lon < 0.0) & (edge_lat > 0.045) & (edge_lat < 0.055))
+    band1 = xp.cos(2.0 * edge_lon[debug_mask1])
+    band2 = xp.cos(2.0 * edge_lon[debug_mask2])
+    print(band1.max(), band1.min())
+    print(band2.max(), band2.min())
+    u_cell = u_factor * xp.cos(2.0 * cell_lon) * xp.cos(cell_lat * v_scale) * xp.cos(cell_lat * v_scale) * xp.sin(cell_lat * v_scale)
+    v_cell = v_factor * xp.cos(cell_lon) * xp.cos(cell_lat * v_scale) * xp.sin(cell_lat * v_scale)
+    debug_mask1 = xp.where((cell_lon > 0.0) & (cell_lat > 0.045) & (cell_lat < 0.055))
+    debug_mask2 = xp.where((cell_lon < 0.0) & (cell_lat > 0.045) & (cell_lat < 0.055))
+    band1 = xp.cos(2.0 * cell_lon[debug_mask1])
+    band2 = xp.cos(2.0 * cell_lon[debug_mask2])
+    print(band1.max(), band1.min())
+    print(band2.max(), band2.min())
+    u = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(u_cell, axis=-1), num_levels, axis=1))
+    v = as_field((CellDim, KDim), xp.repeat(xp.expand_dims(v_cell, axis=-1), num_levels, axis=1))
     diagnostic_state = DiagnosticState(
         pressure=pressure,
         pressure_ifc=pressure_ifc,
@@ -1205,7 +1137,7 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = model_initialization_div_converge(icon_grid, edge_param, path, rank)
+        ) = model_initialization_div_converge(icon_grid, cell_param, edge_param, path, rank)
     elif experiment_type == ExperimentType.ANY:
         (
             diffusion_diagnostic_state,

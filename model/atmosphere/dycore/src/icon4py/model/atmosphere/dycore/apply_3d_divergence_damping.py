@@ -75,7 +75,7 @@ def apply_3d_divergence_damping(
         w,
         out=w,
         domain={
-            EdgeDim: (cell_horizontal_start, cell_horizontal_end),
+            CellDim: (cell_horizontal_start, cell_horizontal_end),
             KDim: (vertical_start + 1, vertical_end),
         },
     )

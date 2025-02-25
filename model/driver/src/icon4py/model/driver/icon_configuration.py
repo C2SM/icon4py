@@ -49,6 +49,8 @@ class IconRunConfig:
 
     run_testcase: bool = False
 
+    update_diagnostic: bool = True
+
 
 @dataclass(frozen=True)
 class VariableAttributes:
@@ -213,7 +215,12 @@ class IconConfig:
     solve_nonhydro_config: NonHydrostaticConfig
 
 
-def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconConfig:
+def read_config(
+    experiment_type: ExperimentType = ExperimentType.ANY,
+    dtime_seconds: float = None,
+    end_date = None,
+    output_seconds_interval: float = None
+) -> IconConfig:
     def _mch_ch_r04b09_diffusion_config():
         return DiffusionConfig(
             diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
@@ -250,7 +257,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             _mch_ch_r04b09_nonhydro_config(),
         )
 
-    def _output_config():
+    def _output_config(output_seconds_interval: float = None):
         output_variable_list = OutputVariableList()
         output_variable_list.add_new_variable(
             "temperature",
@@ -923,13 +930,11 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ),
         )
 
+        # 14400 for jabw
+        output_interval = timedelta(seconds=output_seconds_interval) if output_seconds_interval is not None else timedelta(seconds=120)
         return IconOutputConfig(
-            # output_time_interval=timedelta(seconds=14400),
-            # output_file_time_interval=timedelta(seconds=14400),
-            output_time_interval=timedelta(seconds=120),
-            output_file_time_interval=timedelta(seconds=120),
-            # output_time_interval=timedelta(seconds=600),
-            # output_file_time_interval=timedelta(seconds=600),
+            output_time_interval=output_interval,
+            output_file_time_interval=output_interval,
             output_path=Path("./"),
             output_initial_condition_as_a_separate_file=True,
             output_variable_list=output_variable_list,
@@ -1036,13 +1041,13 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         return NonHydrostaticConfig(
             igradp_method=3,
             ndyn_substeps_var=n_substeps,
-            divdamp_fac=1.0,
+            divdamp_fac=0.1,#0.025,
             divdamp_z=40000.0,
             divdamp_z2=50000.0,
             scal_divsign=1.0,
             do_o2_divdamp=True,
             do_3d_divergence_damping=True,
-            divergence_order=1,
+            divergence_order=2,
             do_multiple_divdamp=False,
             number_of_divdamp_step=100,
             do_proper_diagnostics_divdamp=True,
@@ -1087,16 +1092,16 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             gauss3d_nonhydro_config,
         )
     
-    def _div_converge_config():
+    def _div_converge_config(dtime_seconds: float, end_date, output_seconds_interval: float):
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=0.3),
-            end_date=datetime(1, 1, 1, 1, 0, 0),
-            # end_date=datetime(1, 1, 1, 0, 0, 6),
+            dtime=timedelta(seconds=dtime_seconds),
+            end_date=end_date,
             damping_height=25000.0,
             apply_initial_stabilization=False,
-            n_substeps=5,
+            n_substeps=1,
+            update_diagnostic=False,
         )
-        div_converge_output_config = _output_config()
+        div_converge_output_config = _output_config(output_seconds_interval)
         div_converge_diffusion_config = _div_converge_diffusion_config(icon_run_config.n_substeps)
         div_converge_nonhydro_config = _div_converge_nonhydro_config(icon_run_config.n_substeps)
         return (
@@ -1121,6 +1126,13 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             diffusion_config,
             nonhydro_config,
         ) = _gauss3d_config()
+    elif experiment_type == ExperimentType.DIVCONVERGE:
+        (
+            model_run_config,
+            output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _div_converge_config(dtime_seconds, end_date, output_seconds_interval)
     else:
         log.warning(
             "Experiment name is not specified, default configuration for mch_ch_r04b09_dsl is used."

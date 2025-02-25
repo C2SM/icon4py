@@ -1969,7 +1969,7 @@ class SolveNonhydro:
         )
 
         def aux_func_divergence(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_z_fields: IntermediateFields,
             order: int,
             step: int,
@@ -1983,8 +1983,8 @@ class SolveNonhydro:
                     """
                     compute_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
-                        vn=input_prognostic_state[nnew].vn,
-                        z_dwdz_dd=input_z_fields.z_dwdz_dd,
+                        vn=input_prognostic_state.vn,
+                        dwdz=input_z_fields.z_dwdz_dd,
                         divergence=input_z_fields.z_flxdiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
                         horizontal_end=end_cell_local,
@@ -2000,8 +2000,8 @@ class SolveNonhydro:
                     """
                     compute_2nd_order_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
-                        vn=input_prognostic_state[nnew].vn,
-                        z_dwdz_dd=input_z_fields.z_dwdz_dd,
+                        vn=input_prognostic_state.vn,
+                        dwdz=input_z_fields.z_dwdz_dd,
                         area=self.cell_params.area,
                         divergence=input_z_fields.z_flxdiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
@@ -2022,7 +2022,7 @@ class SolveNonhydro:
                     compute_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
                         vn=input_z_fields.z_flxdiv_graddiv_vn,
-                        z_dwdz_dd=input_z_fields.z_dgraddiv_dz,
+                        dwdz=input_z_fields.z_dgraddiv_dz,
                         divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
                         horizontal_end=end_cell_local,
@@ -2039,7 +2039,7 @@ class SolveNonhydro:
                     compute_2nd_order_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
                         vn=input_z_fields.z_flxdiv_graddiv_vn,
-                        z_dwdz_dd=input_z_fields.z_dgraddiv_dz,
+                        dwdz=input_z_fields.z_dgraddiv_dz,
                         area=self.cell_params.area,
                         divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
@@ -2054,7 +2054,7 @@ class SolveNonhydro:
                 raise NotImplementedError("Step = {step} must be 1 or 2")
 
         def aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
             step: int,
@@ -2073,7 +2073,7 @@ class SolveNonhydro:
                     rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
                     ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
                     ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
-                    vn=input_prognostic_state[nnew].vn,
+                    vn=input_prognostic_state.vn,
                     e_bln_c_s=self.interpolation_state.e_bln_c_s,
                     wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
                     vt=input_z_fields.vt,
@@ -2096,7 +2096,7 @@ class SolveNonhydro:
                 )
                 compute_dwdz_for_divergence_damping(
                     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-                    w=input_prognostic_state[nnew].w,
+                    w=input_prognostic_state.w,
                     w_concorr_c=input_diagnostic_state_nh.w_concorr_c,
                     z_dwdz_dd=input_z_fields.z_dwdz_dd,
                     horizontal_start=start_cell_lb,
@@ -2122,7 +2122,7 @@ class SolveNonhydro:
                 )
 
         def aux_func_graddiv(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_z_fields: IntermediateFields,
             do_3d_divergence: bool,
             step: int,
@@ -2178,7 +2178,7 @@ class SolveNonhydro:
                     """
                     compute_graddiv_of_vn(
                         geofac_grdiv=self.interpolation_state.geofac_grdiv,
-                        vn=input_prognostic_state[nnew].vn,
+                        vn=input_prognostic_state.vn,
                         z_graddiv_vn=input_z_fields.z_graddiv_vn,
                         horizontal_start=start_edge_nudging_plus1,
                         horizontal_end=end_edge_local,
@@ -2223,7 +2223,7 @@ class SolveNonhydro:
                     raise NotImplementedError("Step = {step} must be 1 or 2")
 
         def copy_data_to_output(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_z_fields: IntermediateFields,
             output_group: str,
             do_o2: bool,
@@ -2249,7 +2249,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
                 copy_edge_kdim_field_to_vp(
-                    field=input_prognostic_state[nnew].vn,
+                    field=input_prognostic_state.vn,
                     field_copy=self.output_intermediate_fields.output_before_vn,
                     horizontal_start=int32(0),
                     horizontal_end=end_edge_local,
@@ -2258,7 +2258,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
                 copy_cell_kdim_field_to_vp(
-                    field=input_prognostic_state[nnew].w,
+                    field=input_prognostic_state.w,
                     field_copy=self.output_intermediate_fields.output_before_w,
                     horizontal_start=int32(0),
                     horizontal_end=end_cell_local,
@@ -2348,7 +2348,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
                 copy_edge_kdim_field_to_vp(
-                    field=input_prognostic_state[nnew].vn,
+                    field=input_prognostic_state.vn,
                     field_copy=self.output_intermediate_fields.output_after_vn,
                     horizontal_start=int32(0),
                     horizontal_end=end_edge_local,
@@ -2357,7 +2357,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
                 copy_cell_kdim_field_to_vp(
-                    field=input_prognostic_state[nnew].w,
+                    field=input_prognostic_state.w,
                     field_copy=self.output_intermediate_fields.output_after_w,
                     horizontal_start=int32(0),
                     horizontal_end=end_cell_local,
@@ -2367,7 +2367,7 @@ class SolveNonhydro:
                 )
 
         def output_div_data(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
             input_do_output_step: int,
@@ -2481,13 +2481,14 @@ class SolveNonhydro:
                     )
 
         def aux_func_compute_divergence_damping(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
             order: int,
             do_o2: bool,
             do_compute_diagnostics: bool,
             do_3d_divergence_damping: bool,
+            do_for_output: bool = False,
         ):
             
             if do_o2:
@@ -2496,7 +2497,7 @@ class SolveNonhydro:
                         input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=1
                     )
 
-                if do_3d_divergence_damping:
+                if do_3d_divergence_damping or do_for_output:
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=1)
                 aux_func_graddiv(
                     input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=1
@@ -2507,13 +2508,13 @@ class SolveNonhydro:
                         input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=1
                     )
 
-                if do_3d_divergence_damping:
+                if do_3d_divergence_damping or do_for_output:
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=1)
                 aux_func_graddiv(
                     input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=1
                 )
 
-                if do_3d_divergence_damping:
+                if do_3d_divergence_damping or do_for_output:
                     aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
                         input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=2
                     )
@@ -2523,7 +2524,7 @@ class SolveNonhydro:
                 )
 
         def aux_func_apply_divergence_damping(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
             order: int,
@@ -2546,10 +2547,12 @@ class SolveNonhydro:
                         scal_divdamp_half=self.scal_divdamp_o2_half,
                         graddiv_normal=input_z_fields.z_graddiv_normal,
                         graddiv_vertical=input_z_fields.z_graddiv_vertical,
-                        vn=input_prognostic_state[nnew].vn,
-                        w=input_prognostic_state[nnew].w,
+                        vn=input_prognostic_state.vn,
+                        w=input_prognostic_state.w,
                         edge_horizontal_start=start_edge_nudging_plus1,
                         edge_horizontal_end=end_edge_local,
+                        cell_horizontal_start=int32(0),
+                        cell_horizontal_end=end_cell_local,
                         vertical_start=0,
                         vertical_end=self.grid.num_levels,
                         offset_provider={},
@@ -2560,10 +2563,12 @@ class SolveNonhydro:
                         scal_divdamp_half=self.scal_divdamp_half,
                         graddiv_normal=self.z_graddiv2_normal,
                         graddiv_vertical=self.z_graddiv2_vertical,
-                        vn=input_prognostic_state[nnew].vn,
-                        w=input_prognostic_state[nnew].w,
+                        vn=input_prognostic_state.vn,
+                        w=input_prognostic_state.w,
                         edge_horizontal_start=start_edge_nudging_plus1,
                         edge_horizontal_end=end_edge_local,
+                        cell_horizontal_start=int32(0),
+                        cell_horizontal_end=end_cell_local,
                         vertical_start=0,
                         vertical_end=self.grid.num_levels,
                         offset_provider={},
@@ -2573,7 +2578,7 @@ class SolveNonhydro:
                     apply_4th_order_divergence_damping(
                         scal_divdamp=self.scal_divdamp_o2,
                         z_graddiv2_vn=input_z_fields.z_graddiv_vn,
-                        vn=prognostic_state[nnew].vn,
+                        vn=input_prognostic_state.vn,
                         horizontal_start=start_edge_nudging_plus1,
                         horizontal_end=end_edge_local,
                         vertical_start=0,
@@ -2584,7 +2589,7 @@ class SolveNonhydro:
                     apply_4th_order_divergence_damping(
                         scal_divdamp=self.scal_divdamp,
                         z_graddiv2_vn=self.z_graddiv2_vn,
-                        vn=prognostic_state[nnew].vn,
+                        vn=input_prognostic_state.vn,
                         horizontal_start=start_edge_nudging_plus1,
                         horizontal_end=end_edge_local,
                         vertical_start=0,
@@ -2592,23 +2597,81 @@ class SolveNonhydro:
                         offset_provider={},
                     )
 
+        scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
+
+        copy_cell_kdim_field_to_vp(
+            field=prognostic_state[nnow].w,
+            field_copy=prognostic_state[nnew].w,
+            horizontal_start=int32(0),
+            horizontal_end=end_cell_local,
+            vertical_start=int32(0),
+            vertical_end=int32(self.grid.num_levels+1),
+            offset_provider={},
+        )
+        copy_edge_kdim_field_to_vp(
+            field=prognostic_state[nnow].vn,
+            field_copy=prognostic_state[nnew].vn,
+            horizontal_start=int32(0),
+            horizontal_end=end_edge_local,
+            vertical_start=int32(0),
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
+        # TODO: to cached program
+        # _calculate_divdamp_fields(
+        #     self.enh_divdamp_fac,
+        #     int32(self.config.divdamp_order),
+        #     self.cell_params.mean_cell_area,
+        #     divdamp_fac_o2,
+        #     self.config.nudge_max_coeff,
+        #     constants.dbl_eps,
+        #     out=(self.scal_divdamp, self.scal_divdamp_o2, self._bdy_divdamp),
+        #     offset_provider={},
+        # )
+        calculate_divdamp_fields(
+            self.enh_divdamp_fac,
+            self.scal_divdamp,
+            self.scal_divdamp_o2,
+            self._bdy_divdamp,
+            int32(self.config.divdamp_order),
+            self.cell_params.mean_cell_area,
+            float(0.0),
+            self.config.nudge_max_coeff,
+            constants.dbl_eps,
+            self.config.scal_divsign,
+            offset_provider={},
+        )
+        calculate_scal_divdamp_half(
+            scal_divdamp=self.scal_divdamp,
+            scal_divdamp_o2=self.scal_divdamp_o2,
+            vct_a=self.vertical_params.vct_a,
+            scal_divdamp_half=self.scal_divdamp_half,
+            scal_divdamp_o2_half=self.scal_divdamp_o2_half,
+            # k_field=self.k_field,
+            vertical_start=1,
+            vertical_end=self.grid.num_levels,
+            offset_provider={"Koff": KDim},
+        )
+        
         aux_func_compute_divergence_damping(
-            prognostic_state,
+            prognostic_state[nnew],
+            diagnostic_state_nh,
             z_fields,
             order=self.config.divergence_order,
             do_o2=self.config.do_o2_divdamp,
             do_compute_diagnostics=True,
             do_3d_divergence_damping=self.config.do_3d_divergence_damping,
+            do_for_output=True,
         )
         copy_data_to_output(
-            prognostic_state,
+            prognostic_state[nnew],
             z_fields,
             "before",
             self.config.do_o2_divdamp,
             self.config.do_3d_divergence_damping,
         )
         aux_func_apply_divergence_damping(
-            prognostic_state,
+            prognostic_state[nnew],
             diagnostic_state_nh,
             z_fields,
             order=self.config.divergence_order,
@@ -2617,15 +2680,17 @@ class SolveNonhydro:
             do_3d_divergence_damping=self.config.do_3d_divergence_damping,
         )
         aux_func_compute_divergence_damping(
-            prognostic_state,
+            prognostic_state[nnew],
+            diagnostic_state_nh,
             z_fields,
             order=self.config.divergence_order,
             do_o2=self.config.do_o2_divdamp,
             do_compute_diagnostics=True,
             do_3d_divergence_damping=self.config.do_3d_divergence_damping,
+            do_for_output=True,
         )
         copy_data_to_output(
-            prognostic_state,
+            prognostic_state[nnew],
             z_fields,
             "after",
             self.config.do_o2_divdamp,
@@ -2698,7 +2763,7 @@ class SolveNonhydro:
         )
 
         def aux_func_divergence(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_z_fields: IntermediateFields,
             order: int,
             step: int,
@@ -2712,8 +2777,8 @@ class SolveNonhydro:
                     """
                     compute_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
-                        vn=input_prognostic_state[nnew].vn,
-                        z_dwdz_dd=input_z_fields.z_dwdz_dd,
+                        vn=input_prognostic_state.vn,
+                        dwdz=input_z_fields.z_dwdz_dd,
                         divergence=input_z_fields.z_flxdiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
                         horizontal_end=end_cell_local,
@@ -2729,8 +2794,8 @@ class SolveNonhydro:
                     """
                     compute_2nd_order_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
-                        vn=input_prognostic_state[nnew].vn,
-                        z_dwdz_dd=input_z_fields.z_dwdz_dd,
+                        vn=input_prognostic_state.vn,
+                        dwdz=input_z_fields.z_dwdz_dd,
                         area=self.cell_params.area,
                         divergence=input_z_fields.z_flxdiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
@@ -2751,7 +2816,7 @@ class SolveNonhydro:
                     compute_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
                         vn=input_z_fields.z_flxdiv_graddiv_vn,
-                        z_dwdz_dd=input_z_fields.z_dgraddiv_dz,
+                        dwdz=input_z_fields.z_dgraddiv_dz,
                         divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
                         horizontal_end=end_cell_local,
@@ -2768,7 +2833,7 @@ class SolveNonhydro:
                     compute_2nd_order_divergence_of_flux(
                         geofac_div=self.interpolation_state.geofac_div,
                         vn=input_z_fields.z_flxdiv_graddiv_vn,
-                        z_dwdz_dd=input_z_fields.z_dgraddiv_dz,
+                        dwdz=input_z_fields.z_dgraddiv_dz,
                         area=self.cell_params.area,
                         divergence=input_z_fields.z_flxdiv_graddiv_vn_and_w,
                         horizontal_start=start_cell_nudging,
@@ -2783,7 +2848,7 @@ class SolveNonhydro:
                 raise NotImplementedError("Step = {step} must be 1 or 2")
 
         def aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
             step: int,
@@ -2802,7 +2867,7 @@ class SolveNonhydro:
                     rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
                     ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
                     ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
-                    vn=input_prognostic_state[nnew].vn,
+                    vn=input_prognostic_state.vn,
                     e_bln_c_s=self.interpolation_state.e_bln_c_s,
                     wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
                     vt=input_z_fields.vt,
@@ -2825,7 +2890,7 @@ class SolveNonhydro:
                 )
                 compute_dwdz_for_divergence_damping(
                     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-                    w=input_prognostic_state[nnew].w,
+                    w=input_prognostic_state.w,
                     w_concorr_c=input_diagnostic_state_nh.w_concorr_c,
                     z_dwdz_dd=input_z_fields.z_dwdz_dd,
                     horizontal_start=start_cell_lb,
@@ -2851,7 +2916,7 @@ class SolveNonhydro:
                 )
 
         def aux_func_graddiv(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_z_fields: IntermediateFields,
             do_3d_divergence: bool,
             step: int,
@@ -2907,7 +2972,7 @@ class SolveNonhydro:
                     """
                     compute_graddiv_of_vn(
                         geofac_grdiv=self.interpolation_state.geofac_grdiv,
-                        vn=input_prognostic_state[nnew].vn,
+                        vn=input_prognostic_state.vn,
                         z_graddiv_vn=input_z_fields.z_graddiv_vn,
                         horizontal_start=start_edge_nudging_plus1,
                         horizontal_end=end_edge_local,
@@ -2952,7 +3017,7 @@ class SolveNonhydro:
                     raise NotImplementedError("Step = {step} must be 1 or 2")
 
         def copy_data_to_output(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_z_fields: IntermediateFields,
             output_group: str,
             do_o2: bool,
@@ -2978,7 +3043,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
                 copy_edge_kdim_field_to_vp(
-                    field=input_prognostic_state[nnew].vn,
+                    field=input_prognostic_state.vn,
                     field_copy=self.output_intermediate_fields.output_before_vn,
                     horizontal_start=int32(0),
                     horizontal_end=end_edge_local,
@@ -2987,7 +3052,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
                 copy_cell_kdim_field_to_vp(
-                    field=input_prognostic_state[nnew].w,
+                    field=input_prognostic_state.w,
                     field_copy=self.output_intermediate_fields.output_before_w,
                     horizontal_start=int32(0),
                     horizontal_end=end_cell_local,
@@ -3077,7 +3142,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
                 copy_edge_kdim_field_to_vp(
-                    field=input_prognostic_state[nnew].vn,
+                    field=input_prognostic_state.vn,
                     field_copy=self.output_intermediate_fields.output_after_vn,
                     horizontal_start=int32(0),
                     horizontal_end=end_edge_local,
@@ -3086,7 +3151,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
                 copy_cell_kdim_field_to_vp(
-                    field=input_prognostic_state[nnew].w,
+                    field=input_prognostic_state.w,
                     field_copy=self.output_intermediate_fields.output_after_w,
                     horizontal_start=int32(0),
                     horizontal_end=end_cell_local,
@@ -3096,7 +3161,7 @@ class SolveNonhydro:
                 )
 
         def output_div_data(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
             input_do_output_step: int,
@@ -3210,13 +3275,14 @@ class SolveNonhydro:
                     )
 
         def aux_func_compute_divergence_damping(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
             order: int,
             do_o2: bool,
             do_compute_diagnostics: bool,
             do_3d_divergence_damping: bool,
+            do_for_output: bool = False,
         ):
             # debug_z_graddiv2_vn = _allocate(EdgeDim, KDim, grid=self.grid)
             # debug_z_graddiv_vn = _allocate(EdgeDim, KDim, grid=self.grid)
@@ -3245,7 +3311,7 @@ class SolveNonhydro:
                         input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=1
                     )
 
-                if do_3d_divergence_damping:
+                if do_3d_divergence_damping or do_for_output:
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=1)
                 aux_func_graddiv(
                     input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=1
@@ -3256,13 +3322,13 @@ class SolveNonhydro:
                         input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=1
                     )
 
-                if do_3d_divergence_damping:
+                if do_3d_divergence_damping or do_for_output:
                     aux_func_divergence(input_prognostic_state, input_z_fields, order, step=1)
                 aux_func_graddiv(
                     input_prognostic_state, input_z_fields, do_3d_divergence_damping, step=1
                 )
 
-                if do_3d_divergence_damping:
+                if do_3d_divergence_damping or do_for_output:
                     aux_func_tangential_wind_and_contravariant_correction_and_dwdz(
                         input_prognostic_state, input_diagnostic_state_nh, input_z_fields, step=2
                     )
@@ -3272,7 +3338,7 @@ class SolveNonhydro:
                 )
 
         def aux_func_apply_divergence_damping(
-            input_prognostic_state: list[PrognosticState],
+            input_prognostic_state: PrognosticState,
             input_diagnostic_state_nh: DiagnosticStateNonHydro,
             input_z_fields: IntermediateFields,
             order: int,
@@ -3295,10 +3361,12 @@ class SolveNonhydro:
                         scal_divdamp_half=self.scal_divdamp_o2_half,
                         graddiv_normal=input_z_fields.z_graddiv_normal,
                         graddiv_vertical=input_z_fields.z_graddiv_vertical,
-                        vn=input_prognostic_state[nnew].vn,
-                        w=input_prognostic_state[nnew].w,
+                        vn=input_prognostic_state.vn,
+                        w=input_prognostic_state.w,
                         edge_horizontal_start=start_edge_nudging_plus1,
                         edge_horizontal_end=end_edge_local,
+                        cell_horizontal_start=int32(0),
+                        cell_horizontal_end=end_cell_local,
                         vertical_start=0,
                         vertical_end=self.grid.num_levels,
                         offset_provider={},
@@ -3309,10 +3377,12 @@ class SolveNonhydro:
                         scal_divdamp_half=self.scal_divdamp_half,
                         graddiv_normal=self.z_graddiv2_normal,
                         graddiv_vertical=self.z_graddiv2_vertical,
-                        vn=input_prognostic_state[nnew].vn,
-                        w=input_prognostic_state[nnew].w,
+                        vn=input_prognostic_state.vn,
+                        w=input_prognostic_state.w,
                         edge_horizontal_start=start_edge_nudging_plus1,
                         edge_horizontal_end=end_edge_local,
+                        cell_horizontal_start=int32(0),
+                        cell_horizontal_end=end_cell_local,
                         vertical_start=0,
                         vertical_end=self.grid.num_levels,
                         offset_provider={},
@@ -3322,7 +3392,7 @@ class SolveNonhydro:
                     apply_4th_order_divergence_damping(
                         scal_divdamp=self.scal_divdamp_o2,
                         z_graddiv2_vn=input_z_fields.z_graddiv_vn,
-                        vn=prognostic_state[nnew].vn,
+                        vn=input_prognostic_state.vn,
                         horizontal_start=start_edge_nudging_plus1,
                         horizontal_end=end_edge_local,
                         vertical_start=0,
@@ -3333,7 +3403,7 @@ class SolveNonhydro:
                     apply_4th_order_divergence_damping(
                         scal_divdamp=self.scal_divdamp,
                         z_graddiv2_vn=self.z_graddiv2_vn,
-                        vn=prognostic_state[nnew].vn,
+                        vn=input_prognostic_state.vn,
                         horizontal_start=start_edge_nudging_plus1,
                         horizontal_end=end_edge_local,
                         vertical_start=0,
@@ -3510,7 +3580,7 @@ class SolveNonhydro:
 
         if not self.config.do_proper_diagnostics_divdamp:
             aux_func_compute_divergence_damping(
-                prognostic_state,
+                prognostic_state[nnew],
                 diagnostic_state_nh,
                 z_fields,
                 order=self.config.divergence_order,
@@ -3716,7 +3786,7 @@ class SolveNonhydro:
             else:
                 if self.config.do_proper_diagnostics_divdamp:
                     aux_func_compute_divergence_damping(
-                        prognostic_state,
+                        prognostic_state[nnew],
                         z_fields,
                         order=self.config.divergence_order,
                         do_o2=self.config.do_o2_divdamp,
@@ -3725,14 +3795,14 @@ class SolveNonhydro:
                     )
                 if do_output:
                     copy_data_to_output(
-                        prognostic_state,
+                        prognostic_state[nnew],
                         z_fields,
                         "before",
                         self.config.do_o2_divdamp,
                         self.config.do_3d_divergence_damping,
                     )
                     output_div_data(
-                        prognostic_state,
+                        prognostic_state[nnew],
                         diagnostic_state_nh,
                         z_fields,
                         do_output_step,
@@ -3743,7 +3813,7 @@ class SolveNonhydro:
                         do_compute_diagnostics=False,
                     )
                 aux_func_apply_divergence_damping(
-                    prognostic_state,
+                    prognostic_state[nnew],
                     diagnostic_state_nh,
                     z_fields,
                     order=self.config.divergence_order,
@@ -3754,7 +3824,7 @@ class SolveNonhydro:
 
                 if do_output:
                     copy_data_to_output(
-                        prognostic_state,
+                        prognostic_state[nnew],
                         z_fields,
                         "mid",
                         self.config.do_o2_divdamp,
@@ -3762,7 +3832,7 @@ class SolveNonhydro:
                     )
                     self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
                     output_div_data(
-                        prognostic_state,
+                        prognostic_state[nnew],
                         diagnostic_state_nh,
                         z_fields,
                         do_output_step,
@@ -3776,7 +3846,7 @@ class SolveNonhydro:
                 if self.config.do_multiple_divdamp:
                     for _ in range(self.config.number_of_divdamp_step - 1):
                         aux_func_compute_divergence_damping(
-                            prognostic_state,
+                            prognostic_state[nnew],
                             z_fields,
                             order=self.config.divergence_order,
                             do_o2=self.config.do_o2_divdamp,
@@ -3784,7 +3854,7 @@ class SolveNonhydro:
                             do_3d_divergence_damping=self.config.do_3d_divergence_damping,
                         )
                         aux_func_apply_divergence_damping(
-                            prognostic_state,
+                            prognostic_state[nnew],
                             z_fields,
                             order=self.config.divergence_order,
                             do_o2=self.config.do_o2_divdamp,
@@ -3793,7 +3863,7 @@ class SolveNonhydro:
                         )
                         if do_output:
                             output_div_data(
-                                prognostic_state,
+                                prognostic_state[nnew],
                                 diagnostic_state_nh,
                                 z_fields,
                                 do_output_step,
@@ -3819,7 +3889,7 @@ class SolveNonhydro:
 
         if do_output:
             copy_data_to_output(
-                prognostic_state,
+                prognostic_state[nnew],
                 z_fields,
                 "after",
                 self.config.do_o2_divdamp,

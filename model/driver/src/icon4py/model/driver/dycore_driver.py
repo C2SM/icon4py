@@ -925,7 +925,7 @@ class TimeLoop:
         )
 
         log.info("Initialization of diagnostic variables for output.")
-        if output_state is not None:
+        if output_state is not None and self.run_config.update_diagnostic:
             self._diagnose_for_output_and_physics(
                 prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
             )
@@ -1019,9 +1019,10 @@ class TimeLoop:
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
             if output_state is not None and do_output:
-                self._diagnose_for_output_and_physics(
-                    prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
-                )
+                if self.run_config.update_diagnostic:
+                    self._diagnose_for_output_and_physics(
+                        prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
+                    )
 
                 log.info(f"Debugging U (after diffusion): {xp.max(diagnostic_state.u.ndarray)}")
 
@@ -1336,6 +1337,9 @@ def initialize(
     grid_level,
     enable_output: bool,
     enable_debug_message: bool,
+    dtime_seconds: float = None,
+    end_date = None,
+    output_seconds_interval: float = None
 ):
     """
     Inititalize the driver run.
@@ -1363,7 +1367,7 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = read_config(experiment_type)
+    config = read_config(experiment_type, dtime_seconds, end_date, output_seconds_interval)
     print_config(config)
     decomp_info = read_decomp_info(file_path, props, serialization_type, grid_root, grid_level)
 
