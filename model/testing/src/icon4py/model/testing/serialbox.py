@@ -1881,7 +1881,9 @@ class IconSerialDataProvider:
     def from_external_parameters_savepoint(self) -> ExternalParametersSavepoint:
         try:
             savepoint = self.serializer.savepoint["external_parameters_savepoint"].as_savepoint()
-            return ExternalParametersSavepoint(savepoint, self.serializer, size=self.grid_size)
+            return ExternalParametersSavepoint(
+                savepoint, self.serializer, size=self.grid_size, backend=self.backend
+            )
         except serialbox.error.SerialboxError:
             # some experiments do not (yet) have this savepoint (and that's
             # fine, their tests should use zero or constant fields)
