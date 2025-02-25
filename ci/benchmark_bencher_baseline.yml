@@ -45,7 +45,7 @@ include:
       with open(args.output_file, "w") as file:
           json.dump(flat_data, file, indent=2)
       EOF
-    - pip install flatten_json
+    - uv pip install flatten_json
     - python flatten.py $BENCHER_RESULTS_JSON $BENCHER_RESULTS_JSON
     - |
       jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py.bencher.baseline.test\", \"namespace\": \"alps\"}} + ." $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
