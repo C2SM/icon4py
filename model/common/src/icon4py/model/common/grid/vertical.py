@@ -20,6 +20,7 @@ from gt4py.next import backend as gtx_backend
 import icon4py.model.common.states.metadata as data
 from icon4py.model.common import dimension as dims, exceptions, field_type_aliases as fa
 from icon4py.model.common.grid import icon as icon_grid, topography as topo
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 log = logging.getLogger(__name__)
