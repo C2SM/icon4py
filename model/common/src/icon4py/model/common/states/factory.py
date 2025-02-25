@@ -318,7 +318,10 @@ class FieldOperatorProvider(FieldProvider):
         self._fields = self._allocate(compute_backend, grid_provider, dtype=dtype)
         # call field operator
         # construct dependencies
-        deps = {k: factory.get(v) for k, v in self._dependencies.items()}
+        deps = {
+            k: data_alloc.as_field(factory.get(v), backend=compute_backend)
+            for k, v in self._dependencies.items()
+        }
 
         out_fields = self._unravel_output_fields()
 
@@ -327,7 +330,7 @@ class FieldOperatorProvider(FieldProvider):
         )
         # transfer to target backend, the fields might have been computed on a compute backend
         for f in self._fields.values():
-            gtx.as_field(f.domain, f.ndarray, allocator=factory.backend)
+            data_alloc.as_field(f, backend=factory.backend)
 
     def _unravel_output_fields(self):
         out_fields = tuple(self._fields.values())
