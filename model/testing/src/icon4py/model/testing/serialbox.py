@@ -1444,6 +1444,27 @@ class IconJabwDiagnosticSavepoint(IconSavepoint):
     def meridional_wind(self):
         return self._get_field("output_diag_v", dims.CellDim, dims.KDim)
 
+class  IconDiagnosticsInitSavepoint(IconSavepoint):
+    def pressure(self):
+        return self._get_field("pressure", dims.CellDim, dims.KDim)
+
+    def temperature(self):
+        return self._get_field("temperature", dims.CellDim, dims.KDim)
+
+    def exner_pr(self):
+        return self._get_field("exner_pr", dims.CellDim, dims.KDim)
+
+    def pressure_ifc(self):
+        return self._get_field("pressure_ifc", dims.CellDim, dims.KDim)
+
+    def pressure_sfc(self):
+        return self._get_field("pressure_sfc", dims.CellDim)
+
+    def zonal_wind(self):
+        return self._get_field("u", dims.CellDim, dims.KDim)
+
+    def meridional_wind(self):
+        return self._get_field("v", dims.CellDim, dims.KDim)
 
 class IconGraupelEntrySavepoint(IconSavepoint):
     def temperature(self):
@@ -1951,12 +1972,6 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_jabw_init(self) -> IconJabwInitSavepoint:
-        savepoint = self.serializer.savepoint["icon-jabw-init"].id[1].as_savepoint()
-        return IconJabwInitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
     def from_savepoint_jabw_final(self) -> IconJabwFinalSavepoint:
         savepoint = self.serializer.savepoint["icon-jabw-final"].id[1].as_savepoint()
         return IconJabwFinalSavepoint(
@@ -1966,6 +1981,12 @@ class IconSerialDataProvider:
     def from_savepoint_jabw_diagnostic(self) -> IconJabwDiagnosticSavepoint:
         savepoint = self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
         return IconJabwDiagnosticSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
+
+    def from_savepoint_diagnostics_initial(self)->IconDiagnosticsInitSavepoint:
+        savepoint = self.serializer.savepoint["initial-diagnostics"].id[1].as_savepoint()
+        return IconDiagnosticsInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
