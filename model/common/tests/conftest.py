@@ -15,10 +15,9 @@ from icon4py.model.testing.datatest_fixtures import (
     decomposition_info,
     experiment,
 )
-from icon4py.model.testing.helpers import connectivities_as_numpy
+from icon4py.model.testing.helpers import backend, grid
 
 
-# ruff: noqa: F405
 # Make sure custom icon4py pytest hooks are loaded
 try:
     import sys
@@ -36,7 +35,6 @@ __all__ = [
     "grid",
     "decomposition_info",
     "experiment",
-    "connectivities_as_numpy",
 ]
 
 
