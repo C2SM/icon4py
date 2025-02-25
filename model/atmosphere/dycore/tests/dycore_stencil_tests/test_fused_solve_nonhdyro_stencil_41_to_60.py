@@ -121,8 +121,6 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
         cvd,
         cpd,
         rayleigh_klemp,
-        idiv_method,
-        l_open_ubc,
         l_vert_nested,
         is_iau_active,
         rayleigh_type,
@@ -146,18 +144,17 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
     ):
         horz_idx = horz_idx[:, np.newaxis]
         if istep == 1:
-            if idiv_method == 1:
                 # verified for e-9
-                z_flxdiv_mass, z_flxdiv_theta = np.where(
-                    (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                    mo_solve_nonhydro_stencil_41_numpy(
-                        grid=grid,
-                        geofac_div=geofac_div,
-                        mass_fl_e=mass_fl_e,
-                        z_theta_v_fl_e=z_theta_v_fl_e,
-                    ),
-                    (z_flxdiv_mass, z_flxdiv_theta),
-                )
+            z_flxdiv_mass, z_flxdiv_theta = np.where(
+                (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                mo_solve_nonhydro_stencil_41_numpy(
+                    grid=grid,
+                    geofac_div=geofac_div,
+                    mass_fl_e=mass_fl_e,
+                    z_theta_v_fl_e=z_theta_v_fl_e,
+                ),
+                (z_flxdiv_mass, z_flxdiv_theta),
+            )
 
             (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
                 (horizontal_lower <= horz_idx)
@@ -361,18 +358,17 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
                 )
 
         else:
-            if idiv_method == 1:
-                # verified for e-9
-                z_flxdiv_mass, z_flxdiv_theta = np.where(
-                    (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                    mo_solve_nonhydro_stencil_41_numpy(
-                        grid=grid,
-                        geofac_div=geofac_div,
-                        mass_fl_e=mass_fl_e,
-                        z_theta_v_fl_e=z_theta_v_fl_e,
-                    ),
-                    (z_flxdiv_mass, z_flxdiv_theta),
-                )
+            # verified for e-9
+            z_flxdiv_mass, z_flxdiv_theta = np.where(
+                (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
+                mo_solve_nonhydro_stencil_41_numpy(
+                    grid=grid,
+                    geofac_div=geofac_div,
+                    mass_fl_e=mass_fl_e,
+                    z_theta_v_fl_e=z_theta_v_fl_e,
+                ),
+                (z_flxdiv_mass, z_flxdiv_theta),
+            )
 
             if itime_scheme == 4:
                 (z_w_expl[:, :n_lev], z_contr_w_fl_l[:, :n_lev]) = np.where(
@@ -481,7 +477,7 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
                     z_q,
                 )
 
-            if not (l_open_ubc and not l_vert_nested):
+            if not l_vert_nested:
                 w[:, :n_lev], z_contr_w_fl_l[:, :n_lev] = np.where(
                     (horizontal_lower <= horz_idx)
                     & (horz_idx < horizontal_upper)
@@ -692,8 +688,6 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
         cvd = 1004.64 - rd
         cvd_o_rd = cvd / rd
         rayleigh_klemp = 2
-        idiv_method = 1
-        l_open_ubc = False
         l_vert_nested = False
         is_iau_active = False
         rayleigh_type = 2
@@ -784,8 +778,6 @@ class TestFusedMoSolveNonHydroStencil41To60(StencilTest):
             cvd=cvd,
             cpd=cpd,
             rayleigh_klemp=rayleigh_klemp,
-            idiv_method=idiv_method,
-            l_open_ubc=l_open_ubc,
             l_vert_nested=l_vert_nested,
             is_iau_active=is_iau_active,
             rayleigh_type=rayleigh_type,

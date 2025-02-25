@@ -31,7 +31,7 @@ from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_
     _add_analysis_increments_from_data_assimilation,
 )
 from icon4py.model.atmosphere.dycore.stencils.apply_rayleigh_damping_mechanism import (
-    _apply_rayleigh_damping_mechanism,
+    _apply_rayleigh_damping_mechanism, _apply_rayleigh_damping_mechanism_w_1_broadcasted,
 )
 from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import (
     _compute_divergence_of_fluxes_of_rho_and_theta,
@@ -108,12 +108,11 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
     cvd: wpfloat,
     cpd: wpfloat,
     rayleigh_klemp: int32,
-    idiv_method: int32,
     l_vert_nested: bool,
     is_iau_active: bool,
     rayleigh_type: int32,
     divdamp_type: int32,
-    idyn_timestep: int32,
+    idyn_timestep: bool,
     index_of_damping_layer: int32,
     n_lev: int32,
     jk_start: int32,
@@ -145,8 +144,8 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             mass_fl_e=mass_fl_e,
             z_theta_v_fl_e=z_theta_v_fl_e,
         )
-        if idiv_method == 1
-        else (z_flxdiv_mass, z_flxdiv_theta)
+        # if idiv_method
+        # else (z_flxdiv_mass, z_flxdiv_theta)
     )
 
     # (z_w_expl, z_contr_w_fl_l) = where(
@@ -334,14 +333,15 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
         ),
         w,
     )
-    # w_1 = _set_w_level_1(w, vert_idx_1d)
+
+    w_1 = where(vert_idx_1d == 0, w, 0.)
 
     w = (
         where(
             (int32(1) <= vert_idx < (index_of_damping_layer + int32(1))),
-            _apply_rayleigh_damping_mechanism(
+            _apply_rayleigh_damping_mechanism_w_1_broadcasted(
                 z_raylfac=z_raylfac,
-                w_1=w[KDim(0)],  # w_1,
+                w_1=w_1,
                 w=w,
             ),
             w,
@@ -392,7 +392,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_predictor(
             astype(exner_nnow, vpfloat),
             exner_dyn_incr,
         )
-        if idyn_timestep == 1
+        if idyn_timestep
         else exner_dyn_incr
     )
 
@@ -471,7 +471,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     index_of_damping_layer: int32,
     n_lev: int32,
     jk_start: int32,
-    idyn_timestep: int32,
+    idyn_timestep: bool,
 ) -> tuple[
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
@@ -767,14 +767,15 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
         ),
         w,
     )
-    # w_1 = _set_w_level_1(w, vert_idx_1d)
+
+    w_1 = where(vert_idx_1d == 0, w, 0.)
 
     w = (
         where(
             (int32(1) <= vert_idx < (index_of_damping_layer + int32(1))),
-            _apply_rayleigh_damping_mechanism(
+            _apply_rayleigh_damping_mechanism_w_1_broadcasted(
                 z_raylfac=z_raylfac,
-                w_1=w[KDim(0)],  # w_1,
+                w_1=w_1,
                 w=w,
             ),
             w,
@@ -807,8 +808,7 @@ def _fused_solve_nonhydro_stencil_41_to_60_corrector(
     mass_flx_ic, vol_flx_ic = (
         (broadcast(wpfloat("0.0"), (CellDim, KDim)), broadcast(wpfloat("0.0"), (CellDim, KDim)))
         if (lprep_adv & idyn_timestep)
-        else mass_flx_ic,
-        vol_flx_ic,
+        else (mass_flx_ic, vol_flx_ic)
     )
 
     mass_flx_ic, vol_flx_ic = where(
@@ -898,12 +898,11 @@ def _fused_solve_nonhydro_stencil_41_to_60(
     cvd: wpfloat,
     cpd: wpfloat,
     rayleigh_klemp: int32,
-    idiv_method: int32,
     l_vert_nested: bool,
     is_iau_active: bool,
     rayleigh_type: int32,
     divdamp_type: int32,
-    idyn_timestep: int32,
+    idyn_timestep: bool,
     index_of_damping_layer: int32,
     n_lev: int32,
     jk_start: int32,
@@ -911,6 +910,8 @@ def _fused_solve_nonhydro_stencil_41_to_60(
     kstart_moist: int32,
     istep: int32,
 ) -> tuple[
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
@@ -989,7 +990,6 @@ def _fused_solve_nonhydro_stencil_41_to_60(
             cvd=cvd,
             cpd=cpd,
             rayleigh_klemp=rayleigh_klemp,
-            idiv_method=idiv_method,
             l_vert_nested=l_vert_nested,
             is_iau_active=is_iau_active,
             rayleigh_type=rayleigh_type,
@@ -1194,14 +1194,12 @@ def fused_solve_nonhydro_stencil_41_to_60(
     cvd: wpfloat,
     cpd: wpfloat,
     rayleigh_klemp: int32,
-    idiv_method: int32,
-    l_open_ubc: bool,
     l_vert_nested: bool,
     is_iau_active: bool,
     rayleigh_type: int32,
     lhdiff_rcf: bool,
     divdamp_type: int32,
-    idyn_timestep: int32,
+    idyn_timestep: bool,
     index_of_damping_layer: int32,
     n_lev: int32,
     jk_start: int32,
@@ -1259,7 +1257,6 @@ def fused_solve_nonhydro_stencil_41_to_60(
         wgt_nnew_vel,
         itime_scheme,
         lprep_adv,
-        lclean_mflx,
         r_nsubsteps,
         cvd_o_rd,
         iau_wgt_dyn,
@@ -1268,12 +1265,9 @@ def fused_solve_nonhydro_stencil_41_to_60(
         cvd,
         cpd,
         rayleigh_klemp,
-        idiv_method,
-        l_open_ubc,
         l_vert_nested,
         is_iau_active,
         rayleigh_type,
-        lhdiff_rcf,
         divdamp_type,
         idyn_timestep,
         index_of_damping_layer,
@@ -1348,11 +1342,11 @@ def fused_solve_nonhydro_stencil_41_to_60(
         z_dwdz_dd,
         exner_dyn_incr,
         mass_flx_ic,
+        vol_flx_ic,
         wgt_nnow_vel,
         wgt_nnew_vel,
         itime_scheme,
         lprep_adv,
-        lclean_mflx,
         r_nsubsteps,
         cvd_o_rd,
         iau_wgt_dyn,
@@ -1361,12 +1355,9 @@ def fused_solve_nonhydro_stencil_41_to_60(
         cvd,
         cpd,
         rayleigh_klemp,
-        idiv_method,
-        l_open_ubc,
         l_vert_nested,
         is_iau_active,
         rayleigh_type,
-        lhdiff_rcf,
         divdamp_type,
         idyn_timestep,
         index_of_damping_layer,
