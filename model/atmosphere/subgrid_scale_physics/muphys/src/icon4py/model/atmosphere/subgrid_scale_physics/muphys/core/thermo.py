@@ -129,6 +129,23 @@ def qsat_rho(
     _qsat_rho( t, rho, out=pressure )
 
 @gtx.field_operator
+def _qsat_rho_tmelt(
+    rho:       fa.CellKField[ta.wpfloat],             # Density
+) -> fa.CellKField[ta.wpfloat]:                       # Pressure
+    C1ES   = 610.78
+    C3LES  = 17.269
+    C4LES  = 35.86
+
+    return C1ES / ( rho * t_d.rv * t_d.tmelt )
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
+def qsat_rho_tmelt(
+    rho:       fa.CellKField[ta.wpfloat],             # Density
+    pressure:  fa.CellKField[ta.wpfloat]              # output
+):
+    _qsat_rho_tmelt( rho, out=pressure )
+
+@gtx.field_operator
 def _dqsatdT_rho(
     qs:        fa.CellKField[ta.wpfloat],             # Saturation vapor pressure (over liquid)
     t:         fa.CellKField[ta.wpfloat],             # Temperature

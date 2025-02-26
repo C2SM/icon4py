@@ -12,9 +12,13 @@ from gt4py.next.ffront.experimental import concat_where
 from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.common.frozen import idx, g_ct, t_d
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda, _ice_number, _ice_mass, _ice_sticking, _deposition_factor, _deposition_auto_conversion, _ice_deposition_nucleation, _vel_scale_factor_default, _vel_scale_factor_ice, _vel_scale_factor_snow, _fall_speed_scalar
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import _qsat_rho, _qsat_ice_rho, _internal_energy
-from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import _cloud_to_rain, _rain_to_vapor, _cloud_x_ice, _cloud_to_snow, _cloud_to_graupel, _vapor_x_ice, _ice_to_snow, _ice_to_graupel, _rain_to_graupel, _snow_to_graupel, _vapor_x_snow, _vapor_x_graupel, _snow_to_rain, _graupel_to_rain
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.properties import _fall_speed, _snow_number, _snow_lambda, \
+    _ice_number, _ice_mass, _ice_sticking, _deposition_factor, _deposition_auto_conversion, _ice_deposition_nucleation, \
+    _vel_scale_factor_default, _vel_scale_factor_ice, _vel_scale_factor_snow, _fall_speed_scalar
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.thermo import _qsat_rho, _qsat_rho_tmelt, _qsat_ice_rho, _internal_energy
+from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions import _cloud_to_rain, _rain_to_vapor, _cloud_x_ice, \
+    _cloud_to_snow, _cloud_to_graupel, _vapor_x_ice, _ice_to_snow, _ice_to_graupel, _rain_to_graupel, _snow_to_graupel, \
+    _vapor_x_snow, _vapor_x_graupel, _snow_to_rain, _graupel_to_rain
 
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 
@@ -129,8 +133,8 @@ def _q_t_update(
     sx2x_i_c = -minimum(sx2x_c_i, 0.0)
     sx2x_c_i = maximum(sx2x_c_i, 0.0)
 
-    sx2x_c_s = where( t < t_d.tmelt, _cloud_to_snow( t, qc, qs, n_snow, l_snow ), 0.0 )
-    sx2x_c_g = where( t < t_d.tmelt, _cloud_to_graupel( t, rho, qc, qg ), 0.0 )
+    sx2x_c_s = _cloud_to_snow( t, qc, qs, n_snow, l_snow )
+    sx2x_c_g = _cloud_to_graupel( t, rho, qc, qg )
 
     n_ice    = where( t < t_d.tmelt, _ice_number( t, rho ), 0.0 )
     m_ice    = where( t < t_d.tmelt, _ice_mass( qi, n_ice ), 0.0 )
@@ -139,19 +143,24 @@ def _q_t_update(
     eta      = where( (t < t_d.tmelt) & is_sig_present, _deposition_factor( t, qvsi ), 0.0 )
     sx2x_v_i = where( (t < t_d.tmelt) & is_sig_present, _vapor_x_ice( qi, m_ice, eta, dvsi, rho, dt ), 0.0 )
     sx2x_i_v = where( (t < t_d.tmelt) & is_sig_present, -minimum( sx2x_v_i, 0.0 ) , 0.0 )
-    sx2x_v_i = where( (t < t_d.tmelt) & is_sig_present, maximum( sx2x_v_i, 0.0 ) , 0.0 )#    ice_dep  = where( (t < t_d.tmelt) & is_sig_present, minimum( sx2x_v_i, dvsi/dt ) , 0.0 )
+    sx2x_v_i = where( (t < t_d.tmelt) & is_sig_present, maximum( sx2x_v_i, 0.0 ) , sx2x_i_v )
 
-    ice_dep  = where( t < t_d.tmelt, minimum( sx2x_v_i, dvsi / dt), 0.0 )
-    # TODO: _deposition_auto_conversion yields roundoff differences in q
-    sx2x_i_s = where( (t < t_d.tmelt) & is_sig_present, _deposition_auto_conversion( qi, m_ice, ice_dep ) + _ice_to_snow( qi, n_snow, l_snow, x_ice ), 0.0 )
+    ice_dep  = where( (t < t_d.tmelt) & is_sig_present, minimum( sx2x_v_i, dvsi / dt), 0.0 )
+    # TODO: _deposition_auto_conversion yields roundoff differences in sx2x_i_s
+    sx2x_i_s = where( (t < t_d.tmelt) & is_sig_present, _deposition_auto_conversion( qi, m_ice, ice_dep ) + \
+                      _ice_to_snow( qi, n_snow, l_snow, x_ice ), 0.0 )
     sx2x_i_g = where( (t < t_d.tmelt) & is_sig_present, _ice_to_graupel( rho, qr, qg, qi, x_ice ), 0.0 )
     sx2x_s_g = where( (t < t_d.tmelt) & is_sig_present, _snow_to_graupel( t, rho, qc, qs ), 0.0 )
     sx2x_r_g = where( (t < t_d.tmelt) & is_sig_present, _rain_to_graupel( t, rho, qc, qr, qi, qs, m_ice, dvsw, dt ), 0.0 )
 
-    sx2x_v_i = where( t < t_d.tmelt, sx2x_v_i + _ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt ), 0.0 )
+    sx2x_v_i = where( t < t_d.tmelt, sx2x_v_i + _ice_deposition_nucleation(t, qc, qi, n_ice, dvsi, dt ), 0.0 ) # 0.0 or sx2x_v_i both OK
     sx2x_c_r = where( t >= t_d.tmelt, sx2x_c_r + sx2x_c_s + sx2x_c_g, sx2x_c_r )
+    sx2x_c_s = where( t >= t_d.tmelt, 0.0, sx2x_c_s )
+    sx2x_c_g = where( t >= t_d.tmelt, 0.0, sx2x_c_g )
+    ice_dep  = where( t >= t_d.tmelt, 0.0, ice_dep )
+    eta      = where( t >= t_d.tmelt, 0.0, eta )
 
-    dvsw0    = where( is_sig_present, qv - _qsat_rho( t, rho ), 0.0 )  # TODO: new qsat_rho_tmelt, TODO: use dvsw ??
+    dvsw0    = where( is_sig_present, qv - _qsat_rho_tmelt( rho ), 0.0 )
     sx2x_v_s = where( is_sig_present, _vapor_x_snow( t, p, rho, qs, n_snow, l_snow, eta, ice_dep, dvsw, dvsi, dvsw0, dt ), 0.0 )
     sx2x_s_v = where( is_sig_present, -minimum( sx2x_v_s, 0.0 ), 0.0 )
     sx2x_v_s = where( is_sig_present, maximum( sx2x_v_s, 0.0 ), 0.0 )
@@ -179,7 +188,6 @@ def _q_t_update(
     sink_g   = where ( is_sig_present, sx2x_g_v + sx2x_g_r, 0.0 ) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
 
     #  if ((sink[qx_ind[ix]] > stot) && (q[qx_ind[ix]].x[oned_vec_index] > qmin))
-
     stot     = qv / dt
     sx2x_v_s = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_s * stot / sink_v, sx2x_v_s )
     sx2x_v_i = where( (sink_v > stot) & (qv > g_ct.qmin), sx2x_v_i * stot / sink_v, sx2x_v_i )
@@ -204,6 +212,7 @@ def _q_t_update(
     sx2x_s_g = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_g * stot / sink_s, sx2x_s_g )
     sink_s   = where( (sink_s > stot) & (qs > g_ct.qmin), sx2x_s_v + sx2x_s_r + sx2x_s_g, sink_s) # Missing: sx2x_s_c + sx2x_s_i
 
+
     stot     = qi / dt
     sx2x_i_v = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_v * stot / sink_i, sx2x_i_v )
     sx2x_i_c = where( (sink_i > stot) & (qi > g_ct.qmin), sx2x_i_c * stot / sink_i, sx2x_i_c )
@@ -216,9 +225,10 @@ def _q_t_update(
     sx2x_g_r = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_r * stot / sink_g, sx2x_g_r )
     sink_g   = where( (sink_g > stot) & (qg > g_ct.qmin), sx2x_g_v + sx2x_g_r, sink_g) # Missing: sx2x_g_c + sx2x_g_s + sx2x_g_i
 
+
     # water content updates:
     # Physical: v_s, v_i, v_g, c_r, c_s, c_i, c_g, r_v, r_g, s_v, s_r, s_g, i_v, i_c, i_s, i_g, g_v, g_r
-    dqdt_v = sx2x_r_v + sx2x_s_v + sx2x_i_v + sx2x_g_v - sink_v                    # Missing: sx2x_c_v
+    dqdt_v = sx2x_r_v + sx2x_s_v + sx2x_i_v + sx2x_g_v - sink_v          # Missing: sx2x_c_v
     qv     = where( mask, maximum( 0.0, qv + dqdt_v * dt ), qv )
     dqdt_c = sx2x_i_c - sink_c                     # Missing: sx2x_v_c, sx2x_r_c, sx2x_s_c, sx2x_g_c
     qc     = where( mask, maximum( 0.0, qc + dqdt_c * dt ), qc )
@@ -294,21 +304,6 @@ def _precipitation_effects(
     return qr, qs, qi, qg, t, p_sig+pr, pr, ps, pi, pg, eflx/dt
 
 @gtx.field_operator
-def _output_calculation(
-    qve:       fa.CellKField[ta.wpfloat],             # Specific humidity
-    qce:       fa.CellKField[ta.wpfloat],             # Specific cloud water content
-    qx_hold:   fa.CellKField[ta.wpfloat],             # TBD
-    qx:        fa.CellKField[ta.wpfloat],             # TBD
-    Tx_hold:   fa.CellKField[ta.wpfloat],             # TBD
-    Tx:        fa.CellKField[ta.wpfloat],             # TBD
-) -> tuple[fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat]]:                       # Internal energy
-
-    te  = where( ( qve+qce <= qx_hold ), Tx_hold, Tx )
-    qce = where( ( qve+qce <= qx_hold ), 0.0, maximum(qve+qce-qx, 0.0) )
-    qve = where( ( qve+qce <= qx_hold ), qve+qce, qx )
-    return te, qve, qce
-
-@gtx.field_operator
 def _graupel_run(
     k: fa.KField[gtx.int32],
     last_lev:  gtx.int32,
@@ -328,6 +323,7 @@ def _graupel_run(
            fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat], \
            fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat],fa.CellKField[ta.wpfloat], \
            fa.CellKField[ta.wpfloat]]:
+
     mask, is_sig_present, kmin_r, kmin_i, kmin_s, kmin_g = _graupel_mask(te, rho, qve, qce, qge, qie, qre, qse )
     qv, qc, qr, qs, qi, qg, t = _q_t_update( te, p, rho, qve, qce, qre, qse, qie, qge, mask, is_sig_present, dt, qnc )
     qr, qs, qi, qg, t, pflx, pr, ps, pi, pg, pre = \
@@ -335,7 +331,6 @@ def _graupel_run(
 
     return t, qv, qc, qr, qs, qi, qg, pflx, pr, ps, pi, pg, pre
 
-# TODO : program  needs to be called with offset_provider={"Koff": K}
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def graupel_run(
     k: fa.KField[gtx.int32],

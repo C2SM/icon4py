@@ -417,19 +417,19 @@ def _vapor_x_snow(
     C4_VS  = -0.146293E-6
 
     # See if this can be incorporated into WHERE statement
-    result = where( (qs > g_ct.qmin) & (t < t_d.tmelt), \
+    result = where( (t < t_d.tmelt), \
                     (CNX * ns * eta / rho) * (A0_VS + A1_VS * power(lam, A2_VS)) * dvsi / (lam * lam + EPS), \
                     0.0 )
 
     # GZ: This mask>0 limitation, which was missing in the original graupel scheme,
     # is crucial for numerical stability in the tropics!
     # a meaningful distinction between cloud ice and snow
-    result = where( (qs > g_ct.qmin) & (t < t_d.tmelt) & (result > 0.0), minimum(result, dvsi/dt - ice_dep), result )
-    result = where( (qs > g_ct.qmin) & (t < t_d.tmelt) & (qs <= QS_LIM), minimum(result, 0.0), result )
+    result = where( (t < t_d.tmelt) & (result > 0.0), minimum(result, dvsi/dt - ice_dep), result )
+    result = where( (t < t_d.tmelt) & (qs <= QS_LIM), minimum(result, 0.0), result )
     # ELSE section
-    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t > (t_d.tmelt - g_ct.tx*dvsw0)), \
+    result = where( (t >= t_d.tmelt) & (t > (t_d.tmelt - g_ct.tx*dvsw0)), \
                     (C1_VS/p + C2_VS) * minimum(0.0, dvsw0) * power(qs*rho, B_VS), result)
-    result = where( (qs > g_ct.qmin) & (t >= t_d.tmelt) & (t <= (t_d.tmelt - g_ct.tx*dvsw0)), \
+    result = where( (t >= t_d.tmelt) & (t <= (t_d.tmelt - g_ct.tx*dvsw0)), \
                     (C3_VS + C4_VS*p) * dvsw * power(qs*rho, B_VS), result)
     return where( (qs > g_ct.qmin), maximum(result, -qs/dt), 0.0)
 
