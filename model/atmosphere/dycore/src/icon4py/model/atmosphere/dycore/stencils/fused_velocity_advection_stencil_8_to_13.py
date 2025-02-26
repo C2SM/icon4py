@@ -31,7 +31,6 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
     wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
     z_w_concorr_mc: fa.CellKField[vpfloat],
-    z_w_con_c: fa.CellKField[vpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     k: fa.KField[gtx.int32],
@@ -77,7 +76,6 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
 def _fused_velocity_advection_stencil_8_to_13_corrector(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
     z_w_con_c: fa.CellKField[vpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
@@ -114,71 +112,6 @@ def _fused_velocity_advection_stencil_8_to_13_corrector(
 
 
 @field_operator
-def _fused_velocity_advection_stencil_8_to_13(
-    z_kin_hor_e: fa.EdgeKField[vpfloat],
-    e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    z_w_concorr_me: fa.EdgeKField[vpfloat],
-    wgtfac_c: fa.CellKField[vpfloat],
-    w: fa.CellKField[wpfloat],
-    z_w_concorr_mc: fa.CellKField[vpfloat],
-    z_w_con_c: fa.CellKField[vpfloat],
-    w_concorr_c: fa.CellKField[vpfloat],
-    z_ekinh: fa.CellKField[vpfloat],
-    k: fa.KField[gtx.int32],
-    cell: fa.CellField[gtx.int32],
-    istep: gtx.int32,
-    nlev: gtx.int32,
-    nflatlev: gtx.int32,
-    lateral_boundary_3: gtx.int32,
-    lateral_boundary_4: gtx.int32,
-    end_halo: gtx.int32,
-) -> tuple[
-    fa.CellKField[vpfloat],
-    fa.CellKField[vpfloat],
-    fa.CellKField[vpfloat],
-]:
-    z_ekinh, w_concorr_c, z_w_con_c = (
-        where(
-            lateral_boundary_4 <= cell < end_halo,
-            _fused_velocity_advection_stencil_8_to_13_predictor(
-                z_kin_hor_e,
-                e_bln_c_s,
-                z_w_concorr_me,
-                wgtfac_c,
-                w,
-                z_w_concorr_mc,
-                z_w_con_c,
-                w_concorr_c,
-                z_ekinh,
-                k,
-                nlev,
-                nflatlev,
-            ),
-            (z_ekinh, w_concorr_c, z_w_con_c),
-        )
-        if istep == 1
-        else where(
-            lateral_boundary_3 <= cell < end_halo,
-            _fused_velocity_advection_stencil_8_to_13_corrector(
-                z_kin_hor_e,
-                e_bln_c_s,
-                wgtfac_c,
-                w,
-                z_w_con_c,
-                w_concorr_c,
-                z_ekinh,
-                k,
-                nlev,
-                nflatlev,
-            ),
-            (z_ekinh, w_concorr_c, z_w_con_c),
-        )
-    )
-
-    return z_ekinh, w_concorr_c, z_w_con_c
-
-
-@field_operator
 def _restricted_set_zero(
     k: fa.KField[gtx.int32],
     z_w_con_c: fa.CellKField[vpfloat],
@@ -202,8 +135,7 @@ def fused_velocity_advection_stencil_8_to_13_predictor(
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
     nflatlev: gtx.int32,
-    lateral_boundary_3: gtx.int32,
-    lateral_boundary_4: gtx.int32,
+    lateral_boundary: gtx.int32,
     end_halo: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
@@ -217,7 +149,6 @@ def fused_velocity_advection_stencil_8_to_13_predictor(
         wgtfac_c,
         w,
         z_w_concorr_mc,
-        z_w_con_c,
         w_concorr_c,
         z_ekinh,
         k,
@@ -225,7 +156,7 @@ def fused_velocity_advection_stencil_8_to_13_predictor(
         nflatlev,
         out=(z_ekinh, w_concorr_c, z_w_con_c),
         domain={
-            dims.CellDim: (lateral_boundary_4, end_halo),
+            dims.CellDim: (lateral_boundary, end_halo),
             dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
@@ -246,7 +177,6 @@ def fused_velocity_advection_stencil_8_to_13_predictor(
 def fused_velocity_advection_stencil_8_to_13_corrector(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
@@ -264,7 +194,6 @@ def fused_velocity_advection_stencil_8_to_13_corrector(
     _fused_velocity_advection_stencil_8_to_13_corrector(
         z_kin_hor_e,
         e_bln_c_s,
-        wgtfac_c,
         w,
         z_w_con_c,
         w_concorr_c,
