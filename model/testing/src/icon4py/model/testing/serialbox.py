@@ -340,7 +340,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def _get_connectivity_array(self, name: str, target_dim: gtx.Dimension, reverse: bool = False):
         if reverse:
-            connectivity = np.transpose(self._read_int32(name, offset=1))[
+            connectivity = np.transpose(np.squeeze(self._read_int32(name, offset=1)))[
                 : self.sizes[target_dim], :
             ]
         else:
@@ -356,7 +356,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def c2e2c2e(self):
         if self._c2e2c2e() is None:
-            return np.zeros((self.sizes[dims.CellDim], 9), dtype=int)
+            return np.zeros((self.sizes[dims.CellDim], 9), dtype=gtx.int32)
         else:
             return self._c2e2c2e()
 
@@ -586,6 +586,13 @@ class InterpolationSavepoint(IconSavepoint):
 
     def geofac_grdiv(self):
         return self._get_field("geofac_grdiv", dims.EdgeDim, dims.E2C2EODim)
+
+    def rbf_vec_idx_c(self):
+        buffer = self.serializer.read("rbf_vec_idx_c", self.savepoint)
+        num_cells = self.sizes[dims.CellDim]
+        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer[:, num_cells].T, dtype=gtx.int32, allocator=self.backend)
+
+        #return self._get_field("rbf_vec_idx_c", dims.CellDim, dims.C2E2C2EDim, dtype=gtx.int32)
 
     def geofac_grg(self):
         grg = np.squeeze(self.serializer.read("geofac_grg", self.savepoint))
@@ -1349,33 +1356,32 @@ class IconVelocityExitSavepoint(IconSavepoint):
         return self._get_field("vcfl_dsl", dims.KDim)
 
 
-class IconJabwFinalSavepoint(IconSavepoint):
+class IconJabwExitSavepoint(IconSavepoint):
     def exner(self):
-        return self._get_field("exner_final", dims.CellDim, dims.KDim)
+        return self._get_field("exner", dims.CellDim, dims.KDim)
 
     def rho(self):
-        return self._get_field("rho_final", dims.CellDim, dims.KDim)
+        return self._get_field("rho", dims.CellDim, dims.KDim)
 
     def vn(self):
-        return self._get_field("vn_final", dims.EdgeDim, dims.KDim)
+        return self._get_field("vn", dims.EdgeDim, dims.KDim)
 
     def w(self):
-        return self._get_field("w_final", dims.CellDim, dims.KDim)
+        return self._get_field("w", dims.CellDim, dims.KDim)
 
     def theta_v(self):
-        return self._get_field("theta_v_final", dims.CellDim, dims.KDim)
+        return self._get_field("theta_v", dims.CellDim, dims.KDim)
 
     def pressure(self):
-        return self._get_field("pressure_final", dims.CellDim, dims.KDim)
+        return self._get_field("pressure", dims.CellDim, dims.KDim)
 
     def temperature(self):
-        return self._get_field("temperature_final", dims.CellDim, dims.KDim)
+        return self._get_field("temperature", dims.CellDim, dims.KDim)
 
-    def eta_v(self):
-        return self._get_field("zeta_v_final", dims.CellDim, dims.KDim)
+    #TODO change field name
+    def pressure_sfc(self):
+        return self._get_field("surface_pressure", dims.CellDim)
 
-    def eta_v_e(self):
-        return self._get_field("zeta_v_e_final", dims.EdgeDim, dims.KDim)
 
 
 class IconJabwDiagnosticSavepoint(IconSavepoint):
@@ -1417,11 +1423,41 @@ class IconDiagnosticsInitSavepoint(IconSavepoint):
     def pressure_sfc(self):
         return self._get_field("pressure_sfc", dims.CellDim)
 
+    def virtual_temperature(self):
+        return self._get_field("virtual_temperature", dims.CellDim, dims.KDim)
+
     def zonal_wind(self):
         return self._get_field("u", dims.CellDim, dims.KDim)
 
     def meridional_wind(self):
         return self._get_field("v", dims.CellDim, dims.KDim)
+
+
+class IconPrognosticsInitSavepoint(IconSavepoint):
+    def exner_now(self):
+        return self._get_field("exner_now", dims.CellDim, dims.KDim)
+
+    def rho_now(self):
+        return self._get_field("rho_now", dims.CellDim, dims.KDim)
+
+    def theta_v_now(self):
+        return self._get_field("theta_v_now", dims.CellDim, dims.KDim)
+
+    def pressure_ifc(self):
+        return self._get_field("pressure_ifc", dims.CellDim, dims.KDim)
+
+    def pressure_sfc(self):
+        return self._get_field("pressure_sfc", dims.CellDim)
+
+    def virtual_temperature(self):
+        return self._get_field("virtual_temperature", dims.CellDim, dims.KDim)
+
+    def zonal_wind(self):
+        return self._get_field("u", dims.CellDim, dims.KDim)
+
+    def meridional_wind(self):
+        return self._get_field("v", dims.CellDim, dims.KDim)
+
 
 
 class IconGraupelEntrySavepoint(IconSavepoint):
@@ -1930,17 +1966,12 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_jabw_final(self) -> IconJabwFinalSavepoint:
-        savepoint = self.serializer.savepoint["icon-jabw-final"].id[1].as_savepoint()
-        return IconJabwFinalSavepoint(
+    def from_savepoint_jabw_exit(self) -> IconJabwExitSavepoint:
+        savepoint = self.serializer.savepoint["jabw-initial-state-exit"].id[1].as_savepoint()
+        return IconJabwExitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def from_savepoint_jabw_diagnostic(self) -> IconJabwDiagnosticSavepoint:
-        savepoint = self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
-        return IconJabwDiagnosticSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
 
     def from_savepoint_diagnostics_initial(self) -> IconDiagnosticsInitSavepoint:
         savepoint = self.serializer.savepoint["initial-diagnostics"].id[1].as_savepoint()
