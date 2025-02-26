@@ -133,8 +133,6 @@ def _qsat_rho_tmelt(
     rho:       fa.CellKField[ta.wpfloat],             # Density
 ) -> fa.CellKField[ta.wpfloat]:                       # Pressure
     C1ES   = 610.78
-    C3LES  = 17.269
-    C4LES  = 35.86
 
     return C1ES / ( rho * t_d.rv * t_d.tmelt )
 
