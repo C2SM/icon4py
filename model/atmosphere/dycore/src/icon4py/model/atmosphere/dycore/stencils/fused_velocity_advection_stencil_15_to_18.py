@@ -152,8 +152,6 @@ def _fused_velocity_advection_stencil_15_to_18(
             nrdmax,
             extra_diffu,
         )
-        # if not lvn_only
-        # else ddt_w_adv
     )
 
     return (z_w_con_c_full, ddt_w_adv)
