@@ -11,6 +11,7 @@ import gt4py.next as gtx
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.math.stencils.compute_nabla2_on_cell import compute_nabla2_on_cell
+from icon4py.model.common.utils import data_allocation as data_alloc
 
 
 @gtx.field_operator
@@ -57,10 +58,9 @@ def smooth_topography(
     coordinate.
     """
 
-    # Make sure that it is copied (this should be topography.copy() but this is not supported by GT4Py)
-    smoothed_topography = gtx.as_field((dims.CellDim,), topography.ndarray.copy())
+    smoothed_topography = gtx.as_field((dims.CellDim,), topography.asnumpy())
 
-    nabla2_topo = gtx.zeros(domain={dims.CellDim: range(grid.num_cells)}, dtype=ta.wpfloat)
+    nabla2_topo = data_alloc.zero_field(grid, dims.CellDim, backend=backend)
 
     for _ in range(num_iterations):
         compute_nabla2_on_cell.with_backend(backend)(

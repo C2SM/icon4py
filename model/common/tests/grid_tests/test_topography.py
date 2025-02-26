@@ -12,6 +12,7 @@ from icon4py.model.common.grid import geometry, topography as topo
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
 
+@pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment",
