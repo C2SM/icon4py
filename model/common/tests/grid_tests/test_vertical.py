@@ -295,6 +295,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     assert helpers.dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
     assert helpers.dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
 
+
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.GAUSS3D_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])

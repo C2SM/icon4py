@@ -27,7 +27,6 @@ from icon4py.model.testing.datatest_fixtures import (
     data_provider,
     download_ser_data,
     experiment,
-    external_parameters_savepoint,
     flat_height,
     grid_savepoint,
     htop_moist_proc,
