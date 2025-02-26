@@ -70,7 +70,7 @@ from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss
     _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.dimension import EdgeDim, KDim, CellDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -153,7 +153,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         p_ccpr2=z_rth_pr_2,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
-    )  # if (iadv_rhotheta == MIURA) else (z_grad_rth_1, z_grad_rth_2, z_grad_rth_3, z_grad_rth_4,)
+    ) if (iadv_rhotheta == MIURA) else (broadcast(0., (CellDim, KDim)), broadcast(0., (CellDim, KDim)), broadcast(0., (CellDim, KDim)), broadcast(0., (CellDim, KDim)),)
 
     (z_rho_e, z_theta_v_e) = (
         where(
@@ -208,7 +208,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     )
 
     z_gradh_exner = where(
-        (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx < nflatlev),
+        (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx <= nflatlev),
         _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
         ),
@@ -218,7 +218,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     z_gradh_exner = (
         where(
             (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
-            & (nflatlev < vert_idx < (nflat_gradp + int32(1))),
+            & (nflatlev <= vert_idx < (nflat_gradp + int32(1))),
             _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
                 inv_dual_edge_length=inv_dual_edge_length,
                 z_exner_ex_pr=z_exner_ex_pr,
