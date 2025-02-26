@@ -367,6 +367,7 @@ def solve_nh_run(
     vt: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_me: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     mass_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
+    vol_flx_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn_traj: gtx.Field[gtx.Dims[dims.EdgeDim, dims.KDim], gtx.float64],
     dtime: gtx.float64,
     lprep_adv: bool,
@@ -381,9 +382,7 @@ def solve_nh_run(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=data_alloc.zero_field(
-            dycore_wrapper_state["grid"], dims.CellDim, dims.KDim, dtype=gtx.float64
-        ),
+        vol_flx_ic=vol_flx_ic,
     )
 
     diagnostic_state_nh = dycore_states.DiagnosticStateNonHydro(
