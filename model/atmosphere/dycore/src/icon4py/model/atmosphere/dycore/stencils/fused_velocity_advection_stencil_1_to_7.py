@@ -236,8 +236,6 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
             ),
             z_v_grad_w,
         )
-        # if not lvn_only
-        # else z_v_grad_w
     )
 
     return z_v_grad_w
