@@ -45,7 +45,6 @@ from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
     average_edge_kdim_level_up,
-    broadcast_cells_to_cell_k,
     difference_k_level_up,
     grad_fd_norm,
 )
@@ -99,7 +98,7 @@ def _compute_ddqz_z_half(
     z_mc: fa.CellKField[wpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-):  # -> Field[Dims[dims.CellDim, dims.KHalfDim], wpfloat]:
+) -> fa.CellKField[wpfloat]:
     # TODO: change this to concat_where once it's merged
     ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
     ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
@@ -367,122 +366,6 @@ def compute_coeff_dwdz(
     )
 
 
-@field_operator
-def _compute_d2dexdz2_fac1_mc(
-    theta_ref_mc: fa.CellKField[vpfloat],
-    inv_ddqz_z_full: fa.CellKField[vpfloat],
-    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
-    cpd: float,
-    grav: wpfloat,
-    igradp_method: gtx.int32,
-    igradp_constant: gtx.int32,
-) -> fa.CellKField[vpfloat]:
-    if igradp_method <= igradp_constant:
-        d2dexdz2_fac1_mc = -grav / (cpd * theta_ref_mc**2) * inv_ddqz_z_full
-
-    return d2dexdz2_fac1_mc
-
-
-@field_operator
-def _compute_d2dexdz2_fac2_mc(
-    theta_ref_mc: fa.CellKField[vpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
-    cpd: float,
-    grav: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-    igradp_method: gtx.int32,
-    igradp_constant: gtx.int32,
-) -> fa.CellKField[vpfloat]:
-    if igradp_method <= igradp_constant:
-        d2dexdz2_fac2_mc = (
-            2.0
-            * grav
-            / (cpd * theta_ref_mc**3)
-            * (grav / cpd - del_t_bg / h_scal_bg * exp(-z_mc / h_scal_bg))
-            / exner_ref_mc
-        )
-    return d2dexdz2_fac2_mc
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_d2dexdz2_fac_mc(
-    theta_ref_mc: fa.CellKField[vpfloat],
-    inv_ddqz_z_full: fa.CellKField[vpfloat],
-    exner_ref_mc: fa.CellKField[vpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
-    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
-    cpd: float,
-    grav: wpfloat,
-    del_t_bg: wpfloat,
-    h_scal_bg: wpfloat,
-    igradp_method: gtx.int32,
-    igradp_constant: gtx.int32,
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    """
-    Compute d2dexdz2_fac1_mc and d2dexdz2_fac2_mc factors.
-
-    See mo_vertical_grid.f90
-
-    Args:
-        theta_ref_mc: reference Potential temperature, full level mass points
-        inv_ddqz_z_full: inverse layer thickness (for runtime optimization)
-        exner_ref_mc: reference Exner pressure, full level mass points
-        z_mc: geometric height defined on full levels
-        d2dexdz2_fac1_mc: (output) first vertical derivative of reference Exner pressure, full level mass points, divided by theta_ref
-        d2dexdz2_fac2_mc: (output) vertical derivative of d_exner_dz/theta_ref, full level mass points
-        cpd: Specific heat at constant pressure [J/K/kg]
-        grav: avergae gravitational acceleratio
-        del_t_bg: difference between sea level temperature and asymptotic stratospheric temperature
-        h_scal_bg: height scale for reference atmosphere [m]
-        igradp_method: method for computing the horizontal presure gradient
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-
-    _compute_d2dexdz2_fac1_mc(
-        theta_ref_mc,
-        inv_ddqz_z_full,
-        d2dexdz2_fac1_mc,
-        cpd,
-        grav,
-        igradp_method,
-        igradp_constant,
-        out=d2dexdz2_fac1_mc,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-    _compute_d2dexdz2_fac2_mc(
-        theta_ref_mc,
-        exner_ref_mc,
-        z_mc,
-        d2dexdz2_fac2_mc,
-        cpd,
-        grav,
-        del_t_bg,
-        h_scal_bg,
-        igradp_method,
-        igradp_constant,
-        out=d2dexdz2_fac2_mc,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
 @program
 def compute_ddxn_z_half_e(
     z_ifc: fa.CellKField[wpfloat],
@@ -654,11 +537,17 @@ def compute_maxslp_maxhgtd(
 def _compute_exner_exfac(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
+    cell: fa.CellField[gtx.int32],
     exner_expol: wpfloat,
+    lateral_boundary_level_2: gtx.int32,
 ) -> fa.CellKField[wpfloat]:
     z_maxslp, z_maxhgtd = _compute_maxslp_maxhgtd(ddxn_z_full, dual_edge_length)
 
-    exner_exfac = exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2)
+    exner_exfac = where(
+        cell >= lateral_boundary_level_2,
+        exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2),
+        exner_expol,
+    )
     exner_exfac = maximum(0.0, exner_exfac)
     exner_exfac = where(
         z_maxslp > 1.5, maximum(-1.0 / 6.0, 1.0 / 9.0 * (1.5 - z_maxslp)), exner_exfac
@@ -671,8 +560,10 @@ def _compute_exner_exfac(
 def compute_exner_exfac(
     ddxn_z_full: fa.EdgeKField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],
+    cell: fa.CellField[gtx.int32],
     exner_exfac: fa.CellKField[wpfloat],
     exner_expol: wpfloat,
+    lateral_boundary_level_2: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -694,11 +585,12 @@ def compute_exner_exfac(
         vertical_end: vertical end index
 
     """
-    broadcast_cells_to_cell_k(exner_expol, out=exner_exfac)
     _compute_exner_exfac(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
+        cell=cell,
         exner_expol=exner_expol,
+        lateral_boundary_level_2=lateral_boundary_level_2,
         out=exner_exfac,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
@@ -881,205 +773,104 @@ def compute_flat_idx(
 
 
 @field_operator
-def _compute_z_aux2(
+def _compute_downward_extrapolation_distance(
     z_ifc: fa.CellField[wpfloat],
 ) -> fa.EdgeField[wpfloat]:
     extrapol_dist = 5.0
     z_aux1 = maximum(z_ifc(E2C[0]), z_ifc(E2C[1]))
     z_aux2 = z_aux1 - extrapol_dist
-
     return z_aux2
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_z_aux2(
-    z_ifc_sliced: fa.CellField[wpfloat],
-    z_aux2: fa.EdgeField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-):
-    _compute_z_aux2(
-        z_ifc=z_ifc_sliced, out=z_aux2, domain={dims.EdgeDim: (horizontal_start, horizontal_end)}
-    )
-
-
 @field_operator
-def _compute_pg_edgeidx_vertidx(
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
-    z_ifc: fa.CellKField[wpfloat],
-    z_ifc_sliced: fa.CellField[wpfloat],
-    e_owner_mask: fa.EdgeField[bool],
-    flat_idx_max: fa.EdgeField[int32],
-    e_lev: fa.EdgeField[int32],
-    k_lev: fa.KField[int32],
-    pg_edgeidx: fa.EdgeKField[int32],
-    pg_vertidx: fa.EdgeKField[int32],
-) -> tuple[fa.EdgeKField[int32], fa.EdgeKField[int32]]:
-    z_aux2 = _compute_z_aux2(z_ifc_sliced)
-    e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
-    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
-    z_mc = average_cell_kdim_level_up(z_ifc)
-    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
-    pg_edgeidx = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux2) & e_owner_mask, e_lev, pg_edgeidx
-    )
-    pg_vertidx = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux2) & e_owner_mask, k_lev, pg_vertidx
-    )
-    return pg_edgeidx, pg_vertidx
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_pg_edgeidx_vertidx(
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
-    z_ifc: fa.CellKField[wpfloat],
-    z_ifc_sliced: fa.CellField[wpfloat],
-    e_owner_mask: fa.EdgeField[bool],
-    flat_idx_max: fa.EdgeField[int32],
-    e_lev: fa.EdgeField[int32],
-    k_lev: fa.KField[int32],
-    pg_edgeidx: fa.EdgeKField[int32],
-    pg_vertidx: fa.EdgeKField[int32],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _compute_pg_edgeidx_vertidx(
-        c_lin_e=c_lin_e,
-        z_ifc=z_ifc,
-        z_ifc_sliced=z_ifc_sliced,
-        e_owner_mask=e_owner_mask,
-        flat_idx_max=flat_idx_max,
-        e_lev=e_lev,
-        k_lev=k_lev,
-        pg_edgeidx=pg_edgeidx,
-        pg_vertidx=pg_vertidx,
-        out=(pg_edgeidx, pg_vertidx),
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@field_operator
-def _compute_pg_exdist_dsl(
-    z_ifc_sliced: fa.CellField[wpfloat],
+def _compute_pressure_gradient_downward_extrapolation_mask_distance(
     z_mc: fa.CellKField[wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    e_owner_mask: fa.EdgeField[bool],
-    flat_idx_max: fa.EdgeField[int32],
-    k_lev: fa.KField[int32],
-    e_lev: fa.EdgeField[int32],
-    pg_exdist_dsl: fa.EdgeKField[wpfloat],
-    h_start_zaux2: int32,
-    h_end_zaux2: int32,
-) -> fa.EdgeKField[wpfloat]:
-    z_me = _cell_2_edge_interpolation(z_mc, c_lin_e)
-    z_aux2 = where(
-        (e_lev >= h_start_zaux2) & (e_lev < h_end_zaux2), _compute_z_aux2(z_ifc_sliced), 0.0
-    )
-    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
-    pg_exdist_dsl = where(
-        (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux2) & e_owner_mask,
-        z_me - z_aux2,
-        pg_exdist_dsl,
-    )
-    return pg_exdist_dsl
-
-
-@program
-def compute_pg_exdist_dsl(
     z_ifc_sliced: fa.CellField[wpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
     e_owner_mask: fa.EdgeField[bool],
-    flat_idx_max: fa.EdgeField[int32],
-    k_lev: fa.KField[int32],
-    e_lev: fa.EdgeField[int32],
-    pg_exdist_dsl: fa.EdgeKField[wpfloat],
-    h_start_zaux2: int32,
-    h_end_zaux2: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
+    flat_idx_max: fa.EdgeField[gtx.int32],
+    e_lev: fa.EdgeField[gtx.int32],
+    k_lev: fa.KField[gtx.int32],
+    horizontal_start_distance: int32,
+    horizontal_end_distance: int32,
+) -> tuple[fa.EdgeKField[bool], fa.EdgeKField[wpfloat]]:
     """
-    Compute pg_edgeidx_dsl.
+    Compute an edge mask and extrapolation distance for grid points requiring downward extrapolation of the pressure gradient.
 
-    See mo_vertical_grid.f90
+    See pg_edgeidx and pg_exdist in mo_vertical_grid.f90
 
     Args:
-        z_ifc_sliced: z_ifc sliced field
-        z_mc: Local field
-        c_lin_e: interpolation field
-        e_owner_mask: Field of booleans over edges
-        flat_idx_max: Highest vertical index (counted from top to bottom) for which the edge point lies inside the cell box of the adjacent grid points
-        k_lev: Field of K levels
-        pg_exdist_dsl: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
+        z_mc: height of cells [m]
+        c_lin_e:  interpolation coefficient from cells to edges
+        z_ifc_sliced: ground level height of cells [m]
+        e_owner_mask: mask edges owned by PE.
+        flat_idx_max: level from where edge levels start to become flat
+        e_lev: edge indices
+        k_lev: k-level indices
+        horizontal_start_distance: start index in edge fields from where extrapolation distance is computed
+        horizontal_end_distance: end index in edge fields until where extrapolation distance is computed
+
+    Returns:
+        pg_edge_mask: edge index mask for points requiring downward extrapolation
+        pg_exdist_dsl: extrapolation distance
+
     """
-    _compute_pg_exdist_dsl(
-        z_ifc_sliced=z_ifc_sliced,
-        z_mc=z_mc,
-        c_lin_e=c_lin_e,
-        e_owner_mask=e_owner_mask,
-        flat_idx_max=flat_idx_max,
-        k_lev=k_lev,
-        e_lev=e_lev,
-        pg_exdist_dsl=pg_exdist_dsl,
-        h_start_zaux2=h_start_zaux2,
-        h_end_zaux2=h_end_zaux2,
-        out=pg_exdist_dsl,
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
+
+    e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
+    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
+    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
+    downward_distance = _compute_downward_extrapolation_distance(z_ifc_sliced)
+    extrapolation_distance = where(
+        horizontal_start_distance <= e_lev < horizontal_end_distance,
+        downward_distance,
+        0.0,
+    )
+    pg_edgeidx = where(
+        (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask, e_lev, 0
+    )
+    pg_vertidx = where(
+        (k_lev >= (flat_idx_max + 1)) & (z_me < downward_distance) & e_owner_mask, k_lev, 0
+    )
+    pg_edge_mask = (pg_edgeidx > 0) & (pg_vertidx > 0)
+
+    pg_exdist_dsl = where(
+        (k_lev >= (flat_idx_max + 1)) & (z_me < extrapolation_distance) & e_owner_mask,
+        z_me - extrapolation_distance,
+        0.0,
     )
 
-
-@field_operator
-def _compute_pg_edgeidx_dsl(
-    pg_edgeidx: fa.EdgeKField[gtx.int32],
-    pg_vertidx: fa.EdgeKField[gtx.int32],
-) -> fa.EdgeKField[bool]:
-    pg_edgeidx_dsl = where((pg_edgeidx > 0) & (pg_vertidx > 0), True, False)
-    return pg_edgeidx_dsl
+    return pg_edge_mask, pg_exdist_dsl
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_pg_edgeidx_dsl(
-    pg_edgeidx: fa.EdgeKField[gtx.int32],
-    pg_vertidx: fa.EdgeKField[gtx.int32],
+def compute_pressure_gradient_downward_extrapolation_mask_distance(
+    z_mc: fa.CellKField[wpfloat],
+    c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], float],
+    z_ifc_sliced: fa.CellField[wpfloat],
+    e_owner_mask: fa.EdgeField[bool],
+    flat_idx_max: fa.EdgeField[gtx.int32],
+    e_lev: fa.EdgeField[gtx.int32],
+    k_lev: fa.KField[gtx.int32],
     pg_edgeidx_dsl: fa.EdgeKField[bool],
+    pg_exdist_dsl: fa.EdgeKField[wpfloat],
+    horizontal_start_distance: int32,
+    horizontal_end_distance: int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    """
-    Compute pg_edgeidx_dsl.
-
-    See mo_vertical_grid.f90
-
-    Args:
-        pg_edgeidx: Index Edge values
-        pg_vertidx: Index K values
-        pg_edgeidx_dsl: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-    _compute_pg_edgeidx_dsl(
-        pg_edgeidx=pg_edgeidx,
-        pg_vertidx=pg_vertidx,
-        out=pg_edgeidx_dsl,
+    _compute_pressure_gradient_downward_extrapolation_mask_distance(
+        z_mc=z_mc,
+        c_lin_e=c_lin_e,
+        z_ifc_sliced=z_ifc_sliced,
+        flat_idx_max=flat_idx_max,
+        e_owner_mask=e_owner_mask,
+        e_lev=e_lev,
+        k_lev=k_lev,
+        horizontal_start_distance=horizontal_start_distance,
+        horizontal_end_distance=horizontal_end_distance,
+        out=(pg_edgeidx_dsl, pg_exdist_dsl),
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

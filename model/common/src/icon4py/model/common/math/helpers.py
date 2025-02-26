@@ -7,11 +7,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py import next as gtx
-from gt4py.next import broadcast, field_operator
+from gt4py.next import field_operator
 from gt4py.next.ffront.fbuiltins import arccos, cos, sin, sqrt, where
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import E2C, E2V, CellDim, KDim, Koff
+from icon4py.model.common.dimension import E2C, E2V, Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -529,10 +529,3 @@ def arc_length(
 
     """
     return radius * arccos(dot_product_on_edges(x0, x1, y0, y1, z0, z1))
-
-
-@field_operator
-def broadcast_cells_to_cell_k(
-    cell_value: wpfloat,
-) -> fa.CellKField[wpfloat]:
-    return broadcast(cell_value, (CellDim, KDim))
