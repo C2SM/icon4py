@@ -37,14 +37,14 @@ import gt4py.next as gtx
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
-from icon4py.model.common.grid import icon
-from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.settings import backend, device
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common
+from icon4py.tools.py2fgen.wrappers import (
+    diffusion_wrapper,  # TODO cleanup
+)
 from icon4py.tools.py2fgen.wrappers.wrapper_dimension import (
     CellIndexDim,
     EdgeIndexDim,
@@ -174,8 +174,9 @@ def solve_nh_init(
     nflat_gradp: gtx.int32,
     num_levels: gtx.int32,
 ):
-    if not isinstance(dycore_wrapper_state["grid"], icon.IconGrid):
-        raise Exception("Need to initialise grid using grid_init before running solve_nh_init.")
+    # if not isinstance(dycore_wrapper_state["grid"], icon.IconGrid):
+    #     raise Exception("Need to initialise grid using grid_init before running solve_nh_init.")
+    dycore_wrapper_state["grid"] = diffusion_wrapper.diffusion_wrapper_state["grid"]
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -464,34 +465,4 @@ def grid_init(
     vertical_size: gtx.int32,
     limited_area: bool,
 ):
-    # todo: write this logic into template.py
-    if isinstance(limited_area, int):
-        limited_area = bool(limited_area)
-
-    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
-
-    dycore_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
-        grid_id="icon_grid",
-        global_grid_params=global_grid_params,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        on_gpu=True if device == "GPU" else False,
-        cell_starts=cell_starts.ndarray,
-        cell_ends=cell_ends.ndarray,
-        vertex_starts=vertex_starts.ndarray,
-        vertex_ends=vertex_ends.ndarray,
-        edge_starts=edge_starts.ndarray,
-        edge_ends=edge_ends.ndarray,
-        c2e=c2e.ndarray,
-        e2c=e2c.ndarray,
-        c2e2c=c2e2c.ndarray,
-        e2c2e=e2c2e.ndarray,
-        e2v=e2v.ndarray,
-        v2e=v2e.ndarray,
-        v2c=v2c.ndarray,
-        e2c2v=e2c2v.ndarray,
-        c2v=c2v.ndarray,
-    )
+    dycore_wrapper_state["grid"] = diffusion_wrapper.diffusion_wrapper_state["grid"]
