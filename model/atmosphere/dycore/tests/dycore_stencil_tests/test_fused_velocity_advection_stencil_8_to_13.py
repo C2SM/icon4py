@@ -127,11 +127,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         istep = 1
 
         cell_domain = h_grid.domain(dims.CellDim)
-        lateral_boundary_3 = (
-            grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
-            if hasattr(grid, "start_index")
-            else 0
-        )
+        lateral_boundary_3 = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
         lateral_boundary_4 = (
             grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
             if hasattr(grid, "start_index")
