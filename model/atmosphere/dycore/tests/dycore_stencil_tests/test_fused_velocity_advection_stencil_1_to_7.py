@@ -244,9 +244,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         edge_domain = h_grid.domain(dims.EdgeDim)
         vertex_domain = h_grid.domain(dims.VertexDim)
         # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
-        lateral_boundary_7 = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
-            if hasattr(grid, "start_index")
+        lateral_boundary_7 = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
             else 0
         )
         halo_1 = (
