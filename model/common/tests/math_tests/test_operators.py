@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -20,16 +21,16 @@ from icon4py.model.testing.helpers import StencilTest
 class TestNabla2OnCell(StencilTest):
     PROGRAM = compute_nabla2_on_cell
     OUTPUTS = ("nabla2_psi_c",)
-    #MARKERS = (pytest.mark.skip_value_error,)
+    MARKERS = (pytest.mark.skip_value_error,pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         psi_c: np.array,
         geofac_n2s: np.array,
         **kwargs,
     ) -> dict:
-        nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(grid, psi_c, geofac_n2s)
+        nabla2_psi_c_np = reference_funcs.nabla2_on_cell_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
     @pytest.fixture
@@ -49,15 +50,16 @@ class TestNabla2OnCell(StencilTest):
 class TestNabla2OnCellK(StencilTest):
     PROGRAM = compute_nabla2_on_cell_k
     OUTPUTS = ("nabla2_psi_c",)
+    MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         psi_c: np.array,
         geofac_n2s: np.array,
         **kwargs,
     ) -> dict:
-        nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(grid, psi_c, geofac_n2s)
+        nabla2_psi_c_np = reference_funcs.nabla2_on_cell_k_numpy(connectivities, psi_c, geofac_n2s)
         return dict(nabla2_psi_c=nabla2_psi_c_np)
 
     @pytest.fixture
