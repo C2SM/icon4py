@@ -661,7 +661,7 @@ def _func_name(callable_: Callable[..., Any]) -> str:
 
 
 def _to_backend(
-    provider: gtx.FieldOffset, backend: Optional[gtx_backend.Backend]
+    provider: gtx.NeighborTableOffsetProvider, backend: Optional[gtx_backend.Backend]
 ) -> gtx.NeighborTableOffsetProvider:
     return gtx.NeighborTableOffsetProvider(
         table=data_alloc.to_backend(provider.table, backend),

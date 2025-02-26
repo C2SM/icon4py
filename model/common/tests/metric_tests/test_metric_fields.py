@@ -6,6 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import math
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -58,9 +59,9 @@ class TestComputeZMc(testing_helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_ifc: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        z_ifc: np.ndarray,
+        **kwargs:Any
     ) -> dict:
         shp = z_ifc.shape
         z_mc = 0.5 * (z_ifc + np.roll(z_ifc, shift=-1, axis=1))[:, : shp[1] - 1]
