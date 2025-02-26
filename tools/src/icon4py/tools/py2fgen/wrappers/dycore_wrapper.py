@@ -334,6 +334,7 @@ def solve_nh_init(
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
         backend=backend,
+        exchange=diffusion_wrapper.diffusion_wrapper_state["exchange_runtime"],
     )
 
 
