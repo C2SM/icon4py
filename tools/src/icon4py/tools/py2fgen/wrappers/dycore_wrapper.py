@@ -171,6 +171,7 @@ def solve_nh_init(
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
+    mean_cell_area: gtx.float64,
     nflat_gradp: gtx.int32,
     num_levels: gtx.int32,
 ):
@@ -237,11 +238,11 @@ def solve_nh_init(
     )
 
     # datatest config CellParams
-    cell_geometry = grid_states.CellParams.from_global_num_cells(
+    cell_geometry = grid_states.CellParams(
         cell_center_lat=cell_center_lat,
         cell_center_lon=cell_center_lon,
         area=cell_areas,
-        global_num_cells=dycore_wrapper_state["grid"].global_properties.num_cells,
+        mean_cell_area=mean_cell_area,
         length_rescale_factor=1.0,
     )
 
