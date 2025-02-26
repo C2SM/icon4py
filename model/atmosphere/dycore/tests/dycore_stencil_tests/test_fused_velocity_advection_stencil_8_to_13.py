@@ -11,7 +11,8 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import (
-    fused_velocity_advection_stencil_8_to_13_predictor, fused_velocity_advection_stencil_8_to_13_corrector
+    fused_velocity_advection_stencil_8_to_13_corrector,
+    fused_velocity_advection_stencil_8_to_13_predictor,
 )
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.grid import horizontal as h_grid
@@ -70,9 +71,7 @@ class TestFusedVelocityAdvectionStencil8To13_predictor(StencilTest):
             z_ekinh,
         )
 
-        z_w_concorr_mc = interpolate_to_cell_center_numpy(
-            connectivities, z_w_concorr_me, e_bln_c_s
-        )
+        z_w_concorr_mc = interpolate_to_cell_center_numpy(connectivities, z_w_concorr_me, e_bln_c_s)
 
         w_concorr_c = np.where(
             (nflatlev + 1 <= k_nlev) & (k_nlev < nlev),
@@ -146,6 +145,7 @@ class TestFusedVelocityAdvectionStencil8To13_predictor(StencilTest):
             vertical_start=vertical_start,
             vertical_end=vertical_end,
         )
+
 
 class TestFusedVelocityAdvectionStencil8To13_corrector(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_8_to_13_corrector
