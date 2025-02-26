@@ -755,9 +755,6 @@ class SolveNonhydro:
 
         self._start_edge_halo_level_2 = self._grid.start_index(edge_halo_level_2)
 
-        self._end_cell_lateral_boundary_level_4 = self._grid.end_index(
-            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
-        )
         self._end_edge_nudging = self._grid.end_index(edge_domain(h_grid.Zone.NUDGING))
         self._end_edge_local = self._grid.end_index(edge_domain(h_grid.Zone.LOCAL))
         self._end_edge_halo = self._grid.end_index(edge_domain(h_grid.Zone.HALO))
@@ -855,12 +852,6 @@ class SolveNonhydro:
                 vertical_end=self._grid.num_levels,
                 offset_provider={},
             )
-
-        self.update_time_levels_for_velocity_tendencies(
-            diagnostic_state_nh,
-            at_first_substep=at_first_substep,
-            at_initial_timestep=at_initial_timestep,
-        )
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -2292,7 +2283,7 @@ class SolveNonhydro:
                 self._init_cell_kdim_field_with_zero_wp(
                     field_with_zero_wp=prep_adv.mass_flx_ic,
                     horizontal_start=self._start_cell_lateral_boundary,
-                    horizontal_end=self._end_cell_nudging,
+                    horizontal_end=self._end_cell_lateral_boundary_level_4,
                     vertical_start=0,
                     vertical_end=self._grid.num_levels + 1,
                     offset_provider={},
@@ -2308,7 +2299,7 @@ class SolveNonhydro:
                 mass_flx_ic=prep_adv.mass_flx_ic,
                 r_nsubsteps=r_nsubsteps,
                 horizontal_start=self._start_cell_lateral_boundary,
-                horizontal_end=self._end_cell_nudging,
+                horizontal_end=self._end_cell_lateral_boundary_level_4,
                 vertical_start=0,
                 vertical_end=self._grid.num_levels,
                 offset_provider={},

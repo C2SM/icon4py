@@ -226,6 +226,11 @@ class TimeLoop:
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
                 f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}"
             )
+            self.solve_nonhydro.update_time_levels_for_velocity_tendencies(
+                solve_nonhydro_diagnostic_state,
+                at_first_substep=_is_first_substep(dyn_substep),
+                at_initial_timestep=self._is_first_step_in_simulation,
+            )
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_states,
