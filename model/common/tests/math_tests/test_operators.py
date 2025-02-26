@@ -22,7 +22,7 @@ class TestNabla2OnCell(StencilTest):
     PROGRAM = compute_nabla2_on_cell
     OUTPUTS = ("nabla2_psi_c",)
     MARKERS = (
-        pytest.mark.skip_value_error,
+        pytest.mark.requires_k_dimension,
         pytest.mark.embedded_remap_error,
     )
 
