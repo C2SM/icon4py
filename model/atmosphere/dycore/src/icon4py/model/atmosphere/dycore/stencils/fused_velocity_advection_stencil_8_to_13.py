@@ -9,6 +9,7 @@ import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
     _copy_cell_kdim_field_to_vp,
@@ -47,8 +48,8 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    z_ekinh = concat_where(
-        dims.KDim < nlev,
+    z_ekinh = where(
+        k < nlev,
         _interpolate_to_cell_center(z_kin_hor_e, e_bln_c_s),
         z_ekinh,
     )
@@ -61,14 +62,14 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
         w_concorr_c,
     )
 
-    z_w_con_c = concat_where(
-        dims.KDim < nlev,
+    z_w_con_c = where(
+        k < nlev,
         _copy_cell_kdim_field_to_vp(w),
         _init_cell_kdim_field_with_zero_vp(),
     )
 
-    z_w_con_c = concat_where(
-        (nflatlev + 1 <= dims.KDim) & (dims.KDim < nlev),
+    z_w_con_c = where(
+        nflatlev + 1 <= k < nlev,
         _correct_contravariant_vertical_velocity(z_w_con_c, w_concorr_c),
         z_w_con_c,
     )
@@ -94,20 +95,20 @@ def _fused_velocity_advection_stencil_8_to_13_corrector(
     fa.CellKField[vpfloat],
     fa.CellKField[vpfloat],
 ]:
-    z_ekinh = concat_where(
-        dims.KDim < nlev,
+    z_ekinh = where(
+        k < nlev,
         _interpolate_to_cell_center(z_kin_hor_e, e_bln_c_s),
         z_ekinh,
     )
 
-    z_w_con_c = concat_where(
-        dims.KDim < nlev,
+    z_w_con_c = where(
+        k < nlev,
         _copy_cell_kdim_field_to_vp(w),
         _init_cell_kdim_field_with_zero_vp(),
     )
 
-    z_w_con_c = concat_where(
-        (nflatlev + 1 <= dims.KDim) & (dims.KDim < nlev),
+    z_w_con_c = where(
+        nflatlev + 1 <= k < nlev,
         _correct_contravariant_vertical_velocity(z_w_con_c, w_concorr_c),
         z_w_con_c,
     )

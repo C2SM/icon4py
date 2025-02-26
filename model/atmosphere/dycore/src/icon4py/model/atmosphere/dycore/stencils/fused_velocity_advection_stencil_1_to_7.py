@@ -70,8 +70,8 @@ def compute_interface_vt_vn_and_kinetic_energy(
         else z_vt_ie
     )
 
-    (vn_ie, z_vt_ie, z_kin_hor_e) = concat_where(
-        dims.KDim == 0,
+    (vn_ie, z_vt_ie, z_kin_hor_e) = where(
+        k == 0,
         _compute_horizontal_kinetic_energy(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -105,8 +105,8 @@ def _fused_velocity_advection_stencil_1_to_6(
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
-    vt = concat_where(
-        dims.KDim < nlev,
+    vt = where(
+        k < nlev,
         _compute_tangential_wind(vn, rbf_vec_coeff_e),
         vt,
     )
@@ -115,8 +115,8 @@ def _fused_velocity_advection_stencil_1_to_6(
         vn, wgtfac_e, wgtfacq_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, lvn_only
     )
 
-    z_w_concorr_me = concat_where(
-        (dims.KDim >= nflatlev) & (dims.KDim < nlev),
+    z_w_concorr_me = where(
+        nflatlev <= k < nlev,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )

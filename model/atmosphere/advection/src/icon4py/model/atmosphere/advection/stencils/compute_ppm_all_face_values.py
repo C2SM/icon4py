@@ -38,7 +38,7 @@ def _compute_ppm_all_face_values(
         p_face_in,
     )
 
-    p_face = concat_where(dims.KDim == slev, p_cc, p_face)
+    p_face = where((k == slev), p_cc, p_face)
 
     p_face = concat_where(dims.KDim == elevp1, p_cc(Koff[-1]), p_face)
 

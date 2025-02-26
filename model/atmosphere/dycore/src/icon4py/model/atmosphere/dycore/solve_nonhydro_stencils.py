@@ -215,8 +215,8 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
     fa.CellKField[float],
     fa.CellKField[float],
 ]:
-    (z_rth_pr_1, z_rth_pr_2) = concat_where(
-        dims.KDim == 0,
+    (z_rth_pr_1, z_rth_pr_2) = where(
+        k_field == 0,
         _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
