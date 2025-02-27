@@ -9,7 +9,8 @@
 import logging
 
 import pytest
-
+import gt4py.next as gtx
+import numpy as np
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
@@ -1099,7 +1100,7 @@ def test_run_solve_nonhydro_15_to_28(
     )
     start_edge_nudging_level_2 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
     end_edge_local = icon_grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-    end_edge_end = icon_grid.num_edges  # TODO: check
+    end_edge_end = icon_grid.end_index(edge_domain(h_grid.Zone.END))
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -1125,7 +1126,8 @@ def test_run_solve_nonhydro_15_to_28(
     ddt_vn_apc_ntl2 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(1)
     ddt_vn_apc_ntl1 = savepoint_nonhydro_15_28_init.ddt_vn_apc_ntl(0)
     ddt_vn_phy = savepoint_nonhydro_15_28_init.ddt_vn_phy()
-    vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
+    #vn_incr = savepoint_nonhydro_15_28_init.vn_incr()
+    vn_incr = gtx.empty(domain={dims.EdgeDim: range(icon_grid.num_edges), dims.KDim: range(icon_grid.num_levels)})
     bdy_divdamp = savepoint_nonhydro_15_28_init.bdy_divdamp()
     z_hydro_corr = savepoint_nonhydro_15_28_init.z_hydro_corr()
     z_graddiv2_vn = savepoint_nonhydro_15_28_init.z_graddiv2_vn()

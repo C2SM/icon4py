@@ -208,7 +208,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     )
 
     z_gradh_exner = where(
-        (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx <= nflatlev),
+        (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (vert_idx < nflatlev),
         _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
         ),
@@ -235,7 +235,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     z_gradh_exner = (
         where(
             (start_edge_nudging_level_2 <= horz_idx < end_edge_local)
-            & (nflat_gradp + int32(1) <= vert_idx),
+            & ((nflat_gradp + int32(1)) <= vert_idx),
             _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
                 inv_dual_edge_length=inv_dual_edge_length,
                 z_exner_ex_pr=z_exner_ex_pr,
@@ -252,7 +252,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
 
     z_hydro_corr = (
         where(
-            (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & (nlev - 1 <= vert_idx),
+            (start_edge_nudging_level_2 <= horz_idx < end_edge_local) & ((nlev - 1) <= vert_idx),
             _compute_hydrostatic_correction_term(
                 theta_v=theta_v,
                 ikoffset=ikoffset,
@@ -268,7 +268,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         else z_hydro_corr
     )
 
-    hydro_corr_horizontal = where((vert_idx == nlev - 1), z_hydro_corr, 0.0)
+    hydro_corr_horizontal = where((vert_idx == (nlev - 1)), z_hydro_corr, 0.0)
 
     z_gradh_exner = (
         where(
