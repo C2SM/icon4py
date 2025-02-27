@@ -67,6 +67,7 @@ build_image_aarch64:
   before_script:
     - cd /icon4py
     - ls "${TEST_DATA_PATH}"
+    - find "${TEST_DATA_PATH}" -type d -print
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
