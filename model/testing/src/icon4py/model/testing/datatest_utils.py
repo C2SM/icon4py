@@ -10,7 +10,6 @@ import os
 import pathlib
 import re
 import uuid
-import warnings
 from typing import Optional
 
 from gt4py.next import backend as gtx_backend

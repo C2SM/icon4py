@@ -18,6 +18,7 @@ r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1
 r02b04_global_grid_path = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL)
 r02b04_global_data_file = r02b04_global_grid_path.joinpath("icon_grid_0013_R02B04_R.tar.gz").name
 
+
 def horizontal_dim():
     for dim in (dims.VertexDim, dims.EdgeDim, dims.CellDim):
         yield dim
@@ -26,10 +27,10 @@ def horizontal_dim():
 def global_grid_domains(dim: dims.Dimension):
     zones = [
         h_grid.Zone.END,
-        h_grid.Zone.LOCAL,
-        h_grid.Zone.INTERIOR,
-        h_grid.Zone.HALO,
-        h_grid.Zone.HALO_LEVEL_2,
+        # h_grid.Zone.LOCAL,
+        # h_grid.Zone.INTERIOR,
+        # h_grid.Zone.HALO,
+        # h_grid.Zone.HALO_LEVEL_2,
     ]
 
     yield from _domain(dim, zones)
