@@ -18,7 +18,11 @@ from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 from icon4py.tools.py2fgen import settings as py2fgen_settings
-from icon4py.tools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
+from icon4py.tools.py2fgen.wrappers import (
+    diffusion_wrapper,
+    grid_wrapper,
+    wrapper_dimension as w_dim,
+)
 
 from . import utils
 
@@ -219,7 +223,7 @@ def test_diffusion_wrapper_granule_inputs(
     py2fgen_settings.config.parallel_run = False
 
     # --- Initialize the Grid ---
-    diffusion_wrapper.grid_init_diffusion(
+    grid_wrapper.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,
@@ -542,7 +546,7 @@ def test_diffusion_wrapper_single_step(
 
     py2fgen_settings.config.parallel_run = False
 
-    diffusion_wrapper.grid_init_diffusion(
+    grid_wrapper.grid_init(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
         vertex_starts=vertex_starts,

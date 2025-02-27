@@ -213,10 +213,7 @@ class IconGrid(base.BaseGrid):
         if domain.local:
             # special treatment because this value is not set properly in the underlying data.
             return gtx.int32(0)
-        if hasattr(self._end_indices[domain.dim][domain()], "get"):
-            return gtx.int32(self._start_indices[domain.dim][domain()].get())
-        else:
-            return gtx.int32(self._start_indices[domain.dim][domain()])
+        return gtx.int32(self._start_indices[domain.dim][domain()])
 
     def end_index(self, domain: h_grid.Domain) -> gtx.int32:
         """
@@ -228,7 +225,4 @@ class IconGrid(base.BaseGrid):
         if domain.zone == h_grid.Zone.INTERIOR and not self.limited_area:
             # special treatment because this value is not set properly in the underlying data, for a global grid
             return gtx.int32(self.size[domain.dim])
-        if hasattr(self._end_indices[domain.dim][domain()], "get"):
-            return gtx.int32(self._end_indices[domain.dim][domain()].get())
-        else:
-            return gtx.int32(self._end_indices[domain.dim][domain()])
+        return gtx.int32(self._end_indices[domain.dim][domain()])

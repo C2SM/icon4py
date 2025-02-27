@@ -1280,19 +1280,20 @@ class SolveNonhydro:
             #  - $\exnerprimedz{\ntilde}{\c}{\k}$ : z_dexner_dz_c_1
             #  - $\Whor$ : c_lin_e
             #
-            self._compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-                inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
-                z_exner_ex_pr=self.z_exner_ex_pr,
-                ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
-                c_lin_e=self._interpolation_state.c_lin_e,
-                z_dexner_dz_c_1=self.z_dexner_dz_c_1,
-                z_gradh_exner=z_fields.z_gradh_exner,
-                horizontal_start=self._start_edge_nudging_level_2,
-                horizontal_end=self._end_edge_local,
-                vertical_start=self._vertical_params.nflatlev,
-                vertical_end=gtx.int32(self._vertical_params.nflat_gradp + 1),
-                offset_provider=self._grid.offset_providers,
-            )
+            if self._vertical_params.nflatlev < gtx.int32(self._vertical_params.nflat_gradp + 1):
+                self._compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+                    inv_dual_edge_length=self._edge_geometry.inverse_dual_edge_lengths,
+                    z_exner_ex_pr=self.z_exner_ex_pr,
+                    ddxn_z_full=self._metric_state_nonhydro.ddxn_z_full,
+                    c_lin_e=self._interpolation_state.c_lin_e,
+                    z_dexner_dz_c_1=self.z_dexner_dz_c_1,
+                    z_gradh_exner=z_fields.z_gradh_exner,
+                    horizontal_start=self._start_edge_nudging_level_2,
+                    horizontal_end=self._end_edge_local,
+                    vertical_start=self._vertical_params.nflatlev,
+                    vertical_end=gtx.int32(self._vertical_params.nflat_gradp + 1),
+                    offset_provider=self._grid.offset_providers,
+                )
 
             # scidoc:
             # Outputs:

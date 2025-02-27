@@ -117,17 +117,5 @@ extern int solve_nh_init_wrapper(
     double divdamp_fac2, double divdamp_fac3, double divdamp_fac4,
     double divdamp_z, double divdamp_z2, double divdamp_z3, double divdamp_z4,
     double lowest_layer_thickness, double model_top_height,
-    double stretch_factor, int nflat_gradp, int num_levels);
-extern int grid_init_wrapper(
-    int *cell_starts, int cell_starts_size_0, int *cell_ends,
-    int cell_ends_size_0, int *vertex_starts, int vertex_starts_size_0,
-    int *vertex_ends, int vertex_ends_size_0, int *edge_starts,
-    int edge_starts_size_0, int *edge_ends, int edge_ends_size_0, int *c2e,
-    int c2e_size_0, int c2e_size_1, int *e2c, int e2c_size_0, int e2c_size_1,
-    int *c2e2c, int c2e2c_size_0, int c2e2c_size_1, int *e2c2e,
-    int e2c2e_size_0, int e2c2e_size_1, int *e2v, int e2v_size_0,
-    int e2v_size_1, int *v2e, int v2e_size_0, int v2e_size_1, int *v2c,
-    int v2c_size_0, int v2c_size_1, int *e2c2v, int e2c2v_size_0,
-    int e2c2v_size_1, int *c2v, int c2v_size_0, int c2v_size_1, int global_root,
-    int global_level, int num_vertices, int num_cells, int num_edges,
-    int vertical_size, int limited_area);
+    double stretch_factor, double mean_cell_area, int nflat_gradp,
+    int num_levels);
