@@ -1506,8 +1506,8 @@ def test_granule_solve_nonhydro_multi_step_regional(
         ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(0)
         ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
     else:
-        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(0)
-        ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
+        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
+        ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(0)
     vt = sp.vt()
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
