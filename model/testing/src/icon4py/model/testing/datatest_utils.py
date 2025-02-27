@@ -52,15 +52,9 @@ def get_test_data_root_path() -> pathlib.Path:
     env_base_path = os.getenv("TEST_DATA_PATH")
 
     if env_base_path:
-        warnings.warn(f"loading data from TEST_DATA_PATH='{env_base_path}'", stacklevel=5)
         return pathlib.Path(env_base_path)
     else:
-        default_path = common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
-        warnings.warn(
-            f"loading data: env variable 'TEST_DATA_PATH` not set, falling back to '{default_path}'",
-            stacklevel=5,
-        )
-        return default_path
+        return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
 
 
 TEST_DATA_ROOT = get_test_data_root_path()
