@@ -77,7 +77,7 @@ def test_dycore_wrapper_granule_inputs(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     caplog,
     icon_grid,
     at_initial_timestep,
@@ -182,7 +182,7 @@ def test_dycore_wrapper_granule_inputs(
     vertoffset_gradp = metrics_savepoint._get_field(
         "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
     )
-    ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
+    pg_edgeidx_dsl = metrics_savepoint.pg_edgeidx_dsl()
     pg_exdist = metrics_savepoint.pg_exdist()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
@@ -510,7 +510,7 @@ def test_dycore_wrapper_granule_inputs(
             ddxn_z_full=ddxn_z_full,
             zdiff_gradp=zdiff_gradp,
             vertoffset_gradp=vertoffset_gradp,
-            ipeidx_dsl=ipeidx_dsl,
+            pg_edgeidx_dsl=pg_edgeidx_dsl,
             pg_exdist=pg_exdist,
             ddqz_z_full_e=ddqz_z_full_e,
             ddxt_z_full=ddxt_z_full,
@@ -733,7 +733,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     caplog,
     icon_grid,
     at_initial_timestep,
@@ -742,7 +742,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 
     # savepoints
     sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_exit
+    sp_step_exit = savepoint_nonhydro_step_final
 
     # non hydrostatic config parameters
     itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
@@ -837,7 +837,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     vertoffset_gradp = metrics_savepoint._get_field(
         "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
     )
-    ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
+    pg_edgeidx_dsl = metrics_savepoint.pg_edgeidx_dsl()
     pg_exdist = metrics_savepoint.pg_exdist()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
@@ -987,7 +987,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
-        ipeidx_dsl=ipeidx_dsl,
+        pg_edgeidx_dsl=pg_edgeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
@@ -1177,14 +1177,14 @@ def test_granule_solve_nonhydro_multi_step_regional(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     experiment,
     ndyn_substeps,
     at_initial_timestep,
 ):
     # savepoints
     sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_exit
+    sp_step_exit = savepoint_nonhydro_step_final
 
     # non hydrostatic config parameters
     itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
@@ -1279,7 +1279,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     vertoffset_gradp = metrics_savepoint._get_field(
         "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
     )
-    ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
+    pg_edgeidx_dsl = metrics_savepoint.pg_edgeidx_dsl()
     pg_exdist = metrics_savepoint.pg_exdist()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
@@ -1429,7 +1429,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
-        ipeidx_dsl=ipeidx_dsl,
+        pg_edgeidx_dsl=pg_edgeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,

@@ -37,7 +37,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def compute_interface_vt_vn_and_kinetic_energy(
+def _compute_interface_vt_vn_and_kinetic_energy(
     vn: fa.EdgeKField[wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
@@ -47,7 +47,7 @@ def compute_interface_vt_vn_and_kinetic_energy(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    lvn_only: bool,
+    skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
@@ -65,7 +65,7 @@ def compute_interface_vt_vn_and_kinetic_energy(
             _interpolate_vt_to_interface_edges(wgtfac_e, vt),
             z_vt_ie,
         )
-        if not lvn_only
+        if not skip_compute_predictor_vertical_advection
         else z_vt_ie
     )
 
@@ -96,7 +96,7 @@ def _fused_velocity_advection_stencil_1_to_6(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    lvn_only: bool,
+    skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
@@ -110,8 +110,8 @@ def _fused_velocity_advection_stencil_1_to_6(
         vt,
     )
 
-    (vn_ie, z_vt_ie, z_kin_hor_e) = compute_interface_vt_vn_and_kinetic_energy(
-        vn, wgtfac_e, wgtfacq_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, lvn_only
+    (vn_ie, z_vt_ie, z_kin_hor_e) = _compute_interface_vt_vn_and_kinetic_energy(
+        vn, wgtfac_e, wgtfacq_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, skip_compute_predictor_vertical_advection
     )
 
     z_w_concorr_me = where(
@@ -145,7 +145,7 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     z_v_grad_w: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    lvn_only: bool,
+    skip_compute_predictor_vertical_advection: bool,
     edge: fa.EdgeField[gtx.int32],
     lateral_boundary_7: gtx.int32,
     halo_1: gtx.int32,
@@ -171,12 +171,12 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
         z_kin_hor_e,
         k,
         nlev,
-        lvn_only,
+        skip_compute_predictor_vertical_advection,
     )
 
     k = broadcast(k, (dims.EdgeDim, dims.KDim))
 
-    z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
+    w_at_vertex_on_interface = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
     z_v_grad_w = (
         where(
@@ -188,11 +188,11 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
                 z_vt_ie,
                 inv_primal_edge_length,
                 tangent_orientation,
-                z_w_v,
+                w_at_vertex_on_interface,
             ),
             z_v_grad_w,
         )
-        if not lvn_only
+        if not skip_compute_predictor_vertical_advection
         else z_v_grad_w
     )
 
@@ -201,214 +201,46 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_corrector(
-    vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    ddxn_z_full: fa.EdgeKField[vpfloat],
-    ddxt_z_full: fa.EdgeKField[vpfloat],
-    z_w_concorr_me: fa.EdgeKField[vpfloat],
-    wgtfacq_e: fa.EdgeKField[vpfloat],
-    nflatlev: gtx.int32,
     c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     z_vt_ie: fa.EdgeKField[wpfloat],
-    vt: fa.EdgeKField[vpfloat],
     vn_ie: fa.EdgeKField[vpfloat],
-    z_kin_hor_e: fa.EdgeKField[vpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
-    k: fa.KField[gtx.int32],
-    nlev: gtx.int32,
-    lvn_only: bool,
     edge: fa.EdgeField[gtx.int32],
-    lateral_boundary_7: gtx.int32,
-    halo_1: gtx.int32,
-) -> tuple[
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-]:
-    k = broadcast(k, (dims.EdgeDim, dims.KDim))
-
-    z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
-
-    z_v_grad_w = (
-        where(
-            (lateral_boundary_7 <= edge < halo_1) & (k < nlev),
-            _compute_horizontal_advection_term_for_vertical_velocity(
-                vn_ie,
-                inv_dual_edge_length,
-                w,
-                z_vt_ie,
-                inv_primal_edge_length,
-                tangent_orientation,
-                z_w_v,
-            ),
-            z_v_grad_w,
-        )
-        if not lvn_only
-        else z_v_grad_w
+    vertex: fa.VertexField[gtx.int32],
+    start_edge_lateral_boundary_level_7: gtx.int32,
+    end_edge_halo: gtx.int32,
+    start_vertex_lateral_boundary_level_2: gtx.int32,
+    end_vertex_halo: gtx.int32,
+) -> fa.EdgeKField[vpfloat]:
+    z_w_v = where(
+        (start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo),
+        _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp),
+        0.0,
     )
 
-    return vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w
-
-
-@field_operator
-def _fused_velocity_advection_stencil_1_to_7(
-    vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    ddxn_z_full: fa.EdgeKField[vpfloat],
-    ddxt_z_full: fa.EdgeKField[vpfloat],
-    z_w_concorr_me: fa.EdgeKField[vpfloat],
-    wgtfacq_e: fa.EdgeKField[vpfloat],
-    nflatlev: gtx.int32,
-    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    w: fa.CellKField[wpfloat],
-    inv_dual_edge_length: fa.EdgeField[wpfloat],
-    inv_primal_edge_length: fa.EdgeField[wpfloat],
-    tangent_orientation: fa.EdgeField[wpfloat],
-    z_vt_ie: fa.EdgeKField[wpfloat],
-    vt: fa.EdgeKField[vpfloat],
-    vn_ie: fa.EdgeKField[vpfloat],
-    z_kin_hor_e: fa.EdgeKField[vpfloat],
-    z_v_grad_w: fa.EdgeKField[vpfloat],
-    k: fa.KField[gtx.int32],
-    istep: gtx.int32,
-    nlev: gtx.int32,
-    lvn_only: bool,
-    edge: fa.EdgeField[gtx.int32],
-    lateral_boundary_7: gtx.int32,
-    halo_1: gtx.int32,
-) -> tuple[
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-    fa.EdgeKField[vpfloat],
-]:
-    vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w = (
-        _fused_velocity_advection_stencil_1_to_7_predictor(
-            vn,
-            rbf_vec_coeff_e,
-            wgtfac_e,
-            ddxn_z_full,
-            ddxt_z_full,
-            z_w_concorr_me,
-            wgtfacq_e,
-            nflatlev,
-            c_intp,
-            w,
+    z_v_grad_w = where(
+        (start_edge_lateral_boundary_level_7 <= edge < end_edge_halo),
+        _compute_horizontal_advection_term_for_vertical_velocity(
+            vn_ie,
             inv_dual_edge_length,
+            w,
+            z_vt_ie,
             inv_primal_edge_length,
             tangent_orientation,
-            z_vt_ie,
-            vt,
-            vn_ie,
-            z_kin_hor_e,
-            z_v_grad_w,
-            k,
-            nlev,
-            lvn_only,
-            edge,
-            lateral_boundary_7,
-            halo_1,
-        )
-        if istep == 1
-        else _fused_velocity_advection_stencil_1_to_7_corrector(
-            vn,
-            rbf_vec_coeff_e,
-            wgtfac_e,
-            ddxn_z_full,
-            ddxt_z_full,
-            z_w_concorr_me,
-            wgtfacq_e,
-            nflatlev,
-            c_intp,
-            w,
-            inv_dual_edge_length,
-            inv_primal_edge_length,
-            tangent_orientation,
-            z_vt_ie,
-            vt,
-            vn_ie,
-            z_kin_hor_e,
-            z_v_grad_w,
-            k,
-            nlev,
-            lvn_only,
-            edge,
-            lateral_boundary_7,
-            halo_1,
-        )
-    )
-
-    return vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w
-
-
-@field_operator
-def _fused_velocity_advection_stencil_1_to_7_restricted(
-    vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
-    wgtfac_e: fa.EdgeKField[vpfloat],
-    ddxn_z_full: fa.EdgeKField[vpfloat],
-    ddxt_z_full: fa.EdgeKField[vpfloat],
-    z_w_concorr_me: fa.EdgeKField[vpfloat],
-    wgtfacq_e: fa.EdgeKField[vpfloat],
-    nflatlev: gtx.int32,
-    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
-    w: fa.CellKField[wpfloat],
-    inv_dual_edge_length: fa.EdgeField[wpfloat],
-    inv_primal_edge_length: fa.EdgeField[wpfloat],
-    tangent_orientation: fa.EdgeField[wpfloat],
-    z_vt_ie: fa.EdgeKField[wpfloat],
-    vt: fa.EdgeKField[vpfloat],
-    vn_ie: fa.EdgeKField[vpfloat],
-    z_kin_hor_e: fa.EdgeKField[vpfloat],
-    z_v_grad_w: fa.EdgeKField[vpfloat],
-    k: fa.KField[gtx.int32],
-    istep: gtx.int32,
-    nlev: gtx.int32,
-    lvn_only: bool,
-    edge: fa.EdgeField[gtx.int32],
-    lateral_boundary_7: gtx.int32,
-    halo_1: gtx.int32,
-) -> fa.EdgeKField[float]:
-    return _fused_velocity_advection_stencil_1_to_7(
-        vn,
-        rbf_vec_coeff_e,
-        wgtfac_e,
-        ddxn_z_full,
-        ddxt_z_full,
-        z_w_concorr_me,
-        wgtfacq_e,
-        nflatlev,
-        c_intp,
-        w,
-        inv_dual_edge_length,
-        inv_primal_edge_length,
-        tangent_orientation,
-        z_vt_ie,
-        vt,
-        vn_ie,
-        z_kin_hor_e,
+            z_w_v,
+        ),
         z_v_grad_w,
-        k,
-        istep,
-        nlev,
-        lvn_only,
-        edge,
-        lateral_boundary_7,
-        halo_1,
-    )[1]
+    )
+
+    return z_v_grad_w
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def fused_velocity_advection_stencil_1_to_7(
+def fused_velocity_advection_stencil_1_to_7_predictor(
     vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
@@ -428,9 +260,8 @@ def fused_velocity_advection_stencil_1_to_7(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
     z_v_grad_w: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
-    istep: gtx.int32,
     nlev: gtx.int32,
-    lvn_only: bool,
+    skip_compute_predictor_vertical_advection: bool,
     edge: fa.EdgeField[gtx.int32],
     lateral_boundary_7: gtx.int32,
     halo_1: gtx.int32,
@@ -439,7 +270,7 @@ def fused_velocity_advection_stencil_1_to_7(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _fused_velocity_advection_stencil_1_to_7(
+    _fused_velocity_advection_stencil_1_to_7_predictor(
         vn,
         rbf_vec_coeff_e,
         wgtfac_e,
@@ -459,9 +290,8 @@ def fused_velocity_advection_stencil_1_to_7(
         z_kin_hor_e,
         z_v_grad_w,
         k,
-        istep,
         nlev,
-        lvn_only,
+        skip_compute_predictor_vertical_advection,
         edge,
         lateral_boundary_7,
         halo_1,
@@ -471,35 +301,56 @@ def fused_velocity_advection_stencil_1_to_7(
             dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
-    _fused_velocity_advection_stencil_1_to_7_restricted(
-        vn,
-        rbf_vec_coeff_e,
-        wgtfac_e,
-        ddxn_z_full,
-        ddxt_z_full,
-        z_w_concorr_me,
+    _extrapolate_at_top(
         wgtfacq_e,
-        nflatlev,
+        vn,
+        out=vn_ie,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
+        },
+    )
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def fused_velocity_advection_stencil_1_to_7_corrector(
+    c_intp: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], wpfloat],
+    w: fa.CellKField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    z_vt_ie: fa.EdgeKField[wpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
+    edge: fa.EdgeField[gtx.int32],
+    vertex: fa.VertexField[gtx.int32],
+    lateral_boundary_7: gtx.int32,
+    halo_1: gtx.int32,
+    start_vertex_lateral_boundary_level_2: gtx.int32,
+    end_vertex_halo: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _fused_velocity_advection_stencil_1_to_7_corrector(
         c_intp,
         w,
         inv_dual_edge_length,
         inv_primal_edge_length,
         tangent_orientation,
         z_vt_ie,
-        vt,
         vn_ie,
-        z_kin_hor_e,
         z_v_grad_w,
-        k,
-        istep,
-        nlev,
-        lvn_only,
         edge,
+        vertex,
         lateral_boundary_7,
         halo_1,
-        out=vn_ie,
+        start_vertex_lateral_boundary_level_2,
+        end_vertex_halo,
+        out=z_v_grad_w,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end - 1, vertical_end),
+            dims.KDim: (vertical_start, vertical_end - 1),
         },
     )

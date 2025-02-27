@@ -16,36 +16,23 @@ from gt4py.next import backend as gtx_backend
 
 import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_stencils
 from icon4py.model.atmosphere.dycore import dycore_states
-from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
-    add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
+from icon4py.model.atmosphere.dycore.stencils import (
+    fused_velocity_advection_stencil_1_to_7,
+    fused_velocity_advection_stencil_8_to_13,
+    fused_velocity_advection_stencil_15_to_18,
+    compute_advection_in_horizontal_momentum_equation,
 )
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
-    compute_advective_normal_wind_tendency,
-)
 from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
 from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical_velocity_to_full_levels import (
     interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
     interpolate_to_cell_center,
-)
-from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
-    interpolate_vn_to_ie_and_compute_ekin_on_edges,
-)
-from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges import (
-    interpolate_vt_to_interface_edges,
-)
-from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl import (
-    mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.grid import (
@@ -82,21 +69,27 @@ class VelocityAdvection:
         self._allocate_local_fields()
         self._determine_local_domains()
 
-        self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(self._backend)
-        )
-        self._mo_math_divrot_rot_vertex_ri_dsl = mo_math_divrot_rot_vertex_ri_dsl.with_backend(
+        self._fused_velocity_advection_stencil_1_to_7_predictor = fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7_predictor.with_backend(
             self._backend
         )
-        self._compute_tangential_wind = compute_tangential_wind.with_backend(self._backend)
-        self._interpolate_vn_to_ie_and_compute_ekin_on_edges = (
-            interpolate_vn_to_ie_and_compute_ekin_on_edges.with_backend(self._backend)
-        )
-        self._interpolate_vt_to_interface_edges = interpolate_vt_to_interface_edges.with_backend(
+        self._fused_velocity_advection_stencil_1_to_7_corrector = fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7_corrector.with_backend(
             self._backend
         )
-        self._fused_stencils_4_5 = velocity_stencils.fused_stencils_4_5.with_backend(self._backend)
-        self._extrapolate_at_top = velocity_stencils.extrapolate_at_top.with_backend(self._backend)
+
+        self._fused_velocity_advection_stencil_8_to_13_predictor = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_predictor.with_backend(
+            self._backend
+        )
+        self._fused_velocity_advection_stencil_8_to_13_corrector = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_corrector.with_backend(
+            self._backend
+        )
+
+        self._fused_velocity_advection_stencil_15_to_18 = fused_velocity_advection_stencil_15_to_18.fused_velocity_advection_stencil_15_to_18.with_backend(
+            self._backend
+        )
+
+        self._compute_advection_in_horizontal_momentum_equation = compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
+            self._backend
+        )
         self._compute_horizontal_advection_term_for_vertical_velocity = (
             compute_horizontal_advection_term_for_vertical_velocity.with_backend(self._backend)
         )
@@ -107,6 +100,7 @@ class VelocityAdvection:
         self._fused_stencils_11_to_13 = velocity_stencils.fused_stencils_11_to_13.with_backend(
             self._backend
         )
+
         self._fused_stencil_14 = velocity_stencils.fused_stencil_14.with_backend(self._backend)
         self._interpolate_contravariant_vertical_velocity_to_full_levels = (
             interpolate_contravariant_vertical_velocity_to_full_levels.with_backend(self._backend)
@@ -117,35 +111,31 @@ class VelocityAdvection:
         self._add_extra_diffusion_for_w_con_approaching_cfl = (
             add_extra_diffusion_for_w_con_approaching_cfl.with_backend(self._backend)
         )
-        self._compute_advective_normal_wind_tendency = (
-            compute_advective_normal_wind_tendency.with_backend(self._backend)
-        )
-        self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl = (
-            add_extra_diffusion_for_normal_wind_tendency_approaching_cfl.with_backend(self._backend)
-        )
 
     def _allocate_local_fields(self):
-        self.z_w_v = data_alloc.zero_field(
-            self.grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
-        )
         self.z_v_grad_w = data_alloc.zero_field(
             self.grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.z_ekinh = data_alloc.zero_field(
+        self._horizontal_kinetic_energy_at_cell = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
+        """
+        Declared as z_ekinh in ICON.
+        """
+
         self.z_w_concorr_mc = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         self.z_w_con_c = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self.zeta = data_alloc.zero_field(
-            self.grid, dims.VertexDim, dims.KDim, backend=self._backend
-        )
-        self.z_w_con_c_full = data_alloc.zero_field(
+        self._contravariant_corrected_w_at_cell = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
+        """
+        Declared as z_w_con_c_full in ICON.
+        """
+
         self.cfl_clipping = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, dtype=bool, backend=self._backend
         )
@@ -158,6 +148,9 @@ class VelocityAdvection:
         self.k_field = data_alloc.index_field(
             self.grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
+        self.cell_field = data_alloc.index_field(self.grid, dims.CellDim, backend=self._backend)
+        self.edge_field = data_alloc.index_field(self.grid, dims.EdgeDim, backend=self._backend)
+        self.vertex_field = data_alloc.index_field(self.grid, dims.VertexDim, backend=self._backend)
 
     def _determine_local_domains(self):
         vertex_domain = h_grid.domain(dims.VertexDim)
@@ -194,293 +187,91 @@ class VelocityAdvection:
 
     def run_predictor_step(
         self,
-        vn_only: bool,
+        skip_compute_predictor_vertical_advection: bool,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
         z_w_concorr_me: fa.EdgeKField[float],
-        z_kin_hor_e: fa.EdgeKField[float],
+        horizontal_kinetic_energy_at_edge: fa.EdgeKField[float],
         z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         cell_areas: fa.CellField[float],
     ):
+        """
+        Compute some diagnostic variables that are used in the predictor step 
+        of the dycore and advective tendency of normal and vertical winds.
+
+        Args:
+            skip_compute_predictor_vertical_advection: Option to skip computation of advective tendency of vertical wind
+            diagnostic_state: DiagnosticStateNonHydro class
+            prognostic_state: PrognosticState class
+            z_w_concorr_me: Contravariant corrected vertical wind at edge [m s-1]
+            horizontal_kinetic_energy_at_edge: Horizontal kinetic energy at edge [m^2 s-2]
+            z_vt_ie: tangential wind at edge on k-half levels [m s-1]
+            dtime: time step [m s-1]
+            cell_areas: cell area [m^2]
+        """
+
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
-        if not vn_only:
-            self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-                p_cell_in=prognostic_state.w,
-                c_intp=self.interpolation_state.c_intp,
-                p_vert_out=self.z_w_v,
-                horizontal_start=self._start_vertex_lateral_boundary_level_2,
-                horizontal_end=self._end_vertex_halo,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
-
-        # scidoc:
-        # Outputs:
-        #  - zeta :
-        #     $$
-        #     \vortvert{\n}{\v}{\k} = \sum_{\offProv{v2e}} \Crot \vn{\n}{\e}{\k}
-        #     $$
-        #     Compute the vorticity on vertices using the discrete Stokes
-        #     theorem (eq. 5 in |BonaventuraRingler2005|).
-        #
-        # Inputs:
-        #  - $\Crot$ : geofac_rot
-        #  - $\vn{\n}{\e}{\k}$ : vn
-        #
-        self._mo_math_divrot_rot_vertex_ri_dsl(
-            vec_e=prognostic_state.vn,
-            geofac_rot=self.interpolation_state.geofac_rot,
-            rot_vec=self.zeta,
-            horizontal_start=self._start_vertex_lateral_boundary_level_2,
-            horizontal_end=self._end_vertex_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
+        # TODO: rbf array is inverted in serialized data
+        rbf_vec_coeff_e = gtx.as_field(
+            (dims.EdgeDim, dims.E2C2EDim),
+            self.interpolation_state.rbf_vec_coeff_e.asnumpy().transpose(),
+            allocator=self._backend,
         )
-
-        # scidoc:
-        # Outputs:
-        #  - vt :
-        #     $$
-        #     \vt{\n}{\e}{\k} = \sum_{\offProv{e2c2e}} \Wrbf \vn{\n}{\e}{\k}
-        #     $$
-        #     Compute the tangential velocity by RBF interpolation from four neighboring
-        #     edges (diamond shape) projected along the tangential direction.
-        #
-        # Inputs:
-        #  - $\Wrbf$ : rbf_vec_coeff_e
-        #  - $\vn{\n}{\e}{\k}$ : vn
-        #
-        self._compute_tangential_wind(
+        self._fused_velocity_advection_stencil_1_to_7_predictor(
             vn=prognostic_state.vn,
-            rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
-            vt=diagnostic_state.vt,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        # scidoc:
-        # Outputs:
-        #  - vn_ie :
-        #     $$
-        #     \vn{\n}{\e}{\k-1/2} = \Wlev \vn{\n}{\e}{\k} + (1 - \Wlev) \vn{\n}{\e}{\k-1}, \quad \k \in [1, \nlev)
-        #     $$
-        #     Interpolate the normal velocity from full to half levels.
-        #  - z_kin_hor_e :
-        #     $$
-        #     \kinehori{\n}{\e}{\k} = \frac{1}{2} \left( \vn{\n}{\e}{\k}^2 + \vt{\n}{\e}{\k}^2 \right), \quad \k \in [1, \nlev)
-        #     $$
-        #     Compute the horizontal kinetic energy. Exclude the first full level.
-        #
-        # Inputs:
-        #  - $\Wlev$ : wgtfac_e
-        #  - $\vn{\n}{\e}{\k}$ : vn
-        #  - $\vt{\n}{\e}{\k}$ : vt
-        #
-        self._interpolate_vn_to_ie_and_compute_ekin_on_edges(
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
             wgtfac_e=self.metric_state.wgtfac_e,
-            vn=prognostic_state.vn,
-            vt=diagnostic_state.vt,
-            vn_ie=diagnostic_state.vn_ie,
-            z_kin_hor_e=z_kin_hor_e,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=1,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        if not vn_only:
-            self._interpolate_vt_to_interface_edges(
-                wgtfac_e=self.metric_state.wgtfac_e,
-                vt=diagnostic_state.vt,
-                z_vt_ie=z_vt_ie,
-                horizontal_start=self._start_edge_lateral_boundary_level_5,
-                horizontal_end=self._end_edge_halo_level_2,
-                vertical_start=1,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
-
-        # scidoc:
-        # Outputs:
-        #  - z_w_concorr_me :
-        #     $$
-        #     \wcc{\n}{\e}{\k} = \vn{\n}{\e}{\k} \pdxn{z} + \vt{\n}{\e}{\k} \pdxt{z}, \quad \k \in [\nflatlev, \nlev)
-        #     $$
-        #     Compute the contravariant correction to the vertical wind due to
-        #     terrain-following coordinate. $\pdxn{}$ and $\pdxt{}$ are the
-        #     horizontal derivatives along the normal and tangent directions
-        #     respectively (eq. 17 in |ICONdycorePaper|).
-        #  - vn_ie :
-        #     $$
-        #     \vn{\n}{\e}{-1/2} = \vn{\n}{\e}{0}
-        #     $$
-        #     Set the normal wind at model top equal to the normal wind at the
-        #     first full level.
-        #  - z_vt_ie :
-        #     $$
-        #     \vt{\n}{\e}{-1/2} = \vt{\n}{\e}{0}
-        #     $$
-        #     Set the tangential wind at model top equal to the tangential wind
-        #     at the first full level.
-        #  - z_kin_hor_e :
-        #     $$
-        #     \kinehori{\n}{\e}{0} = \frac{1}{2} \left( \vn{\n}{\e}{0}^2 + \vt{\n}{\e}{0}^2 \right)
-        #     $$
-        #     Compute the horizontal kinetic energy on the first full level.
-        #
-        # Inputs:
-        #  - $\vn{\n}{\e}{\k}$ : vn
-        #  - $\vt{\n}{\e}{\k}$ : vt
-        #  - $\pdxn{z}$ : ddxn_z_full
-        #  - $\pdxt{z}$ : ddxt_z_full
-        #
-        self._fused_stencils_4_5(
-            vn=prognostic_state.vn,
-            vt=diagnostic_state.vt,
-            vn_ie=diagnostic_state.vn_ie,
-            z_vt_ie=z_vt_ie,
-            z_kin_hor_e=z_kin_hor_e,
             ddxn_z_full=self.metric_state.ddxn_z_full,
             ddxt_z_full=self.metric_state.ddxt_z_full,
             z_w_concorr_me=z_w_concorr_me,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
-            nlev=self.grid.num_levels,
-            horizontal_start=self._start_edge_lateral_boundary_level_5,
-            horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider={},
-        )
-        self._extrapolate_at_top(
             wgtfacq_e=self.metric_state.wgtfacq_e,
-            vn=prognostic_state.vn,
-            vn_ie=diagnostic_state.vn_ie,
+            nflatlev=self.vertical_params.nflatlev,
+            c_intp=self.interpolation_state.c_intp,
+            w=prognostic_state.w,
+            inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
+            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
+            tangent_orientation=self.edge_params.tangent_orientation,
+            z_vt_ie=z_vt_ie,
+            vt=diagnostic_state.tangential_wind,
+            vn_ie=diagnostic_state.khalf_vn,
+            z_kin_hor_e=horizontal_kinetic_energy_at_edge,
+            z_v_grad_w=self.z_v_grad_w,
+            k=self.k_field,
+            nlev=gtx.int32(self.grid.num_levels),
+            edge=self.edge_field,
+            skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
+            lateral_boundary_7=self._start_edge_lateral_boundary_level_7,
+            halo_1=self._end_edge_halo,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
-            vertical_start=self.grid.num_levels,
-            vertical_end=self.grid.num_levels + 1,
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self.grid.num_levels + 1),
             offset_provider=self.grid.offset_providers,
         )
 
-        if not vn_only:
-            self._compute_horizontal_advection_term_for_vertical_velocity(
-                vn_ie=diagnostic_state.vn_ie,
-                inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
-                w=prognostic_state.w,
-                z_vt_ie=z_vt_ie,
-                inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-                tangent_orientation=self.edge_params.tangent_orientation,
-                z_w_v=self.z_w_v,
-                z_v_grad_w=self.z_v_grad_w,
-                horizontal_start=self._start_edge_lateral_boundary_level_7,
-                horizontal_end=self._end_edge_halo,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
-
-        # scidoc:
-        # Outputs:
-        #  - z_ekinh :
-        #     $$
-        #     \kinehori{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \kinehori{\n}{\e}{\k}
-        #     $$
-        #     Interpolate the horizonal kinetic energy from edge to cell center.
-        #
-        # Inputs:
-        #  - $\Whor$ : e_bln_c_s
-        #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
-        #
-        self._interpolate_to_cell_center(
-            interpolant=z_kin_hor_e,
+        self._fused_velocity_advection_stencil_8_to_13_predictor(
+            z_kin_hor_e=horizontal_kinetic_energy_at_edge,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            interpolation=self.z_ekinh,
-            horizontal_start=self._start_cell_lateral_boundary_level_4,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        # scidoc:
-        # Outputs:
-        #  - z_w_concorr_mc :
-        #     $$
-        #     \wcc{\n}{\c}{\k} = \sum_{\offProv{c2e}} \Whor \wcc{\n}{\e}{\k}
-        #     $$
-        #     Interpolate the contravariant correction from edge to cell center.
-        #  - w_concorr_c :
-        #     $$
-        #     \wcc{\n}{\c}{\k-1/2} = \Wlev \wcc{\n}{\c}{\k} + (1 - \Wlev) \wcc{\n}{\c}{\k-1}, \quad \k \in [\nflatlev+1, \nlev)
-        #     $$
-        #     Interpolate the contravariant correction from full to half levels.
-        #
-        # Inputs:
-        #  - $\wcc{\n}{\e}{\k}$ : z_w_concorr_me
-        #  - $\Whor$ : e_bln_c_s
-        #  - $\Wlev$ : wgtfac_c
-        #
-        self._fused_stencils_9_10(
             z_w_concorr_me=z_w_concorr_me,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            local_z_w_concorr_mc=self.z_w_concorr_mc,
             wgtfac_c=self.metric_state.wgtfac_c,
-            w_concorr_c=diagnostic_state.w_concorr_c,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
-            nlev=self.grid.num_levels,
-            horizontal_start=self._start_cell_lateral_boundary_level_4,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        # scidoc:
-        # Outputs:
-        #  - z_w_con_c :
-        #     $$
-        #     (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}) =
-        #     \begin{cases}
-        #         \w{\n}{\c}{\k-1/2},                        & \k \in [0, \nflatlev+1)     \\
-        #         \w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2}, & \k \in [\nflatlev+1, \nlev) \\
-        #         0,                                         & \k = \nlev
-        #     \end{cases}
-        #     $$
-        #     Subtract the contravariant correction $\wcc{}{}{}$ from the
-        #     vertical wind $\w{}{}{}$ in the terrain-following levels. This is
-        #     done for convevnience here, instead of directly in the advection
-        #     tendency update, because the result needs to be interpolated to
-        #     edge centers and full levels for later use.
-        #     The papers do not use a new symbol for this variable, and the code
-        #     ambiguosly mixes the variable names used for
-        #     $\wcc{}{}{}$ and $(\w{}{}{} - \wcc{}{}{})$.
-        #
-        # Inputs:
-        #  - $\w{\n}{\c}{\k\pm1/2}$ : w
-        #  - $\wcc{\n}{\c}{\k\pm1/2}$ : w_concorr_c
-        #
-        self._fused_stencils_11_to_13(
             w=prognostic_state.w,
+            z_w_concorr_mc=self.z_w_concorr_mc,
             w_concorr_c=diagnostic_state.w_concorr_c,
-            local_z_w_con_c=self.z_w_con_c,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
+            z_ekinh=self._horizontal_kinetic_energy_at_cell,
+            z_w_con_c=self.z_w_con_c,
+            k=self.k_field,
             nlev=self.grid.num_levels,
+            nflatlev=self.vertical_params.nflatlev,
+            lateral_boundary_3=self._start_cell_lateral_boundary_level_4,
+            lateral_boundary_4=self._start_cell_lateral_boundary_level_4,
+            end_halo=self._end_cell_halo,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider={},
+            offset_provider=self.grid.offset_providers,
         )
 
         self._fused_stencil_14(
@@ -501,138 +292,76 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        # scidoc:
-        # Outputs:
-        #  - z_w_con_c_full :
-        #     $$
-        #     (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k}) = \frac{1}{2} [ (\w{\n}{\c}{\k-1/2} - \wcc{\n}{\c}{\k-1/2})
-        #                                                       + (\w{\n}{\c}{\k+1/2} - \wcc{\n}{\c}{\k+1/2}) ]
-        #     $$
-        #     Interpolate the vertical wind with contravariant correction from
-        #     half to full levels.
-        #
-        # Inputs:
-        #  - $(\w{\n}{\c}{\k\pm1/2} - \wcc{\n}{\c}{\k\pm1/2})$ : z_w_con_c
-        #
-        self._interpolate_contravariant_vertical_velocity_to_full_levels(
+        self._fused_velocity_advection_stencil_15_to_18(
             z_w_con_c=self.z_w_con_c,
-            z_w_con_c_full=self.z_w_con_c_full,
+            w=prognostic_state.w,
+            coeff1_dwdz=self.metric_state.coeff1_dwdz,
+            coeff2_dwdz=self.metric_state.coeff2_dwdz,
+            ddt_w_adv=diagnostic_state.w_advective_tendency.predictor,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            z_v_grad_w=self.z_v_grad_w,
+            levelmask=self.levmask,
+            cfl_clipping=self.cfl_clipping,
+            owner_mask=self.c_owner_mask,
+            ddqz_z_half=self.metric_state.ddqz_z_half,
+            area=cell_areas,
+            geofac_n2s=self.interpolation_state.geofac_n2s,
+            z_w_con_c_full=self._contravariant_corrected_w_at_cell,
+            cell=self.cell_field,
+            k=self.k_field,
+            scalfac_exdiff=scalfac_exdiff,
+            cfl_w_limit=cfl_w_limit,
+            dtime=dtime,
+            cell_lower_bound=self._start_cell_nudging,
+            cell_upper_bound=self._end_cell_local,
+            nlev=gtx.int32(self.grid.num_levels),
+            nrdmax=self.vertical_params.nrdmax,
+            skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
+            start_cell_lateral_boundary=self._start_cell_lateral_boundary_level_4,
+            end_cell_halo=self._end_cell_halo,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,
+            vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
-
-        if not vn_only:
-            self._fused_stencils_16_to_17(
-                w=prognostic_state.w,
-                local_z_v_grad_w=self.z_v_grad_w,
-                e_bln_c_s=self.interpolation_state.e_bln_c_s,
-                local_z_w_con_c=self.z_w_con_c,
-                coeff1_dwdz=self.metric_state.coeff1_dwdz,
-                coeff2_dwdz=self.metric_state.coeff2_dwdz,
-                ddt_w_adv=diagnostic_state.ddt_w_adv_pc.predictor,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=1,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
-
-            self._add_extra_diffusion_for_w_con_approaching_cfl(
-                levmask=self.levmask,
-                cfl_clipping=self.cfl_clipping,
-                owner_mask=self.c_owner_mask,
-                z_w_con_c=self.z_w_con_c,
-                ddqz_z_half=self.metric_state.ddqz_z_half,
-                area=cell_areas,
-                geofac_n2s=self.interpolation_state.geofac_n2s,
-                w=prognostic_state.w,
-                ddt_w_adv=diagnostic_state.ddt_w_adv_pc.predictor,
-                scalfac_exdiff=scalfac_exdiff,
-                cfl_w_limit=cfl_w_limit,
-                dtime=dtime,
-                horizontal_start=self._start_cell_nudging,
-                horizontal_end=self._end_cell_local,
-                vertical_start=gtx.int32(
-                    max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
-                ),
-                vertical_end=gtx.int32(self.grid.num_levels - 3),
-                offset_provider=self.grid.offset_providers,
-            )
 
         self.levelmask = self.levmask
 
-        # scidoc:
-        # Outputs:
-        #  - ddt_vn_apc_pc[ntnd] :
-        #     $$
-        #     \advvn{\n}{\e}{\k} &&= \pdxn{\kinehori{}{}{}} + \vt{}{}{} (\vortvert{}{}{} + \coriolis{}) + \pdz{\vn{}{}{}} (\w{}{}{} - \wcc{}{}{}) \\
-        #                        &&= \Gradn_{\offProv{e2c}} \Cgrad \kinehori{\n}{c}{\k} + \kinehori{\n}{\e}{\k} \Gradn_{\offProv{e2c}} \Cgrad     \\
-        #                        &&+ \vt{\n}{\e}{\k} (\coriolis{\e} + 1/2 \sum_{\offProv{e2v}} \vortvert{\n}{\v}{\k})                             \\
-        #                        &&+ \frac{\vn{\n}{\e}{\k-1/2} - \vn{\n}{\e}{\k+1/2}}{\Dz{k}}
-        #                            \sum_{\offProv{e2c}} \Whor (\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k})
-        #     $$
-        #     Compute the advective tendency of the normal wind (eq. 13 in
-        #     |ICONdycorePaper|).
-        #     The edge-normal derivative of the kinetic energy is computed by
-        #     combining the first order approximation across adiacent cell
-        #     centres (eq. 7 in |BonaventuraRingler2005|) with the edge value of
-        #     the kinetic energy (TODO: this needs explaining and a reference).
-        #
-        # Inputs:
-        #  - $\Cgrad$ : coeff_gradekin
-        #  - $\kinehori{\n}{\e}{\k}$ : z_kin_hor_e
-        #  - $\kinehori{\n}{\c}{\k}$ : z_ekinh
-        #  - $\vt{\n}{\e}{\k}$ : vt
-        #  - $\coriolis{\e}$ : f_e
-        #  - $\vortvert{\n}{\v}{\k}$ : zeta
-        #  - $\Whor$ : c_lin_e
-        #  - $(\w{\n}{\c}{\k} - \wcc{\n}{\c}{\k})$ : z_w_con_c_full
-        #  - $\vn{\n}{\e}{\k\pm1/2}$ : vn_ie
-        #  - $\Dz{\k}$ : ddqz_z_full_e
-        #
-        self._compute_advective_normal_wind_tendency(
-            z_kin_hor_e=z_kin_hor_e,
+        self._compute_advection_in_horizontal_momentum_equation(
+            normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
+            vn=prognostic_state.vn,
+            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+            horizontal_kinetic_energy_at_cell=self._horizontal_kinetic_energy_at_cell,
+            tangential_wind=diagnostic_state.tangential_wind,
+            coriolis_frequency=self.edge_params.coriolis_frequency,
+            contravariant_corrected_w_at_cell=self._contravariant_corrected_w_at_cell,
+            khalf_vn=diagnostic_state.khalf_vn,
+            geofac_rot=self.interpolation_state.geofac_rot,
             coeff_gradekin=self.metric_state.coeff_gradekin,
-            z_ekinh=self.z_ekinh,
-            zeta=self.zeta,
-            vt=diagnostic_state.vt,
-            f_e=self.edge_params.f_e,
             c_lin_e=self.interpolation_state.c_lin_e,
-            z_w_con_c_full=self.z_w_con_c_full,
-            vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.predictor,
-            horizontal_start=self._start_edge_nudging_level_2,
-            horizontal_end=self._end_edge_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
-            c_lin_e=self.interpolation_state.c_lin_e,
-            z_w_con_c_full=self.z_w_con_c_full,
-            ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
             area_edge=self.edge_params.edge_areas,
             tangent_orientation=self.edge_params.tangent_orientation,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-            zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
-            vn=prognostic_state.vn,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.predictor,
+            k=self.k_field,
+            vertex=self.vertex_field,
+            edge=self.edge_field,
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
-            dtime=dtime,
-            horizontal_start=self._start_edge_nudging_level_2,
-            horizontal_end=self._end_edge_local,
-            vertical_start=gtx.int32(
-                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
-            ),
-            vertical_end=gtx.int32(self.grid.num_levels - 4),
+            d_time=dtime,
+            nlev=self.grid.num_levels,
+            nrdmax=self.vertical_params.nrdmax,
+            start_vertex_lateral_boundary_level_2=self._start_vertex_lateral_boundary_level_2,
+            end_vertex_halo=self._end_vertex_halo,
+            start_edge_nudging_level_2=self._start_edge_nudging_level_2,
+            end_edge_local=self._end_edge_local,
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(self.grid.num_edges),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
 
@@ -651,74 +380,53 @@ class VelocityAdvection:
         self,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        z_kin_hor_e: fa.EdgeKField[float],
+        horizontal_kinetic_energy_at_edge: fa.EdgeKField[float],
         z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         cell_areas: fa.CellField[float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
-        self._mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-            p_cell_in=prognostic_state.w,
+        self._fused_velocity_advection_stencil_1_to_7_corrector(
             c_intp=self.interpolation_state.c_intp,
-            p_vert_out=self.z_w_v,
-            horizontal_start=self._start_vertex_lateral_boundary_level_2,
-            horizontal_end=self._end_vertex_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._mo_math_divrot_rot_vertex_ri_dsl(
-            vec_e=prognostic_state.vn,
-            geofac_rot=self.interpolation_state.geofac_rot,
-            rot_vec=self.zeta,
-            horizontal_start=self._start_vertex_lateral_boundary_level_2,
-            horizontal_end=self._end_vertex_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._compute_horizontal_advection_term_for_vertical_velocity(
-            vn_ie=diagnostic_state.vn_ie,
-            inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             w=prognostic_state.w,
-            z_vt_ie=z_vt_ie,
+            inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             tangent_orientation=self.edge_params.tangent_orientation,
-            z_w_v=self.z_w_v,
+            z_vt_ie=z_vt_ie,
+            vn_ie=diagnostic_state.khalf_vn,
             z_v_grad_w=self.z_v_grad_w,
-            horizontal_start=self._start_edge_lateral_boundary_level_7,
-            horizontal_end=self._end_edge_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
+            edge=self.edge_field,
+            vertex=self.vertex_field,
+            lateral_boundary_7=self._start_edge_lateral_boundary_level_7,
+            halo_1=self._end_edge_halo,
+            start_vertex_lateral_boundary_level_2=self._start_vertex_lateral_boundary_level_2,
+            end_vertex_halo=self._end_vertex_halo,
+            horizontal_start=self._start_edge_lateral_boundary_level_5,
+            horizontal_end=self._end_edge_halo_level_2,
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self.grid.num_levels + 1),
             offset_provider=self.grid.offset_providers,
         )
 
-        self._interpolate_to_cell_center(
-            interpolant=z_kin_hor_e,
+        self._fused_velocity_advection_stencil_8_to_13_corrector(
+            z_kin_hor_e=horizontal_kinetic_energy_at_edge,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            interpolation=self.z_ekinh,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._fused_stencils_11_to_13(
+            wgtfac_c=self.metric_state.wgtfac_c,
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
-            local_z_w_con_c=self.z_w_con_c,
-            k_field=self.k_field,
-            nflatlev_startindex=self.vertical_params.nflatlev,
+            z_ekinh=self._horizontal_kinetic_energy_at_cell,
+            z_w_con_c=self.z_w_con_c,
+            k=self.k_field,
             nlev=self.grid.num_levels,
+            nflatlev=self.vertical_params.nflatlev,
+            lateral_boundary=self._start_cell_lateral_boundary_level_3,
+            end_halo=self._end_cell_halo,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider={},
+            vertical_end=self.grid.num_levels + 1,
+            offset_provider=self.grid.offset_providers,
         )
 
         self._fused_stencil_14(
@@ -732,96 +440,80 @@ class VelocityAdvection:
             horizontal_end=self._end_cell_halo,
             vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
             vertical_end=gtx.int32(self.grid.num_levels - 3),
-            offset_provider={},
+            offset_provider=self.grid.offset_providers,
         )
 
         self._update_levmask_from_cfl_clipping()
 
-        self._interpolate_contravariant_vertical_velocity_to_full_levels(
+        self._fused_velocity_advection_stencil_15_to_18(
             z_w_con_c=self.z_w_con_c,
-            z_w_con_c_full=self.z_w_con_c_full,
-            horizontal_start=self._start_cell_lateral_boundary_level_3,
-            horizontal_end=self._end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._fused_stencils_16_to_17(
             w=prognostic_state.w,
-            local_z_v_grad_w=self.z_v_grad_w,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            local_z_w_con_c=self.z_w_con_c,
             coeff1_dwdz=self.metric_state.coeff1_dwdz,
             coeff2_dwdz=self.metric_state.coeff2_dwdz,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc.corrector,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=1,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._add_extra_diffusion_for_w_con_approaching_cfl(
-            levmask=self.levmask,
+            ddt_w_adv=diagnostic_state.w_advective_tendency.corrector,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            z_v_grad_w=self.z_v_grad_w,
+            levelmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
-            z_w_con_c=self.z_w_con_c,
             ddqz_z_half=self.metric_state.ddqz_z_half,
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
-            w=prognostic_state.w,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc.corrector,
+            z_w_con_c_full=self._contravariant_corrected_w_at_cell,
+            cell=self.cell_field,
+            k=self.k_field,
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
-            horizontal_start=self._start_cell_nudging,
-            horizontal_end=self._end_cell_local,
-            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
-            vertical_end=gtx.int32(self.grid.num_levels - 4),
+            cell_lower_bound=self._start_cell_nudging,
+            cell_upper_bound=self._end_cell_local,
+            nlev=gtx.int32(self.grid.num_levels),
+            nrdmax=self.vertical_params.nrdmax,
+            skip_compute_predictor_vertical_advection=False,
+            start_cell_lateral_boundary=self._start_cell_lateral_boundary_level_4,
+            end_cell_halo=self._end_cell_halo,
+            horizontal_start=self._start_cell_lateral_boundary_level_4,
+            horizontal_end=self._end_cell_halo,
+            vertical_start=0,
+            vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
-
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
-        self._compute_advective_normal_wind_tendency(
-            z_kin_hor_e=z_kin_hor_e,
+        self._compute_advection_in_horizontal_momentum_equation(
+            normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
+            vn=prognostic_state.vn,
+            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+            horizontal_kinetic_energy_at_cell=self._horizontal_kinetic_energy_at_cell,
+            tangential_wind=diagnostic_state.tangential_wind,
+            coriolis_frequency=self.edge_params.coriolis_frequency,
+            contravariant_corrected_w_at_cell=self._contravariant_corrected_w_at_cell,
+            khalf_vn=diagnostic_state.khalf_vn,
+            geofac_rot=self.interpolation_state.geofac_rot,
             coeff_gradekin=self.metric_state.coeff_gradekin,
-            z_ekinh=self.z_ekinh,
-            zeta=self.zeta,
-            vt=diagnostic_state.vt,
-            f_e=self.edge_params.f_e,
             c_lin_e=self.interpolation_state.c_lin_e,
-            z_w_con_c_full=self.z_w_con_c_full,
-            vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.corrector,
-            horizontal_start=self._start_edge_nudging_level_2,
-            horizontal_end=self._end_edge_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        self._add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
-            c_lin_e=self.interpolation_state.c_lin_e,
-            z_w_con_c_full=self.z_w_con_c_full,
-            ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
             area_edge=self.edge_params.edge_areas,
             tangent_orientation=self.edge_params.tangent_orientation,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-            zeta=self.zeta,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
-            vn=prognostic_state.vn,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.corrector,
+            k=self.k_field,
+            vertex=self.vertex_field,
+            edge=self.edge_field,
             cfl_w_limit=cfl_w_limit,
             scalfac_exdiff=scalfac_exdiff,
-            dtime=dtime,
-            horizontal_start=self._start_edge_nudging_level_2,
-            horizontal_end=self._end_edge_local,
-            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
-            vertical_end=gtx.int32(self.grid.num_levels - 4),
+            d_time=dtime,
+            nlev=self.grid.num_levels,
+            nrdmax=self.vertical_params.nrdmax,
+            start_vertex_lateral_boundary_level_2=self._start_vertex_lateral_boundary_level_2,
+            end_vertex_halo=self._end_vertex_halo,
+            start_edge_nudging_level_2=self._start_edge_nudging_level_2,
+            end_edge_local=self._end_edge_local,
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(self.grid.num_edges),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
