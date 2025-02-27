@@ -37,6 +37,8 @@ from icon4py.model.testing.datatest_fixtures import (  # F401
     step_date_exit,
     step_date_init,
     stretch_factor,
+    substep_exit,
+    substep_init,
 )
 
 
@@ -63,8 +65,8 @@ __all__ = [
     "interpolation_savepoint",
     "istep_exit",
     "istep_init",
-    "jstep_exit",
-    "jstep_init",
+    "substep_init",
+    "substep_exit",
     "linit",
     "lowest_layer_thickness",
     "metrics_savepoint",
