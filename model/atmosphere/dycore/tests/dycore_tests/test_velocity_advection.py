@@ -586,7 +586,7 @@ def test_velocity_fused_1_7(
 @pytest.mark.parametrize("istep_init", [1, 2])
 @pytest.mark.parametrize("substep_init", [1])
 @pytest.mark.parametrize("substep_exit", [1])
-def test_velocity_fused_8_13_new(
+def test_velocity_fused_8_13(
     icon_grid,
     grid_savepoint,
     savepoint_velocity_8_13_init,
@@ -638,9 +638,7 @@ def test_velocity_fused_8_13_new(
             k=k,
             nlev=icon_grid.num_levels,
             nflatlev=nflatlev,
-            lateral_boundary_3=lateral_boundary_4,
-            # TODO: serialization test works for lateral_boundary_4 but not on lateral_boundary_3, but it should be in lateral_boundary_3 in driver code
-            lateral_boundary_4=lateral_boundary_4,
+            lateral_boundary=lateral_boundary_4,
             end_halo=end_halo,
             horizontal_start=0,
             horizontal_end=icon_grid.num_cells,
@@ -656,7 +654,6 @@ def test_velocity_fused_8_13_new(
         fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_corrector.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=e_bln_c_s,
-            wgtfac_c=wgtfac_c,
             w=w,
             w_concorr_c=w_concorr_c,
             z_ekinh=z_ekinh,
@@ -715,14 +712,12 @@ def test_velocity_fused_15_18(
     substep_exit,
     istep_init,
 ):
-    import numpy as np
-
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
     ddqz_z_half = metrics_savepoint.ddqz_z_half()
     # calculate cfl_clipping
     z_w_con_c_8_13 = savepoint_velocity_8_13_exit.z_w_con_c().asnumpy()
-    cfl_clipping_np = np.abs(z_w_con_c_8_13) > (cfl_w_limit * ddqz_z_half.asnumpy())
+    cfl_clipping_np = z_w_con_c_8_13 > (cfl_w_limit * ddqz_z_half.asnumpy())
     cfl_clipping = gtx.as_field((dims.CellDim, dims.KDim), cfl_clipping_np)
     z_w_con_c = savepoint_velocity_15_18_init.z_w_con_c()
     w = savepoint_velocity_15_18_init.w()
