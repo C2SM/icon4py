@@ -31,41 +31,38 @@ Fortran granule interfaces:
 
 import cProfile
 import pstats
+from typing import Optional
 
 import gt4py.next as gtx
 
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.settings import backend, device
-from icon4py.tools.py2fgen.wrappers import (
-    diffusion_wrapper,  # TODO cleanup
-)
-from icon4py.tools.py2fgen.wrappers.wrapper_dimension import (
-    CellIndexDim,
-    EdgeIndexDim,
-    VertexIndexDim,
-)
+from icon4py.tools.py2fgen.wrappers import grid_wrapper
 
 
 logger = setup_logger(__name__)
 
-dycore_wrapper_state = {
-    "profiler": cProfile.Profile(),
-}
+# TODO(havogt): remove module global state
+profiler = cProfile.Profile()
+granule: Optional[solve_nonhydro.SolveNonhydro] = None
 
 
 def profile_enable():
-    dycore_wrapper_state["profiler"].enable()
+    global profiler
+    profiler.enable()
 
 
 def profile_disable():
-    dycore_wrapper_state["profiler"].disable()
-    stats = pstats.Stats(dycore_wrapper_state["profiler"])
+    global profiler
+    profiler.disable()
+    stats = pstats.Stats(profiler)
     stats.dump_stats(f"{__name__}.profile")
 
 
@@ -175,9 +172,8 @@ def solve_nh_init(
     nflat_gradp: gtx.int32,
     num_levels: gtx.int32,
 ):
-    # if not isinstance(dycore_wrapper_state["grid"], icon.IconGrid):
-    #     raise Exception("Need to initialise grid using grid_init before running solve_nh_init.")
-    dycore_wrapper_state["grid"] = diffusion_wrapper.diffusion_wrapper_state["grid"]
+    if not isinstance(grid_wrapper.grid, icon_grid.IconGrid):
+        raise Exception("Need to initialise grid using grid_init before running solve_nh_init.")
 
     config = solve_nonhydro.NonHydrostaticConfig(
         itime_scheme=itime_scheme,
@@ -324,8 +320,9 @@ def solve_nh_init(
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
-    dycore_wrapper_state["granule"] = solve_nonhydro.SolveNonhydro(
-        grid=dycore_wrapper_state["grid"],
+    global granule
+    granule = solve_nonhydro.SolveNonhydro(
+        grid=grid_wrapper.grid,
         config=config,
         params=nonhydro_params,
         metric_state_nonhydro=metric_state_nonhydro,
@@ -335,7 +332,7 @@ def solve_nh_init(
         cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
         backend=backend,
-        exchange=diffusion_wrapper.diffusion_wrapper_state["exchange_runtime"],
+        exchange=grid_wrapper.exchange_runtime,
     )
 
 
@@ -385,7 +382,7 @@ def solve_nh_run(
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
         vol_flx_ic=data_alloc.zero_field(
-            dycore_wrapper_state["grid"], dims.CellDim, dims.KDim, dtype=gtx.float64
+            grid_wrapper.grid, dims.CellDim, dims.KDim, dtype=gtx.float64
         ),
     )
 
@@ -430,7 +427,8 @@ def solve_nh_run(
     # adjust for Fortran indexes
     idyn_timestep = idyn_timestep - 1
 
-    dycore_wrapper_state["granule"].time_step(
+    global granule
+    granule.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_states=prognostic_states,
         prep_adv=prep_adv,
@@ -441,30 +439,3 @@ def solve_nh_run(
         at_first_substep=idyn_timestep == 0,
         at_last_substep=idyn_timestep == (ndyn_substeps - 1),
     )
-
-
-def grid_init(
-    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
-    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
-    c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
-    e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
-    c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
-    e2c2e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], gtx.int32],
-    e2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2VDim], gtx.int32],
-    v2e: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.int32],
-    v2c: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.int32],
-    e2c2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
-    c2v: gtx.Field[gtx.Dims[dims.CellDim, dims.C2VDim], gtx.int32],
-    global_root: gtx.int32,
-    global_level: gtx.int32,
-    num_vertices: gtx.int32,
-    num_cells: gtx.int32,
-    num_edges: gtx.int32,
-    vertical_size: gtx.int32,
-    limited_area: bool,
-):
-    dycore_wrapper_state["grid"] = diffusion_wrapper.diffusion_wrapper_state["grid"]
