@@ -25,17 +25,18 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _fused_velocity_advection_stencil_19_to_20(
+def _compute_advection_in_horizontal_momentum_equation(
+    normal_wind_advective_tendency: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
+    horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
+    horizontal_kinetic_energy_at_cell: fa.CellKField[vpfloat],
+    tangential_wind: fa.EdgeKField[vpfloat],
+    coriolis_frequency: fa.EdgeField[wpfloat],
+    contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
+    khalf_vn: fa.EdgeKField[vpfloat],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
-    z_kin_hor_e: fa.EdgeKField[vpfloat],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], vpfloat],
-    z_ekinh: fa.CellKField[vpfloat],
-    vt: fa.EdgeKField[vpfloat],
-    f_e: fa.EdgeField[wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    z_w_con_c_full: fa.CellKField[vpfloat],
-    vn_ie: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
     levelmask: fa.KField[bool],
     area_edge: fa.EdgeField[wpfloat],
@@ -54,75 +55,74 @@ def _fused_velocity_advection_stencil_19_to_20(
     end_vertex_halo: gtx.int32,
     start_edge_nudging_level_2: gtx.int32,
     end_edge_local: gtx.int32,
-    ddt_vn_apc: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
-    zeta = where(
+    vorticity_at_vertex = where(
         start_vertex_lateral_boundary_level_2 <= vertex < end_vertex_halo,
         _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot),
         0.0,
     )
 
-    ddt_vn_apc = where(
+    normal_wind_advective_tendency = where(
         start_edge_nudging_level_2 <= edge < end_edge_local,
         _compute_advective_normal_wind_tendency(
-            z_kin_hor_e,
+            horizontal_kinetic_energy_at_edge,
             coeff_gradekin,
-            z_ekinh,
-            zeta,
-            vt,
-            f_e,
+            horizontal_kinetic_energy_at_cell,
+            vorticity_at_vertex,
+            tangential_wind,
+            coriolis_frequency,
             c_lin_e,
-            z_w_con_c_full,
-            vn_ie,
+            contravariant_corrected_w_at_cell,
+            khalf_vn,
             ddqz_z_full_e,
         ),
-        ddt_vn_apc,
+        normal_wind_advective_tendency,
     )
 
     k = broadcast(k, (dims.EdgeDim, dims.KDim))
-    ddt_vn_apc = where(
+    normal_wind_advective_tendency = where(
         (start_edge_nudging_level_2 <= edge < end_edge_local)
         & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 4),
         _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask,
             c_lin_e,
-            z_w_con_c_full,
+            contravariant_corrected_w_at_cell,
             ddqz_z_full_e,
             area_edge,
             tangent_orientation,
             inv_primal_edge_length,
-            zeta,
+            vorticity_at_vertex,
             geofac_grdiv,
             vn,
-            ddt_vn_apc,
+            normal_wind_advective_tendency,
             cfl_w_limit,
             scalfac_exdiff,
             d_time,
         ),
-        ddt_vn_apc,
+        normal_wind_advective_tendency,
     )
-    return ddt_vn_apc
+    return normal_wind_advective_tendency
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def fused_velocity_advection_stencil_19_to_20(
+def compute_advection_in_horizontal_momentum_equation(
+    normal_wind_advective_tendency: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
+    horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
+    horizontal_kinetic_energy_at_cell: fa.CellKField[vpfloat],
+    tangential_wind: fa.EdgeKField[vpfloat],
+    coriolis_frequency: fa.EdgeField[wpfloat],
+    contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
+    khalf_vn: fa.EdgeKField[vpfloat],
     geofac_rot: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], wpfloat],
-    z_kin_hor_e: fa.EdgeKField[vpfloat],
     coeff_gradekin: gtx.Field[gtx.Dims[dims.ECDim], vpfloat],
-    z_ekinh: fa.CellKField[vpfloat],
-    vt: fa.EdgeKField[vpfloat],
-    f_e: fa.EdgeField[wpfloat],
     c_lin_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], wpfloat],
-    z_w_con_c_full: fa.CellKField[vpfloat],
-    vn_ie: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
     levelmask: fa.KField[bool],
     area_edge: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     geofac_grdiv: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EODim], wpfloat],
-    ddt_vn_apc: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     vertex: fa.VertexField[gtx.int32],
     edge: fa.EdgeField[gtx.int32],
@@ -140,17 +140,18 @@ def fused_velocity_advection_stencil_19_to_20(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _fused_velocity_advection_stencil_19_to_20(
+    _compute_advection_in_horizontal_momentum_equation(
+        normal_wind_advective_tendency,
         vn,
+        horizontal_kinetic_energy_at_edge,
+        horizontal_kinetic_energy_at_cell,
+        tangential_wind,
+        coriolis_frequency,
+        contravariant_corrected_w_at_cell,
+        khalf_vn,
         geofac_rot,
-        z_kin_hor_e,
         coeff_gradekin,
-        z_ekinh,
-        vt,
-        f_e,
         c_lin_e,
-        z_w_con_c_full,
-        vn_ie,
         ddqz_z_full_e,
         levelmask,
         area_edge,
@@ -169,8 +170,7 @@ def fused_velocity_advection_stencil_19_to_20(
         end_vertex_halo,
         start_edge_nudging_level_2,
         end_edge_local,
-        ddt_vn_apc,
-        out=ddt_vn_apc,
+        out=normal_wind_advective_tendency,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

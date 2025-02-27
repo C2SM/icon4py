@@ -549,7 +549,7 @@ class IconGridSavepoint(IconSavepoint):
             primal_normal_cell_y=primal_normal_cell[1],
             dual_normal_cell_y=dual_normal_cell[1],
             edge_areas=self.edge_areas(),
-            f_e=self.f_e(),
+            coriolis_frequency=self.f_e(),
             edge_center_lat=self.edge_center_lat(),
             edge_center_lon=self.edge_center_lon(),
             primal_normal_x=self.primal_normal_v1(),

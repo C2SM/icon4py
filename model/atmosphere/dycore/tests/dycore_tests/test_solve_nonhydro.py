@@ -385,7 +385,7 @@ def test_nonhydro_predictor_step(
     )
     # stencil 30
     assert helpers.dallclose(
-        diagnostic_state_nh.vt.asnumpy(),
+        diagnostic_state_nh.tangential_wind.asnumpy(),
         sp_exit.vt().asnumpy(),
         atol=5e-14,
     )
@@ -406,7 +406,7 @@ def test_nonhydro_predictor_step(
 
     # stencil 35,36, 37,38
     assert helpers.dallclose(
-        diagnostic_state_nh.vn_ie.asnumpy()[edge_start_lateral_boundary_level_5:, :],
+        diagnostic_state_nh.khalf_vn.asnumpy()[edge_start_lateral_boundary_level_5:, :],
         sp_exit.vn_ie().asnumpy()[edge_start_lateral_boundary_level_5:, :],
         atol=2e-14,
     )
@@ -421,7 +421,7 @@ def test_nonhydro_predictor_step(
     )
     # stencil 35,36
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_kin_hor_e.asnumpy()[
+        solve_nonhydro.intermediate_fields.horizontal_kinetic_energy_at_edge.asnumpy()[
             edge_start_lateral_boundary_level_5:, :
         ],
         sp_exit.z_kin_hor_e().asnumpy()[edge_start_lateral_boundary_level_5:, :],
@@ -593,7 +593,7 @@ def test_nonhydro_corrector_step(
         z_graddiv_vn=init_savepoint.z_graddiv_vn(),
         z_rho_expl=init_savepoint.z_rho_expl(),
         z_dwdz_dd=init_savepoint.z_dwdz_dd(),
-        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
+        horizontal_kinetic_energy_at_edge=init_savepoint.z_kin_hor_e(),
         z_vt_ie=init_savepoint.z_vt_ie(),
     )
 
@@ -917,7 +917,7 @@ def test_run_solve_nonhydro_multi_step(
 
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp, swap_ddt_w_adv_pc=not linit)
+    diagnostic_state_nh = utils.construct_diagnostics(sp, swap_w_advective_tendency=not linit)
     prognostic_states = utils.create_prognostic_states(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)

@@ -50,7 +50,6 @@ def _fused_velocity_advection_stencil_16_to_18(
     cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-    extra_diffu: bool,
 ) -> fa.CellKField[vpfloat]:
     k = broadcast(k, (dims.CellDim, dims.KDim))
 
@@ -84,8 +83,6 @@ def _fused_velocity_advection_stencil_16_to_18(
             ),
             ddt_w_adv,
         )
-        if extra_diffu
-        else ddt_w_adv
     )
 
     return ddt_w_adv
@@ -116,8 +113,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-    lvn_only: bool,
-    extra_diffu: bool,
+    skip_compute_predictor_vertical_advection: bool,
     start_cell_lateral_boundary: gtx.int32,
     end_cell_halo: gtx.int32,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
@@ -150,10 +146,9 @@ def _fused_velocity_advection_stencil_15_to_18(
             cell_upper_bound,
             nlev,
             nrdmax,
-            extra_diffu,
         )
-        # if not lvn_only
-        # else ddt_w_adv
+        if not skip_compute_predictor_vertical_advection
+        else ddt_w_adv
     )
 
     return (z_w_con_c_full, ddt_w_adv)
@@ -184,8 +179,7 @@ def fused_velocity_advection_stencil_15_to_18(
     cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-    lvn_only: bool,
-    extra_diffu: bool,
+    skip_compute_predictor_vertical_advection: bool,
     start_cell_lateral_boundary: gtx.int32,
     end_cell_halo: gtx.int32,
     horizontal_start: gtx.int32,
@@ -217,8 +211,7 @@ def fused_velocity_advection_stencil_15_to_18(
         cell_upper_bound,
         nlev,
         nrdmax,
-        lvn_only,
-        extra_diffu,
+        skip_compute_predictor_vertical_advection,
         start_cell_lateral_boundary,
         end_cell_halo,
         out=(z_w_con_c_full, ddt_w_adv),

@@ -47,7 +47,7 @@ def _compute_interface_vt_vn_and_kinetic_energy(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    lvn_only: bool,
+    skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
@@ -65,7 +65,7 @@ def _compute_interface_vt_vn_and_kinetic_energy(
             _interpolate_vt_to_interface_edges(wgtfac_e, vt),
             z_vt_ie,
         )
-        if not lvn_only
+        if not skip_compute_predictor_vertical_advection
         else z_vt_ie
     )
 
@@ -96,7 +96,7 @@ def _fused_velocity_advection_stencil_1_to_6(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    lvn_only: bool,
+    skip_compute_predictor_vertical_advection: bool,
 ) -> tuple[
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
@@ -111,7 +111,7 @@ def _fused_velocity_advection_stencil_1_to_6(
     )
 
     (vn_ie, z_vt_ie, z_kin_hor_e) = _compute_interface_vt_vn_and_kinetic_energy(
-        vn, wgtfac_e, wgtfacq_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, lvn_only
+        vn, wgtfac_e, wgtfacq_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, skip_compute_predictor_vertical_advection
     )
 
     z_w_concorr_me = where(
@@ -145,7 +145,7 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     z_v_grad_w: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    lvn_only: bool,
+    skip_compute_predictor_vertical_advection: bool,
     edge: fa.EdgeField[gtx.int32],
     lateral_boundary_7: gtx.int32,
     halo_1: gtx.int32,
@@ -171,12 +171,12 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
         z_kin_hor_e,
         k,
         nlev,
-        lvn_only,
+        skip_compute_predictor_vertical_advection,
     )
 
     k = broadcast(k, (dims.EdgeDim, dims.KDim))
 
-    z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
+    w_at_vertex_on_interface = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
     z_v_grad_w = (
         where(
@@ -188,11 +188,11 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
                 z_vt_ie,
                 inv_primal_edge_length,
                 tangent_orientation,
-                z_w_v,
+                w_at_vertex_on_interface,
             ),
             z_v_grad_w,
         )
-        if not lvn_only
+        if not skip_compute_predictor_vertical_advection
         else z_v_grad_w
     )
 
@@ -236,8 +236,6 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
             ),
             z_v_grad_w,
         )
-        # if not lvn_only
-        # else z_v_grad_w
     )
 
     return z_v_grad_w
@@ -265,7 +263,7 @@ def fused_velocity_advection_stencil_1_to_7_predictor(
     z_v_grad_w: fa.EdgeKField[vpfloat],
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
-    lvn_only: bool,
+    skip_compute_predictor_vertical_advection: bool,
     edge: fa.EdgeField[gtx.int32],
     lateral_boundary_7: gtx.int32,
     halo_1: gtx.int32,
@@ -295,7 +293,7 @@ def fused_velocity_advection_stencil_1_to_7_predictor(
         z_v_grad_w,
         k,
         nlev,
-        lvn_only,
+        skip_compute_predictor_vertical_advection,
         edge,
         lateral_boundary_7,
         halo_1,

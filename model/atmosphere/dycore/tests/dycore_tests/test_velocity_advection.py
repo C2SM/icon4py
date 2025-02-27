@@ -11,12 +11,9 @@ import pytest
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
 from icon4py.model.atmosphere.dycore.stencils import (
     fused_velocity_advection_stencil_1_to_7,
+    fused_velocity_advection_stencil_8_to_13,
     fused_velocity_advection_stencil_15_to_18,
-    fused_velocity_advection_stencil_19_to_20,
-)
-from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import (
-    fused_velocity_advection_stencil_8_to_13_corrector,
-    fused_velocity_advection_stencil_8_to_13_predictor,
+    compute_advection_in_horizontal_momentum_equation,
 )
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
@@ -146,8 +143,8 @@ def test_velocity_predictor_step(
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        vt=init_savepoint.vt(),
-        vn_ie=init_savepoint.vn_ie(),
+        tangential_wind=init_savepoint.vt(),
+        khalf_vn=init_savepoint.vn_ie(),
         w_concorr_c=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
@@ -159,10 +156,10 @@ def test_velocity_predictor_step(
         mass_fl_e=None,
         ddt_vn_phy=None,
         grf_tend_vn=None,
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+        w_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,
@@ -203,11 +200,11 @@ def test_velocity_predictor_step(
     )
 
     velocity_advection.run_predictor_step(
-        vn_only=vn_only,
+        skip_compute_predictor_vertical_advection=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         z_w_concorr_me=init_savepoint.z_w_concorr_me(),
-        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
+        horizontal_kinetic_energy_at_edge=init_savepoint.z_kin_hor_e(),
         z_vt_ie=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
@@ -221,9 +218,9 @@ def test_velocity_predictor_step(
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
     # stencil 01
-    assert helpers.dallclose(diagnostic_state.vt.asnumpy(), icon_result_vt, atol=1.0e-14)
+    assert helpers.dallclose(diagnostic_state.tangential_wind.asnumpy(), icon_result_vt, atol=1.0e-14)
     # stencil 02,05
-    assert helpers.dallclose(diagnostic_state.vn_ie.asnumpy(), icon_result_vn_ie, atol=1.0e-14)
+    assert helpers.dallclose(diagnostic_state.khalf_vn.asnumpy(), icon_result_vn_ie, atol=1.0e-14)
 
     start_edge_lateral_boundary_6 = icon_grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
@@ -240,7 +237,7 @@ def test_velocity_predictor_step(
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert helpers.dallclose(
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
-        velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
+        velocity_advection._horizontal_kinetic_energy_at_cell.asnumpy()[start_cell_nudging:, :],
     )
     # stencil 10
     assert helpers.dallclose(
@@ -267,14 +264,14 @@ def test_velocity_predictor_step(
 
     # stencil 16
     assert helpers.dallclose(
-        diagnostic_state.ddt_w_adv_pc.predictor.asnumpy()[start_cell_nudging:, :],
+        diagnostic_state.w_advective_tendency.predictor.asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
         rtol=1.0e-10,
     )
     # stencil 19
     assert helpers.dallclose(
-        diagnostic_state.ddt_vn_apc_pc.predictor.asnumpy(),
+        diagnostic_state.normal_wind_advective_tendency.predictor.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=1.0e-15,
     )
@@ -315,8 +312,8 @@ def test_velocity_corrector_step(
     assert not vn_only
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        vt=init_savepoint.vt(),
-        vn_ie=init_savepoint.vn_ie(),
+        tangential_wind=init_savepoint.vt(),
+        khalf_vn=init_savepoint.vn_ie(),
         w_concorr_c=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
@@ -328,10 +325,10 @@ def test_velocity_corrector_step(
         mass_fl_e=None,
         ddt_vn_phy=None,
         grf_tend_vn=None,
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
+        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
+        w_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
@@ -376,7 +373,7 @@ def test_velocity_corrector_step(
     velocity_advection.run_corrector_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
+        horizontal_kinetic_energy_at_edge=init_savepoint.z_kin_hor_e(),
         z_vt_ie=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
@@ -398,7 +395,7 @@ def test_velocity_corrector_step(
     # stencil 08
     start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert helpers.dallclose(
-        velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
+        velocity_advection._horizontal_kinetic_energy_at_cell.asnumpy()[start_cell_nudging:, :],
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
     )
 
@@ -409,13 +406,13 @@ def test_velocity_corrector_step(
     )
     # stencil 16
     assert helpers.dallclose(
-        diagnostic_state.ddt_w_adv_pc.corrector.asnumpy()[start_cell_nudging:, :],
+        diagnostic_state.w_advective_tendency.corrector.asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
     )
     # stencil 19
     assert helpers.dallclose(
-        diagnostic_state.ddt_vn_apc_pc.corrector.asnumpy(),
+        diagnostic_state.normal_wind_advective_tendency.corrector.asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
     )
@@ -518,7 +515,7 @@ def test_velocity_fused_1_7(
             z_v_grad_w=z_v_grad_w,
             k=k,
             nlev=gtx.int32(icon_grid.num_levels),
-            lvn_only=lvn_only,
+            skip_compute_predictor_vertical_advection=lvn_only,
             edge=edge,
             lateral_boundary_7=lateral_boundary_7,
             halo_1=halo_1,
@@ -628,7 +625,7 @@ def test_velocity_fused_8_13_new(
     end_halo = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
 
     if istep_init == 1:
-        fused_velocity_advection_stencil_8_to_13_predictor.with_backend(backend)(
+        fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_predictor.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=e_bln_c_s,
             z_w_concorr_me=z_w_concorr_me,
@@ -656,7 +653,7 @@ def test_velocity_fused_8_13_new(
             },
         )
     else:
-        fused_velocity_advection_stencil_8_to_13_corrector.with_backend(backend)(
+        fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_corrector.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=e_bln_c_s,
             wgtfac_c=wgtfac_c,
@@ -794,8 +791,7 @@ def test_velocity_fused_15_18(
         cell_upper_bound=cell_upper_bound,
         nlev=icon_grid.num_levels,
         nrdmax=nrdmax,
-        lvn_only=lvn_only,
-        extra_diffu=extra_diffu,
+        skip_compute_predictor_vertical_advection=lvn_only,
         start_cell_lateral_boundary=start_cell_lateral_boundary,
         end_cell_halo=end_cell_halo,
         horizontal_start=horizontal_start,
@@ -843,17 +839,17 @@ def test_velocity_fused_19_20(
     step_date_exit,
 ):
     vn = savepoint_velocity_19_20_init.vn()
-    z_kin_hor_e = savepoint_velocity_19_20_init.z_kin_hor_e()
-    z_ekinh = savepoint_velocity_19_20_init.z_ekinh()
-    vt = savepoint_velocity_19_20_init.vt()
-    z_w_con_c_full = savepoint_velocity_19_20_init.z_w_con_c_full()
-    vn_ie = savepoint_velocity_19_20_init.vn_ie()
+    horizontal_kinetic_energy_at_edge = savepoint_velocity_19_20_init.z_kin_hor_e()
+    horizontal_kinetic_energy_at_cell = savepoint_velocity_19_20_init.z_ekinh()
+    tangential_wind = savepoint_velocity_19_20_init.vt()
+    contravariant_corrected_w_at_cell = savepoint_velocity_19_20_init.z_w_con_c_full()
+    khalf_vn = savepoint_velocity_19_20_init.vn_ie()
     levelmask = savepoint_velocity_19_20_init.levelmask()
-    ddt_vn_apc = savepoint_velocity_19_20_init.ddt_vn_apc()
+    normal_wind_advective_tendency = savepoint_velocity_19_20_init.ddt_vn_apc()
 
     geofac_rot = interpolation_savepoint.geofac_rot()
     coeff_gradekin = metrics_savepoint.coeff_gradekin()
-    f_e = grid_savepoint.f_e()
+    coriolis_frequency = grid_savepoint.f_e()
     c_lin_e = interpolation_savepoint.c_lin_e()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     area_edge = grid_savepoint.edge_areas()
@@ -878,31 +874,31 @@ def test_velocity_fused_19_20(
     d_time = 5.0
     nrdmax = grid_savepoint.nrdmax()
 
-    ddt_vn_apc_ref = savepoint_velocity_19_20_exit.ddt_vn_apc()
+    normal_wind_advective_tendency_ref = savepoint_velocity_19_20_exit.ddt_vn_apc()
 
     scalfac_exdiff = savepoint_velocity_init.scalfac_exdiff()
     cfl_w_limit = savepoint_velocity_init.cfl_w_limit()
 
-    fused_velocity_advection_stencil_19_to_20.fused_velocity_advection_stencil_19_to_20.with_backend(
+    compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
         backend
     )(
+        normal_wind_advective_tendency=normal_wind_advective_tendency,
         vn=vn,
+        horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+        horizontal_kinetic_energy_at_cell=horizontal_kinetic_energy_at_cell,
+        tangential_wind=tangential_wind,
+        coriolis_frequency=coriolis_frequency,
+        contravariant_corrected_w_at_cell=contravariant_corrected_w_at_cell,
+        khalf_vn=khalf_vn,
         geofac_rot=geofac_rot,
-        z_kin_hor_e=z_kin_hor_e,
         coeff_gradekin=coeff_gradekin,
-        z_ekinh=z_ekinh,
-        vt=vt,
-        f_e=f_e,
         c_lin_e=c_lin_e,
-        z_w_con_c_full=z_w_con_c_full,
-        vn_ie=vn_ie,
         ddqz_z_full_e=ddqz_z_full_e,
         levelmask=levelmask,
         area_edge=area_edge,
         tangent_orientation=tangent_orientation,
         inv_primal_edge_length=inv_primal_edge_length,
         geofac_grdiv=geofac_grdiv,
-        ddt_vn_apc=ddt_vn_apc,
         k=k,
         vertex=vertex,
         edge=edge,
@@ -930,5 +926,5 @@ def test_velocity_fused_19_20(
     )
 
     assert helpers.dallclose(
-        ddt_vn_apc_ref.asnumpy(), ddt_vn_apc.asnumpy(), rtol=1.0e-15, atol=1.0e-15
+        normal_wind_advective_tendency_ref.asnumpy(), normal_wind_advective_tendency.asnumpy(), rtol=1.0e-15, atol=1.0e-15
     )

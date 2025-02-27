@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.stencils import (
     fused_velocity_advection_stencil_1_to_7,
     fused_velocity_advection_stencil_8_to_13,
     fused_velocity_advection_stencil_15_to_18,
-    fused_velocity_advection_stencil_19_to_20,
+    compute_advection_in_horizontal_momentum_equation,
 )
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
@@ -87,7 +87,7 @@ class VelocityAdvection:
             self._backend
         )
 
-        self._fused_velocity_advection_stencil_19_to_20 = fused_velocity_advection_stencil_19_to_20.fused_velocity_advection_stencil_19_to_20.with_backend(
+        self._compute_advection_in_horizontal_momentum_equation = compute_advection_in_horizontal_momentum_equation.compute_advection_in_horizontal_momentum_equation.with_backend(
             self._backend
         )
         self._compute_horizontal_advection_term_for_vertical_velocity = (
@@ -116,18 +116,26 @@ class VelocityAdvection:
         self.z_v_grad_w = data_alloc.zero_field(
             self.grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.z_ekinh = data_alloc.zero_field(
+        self._horizontal_kinetic_energy_at_cell = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
+        """
+        Declared as z_ekinh in ICON.
+        """
+
         self.z_w_concorr_mc = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         self.z_w_con_c = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self.z_w_con_c_full = data_alloc.zero_field(
+        self._contravariant_corrected_w_at_cell = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
+        """
+        Declared as z_w_con_c_full in ICON.
+        """
+
         self.cfl_clipping = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, dtype=bool, backend=self._backend
         )
@@ -179,15 +187,30 @@ class VelocityAdvection:
 
     def run_predictor_step(
         self,
-        vn_only: bool,
+        skip_compute_predictor_vertical_advection: bool,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
         z_w_concorr_me: fa.EdgeKField[float],
-        z_kin_hor_e: fa.EdgeKField[float],
+        horizontal_kinetic_energy_at_edge: fa.EdgeKField[float],
         z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         cell_areas: fa.CellField[float],
     ):
+        """
+        Compute some diagnostic variables that are used in the predictor step 
+        of the dycore and advective tendency of normal and vertical winds.
+
+        Args:
+            skip_compute_predictor_vertical_advection: Option to skip computation of advective tendency of vertical wind
+            diagnostic_state: DiagnosticStateNonHydro class
+            prognostic_state: PrognosticState class
+            z_w_concorr_me: Contravariant corrected vertical wind at edge [m s-1]
+            horizontal_kinetic_energy_at_edge: Horizontal kinetic energy at edge [m^2 s-2]
+            z_vt_ie: tangential wind at edge on k-half levels [m s-1]
+            dtime: time step [m s-1]
+            cell_areas: cell area [m^2]
+        """
+
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         # TODO: rbf array is inverted in serialized data
@@ -211,14 +234,14 @@ class VelocityAdvection:
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             tangent_orientation=self.edge_params.tangent_orientation,
             z_vt_ie=z_vt_ie,
-            vt=diagnostic_state.vt,
-            vn_ie=diagnostic_state.vn_ie,
-            z_kin_hor_e=z_kin_hor_e,
+            vt=diagnostic_state.tangential_wind,
+            vn_ie=diagnostic_state.khalf_vn,
+            z_kin_hor_e=horizontal_kinetic_energy_at_edge,
             z_v_grad_w=self.z_v_grad_w,
             k=self.k_field,
             nlev=gtx.int32(self.grid.num_levels),
             edge=self.edge_field,
-            lvn_only=vn_only,
+            skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             lateral_boundary_7=self._start_edge_lateral_boundary_level_7,
             halo_1=self._end_edge_halo,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
@@ -229,14 +252,14 @@ class VelocityAdvection:
         )
 
         self._fused_velocity_advection_stencil_8_to_13_predictor(
-            z_kin_hor_e=z_kin_hor_e,
+            z_kin_hor_e=horizontal_kinetic_energy_at_edge,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=self.metric_state.wgtfac_c,
             w=prognostic_state.w,
             z_w_concorr_mc=self.z_w_concorr_mc,
             w_concorr_c=diagnostic_state.w_concorr_c,
-            z_ekinh=self.z_ekinh,
+            z_ekinh=self._horizontal_kinetic_energy_at_cell,
             z_w_con_c=self.z_w_con_c,
             k=self.k_field,
             nlev=self.grid.num_levels,
@@ -274,7 +297,7 @@ class VelocityAdvection:
             w=prognostic_state.w,
             coeff1_dwdz=self.metric_state.coeff1_dwdz,
             coeff2_dwdz=self.metric_state.coeff2_dwdz,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc.predictor,
+            ddt_w_adv=diagnostic_state.w_advective_tendency.predictor,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_v_grad_w=self.z_v_grad_w,
             levelmask=self.levmask,
@@ -283,7 +306,7 @@ class VelocityAdvection:
             ddqz_z_half=self.metric_state.ddqz_z_half,
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
-            z_w_con_c_full=self.z_w_con_c_full,
+            z_w_con_c_full=self._contravariant_corrected_w_at_cell,
             cell=self.cell_field,
             k=self.k_field,
             scalfac_exdiff=scalfac_exdiff,
@@ -293,8 +316,7 @@ class VelocityAdvection:
             cell_upper_bound=self._end_cell_local,
             nlev=gtx.int32(self.grid.num_levels),
             nrdmax=self.vertical_params.nrdmax,
-            lvn_only=vn_only,
-            extra_diffu=True,
+            skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             start_cell_lateral_boundary=self._start_cell_lateral_boundary_level_4,
             end_cell_halo=self._end_cell_halo,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
@@ -306,24 +328,24 @@ class VelocityAdvection:
 
         self.levelmask = self.levmask
 
-        self._fused_velocity_advection_stencil_19_to_20(
+        self._compute_advection_in_horizontal_momentum_equation(
+            normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.predictor,
             vn=prognostic_state.vn,
+            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+            horizontal_kinetic_energy_at_cell=self._horizontal_kinetic_energy_at_cell,
+            tangential_wind=diagnostic_state.tangential_wind,
+            coriolis_frequency=self.edge_params.coriolis_frequency,
+            contravariant_corrected_w_at_cell=self._contravariant_corrected_w_at_cell,
+            khalf_vn=diagnostic_state.khalf_vn,
             geofac_rot=self.interpolation_state.geofac_rot,
-            z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
-            z_ekinh=self.z_ekinh,
-            vt=diagnostic_state.vt,
-            f_e=self.edge_params.f_e,
             c_lin_e=self.interpolation_state.c_lin_e,
-            z_w_con_c_full=self.z_w_con_c_full,
-            vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
             levelmask=self.levelmask,
             area_edge=self.edge_params.edge_areas,
             tangent_orientation=self.edge_params.tangent_orientation,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.predictor,
             k=self.k_field,
             vertex=self.vertex_field,
             edge=self.edge_field,
@@ -358,7 +380,7 @@ class VelocityAdvection:
         self,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        z_kin_hor_e: fa.EdgeKField[float],
+        horizontal_kinetic_energy_at_edge: fa.EdgeKField[float],
         z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         cell_areas: fa.CellField[float],
@@ -372,7 +394,7 @@ class VelocityAdvection:
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             tangent_orientation=self.edge_params.tangent_orientation,
             z_vt_ie=z_vt_ie,
-            vn_ie=diagnostic_state.vn_ie,
+            vn_ie=diagnostic_state.khalf_vn,
             z_v_grad_w=self.z_v_grad_w,
             edge=self.edge_field,
             vertex=self.vertex_field,
@@ -388,12 +410,12 @@ class VelocityAdvection:
         )
 
         self._fused_velocity_advection_stencil_8_to_13_corrector(
-            z_kin_hor_e=z_kin_hor_e,
+            z_kin_hor_e=horizontal_kinetic_energy_at_edge,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             wgtfac_c=self.metric_state.wgtfac_c,
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
-            z_ekinh=self.z_ekinh,
+            z_ekinh=self._horizontal_kinetic_energy_at_cell,
             z_w_con_c=self.z_w_con_c,
             k=self.k_field,
             nlev=self.grid.num_levels,
@@ -428,7 +450,7 @@ class VelocityAdvection:
             w=prognostic_state.w,
             coeff1_dwdz=self.metric_state.coeff1_dwdz,
             coeff2_dwdz=self.metric_state.coeff2_dwdz,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc.corrector,
+            ddt_w_adv=diagnostic_state.w_advective_tendency.corrector,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_v_grad_w=self.z_v_grad_w,
             levelmask=self.levmask,
@@ -437,7 +459,7 @@ class VelocityAdvection:
             ddqz_z_half=self.metric_state.ddqz_z_half,
             area=cell_areas,
             geofac_n2s=self.interpolation_state.geofac_n2s,
-            z_w_con_c_full=self.z_w_con_c_full,
+            z_w_con_c_full=self._contravariant_corrected_w_at_cell,
             cell=self.cell_field,
             k=self.k_field,
             scalfac_exdiff=scalfac_exdiff,
@@ -447,8 +469,7 @@ class VelocityAdvection:
             cell_upper_bound=self._end_cell_local,
             nlev=gtx.int32(self.grid.num_levels),
             nrdmax=self.vertical_params.nrdmax,
-            lvn_only=False,
-            extra_diffu=True,
+            skip_compute_predictor_vertical_advection=False,
             start_cell_lateral_boundary=self._start_cell_lateral_boundary_level_4,
             end_cell_halo=self._end_cell_halo,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
@@ -460,24 +481,24 @@ class VelocityAdvection:
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
-        self._fused_velocity_advection_stencil_19_to_20(
+        self._compute_advection_in_horizontal_momentum_equation(
+            normal_wind_advective_tendency=diagnostic_state.normal_wind_advective_tendency.corrector,
             vn=prognostic_state.vn,
+            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+            horizontal_kinetic_energy_at_cell=self._horizontal_kinetic_energy_at_cell,
+            tangential_wind=diagnostic_state.tangential_wind,
+            coriolis_frequency=self.edge_params.coriolis_frequency,
+            contravariant_corrected_w_at_cell=self._contravariant_corrected_w_at_cell,
+            khalf_vn=diagnostic_state.khalf_vn,
             geofac_rot=self.interpolation_state.geofac_rot,
-            z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
-            z_ekinh=self.z_ekinh,
-            vt=diagnostic_state.vt,
-            f_e=self.edge_params.f_e,
             c_lin_e=self.interpolation_state.c_lin_e,
-            z_w_con_c_full=self.z_w_con_c_full,
-            vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
             levelmask=self.levelmask,
             area_edge=self.edge_params.edge_areas,
             tangent_orientation=self.edge_params.tangent_orientation,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
-            ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc.corrector,
             k=self.k_field,
             vertex=self.vertex_field,
             edge=self.edge_field,
