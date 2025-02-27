@@ -22,8 +22,6 @@ from icon4py.model.testing.datatest_fixtures import (  # F401
     interpolation_savepoint,
     istep_exit,
     istep_init,
-    substep_init,
-    substep_exit,
     linit,
     lowest_layer_thickness,
     metrics_savepoint,

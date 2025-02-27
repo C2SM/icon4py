@@ -270,10 +270,10 @@ def test_dycore_wrapper_granule_inputs(
     mass_fl_e = sp.mass_fl_e()
     ddt_vn_phy = sp.ddt_vn_phy()
     grf_tend_vn = sp.grf_tend_vn()
-    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(1)
-    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(2)
-    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
-    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
+    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(0)
+    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(1)
+    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(0)
+    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
     vt = sp.vt()
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
@@ -293,7 +293,7 @@ def test_dycore_wrapper_granule_inputs(
     exner_new = sp.exner_new()
 
     # using fortran indices
-    jstep_init_fortran = jstep_init + 1
+    substep = substep_init
 
     # --- Expected objects that form inputs into init function ---
     expected_icon_grid = icon_grid
@@ -384,8 +384,8 @@ def test_dycore_wrapper_granule_inputs(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(sp.ddt_vn_apc_pc(1), sp.ddt_vn_apc_pc(2)),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(sp.ddt_w_adv_pc(1), sp.ddt_w_adv_pc(2)),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)),
         vt=sp.vt(),
         vn_ie=sp.vn_ie(),
         w_concorr_c=sp.w_concorr_c(),
@@ -421,8 +421,8 @@ def test_dycore_wrapper_granule_inputs(
     expected_initial_divdamp_fac = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
     expected_lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    expected_at_first_substep = jstep_init == 0
-    expected_at_last_substep = jstep_init == (ndyn_substeps - 1)
+    expected_at_first_substep = substep_init == 1
+    expected_at_last_substep = substep_init == ndyn_substeps
 
     # --- Initialize the Grid ---
     dycore_wrapper.grid_init(
@@ -510,7 +510,7 @@ def test_dycore_wrapper_granule_inputs(
             ddxn_z_full=ddxn_z_full,
             zdiff_gradp=zdiff_gradp,
             vertoffset_gradp=vertoffset_gradp,
-            pg_edgeidx_dsl=pg_edgeidx_dsl,
+            ipeidx_dsl=pg_edgeidx_dsl,
             pg_exdist=pg_exdist,
             ddqz_z_full_e=ddqz_z_full_e,
             ddxt_z_full=ddxt_z_full,
@@ -656,7 +656,7 @@ def test_dycore_wrapper_granule_inputs(
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=initial_divdamp_fac,
             ndyn_substeps=ndyn_substeps,
-            idyn_timestep=jstep_init_fortran,
+            idyn_timestep=substep,
         )
 
         # Check input arguments to SolveNonhydro.time_step
@@ -1057,10 +1057,10 @@ def test_granule_solve_nonhydro_single_step_regional(
     mass_fl_e = sp.mass_fl_e()
     ddt_vn_phy = sp.ddt_vn_phy()
     grf_tend_vn = sp.grf_tend_vn()
-    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(1)
-    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(2)
-    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
-    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
+    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(0)
+    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(1)
+    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(0)
+    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
     vt = sp.vt()
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
@@ -1080,7 +1080,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     exner_new = sp.exner_new()
 
     # using fortran indices
-    jstep_init_fortran = jstep_init + 1
+    substep = substep_init
 
     dycore_wrapper.solve_nh_run(
         rho_now=rho_now,
@@ -1119,7 +1119,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=initial_divdamp_fac,
         ndyn_substeps=ndyn_substeps,
-        idyn_timestep=jstep_init_fortran,
+        idyn_timestep=substep,
     )
 
     assert helpers.dallclose(
@@ -1500,13 +1500,13 @@ def test_granule_solve_nonhydro_multi_step_regional(
     mass_fl_e = sp.mass_fl_e()
     ddt_vn_phy = sp.ddt_vn_phy()
     grf_tend_vn = sp.grf_tend_vn()
-    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(1)
-    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(2)
+    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(0)
+    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(1)
     if linit:
-        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
-        ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
+        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(0)
+        ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
     else:
-        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(2)
+        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(0)
         ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
     vt = sp.vt()
     vn_ie = sp.vn_ie()
