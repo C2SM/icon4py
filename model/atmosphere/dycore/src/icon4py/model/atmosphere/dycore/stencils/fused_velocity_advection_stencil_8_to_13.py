@@ -8,6 +8,7 @@
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
@@ -55,8 +56,8 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
 
     z_w_concorr_mc = _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s)
 
-    w_concorr_c = where(
-        nflatlev + 1 <= k < nlev,
+    w_concorr_c = concat_where(
+        (nflatlev + 1 <= dims.KDim) & (dims.KDim < nlev),
         _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_w_concorr_mc),
         w_concorr_c,
     )

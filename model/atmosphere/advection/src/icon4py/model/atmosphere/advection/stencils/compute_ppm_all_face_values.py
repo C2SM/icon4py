@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+from gt4py.next.ffront.experimental import concat_where
 from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.advection.stencils.compute_ppm_quadratic_face_values import (
@@ -39,7 +40,7 @@ def _compute_ppm_all_face_values(
 
     p_face = where((k == slev), p_cc, p_face)
 
-    p_face = where((k == elevp1), p_cc(Koff[-1]), p_face)
+    p_face = concat_where(dims.KDim == elevp1, p_cc(Koff[-1]), p_face)
 
     return p_face
 
