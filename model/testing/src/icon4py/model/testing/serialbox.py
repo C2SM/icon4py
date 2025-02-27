@@ -587,13 +587,6 @@ class InterpolationSavepoint(IconSavepoint):
     def geofac_grdiv(self):
         return self._get_field("geofac_grdiv", dims.EdgeDim, dims.E2C2EODim)
 
-    def rbf_vec_idx_c(self):
-        buffer = self.serializer.read("rbf_vec_idx_c", self.savepoint)
-        num_cells = self.sizes[dims.CellDim]
-        return gtx.as_field((dims.CellDim, dims.C2E2C2EDim), buffer[:, num_cells].T, dtype=gtx.int32, allocator=self.backend)
-
-        #return self._get_field("rbf_vec_idx_c", dims.CellDim, dims.C2E2C2EDim, dtype=gtx.int32)
-
     def geofac_grg(self):
         grg = np.squeeze(self.serializer.read("geofac_grg", self.savepoint))
         num_cells = self.sizes[dims.CellDim]
@@ -1378,10 +1371,9 @@ class IconJabwExitSavepoint(IconSavepoint):
     def temperature(self):
         return self._get_field("temperature", dims.CellDim, dims.KDim)
 
-    #TODO change field name
+    # TODO change field name
     def pressure_sfc(self):
         return self._get_field("surface_pressure", dims.CellDim)
-
 
 
 class IconJabwDiagnosticSavepoint(IconSavepoint):
@@ -1457,7 +1449,6 @@ class IconPrognosticsInitSavepoint(IconSavepoint):
 
     def meridional_wind(self):
         return self._get_field("v", dims.CellDim, dims.KDim)
-
 
 
 class IconGraupelEntrySavepoint(IconSavepoint):
@@ -1972,6 +1963,11 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
+    def from_savepoint_prognostics_initial(self) -> IconPrognosticsInitSavepoint:
+        savepoint = self.serializer.savepoint["initial-prognostics"].id[1].as_savepoint()
+        return IconPrognosticsInitSavepoint(
+            savepoint, self.serializer, size=self.grid_size, backend=self.backend
+        )
 
     def from_savepoint_diagnostics_initial(self) -> IconDiagnosticsInitSavepoint:
         savepoint = self.serializer.savepoint["initial-diagnostics"].id[1].as_savepoint()

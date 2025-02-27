@@ -18,11 +18,6 @@ from icon4py.model.common.diagnostic_calculations.stencils import (
 from icon4py.model.common.interpolation.stencils import (
     edge_2_cell_vector_rbf_interpolation as rbf,
 )
-from icon4py.model.common.states import (
-    diagnostic_state as diagnostics,
-    prognostic_state,
-    tracer_state as tracers,
-)
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
@@ -44,23 +39,23 @@ def test_diagnose_temperature(
     temperature_ref = diagnostic_reference_savepoint.temperature().asnumpy()
     virtual_temperature_ref = diagnostic_reference_savepoint.virtual_temperature().asnumpy()
     initial_prognostic_savepoint = data_provider.from_savepoint_jabw_exit()
-    exner=initial_prognostic_savepoint.exner()
-    theta_v=initial_prognostic_savepoint.theta_v()
+    exner = initial_prognostic_savepoint.exner()
+    theta_v = initial_prognostic_savepoint.theta_v()
 
+    temperature = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
+    )
+    virtual_temperature = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
+    )
 
-    temperature=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
-    virtual_temperature=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
-
-     # TODO those are inputs and should be read from serializer
-    qv=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
-    qc=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
-    qr=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
-    qi=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
-    qs=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
-    qg=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
-
+    # TODO those are inputs and should be read from serializer
+    qv = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qr = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qi = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qs = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
+    qg = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
 
     diagnose_temperature.diagnose_virtual_temperature_and_temperature.with_backend(backend)(
         qv=qv,
@@ -111,11 +106,9 @@ def test_diagnose_meridional_and_zonal_winds(
     rbv_vec_coeff_c1 = interpolation_savepoint.rbf_vec_coeff_c1()
     rbv_vec_coeff_c2 = interpolation_savepoint.rbf_vec_coeff_c2()
 
-
     diagnostics_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
     u_ref = diagnostics_reference_savepoint.zonal_wind().asnumpy()
     v_ref = diagnostics_reference_savepoint.meridional_wind().asnumpy()
-
 
     u = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
     v = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
@@ -161,22 +154,17 @@ def test_diagnose_meridional_and_zonal_winds(
     ],
 )
 def test_diagnose_surface_pressure(
-    experiment,
-    data_provider,
-    icon_grid,
-    backend,
-    metrics_savepoint
+    experiment, data_provider, icon_grid, backend, metrics_savepoint
 ):
-
     initial_diagnostic_savepoint = data_provider.from_savepoint_diagnostics_initial()
     surface_pressure_ref = initial_diagnostic_savepoint.pressure_sfc().asnumpy()
     initial_prognostic_savepoint = data_provider.from_savepoint_jabw_exit()
-    exner=initial_prognostic_savepoint.exner()
-    virtual_temperature=initial_diagnostic_savepoint.virtual_temperature()
+    exner = initial_prognostic_savepoint.exner()
+    virtual_temperature = initial_diagnostic_savepoint.virtual_temperature()
     ddqz_z_full = metrics_savepoint.ddqz_z_full()
 
-    surface_pressure=data_alloc.zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, backend=backend
+    surface_pressure = data_alloc.zero_field(
+        icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}, backend=backend
     )
 
     cell_domain = h_grid.domain(dims.CellDim)
@@ -209,17 +197,11 @@ def test_diagnose_surface_pressure(
         dt_utils.JABW_EXPERIMENT,
     ],
 )
-def test_diagnose_pressure(
-    experiment,
-    data_provider,
-    icon_grid,
-    backend,
-    metrics_savepoint
-):
+def test_diagnose_pressure(experiment, data_provider, icon_grid, backend, metrics_savepoint):
     ddqz_z_full = metrics_savepoint.ddqz_z_full()
 
     diagnostics_reference_savepoint = data_provider.from_savepoint_diagnostics_initial()
-    virtual_temperature=diagnostics_reference_savepoint.temperature()
+    virtual_temperature = diagnostics_reference_savepoint.temperature()
     surface_pressure = diagnostics_reference_savepoint.pressure_sfc()
 
     pressure_ifc_ref = diagnostics_reference_savepoint.pressure_ifc().asnumpy()
@@ -250,10 +232,7 @@ def test_diagnose_pressure(
         offset_provider={},
     )
 
-
-    assert helpers.dallclose(pressure_ifc_ref,
-        pressure_ifc.asnumpy()
-    )
+    assert helpers.dallclose(pressure_ifc_ref, pressure_ifc.asnumpy())
 
     assert helpers.dallclose(
         pressure_ref,
