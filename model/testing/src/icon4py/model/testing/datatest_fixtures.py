@@ -71,6 +71,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 @pytest.fixture
 def data_provider(download_ser_data, ranked_data_path, experiment, processor_props, backend):
     data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+    print(f"loading test data from {data_path}")
     return dt_utils.create_icon_serial_data_provider(data_path, processor_props, backend)
 
 

@@ -109,7 +109,6 @@ def test_time_step_flags(
     savepoint_nonhydro_init,
 ):
     sp = savepoint_nonhydro_init
-
     recompute = sp.get_metadata("recompute").get("recompute")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     linit = sp.get_metadata("linit").get("linit")
@@ -222,11 +221,9 @@ def test_nonhydro_predictor_step(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
     cell_start_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-
     edge_start_lateral_boundary_level_5 = icon_grid.start_index(
         edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
-
     edge_start_lateral_boundary_level_7 = icon_grid.start_index(
         edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
@@ -829,7 +826,7 @@ def test_run_solve_nonhydro_single_step(
         at_initial_timestep=at_initial_timestep,
         lprep_adv=lprep_adv,
         at_first_substep=substep_init == 1,
-        at_last_substep=substep_init == (ndyn_substeps),
+        at_last_substep=substep_init == ndyn_substeps,
     )
     prognostic_state_nnew = prognostic_states.next
     assert helpers.dallclose(
