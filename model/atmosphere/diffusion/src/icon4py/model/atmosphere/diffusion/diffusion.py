@@ -143,6 +143,7 @@ class DiffusionConfig:
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
         shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+        ltkeshs: bool = True,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
@@ -150,39 +151,39 @@ class DiffusionConfig:
         self.diffusion_type: int = diffusion_type
 
         #: If True, apply diffusion on the vertical wind field
-        #: Called `lhdiff_w` in mo_diffusion_nml.f90
+        #: Called 'lhdiff_w' in mo_diffusion_nml.f90
         self.apply_to_vertical_wind: bool = hdiff_w
 
         #: True apply diffusion on the horizontal wind field, is ONLY used in mo_nh_stepping.f90
-        #: Called `lhdiff_vn` in mo_diffusion_nml.f90
+        #: Called 'lhdiff_vn' in mo_diffusion_nml.f90
         self.apply_to_horizontal_wind = hdiff_vn
 
         #:  If True, apply horizontal diffusion to temperature field
-        #: Called `lhdiff_temp` in mo_diffusion_nml.f90
+        #: Called 'lhdiff_temp' in mo_diffusion_nml.f90
         self.apply_to_temperature: bool = hdiff_temp
 
         #: If True, compute 3D Smagorinsky diffusion coefficient
-        #: Called `lsmag_3d` in mo_diffusion_nml.f90
+        #: Called 'lsmag_3d' in mo_diffusion_nml.f90
         self.compute_3d_smag_coeff: bool = smag_3d
 
         #: Options for discretizing the Smagorinsky momentum diffusion
-        #: Called `itype_vn_diffu` in mo_diffusion_nml.f90
+        #: Called 'itype_vn_diffu' in mo_diffusion_nml.f90
         self.type_vn_diffu: int = type_vn_diffu
 
         #: Options for discretizing the Smagorinsky temperature diffusion
-        #: Called `itype_t_diffu` inmo_diffusion_nml.f90
-        self.type_t_diffu = type_t_diffu
+        #: Called 'itype_t_diffu' in mo_diffusion_nml.f90
+        self.type_t_diffu: int = type_t_diffu
 
         #: Ratio of e-folding time to (2*)time step
-        #: Called `hdiff_efdt_ratio` inmo_diffusion_nml.f90
+        #: Called 'hdiff_efdt_ratio' in mo_diffusion_nml.f90
         self.hdiff_efdt_ratio: float = hdiff_efdt_ratio
 
         #: Ratio of e-folding time to time step for w diffusion (NH only)
-        #: Called `hdiff_w_efdt_ratio` inmo_diffusion_nml.f90.
+        #: Called 'hdiff_w_efdt_ratio' in mo_diffusion_nml.f90.
         self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
 
         #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
-        #: Called `hdiff_smag_fac` in mo_diffusion_nml.f90
+        #: Called 'hdiff_smag_fac' in mo_diffusion_nml.f90
         self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
 
         #: If True, apply truly horizontal temperature diffusion over steep slopes
@@ -224,16 +225,20 @@ class DiffusionConfig:
         #:
         #: Maximal value of the nudging coefficients used cell row bordering the boundary interpolation zone,
         #: from there nudging coefficients decay exponentially with `nudge_efold_width` in units of cell rows.
-        #: Called `nudge_max_coeff` in mo_interpol_nml.f90
+        #: Called 'nudge_max_coeff' in mo_interpol_nml.f90
         self.nudge_max_coeff: float = max_nudging_coeff
 
         #: Exponential decay rate (in units of cell rows) of the lateral boundary nudging coefficients
-        #: Called `nudge_efold_width` in mo_interpol_nml.f90
+        #: Called 'nudge_efold_width' in mo_interpol_nml.f90
         self.nudge_efold_width: float = nudging_decay_rate
 
         #: Type of shear forcing used in turbulence
-        #: Called itype_shear in `mo_turbdiff_nml.f90
+        #: Called 'itype_shear' in mo_turbdiff_nml.f90
         self.shear_type = shear_type
+
+        #: Consider separate horizontal shear production in TKE-equation.
+        #: Called 'ltkeshs' in mo_turbdiff_nml.f90
+        self.ltkeshs = ltkeshs
 
         self._validate()
 
@@ -468,51 +473,41 @@ class Diffusion:
         )
 
     def _allocate_temporary_fields(self):
-        self.diff_multfac_vn = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
+        self.diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.diff_multfac_n2w = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.smag_limit = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.enh_smag_fac = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        self.u_vert = data_alloc.zero_field(
+            self._grid, dims.VertexDim, dims.KDim, backend=self._backend
         )
-        self.diff_multfac_n2w = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
+        self.v_vert = data_alloc.zero_field(
+            self._grid, dims.VertexDim, dims.KDim, backend=self._backend
         )
-        self.smag_limit = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
+        self.kh_smag_e = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.enh_smag_fac = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
+        self.kh_smag_ec = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.u_vert = data_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
+        self.z_nabla2_e = data_alloc.zero_field(
+            self._grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
-        self.v_vert = data_alloc.allocate_zero_field(
-            dims.VertexDim, dims.KDim, grid=self._grid, backend=self._backend
+        self.z_temp = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, backend=self._backend
         )
-        self.kh_smag_e = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
-        )
-        self.kh_smag_ec = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
-        )
-        self.z_nabla2_e = data_alloc.allocate_zero_field(
-            dims.EdgeDim, dims.KDim, grid=self._grid, backend=self._backend
-        )
-        self.z_temp = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, backend=self._backend
-        )
-        self.diff_multfac_smag = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
-        )
+        self.diff_multfac_smag = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
         # TODO(Magdalena): this is KHalfDim
-        self.vertical_index = data_alloc.allocate_indices(
-            dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
+        self.vertical_index = data_alloc.index_field(
+            self._grid, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
-        self.horizontal_cell_index = data_alloc.allocate_indices(
-            dims.CellDim, grid=self._grid, backend=self._backend
+        self.horizontal_cell_index = data_alloc.index_field(
+            self._grid, dims.CellDim, backend=self._backend
         )
-        self.horizontal_edge_index = data_alloc.allocate_indices(
-            dims.EdgeDim, grid=self._grid, backend=self._backend
+        self.horizontal_edge_index = data_alloc.index_field(
+            self._grid, dims.EdgeDim, backend=self._backend
         )
-        self.w_tmp = data_alloc.allocate_zero_field(
-            dims.CellDim, dims.KDim, grid=self._grid, is_halfdim=True, backend=self._backend
+        self.w_tmp = data_alloc.zero_field(
+            self._grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
 
     def _determine_horizontal_domains(self):
@@ -567,12 +562,8 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
-        )
-        smag_limit = data_alloc.allocate_zero_field(
-            dims.KDim, grid=self._grid, backend=self._backend
-        )
+        diff_multfac_vn = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
+        smag_limit = data_alloc.zero_field(self._grid, dims.KDim, backend=self._backend)
 
         self.setup_fields_for_initial_step(
             self._params.K4,
@@ -707,6 +698,7 @@ class Diffusion:
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+            or self.config.ltkeshs
         ):
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"

@@ -27,7 +27,7 @@ def flatten_and_get_unique_elts(list_of_lists: list[list[str]]) -> list[str]:
     return sorted(set(item for sublist in list_of_lists for item in sublist))
 
 
-def get_local_test_grid(grid_folder: str):
+def get_local_test_grid(grid_folder: str) -> str:
     test_folder = "testdata"
     module_spec = importlib.util.find_spec("icon4py.tools")
 
@@ -43,7 +43,7 @@ def get_local_test_grid(grid_folder: str):
         )
 
 
-def get_icon_grid_loc():
+def get_icon_grid_loc() -> str:
     env_path = os.environ.get("ICON_GRID_LOC")
     if env_path is not None:
         return env_path
@@ -53,7 +53,7 @@ def get_icon_grid_loc():
         )
 
 
-def get_grid_filename():
+def get_grid_filename() -> str:
     env_path = os.environ.get("ICON_GRID_NAME")
     if env_path is not None:
         return env_path

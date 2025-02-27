@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.integrate_tracer_vertically imp
     integrate_tracer_vertically,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -24,18 +26,18 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        tracer_now: np.array,
-        rhodz_now: np.array,
-        p_mflx_tracer_v: np.array,
-        deepatmo_divzl: np.array,
-        deepatmo_divzu: np.array,
-        rhodz_new: np.array,
-        k: np.array,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        tracer_now: np.ndarray,
+        rhodz_now: np.ndarray,
+        p_mflx_tracer_v: np.ndarray,
+        deepatmo_divzl: np.ndarray,
+        deepatmo_divzu: np.ndarray,
+        rhodz_new: np.ndarray,
+        k: np.ndarray,
         ivadv_tracer: gtx.int32,
         iadv_slev_jt: gtx.int32,
         p_dtime: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         if ivadv_tracer != 0:
             tracer_new = np.where(
@@ -57,7 +59,7 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
         return dict(tracer_new=tracer_new)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         tracer_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rhodz_now = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_mflx_tracer_v = data_alloc.random_field(
@@ -67,7 +69,7 @@ class TestIntegrateTracerVertically(helpers.StencilTest):
         deepatmo_divzu = data_alloc.random_field(grid, dims.KDim)
         rhodz_new = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         tracer_new = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        k = data_alloc.allocate_indices(dims.KDim, grid, is_halfdim=False, dtype=gtx.int32)
+        k = data_alloc.index_field(grid, dims.KDim)
         p_dtime = np.float64(5.0)
         ivadv_tracer = 1
         iadv_slev_jt = 4

@@ -16,8 +16,10 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
+
 import cProfile
 import pstats
+from typing import Optional
 
 import gt4py.next as gtx
 
@@ -43,6 +45,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
+from icon4py.tools.py2fgen import settings as settings
 from icon4py.tools.py2fgen.settings import backend, config as config_settings, device
 from icon4py.tools.py2fgen.wrappers import common as wrapper_common
 from icon4py.tools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
@@ -75,10 +78,10 @@ def profile_disable():
 
 
 def diffusion_init(
-    vct_a: gtx.Field[gtx.Dims[dims.KHalfDim], gtx.float64],
-    vct_b: gtx.Field[gtx.Dims[dims.KHalfDim], gtx.float64],
+    vct_a: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
+    vct_b: gtx.Field[gtx.Dims[dims.KDim], gtx.float64],
     theta_ref_mc: fa.CellKField[wpfloat],
-    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    wgtfac_c: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
     geofac_div: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.float64],
     geofac_grg_x: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], gtx.float64],
@@ -87,10 +90,10 @@ def diffusion_init(
     nudgecoeff_e: fa.EdgeField[wpfloat],
     rbf_coeff_1: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
     rbf_coeff_2: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.float64],
-    mask_hdiff: fa.CellKField[bool],
-    zd_diffcoef: fa.CellKField[wpfloat],
-    zd_vertoffset: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.int32],
-    zd_intcoef: gtx.Field[gtx.Dims[dims.CellDim, dims.E2CDim, dims.KDim], gtx.float64],
+    mask_hdiff: Optional[fa.CellKField[bool]],
+    zd_diffcoef: Optional[fa.CellKField[wpfloat]],
+    zd_vertoffset: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.int32]],
+    zd_intcoef: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim, dims.KDim], gtx.float64]],
     ndyn_substeps: gtx.int32,
     rayleigh_damping_height: gtx.float64,
     nflat_gradp: gtx.int32,
@@ -108,6 +111,7 @@ def diffusion_init(
     denom_diffu_v: float,
     nudge_max_coeff: float,
     itype_sher: gtx.int32,
+    ltkeshs: bool,
     tangent_orientation: fa.EdgeField[wpfloat],
     inverse_primal_edge_lengths: fa.EdgeField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
@@ -150,14 +154,22 @@ def diffusion_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=data_alloc.as_1D_sparse_field(primal_normal_vert_x, dims.ECVDim),
-        primal_normal_vert_y=data_alloc.as_1D_sparse_field(primal_normal_vert_y, dims.ECVDim),
-        dual_normal_vert_x=data_alloc.as_1D_sparse_field(dual_normal_vert_x, dims.ECVDim),
-        dual_normal_vert_y=data_alloc.as_1D_sparse_field(dual_normal_vert_y, dims.ECVDim),
-        primal_normal_cell_x=data_alloc.as_1D_sparse_field(primal_normal_cell_x, dims.ECDim),
-        primal_normal_cell_y=data_alloc.as_1D_sparse_field(primal_normal_cell_y, dims.ECDim),
-        dual_normal_cell_x=data_alloc.as_1D_sparse_field(dual_normal_cell_x, dims.ECDim),
-        dual_normal_cell_y=data_alloc.as_1D_sparse_field(dual_normal_cell_y, dims.ECDim),
+        primal_normal_vert_x=data_alloc.flatten_first_two_dims(
+            dims.ECVDim, field=primal_normal_vert_x
+        ),
+        primal_normal_vert_y=data_alloc.flatten_first_two_dims(
+            dims.ECVDim, field=primal_normal_vert_y
+        ),
+        dual_normal_vert_x=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_x),
+        dual_normal_vert_y=data_alloc.flatten_first_two_dims(dims.ECVDim, field=dual_normal_vert_y),
+        primal_normal_cell_x=data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=primal_normal_cell_x
+        ),
+        primal_normal_cell_y=data_alloc.flatten_first_two_dims(
+            dims.ECDim, field=primal_normal_cell_y
+        ),
+        dual_normal_cell_x=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_x),
+        dual_normal_cell_y=data_alloc.flatten_first_two_dims(dims.ECDim, field=dual_normal_cell_y),
         edge_areas=edge_areas,
         f_e=f_e,
         edge_center_lat=edge_center_lat,
@@ -192,6 +204,7 @@ def diffusion_init(
         velocity_boundary_diffusion_denom=denom_diffu_v,
         max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         shear_type=TurbulenceShearForcingType(itype_sher),
+        ltkeshs=ltkeshs,
     )
 
     diffusion_params = DiffusionParams(config)
@@ -213,6 +226,23 @@ def diffusion_init(
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
+    nlev = wgtfac_c.domain[dims.KDim].unit_range.stop - 1  # wgtfac_c has nlevp1 levels
+    cell_k_domain = {dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range, dims.KDim: nlev}
+    c2e2c_size = geofac_grg_x.domain[dims.C2E2CODim].unit_range.stop - 1
+    cell_c2e2c_k_domain = {
+        dims.CellDim: wgtfac_c.domain[dims.CellDim].unit_range,
+        dims.C2E2CDim: c2e2c_size,
+        dims.KDim: nlev,
+    }
+    xp = wgtfac_c.array_ns
+    if mask_hdiff is None:
+        mask_hdiff = gtx.zeros(cell_k_domain, dtype=xp.bool_)
+    if zd_diffcoef is None:
+        zd_diffcoef = gtx.zeros(cell_k_domain, dtype=theta_ref_mc.dtype)
+    if zd_intcoef is None:
+        zd_intcoef = gtx.zeros(cell_c2e2c_k_domain, dtype=wgtfac_c.dtype)
+    if zd_vertoffset is None:
+        zd_vertoffset = gtx.zeros(cell_c2e2c_k_domain, dtype=xp.int32)
     # Metric state
     metric_state = DiffusionMetricState(
         mask_hdiff=mask_hdiff,
@@ -227,10 +257,10 @@ def diffusion_init(
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.as_1D_sparse_field(e_bln_c_s, dims.CEDim),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=e_bln_c_s),
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=data_alloc.as_1D_sparse_field(geofac_div, dims.CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=geofac_div),
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
@@ -253,15 +283,15 @@ def diffusion_init(
 
 
 def diffusion_run(
-    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    w: gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64],
     vn: fa.EdgeKField[wpfloat],
     exner: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     rho: fa.CellKField[wpfloat],
-    hdef_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
-    div_ic: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
-    dwdx: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
-    dwdy: gtx.Field[gtx.Dims[dims.CellDim, dims.KHalfDim], gtx.float64],
+    hdef_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    div_ic: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    dwdx: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
+    dwdy: Optional[gtx.Field[gtx.Dims[dims.CellDim, dims.KDim], gtx.float64]],
     dtime: gtx.float64,
     linit: bool,
 ):
@@ -274,6 +304,14 @@ def diffusion_run(
         rho=rho,
     )
 
+    if hdef_ic is None:
+        hdef_ic = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+    if div_ic is None:
+        div_ic = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+    if dwdx is None:
+        dwdx = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
+    if dwdy is None:
+        dwdy = gtx.zeros(w.domain, dtype=w.dtype, allocator=backend)
     diagnostic_state = DiffusionDiagnosticState(
         hdef_ic=hdef_ic,
         div_ic=div_ic,
@@ -324,19 +362,47 @@ def grid_init_diffusion(
     vertical_size: gtx.int32,
     limited_area: bool,
 ):
-    # todo: write this logic into template.py
-    if isinstance(limited_area, int):
-        limited_area = bool(limited_area)
+    on_gpu = config_settings.device == settings.Device.GPU
+    xp = c2e.array_ns
+
+    # TODO(havogt): add direct support for ndarrays in py2fgen
+    cell_starts = cell_starts.ndarray
+    cell_ends = cell_ends.ndarray
+    vertex_starts = vertex_starts.ndarray
+    vertex_ends = vertex_ends.ndarray
+    edge_starts = edge_starts.ndarray
+    edge_ends = edge_ends.ndarray
+    c_owner_mask = c_owner_mask.ndarray if c_owner_mask is not None else None
+    e_owner_mask = e_owner_mask.ndarray if e_owner_mask is not None else None
+    v_owner_mask = v_owner_mask.ndarray if v_owner_mask is not None else None
+    c_glb_index = c_glb_index.ndarray if c_glb_index is not None else None
+    e_glb_index = e_glb_index.ndarray if e_glb_index is not None else None
+    v_glb_index = v_glb_index.ndarray if v_glb_index is not None else None
+
+    if on_gpu:
+        cp = xp
+        cell_starts = cp.asnumpy(cell_starts)
+        cell_ends = cp.asnumpy(cell_ends)
+        vertex_starts = cp.asnumpy(vertex_starts)
+        vertex_ends = cp.asnumpy(vertex_ends)
+        edge_starts = cp.asnumpy(edge_starts)
+        edge_ends = cp.asnumpy(edge_ends)
+        c_owner_mask = cp.asnumpy(c_owner_mask) if c_owner_mask is not None else None
+        e_owner_mask = cp.asnumpy(e_owner_mask) if e_owner_mask is not None else None
+        v_owner_mask = cp.asnumpy(v_owner_mask) if v_owner_mask is not None else None
+        c_glb_index = cp.asnumpy(c_glb_index) if c_glb_index is not None else None
+        e_glb_index = cp.asnumpy(e_glb_index) if e_glb_index is not None else None
+        v_glb_index = cp.asnumpy(v_glb_index) if v_glb_index is not None else None
 
     global_grid_params = GlobalGridParams(level=global_level, root=global_root)
 
     diffusion_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
-        cell_starts=cell_starts.ndarray,
-        cell_ends=cell_ends.ndarray,
-        vertex_starts=vertex_starts.ndarray,
-        vertex_ends=vertex_ends.ndarray,
-        edge_starts=edge_starts.ndarray,
-        edge_ends=edge_ends.ndarray,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
         c2e=c2e.ndarray,
         e2c=e2c.ndarray,
         c2e2c=c2e2c.ndarray,
@@ -353,7 +419,7 @@ def grid_init_diffusion(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
-        on_gpu=True if config_settings.device == "GPU" else False,
+        on_gpu=on_gpu,
     )
 
     if config_settings.parallel_run:

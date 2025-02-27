@@ -297,6 +297,9 @@ class Zone(str, enum.Enum):
     #: 2nd nudging level in LAM model
     NUDGING_LEVEL_2 = "nudging_level_2"
 
+    def is_halo(self) -> bool:
+        return self in (Zone.HALO, Zone.HALO_LEVEL_2)
+
 
 def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
     match marker:

@@ -7,120 +7,14 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import logging
-import math
-import typing
 from pathlib import Path
 
 import cffi
-import numpy as np
-from cffi import FFI
-from numpy.typing import NDArray
 
 from icon4py.tools.common.logger import setup_logger
 
 
-if typing.TYPE_CHECKING:
-    import cupy as cp  # type: ignore
-
-ffi = FFI()  # needed for unpack and unpack_gpu functions
-
 logger = setup_logger(__name__)
-
-
-def unpack(ptr, *sizes: int) -> NDArray:
-    """
-    Converts a C pointer into a NumPy array to directly manipulate memory allocated in Fortran.
-    This function is needed for operations requiring in-place modification of CPU data, enabling
-    changes made in Python to reflect immediately in the original Fortran memory space.
-
-    Args:
-        ptr (CData): A CFFI pointer to the beginning of the data array in CPU memory. This pointer
-                     should reference a contiguous block of memory whose total size matches the product
-                     of the specified dimensions.
-        *sizes (int): Variable length argument list specifying the dimensions of the array.
-                      These sizes determine the shape of the resulting NumPy array.
-
-    Returns:
-        np.ndarray: A NumPy array that provides a direct view of the data pointed to by `ptr`.
-                    This array shares the underlying data with the original Fortran code, allowing
-                    modifications made through the array to affect the original data.
-    """
-    length = math.prod(sizes)
-    c_type = ffi.getctype(ffi.typeof(ptr).item)
-
-    # Map C data types to NumPy dtypes
-    dtype_map: dict[str, np.dtype] = {
-        "int": np.dtype(np.int32),
-        "double": np.dtype(np.float64),
-    }
-    dtype = dtype_map.get(c_type, np.dtype(c_type))
-
-    # Create a NumPy array from the buffer, specifying the Fortran order
-    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
-        sizes, order="F"
-    )
-    return arr
-
-
-def unpack_gpu(ptr, *sizes: int):
-    """
-    Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
-    This function is needed for operations that require in-place modification of GPU data,
-    enabling changes made in Python to reflect immediately in the original Fortran memory space.
-
-    Args:
-        ptr (cffi.CData): A CFFI pointer to GPU memory allocated by OpenACC, representing
-                          the starting address of the data. This pointer must correspond to
-                          a contiguous block of memory whose total size matches the product
-                          of the specified dimensions.
-        *sizes (int): Variable length argument list specifying the dimensions of the array.
-                      These sizes determine the shape of the resulting CuPy array.
-
-    Returns:
-        cp.ndarray: A CuPy array that provides a direct view of the data pointed to by `ptr`.
-                    This array shares the underlying data with the original Fortran code, allowing
-                    modifications made through the array to affect the original data.
-    """
-
-    if not sizes:
-        raise ValueError("Sizes must be provided to determine the array shape.")
-
-    length = math.prod(sizes)
-    c_type = ffi.getctype(ffi.typeof(ptr).item)
-
-    dtype_map = {
-        "int": cp.int32,
-        "double": cp.float64,
-    }
-    dtype = dtype_map.get(c_type, None)
-    if dtype is None:
-        raise ValueError(f"Unsupported C data type: {c_type}")
-
-    itemsize = ffi.sizeof(c_type)
-    total_size = length * itemsize
-
-    # cupy array from OpenACC device pointer
-    current_device = cp.cuda.Device()
-    ptr_val = int(ffi.cast("uintptr_t", ptr))
-    mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
-    memptr = cp.cuda.MemoryPointer(mem, 0)
-    arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
-    return arr
-
-
-def int_array_to_bool_array(int_array: NDArray) -> NDArray:
-    """
-    Converts a NumPy array of integers to a boolean array.
-    In the input array, 0 represents False, and any non-zero value (1 or -1) represents True.
-
-    Args:
-        int_array: A NumPy array of integers.
-
-    Returns:
-        A NumPy array of booleans.
-    """
-    bool_array = int_array != 0
-    return bool_array
 
 
 def generate_and_compile_cffi_plugin(

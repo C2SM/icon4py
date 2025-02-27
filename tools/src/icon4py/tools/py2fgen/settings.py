@@ -9,9 +9,10 @@ import dataclasses
 import os
 from enum import Enum
 from functools import cached_property
+from types import ModuleType
 
 import numpy as np
-from gt4py.next import itir_python as run_roundtrip
+from gt4py.next import backend as gtx_backend, itir_python as run_roundtrip
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_gpu_cached,
@@ -19,7 +20,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 
 
 try:
-    import dace  # type: ignore[import-not-found, import-untyped]
+    import dace  # type: ignore[import-untyped]
     from gt4py.next.program_processors.runners.dace import (
         run_dace_cpu,
         run_dace_cpu_noopt,
@@ -31,6 +32,24 @@ except ImportError:
     from typing import Optional
 
     dace: Optional[ModuleType] = None  # type: ignore[no-redef] # definition needed here
+
+
+def env_flag_to_bool(name: str, default: bool) -> bool:  # copied from gt4py.next.config
+    """Recognize true or false signaling string values."""
+    flag_value = None
+    if name in os.environ:
+        flag_value = os.environ[name].lower()
+    match flag_value:
+        case None:
+            return default
+        case "0" | "false" | "off":
+            return False
+        case "1" | "true" | "on":
+            return True
+        case _:
+            raise ValueError(
+                "Invalid environment flag value: use '0 | false | off' or '1 | true | on'."
+            )
 
 
 class Device(Enum):
@@ -50,8 +69,12 @@ class GT4PyBackend(Enum):
 
 @dataclasses.dataclass
 class Icon4PyConfig:
+    parallel_run: bool = dataclasses.field(
+        default_factory=lambda: env_flag_to_bool("ICON4PY_PARALLEL", True)
+    )
+
     @cached_property
-    def icon4py_backend(self):
+    def icon4py_backend(self) -> str:
         backend = os.environ.get("ICON4PY_BACKEND", "CPU")
         if hasattr(GT4PyBackend, backend):
             return backend
@@ -62,22 +85,22 @@ class Icon4PyConfig:
             )
 
     @cached_property
-    def icon4py_dace_orchestration(self):
+    def icon4py_dace_orchestration(self) -> bool:
         # Any value other than None will be considered as True
-        return os.environ.get("ICON4PY_DACE_ORCHESTRATION", None)
+        return env_flag_to_bool("ICON4PY_DACE_ORCHESTRATION", False)
 
     @cached_property
-    def array_ns(self):
+    def array_ns(self) -> ModuleType:
         if self.device == Device.GPU:
-            import cupy as cp  # type: ignore[import-not-found]
+            import cupy as cp  # type: ignore # either `import-not-found` or `import-untyped`
 
             return cp
         else:
             return np
 
     @cached_property
-    def gt4py_runner(self):
-        backend_map = {
+    def gt4py_runner(self) -> gtx_backend.Backend:
+        backend_map: dict[str, gtx_backend.Backend] = {
             GT4PyBackend.CPU.name: run_gtfn_cached,
             GT4PyBackend.GPU.name: run_gtfn_gpu_cached,
             GT4PyBackend.ROUNDTRIP.name: run_roundtrip,
@@ -92,7 +115,7 @@ class Icon4PyConfig:
         return backend_map[self.icon4py_backend]
 
     @cached_property
-    def device(self):
+    def device(self) -> Device:
         device_map = {
             GT4PyBackend.CPU.name: Device.CPU,
             GT4PyBackend.GPU.name: Device.GPU,
@@ -108,17 +131,8 @@ class Icon4PyConfig:
         device = device_map[self.icon4py_backend]
         return device
 
-    @cached_property
-    def limited_area(self):
-        return os.environ.get("ICON4PY_LAM", False)
-
-    @cached_property
-    def parallel_run(self):
-        return os.environ.get("ICON4PY_PARALLEL", False)
-
 
 config = Icon4PyConfig()
 backend = config.gt4py_runner
 dace_orchestration = config.icon4py_dace_orchestration
 device = config.device
-limited_area = config.limited_area

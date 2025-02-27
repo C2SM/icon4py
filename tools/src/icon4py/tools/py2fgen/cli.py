@@ -21,7 +21,7 @@ from icon4py.tools.py2fgen.plugin import generate_and_compile_cffi_plugin
 from icon4py.tools.py2fgen.settings import GT4PyBackend
 
 
-def parse_comma_separated_list(ctx, param, value) -> list[str]:
+def parse_comma_separated_list(ctx: click.Context, param: click.Parameter, value: str) -> list[str]:
     # Splits the input string by commas and strips any leading/trailing whitespace from the strings
     return [item.strip() for item in value.split(",")]
 
@@ -59,7 +59,6 @@ def parse_comma_separated_list(ctx, param, value) -> list[str]:
     is_flag=True,
     help="Profile granule runtime and unpacking Fortran pointers into NumPy or CuPy arrays.",
 )
-@click.option("--limited-area", is_flag=True, help="Enable limited area mode.")
 def main(
     module_import_path: str,
     functions: list[str],
@@ -67,7 +66,6 @@ def main(
     output_path: pathlib.Path,
     debug_mode: bool,
     backend: str,
-    limited_area: str,
     profile: bool,
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
@@ -76,8 +74,8 @@ def main(
     plugin = parse(module_import_path, functions, plugin_name)
 
     c_header = generate_c_header(plugin)
-    python_wrapper = generate_python_wrapper(plugin, backend, debug_mode, limited_area, profile)
-    f90_interface = generate_f90_interface(plugin, limited_area)
+    python_wrapper = generate_python_wrapper(plugin, backend, debug_mode, profile)
+    f90_interface = generate_f90_interface(plugin)
 
     generate_and_compile_cffi_plugin(
         plugin.plugin_name, c_header, python_wrapper, output_path, backend

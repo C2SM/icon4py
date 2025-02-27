@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.limit_vertical_parabola_semi_mo
     limit_vertical_parabola_semi_monotonically,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -23,7 +25,13 @@ class TestLimitVerticalParabolaSemiMonotonically(helpers.StencilTest):
     OUTPUTS = ("p_face_up", "p_face_low")
 
     @staticmethod
-    def reference(grid, l_limit: np.array, p_face: np.array, p_cc: np.array, **kwargs) -> dict:
+    def reference(
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        l_limit: np.ndarray,
+        p_face: np.ndarray,
+        p_cc: np.ndarray,
+        **kwargs: Any,
+    ) -> dict:
         q_face_up, q_face_low = np.where(
             l_limit != 0,
             np.where(
@@ -40,7 +48,7 @@ class TestLimitVerticalParabolaSemiMonotonically(helpers.StencilTest):
         return dict(p_face_up=q_face_up, p_face_low=q_face_low)
 
     @pytest.fixture
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         l_limit = data_alloc.random_mask(grid, dims.CellDim, dims.KDim, dtype=gtx.int32)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         p_face = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})

@@ -17,6 +17,7 @@ from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import states as grid_states, vertical as v_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
+from icon4py.tools.py2fgen import settings as py2fgen_settings
 from icon4py.tools.py2fgen.wrappers import diffusion_wrapper, wrapper_dimension as w_dim
 
 from . import utils
@@ -48,6 +49,7 @@ def test_diffusion_wrapper_granule_inputs(
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
+    ltkeshs = True
     type_t_diffu = 2
     type_vn_diffu = 1
     hdiff_efdt_ratio = 24.0
@@ -170,10 +172,14 @@ def test_diffusion_wrapper_granule_inputs(
     expected_edge_geometry: grid_states.EdgeParams = grid_savepoint.construct_edge_geometry()
     expected_cell_geometry: grid_states.CellParams = grid_savepoint.construct_cell_geometry()
     expected_interpolation_state = diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.e_bln_c_s()
+        ),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=data_alloc.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
+        geofac_div=data_alloc.flatten_first_two_dims(
+            dims.CEDim, field=interpolation_savepoint.geofac_div()
+        ),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=interpolation_savepoint.geofac_grg()[0],
         geofac_grg_y=interpolation_savepoint.geofac_grg()[1],
@@ -209,6 +215,8 @@ def test_diffusion_wrapper_granule_inputs(
     )
     expected_config = utils.construct_diffusion_config(experiment, ndyn_substeps)
     expected_additional_parameters = diffusion.DiffusionParams(expected_config)
+
+    py2fgen_settings.config.parallel_run = False
 
     # --- Initialize the Grid ---
     diffusion_wrapper.grid_init_diffusion(
@@ -281,6 +289,7 @@ def test_diffusion_wrapper_granule_inputs(
             denom_diffu_v=denom_diffu_v,
             nudge_max_coeff=nudge_max_coeff,
             itype_sher=itype_sher.value,
+            ltkeshs=ltkeshs,
             tangent_orientation=tangent_orientation,
             inverse_primal_edge_lengths=inverse_primal_edge_lengths,
             inv_dual_edge_length=inv_dual_edge_length,
@@ -408,6 +417,7 @@ def test_diffusion_wrapper_single_step(
     hdiff_w = True
     hdiff_vn = True
     hdiff_temp = True
+    ltkeshs = True
     type_t_diffu = 2
     type_vn_diffu = 1
     hdiff_efdt_ratio = 24.0
@@ -530,6 +540,8 @@ def test_diffusion_wrapper_single_step(
     e2c2v = gtx.as_field((dims.EdgeDim, dims.E2C2VDim), grid_savepoint._read_int32("e2c2v"))
     c2v = gtx.as_field((dims.CellDim, dims.C2VDim), grid_savepoint._read_int32("c2v"))
 
+    py2fgen_settings.config.parallel_run = False
+
     diffusion_wrapper.grid_init_diffusion(
         cell_starts=cell_starts,
         cell_ends=cell_ends,
@@ -597,6 +609,7 @@ def test_diffusion_wrapper_single_step(
         denom_diffu_v=denom_diffu_v,
         nudge_max_coeff=nudge_max_coeff,
         itype_sher=itype_sher.value,
+        ltkeshs=ltkeshs,
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inv_dual_edge_length=inv_dual_edge_length,

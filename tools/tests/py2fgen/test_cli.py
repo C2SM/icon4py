@@ -68,11 +68,10 @@ def run_test_case(
     compiler="gfortran",
     extra_compiler_flags=(),
     expected_error_code=0,
-    limited_area=False,
     env_vars=None,
 ):
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
-        invoke_cli(cli, module, function, plugin_name, backend, limited_area)
+        invoke_cli(cli, module, function, plugin_name, backend)
         compile_and_run_fortran(
             plugin_name,
             samples_path,
@@ -85,10 +84,8 @@ def run_test_case(
         )
 
 
-def invoke_cli(cli, module, function, plugin_name, backend, limited_area):
+def invoke_cli(cli, module, function, plugin_name, backend):
     cli_args = [module, function, plugin_name, "-b", backend, "-d"]
-    if limited_area:
-        cli_args.append("--limited-area")
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 
@@ -116,9 +113,9 @@ def compile_and_run_fortran(
             env.update(env_vars)
         fortran_result = run_fortran_executable(plugin_name, env)
         if expected_error_code == 0:
-            assert "passed" in fortran_result.stdout
+            assert "passed" in fortran_result.stdout, fortran_result.stderr
         else:
-            assert "failed" in fortran_result.stdout
+            assert "failed" in fortran_result.stdout, fortran_result.stderr
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
 
@@ -127,7 +124,6 @@ def compile_and_run_fortran(
     "run_backend, extra_flags",
     [
         ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
-        ("CPU", ""),
     ],
 )
 def test_py2fgen_compilation_and_execution_square_cpu(
@@ -139,7 +135,7 @@ def test_py2fgen_compilation_and_execution_square_cpu(
     run_test_case(
         cli_runner,
         square_wrapper_module,
-        "square,square_from_function",
+        "square_from_function",
         "square_plugin",
         run_backend,
         samples_path,
@@ -171,7 +167,13 @@ def test_py2fgen_python_error_propagation_to_fortran(
 @pytest.mark.parametrize(
     "function_name, plugin_name, test_name, run_backend, extra_flags",
     [
-        ("square", "square_plugin", "test_square", "GPU", ("-acc", "-Minfo=acc")),
+        (
+            "square_from_function",
+            "square_plugin",
+            "test_square",
+            "GPU",
+            ("-acc", "-Minfo=acc", "-DUSE_SQUARE_FROM_FUNCTION"),
+        ),
     ],
 )
 def test_py2fgen_compilation_and_execution_gpu(
@@ -236,7 +238,6 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(cli_runner, samples_pat
         test_temp_dir,
         os.environ["NVFORTRAN_COMPILER"],
         ("-acc", "-Minfo=acc"),
-        limited_area=True,
         env_vars={"ICON4PY_BACKEND": "GPU"},
     )
 
@@ -252,7 +253,6 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path, t
         samples_path,
         "test_diffusion",
         test_temp_dir,
-        limited_area=True,
     )
 
 
@@ -267,7 +267,6 @@ def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path, test
         samples_path,
         "test_dycore",
         test_temp_dir,
-        limited_area=True,
     )
 
 
@@ -284,6 +283,5 @@ def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path, 
         test_temp_dir,
         os.environ["NVFORTRAN_COMPILER"],
         ("-acc", "-Minfo=acc"),
-        limited_area=True,
         env_vars={"ICON4PY_BACKEND": "GPU"},
     )

@@ -8,8 +8,6 @@
 
 from typing import Final
 
-import gt4py.next as gtx
-
 from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.states import model
 
@@ -38,10 +36,8 @@ EXNER_EXFAC: Final[str] = "exner_exfac"
 WGTFAC_C: Final[str] = "wgtfac_c"
 WGTFAC_E: Final[str] = "wgtfac_e"
 FLAT_IDX_MAX: Final[str] = "flat_idx_max"
-PG_EDGEIDX: Final[str] = "pg_edgeidx"
-PG_VERTIDX: Final[str] = "pg_vertidx"
-PG_EDGEIDX_DSL: Final[str] = "pg_edgeidx_dsl"
-PG_EDGEDIST_DSL: Final[str] = "pg_exdist_dsl"
+PG_EDGEIDX_DSL: Final[str] = "edge_mask_for_pressure_gradient_extrapolation"
+PG_EDGEDIST_DSL: Final[str] = "distance_for_pressure_gradient_extrapolation"
 MASK_PROG_HALO_C: Final[str] = "mask_prog_halo_c"
 BDY_HALO_C: Final[str] = "bdy_halo_c"
 HMASK_DD3D: Final[str] = "hmask_dd3d"
@@ -237,25 +233,9 @@ attrs: dict[str, model.FieldMetaData] = {
         icon_var_name="flat_idx_max",
         dtype=ta.wpfloat,
     ),
-    PG_EDGEIDX: dict(
-        standard_name=PG_EDGEIDX,
-        long_name="pg_edgeidx",
-        units="",
-        dims=(dims.EdgeDim, dims.KDim),
-        icon_var_name="pg_edgeidx",
-        dtype=gtx.int32,
-    ),
-    PG_VERTIDX: dict(
-        standard_name=PG_VERTIDX,
-        long_name="pg_vertidx",
-        units="",
-        dims=(dims.EdgeDim, dims.KDim),
-        icon_var_name="pg_vertidx",
-        dtype=gtx.int32,
-    ),
     PG_EDGEIDX_DSL: dict(
         standard_name=PG_EDGEIDX_DSL,
-        long_name="pg_edgeidx_dsl",
+        long_name="edge mask for pressure gradient downward extrapolation",
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="pg_edgeidx_dsl",
@@ -263,7 +243,7 @@ attrs: dict[str, model.FieldMetaData] = {
     ),
     PG_EDGEDIST_DSL: dict(
         standard_name=PG_EDGEDIST_DSL,
-        long_name="pg_exdist_dsl",
+        long_name="extrapolation distance for pressure gradient downward extrapolation",
         units="",
         dims=(dims.EdgeDim, dims.KDim),
         icon_var_name="pg_exdist_dsl",
@@ -305,7 +285,7 @@ attrs: dict[str, model.FieldMetaData] = {
         standard_name=COEFF_GRADEKIN,
         long_name="coeff_gradekin",
         units="",
-        dims=(dims.EdgeDim,),
+        dims=(dims.ECDim,),
         icon_var_name="coeff_gradekin",
         dtype=ta.wpfloat,
     ),
@@ -398,3 +378,4 @@ attrs: dict[str, model.FieldMetaData] = {
         dtype=ta.wpfloat,
     ),
 }
+CELL_HEIGHT_ON_INTERFACE_LEVEL = "height_on_interface_levels"

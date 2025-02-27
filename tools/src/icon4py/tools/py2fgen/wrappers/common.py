@@ -9,29 +9,34 @@
 
 import logging
 
+import numpy as np
+
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.tools.py2fgen.settings import config
 
+
+# TODO(havogt) import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
+assert hasattr(mpi_decomposition, "get_multinode_properties")
 
 xp = config.array_ns
 
 log = logging.getLogger(__name__)
 
 
-def adjust_fortran_indices(inp: xp.ndarray, offset: int) -> xp.ndarray:
+def adjust_fortran_indices(inp: np.ndarray | xp.ndarray, offset: int) -> np.ndarray | xp.ndarray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
-    return xp.subtract(inp, offset)
+    return inp - offset
 
 
 def construct_icon_grid(
-    cell_starts: xp.ndarray,
-    cell_ends: xp.ndarray,
-    vertex_starts: xp.ndarray,
-    vertex_ends: xp.ndarray,
-    edge_starts: xp.ndarray,
-    edge_ends: xp.ndarray,
+    cell_starts: np.ndarray,
+    cell_ends: np.ndarray,
+    vertex_starts: np.ndarray,
+    vertex_ends: np.ndarray,
+    edge_starts: np.ndarray,
+    edge_ends: np.ndarray,
     c2e: xp.ndarray,
     e2c: xp.ndarray,
     c2e2c: xp.ndarray,
@@ -134,12 +139,12 @@ def construct_icon_grid(
 
 
 def construct_decomposition(
-    c_glb_index: xp.ndarray,
-    e_glb_index: xp.ndarray,
-    v_glb_index: xp.ndarray,
-    c_owner_mask: xp.ndarray,
-    e_owner_mask: xp.ndarray,
-    v_owner_mask: xp.ndarray,
+    c_glb_index: np.ndarray,
+    e_glb_index: np.ndarray,
+    v_glb_index: np.ndarray,
+    c_owner_mask: np.ndarray,
+    e_owner_mask: np.ndarray,
+    v_owner_mask: np.ndarray,
     num_cells: int,
     num_edges: int,
     num_vertices: int,

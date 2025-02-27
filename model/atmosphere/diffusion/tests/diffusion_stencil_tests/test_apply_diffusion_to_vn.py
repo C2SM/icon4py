@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -12,7 +13,7 @@ import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid
+from icon4py.model.common.grid import base, horizontal as h_grid
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing.helpers import StencilTest
 
@@ -31,24 +32,24 @@ class TestApplyDiffusionToVn(StencilTest):
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        u_vert,
-        v_vert,
-        primal_normal_vert_v1,
-        primal_normal_vert_v2,
-        z_nabla2_e,
-        inv_vert_vert_length,
-        inv_primal_edge_length,
-        area_edge,
-        kh_smag_e,
-        diff_multfac_vn,
-        nudgecoeff_e,
-        vn,
-        edge,
-        nudgezone_diff,
-        fac_bdydiff_v,
-        start_2nd_nudge_line_idx_e,
-        limited_area,
-        **kwargs,
+        u_vert: np.ndarray,
+        v_vert: np.ndarray,
+        primal_normal_vert_v1: np.ndarray,
+        primal_normal_vert_v2: np.ndarray,
+        z_nabla2_e: np.ndarray,
+        inv_vert_vert_length: np.ndarray,
+        inv_primal_edge_length: np.ndarray,
+        area_edge: np.ndarray,
+        kh_smag_e: np.ndarray,
+        diff_multfac_vn: np.ndarray,
+        nudgecoeff_e: np.ndarray,
+        vn: np.ndarray,
+        edge: np.ndarray,
+        nudgezone_diff: np.ndarray,
+        fac_bdydiff_v: np.ndarray,
+        start_2nd_nudge_line_idx_e: np.int32,
+        limited_area: bool,
+        **kwargs: Any,
     ):
         vn_cp = vn.copy()
         z_nabla4_e2 = calculate_nabla4_numpy(
@@ -97,21 +98,14 @@ class TestApplyDiffusionToVn(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, grid):
-        edge = data_alloc.allocate_indices(dims.EdgeDim, grid=grid, is_halfdim=False)
+    def input_data(self, grid: base.BaseGrid) -> dict:
+        edge = data_alloc.index_field(grid=grid, dim=dims.EdgeDim)
 
         u_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
         v_vert = data_alloc.random_field(grid, dims.VertexDim, dims.KDim)
 
-        primal_normal_vert_v1 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
-        primal_normal_vert_v2 = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2VDim)
-
-        primal_normal_vert_v1_new = data_alloc.as_1D_sparse_field(
-            primal_normal_vert_v1, dims.ECVDim
-        )
-        primal_normal_vert_v2_new = data_alloc.as_1D_sparse_field(
-            primal_normal_vert_v2, dims.ECVDim
-        )
+        primal_normal_vert_v1 = data_alloc.random_field(grid, dims.ECVDim)
+        primal_normal_vert_v2 = data_alloc.random_field(grid, dims.ECVDim)
 
         inv_vert_vert_length = data_alloc.random_field(grid, dims.EdgeDim)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
@@ -130,22 +124,15 @@ class TestApplyDiffusionToVn(StencilTest):
         start_2nd_nudge_line_idx_e = 6
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        horizontal_start = (
-            grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
-            if hasattr(grid, "start_index")
-            else 0
-        )
-        horizontal_end = (
-            grid.end_index(edge_domain(h_grid.Zone.LOCAL))
-            if hasattr(grid, "end_index")
-            else grid.num_edges
-        )
+        horizontal_start = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+
+        horizontal_end = grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
         return dict(
             u_vert=u_vert,
             v_vert=v_vert,
-            primal_normal_vert_v1=primal_normal_vert_v1_new,
-            primal_normal_vert_v2=primal_normal_vert_v2_new,
+            primal_normal_vert_v1=primal_normal_vert_v1,
+            primal_normal_vert_v2=primal_normal_vert_v2,
             z_nabla2_e=z_nabla2_e,
             inv_vert_vert_length=inv_vert_vert_length,
             inv_primal_edge_length=inv_primal_edge_length,

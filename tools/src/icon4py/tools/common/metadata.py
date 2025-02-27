@@ -58,7 +58,7 @@ class DummyConnectivity(Connectivity):
     neighbor_axis: Dimension = Dimension("unused")
     index_type: type[int] = int
 
-    def mapped_index(self, cur_index, neigh_index) -> int:
+    def mapped_index(self, cur_index, neigh_index) -> int:  # type: ignore[no-untyped-def]  # code will disappear with next gt4py version
         raise AssertionError("Unreachable")
         return 0
 
@@ -89,7 +89,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     assert all(
         _is_list_of_names(body.args) for body in fvprog.past_stage.past_node.body
     ), "Found unsupported expression in input arguments."
-    input_arg_ids = set(arg.id for body in fvprog.past_stage.past_node.body for arg in body.args)  # type: ignore[attr-defined] # Checked in the assert
+    input_arg_ids = set(arg.id for body in fvprog.past_stage.past_node.body for arg in body.args)
 
     out_args = (body.kwargs["out"] for body in fvprog.past_stage.past_node.body)
     output_fields = []

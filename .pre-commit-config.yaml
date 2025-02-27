@@ -54,6 +54,7 @@ repos:
     name: add license for all ICON4Py Python source files
     types: [python]
     args: [--comment-style, "|#|", --license-filepath, HEADER.txt, --fuzzy-match-generates-todo]
+    exclude: ^tools/tests/py2fgen/references/
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.2.2
@@ -68,14 +69,14 @@ repos:
   - id: tach
     name: Check inter-package dependencies
 
-# TODO(egparedes): fix and activate mypy hook 
-# - repo: local
-#   hooks:
-#   - id: mypy
-#     name: mypy static type checker
-#     entry: bash -c 'mypy tools/src/icon4py/tools model/common/src/icon4py/model/common'
-#     language: system
-#     types_or: [python, pyi]
-#     pass_filenames: false
-#     require_serial: true
-#     stages: [pre-commit]
+
+- repo: local
+  hooks:
+  - id: mypy
+    name: mypy static type checker
+    entry: bash -c 'mypy tools/src/icon4py/tools' # model/common/src/icon4py/model/common # TODO(egparedes): fix and activate mypy hook for all packages
+    language: system
+    types_or: [python, pyi]
+    pass_filenames: false
+    require_serial: true
+    stages: [pre-commit]

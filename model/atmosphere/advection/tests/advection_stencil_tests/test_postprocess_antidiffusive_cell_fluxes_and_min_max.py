@@ -5,6 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+from typing import Any
 
 import gt4py.next as gtx
 import numpy as np
@@ -15,6 +16,7 @@ from icon4py.model.atmosphere.advection.stencils.postprocess_antidiffusive_cell_
     postprocess_antidiffusive_cell_fluxes_and_min_max,
 )
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base
 from icon4py.model.common.utils import data_allocation as data_alloc
 
 
@@ -24,7 +26,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
 
     @staticmethod
     def reference(
-        grid,
+        connectivities: dict[gtx.Dimension, np.ndarray],
         refin_ctrl: np.ndarray,
         p_cc: np.ndarray,
         z_tracer_new_low: np.ndarray,
@@ -32,7 +34,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
         z_tracer_min: np.ndarray,
         lo_bound: float,
         hi_bound: float,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict:
         refin_ctrl = np.expand_dims(refin_ctrl, axis=1)
         condition = np.logical_or(
@@ -53,7 +55,7 @@ class TestPostprocessAntidiffusiveCellFluxesAndMinMax(helpers.StencilTest):
         )
 
     @pytest.fixture()
-    def input_data(self, grid) -> dict:
+    def input_data(self, grid: base.BaseGrid) -> dict:
         hi_bound, lo_bound = 3, 1
         refin_ctrl = data_alloc.constant_field(grid, 2, dims.CellDim, dtype=gtx.int32)
         p_cc = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
