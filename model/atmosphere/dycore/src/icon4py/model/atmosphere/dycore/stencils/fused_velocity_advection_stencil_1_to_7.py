@@ -222,22 +222,6 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
         0.0,
     )
 
-<<<<<<< HEAD
-    z_v_grad_w = (
-        where(
-            (start_edge_lateral_boundary_level_7 <= edge < end_edge_halo),
-            _compute_horizontal_advection_term_for_vertical_velocity(
-                vn_ie,
-                inv_dual_edge_length,
-                w,
-                z_vt_ie,
-                inv_primal_edge_length,
-                tangent_orientation,
-                z_w_v,
-            ),
-            z_v_grad_w,
-        )
-=======
     z_v_grad_w = where(
         (start_edge_lateral_boundary_level_7 <= edge < end_edge_halo),
         _compute_horizontal_advection_term_for_vertical_velocity(
@@ -250,7 +234,6 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
             z_w_v,
         ),
         z_v_grad_w,
->>>>>>> 10e1f017a409a59705402449fa5a65e023f44312
     )
 
     return z_v_grad_w
