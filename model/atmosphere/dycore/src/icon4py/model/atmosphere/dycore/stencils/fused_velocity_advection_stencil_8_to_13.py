@@ -57,7 +57,7 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
     z_w_concorr_mc = _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s)
 
     w_concorr_c = concat_where(
-        (nflatlev + 1 <= dims.KDim) & (dims.KDim < nlev),
+        (nflatlev + 1 <= dims.KDim < nlev),
         _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_w_concorr_mc),
         w_concorr_c,
     )
