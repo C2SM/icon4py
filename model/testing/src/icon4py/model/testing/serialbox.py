@@ -1601,7 +1601,7 @@ class IconGscpSatadEntrySavepoint(IconSavepoint):
         return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
 
 
-# microphysics
+# TODO (@halungge) those are for microphysics - fix Weisman Klemp experiment
 class IconGscpSatadExitSavepoint(IconSavepoint):
     def temperature(self):
         return self._get_field("ser_out_satad_temperature", dims.CellDim, dims.KDim)

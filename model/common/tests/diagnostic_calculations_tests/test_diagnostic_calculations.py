@@ -49,7 +49,6 @@ def test_diagnose_temperature(
         icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend
     )
 
-    # TODO those are inputs and should be read from serializer
     qv = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
     qc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
     qr = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float, backend=backend)
