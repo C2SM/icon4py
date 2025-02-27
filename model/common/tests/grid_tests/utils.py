@@ -18,7 +18,6 @@ r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1
 r02b04_global_grid_path = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL)
 r02b04_global_data_file = r02b04_global_grid_path.joinpath("icon_grid_0013_R02B04_R.tar.gz").name
 
-
 def horizontal_dim():
     for dim in (dims.VertexDim, dims.EdgeDim, dims.CellDim):
         yield dim
