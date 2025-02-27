@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+# type: ignore
+
 from typing import Optional
 
 from gt4py import next as gtx
@@ -63,7 +65,7 @@ def grid_init(
     num_edges: gtx.int32,
     vertical_size: gtx.int32,
     limited_area: bool,
-):
+) -> None:
     on_gpu = settings.config.device == settings.Device.GPU
     xp = c2e.array_ns
 
