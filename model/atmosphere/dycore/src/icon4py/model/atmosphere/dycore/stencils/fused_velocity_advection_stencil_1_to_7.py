@@ -55,14 +55,14 @@ def compute_interface_vt_vn_and_kinetic_energy(
     fa.EdgeKField[vpfloat],
 ]:
     vn_ie, z_kin_hor_e = concat_where(
-        (1 <= dims.KDim < nlev),
+        1 <= dims.KDim < nlev,
         _interpolate_vn_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, vt),
         (vn_ie, z_kin_hor_e),
     )
 
     z_vt_ie = (
         concat_where(
-            (1 <= dims.KDim < nlev),
+            1 <= dims.KDim < nlev,
             _interpolate_vt_to_interface_edges(wgtfac_e, vt),
             z_vt_ie,
         )

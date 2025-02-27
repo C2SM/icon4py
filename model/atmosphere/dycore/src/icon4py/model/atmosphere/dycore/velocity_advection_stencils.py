@@ -63,7 +63,7 @@ def _fused_stencils_4_5(
     fa.EdgeKField[float],
 ]:
     z_w_concorr_me = concat_where(
-        (dims.KDim >= nflatlev_startindex) & (dims.KDim < nlev),
+        nflatlev_startindex <= dims.KDim < nlev,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
@@ -148,13 +148,13 @@ def _fused_stencils_9_10(
     nlev: gtx.int32,
 ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
     local_z_w_concorr_mc = concat_where(
-        (dims.KDim >= nflatlev_startindex) & (dims.KDim < nlev),
+        nflatlev_startindex <= dims.KDim < nlev,
         _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
         local_z_w_concorr_mc,
     )
 
     w_concorr_c = concat_where(
-        (dims.KDim >= nflatlev_startindex + 1) & (dims.KDim < nlev),
+        nflatlev_startindex + 1 <= dims.KDim < nlev,
         _interpolate_to_half_levels_vp(interpolant=local_z_w_concorr_mc, wgtfac_c=wgtfac_c),
         w_concorr_c,
     )
@@ -204,7 +204,7 @@ def _fused_stencils_11_to_13(
     nlev: gtx.int32,
 ):
     local_z_w_con_c = concat_where(
-        (dims.KDim >= 0) & (dims.KDim < nlev),
+        0 <= dims.KDim < nlev,
         _copy_cell_kdim_field_to_vp(w),
         local_z_w_con_c,
     )
@@ -212,7 +212,7 @@ def _fused_stencils_11_to_13(
     local_z_w_con_c = concat_where(dims.KDim == nlev, _init_cell_kdim_field_with_zero_vp(), local_z_w_con_c)
 
     local_z_w_con_c = concat_where(
-        (dims.KDim >= (nflatlev_startindex + 1)) & (dims.KDim < nlev),
+        nflatlev_startindex + 1 <= dims.KDim < nlev,
         _correct_contravariant_vertical_velocity(local_z_w_con_c, w_concorr_c),
         local_z_w_con_c,
     )
