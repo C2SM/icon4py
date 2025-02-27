@@ -19,7 +19,7 @@ from icon4py.model.common.states import (
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers
 
-
+@pytest.skip("FIXME: Need to update data for Weisman Klemp")
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor, date",
     [
@@ -138,7 +138,7 @@ def test_saturation_adjustment_in_gscp_call(
         atol=1.0e-13,
     )
 
-
+@pytest.skip("FIXME: Need to update data for Weisman Klemp")
 @pytest.mark.parametrize(
     "experiment, model_top_height, damping_height, stretch_factor, date",
     [
