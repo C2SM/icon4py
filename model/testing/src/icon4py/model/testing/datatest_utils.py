@@ -10,6 +10,7 @@ import os
 import pathlib
 import re
 import uuid
+import warnings
 from typing import Optional
 
 from gt4py.next import backend as gtx_backend
@@ -51,9 +52,15 @@ def get_test_data_root_path() -> pathlib.Path:
     env_base_path = os.getenv("TEST_DATA_PATH")
 
     if env_base_path:
+        warnings.warn(f"loading data from TEST_DATA_PATH='{env_base_path}'", stacklevel=5)
         return pathlib.Path(env_base_path)
     else:
-        return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
+        default_path = common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
+        warnings.warn(
+            f"loading data: env variable 'TEST_DATA_PATH` not set, falling back to '{default_path}'",
+            stacklevel=5,
+        )
+        return default_path
 
 
 TEST_DATA_ROOT = get_test_data_root_path()
@@ -69,7 +76,6 @@ DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/downloa
 DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
 DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/IiRimdJH2ZBZ1od/download"}
 DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/91DEUGmAkBgrXO6/download"}
-DATA_URIS_ADVECTION = {1: "https://polybox.ethz.ch/index.php/s/3rTia1A41YW7KX9/download"}
 
 
 def get_global_grid_params(experiment: str) -> tuple[int, int]:
@@ -119,10 +125,6 @@ def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
-def get_datapath_for_experiment_advection(ranked_base_path, experiment=REGIONAL_EXPERIMENT):
-    return ranked_base_path.joinpath(f"{experiment}/advection/ser_data")
-
-
 def create_icon_serial_data_provider(
     datapath, processor_props, backend: Optional[gtx_backend.Backend]
 ):
@@ -135,20 +137,4 @@ def create_icon_serial_data_provider(
         path=str(datapath),
         mpi_rank=processor_props.rank,
         do_print=True,
-    )
-
-
-def create_icon_serial_data_provider_advection(
-    datapath, processor_props, backend: Optional[gtx_backend.Backend]
-):
-    # note: this needs to be here, otherwise spack doesn't find serialbox
-    from icon4py.model.testing.serialbox import IconSerialDataProvider
-
-    return IconSerialDataProvider(
-        fname_prefix="icon_pyadvection",
-        backend=backend,
-        path=str(datapath),
-        mpi_rank=processor_props.rank,
-        do_print=True,
-        advection=True,
     )
