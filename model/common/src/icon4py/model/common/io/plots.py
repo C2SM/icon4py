@@ -21,171 +21,9 @@ pil_logger = logging.getLogger('PIL')
 # override the logger logging level to INFO
 pil_logger.setLevel(logging.INFO)
 
-DO_PLOTS = True
-
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-# Parameters
-#DOMAIN_LENGTH = 1000.0 # TODO: get from grid file
-#DOMAIN_HEIGHT = 1154.70053837925 # TODO: get from grid file
-DOMAIN_LENGTH = 2000.0 # TODO: get from grid file
-DOMAIN_HEIGHT = 2078.46096908265 # TODO: get from grid file
-X_BOUNDARY_RAD = np.pi
-Y_BOUNDARY_RAD = 15/2*np.pi/180 # Hardcoded in the grid generation script (could get from vertex lat)
-NUM_AXES_PER_COLUMN = 2
-PLOT_X_LIMS = (-X_BOUNDARY_RAD*1.02, X_BOUNDARY_RAD*1.02)
-PLOT_Y_LIMS = (-Y_BOUNDARY_RAD*1.02, Y_BOUNDARY_RAD*1.02)
-PLOT_IMGS_DIR = "imgs"
-
-def rad2cart(vert_lon: np.ndarray, vert_lat: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-
-    vert_x = vert_lon * DOMAIN_LENGTH / (2.0 * X_BOUNDARY_RAD) + DOMAIN_LENGTH / 2.0
-    vert_y = vert_lat * DOMAIN_HEIGHT / (2.0 * Y_BOUNDARY_RAD) + DOMAIN_HEIGHT / 2.0
-
-    # p_x%x(:) = (/ p_pos%lon * geometry_info%domain_length/(2._wp*pi),                              &
-    #   &           (p_pos%lat + TORUS_MAX_LAT) * geometry_info%domain_height/(2._wp*TORUS_MAX_LAT), &
-    #   &           0._wp /)
-    # END FUNCTION gc2cc_plane_torus
-
-    return vert_x, vert_y
-
-def remove_boundary_triangles(
-        tri: mpl.tri.Triangulation,
-        criterion: str = 'wrapping',
-        mask_edges: bool = False,
-) -> mpl.tri.Triangulation:
-    """
-    Remove boundary triangles from a triangulation.
-
-    This function examines each triangle in the provided triangulation and
-    determines if it is elongated based on the ratio of its longest edge to
-    its shortest edge. If the ratio exceeds `ratio`, the triangle is considered
-    elongated and is masked out.
-    Also save the original set of edges
-
-    Args:
-        tri: The input triangulation to be processed.
-
-    Returns:
-        The modified triangulation with elongated triangles masked out.
-    """
-
-    def check_wrapping(vert_x, vert_y):
-        #return (check_three_numbers(vert_x) or check_three_numbers(vert_y)) \
-        #        and ((np.abs(vert_x) == X_BOUNDARY).any() or (np.abs(vert_y) == Y_BOUNDARY).any())
-        return (check_three_numbers(vert_x) and (np.abs(vert_x) == X_BOUNDARY_RAD).any()) \
-            or (check_three_numbers(vert_y) and (np.abs(vert_y) == Y_BOUNDARY_RAD).any())
-
-    def check_three_numbers(numbers):
-        positive_count = sum(1 for x in numbers if x > 0)
-        negative_count = sum(1 for x in numbers if x < 0)
-
-        return (positive_count == 2 and negative_count == 1) or (positive_count == 1 and negative_count == 2)
-
-
-    tri.all_edges = tri.edges.copy()
-
-    tri.n_all_triangles = tri.triangles.shape[0]
-    tri.n_all_edges = tri.edges.shape[0]
-
-    boundary_triangles_mask = []
-    if criterion == 'wrapping':
-        # Remove wrapping triangles
-        for triangle in tri.triangles:
-            if check_wrapping(tri.x[triangle], tri.y[triangle]):
-                boundary_triangles_mask.append(True)
-            else:
-                boundary_triangles_mask.append(False)
-    elif criterion == 'elongated':
-        # Remove elongated triangles
-        ratio = 1.5
-        for triangle in tri.triangles:
-            node_x_diff = tri.x[triangle] - np.roll(tri.x[triangle], 1)
-            node_y_diff = tri.y[triangle] - np.roll(tri.y[triangle], 1)
-            edges = np.sqrt(node_x_diff**2 + node_y_diff**2)
-            if np.max(edges) > ratio*np.min(edges):
-                boundary_triangles_mask.append(True)
-            else:
-                boundary_triangles_mask.append(False)
-
-    tri.set_mask(boundary_triangles_mask)
-
-    if mask_edges:
-        # Mask out edges that are part of boundary triangles
-        edges_mask = np.ones(tri.all_edges.shape[0], dtype=bool)
-        for i, edge in enumerate(tri.all_edges):
-            if any(np.array_equal(edge, filtered_edge) for filtered_edge in tri.edges):
-                edges_mask[i] = False
-        tri.edges_mask = edges_mask
-    else:
-        tri.edges_mask = None
-
-    return tri
-
-def create_torus_triangulation_from_savepoint(
-    grid_savepoint,
-    grid_file = None,
-) -> mpl.tri.Triangulation:
-    """
-    Create a triangulation for a torus from a savepoint and possibly grid file.
-    Remove elongated triangles from the triangulation.
-
-    Returns:
-        A triangulation object created from the grid savepoint / file.
-    """
-
-    if grid_file is None:
-        # lat/lon coordinates
-        #
-        vert_x = grid_savepoint.v_lon().ndarray
-        vert_y = grid_savepoint.v_lat().ndarray
-        edge_x = grid_savepoint.edge_center_lon().ndarray
-        edge_y = grid_savepoint.edge_center_lat().ndarray
-        cell_x = grid_savepoint.cell_center_lon().ndarray
-        cell_y = grid_savepoint.cell_center_lat().ndarray
-        # clean up the grid
-        # Adjust x values to coincide with the periodic boundary
-        vert_x = np.where(np.abs(vert_x - X_BOUNDARY_RAD) < 1e-14,  X_BOUNDARY_RAD, vert_x)
-        vert_x = np.where(np.abs(vert_x + X_BOUNDARY_RAD) < 1e-14, -X_BOUNDARY_RAD, vert_x)
-        # shift all to -X_BOUNDARY
-        vert_x = np.where(vert_x == X_BOUNDARY_RAD, -X_BOUNDARY_RAD, vert_x)
-        # Adjust y values to coincide with the periodic boundary
-        vert_y = np.where(np.abs(vert_y - Y_BOUNDARY_RAD) < 1e-14,  Y_BOUNDARY_RAD, vert_y)
-        vert_y = np.where(np.abs(vert_y + Y_BOUNDARY_RAD) < 1e-14, -Y_BOUNDARY_RAD, vert_y)
-    else:
-        # cartesian coordinates
-        vert_x = grid_file.cartesian_x_vertices.values
-        vert_y = grid_file.cartesian_y_vertices.values
-        edge_x = grid_file.edge_middle_cartesian_x.values
-        edge_y = grid_file.edge_middle_cartesian_y.values
-        cell_x = grid_file.cell_circumcenter_cartesian_x.values
-        cell_y = grid_file.cell_circumcenter_cartesian_y.values
-        # clean up the grid
-        # Adjust x values to coincide with the periodic boundary
-        vert_x = np.where(np.abs(vert_x - DOMAIN_LENGTH) < 1e-9,  0, vert_x)
-        edge_x = np.where(np.abs(edge_x - DOMAIN_LENGTH) < 1e-9,  0, edge_x)
-        cell_x = np.where(np.abs(cell_x - DOMAIN_LENGTH) < 1e-9,  0, cell_x)
-
-    tri = mpl.tri.Triangulation(
-        vert_x,
-        vert_y,
-        triangles= grid_savepoint.c2v(),
-        )
-    tri.edge_x = edge_x
-    tri.edge_y = edge_y
-    tri.cell_x = cell_x
-    tri.cell_y = cell_y
-
-    if grid_file is None:
-        tri = remove_boundary_triangles(tri)
-    else:
-        tri = remove_boundary_triangles(
-            tri,
-            criterion="elongated",
-            )
-
-    return tri
 
 class Plot:
     def __init__(
@@ -195,30 +33,45 @@ class Plot:
             n_levels_to_plot: int = 2,
             backend: gtx.backend.Backend = gtx.gtfn_cpu,
         ):
-        self._n_levels_to_plot = n_levels_to_plot
+
         data_provider = sb.IconSerialDataProvider(
             backend=backend,
             fname_prefix="icon_pydycore",
             path=savepoint_path
             )
         self.grid_savepoint = data_provider.from_savepoint_grid('aa', 0, 2)
+        self._n_levels_to_plot = n_levels_to_plot
+        self._backend = backend
+
         self.grid = self.grid_savepoint.construct_icon_grid(on_gpu=False)
         self.interpolation_savepoint = data_provider.from_interpolation_savepoint()
 
-        self._backend = backend
         self._edge_2_cell_vector_rbf_interpolation = edge_2_cell_vector_rbf_interpolation.with_backend(self._backend)
         self._compute_tangential_wind = compute_tangential_wind.with_backend(self._backend)
 
         if grid_file_path != "":
             self.grid_file = xr.open_dataset(grid_file_path)
-            self.tri = create_torus_triangulation_from_savepoint(
-                grid_savepoint = self.grid_savepoint,
-                grid_file = self.grid_file,
-                )
         else:
-            self.tri = create_torus_triangulation_from_savepoint(
-                grid_savepoint = self.grid_savepoint,
-                )
+            raise NotImplementedError(
+                "Only grid files are supported for now, too much stuff is missing from the savepoint"
+            )
+            self.grid_file = None
+
+        # Constants
+        self.DO_PLOTS = True
+        self.PLOT_IMGS_DIR = "imgs"
+        self.NUM_AXES_PER_COLUMN = 2
+        self.DOMAIN_LENGTH = self.grid_file.domain_length
+        self.DOMAIN_HEIGHT = self.grid_file.domain_height
+        self.X_BOUNDARY_RAD = np.pi
+        self.Y_BOUNDARY_RAD = 15/2*np.pi/180 # Hardcoded in the grid generation script (could get from vertex lat)
+        self.PLOT_X_LIMS = (-self.X_BOUNDARY_RAD*1.02, self.X_BOUNDARY_RAD*1.02)
+        self.PLOT_Y_LIMS = (-self.Y_BOUNDARY_RAD*1.02, self.Y_BOUNDARY_RAD*1.02)
+
+        self.tri = self._create_torus_triangulation(
+            grid_savepoint = self.grid_savepoint,
+            grid_file = self.grid_file,
+        )
 
         self.primal_normal = np.array([
             self.grid_savepoint.primal_normal_v1().ndarray,
@@ -229,22 +82,169 @@ class Plot:
             -self.primal_normal[0],
         ])
 
-        if not os.path.isdir(PLOT_IMGS_DIR):
-            os.makedirs(PLOT_IMGS_DIR)
+        if not os.path.isdir(self.PLOT_IMGS_DIR):
+            os.makedirs(self.PLOT_IMGS_DIR)
         self.plot_counter = 0
 
+    def rad2cart(self, vert_lon: np.ndarray, vert_lat: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+
+        vert_x = vert_lon * self.DOMAIN_LENGTH / (2.0 * self.X_BOUNDARY_RAD) + self.DOMAIN_LENGTH / 2.0
+        vert_y = vert_lat * self.DOMAIN_HEIGHT / (2.0 * self.Y_BOUNDARY_RAD) + self.DOMAIN_HEIGHT / 2.0
+
+        return vert_x, vert_y
+
+    def _remove_boundary_triangles(
+        self,
+        tri: mpl.tri.Triangulation,
+        criterion: str = 'wrapping',
+        mask_edges: bool = False,
+    ) -> mpl.tri.Triangulation:
+        """
+        Remove boundary triangles from a triangulation.
+
+        This function examines each triangle in the provided triangulation and
+        determines if it is elongated based on the ratio of its longest edge to
+        its shortest edge. If the ratio exceeds `ratio`, the triangle is considered
+        elongated and is masked out.
+        Also save the original set of edges
+
+        Args:
+            tri: The input triangulation to be processed.
+
+        Returns:
+            The modified triangulation with elongated triangles masked out.
+        """
+
+        def check_wrapping(vert_x, vert_y):
+            #return (check_three_numbers(vert_x) or check_three_numbers(vert_y)) \
+            #        and ((np.abs(vert_x) == X_BOUNDARY).any() or (np.abs(vert_y) == Y_BOUNDARY).any())
+            return (check_three_numbers(vert_x) and (np.abs(vert_x) == self.X_BOUNDARY_RAD).any()) \
+                or (check_three_numbers(vert_y) and (np.abs(vert_y) == self.Y_BOUNDARY_RAD).any())
+
+        def check_three_numbers(numbers):
+            positive_count = sum(1 for x in numbers if x > 0)
+            negative_count = sum(1 for x in numbers if x < 0)
+
+            return (positive_count == 2 and negative_count == 1) or (positive_count == 1 and negative_count == 2)
+
+
+        tri.all_edges = tri.edges.copy()
+
+        tri.n_all_triangles = tri.triangles.shape[0]
+        tri.n_all_edges = tri.edges.shape[0]
+
+        boundary_triangles_mask = []
+        if criterion == 'wrapping':
+            # Remove wrapping triangles
+            for triangle in tri.triangles:
+                if check_wrapping(tri.x[triangle], tri.y[triangle]):
+                    boundary_triangles_mask.append(True)
+                else:
+                    boundary_triangles_mask.append(False)
+        elif criterion == 'elongated':
+            # Remove elongated triangles
+            ratio = 1.5
+            for triangle in tri.triangles:
+                node_x_diff = tri.x[triangle] - np.roll(tri.x[triangle], 1)
+                node_y_diff = tri.y[triangle] - np.roll(tri.y[triangle], 1)
+                edges = np.sqrt(node_x_diff**2 + node_y_diff**2)
+                if np.max(edges) > ratio*np.min(edges):
+                    boundary_triangles_mask.append(True)
+                else:
+                    boundary_triangles_mask.append(False)
+
+        tri.set_mask(boundary_triangles_mask)
+
+        if mask_edges:
+            # Mask out edges that are part of boundary triangles
+            edges_mask = np.ones(tri.all_edges.shape[0], dtype=bool)
+            for i, edge in enumerate(tri.all_edges):
+                if any(np.array_equal(edge, filtered_edge) for filtered_edge in tri.edges):
+                    edges_mask[i] = False
+            tri.edges_mask = edges_mask
+        else:
+            tri.edges_mask = None
+
+        return tri
+
+    def _create_torus_triangulation(
+        self,
+        grid_savepoint,
+        grid_file = None,
+    ) -> mpl.tri.Triangulation:
+        """
+        Create a triangulation for a torus from a savepoint and possibly grid file.
+        Remove elongated triangles from the triangulation.
+
+        Returns:
+            A triangulation object created from the grid savepoint / file.
+        """
+
+        if grid_file is None:
+            # lat/lon coordinates
+            #
+            vert_x = grid_savepoint.v_lon().ndarray
+            vert_y = grid_savepoint.v_lat().ndarray
+            edge_x = grid_savepoint.edge_center_lon().ndarray
+            edge_y = grid_savepoint.edge_center_lat().ndarray
+            cell_x = grid_savepoint.cell_center_lon().ndarray
+            cell_y = grid_savepoint.cell_center_lat().ndarray
+            # clean up the grid
+            # Adjust x values to coincide with the periodic boundary
+            vert_x = np.where(np.abs(vert_x - self.X_BOUNDARY_RAD) < 1e-14,  self.X_BOUNDARY_RAD, vert_x)
+            vert_x = np.where(np.abs(vert_x + self.X_BOUNDARY_RAD) < 1e-14, -self.X_BOUNDARY_RAD, vert_x)
+            # shift all to -X_BOUNDARY
+            vert_x = np.where(vert_x == self.X_BOUNDARY_RAD, -self.X_BOUNDARY_RAD, vert_x)
+            # Adjust y values to coincide with the periodic boundary
+            vert_y = np.where(np.abs(vert_y - self.Y_BOUNDARY_RAD) < 1e-14,  self.Y_BOUNDARY_RAD, vert_y)
+            vert_y = np.where(np.abs(vert_y + self.Y_BOUNDARY_RAD) < 1e-14, -self.Y_BOUNDARY_RAD, vert_y)
+        else:
+            # cartesian coordinates
+            vert_x = grid_file.cartesian_x_vertices.values
+            vert_y = grid_file.cartesian_y_vertices.values
+            edge_x = grid_file.edge_middle_cartesian_x.values
+            edge_y = grid_file.edge_middle_cartesian_y.values
+            cell_x = grid_file.cell_circumcenter_cartesian_x.values
+            cell_y = grid_file.cell_circumcenter_cartesian_y.values
+            # clean up the grid
+            # Adjust x values to coincide with the periodic boundary
+            vert_x = np.where(np.abs(vert_x - self.DOMAIN_LENGTH) < 1e-9,  0, vert_x)
+            edge_x = np.where(np.abs(edge_x - self.DOMAIN_LENGTH) < 1e-9,  0, edge_x)
+            cell_x = np.where(np.abs(cell_x - self.DOMAIN_LENGTH) < 1e-9,  0, cell_x)
+
+        tri = mpl.tri.Triangulation(
+            vert_x,
+            vert_y,
+            triangles= grid_savepoint.c2v(),
+            )
+        tri.edge_x = edge_x
+        tri.edge_y = edge_y
+        tri.cell_x = cell_x
+        tri.cell_y = cell_y
+
+        if grid_file is None:
+            tri = self._remove_boundary_triangles(tri)
+        else:
+            tri = self._remove_boundary_triangles(
+                tri,
+                criterion="elongated",
+                )
+
+        return tri
+
+
     def save_state(self, state, label: str = "") -> None:
-        file_name = f"{PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}.pkl"
+        file_name = f"{self.PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}.pkl"
         with open(file_name, "wb") as f:
             pickle.dump(state, f)
         self.plot_counter += 1
 
 
     def plot_data(self, data, nlev: int = -1, label: str = "", fig_num: int = 1) -> mpl.axes.Axes:
-        if DO_PLOTS:
+        if self.DO_PLOTS:
             if nlev == -1:
                 nlev = self._n_levels_to_plot
-            file_name = f"{PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}"
+            file_name = f"{self.PLOT_IMGS_DIR}/{self.plot_counter:05d}_{label}"
             axs = self._plot_data(self.tri, data, nlev, file_name, fig_num)
             self.plot_counter += 1
             return axs
@@ -305,11 +305,11 @@ class Plot:
             #cbarticks=[levels[i] for i in [0,nlevels//2-1,nlevels-2]]
         else:
             if cmax > -cmin:
-                #cmap = "YlOrRd"
-                cmap = "gist_rainbow"
+                cmap = "YlOrRd"
+                #cmap = "gist_rainbow"
             else:
-                #cmap = "YlOrRd_r"
-                cmap = "gist_rainbow_r"
+                cmap = "YlOrRd_r"
+                #cmap = "gist_rainbow_r"
             norm = lambda cmin, cmax: colors.Normalize(vmin=min(-1e-9, cmin), vmax=max(1e-9,cmax))
 
 
@@ -323,7 +323,7 @@ class Plot:
             case _: raise ValueError("Invalid data shape")
 
         fig = plt.figure(fig_num, figsize=(14,min(13,4*nlev))); plt.clf()
-        axs = fig.subplots(nrows=min(NUM_AXES_PER_COLUMN, nlev), ncols=max(1,int(np.ceil(nlev/NUM_AXES_PER_COLUMN))), sharex=True, sharey=True)
+        axs = fig.subplots(nrows=min(self.NUM_AXES_PER_COLUMN, nlev), ncols=max(1,int(np.ceil(nlev/self.NUM_AXES_PER_COLUMN))), sharex=True, sharey=True)
         if nlev > 1:
             axs = axs.flatten()
         else:
@@ -361,6 +361,48 @@ class Plot:
 
         return axs
 
+    def _get_section_idxs(self, grid_x, grid_y, s_x=None, s_y=None, dist=1e-3):
+
+        if (s_x is not None) and (s_y is None):
+            coords  = grid_x
+            s_coord = s_x
+            x_coord = grid_y
+        elif (s_x is None) and (s_y is not None):
+            coords  = grid_y
+            s_coord = s_y
+            x_coord = grid_x
+        else:
+            raise NotImplementedError("Only sections parallel to axes are supported")
+
+        nn = np.argmin(np.abs(coords - s_coord))
+        idxs = np.argwhere(np.abs(coords - coords[nn]) < dist).flatten()
+        sorting = np.argsort(x_coord[idxs])
+        idxs = idxs[sorting]
+
+        return idxs
+
+    def get_section(self, uxds, vname, s_lon=None, s_lat=0):
+
+        grid = uxds.uxgrid
+
+        if uxds[vname].shape[-1] == grid.n_face:
+            faceNode='face'
+        elif uxds[vname].shape[-1] == grid.n_node:
+            faceNode='node'
+
+        idxs = self._get_section_idxs(grid, gridPointType=faceNode, s_x=s_lon, s_y=s_lat)
+
+        x_coord = grid.face_lon[idxs]
+        y_coord = uxds.z_ifc[:,idxs].T.values
+        x_coord = np.outer(np.r_[x_coord, 2*x_coord[-1]-x_coord[-2]], np.ones((y_coord.shape[1])))
+        y_coord = np.r_[y_coord, np.reshape(y_coord[-1,:], (1, y_coord.shape[1]))]
+        if uxds[vname].shape[-2] == uxds.z_ifc.shape[0]:
+            x_coord = np.c_[x_coord, np.reshape(x_coord[:,-1], (x_coord.shape[0],1))]
+            y_coord = np.c_[y_coord, np.reshape(y_coord[:,-1], (y_coord.shape[0],1))]
+
+        return idxs, x_coord, y_coord
+
+
     def plot_grid(self, ax=None) -> None:
 
         if ax is None:
@@ -372,6 +414,7 @@ class Plot:
         ax.plot(self.tri.cell_x, self.tri.cell_y, 'ob')
         ax.set_aspect("equal")
         plt.draw()
+
 
 if __name__ == "__main__":
     # example usage and testing
@@ -387,7 +430,6 @@ if __name__ == "__main__":
         backend = gtx.gtfn_cpu,
         )
 
-    import xarray as xr
     ds = xr.open_dataset(main_dir + savepoint_path + "/../torus_exclaim_insta_DOM01_ML_0002.nc")
     axs = plot.plot_data(ds.z_ifc.values.T, 4, label=f"xarray")
 

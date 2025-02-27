@@ -901,6 +901,9 @@ class SolveNonhydro:
             # self._plot.plot_data(prognostic_states.current.rho,     label=f"IC_rho")
             # self._plot.plot_data(prognostic_states.current.exner,   label=f"IC_exner")
             # self._plot.plot_data(prognostic_states.current.theta_v, label=f"IC_theta_v")
+        if at_first_substep and ibm.DEBUG_LEVEL >= 3:
+            # save state
+            self._plot.save_state(prognostic_states.current, "start_of_timestep")
         #<--- IBM
 
         self.run_predictor_step(
