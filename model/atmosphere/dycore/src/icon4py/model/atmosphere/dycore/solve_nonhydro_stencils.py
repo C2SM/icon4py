@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.dycore_utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
@@ -214,22 +215,22 @@ def _compute_pressure_gradient_and_perturbed_rho_and_potential_temperatures(
     fa.CellKField[float],
     fa.CellKField[float],
 ]:
-    (z_rth_pr_1, z_rth_pr_2) = where(
-        k_field == 0,
+    (z_rth_pr_1, z_rth_pr_2) = concat_where(
+        dims.KDim == 0,
         _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
-    (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
-        k_field >= 1,
+    (rho_ic, z_rth_pr_1, z_rth_pr_2) = concat_where(
+        dims.KDim >= 1,
         _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
             wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
         ),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
-    (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-        k_field >= 1,
+    (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = concat_where(
+        dims.KDim >= 1,
         _compute_virtual_potential_temperatures_and_pressure_gradient(
             wgtfac_c,
             z_rth_pr_2,
