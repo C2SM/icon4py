@@ -17,18 +17,18 @@ from icon4py.model.testing.helpers import StencilTest
 
 class TestSnowNumberDefault(StencilTest):
     PROGRAM = snow_number
-    OUTPUTS = ("snow_number",)
+    OUTPUTS = ("number",)
 
     @staticmethod
     def reference(grid, t: np.array, rho: np.array, qs: np.array, **kwargs) -> dict:
-        return dict(snow_number=np.full(t.shape, 8.00e+5 ))
+        return dict(number=np.full(t.shape, 8.00e+5 ))
 
     @pytest.fixture
     def input_data(self, grid):
 
         return dict(
-            t               = data_alloc.constant_field(grid, 276.302, dims.CellDim, dims.KDim, dtype=wpfloat),
-            rho             = data_alloc.constant_field(grid, 1.17797, dims.CellDim, dims.KDim, dtype=wpfloat),
-            qs              = data_alloc.constant_field(grid, 8.28451e-24, dims.CellDim, dims.KDim, dtype=wpfloat),
-            snow_number     = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t        = data_alloc.constant_field(grid, 276.302, dims.CellDim, dims.KDim, dtype=wpfloat),
+            rho      = data_alloc.constant_field(grid, 1.17797, dims.CellDim, dims.KDim, dtype=wpfloat),
+            qs       = data_alloc.constant_field(grid, 8.28451e-24, dims.CellDim, dims.KDim, dtype=wpfloat),
+            number   = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )
