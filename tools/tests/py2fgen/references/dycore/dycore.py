@@ -126,6 +126,9 @@ def solve_nh_run_wrapper(
     mass_flx_ic,
     mass_flx_ic_size_0,
     mass_flx_ic_size_1,
+    vol_flx_ic,
+    vol_flx_ic_size_0,
+    vol_flx_ic_size_1,
     vn_traj,
     vn_traj_size_0,
     vn_traj_size_1,
@@ -376,6 +379,15 @@ def solve_nh_run_wrapper(
             False,
         )
 
+        vol_flx_ic = wrapper_utils.as_field(
+            ffi,
+            xp,
+            vol_flx_ic,
+            ts.ScalarKind.FLOAT64,
+            {Cell: vol_flx_ic_size_0, K: vol_flx_ic_size_1},
+            False,
+        )
+
         vn_traj = wrapper_utils.as_field(
             ffi,
             xp,
@@ -422,6 +434,7 @@ def solve_nh_run_wrapper(
             vt,
             mass_flx_me,
             mass_flx_ic,
+            vol_flx_ic,
             vn_traj,
             dtime,
             lprep_adv,
@@ -684,6 +697,15 @@ def solve_nh_run_wrapper(
         logging.debug(msg)
         msg = "mass_flx_ic after computation: %s" % str(
             mass_flx_ic.ndarray if mass_flx_ic is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of vol_flx_ic after computation = %s" % str(
+            vol_flx_ic.shape if vol_flx_ic is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "vol_flx_ic after computation: %s" % str(
+            vol_flx_ic.ndarray if vol_flx_ic is not None else "None"
         )
         logging.debug(msg)
 

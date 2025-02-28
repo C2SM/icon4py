@@ -28,7 +28,8 @@ extern int solve_nh_run_wrapper(
     int grf_tend_vn_size_1, double *vn_ie, int vn_ie_size_0, int vn_ie_size_1,
     double *vt, int vt_size_0, int vt_size_1, double *mass_flx_me,
     int mass_flx_me_size_0, int mass_flx_me_size_1, double *mass_flx_ic,
-    int mass_flx_ic_size_0, int mass_flx_ic_size_1, double *vn_traj,
+    int mass_flx_ic_size_0, int mass_flx_ic_size_1, double *vol_flx_ic,
+    int vol_flx_ic_size_0, int vol_flx_ic_size_1, double *vn_traj,
     int vn_traj_size_0, int vn_traj_size_1, double dtime, int lprep_adv,
     int at_initial_timestep, double divdamp_fac_o2, double ndyn_substeps,
     int idyn_timestep);

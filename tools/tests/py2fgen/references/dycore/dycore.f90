@@ -98,6 +98,9 @@ module dycore
                                     mass_flx_ic, &
                                     mass_flx_ic_size_0, &
                                     mass_flx_ic_size_1, &
+                                    vol_flx_ic, &
+                                    vol_flx_ic_size_0, &
+                                    vol_flx_ic_size_1, &
                                     vn_traj, &
                                     vn_traj_size_0, &
                                     vn_traj_size_1, &
@@ -289,6 +292,12 @@ module dycore
          integer(c_int), value :: mass_flx_ic_size_0
 
          integer(c_int), value :: mass_flx_ic_size_1
+
+         type(c_ptr), value, target :: vol_flx_ic
+
+         integer(c_int), value :: vol_flx_ic_size_0
+
+         integer(c_int), value :: vol_flx_ic_size_1
 
          type(c_ptr), value, target :: vn_traj
 
@@ -1033,6 +1042,7 @@ contains
                            vt, &
                            mass_flx_me, &
                            mass_flx_ic, &
+                           vol_flx_ic, &
                            vn_traj, &
                            dtime, &
                            lprep_adv, &
@@ -1102,6 +1112,8 @@ contains
       real(c_double), dimension(:, :), target :: mass_flx_me
 
       real(c_double), dimension(:, :), target :: mass_flx_ic
+
+      real(c_double), dimension(:, :), target :: vol_flx_ic
 
       real(c_double), dimension(:, :), target :: vn_traj
 
@@ -1237,6 +1249,10 @@ contains
 
       integer(c_int) :: mass_flx_ic_size_1
 
+      integer(c_int) :: vol_flx_ic_size_0
+
+      integer(c_int) :: vol_flx_ic_size_1
+
       integer(c_int) :: vn_traj_size_0
 
       integer(c_int) :: vn_traj_size_1
@@ -1274,6 +1290,7 @@ contains
       !$acc host_data use_device(vt)
       !$acc host_data use_device(mass_flx_me)
       !$acc host_data use_device(mass_flx_ic)
+      !$acc host_data use_device(vol_flx_ic)
       !$acc host_data use_device(vn_traj)
 
       rho_now_size_0 = SIZE(rho_now, 1)
@@ -1365,6 +1382,9 @@ contains
 
       mass_flx_ic_size_0 = SIZE(mass_flx_ic, 1)
       mass_flx_ic_size_1 = SIZE(mass_flx_ic, 2)
+
+      vol_flx_ic_size_0 = SIZE(vol_flx_ic, 1)
+      vol_flx_ic_size_1 = SIZE(vol_flx_ic, 2)
 
       vn_traj_size_0 = SIZE(vn_traj, 1)
       vn_traj_size_1 = SIZE(vn_traj, 2)
@@ -1459,6 +1479,9 @@ contains
                                 mass_flx_ic=c_loc(mass_flx_ic), &
                                 mass_flx_ic_size_0=mass_flx_ic_size_0, &
                                 mass_flx_ic_size_1=mass_flx_ic_size_1, &
+                                vol_flx_ic=c_loc(vol_flx_ic), &
+                                vol_flx_ic_size_0=vol_flx_ic_size_0, &
+                                vol_flx_ic_size_1=vol_flx_ic_size_1, &
                                 vn_traj=c_loc(vn_traj), &
                                 vn_traj_size_0=vn_traj_size_0, &
                                 vn_traj_size_1=vn_traj_size_1, &
@@ -1468,6 +1491,7 @@ contains
                                 divdamp_fac_o2=divdamp_fac_o2, &
                                 ndyn_substeps=ndyn_substeps, &
                                 idyn_timestep=idyn_timestep)
+      !$acc end host_data
       !$acc end host_data
       !$acc end host_data
       !$acc end host_data
