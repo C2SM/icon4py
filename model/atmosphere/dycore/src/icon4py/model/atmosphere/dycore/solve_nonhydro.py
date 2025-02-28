@@ -766,49 +766,6 @@ class SolveNonhydro:
         )
         self._end_vertex_halo = self._grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    def update_time_levels_for_velocity_tendencies(
-        self,
-        diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
-        at_first_substep: bool,
-        at_initial_timestep: bool,
-    ):
-        """
-        Set time levels of ddt_adv fields for call to velocity_tendencies.
-
-        When using `TimeSteppingScheme.MOST_EFFICIENT` (itime_scheme=4 in ICON Fortran),
-        `ddt_w_adv_pc.predictor` (advection term in vertical momentum equation in
-        predictor step) is not computed in the predictor step of each substep.
-        Instead, the advection term computed in the corrector step during the
-        previous substep is reused for efficiency (except, of course, in the
-        very first substep of the initial time step).
-        `ddt_vn_apc.predictor` (advection term in horizontal momentum equation in
-        predictor step) is only computed in the predictor step of the first
-        substep and the advection term in the corrector step during the previous
-        substep is reused for `ddt_vn_apc.predictor` from the second substep onwards.
-        Additionally, in this scheme the predictor and corrector outputs are kept
-        in separate elements of the pair (.predictor for the predictor step and
-        .corrector for the corrector step) and interpoolated at the end of the
-        corrector step to get the final output.
-
-        No other time stepping schemes are currently supported.
-
-        Args:
-            diagnostic_state_nh: Diagnostic fields calculated in the dynamical core (SolveNonHydro)
-            at_first_substep: Flag indicating if this is the first substep of the time step.
-            at_initial_timestep: Flag indicating if this is the first time step.
-
-        Returns:
-            The index of the pair element to be used for the corrector output.
-        """
-
-        assert (
-            self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT
-        ), f" only {TimeSteppingScheme.MOST_EFFICIENT} is supported. But {self._config.itime_scheme} is chosen."
-        if not (at_initial_timestep and at_first_substep):
-            diagnostic_state_nh.ddt_w_adv_pc.swap()
-        if not at_first_substep:
-            diagnostic_state_nh.ddt_vn_apc_pc.swap()
-
     def time_step(
         self,
         diagnostic_state_nh: dycore_states.DiagnosticStateNonHydro,
