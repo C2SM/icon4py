@@ -245,6 +245,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # PrepAdvection
     vn_traj = sp.vn_traj()
+    vol_flx_ic = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)  # TODO sp.vol_flx_ic()
     mass_flx_me = sp.mass_flx_me()
     mass_flx_ic = sp.mass_flx_ic()
 
@@ -405,7 +406,9 @@ def test_dycore_wrapper_granule_inputs(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        vol_flx_ic=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim
+        ),  # TODO: sp.vol_flx_ic(),
     )
     expected_initial_divdamp_fac = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
@@ -649,6 +652,7 @@ def test_dycore_wrapper_granule_inputs(
             vt=vt,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
+            vol_flx_ic=vol_flx_ic,
             vn_traj=vn_traj,
             dtime=dtime,
             lprep_adv=lprep_adv,
@@ -1053,6 +1057,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 
     # PrepAdvection
     vn_traj = sp.vn_traj()
+    vol_flx_ic = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)  # TODO sp.vol_flx_ic()
     mass_flx_me = sp.mass_flx_me()
     mass_flx_ic = sp.mass_flx_ic()
 
@@ -1124,6 +1129,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
         vn_traj=vn_traj,
+        vol_flx_ic=vol_flx_ic,
         dtime=dtime,
         lprep_adv=lprep_adv,
         at_initial_timestep=at_initial_timestep,
@@ -1507,6 +1513,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
     # PrepAdvection
     vn_traj = sp.vn_traj()
+    vol_flx_ic = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)  # TODO sp.vol_flx_ic()
     mass_flx_me = sp.mass_flx_me()
     mass_flx_ic = sp.mass_flx_ic()
 
@@ -1567,6 +1574,11 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
     # use fortran indices in the driving loop to compute i_substep
     for i_substep in range(1, ndyn_substeps + 1):
+        if not (at_initial_timestep and i_substep == 1):
+            ddt_w_adv.swap()
+        if not i_substep == 1:
+            ddt_vn_apc.swap()
+
         dycore_wrapper.solve_nh_run(
             rho_now=prognostic_states.current.rho,
             rho_new=prognostic_states.next.rho,
@@ -1599,6 +1611,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vn_traj=vn_traj,
+            vol_flx_ic=vol_flx_ic,
             dtime=dtime,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
@@ -1608,11 +1621,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
         )
 
         prognostic_states.swap()
-
-        if not (at_initial_timestep and (i_substep - 1 == 0)):
-            ddt_w_adv.swap()
-        if not (i_substep - 1 == 0):
-            ddt_vn_apc.swap()
 
     cell_start_lb_plus2 = icon_grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)

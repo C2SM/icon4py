@@ -906,7 +906,7 @@ def test_run_solve_nonhydro_multi_step(
 
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp, swap_ddt_w_adv_pc=not linit)
+    diagnostic_state_nh = utils.construct_diagnostics(sp)
     prognostic_states = utils.create_prognostic_states(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)
@@ -931,6 +931,10 @@ def test_run_solve_nonhydro_multi_step(
     for i_substep in range(ndyn_substeps):
         at_first_substep = i_substep == 0
         at_last_substep = i_substep == (ndyn_substeps - 1)
+
+        solve_nonhydro.update_time_levels_for_velocity_tendencies(
+            diagnostic_state_nh, at_first_substep, linit
+        )
 
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
