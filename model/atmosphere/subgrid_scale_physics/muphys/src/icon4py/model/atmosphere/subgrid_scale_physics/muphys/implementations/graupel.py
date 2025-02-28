@@ -22,9 +22,9 @@ from icon4py.model.atmosphere.subgrid_scale_physics.muphys.core.transitions impo
 
 K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 
-@gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, 0.0))
+@gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, 0.0, False))
 def _precip(
-    state:     tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat],
+    state:     tuple[ta.wpfloat, ta.wpfloat, ta.wpfloat, bool],
     prefactor: ta.wpfloat,             # param[0] of fall_speed
     exponent:  ta.wpfloat,             # param[1] of fall_speed
     offset:    ta.wpfloat,             # param[1] of fall_speed
@@ -34,13 +34,14 @@ def _precip(
     q_kp1:     ta.wpfloat,             # specific mass in next lower cell
     rho:       ta.wpfloat,             # density
     mask:      bool                    # k-level located in cloud
-) -> tuple[ta.wpfloat,ta.wpfloat,ta.wpfloat]:   # updates
-    _, flx, vt = state
+) -> tuple[ta.wpfloat,ta.wpfloat,ta.wpfloat, bool]:   # updates
+    _, flx, vt, is_level_activated = state
+    is_level_activated = is_level_activated | mask
     rho_x = q * rho
     flx_eff = (rho_x / zeta) + 2.0*flx
 #    flx_partial = minimum(rho_x * vc * _fall_speed_scalar(rho_x, prefactor, offset, exponent), flx_eff)
     flx_partial = minimum(rho_x * vc * prefactor * power((rho_x+offset), exponent), flx_eff)
-    if( mask ):
+    if( is_level_activated ):
         update0 = (zeta * (flx_eff - flx_partial)) / ((1.0 + zeta * vt) * rho)    # q update
         update1 = (update0 * rho * vt + flx_partial) * 0.5                        # flux
         rho_x   = (update0 + q_kp1) * 0.5 * rho
@@ -50,11 +51,11 @@ def _precip(
         update0  = q
         update1  = 0.0
         update2  = 0.0
-    return update0, update1, update2
+    return update0, update1, update2, is_level_activated
 
-@gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0))
+@gtx.scan_operator(axis=K, forward=True, init=(0.0, 0.0, False))
 def _temperature_update(
-    state:     tuple[ta.wpfloat, ta.wpfloat],
+    state:     tuple[ta.wpfloat, ta.wpfloat,bool],
     t:         ta.wpfloat,
     t_kp1:     ta.wpfloat,
     ei_old:    ta.wpfloat,
@@ -66,20 +67,23 @@ def _temperature_update(
     rho:       ta.wpfloat,             # density
     dz:        ta.wpfloat,
     dt:        ta.wpfloat,
-) -> tuple[ta.wpfloat,ta.wpfloat]:
-    _, eflx = state
-    e_int   = ei_old + eflx
+    mask:      bool
+) -> tuple[ta.wpfloat,ta.wpfloat,bool]:
+    _, eflx, is_level_activated = state
+    is_level_activated = is_level_activated | mask
+    if (is_level_activated):
+      e_int   = ei_old + eflx
 
-    eflx    = dt * ( pr * ( t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc ) + (pflx_tot) * ( g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc ) )
-    e_int   = e_int - eflx
+      eflx    = dt * ( pr * ( t_d.clw * t - t_d.cvd * t_kp1 - g_ct.lvc ) + (pflx_tot) * ( g_ct.ci * t - t_d.cvd * t_kp1 - g_ct.lsc ) )
+      e_int   = e_int - eflx
 
 #   t       = T_from_internal_energy_scalar( min_k, e_int, qv, qliq, qice, rho, dz )
 #   inlined in order to avoid scan_operator -> field_operator
-    qtot    = qliq + qice + qv                          # total water specific mass
-    cv      = ( t_d.cvd * ( 1.0 - qtot ) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice ) * rho * dz # Moist isometric specific heat
-    t       = ( e_int + rho * dz * ( qliq * g_ct.lvc + qice * g_ct.lsc )) / cv
+      qtot    = qliq + qice + qv                          # total water specific mass
+      cv      = ( t_d.cvd * ( 1.0 - qtot ) + t_d.cvv * qv + t_d.clw * qliq + g_ct.ci * qice ) * rho * dz # Moist isometric specific heat
+      t       = ( e_int + rho * dz * ( qliq * g_ct.lvc + qice * g_ct.lsc )) / cv
 
-    return t, eflx
+    return t, eflx, is_level_activated
 
 @gtx.field_operator
 def _graupel_mask(
@@ -276,31 +280,30 @@ def _precipitation_effects(
     qliq    = qc + qr
     qice    = qs + qi + qg
     ei_old  = _internal_energy( t, qv, qliq, qice, rho, dz )
-
     zeta  = dt / (2.0 * dz )
     xrho  = sqrt( g_ct.rho_00 / rho )
 
-    # NP = 4    qp_ind[] = {lqr, lqi, lqs, lqg};
-    vc_r = where( kmin_r, _vel_scale_factor_default( xrho ), 0.0 )
-    vc_i = where( kmin_i, _vel_scale_factor_ice( xrho ), 0.0 )
-    vc_s = where( kmin_s, _vel_scale_factor_snow( xrho, rho, t, qs ), 0.0 )
-    vc_g = where( kmin_g, _vel_scale_factor_default( xrho ), 0.0 )
+    vc_r = _vel_scale_factor_default( xrho )
+    vc_s = _vel_scale_factor_snow( xrho, rho, t, qs )
+    vc_i = _vel_scale_factor_ice( xrho )
+    vc_g = _vel_scale_factor_default( xrho )
 
-    q_kp1     = concat_where( k < last_lev, qr(Koff[1]), qr )
-    qr, pr, _ = _precip( idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, qr, q_kp1, rho, True )
-    q_kp1     = concat_where( k < last_lev, qi(Koff[1]), qi )
-    qi, pi, _ = _precip( idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, qi, q_kp1, rho, True )
-    q_kp1     = concat_where( k < last_lev, qs(Koff[1]), qs )
-    qs, ps, _ = _precip( idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, qs, q_kp1, rho, True )
-    q_kp1     = concat_where( k < last_lev, qg(Koff[1]), qg )
-    qg, pg, _ = _precip( idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, qg, q_kp1, rho, True )
+    q_kp1        = concat_where( k < last_lev, qr(Koff[1]), qr )
+    qr, pr, _, _ = _precip( idx.prefactor_r, idx.exponent_r, idx.offset_r, zeta, vc_r, qr, q_kp1, rho, kmin_r )
+    q_kp1        = concat_where( k < last_lev, qs( Koff[1] ), qs )
+    qs, ps, _, _ = _precip( idx.prefactor_s, idx.exponent_s, idx.offset_s, zeta, vc_s, qs, q_kp1, rho, kmin_s )
+    q_kp1        = concat_where( k < last_lev, qi(Koff[1]), qi )
+    qi, pi, _, _ = _precip( idx.prefactor_i, idx.exponent_i, idx.offset_i, zeta, vc_i, qi, q_kp1, rho, kmin_i )
+    q_kp1        = concat_where( k < last_lev, qg(Koff[1]), qg )
+    qg, pg, _, _ = _precip( idx.prefactor_g, idx.exponent_g, idx.offset_g, zeta, vc_g, qg, q_kp1, rho, kmin_g )
 
-    qliq      = qc + qr
-    qice      = qs + qi + qg
-    p_sig     = ps + pi + pg
-    t_kp1     = concat_where( k < last_lev, t(Koff[1]), t )
-    t, eflx   = _temperature_update( t, t_kp1, ei_old, pr, p_sig, qv, qliq, qice, rho, dz, dt )
-    # TODO: here we have to return a single layer for pre_gsp
+    qliq       = qc + qr
+    qice       = qs + qi + qg
+    p_sig      = ps + pi + pg
+    t_kp1      = concat_where( k < last_lev, t(Koff[1]), t )
+    kmin_rsig  = kmin_r | kmin_s | kmin_i | kmin_g
+    t, eflx, _ = _temperature_update( t, t_kp1, ei_old, pr, p_sig, qv, qliq, qice, rho, dz, dt, kmin_rsig )
+
     return qr, qs, qi, qg, t, p_sig+pr, pr, ps, pi, pg, eflx/dt
 
 @gtx.field_operator
