@@ -120,9 +120,10 @@ def create_vertical_params(
 
 
 def construct_diagnostics(
-    init_savepoint: sb.IconNonHydroInitSavepoint, swap_w_advective_tendency: bool = False
+    init_savepoint: sb.IconNonHydroInitSavepoint,
+    swap_vertical_wind_advective_tendency: bool = False,
 ):
-    current_index, next_index = (1, 0) if swap_w_advective_tendency else (0, 1)
+    current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
@@ -137,7 +138,7 @@ def construct_diagnostics(
         normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
-        w_advective_tendency=common_utils.PredictorCorrectorPair(
+        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(current_index), init_savepoint.ddt_w_adv_pc(next_index)
         ),
         tangential_wind=init_savepoint.vt(),

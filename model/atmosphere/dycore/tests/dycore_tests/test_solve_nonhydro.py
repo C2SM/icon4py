@@ -917,7 +917,9 @@ def test_run_solve_nonhydro_multi_step(
 
     linit = sp.get_metadata("linit").get("linit")
 
-    diagnostic_state_nh = utils.construct_diagnostics(sp, swap_w_advective_tendency=not linit)
+    diagnostic_state_nh = utils.construct_diagnostics(
+        sp, swap_vertical_wind_advective_tendency=not linit
+    )
     prognostic_states = utils.create_prognostic_states(sp)
 
     interpolation_state = utils.construct_interpolation_state(interpolation_savepoint)

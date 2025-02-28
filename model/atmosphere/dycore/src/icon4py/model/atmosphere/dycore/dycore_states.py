@@ -25,6 +25,10 @@ class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
     tangential_wind: fa.EdgeKField[float]
+    """
+    Declared as vt in ICON. Tangential wind at edge.
+    """
+
     khalf_vn: fa.EdgeKField[
         float
     ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
@@ -54,7 +58,7 @@ class DiagnosticStateNonHydro:
     Declared as ddt_vn_apc_pc in ICON. Advective tendency of normal wind (including coriolis force).
     """
 
-    w_advective_tendency: common_utils.PredictorCorrectorPair[fa.CellKField[float]]
+    vertical_wind_advective_tendency: common_utils.PredictorCorrectorPair[fa.CellKField[float]]
     """
     Declared as ddt_w_adv_pc in ICON. Advective tendency of vertical wind.
     """

@@ -280,7 +280,9 @@ class IntermediateFields:
             z_graddiv_vn=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
             z_rho_expl=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
             z_dwdz_dd=data_alloc.zero_field(grid, dims.CellDim, dims.KDim, backend=backend),
-            horizontal_kinetic_energy_at_edge=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
+            horizontal_kinetic_energy_at_edge=data_alloc.zero_field(
+                grid, dims.EdgeDim, dims.KDim, backend=backend
+            ),
             z_vt_ie=data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, backend=backend),
         )
 
@@ -818,7 +820,7 @@ class SolveNonhydro:
             self._config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT
         ), f" only {TimeSteppingScheme.MOST_EFFICIENT} is supported. But {self._config.itime_scheme} is chosen."
         if not (at_initial_timestep and at_first_substep):
-            diagnostic_state_nh.w_advective_tendency.swap()
+            diagnostic_state_nh.vertical_wind_advective_tendency.swap()
         if not at_first_substep:
             diagnostic_state_nh.normal_wind_advective_tendency.swap()
 
@@ -1408,7 +1410,7 @@ class SolveNonhydro:
         self._stencils_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_states.current.w,
-            ddt_w_adv_ntl1=diagnostic_state_nh.w_advective_tendency.predictor,
+            ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
@@ -1885,8 +1887,8 @@ class SolveNonhydro:
             self._stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.w_advective_tendency.predictor,
-                ddt_w_adv_ntl2=diagnostic_state_nh.w_advective_tendency.corrector,
+                ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
+                ddt_w_adv_ntl2=diagnostic_state_nh.vertical_wind_advective_tendency.corrector,
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,
@@ -1920,7 +1922,7 @@ class SolveNonhydro:
             self._stencils_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_states.current.w,
-                ddt_w_adv_ntl1=diagnostic_state_nh.w_advective_tendency.predictor,
+                ddt_w_adv_ntl1=diagnostic_state_nh.vertical_wind_advective_tendency.predictor,
                 z_th_ddz_exner_c=self.z_th_ddz_exner_c,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 rho_ic=diagnostic_state_nh.rho_ic,

@@ -26,15 +26,16 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO (Chia RUi): Rename the individual stencils used by the combined stencil
 @field_operator
-def _fused_velocity_advection_stencil_16_to_18(
-    z_w_con_c: fa.CellKField[vpfloat],
+def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
+    khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
-    ddt_w_adv: fa.CellKField[vpfloat],
+    vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    z_v_grad_w: fa.EdgeKField[vpfloat],
+    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
     levelmask: fa.KField[bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
@@ -53,84 +54,88 @@ def _fused_velocity_advection_stencil_16_to_18(
 ) -> fa.CellKField[vpfloat]:
     k = broadcast(k, (dims.CellDim, dims.KDim))
 
-    ddt_w_adv = where(
+    vertical_wind_advective_tendency = where(
         (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
-        _compute_advective_vertical_wind_tendency(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
-        ddt_w_adv,
+        _compute_advective_vertical_wind_tendency(
+            khalf_contravariant_corrected_w_at_cell, w, coeff1_dwdz, coeff2_dwdz
+        ),
+        vertical_wind_advective_tendency,
     )
-    ddt_w_adv = where(
+    vertical_wind_advective_tendency = where(
         (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
-        _add_interpolated_horizontal_advection_of_w(e_bln_c_s, z_v_grad_w, ddt_w_adv),
-        ddt_w_adv,
+        _add_interpolated_horizontal_advection_of_w(
+            e_bln_c_s, khalf_horizontal_advection_of_w_at_edge, vertical_wind_advective_tendency
+        ),
+        vertical_wind_advective_tendency,
     )
-    ddt_w_adv = (
-        where(
-            (cell_lower_bound <= cell < cell_upper_bound)
-            & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 3),
-            _add_extra_diffusion_for_w_con_approaching_cfl(
-                levelmask,
-                cfl_clipping,
-                owner_mask,
-                z_w_con_c,
-                ddqz_z_half,
-                area,
-                geofac_n2s,
-                w,
-                ddt_w_adv,
-                scalfac_exdiff,
-                cfl_w_limit,
-                dtime,
-            ),
-            ddt_w_adv,
-        )
+    vertical_wind_advective_tendency = where(
+        (cell_lower_bound <= cell < cell_upper_bound)
+        & ((maximum(3, nrdmax - 2) - 1) <= k < nlev - 3),
+        _add_extra_diffusion_for_w_con_approaching_cfl(
+            levelmask,
+            cfl_clipping,
+            owner_mask,
+            khalf_contravariant_corrected_w_at_cell,
+            ddqz_z_half,
+            area,
+            geofac_n2s,
+            w,
+            vertical_wind_advective_tendency,
+            scalfac_exdiff,
+            cfl_w_limit,
+            dtime,
+        ),
+        vertical_wind_advective_tendency,
     )
 
-    return ddt_w_adv
+    return vertical_wind_advective_tendency
 
 
 @field_operator
-def _fused_velocity_advection_stencil_15_to_18(
-    z_w_con_c: fa.CellKField[vpfloat],
+def _compute_advection_in_vertical_momentum_equation(
+    contravariant_corrected_w_at_cell: fa.CellKField[wpfloat],
+    vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
+    khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
+    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
-    ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    z_v_grad_w: fa.EdgeKField[vpfloat],
-    levelmask: fa.KField[bool],
-    cfl_clipping: fa.CellKField[bool],
-    owner_mask: fa.CellField[bool],
     ddqz_z_half: fa.CellKField[vpfloat],
     area: fa.CellField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
-    cell: fa.CellField[gtx.int32],
-    k: fa.KField[gtx.int32],
-    z_w_con_c_full: fa.CellKField[wpfloat],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
+    skip_compute_predictor_vertical_advection: bool,
+    levelmask: fa.KField[bool],
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    cell: fa.CellField[gtx.int32],
+    k: fa.KField[gtx.int32],
     cell_lower_bound: gtx.int32,
     cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-    skip_compute_predictor_vertical_advection: bool,
     start_cell_lateral_boundary: gtx.int32,
     end_cell_halo: gtx.int32,
 ) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
-    z_w_con_c_full = where(
+    contravariant_corrected_w_at_cell = where(
         start_cell_lateral_boundary <= cell < end_cell_halo,
-        _interpolate_contravariant_vertical_velocity_to_full_levels(z_w_con_c),
-        z_w_con_c_full,
+        _interpolate_contravariant_vertical_velocity_to_full_levels(
+            khalf_contravariant_corrected_w_at_cell
+        ),
+        contravariant_corrected_w_at_cell,
     )
-    ddt_w_adv = (
-        _fused_velocity_advection_stencil_16_to_18(
-            z_w_con_c,
+    vertical_wind_advective_tendency = (
+        _compute_advective_vertical_wind_tendency_and_apply_diffusion(
+            khalf_contravariant_corrected_w_at_cell,
             w,
             coeff1_dwdz,
             coeff2_dwdz,
-            ddt_w_adv,
+            vertical_wind_advective_tendency,
             e_bln_c_s,
-            z_v_grad_w,
+            khalf_horizontal_advection_of_w_at_edge,
             levelmask,
             cfl_clipping,
             owner_mask,
@@ -148,38 +153,38 @@ def _fused_velocity_advection_stencil_15_to_18(
             nrdmax,
         )
         if not skip_compute_predictor_vertical_advection
-        else ddt_w_adv
+        else vertical_wind_advective_tendency
     )
 
-    return (z_w_con_c_full, ddt_w_adv)
+    return (contravariant_corrected_w_at_cell, vertical_wind_advective_tendency)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def fused_velocity_advection_stencil_15_to_18(
-    z_w_con_c: fa.CellKField[vpfloat],
+def compute_advection_in_vertical_momentum_equation(
+    contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
+    vertical_wind_advective_tendency: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
+    khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
+    khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
     coeff1_dwdz: fa.CellKField[vpfloat],
     coeff2_dwdz: fa.CellKField[vpfloat],
-    ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
-    z_v_grad_w: fa.EdgeKField[vpfloat],
-    levelmask: fa.KField[bool],
-    cfl_clipping: fa.CellKField[bool],
-    owner_mask: fa.CellField[bool],
     ddqz_z_half: fa.CellKField[vpfloat],
     area: fa.CellField[wpfloat],
     geofac_n2s: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CODim], wpfloat],
-    z_w_con_c_full: fa.CellKField[vpfloat],
-    cell: fa.CellField[gtx.int32],
-    k: fa.KField[gtx.int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
+    skip_compute_predictor_vertical_advection: bool,
+    levelmask: fa.KField[bool],
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    cell: fa.CellField[gtx.int32],
+    k: fa.KField[gtx.int32],
     cell_lower_bound: gtx.int32,
     cell_upper_bound: gtx.int32,
     nlev: gtx.int32,
     nrdmax: gtx.int32,
-    skip_compute_predictor_vertical_advection: bool,
     start_cell_lateral_boundary: gtx.int32,
     end_cell_halo: gtx.int32,
     horizontal_start: gtx.int32,
@@ -187,34 +192,34 @@ def fused_velocity_advection_stencil_15_to_18(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _fused_velocity_advection_stencil_15_to_18(
-        z_w_con_c,
+    _compute_advection_in_vertical_momentum_equation(
+        contravariant_corrected_w_at_cell,
+        vertical_wind_advective_tendency,
         w,
+        khalf_contravariant_corrected_w_at_cell,
+        khalf_horizontal_advection_of_w_at_edge,
         coeff1_dwdz,
         coeff2_dwdz,
-        ddt_w_adv,
         e_bln_c_s,
-        z_v_grad_w,
-        levelmask,
-        cfl_clipping,
-        owner_mask,
         ddqz_z_half,
         area,
         geofac_n2s,
-        cell,
-        k,
-        z_w_con_c_full,
         scalfac_exdiff,
         cfl_w_limit,
         dtime,
+        skip_compute_predictor_vertical_advection,
+        levelmask,
+        cfl_clipping,
+        owner_mask,
+        cell,
+        k,
         cell_lower_bound,
         cell_upper_bound,
         nlev,
         nrdmax,
-        skip_compute_predictor_vertical_advection,
         start_cell_lateral_boundary,
         end_cell_halo,
-        out=(z_w_con_c_full, ddt_w_adv),
+        out=(contravariant_corrected_w_at_cell, vertical_wind_advective_tendency),
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),
