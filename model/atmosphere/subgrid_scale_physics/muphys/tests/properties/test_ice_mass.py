@@ -17,11 +17,11 @@ from icon4py.model.testing.helpers import StencilTest
 
 class TestIceNumber(StencilTest):
     PROGRAM = ice_mass
-    OUTPUTS = ("ice_mass",)
+    OUTPUTS = ("mass",)
 
     @staticmethod
     def reference(grid, qi: np.array, ni: np.array, **kwargs) -> dict:
-        return dict(ice_mass=np.full(qi.shape, 1.0e-12))
+        return dict(mass=np.full(qi.shape, 1.0e-12))
 
     @pytest.fixture
     def input_data(self, grid):
@@ -29,5 +29,5 @@ class TestIceNumber(StencilTest):
         return dict(
             qi              = data_alloc.constant_field(grid, 2.02422e-23, dims.CellDim, dims.KDim, dtype=wpfloat),
             ni              = data_alloc.constant_field(grid, 5.05089, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ice_mass        = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            mass            = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

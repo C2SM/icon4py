@@ -50,9 +50,9 @@ def _deposition_factor(
 def deposition_factor(
     t:            fa.CellKField[ta.wpfloat],             # Temperature
     qvsi:         fa.CellKField[ta.wpfloat],             # Saturation (ice) specific vapor mass
-    deposition_factor: fa.CellKField[ta.wpfloat],        # output
+    deposition_rate: fa.CellKField[ta.wpfloat],          # output
 ):
-    _deposition_factor(t, qvsi, out=deposition_factor)
+    _deposition_factor(t, qvsi, out=deposition_rate)
 
 @gtx.field_operator
 def _fall_speed_scalar(
@@ -80,9 +80,9 @@ def fall_speed_scalar(
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat,
-    fall_speed:   gtx.Field[[], ta.wpfloat],                            # output
+    speed:        gtx.Field[[], ta.wpfloat],                            # output
 ):
-    _fall_speed_scalar(density, prefactor, offset, exponent, out=fall_speed)
+    _fall_speed_scalar(density, prefactor, offset, exponent, out=speed)
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def fall_speed(
@@ -90,9 +90,9 @@ def fall_speed(
     prefactor:    ta.wpfloat,
     offset:       ta.wpfloat,
     exponent:     ta.wpfloat,
-    fall_speed:   fa.CellKField[ta.wpfloat],             # output
+    speed:   fa.CellKField[ta.wpfloat],                  # output
 ):
-    _fall_speed(density, prefactor, offset, exponent, out=fall_speed)
+    _fall_speed(density, prefactor, offset, exponent, out=speed)
 
 @gtx.field_operator
 def _ice_deposition_nucleation(
@@ -113,7 +113,7 @@ def ice_deposition_nucleation(
     qi:	       fa.CellKField[ta.wpfloat],             # Specific humidity of ice
     ni:	       fa.CellKField[ta.wpfloat],             # Ice crystal number
     dvsi:      fa.CellKField[ta.wpfloat],             # Vapor excess with respect to ice sat
-    dt:	       ta.wpfloat,                           # Time step
+    dt:	       ta.wpfloat,                            # Time step
     vapor_deposition_rate: fa.CellKField[ta.wpfloat]  # output
 ):
     _ice_deposition_nucleation( t, qc, qi, ni, dvsi, dt, out=vapor_deposition_rate )
@@ -130,27 +130,27 @@ def _ice_mass(
 def ice_mass(
     qi:        fa.CellKField[ta.wpfloat],             # Specific humidity of ice
     ni:        fa.CellKField[ta.wpfloat],             # Ice crystal number
-    ice_mass: fa.CellKField[ta.wpfloat]  # output
+    mass: fa.CellKField[ta.wpfloat]                   # output
 ):
-    _ice_mass( qi, ni, out=ice_mass )
+    _ice_mass( qi, ni, out=mass )
 
 @gtx.field_operator
 def _ice_number(
     t:         fa.CellKField[ta.wpfloat],             # Ambient temperature
     rho:       fa.CellKField[ta.wpfloat],             # Ambient density
 ) -> fa.CellKField[ta.wpfloat]:                       # Ice number
-    A_COOP = 5.000                                   # Parameter in cooper fit
-    B_COOP = 0.304                                   # Parameter in cooper fit
-    NIMAX  = 250.e+3                                 # Maximal number of ice crystals
+    A_COOP = 5.000                                    # Parameter in cooper fit
+    B_COOP = 0.304                                    # Parameter in cooper fit
+    NIMAX  = 250.e+3                                  # Maximal number of ice crystals
     return minimum(NIMAX, A_COOP * exp( B_COOP * (t_d.tmelt - t) ) ) / rho
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def ice_number(
     t:         fa.CellKField[ta.wpfloat],             # Ambient temperature
     rho:       fa.CellKField[ta.wpfloat],             # Ambient density
-    ice_number: fa.CellKField[ta.wpfloat]             # output
+    number: fa.CellKField[ta.wpfloat]                 # output
 ):
-    _ice_number( t, rho, out=ice_number )
+    _ice_number( t, rho, out=number )
 
 @gtx.field_operator
 def _ice_sticking(
@@ -167,9 +167,9 @@ def _ice_sticking(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED)
 def ice_sticking(
     t:        fa.CellKField[ta.wpfloat],             # Temperature
-    ice_sticking: fa.CellKField[ta.wpfloat]  # output
+    sticking_factor: fa.CellKField[ta.wpfloat]       # output
 ):
-    _ice_sticking( t, out=ice_sticking )
+    _ice_sticking( t, out=sticking_factor )
 
 @gtx.field_operator
 def _snow_lambda(
@@ -232,9 +232,9 @@ def snow_number(
     t:        fa.CellKField[ta.wpfloat],             # Temperature
     rho:      fa.CellKField[ta.wpfloat],             # Ambient air density
     qs:       fa.CellKField[ta.wpfloat],             # Snow specific mass
-    snow_number: fa.CellKField[ta.wpfloat]           # output
+    number:   fa.CellKField[ta.wpfloat]              # output
 ):
-    _snow_number( t, rho, qs, out=snow_number )
+    _snow_number( t, rho, qs, out=number )
 
 @gtx.field_operator
 def _vel_scale_factor_ice(

@@ -17,11 +17,11 @@ from icon4py.model.testing.helpers import StencilTest
 
 class TestDepositionFactor(StencilTest):
     PROGRAM = deposition_factor
-    OUTPUTS = ("deposition_factor",)
+    OUTPUTS = ("deposition_rate",)
 
     @staticmethod
     def reference(grid, t: np.array, qvsi: np.array, **kwargs) -> dict:
-        return dict(deposition_factor=np.full(t.shape, 1.3234329478493952e-05))
+        return dict(deposition_rate=np.full(t.shape, 1.3234329478493952e-05))
 
     @pytest.fixture
     def input_data(self, grid):
@@ -29,5 +29,5 @@ class TestDepositionFactor(StencilTest):
         return dict(
             t               = data_alloc.constant_field(grid, 272.731, dims.CellDim, dims.KDim, dtype=wpfloat),
             qvsi            = data_alloc.constant_field(grid, 0.00416891, dims.CellDim, dims.KDim, dtype=wpfloat),
-            deposition_factor = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            deposition_rate = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

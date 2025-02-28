@@ -86,9 +86,9 @@ def internal_energy(
     qice:      fa.CellKField[ta.wpfloat],             # Specific mass of solid phases
     rho:       fa.CellKField[ta.wpfloat],             # Ambient density
     dz:        fa.CellKField[ta.wpfloat],             # Extent of grid cell
-    internal_energy: fa.CellKField[ta.wpfloat]  # output
+    energy: fa.CellKField[ta.wpfloat]                 # output
 ):
-    _internal_energy( t, qv, qliq, qice, rho, dz, out=internal_energy )
+    _internal_energy( t, qv, qliq, qice, rho, dz, out=energy )
 
 @gtx.field_operator
 def _qsat_ice_rho(

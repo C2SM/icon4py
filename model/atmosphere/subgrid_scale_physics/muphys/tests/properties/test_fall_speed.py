@@ -18,11 +18,11 @@ from icon4py.model.testing.helpers import StencilTest
 
 class TestFallSpeed(StencilTest):
     PROGRAM = fall_speed
-    OUTPUTS = ("fall_speed",)
+    OUTPUTS = ("speed",)
 
     @staticmethod
     def reference(grid, density: np.array, prefactor: wpfloat, offset: wpfloat, exponent: wpfloat, **kwargs) -> dict:
-        return dict(fall_speed=np.full(density.shape, 0.67882452435647411))
+        return dict(speed=np.full(density.shape, 0.67882452435647411))
 
     @pytest.fixture
     def input_data(self, grid):
@@ -32,5 +32,5 @@ class TestFallSpeed(StencilTest):
             prefactor       = idx.prefactor_r,
             offset          = idx.offset_r,
             exponent        = idx.exponent_r,
-            fall_speed      = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
+            speed           = data_alloc.constant_field(grid, 0., dims.CellDim, dims.KDim, dtype=wpfloat),
         )

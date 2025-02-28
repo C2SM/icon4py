@@ -17,16 +17,16 @@ from icon4py.model.testing.helpers import StencilTest
 
 class TestIceSticking(StencilTest):
     PROGRAM = ice_sticking
-    OUTPUTS = ("ice_sticking",)
+    OUTPUTS = ("sticking_factor",)
 
     @staticmethod
     def reference(grid, t: np.array, **kwargs) -> dict:
-        return dict(ice_sticking=np.full(t.shape, 0.8697930232044021))
+        return dict(sticking_factor=np.full(t.shape, 0.8697930232044021))
 
     @pytest.fixture
     def input_data(self, grid):
 
         return dict(
-            t            = data_alloc.constant_field(grid, 271.6, dims.CellDim, dims.KDim, dtype=wpfloat),
-            ice_sticking = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
+            t               = data_alloc.constant_field(grid, 271.6, dims.CellDim, dims.KDim, dtype=wpfloat),
+            sticking_factor = data_alloc.constant_field(grid, 0.0, dims.CellDim, dims.KDim, dtype=wpfloat),
         )

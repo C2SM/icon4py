@@ -17,7 +17,7 @@ def _cloud_to_graupel(
     rho:      fa.CellKField[ta.wpfloat],             # Ambient density
     qc:       fa.CellKField[ta.wpfloat],             # Cloud specific mass
     qg:       fa.CellKField[ta.wpfloat],             # Graupel specific mass
-) -> fa.CellKField[ta.wpfloat]:                     # Return: Riming graupel rate
+) -> fa.CellKField[ta.wpfloat]:                      # Return: Riming graupel rate
     A_RIM = 4.43
     B_RIM = 0.94878
     return where( (minimum(qc,qg) > g_ct.qmin) & (t > g_ct.tfrz_hom), A_RIM * qc * power(qg * rho, B_RIM), 0. )
@@ -383,7 +383,7 @@ def vapor_x_ice(
     eta:       fa.CellKField[ta.wpfloat],             # Deposition factor
     dvsi:      fa.CellKField[ta.wpfloat],             # Vapor excess qv-qsat_ice(T)
     rho:       fa.CellKField[ta.wpfloat],             # Ambient density
-    dt:        ta.wpfloat,                           # time step
+    dt:        ta.wpfloat,                            # time step
     vapor_deposition_rate: fa.CellKField[ta.wpfloat]  # output
 ):
     _vapor_x_ice(qi, mi, eta, dvsi, rho, dt, out=vapor_deposition_rate)
