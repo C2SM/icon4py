@@ -27,10 +27,10 @@ def horizontal_dim():
 def global_grid_domains(dim: dims.Dimension):
     zones = [
         h_grid.Zone.END,
-        # h_grid.Zone.LOCAL,
-        # h_grid.Zone.INTERIOR,
-        # h_grid.Zone.HALO,
-        # h_grid.Zone.HALO_LEVEL_2,
+        h_grid.Zone.LOCAL,
+        h_grid.Zone.INTERIOR,
+        h_grid.Zone.HALO,
+        h_grid.Zone.HALO_LEVEL_2,
     ]
 
     yield from _domain(dim, zones)
