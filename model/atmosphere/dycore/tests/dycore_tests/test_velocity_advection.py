@@ -11,9 +11,9 @@ import pytest
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
+    compute_advection_in_vertical_momentum_equation,
     fused_velocity_advection_stencil_1_to_7,
     fused_velocity_advection_stencil_8_to_13,
-    fused_velocity_advection_stencil_15_to_18,
 )
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import (
@@ -763,8 +763,7 @@ def test_velocity_fused_15_18(
     cell = data_alloc.index_field(dim=dims.CellDim, grid=icon_grid, backend=backend)
 
     nrdmax = grid_savepoint.nrdmax()
-    extra_diffu = True
-
+    
     cell_domain = h_grid.domain(dims.CellDim)
     cell_lower_bound = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
     cell_upper_bound = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
@@ -780,7 +779,7 @@ def test_velocity_fused_15_18(
     horizontal_end = icon_grid.end_index(cell_domain(h_grid.Zone.HALO))
     vertical_start = 0
     vertical_end = icon_grid.num_levels
-    fused_velocity_advection_stencil_15_to_18.compute_advection_in_vertical_momentum_equation.with_backend(
+    compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
         backend
     )(
         contravariant_corrected_w_at_cell=contravariant_corrected_w_at_cell,

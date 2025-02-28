@@ -18,9 +18,9 @@ import icon4py.model.atmosphere.dycore.velocity_advection_stencils as velocity_s
 from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
+    compute_advection_in_vertical_momentum_equation,
     fused_velocity_advection_stencil_1_to_7,
     fused_velocity_advection_stencil_8_to_13,
-    fused_velocity_advection_stencil_15_to_18,
 )
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
@@ -83,7 +83,7 @@ class VelocityAdvection:
             self._backend
         )
 
-        self._compute_advection_in_vertical_momentum_equation = fused_velocity_advection_stencil_15_to_18.compute_advection_in_vertical_momentum_equation.with_backend(
+        self._compute_advection_in_vertical_momentum_equation = compute_advection_in_vertical_momentum_equation.compute_advection_in_vertical_momentum_equation.with_backend(
             self._backend
         )
 
