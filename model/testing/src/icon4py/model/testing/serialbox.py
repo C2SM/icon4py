@@ -1257,7 +1257,7 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self.serializer.read("cfl_w_limit", self.savepoint)[0]
 
     def vn_only(self) -> bool:
-        return self.serializer.read("vn_only", self.savepoint)[0]
+        return bool(self.serializer.read("vn_only", self.savepoint)[0])
 
     def max_vcfl_dyn(self):
         return self.serializer.read("max_vcfl_dyn", self.savepoint)[0]
