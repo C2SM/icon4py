@@ -6,19 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
 import logging
 from unittest import mock
 
@@ -36,7 +23,8 @@ from icon4py.model.testing import (
     datatest_utils as dt_utils,
     helpers,
 )
-from icon4py.tools.py2fgen.wrappers import dycore_wrapper, wrapper_dimension as w_dim
+from icon4py.tools.py2fgen import settings as py2fgen_settings
+from icon4py.tools.py2fgen.wrappers import dycore_wrapper, grid_wrapper, wrapper_dimension as w_dim
 
 from . import utils
 
@@ -135,6 +123,7 @@ def test_dycore_wrapper_granule_inputs(
     cell_center_lat = grid_savepoint.cell_center_lat()
     cell_center_lon = grid_savepoint.cell_center_lon()
     cell_areas = grid_savepoint.cell_areas()
+    mean_cell_area = grid_savepoint.mean_cell_area()
 
     # Edge geometry
     tangent_orientation = grid_savepoint.tangent_orientation()
@@ -256,6 +245,7 @@ def test_dycore_wrapper_granule_inputs(
 
     # PrepAdvection
     vn_traj = sp.vn_traj()
+    vol_flx_ic = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)  # TODO sp.vol_flx_ic()
     mass_flx_me = sp.mass_flx_me()
     mass_flx_ic = sp.mass_flx_ic()
 
@@ -416,7 +406,9 @@ def test_dycore_wrapper_granule_inputs(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim),
+        vol_flx_ic=data_alloc.zero_field(
+            icon_grid, dims.CellDim, dims.KDim
+        ),  # TODO: sp.vol_flx_ic(),
     )
     expected_initial_divdamp_fac = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
@@ -425,7 +417,9 @@ def test_dycore_wrapper_granule_inputs(
     expected_at_last_substep = jstep_init == (ndyn_substeps - 1)
 
     # --- Initialize the Grid ---
-    dycore_wrapper.grid_init(
+    py2fgen_settings.config.parallel_run = False
+
+    grid_wrapper.grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -448,6 +442,13 @@ def test_dycore_wrapper_granule_inputs(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        c_glb_index=None,  # not running in parallel
+        e_glb_index=None,
+        v_glb_index=None,
+        c_owner_mask=None,
+        e_owner_mask=None,
+        v_owner_mask=None,
+        comm_id=None,
     )
 
     # --- Mock and Test SolveNonhydro.init ---
@@ -557,6 +558,7 @@ def test_dycore_wrapper_granule_inputs(
             lowest_layer_thickness=lowest_layer_thickness,
             model_top_height=model_top_height,
             stretch_factor=stretch_factor,
+            mean_cell_area=mean_cell_area,
             nflat_gradp=nflat_gradp,
             num_levels=num_levels,
         )
@@ -650,6 +652,7 @@ def test_dycore_wrapper_granule_inputs(
             vt=vt,
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
+            vol_flx_ic=vol_flx_ic,
             vn_traj=vn_traj,
             dtime=dtime,
             lprep_adv=lprep_adv,
@@ -790,6 +793,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     cell_center_lat = grid_savepoint.cell_center_lat()
     cell_center_lon = grid_savepoint.cell_center_lon()
     cell_areas = grid_savepoint.cell_areas()
+    mean_cell_area = grid_savepoint.mean_cell_area()
 
     # Edge geometry
     tangent_orientation = grid_savepoint.tangent_orientation()
@@ -906,7 +910,9 @@ def test_granule_solve_nonhydro_single_step_regional(
     global_root = 4
     global_level = 9
 
-    dycore_wrapper.grid_init(
+    py2fgen_settings.config.parallel_run = False
+
+    grid_wrapper.grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -929,6 +935,13 @@ def test_granule_solve_nonhydro_single_step_regional(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        c_glb_index=None,  # not running in parallel
+        e_glb_index=None,
+        v_glb_index=None,
+        c_owner_mask=None,
+        e_owner_mask=None,
+        v_owner_mask=None,
+        comm_id=None,
     )
 
     # call solve init
@@ -1034,6 +1047,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
+        mean_cell_area=mean_cell_area,
         nflat_gradp=nflat_gradp,
         num_levels=num_levels,
     )
@@ -1043,6 +1057,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 
     # PrepAdvection
     vn_traj = sp.vn_traj()
+    vol_flx_ic = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)  # TODO sp.vol_flx_ic()
     mass_flx_me = sp.mass_flx_me()
     mass_flx_ic = sp.mass_flx_ic()
 
@@ -1114,6 +1129,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
         vn_traj=vn_traj,
+        vol_flx_ic=vol_flx_ic,
         dtime=dtime,
         lprep_adv=lprep_adv,
         at_initial_timestep=at_initial_timestep,
@@ -1232,6 +1248,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     cell_center_lat = grid_savepoint.cell_center_lat()
     cell_center_lon = grid_savepoint.cell_center_lon()
     cell_areas = grid_savepoint.cell_areas()
+    mean_cell_area = grid_savepoint.mean_cell_area()
 
     # Edge geometry
     tangent_orientation = grid_savepoint.tangent_orientation()
@@ -1348,7 +1365,9 @@ def test_granule_solve_nonhydro_multi_step_regional(
     global_root = 4
     global_level = 9
 
-    dycore_wrapper.grid_init(
+    py2fgen_settings.config.parallel_run = False
+
+    grid_wrapper.grid_init(
         c2e=c2e,
         e2c=e2c,
         c2e2c=c2e2c,
@@ -1371,6 +1390,13 @@ def test_granule_solve_nonhydro_multi_step_regional(
         num_edges=num_edges,
         vertical_size=vertical_size,
         limited_area=limited_area,
+        c_glb_index=None,  # not running in parallel
+        e_glb_index=None,
+        v_glb_index=None,
+        c_owner_mask=None,
+        e_owner_mask=None,
+        v_owner_mask=None,
+        comm_id=None,
     )
 
     # call solve init
@@ -1476,6 +1502,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
+        mean_cell_area=mean_cell_area,
         nflat_gradp=nflat_gradp,
         num_levels=num_levels,
     )
@@ -1486,6 +1513,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
     # PrepAdvection
     vn_traj = sp.vn_traj()
+    vol_flx_ic = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)  # TODO sp.vol_flx_ic()
     mass_flx_me = sp.mass_flx_me()
     mass_flx_ic = sp.mass_flx_ic()
 
@@ -1546,6 +1574,11 @@ def test_granule_solve_nonhydro_multi_step_regional(
 
     # use fortran indices in the driving loop to compute i_substep
     for i_substep in range(1, ndyn_substeps + 1):
+        if not (at_initial_timestep and i_substep == 1):
+            ddt_w_adv.swap()
+        if not i_substep == 1:
+            ddt_vn_apc.swap()
+
         dycore_wrapper.solve_nh_run(
             rho_now=prognostic_states.current.rho,
             rho_new=prognostic_states.next.rho,
@@ -1578,6 +1611,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
             mass_flx_me=mass_flx_me,
             mass_flx_ic=mass_flx_ic,
             vn_traj=vn_traj,
+            vol_flx_ic=vol_flx_ic,
             dtime=dtime,
             lprep_adv=lprep_adv,
             at_initial_timestep=at_initial_timestep,
@@ -1587,11 +1621,6 @@ def test_granule_solve_nonhydro_multi_step_regional(
         )
 
         prognostic_states.swap()
-
-        if not (at_initial_timestep and (i_substep - 1 == 0)):
-            ddt_w_adv.swap()
-        if not (i_substep - 1 == 0):
-            ddt_vn_apc.swap()
 
     cell_start_lb_plus2 = icon_grid.start_index(
         h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)

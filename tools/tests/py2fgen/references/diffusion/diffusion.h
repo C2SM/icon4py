@@ -54,20 +54,3 @@ extern int diffusion_init_wrapper(
     double *primal_normal_y, int primal_normal_y_size_0, int global_root,
     int global_level, double lowest_layer_thickness, double model_top_height,
     double stretch_factor);
-extern int grid_init_diffusion_wrapper(
-    int *cell_starts, int cell_starts_size_0, int *cell_ends,
-    int cell_ends_size_0, int *vertex_starts, int vertex_starts_size_0,
-    int *vertex_ends, int vertex_ends_size_0, int *edge_starts,
-    int edge_starts_size_0, int *edge_ends, int edge_ends_size_0, int *c2e,
-    int c2e_size_0, int c2e_size_1, int *e2c, int e2c_size_0, int e2c_size_1,
-    int *c2e2c, int c2e2c_size_0, int c2e2c_size_1, int *e2c2e,
-    int e2c2e_size_0, int e2c2e_size_1, int *e2v, int e2v_size_0,
-    int e2v_size_1, int *v2e, int v2e_size_0, int v2e_size_1, int *v2c,
-    int v2c_size_0, int v2c_size_1, int *e2c2v, int e2c2v_size_0,
-    int e2c2v_size_1, int *c2v, int c2v_size_0, int c2v_size_1,
-    int *c_owner_mask, int c_owner_mask_size_0, int *e_owner_mask,
-    int e_owner_mask_size_0, int *v_owner_mask, int v_owner_mask_size_0,
-    int *c_glb_index, int c_glb_index_size_0, int *e_glb_index,
-    int e_glb_index_size_0, int *v_glb_index, int v_glb_index_size_0,
-    int comm_id, int global_root, int global_level, int num_vertices,
-    int num_cells, int num_edges, int vertical_size, int limited_area);
