@@ -122,7 +122,7 @@ class ImmersedBoundaryMethod:
         interface_physical_height = vertical_params.interface_physical_height.ndarray
         for k in range(half_cell_mask_np.shape[1]):
             half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= interface_physical_height[k], True, False)
-        if DEBUG_LEVEL >= 3:
+        if DEBUG_LEVEL >= 4:
             with open("testdata/hill_elevation_cells.csv", "r") as f:
                 hill_elevation_cells = np.loadtxt(f, delimiter=",")
             for i in range(cell_x.shape[0]):

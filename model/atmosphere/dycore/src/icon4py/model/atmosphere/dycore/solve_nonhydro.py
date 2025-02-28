@@ -896,11 +896,11 @@ class SolveNonhydro:
             self._ibm.set_dirichlet_value_exner(prognostic_states.current.exner)
             self._ibm.set_dirichlet_value_theta_v(prognostic_states.current.theta_v)
             # # plots
-            # self._plot.plot_data(prognostic_states.current.vn,      label=f"IC_vvec_edge")
-            # self._plot.plot_data(prognostic_states.current.w,       label=f"IC_w")
-            # self._plot.plot_data(prognostic_states.current.rho,     label=f"IC_rho")
-            # self._plot.plot_data(prognostic_states.current.exner,   label=f"IC_exner")
-            # self._plot.plot_data(prognostic_states.current.theta_v, label=f"IC_theta_v")
+            # self._plot.plot_levels(prognostic_states.current.vn,      label=f"IC_vvec_edge")
+            # self._plot.plot_levels(prognostic_states.current.w,       label=f"IC_w")
+            # self._plot.plot_levels(prognostic_states.current.rho,     label=f"IC_rho")
+            # self._plot.plot_levels(prognostic_states.current.exner,   label=f"IC_exner")
+            # self._plot.plot_levels(prognostic_states.current.theta_v, label=f"IC_theta_v")
         if at_first_substep and ibm.DEBUG_LEVEL >= 3:
             # save state
             self._plot.save_state(prognostic_states.current, "start_of_timestep")
@@ -924,11 +924,11 @@ class SolveNonhydro:
         # field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         # log.info(f" ***after_predictor MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
         # # plots
-        # self._plot.plot_data(prognostic_states.next.vn,      label=f"after_predictor_vvec_edge")
-        # self._plot.plot_data(prognostic_states.next.w,       label=f"after_predictor_w")
-        # self._plot.plot_data(prognostic_states.next.rho,     label=f"after_predictor_rho")
-        # self._plot.plot_data(prognostic_states.next.exner,   label=f"after_predictor_exner")
-        # self._plot.plot_data(prognostic_states.next.theta_v, label=f"after_predictor_theta_v")
+        # self._plot.plot_levels(prognostic_states.next.vn,      label=f"after_predictor_vvec_edge")
+        # self._plot.plot_levels(prognostic_states.next.w,       label=f"after_predictor_w")
+        # self._plot.plot_levels(prognostic_states.next.rho,     label=f"after_predictor_rho")
+        # self._plot.plot_levels(prognostic_states.next.exner,   label=f"after_predictor_exner")
+        # self._plot.plot_levels(prognostic_states.next.theta_v, label=f"after_predictor_theta_v")
         #<--- IBM
 
         self.run_corrector_step(
@@ -952,11 +952,11 @@ class SolveNonhydro:
         # field1=np.abs(w);  idxs1 = np.unravel_index(np.argmax(field1), field1.shape); idxs1 = (int(idxs1[0]), int(idxs1[1]))
         # log.info(f" ***after_corrector MAX VN: {field0.max():.15e} on level {idxs0}, MAX W:  {field1.max():.15e} on level {idxs1}")
         # # plots
-        # self._plot.plot_data(prognostic_states.next.vn,      label=f"after_corrector_vvec_edge")
-        # self._plot.plot_data(prognostic_states.next.w,       label=f"after_corrector_w")
-        # self._plot.plot_data(prognostic_states.next.rho,     label=f"after_corrector_rho")
-        # self._plot.plot_data(prognostic_states.next.exner,   label=f"after_corrector_exner")
-        # self._plot.plot_data(prognostic_states.next.theta_v, label=f"after_corrector_theta_v")
+        # self._plot.plot_levels(prognostic_states.next.vn,      label=f"after_corrector_vvec_edge")
+        # self._plot.plot_levels(prognostic_states.next.w,       label=f"after_corrector_w")
+        # self._plot.plot_levels(prognostic_states.next.rho,     label=f"after_corrector_rho")
+        # self._plot.plot_levels(prognostic_states.next.exner,   label=f"after_corrector_exner")
+        # self._plot.plot_levels(prognostic_states.next.theta_v, label=f"after_corrector_theta_v")
         #<--- IBM
 
         if self._grid.limited_area:
@@ -1006,11 +1006,11 @@ class SolveNonhydro:
         #---> IBM
         if at_last_substep:
             # # plots
-            # self._plot.plot_data(prognostic_states.next.vn,      label=f"end_of_timestep_vvec_edge")
-            # self._plot.plot_data(prognostic_states.next.w,       label=f"end_of_timestep_w")
-            # self._plot.plot_data(prognostic_states.next.rho,     label=f"end_of_timestep_rho")
-            # self._plot.plot_data(prognostic_states.next.exner,   label=f"end_of_timestep_exner")
-            # self._plot.plot_data(prognostic_states.next.theta_v, label=f"end_of_timestep_theta_v")
+            # self._plot.plot_levels(prognostic_states.next.vn,      label=f"end_of_timestep_vvec_edge")
+            # self._plot.plot_levels(prognostic_states.next.w,       label=f"end_of_timestep_w")
+            # self._plot.plot_levels(prognostic_states.next.rho,     label=f"end_of_timestep_rho")
+            # self._plot.plot_levels(prognostic_states.next.exner,   label=f"end_of_timestep_exner")
+            # self._plot.plot_levels(prognostic_states.next.theta_v, label=f"end_of_timestep_theta_v")
             # save state
             self._plot.save_state(prognostic_states.next, "end_of_timestep")
         #<--- IBM
@@ -1338,12 +1338,12 @@ class SolveNonhydro:
                 )
 
                 # #---> IBM
-                # self._plot.plot_data(self.z_grad_rth_1, label=f"inside_predictor_miura_ddx_rho")
-                # self._plot.plot_data(self.z_grad_rth_2, label=f"inside_predictor_miura_ddy_rho")
-                # self._plot.plot_data(self.z_grad_rth_3, label=f"inside_predictor_miura_ddx_theta_v")
-                # self._plot.plot_data(self.z_grad_rth_4, label=f"inside_predictor_miura_ddy_theta_v")
-                # self._plot.plot_data(z_fields.z_rho_e, label=f"inside_predictor_miura_rho_e")
-                # self._plot.plot_data(z_fields.z_theta_v_e, label=f"inside_predictor_miura_theta_v_e")
+                # self._plot.plot_levels(self.z_grad_rth_1, label=f"inside_predictor_miura_ddx_rho")
+                # self._plot.plot_levels(self.z_grad_rth_2, label=f"inside_predictor_miura_ddy_rho")
+                # self._plot.plot_levels(self.z_grad_rth_3, label=f"inside_predictor_miura_ddx_theta_v")
+                # self._plot.plot_levels(self.z_grad_rth_4, label=f"inside_predictor_miura_ddy_theta_v")
+                # self._plot.plot_levels(z_fields.z_rho_e, label=f"inside_predictor_miura_rho_e")
+                # self._plot.plot_levels(z_fields.z_theta_v_e, label=f"inside_predictor_miura_theta_v_e")
                 # #<--- IBM
 
         # scidoc:
