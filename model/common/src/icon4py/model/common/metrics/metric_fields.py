@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
+from gt4py.next.ffront.experimental import concat_where
 from gt4py.next import (
     GridType,
     abs,
@@ -100,10 +101,9 @@ def _compute_ddqz_z_half(
     k: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ):  # -> Field[Dims[dims.CellDim, dims.KHalfDim], wpfloat]:
-    # TODO: change this to concat_where once it's merged
     ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
-    ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
-    ddqz_z_half = where(k == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
+    ddqz_z_half = concat_where(0 < dims.KDim < nlev, z_mc(Koff[-1]) - z_mc, ddqz_z_half)
+    ddqz_z_half = concat_where(dims.KDim == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half
 
 
