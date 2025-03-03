@@ -708,6 +708,9 @@ class MetricSavepoint(IconSavepoint):
     def z_ifc(self):
         return self._get_field("z_ifc", dims.CellDim, dims.KDim)
 
+    def z_mc(self):
+        return self._get_field("z_mc", dims.CellDim, dims.KDim)
+
     def theta_ref_me(self):
         return self._get_field("theta_ref_me", dims.EdgeDim, dims.KDim)
 
@@ -1364,50 +1367,6 @@ class IconNHFinalExitSavepoint(IconSavepoint):
         return self._get_field("x_exner", dims.CellDim, dims.KDim)
 
 
-class IconJabwInitSavepoint(IconSavepoint):
-    def exner(self):
-        return self._get_field("exner_init", dims.CellDim, dims.KDim)
-
-    def rho(self):
-        return self._get_field("rho_init", dims.CellDim, dims.KDim)
-
-    def w(self):
-        return self._get_field("w_init", dims.CellDim, dims.KDim)
-
-    def theta_v(self):
-        return self._get_field("theta_v_init", dims.CellDim, dims.KDim)
-
-    def pressure(self):
-        return self._get_field("pressure_init", dims.CellDim, dims.KDim)
-
-    def pressure_sfc(self):
-        return self._get_field("pressure_surface", dims.CellDim)
-
-    def temperature(self):
-        return self._get_field("temperature_init", dims.CellDim, dims.KDim)
-
-    def vn(self):
-        return self._get_field("vn_init", dims.EdgeDim, dims.KDim)
-
-    def eta0(self):
-        return self.serializer.read("eta0", self.savepoint)[0]
-
-    def etat(self):
-        return self.serializer.read("etat", self.savepoint)[0]
-
-    def gamma(self):
-        return self.serializer.read("gamma", self.savepoint)[0]
-
-    def dtemp(self):
-        return self.serializer.read("dtemp", self.savepoint)[0]
-
-    def lat_perturbation_center(self):
-        return self.serializer.read("latC", self.savepoint)[0]
-
-    def lon_perturbation_center(self):
-        return self.serializer.read("lonC", self.savepoint)[0]
-
-
 class IconJabwFinalSavepoint(IconSavepoint):
     def exner(self):
         return self._get_field("exner_final", dims.CellDim, dims.KDim)
@@ -1965,12 +1924,6 @@ class IconSerialDataProvider:
             self.serializer.savepoint["solve_nonhydro_step"].date[date].jstep[jstep].as_savepoint()
         )
         return IconNHFinalExitSavepoint(
-            savepoint, self.serializer, size=self.grid_size, backend=self.backend
-        )
-
-    def from_savepoint_jabw_init(self) -> IconJabwInitSavepoint:
-        savepoint = self.serializer.savepoint["icon-jabw-init"].id[1].as_savepoint()
-        return IconJabwInitSavepoint(
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
