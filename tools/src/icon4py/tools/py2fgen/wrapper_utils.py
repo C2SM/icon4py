@@ -122,7 +122,7 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
     Returns:
         A NumPy array of booleans.
     """
-    bool_array = int_array != 0
+    bool_array = np.array(int_array != 0, order="F")
     return bool_array
 
 
