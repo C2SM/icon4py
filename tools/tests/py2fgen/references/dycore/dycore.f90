@@ -532,7 +532,7 @@ module dycore
                                      l_vert_nested, &
                                      rhotheta_offctr, &
                                      veladv_offctr, &
-                                     max_nudging_coeff, &
+                                     nudge_max_coeff, &
                                      divdamp_fac, &
                                      divdamp_fac2, &
                                      divdamp_fac3, &
@@ -976,7 +976,7 @@ module dycore
 
          real(c_double), value, target :: veladv_offctr
 
-         real(c_double), value, target :: max_nudging_coeff
+         real(c_double), value, target :: nudge_max_coeff
 
          real(c_double), value, target :: divdamp_fac
 
@@ -1614,7 +1614,7 @@ contains
                             l_vert_nested, &
                             rhotheta_offctr, &
                             veladv_offctr, &
-                            max_nudging_coeff, &
+                            nudge_max_coeff, &
                             divdamp_fac, &
                             divdamp_fac2, &
                             divdamp_fac3, &
@@ -1810,7 +1810,7 @@ contains
 
       real(c_double), value, target :: veladv_offctr
 
-      real(c_double), value, target :: max_nudging_coeff
+      real(c_double), value, target :: nudge_max_coeff
 
       real(c_double), value, target :: divdamp_fac
 
@@ -2575,7 +2575,7 @@ contains
                                  l_vert_nested=l_vert_nested, &
                                  rhotheta_offctr=rhotheta_offctr, &
                                  veladv_offctr=veladv_offctr, &
-                                 max_nudging_coeff=max_nudging_coeff, &
+                                 nudge_max_coeff=nudge_max_coeff, &
                                  divdamp_fac=divdamp_fac, &
                                  divdamp_fac2=divdamp_fac2, &
                                  divdamp_fac3=divdamp_fac3, &
