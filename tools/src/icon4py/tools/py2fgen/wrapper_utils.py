@@ -111,7 +111,7 @@ def _unpack_gpu(ffi: cffi.FFI, ptr, *sizes: int):  # type: ignore[no-untyped-def
     return arr
 
 
-def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
+def _int_array_to_bool_array(int_array: np.typing.NDArray, xp) -> np.typing.NDArray:
     """
     Converts a NumPy array of integers to a boolean array.
     In the input array, 0 represents False, and any non-zero value (1 or -1) represents True.
@@ -122,7 +122,7 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
     Returns:
         A NumPy array of booleans.
     """
-    bool_array = np.array(int_array != 0, order="F")
+    bool_array = xp.array(int_array != 0, order="F")
     return bool_array
 
 
@@ -145,5 +145,5 @@ def as_field(  # type: ignore[no-untyped-def] # CData type not public?
     if scalar_kind == ts.ScalarKind.BOOL:
         # TODO(havogt): This transformation breaks if we want to write to this array as we do a copy.
         # Probably we need to do this transformation by hand on the Fortran side and pass responsibility to the user.
-        arr = _int_array_to_bool_array(arr)
+        arr = _int_array_to_bool_array(arr, xp)
     return gtx_common._field(arr, domain=gtx_common.domain(domain))
