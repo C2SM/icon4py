@@ -54,6 +54,7 @@ repos:
     name: add license for all ICON4Py Python source files
     types: [python]
     args: [--comment-style, "|#|", --license-filepath, HEADER.txt, --fuzzy-match-generates-todo]
+    exclude: ^tools/tests/py2fgen/references/
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.2.2
