@@ -1394,7 +1394,7 @@ wheels = [
 [[package]]
 name = "gt4py"
 version = "1.0.4"
-source = { git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where#cf50a37b6f4aae11f73353387dae7418d1546f28" }
+source = { git = "https://github.com/sf-n/gt4py?branch=GTIR_concat_where#5fc42cea4366c99fc280a0bbc9c188a4a72cebf5" }
 dependencies = [
     { name = "attrs" },
     { name = "black" },
