@@ -33,6 +33,7 @@ from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen.settings import backend, device
 from icon4py.tools.py2fgen.wrappers import grid_wrapper
+from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 
 
 logger = setup_logger(__name__)
@@ -179,7 +180,7 @@ def solve_nh_init(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coeff=max_nudging_coeff,
+        max_nudging_coeff=max_nudging_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         divdamp_fac=divdamp_fac,
         divdamp_fac2=divdamp_fac2,
         divdamp_fac3=divdamp_fac3,
@@ -305,7 +306,7 @@ def solve_nh_init(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        _min_index_flat_horizontal_grad_pressure=nflat_gradp,
+        _min_index_flat_horizontal_grad_pressure=nflat_gradp-1, # Fortran vs Python indexing
     )
 
     global granule
