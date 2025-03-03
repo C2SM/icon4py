@@ -38,7 +38,6 @@ val = factory.get("foo", RetrievalType.DATA_ARRAY)
 TODO: @halungge: allow to read configuration data
 
 """
-
 import collections
 import enum
 import functools
