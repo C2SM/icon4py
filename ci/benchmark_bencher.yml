@@ -31,7 +31,7 @@ include:
       --err \
       --adapter python_pytest \
       --file results.json \
-      "pytest --benchmark-json results.json -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
+      "pytest --benchmark-json results.json -v --benchmark-only --benchmark-warmup=on --benchmark-warmup-iterations=30 --backend=$BACKEND --grid=$GRID ./model"
     - | # Post the Bencher Dashboard link to the PR
       if [[ "$PR_ID" != "" && "$BACKEND" == "gtfn_cpu" && "$GRID" == "icon_grid" ]]; then
         COMMENT_BODY="[Bencher Dashboard](https://bencher.dev/perf/icon4py)"
