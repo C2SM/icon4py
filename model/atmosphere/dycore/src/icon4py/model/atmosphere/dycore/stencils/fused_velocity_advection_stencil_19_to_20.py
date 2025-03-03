@@ -8,7 +8,8 @@
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import maximum, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import maximum
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
@@ -65,8 +66,8 @@ def _fused_velocity_advection_stencil_19_to_20(
     )
 
     ddt_vn_apc = (
-        where(
-            maximum(2, nrdmax - 2) <= k < nlev - 3,
+        concat_where(
+            maximum(2, nrdmax - 2) <= dims.KDim < nlev - 3,
             _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
                 levelmask,
                 c_lin_e,

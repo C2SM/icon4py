@@ -9,7 +9,7 @@ import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import broadcast, where
+from gt4py.next.ffront.fbuiltins import broadcast
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -70,8 +70,8 @@ def compute_interface_vt_vn_and_kinetic_energy(
         else z_vt_ie
     )
 
-    (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k == 0,
+    (vn_ie, z_vt_ie, z_kin_hor_e) = concat_where(
+        dims.KDim == 0,
         _compute_horizontal_kinetic_energy(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -105,8 +105,8 @@ def _fused_velocity_advection_stencil_1_to_6(
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
-    vt = where(
-        k < nlev,
+    vt = concat_where(
+        dims.KDim < nlev,
         _compute_tangential_wind(vn, rbf_vec_coeff_e),
         vt,
     )
@@ -115,8 +115,8 @@ def _fused_velocity_advection_stencil_1_to_6(
         vn, wgtfac_e, wgtfacq_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, lvn_only
     )
 
-    z_w_concorr_me = where(
-        nflatlev <= k < nlev,
+    z_w_concorr_me = concat_where(
+        nflatlev <= dims.KDim < nlev,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
@@ -180,8 +180,8 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
     z_v_grad_w = (
-        where(
-            (lateral_boundary_7 <= edge) & (edge < halo_1) & (k < nlev),
+        concat_where(
+            (lateral_boundary_7 <= dims.EdgeDim < halo_1) & (dims.KDim < nlev),
             _compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie,
                 inv_dual_edge_length,
@@ -238,8 +238,8 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
     z_v_grad_w = (
-        where(
-            (lateral_boundary_7 <= edge < halo_1) & (k < nlev),
+        concat_where(
+            (lateral_boundary_7 <= dims.EdgeDim < halo_1) & (dims.KDim < nlev),
             _compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie,
                 inv_dual_edge_length,
