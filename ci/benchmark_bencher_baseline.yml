@@ -6,26 +6,26 @@ include:
   script:
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
     - source "$HOME/.cargo/env"
-    - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
+    - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli # Install bencher CLI
     - uv sync --no-dev --extra=dace --extra=io --extra=testing --extra=$ICON4PY_NOX_UV_CUSTOM_SESSION_EXTRAS --group=test
     - source .venv/bin/activate
     - BENCHER_RESULTS_JSON="results_${CI_COMMIT_SHA}_${BACKEND}_${GRID}.json"
-    - |
+    - | # Run the benchmarks
       bencher run \
       --project "$BENCHER_PROJECT" \
       --token "$BENCHER_API_TOKEN" \
       --branch main \
       --testbed "ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}" \
       --threshold-measure latency \
-      --threshold-test t_test \
+      --threshold-test percentage \
       --threshold-max-sample-size 64 \
-      --threshold-upper-boundary 0.99 \
+      --threshold-upper-boundary 0.1 \
       --thresholds-reset \
       --err \
       --adapter python_pytest \
       --file $BENCHER_RESULTS_JSON \
       "pytest --benchmark-json $BENCHER_RESULTS_JSON -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
-    - |
+    - | # Script to flatten the BENCHER_RESULTS_JSON file. Needed for Kibana.
       cat <<EOF > flatten.py
       import argparse
       import json
@@ -47,11 +47,11 @@ include:
       EOF
     - uv pip install flatten_json
     - python flatten.py $BENCHER_RESULTS_JSON $BENCHER_RESULTS_JSON
-    - |
+    - | # Additional fields to BENCHER_RESULTS_JSON for Kibana
       jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py.bencher.baseline.test\", \"namespace\": \"alps\"}} + ." $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
     - |
       jq ". + {\"bencher.testbed\": \"ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}\"}" $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
-    - |
+    - | # Upload BENCHER_RESULTS_JSON to Kibana
       curl -X POST \
       -H "Content-Type: application/json" \
       -d @"./${BENCHER_RESULTS_JSON}" \
