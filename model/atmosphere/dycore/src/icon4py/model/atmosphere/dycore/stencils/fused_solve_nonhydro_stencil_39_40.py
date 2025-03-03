@@ -6,7 +6,7 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
@@ -28,8 +28,8 @@ def _fused_solve_nonhydro_stencil_39_40(
     nlev: gtx.int32,
     nflatlev: gtx.int32,
 ) -> fa.CellKField[vpfloat]:
-    w_concorr_c = where(
-        nflatlev + 1 <= vert_idx < nlev,
+    w_concorr_c = concat_where(
+        nflatlev + 1 <= dims.VertexDim < nlev,
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         _compute_contravariant_correction_of_w_for_lower_boundary(
             e_bln_c_s, z_w_concorr_me, wgtfacq_c

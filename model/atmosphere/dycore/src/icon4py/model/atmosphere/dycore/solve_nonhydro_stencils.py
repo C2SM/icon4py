@@ -7,7 +7,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 from gt4py.next.ffront.experimental import concat_where
-from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.dycore.dycore_utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
@@ -311,10 +310,10 @@ def _predictor_stencils_11_lower_upper(
     k_field: fa.KField[gtx.int32],
     nlev: gtx.int32,
 ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
-    z_theta_v_pr_ic = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic)
+    z_theta_v_pr_ic = concat_where(dims.KDim == 0, _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic)
 
-    (z_theta_v_pr_ic, theta_v_ic) = where(
-        k_field == nlev,
+    (z_theta_v_pr_ic, theta_v_ic) = concat_where(
+        dims.KDim == nlev,
         _set_theta_v_prime_ic_at_lower_boundary(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic),
         (z_theta_v_pr_ic, theta_v_ic),
     )
@@ -422,13 +421,13 @@ def _predictor_stencils_35_36(
     fa.EdgeKField[float],
     fa.EdgeKField[float],
 ]:
-    z_w_concorr_me = where(
-        k_field >= nflatlev_startindex,
+    z_w_concorr_me = concat_where(
+        dims.KDim >= nflatlev_startindex,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
-    (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k_field >= 1,
+    (vn_ie, z_vt_ie, z_kin_hor_e) = concat_where(
+        dims.KDim >= 1,
         _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -517,14 +516,14 @@ def _stencils_39_40(
     nflatlev_startindex_plus1: gtx.int32,
     nlev: gtx.int32,
 ) -> fa.CellKField[float]:
-    w_concorr_c = where(
-        k_field >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
+    w_concorr_c = concat_where(
+        dims.KDim >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         w_concorr_c,
     )
 
-    w_concorr_c = where(
-        k_field == nlev,
+    w_concorr_c = concat_where(
+        dims.KDim == nlev,
         _compute_contravariant_correction_of_w_for_lower_boundary(
             e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl
         ),
@@ -601,8 +600,8 @@ def _stencils_42_44_45(
     fa.CellKField[float],
     fa.CellKField[float],
 ]:
-    (z_w_expl, z_contr_w_fl_l) = where(
-        (k_field >= 1) & (k_field < nlev),
+    (z_w_expl, z_contr_w_fl_l) = concat_where(
+        1 <= dims.KDim < nlev,
         _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -619,8 +618,8 @@ def _stencils_42_44_45(
         (z_w_expl, z_contr_w_fl_l),
     )
 
-    (z_beta, z_alpha) = where(
-        (k_field >= 0) & (k_field < nlev),
+    (z_beta, z_alpha) = concat_where(
+        0 <= dims.KDim < nlev,
         _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
@@ -635,7 +634,7 @@ def _stencils_42_44_45(
         ),
         (z_beta, z_alpha),
     )
-    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_q = concat_where(dims.KDim == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -747,8 +746,8 @@ def _stencils_43_44_45(
     fa.CellKField[float],
     fa.CellKField[float],
 ]:
-    (z_w_expl, z_contr_w_fl_l) = where(
-        (k_field >= 1) & (k_field < nlev),
+    (z_w_expl, z_contr_w_fl_l) = concat_where(
+        1 <= dims.KDim < nlev,
         _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -761,8 +760,8 @@ def _stencils_43_44_45(
         ),
         (z_w_expl, z_contr_w_fl_l),
     )
-    (z_beta, z_alpha) = where(
-        (k_field >= 0) & (k_field < nlev),
+    (z_beta, z_alpha) = concat_where(
+        0 <= k_field < nlev,
         _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
@@ -777,7 +776,7 @@ def _stencils_43_44_45(
         ),
         (z_beta, z_alpha),
     )
-    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_q = concat_where(dims.KDim == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
