@@ -162,8 +162,12 @@ class BaseGrid(ABC):
         ), 'Neighbor table\'s "{}" data type must be gtx.int32. Instead it\'s "{}"'.format(
             dim, self.connectivities[dim].dtype
         )
+        xp = data_alloc.array_ns(self.config.on_gpu)
         return gtx.NeighborTableOffsetProvider(
-            self.connectivities[dim],
+            gtx.as_field(
+                [from_dim, gtx.Dimension("neigh", kind=gtx.DimensionKind.LOCAL)],
+                xp.asarray(self.connectivities[dim]),
+            ).ndarray,
             from_dim,
             to_dim,
             self.size[dim],
