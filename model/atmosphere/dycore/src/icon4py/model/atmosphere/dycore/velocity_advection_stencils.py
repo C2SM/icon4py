@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import where
 from gt4py.next.ffront.experimental import concat_where
 
 from icon4py.model.atmosphere.dycore.stencils.add_interpolated_horizontal_advection_of_w import (

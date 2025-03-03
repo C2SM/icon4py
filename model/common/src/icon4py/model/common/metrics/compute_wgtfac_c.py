@@ -9,6 +9,7 @@ import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
@@ -51,7 +52,7 @@ def _compute_wgtfac_c(
     return wgt_fac_c
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=run_gtfn)
 def compute_wgtfac_c(
     wgtfac_c: fa.CellKField[wpfloat],
     z_ifc: fa.CellKField[wpfloat],

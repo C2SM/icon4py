@@ -761,7 +761,7 @@ def _stencils_43_44_45(
         (z_w_expl, z_contr_w_fl_l),
     )
     (z_beta, z_alpha) = concat_where(
-        0 <= k_field < nlev,
+        0 <= dims.KDim < nlev,
         _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
