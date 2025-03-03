@@ -1973,7 +1973,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def savepoint_velocity_1_7_init(
+    def savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityInit1to7Savepoint:
         savepoint = (
@@ -1987,7 +1987,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def savepoint_velocity_8_13_init(
+    def savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_init(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityInit8to13Savepoint:
         savepoint = (
@@ -2001,7 +2001,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def savepoint_velocity_15_18_init(
+    def savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_init(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityInit15to18Savepoint:
         savepoint = (
@@ -2015,7 +2015,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def savepoint_velocity_19_20_init(
+    def savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_init(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityInit19to20Savepoint:
         savepoint = (
@@ -2085,7 +2085,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def savepoint_velocity_1_7_exit(
+    def savepoint_velocity_1_7_compute_edge_diagnostics_for_velocity_advection_exit(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExit1to7Savepoint:
         savepoint = (
@@ -2099,7 +2099,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def savepoint_velocity_8_13_exit(
+    def savepoint_velocity_8_13_compute_cell_diagnostics_for_velocity_advection_exit(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExit8to13Savepoint:
         savepoint = (
@@ -2113,7 +2113,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def savepoint_velocity_15_18_exit(
+    def savepoint_velocity_15_18_compute_advection_in_vertical_momentum_equation_exit(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExit15to18Savepoint:
         savepoint = (
@@ -2127,7 +2127,7 @@ class IconSerialDataProvider:
             savepoint, self.serializer, size=self.grid_size, backend=self.backend
         )
 
-    def savepoint_velocity_19_20_exit(
+    def savepoint_velocity_19_20_compute_advection_in_horizontal_momentum_equation_exit(
         self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExit19to20Savepoint:
         savepoint = (

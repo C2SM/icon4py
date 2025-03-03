@@ -36,11 +36,11 @@ class DiagnosticStateNonHydro:
     Declared as vn_ie in ICON. Normal wind at edge on k-half levels.
     """
 
-    w_concorr_c: fa.CellKField[
+    khalf_contravariant_correction_at_cell: fa.CellKField[
         float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     """
-    Declared as w_concorr_c in ICON. Vertical wind with contravariant correction at cell center on k-half levels.
+    Declared as w_concorr_c in ICON. Contravariant correction at cell center on k-half levels. vn dz/dn + vt dz/dt, z is topography height
     """
 
     theta_v_ic: fa.CellKField[float]

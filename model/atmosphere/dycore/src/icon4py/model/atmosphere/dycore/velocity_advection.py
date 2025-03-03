@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.dycore import dycore_states
 from icon4py.model.atmosphere.dycore.stencils import (
     compute_advection_in_horizontal_momentum_equation,
     compute_advection_in_vertical_momentum_equation,
-    fused_velocity_advection_stencil_1_to_7,
-    fused_velocity_advection_stencil_8_to_13,
+    compute_cell_diagnostics_for_velocity_advection,
+    compute_edge_diagnostics_for_velocity_advection,
 )
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
@@ -69,17 +69,17 @@ class VelocityAdvection:
         self._allocate_local_fields()
         self._determine_local_domains()
 
-        self._fused_velocity_advection_stencil_1_to_7_predictor = fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7_predictor.with_backend(
+        self._compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction = compute_edge_diagnostics_for_velocity_advection.compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
             self._backend
         )
-        self._fused_velocity_advection_stencil_1_to_7_corrector = fused_velocity_advection_stencil_1_to_7.fused_velocity_advection_stencil_1_to_7_corrector.with_backend(
+        self._compute_horizontal_advection_of_w = compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
             self._backend
         )
 
-        self._fused_velocity_advection_stencil_8_to_13_predictor = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_predictor.with_backend(
+        self._compute_horizontal_kinetic_energy_and_khalf_contravariant_terms = compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_terms.with_backend(
             self._backend
         )
-        self._fused_velocity_advection_stencil_8_to_13_corrector = fused_velocity_advection_stencil_8_to_13.fused_velocity_advection_stencil_8_to_13_corrector.with_backend(
+        self._compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w = compute_cell_diagnostics_for_velocity_advection.compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w.with_backend(
             self._backend
         )
 
@@ -117,7 +117,7 @@ class VelocityAdvection:
             self.grid, dims.EdgeDim, dims.KDim, backend=self._backend
         )
         """
-        Declared as z_v_grad_w in ICON.
+        Declared as z_v_grad_w in ICON. vn dw/dn + vt dw/dt. NOTE THAT IT ONLY HAS nlev LEVELS because w[nlevp1-1] is diagnostic.
         """
 
         self._horizontal_kinetic_energy_at_cell = data_alloc.zero_field(
@@ -127,21 +127,18 @@ class VelocityAdvection:
         Declared as z_ekinh in ICON.
         """
 
-        self.z_w_concorr_mc = data_alloc.zero_field(
-            self.grid, dims.CellDim, dims.KDim, backend=self._backend
-        )
         self._khalf_contravariant_corrected_w_at_cell = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=self._backend
         )
         """
-        Declared as z_w_con_c in ICON.
+        Declared as z_w_con_c in ICON. w - (vn dz/dn + vt dz/dt), z is topography height
         """
 
         self._contravariant_corrected_w_at_cell = data_alloc.zero_field(
             self.grid, dims.CellDim, dims.KDim, backend=self._backend
         )
         """
-        Declared as z_w_con_c_full in ICON.
+        Declared as z_w_con_c_full in ICON. w - (vn dz/dn + vt dz/dt), z is topography height
         """
 
         self.cfl_clipping = data_alloc.zero_field(
@@ -198,9 +195,9 @@ class VelocityAdvection:
         skip_compute_predictor_vertical_advection: bool,
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        z_w_concorr_me: fa.EdgeKField[float],
+        contravariant_correction_at_edge: fa.EdgeKField[float],
         horizontal_kinetic_energy_at_edge: fa.EdgeKField[float],
-        z_vt_ie: fa.EdgeKField[float],
+        khalf_tangential_wind: fa.EdgeKField[float],
         dtime: float,
         cell_areas: fa.CellField[float],
     ):
@@ -212,9 +209,9 @@ class VelocityAdvection:
             skip_compute_predictor_vertical_advection: Option to skip computation of advective tendency of vertical wind
             diagnostic_state: DiagnosticStateNonHydro class
             prognostic_state: PrognosticState class
-            z_w_concorr_me: Contravariant corrected vertical wind at edge [m s-1]
+            contravariant_correction_at_edge: Contravariant corrected vertical wind at edge [m s-1]
             horizontal_kinetic_energy_at_edge: Horizontal kinetic energy at edge [m^2 s-2]
-            z_vt_ie: tangential wind at edge on k-half levels [m s-1]
+            khalf_tangential_wind: tangential wind at edge on k-half levels [m s-1]
             dtime: time step [m s-1]
             cell_areas: cell area [m^2]
         """
@@ -227,29 +224,29 @@ class VelocityAdvection:
             self.interpolation_state.rbf_vec_coeff_e.asnumpy().transpose(),
             allocator=self._backend,
         )
-        self._fused_velocity_advection_stencil_1_to_7_predictor(
+        self._compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction(
+            tangential_wind=diagnostic_state.tangential_wind,
+            khalf_tangential_wind=khalf_tangential_wind,
+            khalf_vn=diagnostic_state.khalf_vn,
+            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+            contravariant_correction_at_edge=contravariant_correction_at_edge,
+            khalf_horizontal_advection_of_w_at_edge=self._khalf_horizontal_advection_of_w_at_edge,
             vn=prognostic_state.vn,
+            w=prognostic_state.w,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             wgtfac_e=self.metric_state.wgtfac_e,
             ddxn_z_full=self.metric_state.ddxn_z_full,
             ddxt_z_full=self.metric_state.ddxt_z_full,
-            z_w_concorr_me=z_w_concorr_me,
             wgtfacq_e=self.metric_state.wgtfacq_e,
-            nflatlev=self.vertical_params.nflatlev,
             c_intp=self.interpolation_state.c_intp,
-            w=prognostic_state.w,
             inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             tangent_orientation=self.edge_params.tangent_orientation,
-            z_vt_ie=z_vt_ie,
-            vt=diagnostic_state.tangential_wind,
-            vn_ie=diagnostic_state.khalf_vn,
-            z_kin_hor_e=horizontal_kinetic_energy_at_edge,
-            z_v_grad_w=self._khalf_horizontal_advection_of_w_at_edge,
-            k=self.k_field,
-            nlev=gtx.int32(self.grid.num_levels),
-            edge=self.edge_field,
             skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
+            k=self.k_field,
+            edge=self.edge_field,
+            nflatlev=self.vertical_params.nflatlev,
+            nlev=gtx.int32(self.grid.num_levels),
             lateral_boundary_7=self._start_edge_lateral_boundary_level_7,
             halo_1=self._end_edge_halo,
             horizontal_start=self._start_edge_lateral_boundary_level_5,
@@ -259,21 +256,18 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        self._fused_velocity_advection_stencil_8_to_13_predictor(
-            z_kin_hor_e=horizontal_kinetic_energy_at_edge,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            z_w_concorr_me=z_w_concorr_me,
-            wgtfac_c=self.metric_state.wgtfac_c,
+        self._compute_horizontal_kinetic_energy_and_khalf_contravariant_terms(
+            horizontal_kinetic_energy_at_cell=self._horizontal_kinetic_energy_at_cell,
+            khalf_contravariant_correction_at_cell=diagnostic_state.khalf_contravariant_correction_at_cell,
+            khalf_contravariant_corrected_w_at_cell=self._khalf_contravariant_corrected_w_at_cell,
             w=prognostic_state.w,
-            z_w_concorr_mc=self.z_w_concorr_mc,
-            w_concorr_c=diagnostic_state.w_concorr_c,
-            z_ekinh=self._horizontal_kinetic_energy_at_cell,
-            z_w_con_c=self._khalf_contravariant_corrected_w_at_cell,
+            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+            contravariant_correction_at_edge=contravariant_correction_at_edge,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+            wgtfac_c=self.metric_state.wgtfac_c,
             k=self.k_field,
-            nlev=self.grid.num_levels,
             nflatlev=self.vertical_params.nflatlev,
-            lateral_boundary=self._start_cell_lateral_boundary_level_4,
-            end_halo=self._end_cell_halo,
+            nlev=self.grid.num_levels,
             horizontal_start=self._start_cell_lateral_boundary_level_4,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
@@ -281,6 +275,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
+        # TODO (Chia Rui): rename this stencil
         self._fused_stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self._khalf_contravariant_corrected_w_at_cell,
@@ -388,21 +383,35 @@ class VelocityAdvection:
         diagnostic_state: dycore_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
         horizontal_kinetic_energy_at_edge: fa.EdgeKField[float],
-        z_vt_ie: fa.EdgeKField[float],
+        khalf_tangential_wind: fa.EdgeKField[float],
         dtime: float,
         cell_areas: fa.CellField[float],
     ):
+        """
+        Compute some diagnostic variables that are used in the predictor step
+        of the dycore and advective tendency of normal and vertical winds.
+
+        Args:
+            skip_compute_predictor_vertical_advection: Option to skip computation of advective tendency of vertical wind
+            diagnostic_state: DiagnosticStateNonHydro class
+            prognostic_state: PrognosticState class
+            horizontal_kinetic_energy_at_edge: Horizontal kinetic energy at edge [m^2 s-2]
+            khalf_tangential_wind: tangential wind at edge on k-half levels [m s-1]
+            dtime: time step [m s-1]
+            cell_areas: cell area [m^2]
+        """
+
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
-        self._fused_velocity_advection_stencil_1_to_7_corrector(
-            c_intp=self.interpolation_state.c_intp,
+        self._compute_horizontal_advection_of_w(
+            khalf_horizontal_advection_of_w_at_edge=self._khalf_horizontal_advection_of_w_at_edge,
             w=prognostic_state.w,
+            khalf_tangential_wind=khalf_tangential_wind,
+            khalf_vn=diagnostic_state.khalf_vn,
+            c_intp=self.interpolation_state.c_intp,
             inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             tangent_orientation=self.edge_params.tangent_orientation,
-            z_vt_ie=z_vt_ie,
-            vn_ie=diagnostic_state.khalf_vn,
-            z_v_grad_w=self._khalf_horizontal_advection_of_w_at_edge,
             edge=self.edge_field,
             vertex=self.vertex_field,
             lateral_boundary_7=self._start_edge_lateral_boundary_level_7,
@@ -412,22 +421,20 @@ class VelocityAdvection:
             horizontal_start=self._start_edge_lateral_boundary_level_5,
             horizontal_end=self._end_edge_halo_level_2,
             vertical_start=gtx.int32(0),
-            vertical_end=gtx.int32(self.grid.num_levels + 1),
+            vertical_end=gtx.int32(self.grid.num_levels),
             offset_provider=self.grid.offset_providers,
         )
 
-        self._fused_velocity_advection_stencil_8_to_13_corrector(
-            z_kin_hor_e=horizontal_kinetic_energy_at_edge,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
+        self._compute_horizontal_kinetic_energy_and_khalf_contravariant_corrected_w(
+            horizontal_kinetic_energy_at_cell=self._horizontal_kinetic_energy_at_cell,
+            khalf_contravariant_correction_at_cell=diagnostic_state.khalf_contravariant_correction_at_cell,
+            khalf_contravariant_corrected_w_at_cell=self._khalf_contravariant_corrected_w_at_cell,
             w=prognostic_state.w,
-            w_concorr_c=diagnostic_state.w_concorr_c,
-            z_ekinh=self._horizontal_kinetic_energy_at_cell,
-            z_w_con_c=self._khalf_contravariant_corrected_w_at_cell,
+            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+            e_bln_c_s=self.interpolation_state.e_bln_c_s,
             k=self.k_field,
-            nlev=self.grid.num_levels,
             nflatlev=self.vertical_params.nflatlev,
-            lateral_boundary=self._start_cell_lateral_boundary_level_3,
-            end_halo=self._end_cell_halo,
+            nlev=self.grid.num_levels,
             horizontal_start=self._start_cell_lateral_boundary_level_3,
             horizontal_end=self._end_cell_halo,
             vertical_start=0,
@@ -435,6 +442,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
+        # TODO (Chia Rui): rename this stencil
         self._fused_stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self._khalf_contravariant_corrected_w_at_cell,
