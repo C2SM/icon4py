@@ -24,7 +24,7 @@ include:
       --err \
       --adapter python_pytest \
       --file $BENCHER_RESULTS_JSON \
-      "pytest --benchmark-json $BENCHER_RESULTS_JSON -v --benchmark-only --backend=$BACKEND --grid=$GRID ./model"
+      "pytest --benchmark-json $BENCHER_RESULTS_JSON -v --benchmark-only --benchmark-warmup=on --benchmark-warmup-iterations=30 --backend=$BACKEND --grid=$GRID ./model"
     - | # Script to flatten the BENCHER_RESULTS_JSON file. Needed for Kibana.
       cat <<EOF > flatten.py
       import argparse
@@ -51,7 +51,7 @@ include:
       jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py.bencher.baseline.test\", \"namespace\": \"alps\"}} + ." $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
     - |
       jq ". + {\"bencher.testbed\": \"ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}\"}" $BENCHER_RESULTS_JSON > results_tmp.json && mv results_tmp.json $BENCHER_RESULTS_JSON
-    - | # Upload BENCHER_RESULTS_JSON to Kibana
+    - | # Upload BENCHER_RESULTS_JSON to Kibana - https://confluence.cscs.ch/spaces/SCISWDEV/pages/797507767/Performance+dashboard+guide -
       curl -X POST \
       -H "Content-Type: application/json" \
       -d @"./${BENCHER_RESULTS_JSON}" \
