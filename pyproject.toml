@@ -26,6 +26,7 @@ dependencies = [
     "icon4py-atmosphere-diffusion>=0.0.6",
     "icon4py-atmosphere-dycore>=0.0.6",
     "icon4py-atmosphere-microphysics>=0.0.6",
+    "icon4py-atmosphere-muphys>=0.0.6",
     "icon4py-common>=0.0.6",
     "icon4py-driver>=0.0.6",
 ]

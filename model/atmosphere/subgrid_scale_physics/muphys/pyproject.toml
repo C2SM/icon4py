@@ -28,7 +28,7 @@ dependencies = [
 description = "ICON subgrid scale muphys parameterization."
 dynamic = ['version']
 license = {file = "LICENSE"}
-name = "icon4py-atmosphere-subgrid_scale_physics-muphys"
+name = "icon4py-atmosphere-muphys"
 readme = "README.md"
 requires-python = ">=3.10"
 
