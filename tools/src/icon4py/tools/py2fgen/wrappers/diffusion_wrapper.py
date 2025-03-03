@@ -145,28 +145,28 @@ def diffusion_init(
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
         primal_normal_vert_x=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_x, allocator=backend
+            dims.ECVDim, field=primal_normal_vert_x, backend=backend
         ),
         primal_normal_vert_y=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=primal_normal_vert_y, allocator=backend
+            dims.ECVDim, field=primal_normal_vert_y, backend=backend
         ),
         dual_normal_vert_x=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=dual_normal_vert_x, allocator=backend
+            dims.ECVDim, field=dual_normal_vert_x, backend=backend
         ),
         dual_normal_vert_y=data_alloc.flatten_first_two_dims(
-            dims.ECVDim, field=dual_normal_vert_y, allocator=backend
+            dims.ECVDim, field=dual_normal_vert_y, backend=backend
         ),
         primal_normal_cell_x=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_x, allocator=backend
+            dims.ECDim, field=primal_normal_cell_x, backend=backend
         ),
         primal_normal_cell_y=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=primal_normal_cell_y, allocator=backend
+            dims.ECDim, field=primal_normal_cell_y, backend=backend
         ),
         dual_normal_cell_x=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=dual_normal_cell_x, allocator=backend
+            dims.ECDim, field=dual_normal_cell_x, backend=backend
         ),
         dual_normal_cell_y=data_alloc.flatten_first_two_dims(
-            dims.ECDim, field=dual_normal_cell_y, allocator=backend
+            dims.ECDim, field=dual_normal_cell_y, backend=backend
         ),
         edge_areas=edge_areas,
         f_e=f_e,
@@ -247,22 +247,20 @@ def diffusion_init(
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
         zd_intcoef=data_alloc.flatten_first_two_dims(
-            dims.CECDim, dims.KDim, field=zd_intcoef, allocator=backend
+            dims.CECDim, dims.KDim, field=zd_intcoef, backend=backend
         ),
         zd_vertoffset=data_alloc.flatten_first_two_dims(
-            dims.CECDim, dims.KDim, field=zd_vertoffset, allocator=backend
+            dims.CECDim, dims.KDim, field=zd_vertoffset, backend=backend
         ),
         zd_diffcoef=zd_diffcoef,
     )
 
     # Interpolation state
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=e_bln_c_s, allocator=backend),
+        e_bln_c_s=data_alloc.flatten_first_two_dims(dims.CEDim, field=e_bln_c_s, backend=backend),
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=data_alloc.flatten_first_two_dims(
-            dims.CEDim, field=geofac_div, allocator=backend
-        ),
+        geofac_div=data_alloc.flatten_first_two_dims(dims.CEDim, field=geofac_div, backend=backend),
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
