@@ -201,11 +201,11 @@ def test_nonhydro_predictor_step(
     at_first_substep = jstep_init == 0
 
     prognostic_states = utils.create_prognostic_states(sp)
-    solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh,
-        at_first_substep=at_first_substep,
-        at_initial_timestep=at_initial_timestep,
-    )
+
+    if not (at_initial_timestep and at_first_substep):
+        diagnostic_state_nh.ddt_w_adv_pc.swap()
+    if not at_first_substep:
+        diagnostic_state_nh.ddt_vn_apc_pc.swap()
 
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -616,11 +616,11 @@ def test_nonhydro_corrector_step(
     at_last_substep = jstep_init == (ndyn_substeps - 1)
 
     prognostic_states = utils.create_prognostic_states(sp)
-    solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh,
-        at_first_substep=at_first_substep,
-        at_initial_timestep=at_initial_timestep,
-    )
+
+    if not (at_initial_timestep and at_first_substep):
+        diagnostic_state_nh.ddt_w_adv_pc.swap()
+    if not at_first_substep:
+        diagnostic_state_nh.ddt_vn_apc_pc.swap()
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -931,6 +931,11 @@ def test_run_solve_nonhydro_multi_step(
     for i_substep in range(ndyn_substeps):
         at_first_substep = i_substep == 0
         at_last_substep = i_substep == (ndyn_substeps - 1)
+
+        if not (at_initial_timestep and at_first_substep):
+            diagnostic_state_nh.ddt_w_adv_pc.swap()
+        if not at_first_substep:
+            diagnostic_state_nh.ddt_vn_apc_pc.swap()
 
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
