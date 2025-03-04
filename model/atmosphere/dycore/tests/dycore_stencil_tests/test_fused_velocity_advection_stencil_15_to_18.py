@@ -132,7 +132,6 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         ddqz_z_half,
         area,
         geofac_n2s,
-        z_w_con_c_full,
         cell,
         k,
         scalfac_exdiff,
@@ -144,6 +143,9 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         nrdmax,
         lvn_only,
         extra_diffu,
+        z_w_con_c_full,
+        start_cell_lateral_boundary,
+        end_cell_halo,
         **kwargs,
     ):
         # We need to store the initial return field, because we only compute on a subdomain.
@@ -231,6 +233,21 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         nrdmax = 5
         extra_diffu = True
 
+        cell_lower_bound = 2
+        cell_upper_bound = 4
+        istep = 1
+        cell_domain = h_grid.domain(dims.EdgeDim)
+        start_cell_lateral_boundary = (
+            grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+            if istep == 1
+            else grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+            if hasattr(grid, "start_index")
+            else 0
+        )
+        end_cell_halo = (
+            grid.end_index(cell_domain(h_grid.Zone.HALO)) if hasattr(grid, "end_index") else 0
+        )
+
         lvn_only = False
 
         cell_domain = h_grid.domain(dims.CellDim)
@@ -267,6 +284,8 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
             lvn_only=lvn_only,
             extra_diffu=extra_diffu,
             z_w_con_c_full=z_w_con_c_full,
+            start_cell_lateral_boundary=start_cell_lateral_boundary,
+            end_cell_halo=end_cell_halo,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=vertical_start,
