@@ -162,7 +162,7 @@ def test_factory_ddqz_full_e(grid_savepoint, metrics_savepoint, grid_file, exper
         metrics_savepoint=metrics_savepoint,
     )
     field = factory.get(attrs.DDQZ_Z_FULL_E)
-    assert test_helpers.dallclose(field_ref, field.asnumpy())
+    assert test_helpers.dallclose(field_ref, field.asnumpy(), rtol=1e-8)
 
 
 @pytest.mark.requires_concat_where

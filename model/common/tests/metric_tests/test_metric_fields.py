@@ -13,13 +13,6 @@ import pytest
 
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
-from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
-    compute_cell_2_vertex_interpolation,
-)
-from icon4py.model.common.math.helpers import (
-    average_cell_kdim_level_up,
-    average_of_two_vertical_levels_downwards_on_edges,
-)
 from icon4py.model.common.metrics.compute_vwind_impl_wgt import (
     compute_vwind_impl_wgt,
 )
@@ -216,63 +209,6 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
 
     assert testing_helpers.dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
     assert testing_helpers.dallclose(coeff2_dwdz_full.asnumpy(), coeff2_dwdz_ref.asnumpy())
-
-
-# TODO (halungge) does this test the right thing? final assert and test name do not match...
-@pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
-def test_compute_ddxt_z_full_e(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
-):
-    z_ifc = metrics_savepoint.z_ifc()
-    ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
-    horizontal_start_vertex = icon_grid.start_index(
-        vertex_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    )
-    horizontal_end_vertex = icon_grid.end_index(vertex_domain(horizontal.Zone.INTERIOR))
-    vertical_start = 0
-    vertical_end = icon_grid.num_levels + 1
-    cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
-    z_ifv = data_alloc.zero_field(
-        icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-    )
-    compute_cell_2_vertex_interpolation.with_backend(backend)(
-        z_ifc,
-        gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts, allocator=backend),
-        z_ifv,
-        horizontal_start=horizontal_start_vertex,
-        horizontal_end=horizontal_end_vertex,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
-        offset_provider={"V2C": icon_grid.get_offset_provider("V2C")},
-    )
-    ddxn_z_half_e = data_alloc.zero_field(
-        icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
-    )
-    compute_ddxn_z_half_e.with_backend(backend)(
-        z_ifc=z_ifc,
-        inv_dual_edge_length=grid_savepoint.inv_dual_edge_length(),
-        ddxn_z_half_e=ddxn_z_half_e,
-        horizontal_start=icon_grid.start_index(
-            edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        ),
-        horizontal_end=icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR)),
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
-    )
-    ddxn_z_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
-    average_of_two_vertical_levels_downwards_on_edges.with_backend(backend)(
-        ddxnt_z_half_e=ddxn_z_half_e,
-        ddxn_z_full=ddxn_z_full,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_edges,
-        vertical_start=0,
-        vertical_end=icon_grid.num_levels,
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
-    )
-
-    assert testing_helpers.dallclose(ddxn_z_full.asnumpy(), ddxn_z_full_ref)
 
 
 @pytest.mark.datatest
@@ -574,10 +510,8 @@ def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
-    average_cell_kdim_level_up.with_backend(backend)(
-        z_ifc, out=z_mc, offset_provider={"Koff": icon_grid.get_offset_provider("Koff")}
-    )
+    z_mc = metrics_savepoint.z_mc()
+
     compute_theta_exner_ref_mc.with_backend(backend)(
         z_mc=z_mc,
         exner_ref_mc=exner_ref_mc_full,
