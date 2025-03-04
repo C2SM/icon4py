@@ -2,18 +2,21 @@
 import logging
 
 from grid import ffi
-import cupy as cp
+
+try:
+    import cupy as cp  # TODO remove this import
+except ImportError:
+    cp = None
 import gt4py.next as gtx
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.tools.py2fgen.settings import config
 from icon4py.tools.py2fgen import wrapper_utils
-
-xp = config.array_ns
 
 # logger setup
 log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.DEBUG, format=log_format, datefmt="%Y-%m-%d %H:%M:%S")
-logging.info(cp.show_config())
+
+if cp is not None:
+    logging.info(cp.show_config())
 
 # embedded function imports
 from icon4py.tools.py2fgen.wrappers.grid_wrapper import grid_init
@@ -92,14 +95,64 @@ def grid_init_wrapper(
     e_glb_index_size_0,
     v_glb_index,
     v_glb_index_size_0,
+    tangent_orientation,
+    tangent_orientation_size_0,
+    inverse_primal_edge_lengths,
+    inverse_primal_edge_lengths_size_0,
+    inv_dual_edge_length,
+    inv_dual_edge_length_size_0,
+    inv_vert_vert_length,
+    inv_vert_vert_length_size_0,
+    edge_areas,
+    edge_areas_size_0,
+    f_e,
+    f_e_size_0,
+    cell_center_lat,
+    cell_center_lat_size_0,
+    cell_center_lon,
+    cell_center_lon_size_0,
+    cell_areas,
+    cell_areas_size_0,
+    primal_normal_vert_x,
+    primal_normal_vert_x_size_0,
+    primal_normal_vert_x_size_1,
+    primal_normal_vert_y,
+    primal_normal_vert_y_size_0,
+    primal_normal_vert_y_size_1,
+    dual_normal_vert_x,
+    dual_normal_vert_x_size_0,
+    dual_normal_vert_x_size_1,
+    dual_normal_vert_y,
+    dual_normal_vert_y_size_0,
+    dual_normal_vert_y_size_1,
+    primal_normal_cell_x,
+    primal_normal_cell_x_size_0,
+    primal_normal_cell_x_size_1,
+    primal_normal_cell_y,
+    primal_normal_cell_y_size_0,
+    primal_normal_cell_y_size_1,
+    dual_normal_cell_x,
+    dual_normal_cell_x_size_0,
+    dual_normal_cell_x_size_1,
+    dual_normal_cell_y,
+    dual_normal_cell_y_size_0,
+    dual_normal_cell_y_size_1,
+    edge_center_lat,
+    edge_center_lat_size_0,
+    edge_center_lon,
+    edge_center_lon_size_0,
+    primal_normal_x,
+    primal_normal_x_size_0,
+    primal_normal_y,
+    primal_normal_y_size_0,
+    mean_cell_area,
     comm_id,
-    global_root,
-    global_level,
     num_vertices,
     num_cells,
     num_edges,
     vertical_size,
     limited_area,
+    on_gpu,
 ):
     try:
         logging.info("Python Execution Context Start")
@@ -107,91 +160,295 @@ def grid_init_wrapper(
         # Convert ptr to GT4Py fields
 
         cell_starts = wrapper_utils.as_field(
-            ffi, xp, cell_starts, ts.ScalarKind.INT32, {CellIndex: cell_starts_size_0}, False
+            ffi, on_gpu, cell_starts, ts.ScalarKind.INT32, {CellIndex: cell_starts_size_0}, False
         )
 
         cell_ends = wrapper_utils.as_field(
-            ffi, xp, cell_ends, ts.ScalarKind.INT32, {CellIndex: cell_ends_size_0}, False
+            ffi, on_gpu, cell_ends, ts.ScalarKind.INT32, {CellIndex: cell_ends_size_0}, False
         )
 
         vertex_starts = wrapper_utils.as_field(
-            ffi, xp, vertex_starts, ts.ScalarKind.INT32, {VertexIndex: vertex_starts_size_0}, False
+            ffi,
+            on_gpu,
+            vertex_starts,
+            ts.ScalarKind.INT32,
+            {VertexIndex: vertex_starts_size_0},
+            False,
         )
 
         vertex_ends = wrapper_utils.as_field(
-            ffi, xp, vertex_ends, ts.ScalarKind.INT32, {VertexIndex: vertex_ends_size_0}, False
+            ffi, on_gpu, vertex_ends, ts.ScalarKind.INT32, {VertexIndex: vertex_ends_size_0}, False
         )
 
         edge_starts = wrapper_utils.as_field(
-            ffi, xp, edge_starts, ts.ScalarKind.INT32, {EdgeIndex: edge_starts_size_0}, False
+            ffi, on_gpu, edge_starts, ts.ScalarKind.INT32, {EdgeIndex: edge_starts_size_0}, False
         )
 
         edge_ends = wrapper_utils.as_field(
-            ffi, xp, edge_ends, ts.ScalarKind.INT32, {EdgeIndex: edge_ends_size_0}, False
+            ffi, on_gpu, edge_ends, ts.ScalarKind.INT32, {EdgeIndex: edge_ends_size_0}, False
         )
 
         c2e = wrapper_utils.as_field(
-            ffi, xp, c2e, ts.ScalarKind.INT32, {Cell: c2e_size_0, C2E: c2e_size_1}, False
+            ffi, on_gpu, c2e, ts.ScalarKind.INT32, {Cell: c2e_size_0, C2E: c2e_size_1}, False
         )
 
         e2c = wrapper_utils.as_field(
-            ffi, xp, e2c, ts.ScalarKind.INT32, {Edge: e2c_size_0, E2C: e2c_size_1}, False
+            ffi, on_gpu, e2c, ts.ScalarKind.INT32, {Edge: e2c_size_0, E2C: e2c_size_1}, False
         )
 
         c2e2c = wrapper_utils.as_field(
-            ffi, xp, c2e2c, ts.ScalarKind.INT32, {Cell: c2e2c_size_0, C2E2C: c2e2c_size_1}, False
+            ffi,
+            on_gpu,
+            c2e2c,
+            ts.ScalarKind.INT32,
+            {Cell: c2e2c_size_0, C2E2C: c2e2c_size_1},
+            False,
         )
 
         e2c2e = wrapper_utils.as_field(
-            ffi, xp, e2c2e, ts.ScalarKind.INT32, {Edge: e2c2e_size_0, E2C2E: e2c2e_size_1}, False
+            ffi,
+            on_gpu,
+            e2c2e,
+            ts.ScalarKind.INT32,
+            {Edge: e2c2e_size_0, E2C2E: e2c2e_size_1},
+            False,
         )
 
         e2v = wrapper_utils.as_field(
-            ffi, xp, e2v, ts.ScalarKind.INT32, {Edge: e2v_size_0, E2V: e2v_size_1}, False
+            ffi, on_gpu, e2v, ts.ScalarKind.INT32, {Edge: e2v_size_0, E2V: e2v_size_1}, False
         )
 
         v2e = wrapper_utils.as_field(
-            ffi, xp, v2e, ts.ScalarKind.INT32, {Vertex: v2e_size_0, V2E: v2e_size_1}, False
+            ffi, on_gpu, v2e, ts.ScalarKind.INT32, {Vertex: v2e_size_0, V2E: v2e_size_1}, False
         )
 
         v2c = wrapper_utils.as_field(
-            ffi, xp, v2c, ts.ScalarKind.INT32, {Vertex: v2c_size_0, V2C: v2c_size_1}, False
+            ffi, on_gpu, v2c, ts.ScalarKind.INT32, {Vertex: v2c_size_0, V2C: v2c_size_1}, False
         )
 
         e2c2v = wrapper_utils.as_field(
-            ffi, xp, e2c2v, ts.ScalarKind.INT32, {Edge: e2c2v_size_0, E2C2V: e2c2v_size_1}, False
+            ffi,
+            on_gpu,
+            e2c2v,
+            ts.ScalarKind.INT32,
+            {Edge: e2c2v_size_0, E2C2V: e2c2v_size_1},
+            False,
         )
 
         c2v = wrapper_utils.as_field(
-            ffi, xp, c2v, ts.ScalarKind.INT32, {Cell: c2v_size_0, C2V: c2v_size_1}, False
+            ffi, on_gpu, c2v, ts.ScalarKind.INT32, {Cell: c2v_size_0, C2V: c2v_size_1}, False
         )
 
         c_owner_mask = wrapper_utils.as_field(
-            ffi, xp, c_owner_mask, ts.ScalarKind.BOOL, {Cell: c_owner_mask_size_0}, False
+            ffi, on_gpu, c_owner_mask, ts.ScalarKind.BOOL, {Cell: c_owner_mask_size_0}, False
         )
 
         e_owner_mask = wrapper_utils.as_field(
-            ffi, xp, e_owner_mask, ts.ScalarKind.BOOL, {Edge: e_owner_mask_size_0}, False
+            ffi, on_gpu, e_owner_mask, ts.ScalarKind.BOOL, {Edge: e_owner_mask_size_0}, False
         )
 
         v_owner_mask = wrapper_utils.as_field(
-            ffi, xp, v_owner_mask, ts.ScalarKind.BOOL, {Vertex: v_owner_mask_size_0}, False
+            ffi, on_gpu, v_owner_mask, ts.ScalarKind.BOOL, {Vertex: v_owner_mask_size_0}, False
         )
 
         c_glb_index = wrapper_utils.as_field(
-            ffi, xp, c_glb_index, ts.ScalarKind.INT32, {CellGlobalIndex: c_glb_index_size_0}, False
+            ffi,
+            on_gpu,
+            c_glb_index,
+            ts.ScalarKind.INT32,
+            {CellGlobalIndex: c_glb_index_size_0},
+            False,
         )
 
         e_glb_index = wrapper_utils.as_field(
-            ffi, xp, e_glb_index, ts.ScalarKind.INT32, {EdgeGlobalIndex: e_glb_index_size_0}, False
+            ffi,
+            on_gpu,
+            e_glb_index,
+            ts.ScalarKind.INT32,
+            {EdgeGlobalIndex: e_glb_index_size_0},
+            False,
         )
 
         v_glb_index = wrapper_utils.as_field(
             ffi,
-            xp,
+            on_gpu,
             v_glb_index,
             ts.ScalarKind.INT32,
             {VertexGlobalIndex: v_glb_index_size_0},
+            False,
+        )
+
+        tangent_orientation = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            tangent_orientation,
+            ts.ScalarKind.FLOAT64,
+            {Edge: tangent_orientation_size_0},
+            False,
+        )
+
+        inverse_primal_edge_lengths = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            inverse_primal_edge_lengths,
+            ts.ScalarKind.FLOAT64,
+            {Edge: inverse_primal_edge_lengths_size_0},
+            False,
+        )
+
+        inv_dual_edge_length = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            inv_dual_edge_length,
+            ts.ScalarKind.FLOAT64,
+            {Edge: inv_dual_edge_length_size_0},
+            False,
+        )
+
+        inv_vert_vert_length = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            inv_vert_vert_length,
+            ts.ScalarKind.FLOAT64,
+            {Edge: inv_vert_vert_length_size_0},
+            False,
+        )
+
+        edge_areas = wrapper_utils.as_field(
+            ffi, on_gpu, edge_areas, ts.ScalarKind.FLOAT64, {Edge: edge_areas_size_0}, False
+        )
+
+        f_e = wrapper_utils.as_field(
+            ffi, on_gpu, f_e, ts.ScalarKind.FLOAT64, {Edge: f_e_size_0}, False
+        )
+
+        cell_center_lat = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            cell_center_lat,
+            ts.ScalarKind.FLOAT64,
+            {Cell: cell_center_lat_size_0},
+            False,
+        )
+
+        cell_center_lon = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            cell_center_lon,
+            ts.ScalarKind.FLOAT64,
+            {Cell: cell_center_lon_size_0},
+            False,
+        )
+
+        cell_areas = wrapper_utils.as_field(
+            ffi, on_gpu, cell_areas, ts.ScalarKind.FLOAT64, {Cell: cell_areas_size_0}, False
+        )
+
+        primal_normal_vert_x = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            primal_normal_vert_x,
+            ts.ScalarKind.FLOAT64,
+            {Edge: primal_normal_vert_x_size_0, E2C2V: primal_normal_vert_x_size_1},
+            False,
+        )
+
+        primal_normal_vert_y = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            primal_normal_vert_y,
+            ts.ScalarKind.FLOAT64,
+            {Edge: primal_normal_vert_y_size_0, E2C2V: primal_normal_vert_y_size_1},
+            False,
+        )
+
+        dual_normal_vert_x = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            dual_normal_vert_x,
+            ts.ScalarKind.FLOAT64,
+            {Edge: dual_normal_vert_x_size_0, E2C2V: dual_normal_vert_x_size_1},
+            False,
+        )
+
+        dual_normal_vert_y = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            dual_normal_vert_y,
+            ts.ScalarKind.FLOAT64,
+            {Edge: dual_normal_vert_y_size_0, E2C2V: dual_normal_vert_y_size_1},
+            False,
+        )
+
+        primal_normal_cell_x = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            primal_normal_cell_x,
+            ts.ScalarKind.FLOAT64,
+            {Edge: primal_normal_cell_x_size_0, E2C: primal_normal_cell_x_size_1},
+            False,
+        )
+
+        primal_normal_cell_y = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            primal_normal_cell_y,
+            ts.ScalarKind.FLOAT64,
+            {Edge: primal_normal_cell_y_size_0, E2C: primal_normal_cell_y_size_1},
+            False,
+        )
+
+        dual_normal_cell_x = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            dual_normal_cell_x,
+            ts.ScalarKind.FLOAT64,
+            {Edge: dual_normal_cell_x_size_0, E2C: dual_normal_cell_x_size_1},
+            False,
+        )
+
+        dual_normal_cell_y = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            dual_normal_cell_y,
+            ts.ScalarKind.FLOAT64,
+            {Edge: dual_normal_cell_y_size_0, E2C: dual_normal_cell_y_size_1},
+            False,
+        )
+
+        edge_center_lat = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            edge_center_lat,
+            ts.ScalarKind.FLOAT64,
+            {Edge: edge_center_lat_size_0},
+            False,
+        )
+
+        edge_center_lon = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            edge_center_lon,
+            ts.ScalarKind.FLOAT64,
+            {Edge: edge_center_lon_size_0},
+            False,
+        )
+
+        primal_normal_x = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            primal_normal_x,
+            ts.ScalarKind.FLOAT64,
+            {Edge: primal_normal_x_size_0},
+            False,
+        )
+
+        primal_normal_y = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            primal_normal_y,
+            ts.ScalarKind.FLOAT64,
+            {Edge: primal_normal_y_size_0},
             False,
         )
 
@@ -220,9 +477,29 @@ def grid_init_wrapper(
             c_glb_index,
             e_glb_index,
             v_glb_index,
+            tangent_orientation,
+            inverse_primal_edge_lengths,
+            inv_dual_edge_length,
+            inv_vert_vert_length,
+            edge_areas,
+            f_e,
+            cell_center_lat,
+            cell_center_lon,
+            cell_areas,
+            primal_normal_vert_x,
+            primal_normal_vert_y,
+            dual_normal_vert_x,
+            dual_normal_vert_y,
+            primal_normal_cell_x,
+            primal_normal_cell_y,
+            dual_normal_cell_x,
+            dual_normal_cell_y,
+            edge_center_lat,
+            edge_center_lon,
+            primal_normal_x,
+            primal_normal_y,
+            mean_cell_area,
             comm_id,
-            global_root,
-            global_level,
             num_vertices,
             num_cells,
             num_edges,
@@ -388,6 +665,193 @@ def grid_init_wrapper(
         logging.debug(msg)
         msg = "v_glb_index after computation: %s" % str(
             v_glb_index.ndarray if v_glb_index is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of tangent_orientation after computation = %s" % str(
+            tangent_orientation.shape if tangent_orientation is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "tangent_orientation after computation: %s" % str(
+            tangent_orientation.ndarray if tangent_orientation is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of inverse_primal_edge_lengths after computation = %s" % str(
+            inverse_primal_edge_lengths.shape if inverse_primal_edge_lengths is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "inverse_primal_edge_lengths after computation: %s" % str(
+            inverse_primal_edge_lengths.ndarray
+            if inverse_primal_edge_lengths is not None
+            else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of inv_dual_edge_length after computation = %s" % str(
+            inv_dual_edge_length.shape if inv_dual_edge_length is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "inv_dual_edge_length after computation: %s" % str(
+            inv_dual_edge_length.ndarray if inv_dual_edge_length is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of inv_vert_vert_length after computation = %s" % str(
+            inv_vert_vert_length.shape if inv_vert_vert_length is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "inv_vert_vert_length after computation: %s" % str(
+            inv_vert_vert_length.ndarray if inv_vert_vert_length is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of edge_areas after computation = %s" % str(
+            edge_areas.shape if edge_areas is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "edge_areas after computation: %s" % str(
+            edge_areas.ndarray if edge_areas is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of f_e after computation = %s" % str(f_e.shape if f_e is not None else "None")
+        logging.debug(msg)
+        msg = "f_e after computation: %s" % str(f_e.ndarray if f_e is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of cell_center_lat after computation = %s" % str(
+            cell_center_lat.shape if cell_center_lat is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "cell_center_lat after computation: %s" % str(
+            cell_center_lat.ndarray if cell_center_lat is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of cell_center_lon after computation = %s" % str(
+            cell_center_lon.shape if cell_center_lon is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "cell_center_lon after computation: %s" % str(
+            cell_center_lon.ndarray if cell_center_lon is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of cell_areas after computation = %s" % str(
+            cell_areas.shape if cell_areas is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "cell_areas after computation: %s" % str(
+            cell_areas.ndarray if cell_areas is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of primal_normal_vert_x after computation = %s" % str(
+            primal_normal_vert_x.shape if primal_normal_vert_x is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "primal_normal_vert_x after computation: %s" % str(
+            primal_normal_vert_x.ndarray if primal_normal_vert_x is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of primal_normal_vert_y after computation = %s" % str(
+            primal_normal_vert_y.shape if primal_normal_vert_y is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "primal_normal_vert_y after computation: %s" % str(
+            primal_normal_vert_y.ndarray if primal_normal_vert_y is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of dual_normal_vert_x after computation = %s" % str(
+            dual_normal_vert_x.shape if dual_normal_vert_x is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "dual_normal_vert_x after computation: %s" % str(
+            dual_normal_vert_x.ndarray if dual_normal_vert_x is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of dual_normal_vert_y after computation = %s" % str(
+            dual_normal_vert_y.shape if dual_normal_vert_y is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "dual_normal_vert_y after computation: %s" % str(
+            dual_normal_vert_y.ndarray if dual_normal_vert_y is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of primal_normal_cell_x after computation = %s" % str(
+            primal_normal_cell_x.shape if primal_normal_cell_x is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "primal_normal_cell_x after computation: %s" % str(
+            primal_normal_cell_x.ndarray if primal_normal_cell_x is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of primal_normal_cell_y after computation = %s" % str(
+            primal_normal_cell_y.shape if primal_normal_cell_y is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "primal_normal_cell_y after computation: %s" % str(
+            primal_normal_cell_y.ndarray if primal_normal_cell_y is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of dual_normal_cell_x after computation = %s" % str(
+            dual_normal_cell_x.shape if dual_normal_cell_x is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "dual_normal_cell_x after computation: %s" % str(
+            dual_normal_cell_x.ndarray if dual_normal_cell_x is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of dual_normal_cell_y after computation = %s" % str(
+            dual_normal_cell_y.shape if dual_normal_cell_y is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "dual_normal_cell_y after computation: %s" % str(
+            dual_normal_cell_y.ndarray if dual_normal_cell_y is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of edge_center_lat after computation = %s" % str(
+            edge_center_lat.shape if edge_center_lat is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "edge_center_lat after computation: %s" % str(
+            edge_center_lat.ndarray if edge_center_lat is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of edge_center_lon after computation = %s" % str(
+            edge_center_lon.shape if edge_center_lon is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "edge_center_lon after computation: %s" % str(
+            edge_center_lon.ndarray if edge_center_lon is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of primal_normal_x after computation = %s" % str(
+            primal_normal_x.shape if primal_normal_x is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "primal_normal_x after computation: %s" % str(
+            primal_normal_x.ndarray if primal_normal_x is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of primal_normal_y after computation = %s" % str(
+            primal_normal_y.shape if primal_normal_y is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "primal_normal_y after computation: %s" % str(
+            primal_normal_y.ndarray if primal_normal_y is not None else "None"
         )
         logging.debug(msg)
 

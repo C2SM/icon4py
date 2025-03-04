@@ -66,11 +66,8 @@ def test_compile_and_run_cffi_plugin_from_C():
 
         try:
             # Generate and compile the CFFI plugin, which creates lib{plugin_name}.so
-            backend = "CPU"
-            shared_library = f"{plugin_name}_{backend.lower()}"
-            generate_and_compile_cffi_plugin(
-                plugin_name, c_header, python_wrapper, build_path, backend
-            )
+            shared_library = f"{plugin_name}"
+            generate_and_compile_cffi_plugin(plugin_name, c_header, python_wrapper, build_path)
             compiled_library_path = build_path / f"lib{shared_library}.so"
 
             # Verify the shared library was created
