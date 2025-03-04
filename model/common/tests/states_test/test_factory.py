@@ -127,9 +127,9 @@ def test_program_provider(height_coordinate_source):
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
     deps = {
-        "z_ifc": "height_coordinate",
+        "input_field": "height_coordinate",
     }
-    fields = {"z_mc": "output_f"}
+    fields = {"result": "output_f"}
     provider = factory.ProgramFieldProvider(program, domain, fields, deps)
     provider(
         "output_f",
@@ -149,9 +149,9 @@ def test_field_source_raise_error_on_register(cell_coordinate_source):
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
     }
     deps = {
-        "z_ifc": "height_coordinate",
+        "input_field": "height_coordinate",
     }
-    fields = {"z_mc": "output_f"}
+    fields = {"result": "output_f"}
     provider = factory.ProgramFieldProvider(func=program, domain=domain, fields=fields, deps=deps)
     with pytest.raises(ValueError) as err:
         cell_coordinate_source.register_provider(provider)

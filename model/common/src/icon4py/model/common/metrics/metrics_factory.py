@@ -149,8 +149,8 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
                     vertical_domain(v_grid.Zone.BOTTOM),
                 ),
             },
-            fields={"z_mc": attrs.Z_MC},
-            deps={"z_ifc": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL},
+            fields={"average": attrs.Z_MC},
+            deps={"input_field": attrs.CELL_HEIGHT_ON_INTERFACE_LEVEL},
         )
         self.register_provider(height)
 

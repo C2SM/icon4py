@@ -535,16 +535,16 @@ def average_two_vertical_levels_downwards_on_edges(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def average_two_vertical_levels_downwards_on_cells(
-    z_ifc: fa.CellKField[wpfloat],
-    z_mc: fa.CellKField[wpfloat],
+    input_field: fa.CellKField[wpfloat],
+    average: fa.CellKField[wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
     average_level_plus1_on_cells(
-        z_ifc,
-        out=z_mc,
+        input_field,
+        out=average,
         domain={
             dims.CellDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

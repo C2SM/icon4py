@@ -42,7 +42,7 @@ def test_cross_product(backend):
     assert test_helpers.dallclose(c[:, 2], z.asnumpy())
 
 
-class TestAverageOfTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
+class TestAverageTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
     PROGRAM = helpers.average_two_vertical_levels_downwards_on_edges
     OUTPUTS = (
         test_helpers.Output(
@@ -76,32 +76,32 @@ class TestAverageOfTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
         )
 
 
-class TestComputeZMc(testing_helpers.StencilTest):
+class TestAverageTwoVerticalLevelsDownwardsOnCells(testing_helpers.StencilTest):
     PROGRAM = helpers.average_two_vertical_levels_downwards_on_cells
-    OUTPUTS = ("z_mc",)
+    OUTPUTS = ("average",)
 
     @staticmethod
     def reference(
-        grid,
-        z_ifc: np.array,
-        **kwargs,
+        connectivities: dict[gtx.Dimension, np.ndarray],
+        input_field: np.ndarray,
+        **kwargs: Any,
     ) -> dict:
-        shp = z_ifc.shape
-        z_mc = 0.5 * (z_ifc + np.roll(z_ifc, shift=-1, axis=1))[:, : shp[1] - 1]
-        return dict(z_mc=z_mc)
+        shp = input_field.shape
+        res = 0.5 * (input_field + np.roll(input_field, shift=-1, axis=1))[:, : shp[1] - 1]
+        return dict(result=res)
 
     @pytest.fixture
     def input_data(self, grid) -> dict:
-        z_mc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_if = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        input_field = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        result = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
         horizontal_start = 0
         horizontal_end = grid.num_cells
         vertical_start = 0
         vertical_end = grid.num_levels
 
         return dict(
-            z_mc=z_mc,
-            z_ifc=z_if,
+            input_field=input_field,
+            average=result,
             vertical_start=vertical_start,
             vertical_end=vertical_end,
             horizontal_start=horizontal_start,
