@@ -132,7 +132,7 @@ def _install_session_venv(
 
 def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
     pytest_args = []
-    
+
     match selection:
         case "datatest":
             pytest_args.extend(["-k", "not stencil_test", "--datatest"])
@@ -140,7 +140,10 @@ def _selection_to_pytest_args(selection: ModelTestsSubset) -> list[str]:
             pytest_args.extend(["-k", "stencil_tests"])
         case "basic":
             pytest_args.extend(["-k", "not stencil_tests"])
+        case "parallel":
+            pytest_args.extend(["-k", "not stencil_tests", "--datatest", "--with-mpi"])
         case _:
             raise AssertionError(f"Invalid selection: {selection}")
-        
+
+
     return pytest_args
