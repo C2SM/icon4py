@@ -25,6 +25,7 @@ def _apply_rayleigh_damping_mechanism(
     w_wp = z_raylfac * w + (wpfloat("1.0") - z_raylfac) * w_1
     return w_wp
 
+
 @field_operator
 def _apply_rayleigh_damping_mechanism_w_1_broadcasted(
     z_raylfac: fa.KField[wpfloat],

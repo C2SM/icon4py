@@ -18,16 +18,28 @@ from icon4py.model.common.utils.data_allocation import random_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_dwdz_for_divergence_damping_numpy(
+    grid,
+    inv_ddqz_z_full: np.ndarray,
+    w: np.ndarray,
+    w_concorr_c: np.ndarray,
+) -> np.ndarray:
+    z_dwdz_dd = inv_ddqz_z_full * (
+        (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
+    )
+    return z_dwdz_dd
+
+
 class TestComputeDwdzForDivergenceDamping(StencilTest):
     PROGRAM = compute_dwdz_for_divergence_damping
     OUTPUTS = ("z_dwdz_dd",)
 
     @staticmethod
     def reference(
-        grid, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array, **kwargs
+        grid, inv_ddqz_z_full: np.ndarray, w: np.ndarray, w_concorr_c: np.ndarray, **kwargs
     ) -> dict:
-        z_dwdz_dd = inv_ddqz_z_full * (
-            (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
+        z_dwdz_dd = compute_dwdz_for_divergence_damping_numpy(
+            grid, inv_ddqz_z_full=inv_ddqz_z_full, w=w, w_concorr_c=w_concorr_c
         )
         return dict(z_dwdz_dd=z_dwdz_dd)
 

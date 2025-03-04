@@ -18,6 +18,23 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
+    grid,
+    w_nnow: np.ndarray,
+    ddt_w_adv_ntl1: np.ndarray,
+    z_th_ddz_exner_c: np.ndarray,
+    rho_ic: np.ndarray,
+    w_concorr_c: np.ndarray,
+    vwind_expl_wgt: np.ndarray,
+    dtime: float,
+    cpd: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, -1)
+    z_w_expl = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * z_th_ddz_exner_c)
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+    return (z_w_expl, z_contr_w_fl_l)
+
+
 class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTest):
     PROGRAM = compute_explicit_vertical_wind_speed_and_vertical_wind_times_density
     OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
@@ -25,19 +42,30 @@ class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTes
     @staticmethod
     def reference(
         grid,
-        w_nnow: np.array,
-        ddt_w_adv_ntl1: np.array,
-        z_th_ddz_exner_c: np.array,
-        rho_ic: np.array,
-        w_concorr_c: np.array,
-        vwind_expl_wgt: np.array,
+        w_nnow: np.ndarray,
+        ddt_w_adv_ntl1: np.ndarray,
+        z_th_ddz_exner_c: np.ndarray,
+        rho_ic: np.ndarray,
+        w_concorr_c: np.ndarray,
+        vwind_expl_wgt: np.ndarray,
         dtime: float,
         cpd: float,
         **kwargs,
     ) -> dict:
-        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, -1)
-        z_w_expl = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * z_th_ddz_exner_c)
-        z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+        (
+            z_w_expl,
+            z_contr_w_fl_l,
+        ) = compute_explicit_vertical_wind_speed_and_vertical_wind_times_density_numpy(
+            grid,
+            w_nnow=w_nnow,
+            ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+            z_th_ddz_exner_c=z_th_ddz_exner_c,
+            rho_ic=rho_ic,
+            w_concorr_c=w_concorr_c,
+            vwind_expl_wgt=vwind_expl_wgt,
+            dtime=dtime,
+            cpd=cpd,
+        )
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture

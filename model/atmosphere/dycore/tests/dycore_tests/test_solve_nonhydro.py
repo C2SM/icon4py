@@ -9,7 +9,7 @@
 import logging
 
 import pytest
-import gt4py.next as gtx
+
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import (
     dycore_states,
@@ -1048,9 +1048,7 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "istep_init, istep_exit, at_initial_timestep", [(1, 2, True)]
-)
+@pytest.mark.parametrize("istep_init, istep_exit, at_initial_timestep", [(1, 2, True)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -1139,11 +1137,18 @@ def test_run_solve_nonhydro_15_to_28(
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
     params_config = solve_nh.NonHydrostaticConfig()
-    primal_normal_cell_1 = data_alloc.flatten_first_two_dims(dims.ECDim, field=grid_savepoint.primal_normal_cell_x())
-    primal_normal_cell_2 = data_alloc.flatten_first_two_dims(dims.ECDim, field=grid_savepoint.primal_normal_cell_y())
-    dual_normal_cell_1 = data_alloc.flatten_first_two_dims(dims.ECDim, field=grid_savepoint.dual_normal_cell_x())
-    dual_normal_cell_2 = data_alloc.flatten_first_two_dims(dims.ECDim, field=grid_savepoint.dual_normal_cell_y())
-
+    primal_normal_cell_1 = data_alloc.flatten_first_two_dims(
+        dims.ECDim, field=grid_savepoint.primal_normal_cell_x()
+    )
+    primal_normal_cell_2 = data_alloc.flatten_first_two_dims(
+        dims.ECDim, field=grid_savepoint.primal_normal_cell_y()
+    )
+    dual_normal_cell_1 = data_alloc.flatten_first_two_dims(
+        dims.ECDim, field=grid_savepoint.dual_normal_cell_x()
+    )
+    dual_normal_cell_2 = data_alloc.flatten_first_two_dims(
+        dims.ECDim, field=grid_savepoint.dual_normal_cell_y()
+    )
 
     iau_wgt_dyn = params_config.iau_wgt_dyn
     itime_scheme = params_config.itime_scheme
@@ -1309,7 +1314,7 @@ def test_run_solve_nonhydro_41_to_60(
         rayleigh_damping_height=damping_height,
     )
     vertical_params = utils.create_vertical_params(vertical_config, grid_savepoint)
-    at_first_substep = (substep_init == 0)
+    at_first_substep = substep_init == 0
 
     mass_fl_e = savepoint_nonhydro_41_60_init.mass_fl_e()
     z_theta_v_fl_e = savepoint_nonhydro_41_60_init.z_theta_v_fl_e()
@@ -1352,12 +1357,12 @@ def test_run_solve_nonhydro_41_to_60(
     itime_scheme = params_config.itime_scheme.value
     iau_wgt_dyn = params_config.iau_wgt_dyn
     is_iau_active = params_config.is_iau_active
-    lhdiff_rcf = True # savepoint_nonhydro_41_60_init.lhdiff_rcf()
+    lhdiff_rcf = True  # savepoint_nonhydro_41_60_init.lhdiff_rcf()
     divdamp_type = params_config.divdamp_type
     lclean_mflx = savepoint_nonhydro_init.get_metadata("clean_mflx").get("clean_mflx")
     r_nsubsteps = params_config.ndyn_substeps_var
     l_vert_nested = params_config.l_vert_nested
-    jk_start = icon_grid.num_levels - 1 # TODO: check - savepoint_nonhydro_41_60_init.jk_start()
+    jk_start = icon_grid.num_levels - 1  # TODO: check - savepoint_nonhydro_41_60_init.jk_start()
 
     z_flxdiv_mass_ref = savepoint_nonhydro_exit.z_flxdiv_mass()
     z_flxdiv_theta_ref = savepoint_nonhydro_exit.z_flxdiv_theta()
@@ -1372,10 +1377,10 @@ def test_run_solve_nonhydro_41_to_60(
     rho_ref = savepoint_nonhydro_exit.rho_new()
     exner_ref = savepoint_nonhydro_exit.exner_new()
     theta_v_ref = savepoint_nonhydro_exit.theta_v_new()
-    #z_dwdz_dd_ref = savepoint_nonhydro_exit.z_dwdz_dd()
+    # z_dwdz_dd_ref = savepoint_nonhydro_exit.z_dwdz_dd()
     exner_dyn_incr_ref = savepoint_nonhydro_exit.exner_dyn_incr()
-    #mass_flx_ic_ref = savepoint_nonhydro_exit.mass_flx_ic()
-    #vol_flx_ic_ref = savepoint_nonhydro_exit.vol_flx_ic()
+    # mass_flx_ic_ref = savepoint_nonhydro_exit.mass_flx_ic()
+    # vol_flx_ic_ref = savepoint_nonhydro_exit.vol_flx_ic()
 
     config = utils.construct_solve_nh_config(experiment, ndyn_substeps)
     nonhydro_params = solve_nh.NonHydrostaticParams(config)
@@ -1385,7 +1390,9 @@ def test_run_solve_nonhydro_41_to_60(
     end_cell_local = icon_grid.end_index(cell_domain(h_grid.Zone.LOCAL))
     lprep_adv = savepoint_nonhydro_init.get_metadata("prep_adv").get("prep_adv")
 
-    geofac_div = data_alloc.flatten_first_two_dims(dims.CEDim, field=interpolation_savepoint.geofac_div())
+    geofac_div = data_alloc.flatten_first_two_dims(
+        dims.CEDim, field=interpolation_savepoint.geofac_div()
+    )
 
     fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60.with_backend(
         backend
@@ -1480,7 +1487,7 @@ def test_run_solve_nonhydro_41_to_60(
     assert helpers.dallclose(rho.asnumpy(), rho_ref.asnumpy())
     assert helpers.dallclose(exner.asnumpy(), exner_ref.asnumpy())
     assert helpers.dallclose(theta_v.asnumpy(), theta_v_ref.asnumpy())
-    #assert helpers.dallclose(z_dwdz_dd.asnumpy(), z_dwdz_dd_ref.asnumpy())
+    # assert helpers.dallclose(z_dwdz_dd.asnumpy(), z_dwdz_dd_ref.asnumpy())
     assert helpers.dallclose(exner_dyn_incr.asnumpy(), exner_dyn_incr_ref.asnumpy())
-    #assert helpers.dallclose(mass_flx_ic.asnumpy(), mass_flx_ic_ref.asnumpy())
-    #assert helpers.dallclose(vol_flx_ic.asnumpy(), vol_flx_ic_ref.asnumpy())
+    # assert helpers.dallclose(mass_flx_ic.asnumpy(), mass_flx_ic_ref.asnumpy())
+    # assert helpers.dallclose(vol_flx_ic.asnumpy(), vol_flx_ic_ref.asnumpy())

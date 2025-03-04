@@ -18,6 +18,36 @@ from icon4py.model.common.utils.data_allocation import random_field, zero_field
 from icon4py.model.testing.helpers import StencilTest
 
 
+def compute_explicit_part_for_rho_and_exner_numpy(
+    grid,
+    rho_nnow: np.ndarray,
+    inv_ddqz_z_full: np.ndarray,
+    z_flxdiv_mass: np.ndarray,
+    z_contr_w_fl_l: np.ndarray,
+    exner_pr: np.ndarray,
+    z_beta: np.ndarray,
+    z_flxdiv_theta: np.ndarray,
+    theta_v_ic: np.ndarray,
+    ddt_exner_phy: np.ndarray,
+    dtime: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
+        z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
+    )
+
+    z_exner_expl = (
+        exner_pr
+        - z_beta
+        * (
+            z_flxdiv_theta
+            + (theta_v_ic * z_contr_w_fl_l)[:, :-1]
+            - (theta_v_ic * z_contr_w_fl_l)[:, 1:]
+        )
+        + dtime * ddt_exner_phy
+    )
+    return (z_rho_expl, z_exner_expl)
+
+
 class TestComputeExplicitPartForRhoAndExner(StencilTest):
     PROGRAM = compute_explicit_part_for_rho_and_exner
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
@@ -25,31 +55,30 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
     @staticmethod
     def reference(
         grid,
-        rho_nnow: np.array,
-        inv_ddqz_z_full: np.array,
-        z_flxdiv_mass: np.array,
-        z_contr_w_fl_l: np.array,
-        exner_pr: np.array,
-        z_beta: np.array,
-        z_flxdiv_theta: np.array,
-        theta_v_ic: np.array,
-        ddt_exner_phy: np.array,
-        dtime,
+        rho_nnow: np.ndarray,
+        inv_ddqz_z_full: np.ndarray,
+        z_flxdiv_mass: np.ndarray,
+        z_contr_w_fl_l: np.ndarray,
+        exner_pr: np.ndarray,
+        z_beta: np.ndarray,
+        z_flxdiv_theta: np.ndarray,
+        theta_v_ic: np.ndarray,
+        ddt_exner_phy: np.ndarray,
+        dtime: float,
         **kwargs,
     ) -> dict:
-        z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
-            z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
-        )
-
-        z_exner_expl = (
-            exner_pr
-            - z_beta
-            * (
-                z_flxdiv_theta
-                + (theta_v_ic * z_contr_w_fl_l)[:, :-1]
-                - (theta_v_ic * z_contr_w_fl_l)[:, 1:]
-            )
-            + dtime * ddt_exner_phy
+        (z_rho_expl, z_exner_expl) = compute_explicit_part_for_rho_and_exner_numpy(
+            grid,
+            rho_nnow=rho_nnow,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            z_flxdiv_mass=z_flxdiv_mass,
+            z_contr_w_fl_l=z_contr_w_fl_l,
+            exner_pr=exner_pr,
+            z_beta=z_beta,
+            z_flxdiv_theta=z_flxdiv_theta,
+            theta_v_ic=theta_v_ic,
+            ddt_exner_phy=ddt_exner_phy,
+            dtime=dtime,
         )
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 

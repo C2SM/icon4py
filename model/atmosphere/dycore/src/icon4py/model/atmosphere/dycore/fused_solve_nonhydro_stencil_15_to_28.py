@@ -63,9 +63,6 @@ from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exn
 from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     _compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
-    _init_two_edge_kdim_fields_with_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
@@ -158,9 +155,10 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     (z_rho_e, z_theta_v_e) = (
         where(
             (start_edge_halo_level_2 <= horz_idx < end_edge_halo_level_2),
-            (broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)), broadcast(
-                wpfloat("0.0"), (dims.EdgeDim, dims.KDim)
-            )),
+            (
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            ),
             (z_rho_e, z_theta_v_e),
         )
         if iadv_rhotheta <= 2
@@ -170,9 +168,10 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     (z_rho_e, z_theta_v_e) = (
         where(
             (start_edge_lateral_boundary <= horz_idx < end_edge_halo),
-            (broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)), broadcast(
-                wpfloat("0.0"), (dims.EdgeDim, dims.KDim)
-            )),
+            (
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+                broadcast(wpfloat("0.0"), (dims.EdgeDim, dims.KDim)),
+            ),
             (z_rho_e, z_theta_v_e),
         )
         if limited_area & (iadv_rhotheta <= 2)
