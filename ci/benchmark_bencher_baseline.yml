@@ -42,7 +42,7 @@ include:
     - uv pip install flatten_json
     - python flatten.py results.json results.json
     - | # Additional fields to results.json for Kibana
-      jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py.bencher.baseline.test\", \"namespace\": \"alps\"}} + ." results.json > results_tmp.json && mv results_tmp.json results.json
+      jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py.bencher.baseline\", \"namespace\": \"alps\"}} + ." results.json > results_tmp.json && mv results_tmp.json results.json
     - |
       jq ". + {\"bencher.testbed\": \"ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}\"}" results.json > results_tmp.json && mv results_tmp.json results.json
     - | # Upload results.json to Kibana - https://confluence.cscs.ch/spaces/SCISWDEV/pages/797507767/Performance+dashboard+guide -
