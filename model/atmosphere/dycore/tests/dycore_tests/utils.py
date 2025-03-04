@@ -90,7 +90,7 @@ def _mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn: int):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
     config = solve_nh.NonHydrostaticConfig(
         ndyn_substeps_var=ndyn,
-        divdamp_order=24,
+        divdamp_order=solve_nh.DivergenceDampingOrder.COMBINED,
         iau_wgt_dyn=1.0,
         divdamp_fac=0.004,
         max_nudging_coeff=0.075,
@@ -123,7 +123,7 @@ def construct_diagnostics(
     init_savepoint: sb.IconNonHydroInitSavepoint,
     swap_vertical_wind_advective_tendency: bool = False,
 ):
-    current_index, next_index = (1, 0) if swap_vertical_wind_advective_tendency else (0, 1)
+    current_index, next_index = (1, 0) if swap_ddt_w_adv_pc else (0, 1)
     return dycore_states.DiagnosticStateNonHydro(
         theta_v_ic=init_savepoint.theta_v_ic(),
         exner_pr=init_savepoint.exner_pr(),
@@ -135,7 +135,7 @@ def construct_diagnostics(
         mass_fl_e=init_savepoint.mass_fl_e(),
         ddt_vn_phy=init_savepoint.ddt_vn_phy(),
         grf_tend_vn=init_savepoint.grf_tend_vn(),
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(

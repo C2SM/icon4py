@@ -63,15 +63,20 @@ def check_generated_files(bindings_name: str) -> None:
         (
             "diffusion",
             "icon4py.tools.py2fgen.wrappers.diffusion_wrapper",
-            "diffusion_run, diffusion_init, grid_init_diffusion",
+            "diffusion_run, diffusion_init",
         ),
         (
             "dycore",
             "icon4py.tools.py2fgen.wrappers.dycore_wrapper",
-            "solve_nh_run, solve_nh_init, grid_init",
+            "solve_nh_run, solve_nh_init",
+        ),
+        (
+            "grid",
+            "icon4py.tools.py2fgen.wrappers.grid_wrapper",
+            "grid_init",
         ),
     ],
-    ids=["diffusion", "dycore"],
+    ids=["diffusion", "dycore", "grid"],
 )
 def test_references(cli_runner, bindings_name, module, functions):
     invoke_cli(

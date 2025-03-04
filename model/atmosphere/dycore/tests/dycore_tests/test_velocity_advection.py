@@ -6,6 +6,8 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
+
+import logging
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
@@ -28,6 +30,9 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 from . import utils
 
 
+log = logging.getLogger(__name__)
+
+
 def create_vertical_params(vertical_config, grid_savepoint):
     return v_grid.VerticalGrid(
         config=vertical_config,
@@ -42,7 +47,7 @@ def create_vertical_params(vertical_config, grid_savepoint):
     "experiment, step_date_init",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_savepoint(
@@ -112,7 +117,7 @@ def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit, substep_init", [(1, 1, 1)])
+@pytest.mark.parametrize("istep_init, substep_init, istep_exit, substep_exit ", [(1, 1, 1, 1)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -126,6 +131,8 @@ def test_velocity_predictor_step(
     istep_exit,
     step_date_init,
     step_date_exit,
+    substep_init,
+    substep_exit,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -137,15 +144,17 @@ def test_velocity_predictor_step(
     interpolation_savepoint,
     savepoint_velocity_exit,
     backend,
+    caplog,
 ):
+    caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        tangential_wind=init_savepoint.vt(),
-        khalf_vn=init_savepoint.vn_ie(),
-        khalf_contravariant_correction_at_cell=init_savepoint.w_concorr_c(),
+        vt=init_savepoint.vt(),
+        vn_ie=init_savepoint.vn_ie(),
+        w_concorr_c=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
         rho_ic=None,
@@ -156,10 +165,10 @@ def test_velocity_predictor_step(
         mass_fl_e=None,
         ddt_vn_phy=None,
         grf_tend_vn=None,
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
-        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,
@@ -203,9 +212,9 @@ def test_velocity_predictor_step(
         skip_compute_predictor_vertical_advection=vn_only,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        contravariant_correction_at_edge=init_savepoint.z_w_concorr_me(),
-        horizontal_kinetic_energy_at_edge=init_savepoint.z_kin_hor_e(),
-        khalf_tangential_wind=init_savepoint.z_vt_ie(),
+        z_w_concorr_me=init_savepoint.z_w_concorr_me(),
+        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
+        z_vt_ie=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
     )
@@ -217,6 +226,7 @@ def test_velocity_predictor_step(
     icon_result_w_concorr_c = savepoint_velocity_exit.w_concorr_c().asnumpy()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
+    # FIX
     # stencil 01
     assert helpers.dallclose(
         diagnostic_state.tangential_wind.asnumpy(), icon_result_vt, atol=1.0e-14
@@ -322,9 +332,9 @@ def test_velocity_corrector_step(
     assert not vn_only
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        tangential_wind=init_savepoint.vt(),
-        khalf_vn=init_savepoint.vn_ie(),
-        khalf_contravariant_correction_at_cell=init_savepoint.w_concorr_c(),
+        vt=init_savepoint.vt(),
+        vn_ie=init_savepoint.vn_ie(),
+        w_concorr_c=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
         rho_ic=None,
@@ -335,10 +345,10 @@ def test_velocity_corrector_step(
         mass_fl_e=None,
         ddt_vn_phy=None,
         grf_tend_vn=None,
-        normal_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
-        vertical_wind_advective_tendency=common_utils.PredictorCorrectorPair(
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
             init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
@@ -383,8 +393,8 @@ def test_velocity_corrector_step(
     velocity_advection.run_corrector_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        horizontal_kinetic_energy_at_edge=init_savepoint.z_kin_hor_e(),
-        khalf_tangential_wind=init_savepoint.z_vt_ie(),
+        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
+        z_vt_ie=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
     )
