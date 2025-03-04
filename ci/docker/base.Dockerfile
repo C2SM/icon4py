@@ -32,8 +32,9 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Install Rust using rustup
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && /root/.cargo/bin/rustup default stable
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
+RUN rustc --version && which rustc && cargo --version && which cargo
 
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=24.11
