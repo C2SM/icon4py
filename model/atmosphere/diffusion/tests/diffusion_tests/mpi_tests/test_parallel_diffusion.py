@@ -49,7 +49,7 @@ def test_parallel_diffusion(
     caplog.set_level("INFO")
     parallel_helpers.check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{datatest_utils.REGIONAL_EXPERIMENT}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{experiment}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
