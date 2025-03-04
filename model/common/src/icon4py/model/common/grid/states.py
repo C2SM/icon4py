@@ -33,7 +33,7 @@ class EdgeParams:
         primal_normal_cell_y=None,
         dual_normal_cell_y=None,
         edge_areas=None,
-        f_e=None,
+        coriolis_frequency=None,
         edge_center_lat=None,
         edge_center_lon=None,
         primal_normal_x=None,
@@ -172,9 +172,9 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.f_e: fa.EdgeField[float] = f_e
+        self.coriolis_frequency: fa.EdgeField[float] = coriolis_frequency
         """
-        Coriolis parameter at cell edges
+        Declared as f_e in ICON. Coriolis parameter at cell edges.
         """
 
         self.edge_center: tuple[fa.EdgeField[float], fa.EdgeField[float]] = (
