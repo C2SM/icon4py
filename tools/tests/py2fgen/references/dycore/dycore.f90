@@ -2,11 +2,325 @@ module dycore
    use, intrinsic :: iso_c_binding
    implicit none
 
-   public :: solve_nh_init
-
    public :: solve_nh_run
 
+   public :: solve_nh_init
+
    interface
+
+      function solve_nh_run_wrapper(rho_now, &
+                                    rho_now_size_0, &
+                                    rho_now_size_1, &
+                                    rho_new, &
+                                    rho_new_size_0, &
+                                    rho_new_size_1, &
+                                    exner_now, &
+                                    exner_now_size_0, &
+                                    exner_now_size_1, &
+                                    exner_new, &
+                                    exner_new_size_0, &
+                                    exner_new_size_1, &
+                                    w_now, &
+                                    w_now_size_0, &
+                                    w_now_size_1, &
+                                    w_new, &
+                                    w_new_size_0, &
+                                    w_new_size_1, &
+                                    theta_v_now, &
+                                    theta_v_now_size_0, &
+                                    theta_v_now_size_1, &
+                                    theta_v_new, &
+                                    theta_v_new_size_0, &
+                                    theta_v_new_size_1, &
+                                    vn_now, &
+                                    vn_now_size_0, &
+                                    vn_now_size_1, &
+                                    vn_new, &
+                                    vn_new_size_0, &
+                                    vn_new_size_1, &
+                                    w_concorr_c, &
+                                    w_concorr_c_size_0, &
+                                    w_concorr_c_size_1, &
+                                    ddt_vn_apc_ntl1, &
+                                    ddt_vn_apc_ntl1_size_0, &
+                                    ddt_vn_apc_ntl1_size_1, &
+                                    ddt_vn_apc_ntl2, &
+                                    ddt_vn_apc_ntl2_size_0, &
+                                    ddt_vn_apc_ntl2_size_1, &
+                                    ddt_w_adv_ntl1, &
+                                    ddt_w_adv_ntl1_size_0, &
+                                    ddt_w_adv_ntl1_size_1, &
+                                    ddt_w_adv_ntl2, &
+                                    ddt_w_adv_ntl2_size_0, &
+                                    ddt_w_adv_ntl2_size_1, &
+                                    theta_v_ic, &
+                                    theta_v_ic_size_0, &
+                                    theta_v_ic_size_1, &
+                                    rho_ic, &
+                                    rho_ic_size_0, &
+                                    rho_ic_size_1, &
+                                    exner_pr, &
+                                    exner_pr_size_0, &
+                                    exner_pr_size_1, &
+                                    exner_dyn_incr, &
+                                    exner_dyn_incr_size_0, &
+                                    exner_dyn_incr_size_1, &
+                                    ddt_exner_phy, &
+                                    ddt_exner_phy_size_0, &
+                                    ddt_exner_phy_size_1, &
+                                    grf_tend_rho, &
+                                    grf_tend_rho_size_0, &
+                                    grf_tend_rho_size_1, &
+                                    grf_tend_thv, &
+                                    grf_tend_thv_size_0, &
+                                    grf_tend_thv_size_1, &
+                                    grf_tend_w, &
+                                    grf_tend_w_size_0, &
+                                    grf_tend_w_size_1, &
+                                    mass_fl_e, &
+                                    mass_fl_e_size_0, &
+                                    mass_fl_e_size_1, &
+                                    ddt_vn_phy, &
+                                    ddt_vn_phy_size_0, &
+                                    ddt_vn_phy_size_1, &
+                                    grf_tend_vn, &
+                                    grf_tend_vn_size_0, &
+                                    grf_tend_vn_size_1, &
+                                    vn_ie, &
+                                    vn_ie_size_0, &
+                                    vn_ie_size_1, &
+                                    vt, &
+                                    vt_size_0, &
+                                    vt_size_1, &
+                                    mass_flx_me, &
+                                    mass_flx_me_size_0, &
+                                    mass_flx_me_size_1, &
+                                    mass_flx_ic, &
+                                    mass_flx_ic_size_0, &
+                                    mass_flx_ic_size_1, &
+                                    vol_flx_ic, &
+                                    vol_flx_ic_size_0, &
+                                    vol_flx_ic_size_1, &
+                                    vn_traj, &
+                                    vn_traj_size_0, &
+                                    vn_traj_size_1, &
+                                    dtime, &
+                                    lprep_adv, &
+                                    at_initial_timestep, &
+                                    divdamp_fac_o2, &
+                                    ndyn_substeps, &
+                                    idyn_timestep, &
+                                    on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
+         import :: c_int, c_double, c_bool, c_ptr
+         integer(c_int) :: rc  ! Stores the return code
+
+         type(c_ptr), value, target :: rho_now
+
+         integer(c_int), value :: rho_now_size_0
+
+         integer(c_int), value :: rho_now_size_1
+
+         type(c_ptr), value, target :: rho_new
+
+         integer(c_int), value :: rho_new_size_0
+
+         integer(c_int), value :: rho_new_size_1
+
+         type(c_ptr), value, target :: exner_now
+
+         integer(c_int), value :: exner_now_size_0
+
+         integer(c_int), value :: exner_now_size_1
+
+         type(c_ptr), value, target :: exner_new
+
+         integer(c_int), value :: exner_new_size_0
+
+         integer(c_int), value :: exner_new_size_1
+
+         type(c_ptr), value, target :: w_now
+
+         integer(c_int), value :: w_now_size_0
+
+         integer(c_int), value :: w_now_size_1
+
+         type(c_ptr), value, target :: w_new
+
+         integer(c_int), value :: w_new_size_0
+
+         integer(c_int), value :: w_new_size_1
+
+         type(c_ptr), value, target :: theta_v_now
+
+         integer(c_int), value :: theta_v_now_size_0
+
+         integer(c_int), value :: theta_v_now_size_1
+
+         type(c_ptr), value, target :: theta_v_new
+
+         integer(c_int), value :: theta_v_new_size_0
+
+         integer(c_int), value :: theta_v_new_size_1
+
+         type(c_ptr), value, target :: vn_now
+
+         integer(c_int), value :: vn_now_size_0
+
+         integer(c_int), value :: vn_now_size_1
+
+         type(c_ptr), value, target :: vn_new
+
+         integer(c_int), value :: vn_new_size_0
+
+         integer(c_int), value :: vn_new_size_1
+
+         type(c_ptr), value, target :: w_concorr_c
+
+         integer(c_int), value :: w_concorr_c_size_0
+
+         integer(c_int), value :: w_concorr_c_size_1
+
+         type(c_ptr), value, target :: ddt_vn_apc_ntl1
+
+         integer(c_int), value :: ddt_vn_apc_ntl1_size_0
+
+         integer(c_int), value :: ddt_vn_apc_ntl1_size_1
+
+         type(c_ptr), value, target :: ddt_vn_apc_ntl2
+
+         integer(c_int), value :: ddt_vn_apc_ntl2_size_0
+
+         integer(c_int), value :: ddt_vn_apc_ntl2_size_1
+
+         type(c_ptr), value, target :: ddt_w_adv_ntl1
+
+         integer(c_int), value :: ddt_w_adv_ntl1_size_0
+
+         integer(c_int), value :: ddt_w_adv_ntl1_size_1
+
+         type(c_ptr), value, target :: ddt_w_adv_ntl2
+
+         integer(c_int), value :: ddt_w_adv_ntl2_size_0
+
+         integer(c_int), value :: ddt_w_adv_ntl2_size_1
+
+         type(c_ptr), value, target :: theta_v_ic
+
+         integer(c_int), value :: theta_v_ic_size_0
+
+         integer(c_int), value :: theta_v_ic_size_1
+
+         type(c_ptr), value, target :: rho_ic
+
+         integer(c_int), value :: rho_ic_size_0
+
+         integer(c_int), value :: rho_ic_size_1
+
+         type(c_ptr), value, target :: exner_pr
+
+         integer(c_int), value :: exner_pr_size_0
+
+         integer(c_int), value :: exner_pr_size_1
+
+         type(c_ptr), value, target :: exner_dyn_incr
+
+         integer(c_int), value :: exner_dyn_incr_size_0
+
+         integer(c_int), value :: exner_dyn_incr_size_1
+
+         type(c_ptr), value, target :: ddt_exner_phy
+
+         integer(c_int), value :: ddt_exner_phy_size_0
+
+         integer(c_int), value :: ddt_exner_phy_size_1
+
+         type(c_ptr), value, target :: grf_tend_rho
+
+         integer(c_int), value :: grf_tend_rho_size_0
+
+         integer(c_int), value :: grf_tend_rho_size_1
+
+         type(c_ptr), value, target :: grf_tend_thv
+
+         integer(c_int), value :: grf_tend_thv_size_0
+
+         integer(c_int), value :: grf_tend_thv_size_1
+
+         type(c_ptr), value, target :: grf_tend_w
+
+         integer(c_int), value :: grf_tend_w_size_0
+
+         integer(c_int), value :: grf_tend_w_size_1
+
+         type(c_ptr), value, target :: mass_fl_e
+
+         integer(c_int), value :: mass_fl_e_size_0
+
+         integer(c_int), value :: mass_fl_e_size_1
+
+         type(c_ptr), value, target :: ddt_vn_phy
+
+         integer(c_int), value :: ddt_vn_phy_size_0
+
+         integer(c_int), value :: ddt_vn_phy_size_1
+
+         type(c_ptr), value, target :: grf_tend_vn
+
+         integer(c_int), value :: grf_tend_vn_size_0
+
+         integer(c_int), value :: grf_tend_vn_size_1
+
+         type(c_ptr), value, target :: vn_ie
+
+         integer(c_int), value :: vn_ie_size_0
+
+         integer(c_int), value :: vn_ie_size_1
+
+         type(c_ptr), value, target :: vt
+
+         integer(c_int), value :: vt_size_0
+
+         integer(c_int), value :: vt_size_1
+
+         type(c_ptr), value, target :: mass_flx_me
+
+         integer(c_int), value :: mass_flx_me_size_0
+
+         integer(c_int), value :: mass_flx_me_size_1
+
+         type(c_ptr), value, target :: mass_flx_ic
+
+         integer(c_int), value :: mass_flx_ic_size_0
+
+         integer(c_int), value :: mass_flx_ic_size_1
+
+         type(c_ptr), value, target :: vol_flx_ic
+
+         integer(c_int), value :: vol_flx_ic_size_0
+
+         integer(c_int), value :: vol_flx_ic_size_1
+
+         type(c_ptr), value, target :: vn_traj
+
+         integer(c_int), value :: vn_traj_size_0
+
+         integer(c_int), value :: vn_traj_size_1
+
+         real(c_double), value, target :: dtime
+
+         logical(c_int), value, target :: lprep_adv
+
+         logical(c_int), value, target :: at_initial_timestep
+
+         real(c_double), value, target :: divdamp_fac_o2
+
+         real(c_double), value, target :: ndyn_substeps
+
+         integer(c_int), value, target :: idyn_timestep
+
+         logical(c_int), value :: on_gpu
+
+      end function solve_nh_run_wrapper
 
       function solve_nh_init_wrapper(vct_a, &
                                      vct_a_size_0, &
@@ -550,323 +864,531 @@ module dycore
 
       end function solve_nh_init_wrapper
 
-      function solve_nh_run_wrapper(rho_now, &
-                                    rho_now_size_0, &
-                                    rho_now_size_1, &
-                                    rho_new, &
-                                    rho_new_size_0, &
-                                    rho_new_size_1, &
-                                    exner_now, &
-                                    exner_now_size_0, &
-                                    exner_now_size_1, &
-                                    exner_new, &
-                                    exner_new_size_0, &
-                                    exner_new_size_1, &
-                                    w_now, &
-                                    w_now_size_0, &
-                                    w_now_size_1, &
-                                    w_new, &
-                                    w_new_size_0, &
-                                    w_new_size_1, &
-                                    theta_v_now, &
-                                    theta_v_now_size_0, &
-                                    theta_v_now_size_1, &
-                                    theta_v_new, &
-                                    theta_v_new_size_0, &
-                                    theta_v_new_size_1, &
-                                    vn_now, &
-                                    vn_now_size_0, &
-                                    vn_now_size_1, &
-                                    vn_new, &
-                                    vn_new_size_0, &
-                                    vn_new_size_1, &
-                                    w_concorr_c, &
-                                    w_concorr_c_size_0, &
-                                    w_concorr_c_size_1, &
-                                    ddt_vn_apc_ntl1, &
-                                    ddt_vn_apc_ntl1_size_0, &
-                                    ddt_vn_apc_ntl1_size_1, &
-                                    ddt_vn_apc_ntl2, &
-                                    ddt_vn_apc_ntl2_size_0, &
-                                    ddt_vn_apc_ntl2_size_1, &
-                                    ddt_w_adv_ntl1, &
-                                    ddt_w_adv_ntl1_size_0, &
-                                    ddt_w_adv_ntl1_size_1, &
-                                    ddt_w_adv_ntl2, &
-                                    ddt_w_adv_ntl2_size_0, &
-                                    ddt_w_adv_ntl2_size_1, &
-                                    theta_v_ic, &
-                                    theta_v_ic_size_0, &
-                                    theta_v_ic_size_1, &
-                                    rho_ic, &
-                                    rho_ic_size_0, &
-                                    rho_ic_size_1, &
-                                    exner_pr, &
-                                    exner_pr_size_0, &
-                                    exner_pr_size_1, &
-                                    exner_dyn_incr, &
-                                    exner_dyn_incr_size_0, &
-                                    exner_dyn_incr_size_1, &
-                                    ddt_exner_phy, &
-                                    ddt_exner_phy_size_0, &
-                                    ddt_exner_phy_size_1, &
-                                    grf_tend_rho, &
-                                    grf_tend_rho_size_0, &
-                                    grf_tend_rho_size_1, &
-                                    grf_tend_thv, &
-                                    grf_tend_thv_size_0, &
-                                    grf_tend_thv_size_1, &
-                                    grf_tend_w, &
-                                    grf_tend_w_size_0, &
-                                    grf_tend_w_size_1, &
-                                    mass_fl_e, &
-                                    mass_fl_e_size_0, &
-                                    mass_fl_e_size_1, &
-                                    ddt_vn_phy, &
-                                    ddt_vn_phy_size_0, &
-                                    ddt_vn_phy_size_1, &
-                                    grf_tend_vn, &
-                                    grf_tend_vn_size_0, &
-                                    grf_tend_vn_size_1, &
-                                    vn_ie, &
-                                    vn_ie_size_0, &
-                                    vn_ie_size_1, &
-                                    vt, &
-                                    vt_size_0, &
-                                    vt_size_1, &
-                                    mass_flx_me, &
-                                    mass_flx_me_size_0, &
-                                    mass_flx_me_size_1, &
-                                    mass_flx_ic, &
-                                    mass_flx_ic_size_0, &
-                                    mass_flx_ic_size_1, &
-                                    vol_flx_ic, &
-                                    vol_flx_ic_size_0, &
-                                    vol_flx_ic_size_1, &
-                                    vn_traj, &
-                                    vn_traj_size_0, &
-                                    vn_traj_size_1, &
-                                    dtime, &
-                                    lprep_adv, &
-                                    at_initial_timestep, &
-                                    divdamp_fac_o2, &
-                                    ndyn_substeps, &
-                                    idyn_timestep, &
-                                    on_gpu) bind(c, name="solve_nh_run_wrapper") result(rc)
-         import :: c_int, c_double, c_bool, c_ptr
-         integer(c_int) :: rc  ! Stores the return code
-
-         type(c_ptr), value, target :: rho_now
-
-         integer(c_int), value :: rho_now_size_0
-
-         integer(c_int), value :: rho_now_size_1
-
-         type(c_ptr), value, target :: rho_new
-
-         integer(c_int), value :: rho_new_size_0
-
-         integer(c_int), value :: rho_new_size_1
-
-         type(c_ptr), value, target :: exner_now
-
-         integer(c_int), value :: exner_now_size_0
-
-         integer(c_int), value :: exner_now_size_1
-
-         type(c_ptr), value, target :: exner_new
-
-         integer(c_int), value :: exner_new_size_0
-
-         integer(c_int), value :: exner_new_size_1
-
-         type(c_ptr), value, target :: w_now
-
-         integer(c_int), value :: w_now_size_0
-
-         integer(c_int), value :: w_now_size_1
-
-         type(c_ptr), value, target :: w_new
-
-         integer(c_int), value :: w_new_size_0
-
-         integer(c_int), value :: w_new_size_1
-
-         type(c_ptr), value, target :: theta_v_now
-
-         integer(c_int), value :: theta_v_now_size_0
-
-         integer(c_int), value :: theta_v_now_size_1
-
-         type(c_ptr), value, target :: theta_v_new
-
-         integer(c_int), value :: theta_v_new_size_0
-
-         integer(c_int), value :: theta_v_new_size_1
-
-         type(c_ptr), value, target :: vn_now
-
-         integer(c_int), value :: vn_now_size_0
-
-         integer(c_int), value :: vn_now_size_1
-
-         type(c_ptr), value, target :: vn_new
-
-         integer(c_int), value :: vn_new_size_0
-
-         integer(c_int), value :: vn_new_size_1
-
-         type(c_ptr), value, target :: w_concorr_c
-
-         integer(c_int), value :: w_concorr_c_size_0
-
-         integer(c_int), value :: w_concorr_c_size_1
-
-         type(c_ptr), value, target :: ddt_vn_apc_ntl1
-
-         integer(c_int), value :: ddt_vn_apc_ntl1_size_0
-
-         integer(c_int), value :: ddt_vn_apc_ntl1_size_1
-
-         type(c_ptr), value, target :: ddt_vn_apc_ntl2
-
-         integer(c_int), value :: ddt_vn_apc_ntl2_size_0
-
-         integer(c_int), value :: ddt_vn_apc_ntl2_size_1
-
-         type(c_ptr), value, target :: ddt_w_adv_ntl1
-
-         integer(c_int), value :: ddt_w_adv_ntl1_size_0
-
-         integer(c_int), value :: ddt_w_adv_ntl1_size_1
-
-         type(c_ptr), value, target :: ddt_w_adv_ntl2
-
-         integer(c_int), value :: ddt_w_adv_ntl2_size_0
-
-         integer(c_int), value :: ddt_w_adv_ntl2_size_1
-
-         type(c_ptr), value, target :: theta_v_ic
-
-         integer(c_int), value :: theta_v_ic_size_0
-
-         integer(c_int), value :: theta_v_ic_size_1
-
-         type(c_ptr), value, target :: rho_ic
-
-         integer(c_int), value :: rho_ic_size_0
-
-         integer(c_int), value :: rho_ic_size_1
-
-         type(c_ptr), value, target :: exner_pr
-
-         integer(c_int), value :: exner_pr_size_0
-
-         integer(c_int), value :: exner_pr_size_1
-
-         type(c_ptr), value, target :: exner_dyn_incr
-
-         integer(c_int), value :: exner_dyn_incr_size_0
-
-         integer(c_int), value :: exner_dyn_incr_size_1
-
-         type(c_ptr), value, target :: ddt_exner_phy
-
-         integer(c_int), value :: ddt_exner_phy_size_0
-
-         integer(c_int), value :: ddt_exner_phy_size_1
-
-         type(c_ptr), value, target :: grf_tend_rho
-
-         integer(c_int), value :: grf_tend_rho_size_0
-
-         integer(c_int), value :: grf_tend_rho_size_1
-
-         type(c_ptr), value, target :: grf_tend_thv
-
-         integer(c_int), value :: grf_tend_thv_size_0
-
-         integer(c_int), value :: grf_tend_thv_size_1
-
-         type(c_ptr), value, target :: grf_tend_w
-
-         integer(c_int), value :: grf_tend_w_size_0
-
-         integer(c_int), value :: grf_tend_w_size_1
-
-         type(c_ptr), value, target :: mass_fl_e
-
-         integer(c_int), value :: mass_fl_e_size_0
-
-         integer(c_int), value :: mass_fl_e_size_1
-
-         type(c_ptr), value, target :: ddt_vn_phy
-
-         integer(c_int), value :: ddt_vn_phy_size_0
-
-         integer(c_int), value :: ddt_vn_phy_size_1
-
-         type(c_ptr), value, target :: grf_tend_vn
-
-         integer(c_int), value :: grf_tend_vn_size_0
-
-         integer(c_int), value :: grf_tend_vn_size_1
-
-         type(c_ptr), value, target :: vn_ie
-
-         integer(c_int), value :: vn_ie_size_0
-
-         integer(c_int), value :: vn_ie_size_1
-
-         type(c_ptr), value, target :: vt
-
-         integer(c_int), value :: vt_size_0
-
-         integer(c_int), value :: vt_size_1
-
-         type(c_ptr), value, target :: mass_flx_me
-
-         integer(c_int), value :: mass_flx_me_size_0
-
-         integer(c_int), value :: mass_flx_me_size_1
-
-         type(c_ptr), value, target :: mass_flx_ic
-
-         integer(c_int), value :: mass_flx_ic_size_0
-
-         integer(c_int), value :: mass_flx_ic_size_1
-
-         type(c_ptr), value, target :: vol_flx_ic
-
-         integer(c_int), value :: vol_flx_ic_size_0
-
-         integer(c_int), value :: vol_flx_ic_size_1
-
-         type(c_ptr), value, target :: vn_traj
-
-         integer(c_int), value :: vn_traj_size_0
-
-         integer(c_int), value :: vn_traj_size_1
-
-         real(c_double), value, target :: dtime
-
-         logical(c_int), value, target :: lprep_adv
-
-         logical(c_int), value, target :: at_initial_timestep
-
-         real(c_double), value, target :: divdamp_fac_o2
-
-         real(c_double), value, target :: ndyn_substeps
-
-         integer(c_int), value, target :: idyn_timestep
-
-         logical(c_int), value :: on_gpu
-
-      end function solve_nh_run_wrapper
-
    end interface
 
 contains
+
+   subroutine solve_nh_run(rho_now, &
+                           rho_new, &
+                           exner_now, &
+                           exner_new, &
+                           w_now, &
+                           w_new, &
+                           theta_v_now, &
+                           theta_v_new, &
+                           vn_now, &
+                           vn_new, &
+                           w_concorr_c, &
+                           ddt_vn_apc_ntl1, &
+                           ddt_vn_apc_ntl2, &
+                           ddt_w_adv_ntl1, &
+                           ddt_w_adv_ntl2, &
+                           theta_v_ic, &
+                           rho_ic, &
+                           exner_pr, &
+                           exner_dyn_incr, &
+                           ddt_exner_phy, &
+                           grf_tend_rho, &
+                           grf_tend_thv, &
+                           grf_tend_w, &
+                           mass_fl_e, &
+                           ddt_vn_phy, &
+                           grf_tend_vn, &
+                           vn_ie, &
+                           vt, &
+                           mass_flx_me, &
+                           mass_flx_ic, &
+                           vol_flx_ic, &
+                           vn_traj, &
+                           dtime, &
+                           lprep_adv, &
+                           at_initial_timestep, &
+                           divdamp_fac_o2, &
+                           ndyn_substeps, &
+                           idyn_timestep, &
+                           rc)
+      use, intrinsic :: iso_c_binding
+
+      real(c_double), dimension(:, :), target :: rho_now
+
+      real(c_double), dimension(:, :), target :: rho_new
+
+      real(c_double), dimension(:, :), target :: exner_now
+
+      real(c_double), dimension(:, :), target :: exner_new
+
+      real(c_double), dimension(:, :), target :: w_now
+
+      real(c_double), dimension(:, :), target :: w_new
+
+      real(c_double), dimension(:, :), target :: theta_v_now
+
+      real(c_double), dimension(:, :), target :: theta_v_new
+
+      real(c_double), dimension(:, :), target :: vn_now
+
+      real(c_double), dimension(:, :), target :: vn_new
+
+      real(c_double), dimension(:, :), target :: w_concorr_c
+
+      real(c_double), dimension(:, :), target :: ddt_vn_apc_ntl1
+
+      real(c_double), dimension(:, :), target :: ddt_vn_apc_ntl2
+
+      real(c_double), dimension(:, :), target :: ddt_w_adv_ntl1
+
+      real(c_double), dimension(:, :), target :: ddt_w_adv_ntl2
+
+      real(c_double), dimension(:, :), target :: theta_v_ic
+
+      real(c_double), dimension(:, :), target :: rho_ic
+
+      real(c_double), dimension(:, :), target :: exner_pr
+
+      real(c_double), dimension(:, :), target :: exner_dyn_incr
+
+      real(c_double), dimension(:, :), target :: ddt_exner_phy
+
+      real(c_double), dimension(:, :), target :: grf_tend_rho
+
+      real(c_double), dimension(:, :), target :: grf_tend_thv
+
+      real(c_double), dimension(:, :), target :: grf_tend_w
+
+      real(c_double), dimension(:, :), target :: mass_fl_e
+
+      real(c_double), dimension(:, :), target :: ddt_vn_phy
+
+      real(c_double), dimension(:, :), target :: grf_tend_vn
+
+      real(c_double), dimension(:, :), target :: vn_ie
+
+      real(c_double), dimension(:, :), target :: vt
+
+      real(c_double), dimension(:, :), target :: mass_flx_me
+
+      real(c_double), dimension(:, :), target :: mass_flx_ic
+
+      real(c_double), dimension(:, :), target :: vol_flx_ic
+
+      real(c_double), dimension(:, :), target :: vn_traj
+
+      real(c_double), value, target :: dtime
+
+      logical(c_int), value, target :: lprep_adv
+
+      logical(c_int), value, target :: at_initial_timestep
+
+      real(c_double), value, target :: divdamp_fac_o2
+
+      real(c_double), value, target :: ndyn_substeps
+
+      integer(c_int), value, target :: idyn_timestep
+
+      logical(c_int) :: on_gpu
+
+      integer(c_int) :: rho_now_size_0
+
+      integer(c_int) :: rho_now_size_1
+
+      integer(c_int) :: rho_new_size_0
+
+      integer(c_int) :: rho_new_size_1
+
+      integer(c_int) :: exner_now_size_0
+
+      integer(c_int) :: exner_now_size_1
+
+      integer(c_int) :: exner_new_size_0
+
+      integer(c_int) :: exner_new_size_1
+
+      integer(c_int) :: w_now_size_0
+
+      integer(c_int) :: w_now_size_1
+
+      integer(c_int) :: w_new_size_0
+
+      integer(c_int) :: w_new_size_1
+
+      integer(c_int) :: theta_v_now_size_0
+
+      integer(c_int) :: theta_v_now_size_1
+
+      integer(c_int) :: theta_v_new_size_0
+
+      integer(c_int) :: theta_v_new_size_1
+
+      integer(c_int) :: vn_now_size_0
+
+      integer(c_int) :: vn_now_size_1
+
+      integer(c_int) :: vn_new_size_0
+
+      integer(c_int) :: vn_new_size_1
+
+      integer(c_int) :: w_concorr_c_size_0
+
+      integer(c_int) :: w_concorr_c_size_1
+
+      integer(c_int) :: ddt_vn_apc_ntl1_size_0
+
+      integer(c_int) :: ddt_vn_apc_ntl1_size_1
+
+      integer(c_int) :: ddt_vn_apc_ntl2_size_0
+
+      integer(c_int) :: ddt_vn_apc_ntl2_size_1
+
+      integer(c_int) :: ddt_w_adv_ntl1_size_0
+
+      integer(c_int) :: ddt_w_adv_ntl1_size_1
+
+      integer(c_int) :: ddt_w_adv_ntl2_size_0
+
+      integer(c_int) :: ddt_w_adv_ntl2_size_1
+
+      integer(c_int) :: theta_v_ic_size_0
+
+      integer(c_int) :: theta_v_ic_size_1
+
+      integer(c_int) :: rho_ic_size_0
+
+      integer(c_int) :: rho_ic_size_1
+
+      integer(c_int) :: exner_pr_size_0
+
+      integer(c_int) :: exner_pr_size_1
+
+      integer(c_int) :: exner_dyn_incr_size_0
+
+      integer(c_int) :: exner_dyn_incr_size_1
+
+      integer(c_int) :: ddt_exner_phy_size_0
+
+      integer(c_int) :: ddt_exner_phy_size_1
+
+      integer(c_int) :: grf_tend_rho_size_0
+
+      integer(c_int) :: grf_tend_rho_size_1
+
+      integer(c_int) :: grf_tend_thv_size_0
+
+      integer(c_int) :: grf_tend_thv_size_1
+
+      integer(c_int) :: grf_tend_w_size_0
+
+      integer(c_int) :: grf_tend_w_size_1
+
+      integer(c_int) :: mass_fl_e_size_0
+
+      integer(c_int) :: mass_fl_e_size_1
+
+      integer(c_int) :: ddt_vn_phy_size_0
+
+      integer(c_int) :: ddt_vn_phy_size_1
+
+      integer(c_int) :: grf_tend_vn_size_0
+
+      integer(c_int) :: grf_tend_vn_size_1
+
+      integer(c_int) :: vn_ie_size_0
+
+      integer(c_int) :: vn_ie_size_1
+
+      integer(c_int) :: vt_size_0
+
+      integer(c_int) :: vt_size_1
+
+      integer(c_int) :: mass_flx_me_size_0
+
+      integer(c_int) :: mass_flx_me_size_1
+
+      integer(c_int) :: mass_flx_ic_size_0
+
+      integer(c_int) :: mass_flx_ic_size_1
+
+      integer(c_int) :: vol_flx_ic_size_0
+
+      integer(c_int) :: vol_flx_ic_size_1
+
+      integer(c_int) :: vn_traj_size_0
+
+      integer(c_int) :: vn_traj_size_1
+
+      integer(c_int) :: rc  ! Stores the return code
+      ! ptrs
+
+      !$acc host_data use_device(rho_now)
+      !$acc host_data use_device(rho_new)
+      !$acc host_data use_device(exner_now)
+      !$acc host_data use_device(exner_new)
+      !$acc host_data use_device(w_now)
+      !$acc host_data use_device(w_new)
+      !$acc host_data use_device(theta_v_now)
+      !$acc host_data use_device(theta_v_new)
+      !$acc host_data use_device(vn_now)
+      !$acc host_data use_device(vn_new)
+      !$acc host_data use_device(w_concorr_c)
+      !$acc host_data use_device(ddt_vn_apc_ntl1)
+      !$acc host_data use_device(ddt_vn_apc_ntl2)
+      !$acc host_data use_device(ddt_w_adv_ntl1)
+      !$acc host_data use_device(ddt_w_adv_ntl2)
+      !$acc host_data use_device(theta_v_ic)
+      !$acc host_data use_device(rho_ic)
+      !$acc host_data use_device(exner_pr)
+      !$acc host_data use_device(exner_dyn_incr)
+      !$acc host_data use_device(ddt_exner_phy)
+      !$acc host_data use_device(grf_tend_rho)
+      !$acc host_data use_device(grf_tend_thv)
+      !$acc host_data use_device(grf_tend_w)
+      !$acc host_data use_device(mass_fl_e)
+      !$acc host_data use_device(ddt_vn_phy)
+      !$acc host_data use_device(grf_tend_vn)
+      !$acc host_data use_device(vn_ie)
+      !$acc host_data use_device(vt)
+      !$acc host_data use_device(mass_flx_me)
+      !$acc host_data use_device(mass_flx_ic)
+      !$acc host_data use_device(vol_flx_ic)
+      !$acc host_data use_device(vn_traj)
+
+#ifdef _OPENACC
+      on_gpu = .True.
+#else
+      on_gpu = .False.
+#endif
+
+      rho_now_size_0 = SIZE(rho_now, 1)
+      rho_now_size_1 = SIZE(rho_now, 2)
+
+      rho_new_size_0 = SIZE(rho_new, 1)
+      rho_new_size_1 = SIZE(rho_new, 2)
+
+      exner_now_size_0 = SIZE(exner_now, 1)
+      exner_now_size_1 = SIZE(exner_now, 2)
+
+      exner_new_size_0 = SIZE(exner_new, 1)
+      exner_new_size_1 = SIZE(exner_new, 2)
+
+      w_now_size_0 = SIZE(w_now, 1)
+      w_now_size_1 = SIZE(w_now, 2)
+
+      w_new_size_0 = SIZE(w_new, 1)
+      w_new_size_1 = SIZE(w_new, 2)
+
+      theta_v_now_size_0 = SIZE(theta_v_now, 1)
+      theta_v_now_size_1 = SIZE(theta_v_now, 2)
+
+      theta_v_new_size_0 = SIZE(theta_v_new, 1)
+      theta_v_new_size_1 = SIZE(theta_v_new, 2)
+
+      vn_now_size_0 = SIZE(vn_now, 1)
+      vn_now_size_1 = SIZE(vn_now, 2)
+
+      vn_new_size_0 = SIZE(vn_new, 1)
+      vn_new_size_1 = SIZE(vn_new, 2)
+
+      w_concorr_c_size_0 = SIZE(w_concorr_c, 1)
+      w_concorr_c_size_1 = SIZE(w_concorr_c, 2)
+
+      ddt_vn_apc_ntl1_size_0 = SIZE(ddt_vn_apc_ntl1, 1)
+      ddt_vn_apc_ntl1_size_1 = SIZE(ddt_vn_apc_ntl1, 2)
+
+      ddt_vn_apc_ntl2_size_0 = SIZE(ddt_vn_apc_ntl2, 1)
+      ddt_vn_apc_ntl2_size_1 = SIZE(ddt_vn_apc_ntl2, 2)
+
+      ddt_w_adv_ntl1_size_0 = SIZE(ddt_w_adv_ntl1, 1)
+      ddt_w_adv_ntl1_size_1 = SIZE(ddt_w_adv_ntl1, 2)
+
+      ddt_w_adv_ntl2_size_0 = SIZE(ddt_w_adv_ntl2, 1)
+      ddt_w_adv_ntl2_size_1 = SIZE(ddt_w_adv_ntl2, 2)
+
+      theta_v_ic_size_0 = SIZE(theta_v_ic, 1)
+      theta_v_ic_size_1 = SIZE(theta_v_ic, 2)
+
+      rho_ic_size_0 = SIZE(rho_ic, 1)
+      rho_ic_size_1 = SIZE(rho_ic, 2)
+
+      exner_pr_size_0 = SIZE(exner_pr, 1)
+      exner_pr_size_1 = SIZE(exner_pr, 2)
+
+      exner_dyn_incr_size_0 = SIZE(exner_dyn_incr, 1)
+      exner_dyn_incr_size_1 = SIZE(exner_dyn_incr, 2)
+
+      ddt_exner_phy_size_0 = SIZE(ddt_exner_phy, 1)
+      ddt_exner_phy_size_1 = SIZE(ddt_exner_phy, 2)
+
+      grf_tend_rho_size_0 = SIZE(grf_tend_rho, 1)
+      grf_tend_rho_size_1 = SIZE(grf_tend_rho, 2)
+
+      grf_tend_thv_size_0 = SIZE(grf_tend_thv, 1)
+      grf_tend_thv_size_1 = SIZE(grf_tend_thv, 2)
+
+      grf_tend_w_size_0 = SIZE(grf_tend_w, 1)
+      grf_tend_w_size_1 = SIZE(grf_tend_w, 2)
+
+      mass_fl_e_size_0 = SIZE(mass_fl_e, 1)
+      mass_fl_e_size_1 = SIZE(mass_fl_e, 2)
+
+      ddt_vn_phy_size_0 = SIZE(ddt_vn_phy, 1)
+      ddt_vn_phy_size_1 = SIZE(ddt_vn_phy, 2)
+
+      grf_tend_vn_size_0 = SIZE(grf_tend_vn, 1)
+      grf_tend_vn_size_1 = SIZE(grf_tend_vn, 2)
+
+      vn_ie_size_0 = SIZE(vn_ie, 1)
+      vn_ie_size_1 = SIZE(vn_ie, 2)
+
+      vt_size_0 = SIZE(vt, 1)
+      vt_size_1 = SIZE(vt, 2)
+
+      mass_flx_me_size_0 = SIZE(mass_flx_me, 1)
+      mass_flx_me_size_1 = SIZE(mass_flx_me, 2)
+
+      mass_flx_ic_size_0 = SIZE(mass_flx_ic, 1)
+      mass_flx_ic_size_1 = SIZE(mass_flx_ic, 2)
+
+      vol_flx_ic_size_0 = SIZE(vol_flx_ic, 1)
+      vol_flx_ic_size_1 = SIZE(vol_flx_ic, 2)
+
+      vn_traj_size_0 = SIZE(vn_traj, 1)
+      vn_traj_size_1 = SIZE(vn_traj, 2)
+
+      rc = solve_nh_run_wrapper(rho_now=c_loc(rho_now), &
+                                rho_now_size_0=rho_now_size_0, &
+                                rho_now_size_1=rho_now_size_1, &
+                                rho_new=c_loc(rho_new), &
+                                rho_new_size_0=rho_new_size_0, &
+                                rho_new_size_1=rho_new_size_1, &
+                                exner_now=c_loc(exner_now), &
+                                exner_now_size_0=exner_now_size_0, &
+                                exner_now_size_1=exner_now_size_1, &
+                                exner_new=c_loc(exner_new), &
+                                exner_new_size_0=exner_new_size_0, &
+                                exner_new_size_1=exner_new_size_1, &
+                                w_now=c_loc(w_now), &
+                                w_now_size_0=w_now_size_0, &
+                                w_now_size_1=w_now_size_1, &
+                                w_new=c_loc(w_new), &
+                                w_new_size_0=w_new_size_0, &
+                                w_new_size_1=w_new_size_1, &
+                                theta_v_now=c_loc(theta_v_now), &
+                                theta_v_now_size_0=theta_v_now_size_0, &
+                                theta_v_now_size_1=theta_v_now_size_1, &
+                                theta_v_new=c_loc(theta_v_new), &
+                                theta_v_new_size_0=theta_v_new_size_0, &
+                                theta_v_new_size_1=theta_v_new_size_1, &
+                                vn_now=c_loc(vn_now), &
+                                vn_now_size_0=vn_now_size_0, &
+                                vn_now_size_1=vn_now_size_1, &
+                                vn_new=c_loc(vn_new), &
+                                vn_new_size_0=vn_new_size_0, &
+                                vn_new_size_1=vn_new_size_1, &
+                                w_concorr_c=c_loc(w_concorr_c), &
+                                w_concorr_c_size_0=w_concorr_c_size_0, &
+                                w_concorr_c_size_1=w_concorr_c_size_1, &
+                                ddt_vn_apc_ntl1=c_loc(ddt_vn_apc_ntl1), &
+                                ddt_vn_apc_ntl1_size_0=ddt_vn_apc_ntl1_size_0, &
+                                ddt_vn_apc_ntl1_size_1=ddt_vn_apc_ntl1_size_1, &
+                                ddt_vn_apc_ntl2=c_loc(ddt_vn_apc_ntl2), &
+                                ddt_vn_apc_ntl2_size_0=ddt_vn_apc_ntl2_size_0, &
+                                ddt_vn_apc_ntl2_size_1=ddt_vn_apc_ntl2_size_1, &
+                                ddt_w_adv_ntl1=c_loc(ddt_w_adv_ntl1), &
+                                ddt_w_adv_ntl1_size_0=ddt_w_adv_ntl1_size_0, &
+                                ddt_w_adv_ntl1_size_1=ddt_w_adv_ntl1_size_1, &
+                                ddt_w_adv_ntl2=c_loc(ddt_w_adv_ntl2), &
+                                ddt_w_adv_ntl2_size_0=ddt_w_adv_ntl2_size_0, &
+                                ddt_w_adv_ntl2_size_1=ddt_w_adv_ntl2_size_1, &
+                                theta_v_ic=c_loc(theta_v_ic), &
+                                theta_v_ic_size_0=theta_v_ic_size_0, &
+                                theta_v_ic_size_1=theta_v_ic_size_1, &
+                                rho_ic=c_loc(rho_ic), &
+                                rho_ic_size_0=rho_ic_size_0, &
+                                rho_ic_size_1=rho_ic_size_1, &
+                                exner_pr=c_loc(exner_pr), &
+                                exner_pr_size_0=exner_pr_size_0, &
+                                exner_pr_size_1=exner_pr_size_1, &
+                                exner_dyn_incr=c_loc(exner_dyn_incr), &
+                                exner_dyn_incr_size_0=exner_dyn_incr_size_0, &
+                                exner_dyn_incr_size_1=exner_dyn_incr_size_1, &
+                                ddt_exner_phy=c_loc(ddt_exner_phy), &
+                                ddt_exner_phy_size_0=ddt_exner_phy_size_0, &
+                                ddt_exner_phy_size_1=ddt_exner_phy_size_1, &
+                                grf_tend_rho=c_loc(grf_tend_rho), &
+                                grf_tend_rho_size_0=grf_tend_rho_size_0, &
+                                grf_tend_rho_size_1=grf_tend_rho_size_1, &
+                                grf_tend_thv=c_loc(grf_tend_thv), &
+                                grf_tend_thv_size_0=grf_tend_thv_size_0, &
+                                grf_tend_thv_size_1=grf_tend_thv_size_1, &
+                                grf_tend_w=c_loc(grf_tend_w), &
+                                grf_tend_w_size_0=grf_tend_w_size_0, &
+                                grf_tend_w_size_1=grf_tend_w_size_1, &
+                                mass_fl_e=c_loc(mass_fl_e), &
+                                mass_fl_e_size_0=mass_fl_e_size_0, &
+                                mass_fl_e_size_1=mass_fl_e_size_1, &
+                                ddt_vn_phy=c_loc(ddt_vn_phy), &
+                                ddt_vn_phy_size_0=ddt_vn_phy_size_0, &
+                                ddt_vn_phy_size_1=ddt_vn_phy_size_1, &
+                                grf_tend_vn=c_loc(grf_tend_vn), &
+                                grf_tend_vn_size_0=grf_tend_vn_size_0, &
+                                grf_tend_vn_size_1=grf_tend_vn_size_1, &
+                                vn_ie=c_loc(vn_ie), &
+                                vn_ie_size_0=vn_ie_size_0, &
+                                vn_ie_size_1=vn_ie_size_1, &
+                                vt=c_loc(vt), &
+                                vt_size_0=vt_size_0, &
+                                vt_size_1=vt_size_1, &
+                                mass_flx_me=c_loc(mass_flx_me), &
+                                mass_flx_me_size_0=mass_flx_me_size_0, &
+                                mass_flx_me_size_1=mass_flx_me_size_1, &
+                                mass_flx_ic=c_loc(mass_flx_ic), &
+                                mass_flx_ic_size_0=mass_flx_ic_size_0, &
+                                mass_flx_ic_size_1=mass_flx_ic_size_1, &
+                                vol_flx_ic=c_loc(vol_flx_ic), &
+                                vol_flx_ic_size_0=vol_flx_ic_size_0, &
+                                vol_flx_ic_size_1=vol_flx_ic_size_1, &
+                                vn_traj=c_loc(vn_traj), &
+                                vn_traj_size_0=vn_traj_size_0, &
+                                vn_traj_size_1=vn_traj_size_1, &
+                                dtime=dtime, &
+                                lprep_adv=lprep_adv, &
+                                at_initial_timestep=at_initial_timestep, &
+                                divdamp_fac_o2=divdamp_fac_o2, &
+                                ndyn_substeps=ndyn_substeps, &
+                                idyn_timestep=idyn_timestep, &
+                                on_gpu=on_gpu)
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+      !$acc end host_data
+   end subroutine solve_nh_run
 
    subroutine solve_nh_init(vct_a, &
                             vct_b, &
@@ -1120,7 +1642,7 @@ contains
 
       integer(c_int), value, target :: backend
 
-      logical(c_int), value :: on_gpu
+      logical(c_int) :: on_gpu
 
       integer(c_int) :: vct_a_size_0
 
@@ -1753,527 +2275,5 @@ contains
       !$acc end host_data
       !$acc end host_data
    end subroutine solve_nh_init
-
-   subroutine solve_nh_run(rho_now, &
-                           rho_new, &
-                           exner_now, &
-                           exner_new, &
-                           w_now, &
-                           w_new, &
-                           theta_v_now, &
-                           theta_v_new, &
-                           vn_now, &
-                           vn_new, &
-                           w_concorr_c, &
-                           ddt_vn_apc_ntl1, &
-                           ddt_vn_apc_ntl2, &
-                           ddt_w_adv_ntl1, &
-                           ddt_w_adv_ntl2, &
-                           theta_v_ic, &
-                           rho_ic, &
-                           exner_pr, &
-                           exner_dyn_incr, &
-                           ddt_exner_phy, &
-                           grf_tend_rho, &
-                           grf_tend_thv, &
-                           grf_tend_w, &
-                           mass_fl_e, &
-                           ddt_vn_phy, &
-                           grf_tend_vn, &
-                           vn_ie, &
-                           vt, &
-                           mass_flx_me, &
-                           mass_flx_ic, &
-                           vol_flx_ic, &
-                           vn_traj, &
-                           dtime, &
-                           lprep_adv, &
-                           at_initial_timestep, &
-                           divdamp_fac_o2, &
-                           ndyn_substeps, &
-                           idyn_timestep, &
-                           rc)
-      use, intrinsic :: iso_c_binding
-
-      real(c_double), dimension(:, :), target :: rho_now
-
-      real(c_double), dimension(:, :), target :: rho_new
-
-      real(c_double), dimension(:, :), target :: exner_now
-
-      real(c_double), dimension(:, :), target :: exner_new
-
-      real(c_double), dimension(:, :), target :: w_now
-
-      real(c_double), dimension(:, :), target :: w_new
-
-      real(c_double), dimension(:, :), target :: theta_v_now
-
-      real(c_double), dimension(:, :), target :: theta_v_new
-
-      real(c_double), dimension(:, :), target :: vn_now
-
-      real(c_double), dimension(:, :), target :: vn_new
-
-      real(c_double), dimension(:, :), target :: w_concorr_c
-
-      real(c_double), dimension(:, :), target :: ddt_vn_apc_ntl1
-
-      real(c_double), dimension(:, :), target :: ddt_vn_apc_ntl2
-
-      real(c_double), dimension(:, :), target :: ddt_w_adv_ntl1
-
-      real(c_double), dimension(:, :), target :: ddt_w_adv_ntl2
-
-      real(c_double), dimension(:, :), target :: theta_v_ic
-
-      real(c_double), dimension(:, :), target :: rho_ic
-
-      real(c_double), dimension(:, :), target :: exner_pr
-
-      real(c_double), dimension(:, :), target :: exner_dyn_incr
-
-      real(c_double), dimension(:, :), target :: ddt_exner_phy
-
-      real(c_double), dimension(:, :), target :: grf_tend_rho
-
-      real(c_double), dimension(:, :), target :: grf_tend_thv
-
-      real(c_double), dimension(:, :), target :: grf_tend_w
-
-      real(c_double), dimension(:, :), target :: mass_fl_e
-
-      real(c_double), dimension(:, :), target :: ddt_vn_phy
-
-      real(c_double), dimension(:, :), target :: grf_tend_vn
-
-      real(c_double), dimension(:, :), target :: vn_ie
-
-      real(c_double), dimension(:, :), target :: vt
-
-      real(c_double), dimension(:, :), target :: mass_flx_me
-
-      real(c_double), dimension(:, :), target :: mass_flx_ic
-
-      real(c_double), dimension(:, :), target :: vol_flx_ic
-
-      real(c_double), dimension(:, :), target :: vn_traj
-
-      real(c_double), value, target :: dtime
-
-      logical(c_int), value, target :: lprep_adv
-
-      logical(c_int), value, target :: at_initial_timestep
-
-      real(c_double), value, target :: divdamp_fac_o2
-
-      real(c_double), value, target :: ndyn_substeps
-
-      integer(c_int), value, target :: idyn_timestep
-
-      logical(c_int), value :: on_gpu
-
-      integer(c_int) :: rho_now_size_0
-
-      integer(c_int) :: rho_now_size_1
-
-      integer(c_int) :: rho_new_size_0
-
-      integer(c_int) :: rho_new_size_1
-
-      integer(c_int) :: exner_now_size_0
-
-      integer(c_int) :: exner_now_size_1
-
-      integer(c_int) :: exner_new_size_0
-
-      integer(c_int) :: exner_new_size_1
-
-      integer(c_int) :: w_now_size_0
-
-      integer(c_int) :: w_now_size_1
-
-      integer(c_int) :: w_new_size_0
-
-      integer(c_int) :: w_new_size_1
-
-      integer(c_int) :: theta_v_now_size_0
-
-      integer(c_int) :: theta_v_now_size_1
-
-      integer(c_int) :: theta_v_new_size_0
-
-      integer(c_int) :: theta_v_new_size_1
-
-      integer(c_int) :: vn_now_size_0
-
-      integer(c_int) :: vn_now_size_1
-
-      integer(c_int) :: vn_new_size_0
-
-      integer(c_int) :: vn_new_size_1
-
-      integer(c_int) :: w_concorr_c_size_0
-
-      integer(c_int) :: w_concorr_c_size_1
-
-      integer(c_int) :: ddt_vn_apc_ntl1_size_0
-
-      integer(c_int) :: ddt_vn_apc_ntl1_size_1
-
-      integer(c_int) :: ddt_vn_apc_ntl2_size_0
-
-      integer(c_int) :: ddt_vn_apc_ntl2_size_1
-
-      integer(c_int) :: ddt_w_adv_ntl1_size_0
-
-      integer(c_int) :: ddt_w_adv_ntl1_size_1
-
-      integer(c_int) :: ddt_w_adv_ntl2_size_0
-
-      integer(c_int) :: ddt_w_adv_ntl2_size_1
-
-      integer(c_int) :: theta_v_ic_size_0
-
-      integer(c_int) :: theta_v_ic_size_1
-
-      integer(c_int) :: rho_ic_size_0
-
-      integer(c_int) :: rho_ic_size_1
-
-      integer(c_int) :: exner_pr_size_0
-
-      integer(c_int) :: exner_pr_size_1
-
-      integer(c_int) :: exner_dyn_incr_size_0
-
-      integer(c_int) :: exner_dyn_incr_size_1
-
-      integer(c_int) :: ddt_exner_phy_size_0
-
-      integer(c_int) :: ddt_exner_phy_size_1
-
-      integer(c_int) :: grf_tend_rho_size_0
-
-      integer(c_int) :: grf_tend_rho_size_1
-
-      integer(c_int) :: grf_tend_thv_size_0
-
-      integer(c_int) :: grf_tend_thv_size_1
-
-      integer(c_int) :: grf_tend_w_size_0
-
-      integer(c_int) :: grf_tend_w_size_1
-
-      integer(c_int) :: mass_fl_e_size_0
-
-      integer(c_int) :: mass_fl_e_size_1
-
-      integer(c_int) :: ddt_vn_phy_size_0
-
-      integer(c_int) :: ddt_vn_phy_size_1
-
-      integer(c_int) :: grf_tend_vn_size_0
-
-      integer(c_int) :: grf_tend_vn_size_1
-
-      integer(c_int) :: vn_ie_size_0
-
-      integer(c_int) :: vn_ie_size_1
-
-      integer(c_int) :: vt_size_0
-
-      integer(c_int) :: vt_size_1
-
-      integer(c_int) :: mass_flx_me_size_0
-
-      integer(c_int) :: mass_flx_me_size_1
-
-      integer(c_int) :: mass_flx_ic_size_0
-
-      integer(c_int) :: mass_flx_ic_size_1
-
-      integer(c_int) :: vol_flx_ic_size_0
-
-      integer(c_int) :: vol_flx_ic_size_1
-
-      integer(c_int) :: vn_traj_size_0
-
-      integer(c_int) :: vn_traj_size_1
-
-      integer(c_int) :: rc  ! Stores the return code
-      ! ptrs
-
-      !$acc host_data use_device(rho_now)
-      !$acc host_data use_device(rho_new)
-      !$acc host_data use_device(exner_now)
-      !$acc host_data use_device(exner_new)
-      !$acc host_data use_device(w_now)
-      !$acc host_data use_device(w_new)
-      !$acc host_data use_device(theta_v_now)
-      !$acc host_data use_device(theta_v_new)
-      !$acc host_data use_device(vn_now)
-      !$acc host_data use_device(vn_new)
-      !$acc host_data use_device(w_concorr_c)
-      !$acc host_data use_device(ddt_vn_apc_ntl1)
-      !$acc host_data use_device(ddt_vn_apc_ntl2)
-      !$acc host_data use_device(ddt_w_adv_ntl1)
-      !$acc host_data use_device(ddt_w_adv_ntl2)
-      !$acc host_data use_device(theta_v_ic)
-      !$acc host_data use_device(rho_ic)
-      !$acc host_data use_device(exner_pr)
-      !$acc host_data use_device(exner_dyn_incr)
-      !$acc host_data use_device(ddt_exner_phy)
-      !$acc host_data use_device(grf_tend_rho)
-      !$acc host_data use_device(grf_tend_thv)
-      !$acc host_data use_device(grf_tend_w)
-      !$acc host_data use_device(mass_fl_e)
-      !$acc host_data use_device(ddt_vn_phy)
-      !$acc host_data use_device(grf_tend_vn)
-      !$acc host_data use_device(vn_ie)
-      !$acc host_data use_device(vt)
-      !$acc host_data use_device(mass_flx_me)
-      !$acc host_data use_device(mass_flx_ic)
-      !$acc host_data use_device(vol_flx_ic)
-      !$acc host_data use_device(vn_traj)
-
-#ifdef _OPENACC
-      on_gpu = .True.
-#else
-      on_gpu = .False.
-#endif
-
-      rho_now_size_0 = SIZE(rho_now, 1)
-      rho_now_size_1 = SIZE(rho_now, 2)
-
-      rho_new_size_0 = SIZE(rho_new, 1)
-      rho_new_size_1 = SIZE(rho_new, 2)
-
-      exner_now_size_0 = SIZE(exner_now, 1)
-      exner_now_size_1 = SIZE(exner_now, 2)
-
-      exner_new_size_0 = SIZE(exner_new, 1)
-      exner_new_size_1 = SIZE(exner_new, 2)
-
-      w_now_size_0 = SIZE(w_now, 1)
-      w_now_size_1 = SIZE(w_now, 2)
-
-      w_new_size_0 = SIZE(w_new, 1)
-      w_new_size_1 = SIZE(w_new, 2)
-
-      theta_v_now_size_0 = SIZE(theta_v_now, 1)
-      theta_v_now_size_1 = SIZE(theta_v_now, 2)
-
-      theta_v_new_size_0 = SIZE(theta_v_new, 1)
-      theta_v_new_size_1 = SIZE(theta_v_new, 2)
-
-      vn_now_size_0 = SIZE(vn_now, 1)
-      vn_now_size_1 = SIZE(vn_now, 2)
-
-      vn_new_size_0 = SIZE(vn_new, 1)
-      vn_new_size_1 = SIZE(vn_new, 2)
-
-      w_concorr_c_size_0 = SIZE(w_concorr_c, 1)
-      w_concorr_c_size_1 = SIZE(w_concorr_c, 2)
-
-      ddt_vn_apc_ntl1_size_0 = SIZE(ddt_vn_apc_ntl1, 1)
-      ddt_vn_apc_ntl1_size_1 = SIZE(ddt_vn_apc_ntl1, 2)
-
-      ddt_vn_apc_ntl2_size_0 = SIZE(ddt_vn_apc_ntl2, 1)
-      ddt_vn_apc_ntl2_size_1 = SIZE(ddt_vn_apc_ntl2, 2)
-
-      ddt_w_adv_ntl1_size_0 = SIZE(ddt_w_adv_ntl1, 1)
-      ddt_w_adv_ntl1_size_1 = SIZE(ddt_w_adv_ntl1, 2)
-
-      ddt_w_adv_ntl2_size_0 = SIZE(ddt_w_adv_ntl2, 1)
-      ddt_w_adv_ntl2_size_1 = SIZE(ddt_w_adv_ntl2, 2)
-
-      theta_v_ic_size_0 = SIZE(theta_v_ic, 1)
-      theta_v_ic_size_1 = SIZE(theta_v_ic, 2)
-
-      rho_ic_size_0 = SIZE(rho_ic, 1)
-      rho_ic_size_1 = SIZE(rho_ic, 2)
-
-      exner_pr_size_0 = SIZE(exner_pr, 1)
-      exner_pr_size_1 = SIZE(exner_pr, 2)
-
-      exner_dyn_incr_size_0 = SIZE(exner_dyn_incr, 1)
-      exner_dyn_incr_size_1 = SIZE(exner_dyn_incr, 2)
-
-      ddt_exner_phy_size_0 = SIZE(ddt_exner_phy, 1)
-      ddt_exner_phy_size_1 = SIZE(ddt_exner_phy, 2)
-
-      grf_tend_rho_size_0 = SIZE(grf_tend_rho, 1)
-      grf_tend_rho_size_1 = SIZE(grf_tend_rho, 2)
-
-      grf_tend_thv_size_0 = SIZE(grf_tend_thv, 1)
-      grf_tend_thv_size_1 = SIZE(grf_tend_thv, 2)
-
-      grf_tend_w_size_0 = SIZE(grf_tend_w, 1)
-      grf_tend_w_size_1 = SIZE(grf_tend_w, 2)
-
-      mass_fl_e_size_0 = SIZE(mass_fl_e, 1)
-      mass_fl_e_size_1 = SIZE(mass_fl_e, 2)
-
-      ddt_vn_phy_size_0 = SIZE(ddt_vn_phy, 1)
-      ddt_vn_phy_size_1 = SIZE(ddt_vn_phy, 2)
-
-      grf_tend_vn_size_0 = SIZE(grf_tend_vn, 1)
-      grf_tend_vn_size_1 = SIZE(grf_tend_vn, 2)
-
-      vn_ie_size_0 = SIZE(vn_ie, 1)
-      vn_ie_size_1 = SIZE(vn_ie, 2)
-
-      vt_size_0 = SIZE(vt, 1)
-      vt_size_1 = SIZE(vt, 2)
-
-      mass_flx_me_size_0 = SIZE(mass_flx_me, 1)
-      mass_flx_me_size_1 = SIZE(mass_flx_me, 2)
-
-      mass_flx_ic_size_0 = SIZE(mass_flx_ic, 1)
-      mass_flx_ic_size_1 = SIZE(mass_flx_ic, 2)
-
-      vol_flx_ic_size_0 = SIZE(vol_flx_ic, 1)
-      vol_flx_ic_size_1 = SIZE(vol_flx_ic, 2)
-
-      vn_traj_size_0 = SIZE(vn_traj, 1)
-      vn_traj_size_1 = SIZE(vn_traj, 2)
-
-      rc = solve_nh_run_wrapper(rho_now=c_loc(rho_now), &
-                                rho_now_size_0=rho_now_size_0, &
-                                rho_now_size_1=rho_now_size_1, &
-                                rho_new=c_loc(rho_new), &
-                                rho_new_size_0=rho_new_size_0, &
-                                rho_new_size_1=rho_new_size_1, &
-                                exner_now=c_loc(exner_now), &
-                                exner_now_size_0=exner_now_size_0, &
-                                exner_now_size_1=exner_now_size_1, &
-                                exner_new=c_loc(exner_new), &
-                                exner_new_size_0=exner_new_size_0, &
-                                exner_new_size_1=exner_new_size_1, &
-                                w_now=c_loc(w_now), &
-                                w_now_size_0=w_now_size_0, &
-                                w_now_size_1=w_now_size_1, &
-                                w_new=c_loc(w_new), &
-                                w_new_size_0=w_new_size_0, &
-                                w_new_size_1=w_new_size_1, &
-                                theta_v_now=c_loc(theta_v_now), &
-                                theta_v_now_size_0=theta_v_now_size_0, &
-                                theta_v_now_size_1=theta_v_now_size_1, &
-                                theta_v_new=c_loc(theta_v_new), &
-                                theta_v_new_size_0=theta_v_new_size_0, &
-                                theta_v_new_size_1=theta_v_new_size_1, &
-                                vn_now=c_loc(vn_now), &
-                                vn_now_size_0=vn_now_size_0, &
-                                vn_now_size_1=vn_now_size_1, &
-                                vn_new=c_loc(vn_new), &
-                                vn_new_size_0=vn_new_size_0, &
-                                vn_new_size_1=vn_new_size_1, &
-                                w_concorr_c=c_loc(w_concorr_c), &
-                                w_concorr_c_size_0=w_concorr_c_size_0, &
-                                w_concorr_c_size_1=w_concorr_c_size_1, &
-                                ddt_vn_apc_ntl1=c_loc(ddt_vn_apc_ntl1), &
-                                ddt_vn_apc_ntl1_size_0=ddt_vn_apc_ntl1_size_0, &
-                                ddt_vn_apc_ntl1_size_1=ddt_vn_apc_ntl1_size_1, &
-                                ddt_vn_apc_ntl2=c_loc(ddt_vn_apc_ntl2), &
-                                ddt_vn_apc_ntl2_size_0=ddt_vn_apc_ntl2_size_0, &
-                                ddt_vn_apc_ntl2_size_1=ddt_vn_apc_ntl2_size_1, &
-                                ddt_w_adv_ntl1=c_loc(ddt_w_adv_ntl1), &
-                                ddt_w_adv_ntl1_size_0=ddt_w_adv_ntl1_size_0, &
-                                ddt_w_adv_ntl1_size_1=ddt_w_adv_ntl1_size_1, &
-                                ddt_w_adv_ntl2=c_loc(ddt_w_adv_ntl2), &
-                                ddt_w_adv_ntl2_size_0=ddt_w_adv_ntl2_size_0, &
-                                ddt_w_adv_ntl2_size_1=ddt_w_adv_ntl2_size_1, &
-                                theta_v_ic=c_loc(theta_v_ic), &
-                                theta_v_ic_size_0=theta_v_ic_size_0, &
-                                theta_v_ic_size_1=theta_v_ic_size_1, &
-                                rho_ic=c_loc(rho_ic), &
-                                rho_ic_size_0=rho_ic_size_0, &
-                                rho_ic_size_1=rho_ic_size_1, &
-                                exner_pr=c_loc(exner_pr), &
-                                exner_pr_size_0=exner_pr_size_0, &
-                                exner_pr_size_1=exner_pr_size_1, &
-                                exner_dyn_incr=c_loc(exner_dyn_incr), &
-                                exner_dyn_incr_size_0=exner_dyn_incr_size_0, &
-                                exner_dyn_incr_size_1=exner_dyn_incr_size_1, &
-                                ddt_exner_phy=c_loc(ddt_exner_phy), &
-                                ddt_exner_phy_size_0=ddt_exner_phy_size_0, &
-                                ddt_exner_phy_size_1=ddt_exner_phy_size_1, &
-                                grf_tend_rho=c_loc(grf_tend_rho), &
-                                grf_tend_rho_size_0=grf_tend_rho_size_0, &
-                                grf_tend_rho_size_1=grf_tend_rho_size_1, &
-                                grf_tend_thv=c_loc(grf_tend_thv), &
-                                grf_tend_thv_size_0=grf_tend_thv_size_0, &
-                                grf_tend_thv_size_1=grf_tend_thv_size_1, &
-                                grf_tend_w=c_loc(grf_tend_w), &
-                                grf_tend_w_size_0=grf_tend_w_size_0, &
-                                grf_tend_w_size_1=grf_tend_w_size_1, &
-                                mass_fl_e=c_loc(mass_fl_e), &
-                                mass_fl_e_size_0=mass_fl_e_size_0, &
-                                mass_fl_e_size_1=mass_fl_e_size_1, &
-                                ddt_vn_phy=c_loc(ddt_vn_phy), &
-                                ddt_vn_phy_size_0=ddt_vn_phy_size_0, &
-                                ddt_vn_phy_size_1=ddt_vn_phy_size_1, &
-                                grf_tend_vn=c_loc(grf_tend_vn), &
-                                grf_tend_vn_size_0=grf_tend_vn_size_0, &
-                                grf_tend_vn_size_1=grf_tend_vn_size_1, &
-                                vn_ie=c_loc(vn_ie), &
-                                vn_ie_size_0=vn_ie_size_0, &
-                                vn_ie_size_1=vn_ie_size_1, &
-                                vt=c_loc(vt), &
-                                vt_size_0=vt_size_0, &
-                                vt_size_1=vt_size_1, &
-                                mass_flx_me=c_loc(mass_flx_me), &
-                                mass_flx_me_size_0=mass_flx_me_size_0, &
-                                mass_flx_me_size_1=mass_flx_me_size_1, &
-                                mass_flx_ic=c_loc(mass_flx_ic), &
-                                mass_flx_ic_size_0=mass_flx_ic_size_0, &
-                                mass_flx_ic_size_1=mass_flx_ic_size_1, &
-                                vol_flx_ic=c_loc(vol_flx_ic), &
-                                vol_flx_ic_size_0=vol_flx_ic_size_0, &
-                                vol_flx_ic_size_1=vol_flx_ic_size_1, &
-                                vn_traj=c_loc(vn_traj), &
-                                vn_traj_size_0=vn_traj_size_0, &
-                                vn_traj_size_1=vn_traj_size_1, &
-                                dtime=dtime, &
-                                lprep_adv=lprep_adv, &
-                                at_initial_timestep=at_initial_timestep, &
-                                divdamp_fac_o2=divdamp_fac_o2, &
-                                ndyn_substeps=ndyn_substeps, &
-                                idyn_timestep=idyn_timestep, &
-                                on_gpu=on_gpu)
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-      !$acc end host_data
-   end subroutine solve_nh_run
 
 end module

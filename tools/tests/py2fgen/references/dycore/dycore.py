@@ -19,8 +19,8 @@ if cp is not None:
     logging.info(cp.show_config())
 
 # embedded function imports
-from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init
 from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_run
+from icon4py.tools.py2fgen.wrappers.dycore_wrapper import solve_nh_init
 
 
 C2E = gtx.Dimension("C2E", kind=gtx.DimensionKind.LOCAL)
@@ -34,6 +34,715 @@ K = gtx.Dimension("K", kind=gtx.DimensionKind.VERTICAL)
 V2C = gtx.Dimension("V2C", kind=gtx.DimensionKind.LOCAL)
 V2E = gtx.Dimension("V2E", kind=gtx.DimensionKind.LOCAL)
 Vertex = gtx.Dimension("Vertex", kind=gtx.DimensionKind.HORIZONTAL)
+
+
+@ffi.def_extern()
+def solve_nh_run_wrapper(
+    rho_now,
+    rho_now_size_0,
+    rho_now_size_1,
+    rho_new,
+    rho_new_size_0,
+    rho_new_size_1,
+    exner_now,
+    exner_now_size_0,
+    exner_now_size_1,
+    exner_new,
+    exner_new_size_0,
+    exner_new_size_1,
+    w_now,
+    w_now_size_0,
+    w_now_size_1,
+    w_new,
+    w_new_size_0,
+    w_new_size_1,
+    theta_v_now,
+    theta_v_now_size_0,
+    theta_v_now_size_1,
+    theta_v_new,
+    theta_v_new_size_0,
+    theta_v_new_size_1,
+    vn_now,
+    vn_now_size_0,
+    vn_now_size_1,
+    vn_new,
+    vn_new_size_0,
+    vn_new_size_1,
+    w_concorr_c,
+    w_concorr_c_size_0,
+    w_concorr_c_size_1,
+    ddt_vn_apc_ntl1,
+    ddt_vn_apc_ntl1_size_0,
+    ddt_vn_apc_ntl1_size_1,
+    ddt_vn_apc_ntl2,
+    ddt_vn_apc_ntl2_size_0,
+    ddt_vn_apc_ntl2_size_1,
+    ddt_w_adv_ntl1,
+    ddt_w_adv_ntl1_size_0,
+    ddt_w_adv_ntl1_size_1,
+    ddt_w_adv_ntl2,
+    ddt_w_adv_ntl2_size_0,
+    ddt_w_adv_ntl2_size_1,
+    theta_v_ic,
+    theta_v_ic_size_0,
+    theta_v_ic_size_1,
+    rho_ic,
+    rho_ic_size_0,
+    rho_ic_size_1,
+    exner_pr,
+    exner_pr_size_0,
+    exner_pr_size_1,
+    exner_dyn_incr,
+    exner_dyn_incr_size_0,
+    exner_dyn_incr_size_1,
+    ddt_exner_phy,
+    ddt_exner_phy_size_0,
+    ddt_exner_phy_size_1,
+    grf_tend_rho,
+    grf_tend_rho_size_0,
+    grf_tend_rho_size_1,
+    grf_tend_thv,
+    grf_tend_thv_size_0,
+    grf_tend_thv_size_1,
+    grf_tend_w,
+    grf_tend_w_size_0,
+    grf_tend_w_size_1,
+    mass_fl_e,
+    mass_fl_e_size_0,
+    mass_fl_e_size_1,
+    ddt_vn_phy,
+    ddt_vn_phy_size_0,
+    ddt_vn_phy_size_1,
+    grf_tend_vn,
+    grf_tend_vn_size_0,
+    grf_tend_vn_size_1,
+    vn_ie,
+    vn_ie_size_0,
+    vn_ie_size_1,
+    vt,
+    vt_size_0,
+    vt_size_1,
+    mass_flx_me,
+    mass_flx_me_size_0,
+    mass_flx_me_size_1,
+    mass_flx_ic,
+    mass_flx_ic_size_0,
+    mass_flx_ic_size_1,
+    vol_flx_ic,
+    vol_flx_ic_size_0,
+    vol_flx_ic_size_1,
+    vn_traj,
+    vn_traj_size_0,
+    vn_traj_size_1,
+    dtime,
+    lprep_adv,
+    at_initial_timestep,
+    divdamp_fac_o2,
+    ndyn_substeps,
+    idyn_timestep,
+    on_gpu,
+):
+    try:
+        logging.info("Python Execution Context Start")
+
+        # Convert ptr to GT4Py fields
+
+        rho_now = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            rho_now,
+            ts.ScalarKind.FLOAT64,
+            {Cell: rho_now_size_0, K: rho_now_size_1},
+            False,
+        )
+
+        rho_new = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            rho_new,
+            ts.ScalarKind.FLOAT64,
+            {Cell: rho_new_size_0, K: rho_new_size_1},
+            False,
+        )
+
+        exner_now = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            exner_now,
+            ts.ScalarKind.FLOAT64,
+            {Cell: exner_now_size_0, K: exner_now_size_1},
+            False,
+        )
+
+        exner_new = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            exner_new,
+            ts.ScalarKind.FLOAT64,
+            {Cell: exner_new_size_0, K: exner_new_size_1},
+            False,
+        )
+
+        w_now = wrapper_utils.as_field(
+            ffi, on_gpu, w_now, ts.ScalarKind.FLOAT64, {Cell: w_now_size_0, K: w_now_size_1}, False
+        )
+
+        w_new = wrapper_utils.as_field(
+            ffi, on_gpu, w_new, ts.ScalarKind.FLOAT64, {Cell: w_new_size_0, K: w_new_size_1}, False
+        )
+
+        theta_v_now = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            theta_v_now,
+            ts.ScalarKind.FLOAT64,
+            {Cell: theta_v_now_size_0, K: theta_v_now_size_1},
+            False,
+        )
+
+        theta_v_new = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            theta_v_new,
+            ts.ScalarKind.FLOAT64,
+            {Cell: theta_v_new_size_0, K: theta_v_new_size_1},
+            False,
+        )
+
+        vn_now = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            vn_now,
+            ts.ScalarKind.FLOAT64,
+            {Edge: vn_now_size_0, K: vn_now_size_1},
+            False,
+        )
+
+        vn_new = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            vn_new,
+            ts.ScalarKind.FLOAT64,
+            {Edge: vn_new_size_0, K: vn_new_size_1},
+            False,
+        )
+
+        w_concorr_c = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            w_concorr_c,
+            ts.ScalarKind.FLOAT64,
+            {Cell: w_concorr_c_size_0, K: w_concorr_c_size_1},
+            False,
+        )
+
+        ddt_vn_apc_ntl1 = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            ddt_vn_apc_ntl1,
+            ts.ScalarKind.FLOAT64,
+            {Edge: ddt_vn_apc_ntl1_size_0, K: ddt_vn_apc_ntl1_size_1},
+            False,
+        )
+
+        ddt_vn_apc_ntl2 = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            ddt_vn_apc_ntl2,
+            ts.ScalarKind.FLOAT64,
+            {Edge: ddt_vn_apc_ntl2_size_0, K: ddt_vn_apc_ntl2_size_1},
+            False,
+        )
+
+        ddt_w_adv_ntl1 = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            ddt_w_adv_ntl1,
+            ts.ScalarKind.FLOAT64,
+            {Cell: ddt_w_adv_ntl1_size_0, K: ddt_w_adv_ntl1_size_1},
+            False,
+        )
+
+        ddt_w_adv_ntl2 = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            ddt_w_adv_ntl2,
+            ts.ScalarKind.FLOAT64,
+            {Cell: ddt_w_adv_ntl2_size_0, K: ddt_w_adv_ntl2_size_1},
+            False,
+        )
+
+        theta_v_ic = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            theta_v_ic,
+            ts.ScalarKind.FLOAT64,
+            {Cell: theta_v_ic_size_0, K: theta_v_ic_size_1},
+            False,
+        )
+
+        rho_ic = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            rho_ic,
+            ts.ScalarKind.FLOAT64,
+            {Cell: rho_ic_size_0, K: rho_ic_size_1},
+            False,
+        )
+
+        exner_pr = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            exner_pr,
+            ts.ScalarKind.FLOAT64,
+            {Cell: exner_pr_size_0, K: exner_pr_size_1},
+            False,
+        )
+
+        exner_dyn_incr = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            exner_dyn_incr,
+            ts.ScalarKind.FLOAT64,
+            {Cell: exner_dyn_incr_size_0, K: exner_dyn_incr_size_1},
+            False,
+        )
+
+        ddt_exner_phy = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            ddt_exner_phy,
+            ts.ScalarKind.FLOAT64,
+            {Cell: ddt_exner_phy_size_0, K: ddt_exner_phy_size_1},
+            False,
+        )
+
+        grf_tend_rho = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            grf_tend_rho,
+            ts.ScalarKind.FLOAT64,
+            {Cell: grf_tend_rho_size_0, K: grf_tend_rho_size_1},
+            False,
+        )
+
+        grf_tend_thv = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            grf_tend_thv,
+            ts.ScalarKind.FLOAT64,
+            {Cell: grf_tend_thv_size_0, K: grf_tend_thv_size_1},
+            False,
+        )
+
+        grf_tend_w = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            grf_tend_w,
+            ts.ScalarKind.FLOAT64,
+            {Cell: grf_tend_w_size_0, K: grf_tend_w_size_1},
+            False,
+        )
+
+        mass_fl_e = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            mass_fl_e,
+            ts.ScalarKind.FLOAT64,
+            {Edge: mass_fl_e_size_0, K: mass_fl_e_size_1},
+            False,
+        )
+
+        ddt_vn_phy = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            ddt_vn_phy,
+            ts.ScalarKind.FLOAT64,
+            {Edge: ddt_vn_phy_size_0, K: ddt_vn_phy_size_1},
+            False,
+        )
+
+        grf_tend_vn = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            grf_tend_vn,
+            ts.ScalarKind.FLOAT64,
+            {Edge: grf_tend_vn_size_0, K: grf_tend_vn_size_1},
+            False,
+        )
+
+        vn_ie = wrapper_utils.as_field(
+            ffi, on_gpu, vn_ie, ts.ScalarKind.FLOAT64, {Edge: vn_ie_size_0, K: vn_ie_size_1}, False
+        )
+
+        vt = wrapper_utils.as_field(
+            ffi, on_gpu, vt, ts.ScalarKind.FLOAT64, {Edge: vt_size_0, K: vt_size_1}, False
+        )
+
+        mass_flx_me = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            mass_flx_me,
+            ts.ScalarKind.FLOAT64,
+            {Edge: mass_flx_me_size_0, K: mass_flx_me_size_1},
+            False,
+        )
+
+        mass_flx_ic = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            mass_flx_ic,
+            ts.ScalarKind.FLOAT64,
+            {Cell: mass_flx_ic_size_0, K: mass_flx_ic_size_1},
+            False,
+        )
+
+        vol_flx_ic = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            vol_flx_ic,
+            ts.ScalarKind.FLOAT64,
+            {Cell: vol_flx_ic_size_0, K: vol_flx_ic_size_1},
+            False,
+        )
+
+        vn_traj = wrapper_utils.as_field(
+            ffi,
+            on_gpu,
+            vn_traj,
+            ts.ScalarKind.FLOAT64,
+            {Edge: vn_traj_size_0, K: vn_traj_size_1},
+            False,
+        )
+
+        assert isinstance(lprep_adv, int)
+        lprep_adv = lprep_adv != 0
+
+        assert isinstance(at_initial_timestep, int)
+        at_initial_timestep = at_initial_timestep != 0
+
+        solve_nh_run(
+            rho_now,
+            rho_new,
+            exner_now,
+            exner_new,
+            w_now,
+            w_new,
+            theta_v_now,
+            theta_v_new,
+            vn_now,
+            vn_new,
+            w_concorr_c,
+            ddt_vn_apc_ntl1,
+            ddt_vn_apc_ntl2,
+            ddt_w_adv_ntl1,
+            ddt_w_adv_ntl2,
+            theta_v_ic,
+            rho_ic,
+            exner_pr,
+            exner_dyn_incr,
+            ddt_exner_phy,
+            grf_tend_rho,
+            grf_tend_thv,
+            grf_tend_w,
+            mass_fl_e,
+            ddt_vn_phy,
+            grf_tend_vn,
+            vn_ie,
+            vt,
+            mass_flx_me,
+            mass_flx_ic,
+            vol_flx_ic,
+            vn_traj,
+            dtime,
+            lprep_adv,
+            at_initial_timestep,
+            divdamp_fac_o2,
+            ndyn_substeps,
+            idyn_timestep,
+        )
+
+        # debug info
+
+        msg = "shape of rho_now after computation = %s" % str(
+            rho_now.shape if rho_now is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "rho_now after computation: %s" % str(
+            rho_now.ndarray if rho_now is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of rho_new after computation = %s" % str(
+            rho_new.shape if rho_new is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "rho_new after computation: %s" % str(
+            rho_new.ndarray if rho_new is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of exner_now after computation = %s" % str(
+            exner_now.shape if exner_now is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "exner_now after computation: %s" % str(
+            exner_now.ndarray if exner_now is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of exner_new after computation = %s" % str(
+            exner_new.shape if exner_new is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "exner_new after computation: %s" % str(
+            exner_new.ndarray if exner_new is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of w_now after computation = %s" % str(
+            w_now.shape if w_now is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "w_now after computation: %s" % str(w_now.ndarray if w_now is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of w_new after computation = %s" % str(
+            w_new.shape if w_new is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "w_new after computation: %s" % str(w_new.ndarray if w_new is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of theta_v_now after computation = %s" % str(
+            theta_v_now.shape if theta_v_now is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "theta_v_now after computation: %s" % str(
+            theta_v_now.ndarray if theta_v_now is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of theta_v_new after computation = %s" % str(
+            theta_v_new.shape if theta_v_new is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "theta_v_new after computation: %s" % str(
+            theta_v_new.ndarray if theta_v_new is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of vn_now after computation = %s" % str(
+            vn_now.shape if vn_now is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "vn_now after computation: %s" % str(vn_now.ndarray if vn_now is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of vn_new after computation = %s" % str(
+            vn_new.shape if vn_new is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "vn_new after computation: %s" % str(vn_new.ndarray if vn_new is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of w_concorr_c after computation = %s" % str(
+            w_concorr_c.shape if w_concorr_c is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "w_concorr_c after computation: %s" % str(
+            w_concorr_c.ndarray if w_concorr_c is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of ddt_vn_apc_ntl1 after computation = %s" % str(
+            ddt_vn_apc_ntl1.shape if ddt_vn_apc_ntl1 is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "ddt_vn_apc_ntl1 after computation: %s" % str(
+            ddt_vn_apc_ntl1.ndarray if ddt_vn_apc_ntl1 is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of ddt_vn_apc_ntl2 after computation = %s" % str(
+            ddt_vn_apc_ntl2.shape if ddt_vn_apc_ntl2 is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "ddt_vn_apc_ntl2 after computation: %s" % str(
+            ddt_vn_apc_ntl2.ndarray if ddt_vn_apc_ntl2 is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of ddt_w_adv_ntl1 after computation = %s" % str(
+            ddt_w_adv_ntl1.shape if ddt_w_adv_ntl1 is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "ddt_w_adv_ntl1 after computation: %s" % str(
+            ddt_w_adv_ntl1.ndarray if ddt_w_adv_ntl1 is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of ddt_w_adv_ntl2 after computation = %s" % str(
+            ddt_w_adv_ntl2.shape if ddt_w_adv_ntl2 is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "ddt_w_adv_ntl2 after computation: %s" % str(
+            ddt_w_adv_ntl2.ndarray if ddt_w_adv_ntl2 is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of theta_v_ic after computation = %s" % str(
+            theta_v_ic.shape if theta_v_ic is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "theta_v_ic after computation: %s" % str(
+            theta_v_ic.ndarray if theta_v_ic is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of rho_ic after computation = %s" % str(
+            rho_ic.shape if rho_ic is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "rho_ic after computation: %s" % str(rho_ic.ndarray if rho_ic is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of exner_pr after computation = %s" % str(
+            exner_pr.shape if exner_pr is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "exner_pr after computation: %s" % str(
+            exner_pr.ndarray if exner_pr is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of exner_dyn_incr after computation = %s" % str(
+            exner_dyn_incr.shape if exner_dyn_incr is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "exner_dyn_incr after computation: %s" % str(
+            exner_dyn_incr.ndarray if exner_dyn_incr is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of ddt_exner_phy after computation = %s" % str(
+            ddt_exner_phy.shape if ddt_exner_phy is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "ddt_exner_phy after computation: %s" % str(
+            ddt_exner_phy.ndarray if ddt_exner_phy is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of grf_tend_rho after computation = %s" % str(
+            grf_tend_rho.shape if grf_tend_rho is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "grf_tend_rho after computation: %s" % str(
+            grf_tend_rho.ndarray if grf_tend_rho is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of grf_tend_thv after computation = %s" % str(
+            grf_tend_thv.shape if grf_tend_thv is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "grf_tend_thv after computation: %s" % str(
+            grf_tend_thv.ndarray if grf_tend_thv is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of grf_tend_w after computation = %s" % str(
+            grf_tend_w.shape if grf_tend_w is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "grf_tend_w after computation: %s" % str(
+            grf_tend_w.ndarray if grf_tend_w is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of mass_fl_e after computation = %s" % str(
+            mass_fl_e.shape if mass_fl_e is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "mass_fl_e after computation: %s" % str(
+            mass_fl_e.ndarray if mass_fl_e is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of ddt_vn_phy after computation = %s" % str(
+            ddt_vn_phy.shape if ddt_vn_phy is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "ddt_vn_phy after computation: %s" % str(
+            ddt_vn_phy.ndarray if ddt_vn_phy is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of grf_tend_vn after computation = %s" % str(
+            grf_tend_vn.shape if grf_tend_vn is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "grf_tend_vn after computation: %s" % str(
+            grf_tend_vn.ndarray if grf_tend_vn is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of vn_ie after computation = %s" % str(
+            vn_ie.shape if vn_ie is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "vn_ie after computation: %s" % str(vn_ie.ndarray if vn_ie is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of vt after computation = %s" % str(vt.shape if vt is not None else "None")
+        logging.debug(msg)
+        msg = "vt after computation: %s" % str(vt.ndarray if vt is not None else "None")
+        logging.debug(msg)
+
+        msg = "shape of mass_flx_me after computation = %s" % str(
+            mass_flx_me.shape if mass_flx_me is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "mass_flx_me after computation: %s" % str(
+            mass_flx_me.ndarray if mass_flx_me is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of mass_flx_ic after computation = %s" % str(
+            mass_flx_ic.shape if mass_flx_ic is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "mass_flx_ic after computation: %s" % str(
+            mass_flx_ic.ndarray if mass_flx_ic is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of vol_flx_ic after computation = %s" % str(
+            vol_flx_ic.shape if vol_flx_ic is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "vol_flx_ic after computation: %s" % str(
+            vol_flx_ic.ndarray if vol_flx_ic is not None else "None"
+        )
+        logging.debug(msg)
+
+        msg = "shape of vn_traj after computation = %s" % str(
+            vn_traj.shape if vn_traj is not None else "None"
+        )
+        logging.debug(msg)
+        msg = "vn_traj after computation: %s" % str(
+            vn_traj.ndarray if vn_traj is not None else "None"
+        )
+        logging.debug(msg)
+
+        logging.critical("Python Execution Context End")
+
+    except Exception as e:
+        logging.exception(f"A Python error occurred: {e}")
+        return 1
+
+    return 0
 
 
 @ffi.def_extern()
@@ -1198,715 +1907,6 @@ def solve_nh_init_wrapper(
         logging.debug(msg)
         msg = "c_owner_mask after computation: %s" % str(
             c_owner_mask.ndarray if c_owner_mask is not None else "None"
-        )
-        logging.debug(msg)
-
-        logging.critical("Python Execution Context End")
-
-    except Exception as e:
-        logging.exception(f"A Python error occurred: {e}")
-        return 1
-
-    return 0
-
-
-@ffi.def_extern()
-def solve_nh_run_wrapper(
-    rho_now,
-    rho_now_size_0,
-    rho_now_size_1,
-    rho_new,
-    rho_new_size_0,
-    rho_new_size_1,
-    exner_now,
-    exner_now_size_0,
-    exner_now_size_1,
-    exner_new,
-    exner_new_size_0,
-    exner_new_size_1,
-    w_now,
-    w_now_size_0,
-    w_now_size_1,
-    w_new,
-    w_new_size_0,
-    w_new_size_1,
-    theta_v_now,
-    theta_v_now_size_0,
-    theta_v_now_size_1,
-    theta_v_new,
-    theta_v_new_size_0,
-    theta_v_new_size_1,
-    vn_now,
-    vn_now_size_0,
-    vn_now_size_1,
-    vn_new,
-    vn_new_size_0,
-    vn_new_size_1,
-    w_concorr_c,
-    w_concorr_c_size_0,
-    w_concorr_c_size_1,
-    ddt_vn_apc_ntl1,
-    ddt_vn_apc_ntl1_size_0,
-    ddt_vn_apc_ntl1_size_1,
-    ddt_vn_apc_ntl2,
-    ddt_vn_apc_ntl2_size_0,
-    ddt_vn_apc_ntl2_size_1,
-    ddt_w_adv_ntl1,
-    ddt_w_adv_ntl1_size_0,
-    ddt_w_adv_ntl1_size_1,
-    ddt_w_adv_ntl2,
-    ddt_w_adv_ntl2_size_0,
-    ddt_w_adv_ntl2_size_1,
-    theta_v_ic,
-    theta_v_ic_size_0,
-    theta_v_ic_size_1,
-    rho_ic,
-    rho_ic_size_0,
-    rho_ic_size_1,
-    exner_pr,
-    exner_pr_size_0,
-    exner_pr_size_1,
-    exner_dyn_incr,
-    exner_dyn_incr_size_0,
-    exner_dyn_incr_size_1,
-    ddt_exner_phy,
-    ddt_exner_phy_size_0,
-    ddt_exner_phy_size_1,
-    grf_tend_rho,
-    grf_tend_rho_size_0,
-    grf_tend_rho_size_1,
-    grf_tend_thv,
-    grf_tend_thv_size_0,
-    grf_tend_thv_size_1,
-    grf_tend_w,
-    grf_tend_w_size_0,
-    grf_tend_w_size_1,
-    mass_fl_e,
-    mass_fl_e_size_0,
-    mass_fl_e_size_1,
-    ddt_vn_phy,
-    ddt_vn_phy_size_0,
-    ddt_vn_phy_size_1,
-    grf_tend_vn,
-    grf_tend_vn_size_0,
-    grf_tend_vn_size_1,
-    vn_ie,
-    vn_ie_size_0,
-    vn_ie_size_1,
-    vt,
-    vt_size_0,
-    vt_size_1,
-    mass_flx_me,
-    mass_flx_me_size_0,
-    mass_flx_me_size_1,
-    mass_flx_ic,
-    mass_flx_ic_size_0,
-    mass_flx_ic_size_1,
-    vol_flx_ic,
-    vol_flx_ic_size_0,
-    vol_flx_ic_size_1,
-    vn_traj,
-    vn_traj_size_0,
-    vn_traj_size_1,
-    dtime,
-    lprep_adv,
-    at_initial_timestep,
-    divdamp_fac_o2,
-    ndyn_substeps,
-    idyn_timestep,
-    on_gpu,
-):
-    try:
-        logging.info("Python Execution Context Start")
-
-        # Convert ptr to GT4Py fields
-
-        rho_now = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            rho_now,
-            ts.ScalarKind.FLOAT64,
-            {Cell: rho_now_size_0, K: rho_now_size_1},
-            False,
-        )
-
-        rho_new = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            rho_new,
-            ts.ScalarKind.FLOAT64,
-            {Cell: rho_new_size_0, K: rho_new_size_1},
-            False,
-        )
-
-        exner_now = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            exner_now,
-            ts.ScalarKind.FLOAT64,
-            {Cell: exner_now_size_0, K: exner_now_size_1},
-            False,
-        )
-
-        exner_new = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            exner_new,
-            ts.ScalarKind.FLOAT64,
-            {Cell: exner_new_size_0, K: exner_new_size_1},
-            False,
-        )
-
-        w_now = wrapper_utils.as_field(
-            ffi, on_gpu, w_now, ts.ScalarKind.FLOAT64, {Cell: w_now_size_0, K: w_now_size_1}, False
-        )
-
-        w_new = wrapper_utils.as_field(
-            ffi, on_gpu, w_new, ts.ScalarKind.FLOAT64, {Cell: w_new_size_0, K: w_new_size_1}, False
-        )
-
-        theta_v_now = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            theta_v_now,
-            ts.ScalarKind.FLOAT64,
-            {Cell: theta_v_now_size_0, K: theta_v_now_size_1},
-            False,
-        )
-
-        theta_v_new = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            theta_v_new,
-            ts.ScalarKind.FLOAT64,
-            {Cell: theta_v_new_size_0, K: theta_v_new_size_1},
-            False,
-        )
-
-        vn_now = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            vn_now,
-            ts.ScalarKind.FLOAT64,
-            {Edge: vn_now_size_0, K: vn_now_size_1},
-            False,
-        )
-
-        vn_new = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            vn_new,
-            ts.ScalarKind.FLOAT64,
-            {Edge: vn_new_size_0, K: vn_new_size_1},
-            False,
-        )
-
-        w_concorr_c = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            w_concorr_c,
-            ts.ScalarKind.FLOAT64,
-            {Cell: w_concorr_c_size_0, K: w_concorr_c_size_1},
-            False,
-        )
-
-        ddt_vn_apc_ntl1 = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            ddt_vn_apc_ntl1,
-            ts.ScalarKind.FLOAT64,
-            {Edge: ddt_vn_apc_ntl1_size_0, K: ddt_vn_apc_ntl1_size_1},
-            False,
-        )
-
-        ddt_vn_apc_ntl2 = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            ddt_vn_apc_ntl2,
-            ts.ScalarKind.FLOAT64,
-            {Edge: ddt_vn_apc_ntl2_size_0, K: ddt_vn_apc_ntl2_size_1},
-            False,
-        )
-
-        ddt_w_adv_ntl1 = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            ddt_w_adv_ntl1,
-            ts.ScalarKind.FLOAT64,
-            {Cell: ddt_w_adv_ntl1_size_0, K: ddt_w_adv_ntl1_size_1},
-            False,
-        )
-
-        ddt_w_adv_ntl2 = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            ddt_w_adv_ntl2,
-            ts.ScalarKind.FLOAT64,
-            {Cell: ddt_w_adv_ntl2_size_0, K: ddt_w_adv_ntl2_size_1},
-            False,
-        )
-
-        theta_v_ic = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            theta_v_ic,
-            ts.ScalarKind.FLOAT64,
-            {Cell: theta_v_ic_size_0, K: theta_v_ic_size_1},
-            False,
-        )
-
-        rho_ic = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            rho_ic,
-            ts.ScalarKind.FLOAT64,
-            {Cell: rho_ic_size_0, K: rho_ic_size_1},
-            False,
-        )
-
-        exner_pr = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            exner_pr,
-            ts.ScalarKind.FLOAT64,
-            {Cell: exner_pr_size_0, K: exner_pr_size_1},
-            False,
-        )
-
-        exner_dyn_incr = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            exner_dyn_incr,
-            ts.ScalarKind.FLOAT64,
-            {Cell: exner_dyn_incr_size_0, K: exner_dyn_incr_size_1},
-            False,
-        )
-
-        ddt_exner_phy = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            ddt_exner_phy,
-            ts.ScalarKind.FLOAT64,
-            {Cell: ddt_exner_phy_size_0, K: ddt_exner_phy_size_1},
-            False,
-        )
-
-        grf_tend_rho = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            grf_tend_rho,
-            ts.ScalarKind.FLOAT64,
-            {Cell: grf_tend_rho_size_0, K: grf_tend_rho_size_1},
-            False,
-        )
-
-        grf_tend_thv = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            grf_tend_thv,
-            ts.ScalarKind.FLOAT64,
-            {Cell: grf_tend_thv_size_0, K: grf_tend_thv_size_1},
-            False,
-        )
-
-        grf_tend_w = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            grf_tend_w,
-            ts.ScalarKind.FLOAT64,
-            {Cell: grf_tend_w_size_0, K: grf_tend_w_size_1},
-            False,
-        )
-
-        mass_fl_e = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            mass_fl_e,
-            ts.ScalarKind.FLOAT64,
-            {Edge: mass_fl_e_size_0, K: mass_fl_e_size_1},
-            False,
-        )
-
-        ddt_vn_phy = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            ddt_vn_phy,
-            ts.ScalarKind.FLOAT64,
-            {Edge: ddt_vn_phy_size_0, K: ddt_vn_phy_size_1},
-            False,
-        )
-
-        grf_tend_vn = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            grf_tend_vn,
-            ts.ScalarKind.FLOAT64,
-            {Edge: grf_tend_vn_size_0, K: grf_tend_vn_size_1},
-            False,
-        )
-
-        vn_ie = wrapper_utils.as_field(
-            ffi, on_gpu, vn_ie, ts.ScalarKind.FLOAT64, {Edge: vn_ie_size_0, K: vn_ie_size_1}, False
-        )
-
-        vt = wrapper_utils.as_field(
-            ffi, on_gpu, vt, ts.ScalarKind.FLOAT64, {Edge: vt_size_0, K: vt_size_1}, False
-        )
-
-        mass_flx_me = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            mass_flx_me,
-            ts.ScalarKind.FLOAT64,
-            {Edge: mass_flx_me_size_0, K: mass_flx_me_size_1},
-            False,
-        )
-
-        mass_flx_ic = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            mass_flx_ic,
-            ts.ScalarKind.FLOAT64,
-            {Cell: mass_flx_ic_size_0, K: mass_flx_ic_size_1},
-            False,
-        )
-
-        vol_flx_ic = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            vol_flx_ic,
-            ts.ScalarKind.FLOAT64,
-            {Cell: vol_flx_ic_size_0, K: vol_flx_ic_size_1},
-            False,
-        )
-
-        vn_traj = wrapper_utils.as_field(
-            ffi,
-            on_gpu,
-            vn_traj,
-            ts.ScalarKind.FLOAT64,
-            {Edge: vn_traj_size_0, K: vn_traj_size_1},
-            False,
-        )
-
-        assert isinstance(lprep_adv, int)
-        lprep_adv = lprep_adv != 0
-
-        assert isinstance(at_initial_timestep, int)
-        at_initial_timestep = at_initial_timestep != 0
-
-        solve_nh_run(
-            rho_now,
-            rho_new,
-            exner_now,
-            exner_new,
-            w_now,
-            w_new,
-            theta_v_now,
-            theta_v_new,
-            vn_now,
-            vn_new,
-            w_concorr_c,
-            ddt_vn_apc_ntl1,
-            ddt_vn_apc_ntl2,
-            ddt_w_adv_ntl1,
-            ddt_w_adv_ntl2,
-            theta_v_ic,
-            rho_ic,
-            exner_pr,
-            exner_dyn_incr,
-            ddt_exner_phy,
-            grf_tend_rho,
-            grf_tend_thv,
-            grf_tend_w,
-            mass_fl_e,
-            ddt_vn_phy,
-            grf_tend_vn,
-            vn_ie,
-            vt,
-            mass_flx_me,
-            mass_flx_ic,
-            vol_flx_ic,
-            vn_traj,
-            dtime,
-            lprep_adv,
-            at_initial_timestep,
-            divdamp_fac_o2,
-            ndyn_substeps,
-            idyn_timestep,
-        )
-
-        # debug info
-
-        msg = "shape of rho_now after computation = %s" % str(
-            rho_now.shape if rho_now is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "rho_now after computation: %s" % str(
-            rho_now.ndarray if rho_now is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of rho_new after computation = %s" % str(
-            rho_new.shape if rho_new is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "rho_new after computation: %s" % str(
-            rho_new.ndarray if rho_new is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of exner_now after computation = %s" % str(
-            exner_now.shape if exner_now is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "exner_now after computation: %s" % str(
-            exner_now.ndarray if exner_now is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of exner_new after computation = %s" % str(
-            exner_new.shape if exner_new is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "exner_new after computation: %s" % str(
-            exner_new.ndarray if exner_new is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of w_now after computation = %s" % str(
-            w_now.shape if w_now is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "w_now after computation: %s" % str(w_now.ndarray if w_now is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of w_new after computation = %s" % str(
-            w_new.shape if w_new is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "w_new after computation: %s" % str(w_new.ndarray if w_new is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of theta_v_now after computation = %s" % str(
-            theta_v_now.shape if theta_v_now is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "theta_v_now after computation: %s" % str(
-            theta_v_now.ndarray if theta_v_now is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of theta_v_new after computation = %s" % str(
-            theta_v_new.shape if theta_v_new is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "theta_v_new after computation: %s" % str(
-            theta_v_new.ndarray if theta_v_new is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of vn_now after computation = %s" % str(
-            vn_now.shape if vn_now is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "vn_now after computation: %s" % str(vn_now.ndarray if vn_now is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of vn_new after computation = %s" % str(
-            vn_new.shape if vn_new is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "vn_new after computation: %s" % str(vn_new.ndarray if vn_new is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of w_concorr_c after computation = %s" % str(
-            w_concorr_c.shape if w_concorr_c is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "w_concorr_c after computation: %s" % str(
-            w_concorr_c.ndarray if w_concorr_c is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of ddt_vn_apc_ntl1 after computation = %s" % str(
-            ddt_vn_apc_ntl1.shape if ddt_vn_apc_ntl1 is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "ddt_vn_apc_ntl1 after computation: %s" % str(
-            ddt_vn_apc_ntl1.ndarray if ddt_vn_apc_ntl1 is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of ddt_vn_apc_ntl2 after computation = %s" % str(
-            ddt_vn_apc_ntl2.shape if ddt_vn_apc_ntl2 is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "ddt_vn_apc_ntl2 after computation: %s" % str(
-            ddt_vn_apc_ntl2.ndarray if ddt_vn_apc_ntl2 is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of ddt_w_adv_ntl1 after computation = %s" % str(
-            ddt_w_adv_ntl1.shape if ddt_w_adv_ntl1 is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "ddt_w_adv_ntl1 after computation: %s" % str(
-            ddt_w_adv_ntl1.ndarray if ddt_w_adv_ntl1 is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of ddt_w_adv_ntl2 after computation = %s" % str(
-            ddt_w_adv_ntl2.shape if ddt_w_adv_ntl2 is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "ddt_w_adv_ntl2 after computation: %s" % str(
-            ddt_w_adv_ntl2.ndarray if ddt_w_adv_ntl2 is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of theta_v_ic after computation = %s" % str(
-            theta_v_ic.shape if theta_v_ic is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "theta_v_ic after computation: %s" % str(
-            theta_v_ic.ndarray if theta_v_ic is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of rho_ic after computation = %s" % str(
-            rho_ic.shape if rho_ic is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "rho_ic after computation: %s" % str(rho_ic.ndarray if rho_ic is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of exner_pr after computation = %s" % str(
-            exner_pr.shape if exner_pr is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "exner_pr after computation: %s" % str(
-            exner_pr.ndarray if exner_pr is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of exner_dyn_incr after computation = %s" % str(
-            exner_dyn_incr.shape if exner_dyn_incr is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "exner_dyn_incr after computation: %s" % str(
-            exner_dyn_incr.ndarray if exner_dyn_incr is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of ddt_exner_phy after computation = %s" % str(
-            ddt_exner_phy.shape if ddt_exner_phy is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "ddt_exner_phy after computation: %s" % str(
-            ddt_exner_phy.ndarray if ddt_exner_phy is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of grf_tend_rho after computation = %s" % str(
-            grf_tend_rho.shape if grf_tend_rho is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "grf_tend_rho after computation: %s" % str(
-            grf_tend_rho.ndarray if grf_tend_rho is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of grf_tend_thv after computation = %s" % str(
-            grf_tend_thv.shape if grf_tend_thv is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "grf_tend_thv after computation: %s" % str(
-            grf_tend_thv.ndarray if grf_tend_thv is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of grf_tend_w after computation = %s" % str(
-            grf_tend_w.shape if grf_tend_w is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "grf_tend_w after computation: %s" % str(
-            grf_tend_w.ndarray if grf_tend_w is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of mass_fl_e after computation = %s" % str(
-            mass_fl_e.shape if mass_fl_e is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "mass_fl_e after computation: %s" % str(
-            mass_fl_e.ndarray if mass_fl_e is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of ddt_vn_phy after computation = %s" % str(
-            ddt_vn_phy.shape if ddt_vn_phy is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "ddt_vn_phy after computation: %s" % str(
-            ddt_vn_phy.ndarray if ddt_vn_phy is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of grf_tend_vn after computation = %s" % str(
-            grf_tend_vn.shape if grf_tend_vn is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "grf_tend_vn after computation: %s" % str(
-            grf_tend_vn.ndarray if grf_tend_vn is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of vn_ie after computation = %s" % str(
-            vn_ie.shape if vn_ie is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "vn_ie after computation: %s" % str(vn_ie.ndarray if vn_ie is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of vt after computation = %s" % str(vt.shape if vt is not None else "None")
-        logging.debug(msg)
-        msg = "vt after computation: %s" % str(vt.ndarray if vt is not None else "None")
-        logging.debug(msg)
-
-        msg = "shape of mass_flx_me after computation = %s" % str(
-            mass_flx_me.shape if mass_flx_me is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "mass_flx_me after computation: %s" % str(
-            mass_flx_me.ndarray if mass_flx_me is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of mass_flx_ic after computation = %s" % str(
-            mass_flx_ic.shape if mass_flx_ic is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "mass_flx_ic after computation: %s" % str(
-            mass_flx_ic.ndarray if mass_flx_ic is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of vol_flx_ic after computation = %s" % str(
-            vol_flx_ic.shape if vol_flx_ic is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "vol_flx_ic after computation: %s" % str(
-            vol_flx_ic.ndarray if vol_flx_ic is not None else "None"
-        )
-        logging.debug(msg)
-
-        msg = "shape of vn_traj after computation = %s" % str(
-            vn_traj.shape if vn_traj is not None else "None"
-        )
-        logging.debug(msg)
-        msg = "vn_traj after computation: %s" % str(
-            vn_traj.ndarray if vn_traj is not None else "None"
         )
         logging.debug(msg)
 
