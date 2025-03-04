@@ -29,4 +29,4 @@ extern int diffusion_init_wrapper(
     double smagorinski_scaling_factor, int hdiff_temp, double thslp_zdiffu,
     double thhgtd_zdiffu, double denom_diffu_v, double nudge_max_coeff,
     int itype_sher, int ltkeshs, double lowest_layer_thickness,
-    double model_top_height, double stretch_factor, long backend, int on_gpu);
+    double model_top_height, double stretch_factor, int backend, int on_gpu);

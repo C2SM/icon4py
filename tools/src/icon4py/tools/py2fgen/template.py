@@ -465,7 +465,7 @@ end function {{name}}_wrapper
         ]
 
         # on_gpu flag
-        param_declarations.append("logical(c_int) :: on_gpu")
+        param_declarations.append("logical(c_int), value :: on_gpu")
 
         def get_sizes_maker(arg: FuncParameter) -> str:
             return "\n".join(

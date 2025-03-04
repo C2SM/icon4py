@@ -110,7 +110,7 @@ def diffusion_init(
     lowest_layer_thickness: gtx.float64,
     model_top_height: gtx.float64,
     stretch_factor: gtx.float64,
-    backend: int,
+    backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception(

@@ -144,7 +144,7 @@ def solve_nh_init(
     stretch_factor: gtx.float64,
     nflat_gradp: gtx.int32,
     num_levels: gtx.int32,
-    backend: int,
+    backend: gtx.int32,
 ):
     if grid_wrapper.grid_state is None:
         raise Exception("Need to initialise grid using 'grid_init' before running 'solve_nh_init'.")

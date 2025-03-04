@@ -312,7 +312,7 @@ module diffusion
 
          real(c_double), value, target :: stretch_factor
 
-         integer(c_long), value, target :: backend
+         integer(c_int), value, target :: backend
 
          logical(c_int), value :: on_gpu
 
@@ -358,7 +358,7 @@ contains
 
       logical(c_int), value, target :: linit
 
-      logical(c_int) :: on_gpu
+      logical(c_int), value :: on_gpu
 
       integer(c_int) :: w_size_0
 
@@ -626,9 +626,9 @@ contains
 
       real(c_double), value, target :: stretch_factor
 
-      integer(c_long), value, target :: backend
+      integer(c_int), value, target :: backend
 
-      logical(c_int) :: on_gpu
+      logical(c_int), value :: on_gpu
 
       integer(c_int) :: vct_a_size_0
 

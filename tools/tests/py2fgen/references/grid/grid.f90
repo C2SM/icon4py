@@ -492,7 +492,7 @@ contains
 
       logical(c_int), value, target :: limited_area
 
-      logical(c_int) :: on_gpu
+      logical(c_int), value :: on_gpu
 
       integer(c_int) :: cell_starts_size_0
 
