@@ -47,14 +47,13 @@ NO_TESTS_COLLECTED_EXIT_CODE: Final = 5
 # TODO(egparedes): Add backend parameter
 # TODO(edopao,egparedes): Change 'extras' back to 'all' once mpi4py can be compiled with hpc_sdk
 @nox.session(python=["3.10", "3.11"])
-@nox.parametrize("subpackage", MODEL_SUBPACKAGE_PATHS)
-def benchmark_model(session: nox.Session, subpackage: ModelSubpackagePath) -> None:
+def benchmark_model(session: nox.Session) -> None:
     """Run pytest benchmarks for selected icon4py model subpackages."""
     _install_session_venv(session, extras=["dace", "io", "testing"], groups=["test"])
 
-    with session.chdir(f"model/{subpackage}"):
-        session.run(*"pytest -sv --benchmark-only".split(), *session.posargs)
-
+    results_json = os.path.abspath("results.json")  # Store results in the top directory
+    with session.chdir(f"model"):
+        session.run("pytest", "-v", "--benchmark-only", "--benchmark-warmup=on", "--benchmark-warmup-iterations=30", f"--benchmark-json={results_json}", *session.posargs)
 
 # Model test sessions
 # TODO(egparedes): Add backend parameter

@@ -1,0 +1,65 @@
+include:
+  - local: 'ci/base.yml'
+
+.benchmark_model_stencils:
+  stage: benchmark
+  script:
+    - rustup show && rustc --version && which rustc && cargo --version && which cargo
+    - rustup default stable
+    - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
+    - | # Run the benchmarks
+      bencher run \
+      --project "$BENCHER_PROJECT" \
+      --token "$BENCHER_API_TOKEN" \
+      --branch main \
+      --testbed "ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}" \
+      --threshold-measure latency \
+      --threshold-test percentage \
+      --threshold-max-sample-size 64 \
+      --threshold-upper-boundary 0.1 \
+      --thresholds-reset \
+      --err \
+      --adapter python_pytest \
+      --file results.json \
+      "nox -s benchmark_model-3.10 -- --backend=$BACKEND --grid=$GRID"
+    - | # Script to flatten the results.json file. Needed for Kibana.
+      cat <<EOF > flatten.py
+      import argparse
+      import json
+      from flatten_json import flatten
+
+      parser = argparse.ArgumentParser(description="Flatten a JSON file.")
+      parser.add_argument("input_file", help="input JSON file")
+      parser.add_argument("output_file", help="output JSON file")
+
+      args = parser.parse_args()
+
+      with open(args.input_file, "r") as file:
+          data = json.load(file)
+
+      flat_data = flatten(data, separator=".")
+
+      with open(args.output_file, "w") as file:
+          json.dump(flat_data, file, indent=2)
+      EOF
+    - uv pip install flatten_json
+    - python flatten.py results.json results.json
+    - | # Additional fields to results.json for Kibana
+      jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py.bencher.baseline.test\", \"namespace\": \"alps\"}} + ." results.json > results_tmp.json && mv results_tmp.json results.json
+    - |
+      jq ". + {\"bencher.testbed\": \"ci-runner:${SYSTEM_NAME}:${BACKEND}:${GRID}\"}" results.json > results_tmp.json && mv results_tmp.json results.json
+    - | # Upload results.json to Kibana - https://confluence.cscs.ch/spaces/SCISWDEV/pages/797507767/Performance+dashboard+guide -
+      curl -X POST \
+      -H "Content-Type: application/json" \
+      -d @"./results.json" \
+      "${CSCS_LOGSTASH_URL}"
+  parallel:
+    matrix:
+      - BACKEND: [gtfn_cpu, gtfn_gpu]
+        GRID: [icon_grid, icon_grid_global]
+
+# benchmark_bencher_baseline_x86_64:
+#   extends: [.benchmark_model_stencils, .test_template_x86_64]
+
+benchmark_bencher_baseline_aarch64:
+  extends: [.benchmark_model_stencils, .test_template_aarch64]
