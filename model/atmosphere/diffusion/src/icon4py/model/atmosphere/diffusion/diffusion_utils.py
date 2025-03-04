@@ -5,7 +5,6 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-from typing import Tuple
 
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import broadcast, minimum, where
@@ -70,7 +69,7 @@ def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> fa.KFi
 @gtx.field_operator
 def _setup_fields_for_initial_step(
     k4: float, hdiff_efdt_ratio: float
-) -> Tuple[fa.KField[float], fa.KField[float]]:
+) -> tuple[fa.KField[float], fa.KField[float]]:
     diff_multfac_vn = _setup_initial_diff_multfac_vn(k4, hdiff_efdt_ratio)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     return diff_multfac_vn, smag_limit

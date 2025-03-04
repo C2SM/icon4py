@@ -34,7 +34,7 @@ logging.basicConfig(level=logging.INFO)
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
 )
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
@@ -50,8 +50,8 @@ logging.basicConfig(level=logging.INFO)
 def test_dycore_wrapper_granule_inputs(
     istep_init,
     istep_exit,
-    jstep_init,
-    jstep_exit,
+    substep_init,
+    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
@@ -65,7 +65,7 @@ def test_dycore_wrapper_granule_inputs(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     caplog,
     icon_grid,
     at_initial_timestep,
@@ -173,7 +173,7 @@ def test_dycore_wrapper_granule_inputs(
     vertoffset_gradp = metrics_savepoint._get_field(
         "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
     )
-    ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
+    pg_edgeidx_dsl = metrics_savepoint.pg_edgeidx_dsl()
     pg_exdist = metrics_savepoint.pg_exdist()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
@@ -262,10 +262,10 @@ def test_dycore_wrapper_granule_inputs(
     mass_fl_e = sp.mass_fl_e()
     ddt_vn_phy = sp.ddt_vn_phy()
     grf_tend_vn = sp.grf_tend_vn()
-    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(1)
-    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(2)
-    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
-    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
+    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(0)
+    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(1)
+    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(0)
+    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
     vt = sp.vt()
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
@@ -285,7 +285,7 @@ def test_dycore_wrapper_granule_inputs(
     exner_new = sp.exner_new()
 
     # using fortran indices
-    jstep_init_fortran = jstep_init + 1
+    substep = substep_init
 
     # --- Expected objects that form inputs into init function ---
     expected_icon_grid = icon_grid
@@ -335,7 +335,7 @@ def test_dycore_wrapper_granule_inputs(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         zdiff_gradp=metrics_savepoint.zdiff_gradp(),
         vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
-        ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+        pg_edgeidx_dsl=metrics_savepoint.pg_edgeidx_dsl(),
         pg_exdist=metrics_savepoint.pg_exdist(),
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
@@ -376,8 +376,8 @@ def test_dycore_wrapper_granule_inputs(
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(sp.ddt_vn_apc_pc(1), sp.ddt_vn_apc_pc(2)),
-        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(sp.ddt_w_adv_pc(1), sp.ddt_w_adv_pc(2)),
+        ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(sp.ddt_vn_apc_pc(0), sp.ddt_vn_apc_pc(1)),
+        ddt_w_adv_pc=common_utils.PredictorCorrectorPair(sp.ddt_w_adv_pc(0), sp.ddt_w_adv_pc(1)),
         vt=sp.vt(),
         vn_ie=sp.vn_ie(),
         w_concorr_c=sp.w_concorr_c(),
@@ -415,8 +415,8 @@ def test_dycore_wrapper_granule_inputs(
     expected_initial_divdamp_fac = sp.divdamp_fac_o2()
     expected_dtime = sp.get_metadata("dtime").get("dtime")
     expected_lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
-    expected_at_first_substep = jstep_init == 0
-    expected_at_last_substep = jstep_init == (ndyn_substeps - 1)
+    expected_at_first_substep = substep_init == 1
+    expected_at_last_substep = substep_init == ndyn_substeps
 
     # --- Initialize the Grid ---
     py2fgen_settings.config.parallel_run = False
@@ -513,7 +513,7 @@ def test_dycore_wrapper_granule_inputs(
             ddxn_z_full=ddxn_z_full,
             zdiff_gradp=zdiff_gradp,
             vertoffset_gradp=vertoffset_gradp,
-            ipeidx_dsl=ipeidx_dsl,
+            ipeidx_dsl=pg_edgeidx_dsl,
             pg_exdist=pg_exdist,
             ddqz_z_full_e=ddqz_z_full_e,
             ddxt_z_full=ddxt_z_full,
@@ -661,7 +661,7 @@ def test_dycore_wrapper_granule_inputs(
             at_initial_timestep=at_initial_timestep,
             divdamp_fac_o2=initial_divdamp_fac,
             ndyn_substeps=ndyn_substeps,
-            idyn_timestep=jstep_init_fortran,
+            idyn_timestep=substep,
         )
 
         # Check input arguments to SolveNonhydro.time_step
@@ -708,7 +708,7 @@ def test_dycore_wrapper_granule_inputs(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, istep_exit, jstep_exit, at_initial_timestep", [(1, 0, 2, 0, True)]
+    "istep_init, substep_init, istep_exit, substep_exit, at_initial_timestep", [(1, 1, 2, 1, True)]
 )
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit",
@@ -723,8 +723,8 @@ def test_dycore_wrapper_granule_inputs(
 def test_granule_solve_nonhydro_single_step_regional(
     istep_init,
     istep_exit,
-    jstep_init,
-    jstep_exit,
+    substep_init,
+    substep_exit,
     step_date_init,
     step_date_exit,
     experiment,
@@ -738,7 +738,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     caplog,
     icon_grid,
     at_initial_timestep,
@@ -747,7 +747,7 @@ def test_granule_solve_nonhydro_single_step_regional(
 
     # savepoints
     sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_exit
+    sp_step_exit = savepoint_nonhydro_step_final
 
     # non hydrostatic config parameters
     itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
@@ -845,7 +845,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     vertoffset_gradp = metrics_savepoint._get_field(
         "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
     )
-    ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
+    pg_edgeidx_dsl = metrics_savepoint.pg_edgeidx_dsl()
     pg_exdist = metrics_savepoint.pg_exdist()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
@@ -1004,7 +1004,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
-        ipeidx_dsl=ipeidx_dsl,
+        ipeidx_dsl=pg_edgeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
@@ -1076,10 +1076,10 @@ def test_granule_solve_nonhydro_single_step_regional(
     mass_fl_e = sp.mass_fl_e()
     ddt_vn_phy = sp.ddt_vn_phy()
     grf_tend_vn = sp.grf_tend_vn()
-    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(1)
-    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(2)
-    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
-    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
+    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(0)
+    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(1)
+    ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(0)
+    ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
     vt = sp.vt()
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
@@ -1099,7 +1099,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     exner_new = sp.exner_new()
 
     # using fortran indices
-    jstep_init_fortran = jstep_init + 1
+    substep = substep_init
 
     dycore_wrapper.solve_nh_run(
         rho_now=rho_now,
@@ -1139,7 +1139,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         at_initial_timestep=at_initial_timestep,
         divdamp_fac_o2=initial_divdamp_fac,
         ndyn_substeps=ndyn_substeps,
-        idyn_timestep=jstep_init_fortran,
+        idyn_timestep=substep,
     )
 
     assert helpers.dallclose(
@@ -1174,18 +1174,18 @@ def test_granule_solve_nonhydro_single_step_regional(
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only, at_initial_timestep",
+    "istep_init, substep_init, step_date_init, istep_exit, substep_exit, step_date_exit, vn_only, at_initial_timestep",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False, True),
-        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True, False),
+        (1, 1, "2021-06-20T12:00:10.000", 2, 2, "2021-06-20T12:00:10.000", False, True),
+        (1, 1, "2021-06-20T12:00:20.000", 2, 2, "2021-06-20T12:00:20.000", True, False),
     ],
 )
 def test_granule_solve_nonhydro_multi_step_regional(
     step_date_init,
     step_date_exit,
     istep_exit,
-    jstep_init,
-    jstep_exit,
+    substep_init,
+    substep_exit,
     icon_grid,
     savepoint_nonhydro_init,
     lowest_layer_thickness,
@@ -1197,14 +1197,14 @@ def test_granule_solve_nonhydro_multi_step_regional(
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
-    savepoint_nonhydro_step_exit,
+    savepoint_nonhydro_step_final,
     experiment,
     ndyn_substeps,
     at_initial_timestep,
 ):
     # savepoints
     sp = savepoint_nonhydro_init
-    sp_step_exit = savepoint_nonhydro_step_exit
+    sp_step_exit = savepoint_nonhydro_step_final
 
     # non hydrostatic config parameters
     itime_scheme = solve_nh.TimeSteppingScheme.MOST_EFFICIENT
@@ -1302,7 +1302,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     vertoffset_gradp = metrics_savepoint._get_field(
         "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
     )
-    ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
+    pg_edgeidx_dsl = metrics_savepoint.pg_edgeidx_dsl()
     pg_exdist = metrics_savepoint.pg_exdist()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
@@ -1461,7 +1461,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
         ddxn_z_full=ddxn_z_full,
         zdiff_gradp=zdiff_gradp,
         vertoffset_gradp=vertoffset_gradp,
-        ipeidx_dsl=ipeidx_dsl,
+        ipeidx_dsl=pg_edgeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
@@ -1534,14 +1534,14 @@ def test_granule_solve_nonhydro_multi_step_regional(
     mass_fl_e = sp.mass_fl_e()
     ddt_vn_phy = sp.ddt_vn_phy()
     grf_tend_vn = sp.grf_tend_vn()
-    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(1)
-    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(2)
+    ddt_vn_apc_ntl1 = sp.ddt_vn_apc_pc(0)
+    ddt_vn_apc_ntl2 = sp.ddt_vn_apc_pc(1)
     if linit:
-        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
-        ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(2)
-    else:
-        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(2)
+        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(0)
         ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(1)
+    else:
+        ddt_w_adv_ntl1 = sp.ddt_w_adv_pc(1)
+        ddt_w_adv_ntl2 = sp.ddt_w_adv_pc(0)
     vt = sp.vt()
     vn_ie = sp.vn_ie()
     w_concorr_c = sp.w_concorr_c()
