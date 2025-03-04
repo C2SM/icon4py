@@ -4,7 +4,6 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - source "/root/.cargo/env"
     - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
     - | # Run the benchmarks
       bencher run \
