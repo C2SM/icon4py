@@ -126,8 +126,11 @@ def get_metrics_factory(
     ],
 )
 @pytest.mark.datatest
-def test_factory_inv_ddqz_z(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
-    field_ref = metrics_savepoint.inv_ddqz_z_full()
+def test_factory_ddqz_z_and_inverse(
+    grid_savepoint, metrics_savepoint, grid_file, experiment, backend
+):
+    inverse_field_ref = metrics_savepoint.inv_ddqz_z_full()
+    field_ref = metrics_savepoint.ddqz_z_full()
     factory = get_metrics_factory(
         backend=backend,
         experiment=experiment,
@@ -135,8 +138,31 @@ def test_factory_inv_ddqz_z(grid_savepoint, metrics_savepoint, grid_file, experi
         grid_savepoint=grid_savepoint,
         metrics_savepoint=metrics_savepoint,
     )
-    field = factory.get(attrs.INV_DDQZ_Z_FULL)
+    inverse_field = factory.get(attrs.INV_DDQZ_Z_FULL)
+    field = factory.get(attrs.DDQZ_Z_FULL)
+    assert test_helpers.dallclose(inverse_field_ref.asnumpy(), inverse_field.asnumpy())
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy())
+
+
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+@pytest.mark.datatest
+def test_factory_ddqz_full_e(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+    field_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
+    factory = get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_file=grid_file,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+    )
+    field = factory.get(attrs.DDQZ_Z_FULL_E)
+    assert test_helpers.dallclose(field_ref, field.asnumpy())
 
 
 @pytest.mark.requires_concat_where
@@ -259,7 +285,9 @@ def test_factory_ref_mc(grid_savepoint, metrics_savepoint, grid_file, experiment
     ],
 )
 @pytest.mark.datatest
-def test_factory_facs_mc(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+def test_factory_d2dexdz2_facs_mc(
+    grid_savepoint, metrics_savepoint, grid_file, experiment, backend
+):
     field_ref_1 = metrics_savepoint.d2dexdz2_fac1_mc()
     field_ref_2 = metrics_savepoint.d2dexdz2_fac2_mc()
     factory = get_metrics_factory(
@@ -294,6 +322,28 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
     )
     field = factory.get(attrs.DDXN_Z_FULL)
     assert test_helpers.dallclose(field_ref.asnumpy(), field.asnumpy(), rtol=1e-8)
+
+
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+@pytest.mark.datatest
+def test_factory_ddxt_z_full(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
+    field_ref = metrics_savepoint.ddxt_z_full().asnumpy()
+    factory = get_metrics_factory(
+        backend=backend,
+        experiment=experiment,
+        grid_file=grid_file,
+        grid_savepoint=grid_savepoint,
+        metrics_savepoint=metrics_savepoint,
+    )
+    field = factory.get(attrs.DDXT_Z_FULL)
+    # TODO (halungge) these are the np.allclose default values: single precision
+    assert test_helpers.dallclose(field.asnumpy(), field_ref, rtol=1.0e-5, atol=1.0e-8)
 
 
 @pytest.mark.parametrize(

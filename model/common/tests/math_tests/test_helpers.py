@@ -44,28 +44,33 @@ def test_cross_product(backend):
 
 class TestAverageOfTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
     PROGRAM = helpers.average_of_two_vertical_levels_downwards_on_edges
-    OUTPUTS = (test_helpers.Output("average",
-                                   refslice=(slice(None), slice(None, -1)),
-                                   gtslice=(slice(None), slice(None, -1))),)
+    OUTPUTS = (
+        test_helpers.Output(
+            "average",
+            refslice=(slice(None), slice(None, -1)),
+            gtslice=(slice(None), slice(None, -1)),
+        ),
+    )
 
     @staticmethod
     def reference(
         connectivities: dict[gtx.Dimension, np.ndarray],
-        input_field:np.ndarray,
+        input_field: np.ndarray,
         **kwargs: Any,
-    )->dict:
-        offset = np.roll(input_field, shift=1,  axis=1)
+    ) -> dict:
+        offset = np.roll(input_field, shift=1, axis=1)
         average = 0.5 * (input_field + offset)
         return dict(average=average)
 
     @pytest.fixture
-    def input_data(self, grid:base.BaseGrid)->dict:
-        input_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim:1})
-        result = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim,extend={dims.KDim:1})
-        return dict(input_field=input_field, average=result,
-                    horizontal_start=gtx.int32(0),
-                    horizontal_end=gtx.int32(grid.num_edges),
-                    vertical_start=gtx.int32(0),
-        vertical_end = gtx.int32(grid.num_levels))
-    
-    
+    def input_data(self, grid: base.BaseGrid) -> dict:
+        input_field = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        result = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        return dict(
+            input_field=input_field,
+            average=result,
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(grid.num_edges),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(grid.num_levels),
+        )
