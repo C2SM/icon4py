@@ -66,7 +66,8 @@ DEL_T_BG: Final[wpfloat] = DELTA_TEMPERATURE
 
 #: height scale for reference atmosphere [m], defined  in mo_vertical_grid
 #: scale height [m]
-_H_SCAL_BG: Final[wpfloat] = 10000.0
+HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE = 10000.0
+_H_SCAL_BG: Final[wpfloat] = HEIGHT_SCALE_FOR_REFERENCE_ATMOSPHERE
 
 # Math constants
 DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)

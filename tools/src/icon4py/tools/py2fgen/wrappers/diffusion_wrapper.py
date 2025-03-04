@@ -37,7 +37,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
@@ -46,34 +45,25 @@ from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.tools.common.logger import setup_logger
 from icon4py.tools.py2fgen import settings as settings
-from icon4py.tools.py2fgen.settings import backend, config as config_settings, device
-from icon4py.tools.py2fgen.wrappers import common as wrapper_common
-from icon4py.tools.py2fgen.wrappers.debug_utils import print_grid_decomp_info
-from icon4py.tools.py2fgen.wrappers.wrapper_dimension import (
-    CellGlobalIndexDim,
-    CellIndexDim,
-    EdgeGlobalIndexDim,
-    EdgeIndexDim,
-    VertexGlobalIndexDim,
-    VertexIndexDim,
-)
+from icon4py.tools.py2fgen.settings import backend, device
+from icon4py.tools.py2fgen.wrappers import grid_wrapper
 
 
 logger = setup_logger(__name__)
 
-diffusion_wrapper_state = {
-    "profiler": cProfile.Profile(),
-    "exchange_runtime": definitions.ExchangeRuntime,
-}
+profiler = cProfile.Profile()
+granule: Optional[Diffusion] = None
 
 
 def profile_enable():
-    diffusion_wrapper_state["profiler"].enable()
+    global profiler
+    profiler.enable()
 
 
 def profile_disable():
-    diffusion_wrapper_state["profiler"].disable()
-    stats = pstats.Stats(diffusion_wrapper_state["profiler"])
+    global profiler
+    profiler.disable()
+    stats = pstats.Stats(profiler)
     stats.dump_stats(f"{__name__}.profile")
 
 
@@ -143,7 +133,7 @@ def diffusion_init(
 
     global_grid_params = GlobalGridParams(root=global_root, level=global_level)
 
-    if not isinstance(diffusion_wrapper_state["grid"], icon.IconGrid):
+    if not isinstance(grid_wrapper.grid, icon.IconGrid):
         raise Exception(
             "Need to initialise grid using grid_init_diffusion before running diffusion_init."
         )
@@ -211,7 +201,7 @@ def diffusion_init(
 
     # Vertical grid config
     vertical_config = VerticalGridConfig(
-        num_levels=diffusion_wrapper_state["grid"].num_levels,
+        num_levels=grid_wrapper.grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
@@ -268,8 +258,9 @@ def diffusion_init(
     )
 
     # Initialize the diffusion granule
-    diffusion_wrapper_state["granule"] = Diffusion(
-        grid=diffusion_wrapper_state["grid"],
+    global granule
+    granule = Diffusion(
+        grid=grid_wrapper.grid,
         config=config,
         params=diffusion_params,
         vertical_grid=vertical_params,
@@ -278,7 +269,7 @@ def diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
         backend=backend,
-        exchange=diffusion_wrapper_state["exchange_runtime"],
+        exchange=grid_wrapper.exchange_runtime,
     )
 
 
@@ -319,138 +310,14 @@ def diffusion_run(
         dwdy=dwdy,
     )
 
+    global granule
     if linit:
-        diffusion_wrapper_state["granule"].initial_run(
+        granule.initial_run(
             diagnostic_state,
             prognostic_state,
             dtime,
         )
     else:
-        diffusion_wrapper_state["granule"].run(
+        granule.run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )
-
-
-def grid_init_diffusion(
-    cell_starts: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    cell_ends: gtx.Field[gtx.Dims[CellIndexDim], gtx.int32],
-    vertex_starts: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    vertex_ends: gtx.Field[gtx.Dims[VertexIndexDim], gtx.int32],
-    edge_starts: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
-    edge_ends: gtx.Field[gtx.Dims[EdgeIndexDim], gtx.int32],
-    c2e: gtx.Field[gtx.Dims[dims.CellDim, dims.C2EDim], gtx.int32],
-    e2c: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2CDim], gtx.int32],
-    c2e2c: gtx.Field[gtx.Dims[dims.CellDim, dims.C2E2CDim], gtx.int32],
-    e2c2e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], gtx.int32],
-    e2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2VDim], gtx.int32],
-    v2e: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2EDim], gtx.int32],
-    v2c: gtx.Field[gtx.Dims[dims.VertexDim, dims.V2CDim], gtx.int32],
-    e2c2v: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2VDim], gtx.int32],
-    c2v: gtx.Field[gtx.Dims[dims.CellDim, dims.C2VDim], gtx.int32],
-    c_owner_mask: gtx.Field[[dims.CellDim], bool],
-    e_owner_mask: gtx.Field[[dims.EdgeDim], bool],
-    v_owner_mask: gtx.Field[[dims.VertexDim], bool],
-    c_glb_index: gtx.Field[[CellGlobalIndexDim], gtx.int32],
-    e_glb_index: gtx.Field[[EdgeGlobalIndexDim], gtx.int32],
-    v_glb_index: gtx.Field[[VertexGlobalIndexDim], gtx.int32],
-    comm_id: gtx.int32,
-    global_root: gtx.int32,
-    global_level: gtx.int32,
-    num_vertices: gtx.int32,
-    num_cells: gtx.int32,
-    num_edges: gtx.int32,
-    vertical_size: gtx.int32,
-    limited_area: bool,
-):
-    on_gpu = config_settings.device == settings.Device.GPU
-    xp = c2e.array_ns
-
-    # TODO(havogt): add direct support for ndarrays in py2fgen
-    cell_starts = cell_starts.ndarray
-    cell_ends = cell_ends.ndarray
-    vertex_starts = vertex_starts.ndarray
-    vertex_ends = vertex_ends.ndarray
-    edge_starts = edge_starts.ndarray
-    edge_ends = edge_ends.ndarray
-    c_owner_mask = c_owner_mask.ndarray if c_owner_mask is not None else None
-    e_owner_mask = e_owner_mask.ndarray if e_owner_mask is not None else None
-    v_owner_mask = v_owner_mask.ndarray if v_owner_mask is not None else None
-    c_glb_index = c_glb_index.ndarray if c_glb_index is not None else None
-    e_glb_index = e_glb_index.ndarray if e_glb_index is not None else None
-    v_glb_index = v_glb_index.ndarray if v_glb_index is not None else None
-
-    if on_gpu:
-        cp = xp
-        cell_starts = cp.asnumpy(cell_starts)
-        cell_ends = cp.asnumpy(cell_ends)
-        vertex_starts = cp.asnumpy(vertex_starts)
-        vertex_ends = cp.asnumpy(vertex_ends)
-        edge_starts = cp.asnumpy(edge_starts)
-        edge_ends = cp.asnumpy(edge_ends)
-        c_owner_mask = cp.asnumpy(c_owner_mask) if c_owner_mask is not None else None
-        e_owner_mask = cp.asnumpy(e_owner_mask) if e_owner_mask is not None else None
-        v_owner_mask = cp.asnumpy(v_owner_mask) if v_owner_mask is not None else None
-        c_glb_index = cp.asnumpy(c_glb_index) if c_glb_index is not None else None
-        e_glb_index = cp.asnumpy(e_glb_index) if e_glb_index is not None else None
-        v_glb_index = cp.asnumpy(v_glb_index) if v_glb_index is not None else None
-
-    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
-
-    diffusion_wrapper_state["grid"] = wrapper_common.construct_icon_grid(
-        cell_starts=cell_starts,
-        cell_ends=cell_ends,
-        vertex_starts=vertex_starts,
-        vertex_ends=vertex_ends,
-        edge_starts=edge_starts,
-        edge_ends=edge_ends,
-        c2e=c2e.ndarray,
-        e2c=e2c.ndarray,
-        c2e2c=c2e2c.ndarray,
-        e2c2e=e2c2e.ndarray,
-        e2v=e2v.ndarray,
-        v2e=v2e.ndarray,
-        v2c=v2c.ndarray,
-        e2c2v=e2c2v.ndarray,
-        c2v=c2v.ndarray,
-        grid_id="icon_grid",
-        global_grid_params=global_grid_params,
-        num_vertices=num_vertices,
-        num_cells=num_cells,
-        num_edges=num_edges,
-        vertical_size=vertical_size,
-        limited_area=limited_area,
-        on_gpu=on_gpu,
-    )
-
-    if config_settings.parallel_run:
-        # Set MultiNodeExchange as exchange runtime
-        (
-            processor_props,
-            decomposition_info,
-            exchange_runtime,
-        ) = wrapper_common.construct_decomposition(
-            c_glb_index,
-            e_glb_index,
-            v_glb_index,
-            c_owner_mask,
-            e_owner_mask,
-            v_owner_mask,
-            num_cells,
-            num_edges,
-            num_vertices,
-            vertical_size,
-            comm_id,
-        )
-        print_grid_decomp_info(
-            diffusion_wrapper_state["grid"],
-            processor_props,
-            decomposition_info,
-            num_cells,
-            num_edges,
-            num_vertices,
-        )
-        # set exchange runtime to MultiNodeExchange
-        diffusion_wrapper_state["exchange_runtime"] = exchange_runtime
-    else:
-        # set exchange runtime to SingleNodeExchange
-        diffusion_wrapper_state["exchange_runtime"] = definitions.SingleNodeExchange()

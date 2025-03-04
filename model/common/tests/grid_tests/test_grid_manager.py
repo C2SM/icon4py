@@ -529,6 +529,14 @@ def test_grid_manager_start_end_index(caplog, grid_file, experiment, dim, icon_g
     serialized_grid = icon_grid
     grid = _run_grid_manager(grid_file, backend).grid
     for domain in utils.global_grid_domains(dim):
+        if (
+            dim == dims.EdgeDim
+            and domain.zone == h_grid.Zone.END
+            and experiment == dt_utils.GLOBAL_EXPERIMENT
+        ):
+            pytest.xfail(
+                "FIXME: start_index in serialized data changed to 0 with unknown consequences, see also icon-exclaim output"
+            )
         assert grid.start_index(domain) == serialized_grid.start_index(
             domain
         ), f"start index wrong for domain {domain}"

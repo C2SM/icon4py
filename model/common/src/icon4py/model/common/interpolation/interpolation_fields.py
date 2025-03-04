@@ -27,7 +27,7 @@ def compute_c_lin_e(
     edge_cell_length: data_alloc.NDArray,
     inv_dual_edge_length: data_alloc.NDArray,
     edge_owner_mask: data_alloc.NDArray,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -97,7 +97,7 @@ def compute_geofac_n2s(
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -268,7 +268,7 @@ def compute_geofac_grdiv(
     c2e: data_alloc.NDArray,
     e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -440,7 +440,7 @@ def _compute_c_bln_avg(
     lat: data_alloc.NDArray,
     lon: data_alloc.NDArray,
     divavg_cntrwgt: ta.wpfloat,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -689,8 +689,8 @@ def compute_e_flx_avg(
     c2e: data_alloc.NDArray,
     c2e2c: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
-    horizontal_start_p3: np.int32,
-    horizontal_start_p4: np.int32,
+    horizontal_start_p3: gtx.int32,
+    horizontal_start_p4: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """
@@ -971,7 +971,7 @@ def compute_pos_on_tplane_e_x_y(
     e2c: data_alloc.NDArray,
     e2v: data_alloc.NDArray,
     e2c2e: data_alloc.NDArray,
-    horizontal_start: np.int32,
+    horizontal_start: gtx.int32,
     array_ns: ModuleType = np,
 ) -> data_alloc.NDArray:
     """

@@ -12,6 +12,7 @@ from typing import Any, Iterable, List
 
 from gt4py.next.common import DimensionKind, OffsetProvider
 from gt4py.next.iterator import ir as itir
+from gt4py.next.iterator.ir_utils import ir_makers as im
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from gt4py.next.type_system import type_specifications as ts
 
@@ -142,12 +143,12 @@ def generate_gtheader(
                 "Vertex": "num_vertices",
                 # These might be used temporarily in the domain inference, but will disappear
                 # later. Can be removed after domain sizes are determined at runtime.
-                "EC": "UNKNOWN",
-                "CE": "UNKNOWN",
-                "CECD": "UNKNOWN",
-                "ECD": "UNKNOWN",
-                "ECVD": "UNKNOWN",
-                "CECECD": "UNKNOWN",
+                "EC": im.literal_from_value(-666),
+                "CE": im.literal_from_value(-666),
+                "CECD": im.literal_from_value(-666),
+                "ECD": im.literal_from_value(-666),
+                "ECVD": im.literal_from_value(-666),
+                "CECECD": im.literal_from_value(-666),
             },
         )
 

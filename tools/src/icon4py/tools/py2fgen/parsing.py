@@ -13,7 +13,6 @@ from types import ModuleType, NoneType
 from typing import Any, Callable, List, Union
 
 from gt4py.next.type_system import (
-    type_specifications as gtx_type_specifications,
     type_translation as gtx_type_translation,
 )
 

@@ -20,22 +20,9 @@ test_model_stencils_aarch64:
     - nox -s "test_model-3.10(datatest, $COMPONENT)" -- --backend=$BACKEND
   parallel:
     matrix:
-    - COMPONENT: [advection, diffusion, dycore, microphysics, driver]  # common
+    - COMPONENT: [advection, diffusion, dycore, microphysics, common, driver]
       BACKEND: [dace_cpu, dace_gpu]
 # test_model_datatests_x86_64:
 #   extends: [.test_model_datatests, .test_template_x86_64]
 test_model_datatests_aarch64:
   extends: [.test_model_datatests, .test_template_aarch64]
-
-.benchmark_model_stencils:
-  stage: benchmark
-  script:
-    - nox -s benchmark_model-3.10  -- --backend=$BACKEND --grid=$GRID
-  parallel:
-    matrix:
-    - BACKEND: [dace_cpu, dace_gpu]
-      GRID: [icon_grid, icon_grid_global]
-# benchmark_model_stencils_x86_64:
-#   extends: [.benchmark_model_stencils, .test_template_x86_64]
-benchmark_model_stencils_aarch64:
-  extends: [.benchmark_model_stencils, .test_template_aarch64]
