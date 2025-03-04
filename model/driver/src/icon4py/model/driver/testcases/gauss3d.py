@@ -25,7 +25,7 @@ from icon4py.model.common.states import (
     prognostic_state as prognostics,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver.test_cases import utils as testcases_utils
+from icon4py.model.driver.testcases import utils as testcases_utils
 from icon4py.model.testing import serialbox as sb
 
 

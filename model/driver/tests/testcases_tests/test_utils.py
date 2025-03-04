@@ -10,7 +10,7 @@ import functools
 import numpy as np
 
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.driver.test_cases import utils
+from icon4py.model.driver.testcases import utils
 from icon4py.model.testing import helpers
 
 

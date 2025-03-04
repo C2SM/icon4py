@@ -49,6 +49,10 @@ def is_embedded(backend: gtx_backend.Backend | None) -> bool:
     return backend is None
 
 
+def is_gtfn_backend(backend: gtx_backend.Backend | None) -> bool:
+    return "gtfn" in backend.name if backend else False
+
+
 def is_roundtrip(backend: gtx_backend.Backend | None) -> bool:
     return backend.name == "roundtrip" if backend else False
 
@@ -82,6 +86,10 @@ def apply_markers(
 ):
     for marker in markers:
         match marker.name:
+            case "requires_k_dimension" if is_gtfn_backend(backend):
+                pytest.xfail(
+                    "Stencil only operates on horizontal dimensions but gtfn_ir requires vertical as well."
+                )
             case "cpu_only" if data_alloc.is_cupy_device(backend):
                 pytest.xfail("currently only runs on CPU")
             case "embedded_only" if not is_embedded(backend):
