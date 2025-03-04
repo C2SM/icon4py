@@ -8,7 +8,8 @@
 import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, maximum, where
+from gt4py.next.ffront.experimental import concat_where
+from gt4py.next.ffront.fbuiltins import broadcast, maximum
 
 from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
     _add_extra_diffusion_for_w_con_approaching_cfl,
@@ -54,20 +55,20 @@ def _fused_velocity_advection_stencil_16_to_18(
 ) -> fa.CellKField[vpfloat]:
     k = broadcast(k, (dims.CellDim, dims.KDim))
 
-    ddt_w_adv = where(
-        (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
+    ddt_w_adv = concat_where(
+        (cell_lower_bound <= dims.CellDim < cell_upper_bound) & (1 <= dims.KDim),
         _compute_advective_vertical_wind_tendency(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
         ddt_w_adv,
     )
-    ddt_w_adv = where(
-        (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
+    ddt_w_adv = concat_where(
+        (cell_lower_bound <= dims.CellDim < cell_upper_bound) & (1 <= dims.KDim),
         _add_interpolated_horizontal_advection_of_w(e_bln_c_s, z_v_grad_w, ddt_w_adv),
         ddt_w_adv,
     )
     ddt_w_adv = (
-        where(
-            (cell_lower_bound <= cell < cell_upper_bound)
-            & (maximum(2, nrdmax - 2) <= k < nlev - 3),
+        concat_where(
+            (cell_lower_bound <= dims.CellDim < cell_upper_bound)
+            & (maximum(2, nrdmax - 2) <= dims.KDim < nlev - 3),
             _add_extra_diffusion_for_w_con_approaching_cfl(
                 levelmask,
                 cfl_clipping,

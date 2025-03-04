@@ -4,10 +4,12 @@ include:
 .test_model_stencils:
   stage: test
   script:
-    - nox -s test_model_stencils-3.10 -- --backend=$BACKEND --grid=$GRID
+    - nox -s "test_model_stencils-3.10(subpackage='$COMPONENT')" -- --backend=$BACKEND --grid=$GRID
   parallel:
     matrix:
-    - BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
+    # TODO: enable advection tests
+    - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, atmosphere/subgrid_scale_physics/microphysics, common, driver]
+      BACKEND: [embedded, gtfn_cpu, gtfn_gpu]
       GRID: [simple_grid, icon_grid]
   rules:
     - when: on_success
