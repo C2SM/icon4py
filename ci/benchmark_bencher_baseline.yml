@@ -4,9 +4,11 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - rustup show && rustc --version && which rustc && cargo --version && which cargo
+    - rustup show
     - rustup default stable
+    - rustc --version && which rustc && cargo --version && which cargo
     - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
+    - source "$HOME/.cargo/env"
     - | # Run the benchmarks
       bencher run \
       --project "$BENCHER_PROJECT" \
