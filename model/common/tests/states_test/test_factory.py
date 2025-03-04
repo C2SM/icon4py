@@ -14,7 +14,6 @@ import pytest
 from icon4py.model.common import dimension as dims, utils as common_utils
 from icon4py.model.common.grid import horizontal as h_grid, icon, vertical as v_grid
 from icon4py.model.common.math import helpers as math_helpers
-from icon4py.model.common.metrics import metric_fields as metrics
 from icon4py.model.common.states import factory, model, utils as state_utils
 from icon4py.model.common.utils import data_allocation as data_alloc
 
@@ -122,7 +121,7 @@ def test_field_operator_provider(cell_coordinate_source):
 
 @pytest.mark.datatest
 def test_program_provider(height_coordinate_source):
-    program = metrics.compute_z_mc
+    program = math_helpers.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),
@@ -144,7 +143,7 @@ def test_program_provider(height_coordinate_source):
 
 
 def test_field_source_raise_error_on_register(cell_coordinate_source):
-    program = metrics.compute_z_mc
+    program = math_helpers.average_two_vertical_levels_downwards_on_cells
     domain = {
         dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.LOCAL)),
         dims.KDim: (k_domain(v_grid.Zone.TOP), k_domain(v_grid.Zone.BOTTOM)),

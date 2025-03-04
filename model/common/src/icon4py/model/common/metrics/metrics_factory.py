@@ -139,7 +139,9 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
 
     def _register_computed_fields(self):
         height = factory.ProgramFieldProvider(
-            func=mf.compute_z_mc.with_backend(self._backend),
+            func=math_helpers.average_two_vertical_levels_downwards_on_cells.with_backend(
+                self._backend
+            ),
             domain={
                 dims.CellDim: (cell_domain(h_grid.Zone.LOCAL), cell_domain(h_grid.Zone.END)),
                 dims.KDim: (
@@ -390,7 +392,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         self.register_provider(compute_ddxn_z_half_e)
 
         compute_ddxn_z_full = factory.ProgramFieldProvider(
-            func=math_helpers.average_of_two_vertical_levels_downwards_on_edges.with_backend(
+            func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
             ),
             deps={
@@ -410,7 +412,7 @@ class MetricsFieldsFactory(factory.FieldSource, factory.GridProvider):
         )
         self.register_provider(compute_ddxn_z_full)
         compute_ddxt_z_full = factory.ProgramFieldProvider(
-            func=math_helpers.average_of_two_vertical_levels_downwards_on_edges.with_backend(
+            func=math_helpers.average_two_vertical_levels_downwards_on_edges.with_backend(
                 self._backend
             ),
             deps={

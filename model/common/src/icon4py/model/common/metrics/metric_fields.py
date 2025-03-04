@@ -43,8 +43,7 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 )
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
-    average_cell_kdim_level_up,
-    difference_k_level_up,
+    difference_level_plus1_on_cells,
     grad_fd_norm,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -53,40 +52,6 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 """
 Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
 """
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_z_mc(
-    z_ifc: fa.CellKField[wpfloat],
-    z_mc: fa.CellKField[wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    """
-    Compute the geometric height of full levels from the geometric height of half levels (z_ifc).
-
-    This assumes that the input field z_ifc is defined on half levels (KHalfDim) and the
-    returned fields is defined on full levels (dims.KDim)
-
-    Args:
-        z_ifc: Field[Dims[dims.CellDim, dims.KDim], wpfloat] geometric height on half levels
-        z_mc: Field[Dims[dims.CellDim, dims.KDim], wpfloat] output, geometric height defined on full levels
-        horizontal_start:int32 start index of horizontal domain
-        horizontal_end:int32 end index of horizontal domain
-        vertical_start:int32 start index of vertical domain
-        vertical_end:int32 end index of vertical domain
-
-    """
-    average_cell_kdim_level_up(
-        z_ifc,
-        out=z_mc,
-        domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
 
 
 # TODO(@nfarabullini): ddqz_z_half vertical dimension is khalf, use K2KHalf once merged for z_ifc and z_mc
@@ -150,7 +115,7 @@ def compute_ddqz_z_half(
 def _compute_ddqz_z_full_and_inverse(
     z_ifc: fa.CellKField[wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
-    ddqz_z_full = difference_k_level_up(z_ifc)
+    ddqz_z_full = difference_level_plus1_on_cells(z_ifc)
     inverse_ddqz_z_full = 1.0 / ddqz_z_full
     return ddqz_z_full, inverse_ddqz_z_full
 

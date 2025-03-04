@@ -8,7 +8,6 @@
 import math
 
 import gt4py.next as gtx
-import numpy as np
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
@@ -33,7 +32,6 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_theta_exner_ref_mc,
     compute_vwind_expl_wgt,
     compute_wgtfac_e,
-    compute_z_mc,
 )
 from icon4py.model.common.utils import data_allocation as data_alloc
 from icon4py.model.testing import datatest_utils as dt_utils, helpers as testing_helpers
@@ -42,39 +40,6 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers as testing
 cell_domain = horizontal.domain(dims.CellDim)
 edge_domain = horizontal.domain(dims.EdgeDim)
 vertex_domain = horizontal.domain(dims.VertexDim)
-
-
-class TestComputeZMc(testing_helpers.StencilTest):
-    PROGRAM = compute_z_mc
-    OUTPUTS = ("z_mc",)
-
-    @staticmethod
-    def reference(
-        grid,
-        z_ifc: np.array,
-        **kwargs,
-    ) -> dict:
-        shp = z_ifc.shape
-        z_mc = 0.5 * (z_ifc + np.roll(z_ifc, shift=-1, axis=1))[:, : shp[1] - 1]
-        return dict(z_mc=z_mc)
-
-    @pytest.fixture
-    def input_data(self, grid) -> dict:
-        z_mc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        z_if = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        horizontal_start = 0
-        horizontal_end = grid.num_cells
-        vertical_start = 0
-        vertical_end = grid.num_levels
-
-        return dict(
-            z_mc=z_mc,
-            z_ifc=z_if,
-            vertical_start=vertical_start,
-            vertical_end=vertical_end,
-            horizontal_start=horizontal_start,
-            horizontal_end=horizontal_end,
-        )
 
 
 @pytest.mark.embedded_remap_error
@@ -509,7 +474,6 @@ def test_compute_theta_exner_ref_mc(metrics_savepoint, icon_grid, backend):
     p0ref = constants.REFERENCE_PRESSURE
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
-    z_ifc = metrics_savepoint.z_ifc()
     z_mc = metrics_savepoint.z_mc()
 
     compute_theta_exner_ref_mc.with_backend(backend)(

@@ -15,7 +15,7 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, simple
 from icon4py.model.common.math import helpers
 from icon4py.model.common.utils import data_allocation as data_alloc
-from icon4py.model.testing import helpers as test_helpers
+from icon4py.model.testing import helpers as test_helpers, helpers as testing_helpers
 
 
 def test_cross_product(backend):
@@ -43,7 +43,7 @@ def test_cross_product(backend):
 
 
 class TestAverageOfTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
-    PROGRAM = helpers.average_of_two_vertical_levels_downwards_on_edges
+    PROGRAM = helpers.average_two_vertical_levels_downwards_on_edges
     OUTPUTS = (
         test_helpers.Output(
             "average",
@@ -73,4 +73,37 @@ class TestAverageOfTwoVerticalLevelsDownwardsOnEdges(test_helpers.StencilTest):
             horizontal_end=gtx.int32(grid.num_edges),
             vertical_start=gtx.int32(0),
             vertical_end=gtx.int32(grid.num_levels),
+        )
+
+
+class TestComputeZMc(testing_helpers.StencilTest):
+    PROGRAM = helpers.average_two_vertical_levels_downwards_on_cells
+    OUTPUTS = ("z_mc",)
+
+    @staticmethod
+    def reference(
+        grid,
+        z_ifc: np.array,
+        **kwargs,
+    ) -> dict:
+        shp = z_ifc.shape
+        z_mc = 0.5 * (z_ifc + np.roll(z_ifc, shift=-1, axis=1))[:, : shp[1] - 1]
+        return dict(z_mc=z_mc)
+
+    @pytest.fixture
+    def input_data(self, grid) -> dict:
+        z_mc = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
+        z_if = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        horizontal_start = 0
+        horizontal_end = grid.num_cells
+        vertical_start = 0
+        vertical_end = grid.num_levels
+
+        return dict(
+            z_mc=z_mc,
+            z_ifc=z_if,
+            vertical_start=vertical_start,
+            vertical_end=vertical_end,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
         )
