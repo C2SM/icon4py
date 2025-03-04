@@ -4,8 +4,6 @@ include:
 .benchmark_model_stencils:
   stage: benchmark
   script:
-    - rustup default stable
-    - cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli --root /root/.cargo
     - | # Run the benchmarks
       bencher run \
       --project "$BENCHER_PROJECT" \

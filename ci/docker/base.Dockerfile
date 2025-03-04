@@ -36,6 +36,10 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN rustc --version && which rustc && cargo --version && which cargo
 
+# Install Bencher for performance monitoring
+RUN cargo install --git https://github.com/bencherdev/bencher --branch main --locked --force bencher_cli
+RUN bencher --version
+
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=24.11
 ARG HPC_SDK_NAME=nvhpc_2024_2411_Linux_aarch64_cuda_12.6
