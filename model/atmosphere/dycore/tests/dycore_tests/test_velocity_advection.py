@@ -7,6 +7,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 import gt4py.next as gtx
 import numpy as np
+
+import logging
 import pytest
 
 from icon4py.model.atmosphere.dycore import dycore_states, velocity_advection as advection
@@ -33,6 +35,9 @@ from icon4py.model.testing import datatest_utils as dt_utils, helpers
 from . import utils
 
 
+log = logging.getLogger(__name__)
+
+
 def create_vertical_params(vertical_config, grid_savepoint):
     return v_grid.VerticalGrid(
         config=vertical_config,
@@ -47,7 +52,7 @@ def create_vertical_params(vertical_config, grid_savepoint):
     "experiment, step_date_init",
     [
         ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
-        # ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_savepoint(
@@ -117,7 +122,7 @@ def test_scale_factors_by_dtime(savepoint_velocity_init, icon_grid, backend):
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit, substep_init", [(1, 1, 1)])
+@pytest.mark.parametrize("istep_init, substep_init, istep_exit, substep_exit ", [(1, 1, 1, 1)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -131,6 +136,8 @@ def test_velocity_predictor_step(
     istep_exit,
     step_date_init,
     step_date_exit,
+    substep_init,
+    substep_exit,
     lowest_layer_thickness,
     model_top_height,
     stretch_factor,
@@ -142,7 +149,9 @@ def test_velocity_predictor_step(
     interpolation_savepoint,
     savepoint_velocity_exit,
     backend,
+    caplog,
 ):
+    caplog.set_level(logging.WARN)
     init_savepoint = savepoint_velocity_init
     vn_only = init_savepoint.vn_only()
     dtime = init_savepoint.get_metadata("dtime").get("dtime")
@@ -223,6 +232,7 @@ def test_velocity_predictor_step(
     icon_result_z_w_concorr_mc = savepoint_velocity_exit.z_w_concorr_mc().asnumpy()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
+    # FIX
     # stencil 01
     assert helpers.dallclose(diagnostic_state.vt.asnumpy(), icon_result_vt, atol=1.0e-14)
     # stencil 02,05
@@ -288,7 +298,7 @@ def test_velocity_predictor_step(
 
 @pytest.mark.embedded_remap_error
 @pytest.mark.datatest
-@pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
+@pytest.mark.parametrize("istep_init, istep_exit, substep_init", [(2, 2, 1)])
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit",
     [
@@ -299,6 +309,7 @@ def test_velocity_predictor_step(
 def test_velocity_corrector_step(
     istep_init,
     istep_exit,
+    substep_init,
     step_date_init,
     step_date_exit,
     lowest_layer_thickness,
@@ -313,17 +324,16 @@ def test_velocity_corrector_step(
     metrics_savepoint,
     backend,
 ):
-    sp_v = savepoint_velocity_init
-    vn_only = sp_v.get_metadata("vn_only").get("vn_only")
-    ntnd = sp_v.get_metadata("ntnd").get("ntnd")
-    dtime = sp_v.get_metadata("dtime").get("dtime")
+    init_savepoint = savepoint_velocity_init
+    vn_only = init_savepoint.vn_only()
+    dtime = init_savepoint.get_metadata("dtime").get("dtime")
 
     assert not vn_only
 
     diagnostic_state = dycore_states.DiagnosticStateNonHydro(
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
+        vt=init_savepoint.vt(),
+        vn_ie=init_savepoint.vn_ie(),
+        w_concorr_c=init_savepoint.w_concorr_c(),
         theta_v_ic=None,
         exner_pr=None,
         rho_ic=None,
@@ -335,10 +345,10 @@ def test_velocity_corrector_step(
         ddt_vn_phy=None,
         grf_tend_vn=None,
         ddt_vn_apc_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_vn_apc_pc(1), sp_v.ddt_vn_apc_pc(2)
+            init_savepoint.ddt_vn_apc_pc(0), init_savepoint.ddt_vn_apc_pc(1)
         ),
         ddt_w_adv_pc=common_utils.PredictorCorrectorPair(
-            sp_v.ddt_w_adv_pc(1), sp_v.ddt_w_adv_pc(2)
+            init_savepoint.ddt_w_adv_pc(0), init_savepoint.ddt_w_adv_pc(1)
         ),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
@@ -346,8 +356,8 @@ def test_velocity_corrector_step(
         exner_dyn_incr=None,
     )
     prognostic_state = prognostics.PrognosticState(
-        w=sp_v.w(),
-        vn=sp_v.vn(),
+        w=init_savepoint.w(),
+        vn=init_savepoint.vn(),
         theta_v=None,
         rho=None,
         exner=None,
@@ -382,14 +392,14 @@ def test_velocity_corrector_step(
     velocity_advection.run_corrector_step(
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
-        z_kin_hor_e=sp_v.z_kin_hor_e(),
-        z_vt_ie=sp_v.z_vt_ie(),
+        z_kin_hor_e=init_savepoint.z_kin_hor_e(),
+        z_vt_ie=init_savepoint.z_vt_ie(),
         dtime=dtime,
         cell_areas=cell_geometry.area,
     )
 
-    icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(ntnd).asnumpy()
-    icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(ntnd).asnumpy()
+    icon_result_ddt_vn_apc_pc = savepoint_velocity_exit.ddt_vn_apc_pc(1).asnumpy()
+    icon_result_ddt_w_adv_pc = savepoint_velocity_exit.ddt_w_adv_pc(1).asnumpy()
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
     # stencil 07
