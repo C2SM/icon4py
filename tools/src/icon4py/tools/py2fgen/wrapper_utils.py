@@ -128,14 +128,14 @@ def _int_array_to_bool_array(int_array: np.typing.NDArray) -> np.typing.NDArray:
 
 def as_field(  # type: ignore[no-untyped-def] # CData type not public?
     ffi: cffi.FFI,
-    xp,
+    on_gpu: bool,
     ptr,
     scalar_kind: ts.ScalarKind,
     domain: dict[gtx.Dimension, int],
     is_optional: bool,
 ) -> Optional[gtx.Field]:
     sizes = domain.values()
-    unpack = _unpack if xp == np else _unpack_gpu
+    unpack = _unpack_gpu if on_gpu else _unpack
     if ptr == ffi.NULL:
         if is_optional:
             return None

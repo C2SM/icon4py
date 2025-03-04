@@ -25,10 +25,8 @@ def square_wrapper_module():
     return "icon4py.tools.py2fgen.wrappers.simple"
 
 
-def compile_fortran_code(
-    plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags, backend
-):
-    shared_library = f"{plugin_name}_{backend.lower()}"
+def compile_fortran_code(plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags):
+    shared_library = f"{plugin_name}"
     command = [
         f"{compiler}",
         "-cpp",
@@ -61,7 +59,7 @@ def run_test_case(
     module,
     function,
     plugin_name,
-    backend,
+    backend,  # TODO remove
     samples_path,
     fortran_driver,
     test_temp_dir,
@@ -71,7 +69,7 @@ def run_test_case(
     env_vars=None,
 ):
     with cli.isolated_filesystem(temp_dir=test_temp_dir):
-        invoke_cli(cli, module, function, plugin_name, backend)
+        invoke_cli(cli, module, function, plugin_name)
         compile_and_run_fortran(
             plugin_name,
             samples_path,
@@ -80,12 +78,11 @@ def run_test_case(
             extra_compiler_flags,
             expected_error_code,
             env_vars,
-            backend=backend,
         )
 
 
-def invoke_cli(cli, module, function, plugin_name, backend):
-    cli_args = [module, function, plugin_name, "-b", backend, "-d"]
+def invoke_cli(cli, module, function, plugin_name):
+    cli_args = [module, function, plugin_name, "-d"]
     result = cli.invoke(main, cli_args)
     assert result.exit_code == 0, "CLI execution failed"
 
@@ -98,11 +95,10 @@ def compile_and_run_fortran(
     extra_compiler_flags,
     expected_error_code,
     env_vars,
-    backend,
 ):
     try:
         compile_fortran_code(
-            plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags, backend
+            plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags
         )
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Compilation failed: {e}\n{e.stderr}\n{e.stdout}")

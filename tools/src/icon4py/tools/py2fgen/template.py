@@ -18,7 +18,6 @@ from icon4py.tools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_ISO_C_TYPE,
     BUILTIN_TO_NUMPY_TYPE,
 )
-from icon4py.tools.py2fgen.settings import GT4PyBackend
 
 
 CFFI_DECORATOR = "@ffi.def_extern()"
@@ -67,6 +66,7 @@ class Func(Node):
             params.append(param.name)
             for i in range(len(param.dimensions)):
                 params.append(_size_arg_name(param, i))
+        params.append("on_gpu")
         self.rendered_params = ", ".join(params)
 
 
@@ -77,16 +77,12 @@ class CffiPlugin(Node):
 
 
 class PythonWrapper(CffiPlugin):
-    backend: str
     debug_mode: bool
     profile: bool
     cffi_decorator: str = CFFI_DECORATOR
-    gt4py_backend: str = datamodels.field(init=False)
     used_dimensions: list[gtx.Dimension] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.gt4py_backend = GT4PyBackend[self.backend].value
-
         _used_dimensions: set[gtx.Dimension] = set()
         for func in self.functions:
             for arg in func.args:
@@ -188,19 +184,22 @@ class PythonWrapperGenerator(TemplatedGenerator):
 import logging
 {% if _this_node.profile %}import time{% endif %}
 from {{ plugin_name }} import ffi
-{% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
+try:
+    import cupy as cp # TODO remove this import
+except ImportError:
+    cp = None
 import gt4py.next as gtx
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.tools.py2fgen.settings import config
 from icon4py.tools.py2fgen import wrapper_utils
-xp = config.array_ns
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
 logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else -%}ERROR{%- endif -%},
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
-{% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
+
+if cp is not None:
+    logging.info(cp.show_config())
 
 # embedded function imports
 {% for func in _this_node.functions -%}
@@ -236,7 +235,7 @@ def {{ func.name }}_wrapper(
         # Convert ptr to GT4Py fields
         {% for arg in func.args %}
         {% if arg.is_array %}
-        {{ arg.name }} = wrapper_utils.as_field(ffi, xp, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}}, {{arg.is_optional}})
+        {{ arg.name }} = wrapper_utils.as_field(ffi, on_gpu, {{ arg.name }}, ts.ScalarKind.{{ arg.d_type.name }}, {{arg.domain}}, {{arg.is_optional}})
         {% elif arg.is_bool %}
         assert isinstance({{ arg.name }}, int)
         {{ arg.name }} = {{ arg.name }} != 0
@@ -305,6 +304,7 @@ class CHeaderGenerator(TemplatedGenerator):
             params.append(self.visit(param))
             for i in range(len(param.dimensions)):
                 params.append(f"int {_size_arg_name(param, i)}")
+        params.append("int on_gpu")
         rendered_params = ", ".join(params)
         return self.generic_visit(func, rendered_params=rendered_params)
 
@@ -330,27 +330,8 @@ class DimensionPosition(Node):
 
 
 class F90FunctionDefinition(Func):
-    dimension_positions: Sequence[DimensionPosition] = datamodels.field(init=False)
-
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         super().__post_init__()  # call Func __post_init__
-        self.dimension_positions = self.extract_dimension_positions()
-
-    def extract_dimension_positions(self) -> Sequence[DimensionPosition]:
-        """Extract a unique set of dimension positions which are used to infer dimension sizes at runtime."""
-        dim_positions: list[DimensionPosition] = []
-        unique_size_args: set[str] = set()
-        non_optional_args = [arg for arg in self.args if not arg.is_optional]
-        for arg in non_optional_args:
-            for index, size_arg in enumerate(arg.size_args):
-                if size_arg not in unique_size_args:
-                    dim_positions.append(
-                        DimensionPosition(
-                            variable=str(arg.name), size_arg=size_arg, index=index + 1
-                        )
-                    )  # Use Fortran indexing
-                    unique_size_args.add(size_arg)
-        return dim_positions
 
 
 def _render_parameter_declaration(name: str, attributes: Sequence[str | None]) -> str:
@@ -424,6 +405,11 @@ end module
                 name = _size_arg_name(param, i)
                 param_names.append(name)
                 param_declarations.append(_size_param_declaration(name))
+
+        # on_gpu flag
+        param_declarations.append("logical(c_int), value :: on_gpu")
+        param_names.append("on_gpu")
+
         param_names_str = ", &\n ".join(param_names)
 
         return self.generic_visit(
@@ -461,6 +447,8 @@ end function {{name}}_wrapper
                 name = _size_arg_name(arg, i)
                 args.append(f"{name} = {name}")
 
+        # on_gpu flag
+        args.append("on_gpu = on_gpu")
         compiled_arg_names = ", &\n".join(args)
 
         param_declarations = [
@@ -475,6 +463,9 @@ end function {{name}}_wrapper
             )
             for param in func.args
         ]
+
+        # on_gpu flag
+        param_declarations.append("logical(c_int) :: on_gpu")
 
         def get_sizes_maker(arg: FuncParameter) -> str:
             return "\n".join(
@@ -526,6 +517,12 @@ subroutine {{name}}({{param_names}})
    {%- for arr in optional_arrays %}
        !$acc host_data use_device({{ arr }}) if(associated({{ arr }}))
    {%- endfor %}
+   
+   #ifdef _OPENACC
+   on_gpu = .True.
+   #else
+   on_gpu = .False.
+   #endif
 
    {% for arg in _this_node.args if not arg.is_optional %}
      {{ get_sizes_maker(arg) }}

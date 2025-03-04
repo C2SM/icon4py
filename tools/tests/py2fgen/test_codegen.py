@@ -79,14 +79,20 @@ def test_cheader_generation_for_single_function():
     plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[foo])
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1);"
+    assert (
+        header
+        == "extern int foo_wrapper(int one, double* two, int two_size_0, int two_size_1, int on_gpu);"
+    )
 
 
 def test_cheader_for_pointer_args():
     plugin = CffiPlugin(module_name="libtest", plugin_name="libtest_plugin", functions=[bar])
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two);"
+    assert (
+        header
+        == "extern int bar_wrapper(float* one, int one_size_0, int one_size_1, int two, int on_gpu);"
+    )
 
 
 def compare_ignore_whitespace(actual: str, expected: str):
