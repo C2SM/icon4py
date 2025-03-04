@@ -233,7 +233,7 @@ def solve_nh_init(
         vertoffset_gradp=data_alloc.flatten_first_two_dims(
             dims.ECDim, dims.KDim, field=vertoffset_gradp
         ),
-        ipeidx_dsl=ipeidx_dsl,
+        pg_edgeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
