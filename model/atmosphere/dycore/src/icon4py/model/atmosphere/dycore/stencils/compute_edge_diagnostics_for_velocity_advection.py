@@ -227,7 +227,7 @@ def _compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_
 
 
 @field_operator
-def _compute_horizontal_advection_of_w(
+def _compute_khalf_horizontal_advection_of_w(
     khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
     w: fa.CellKField[wpfloat],
     khalf_tangential_wind: fa.EdgeKField[wpfloat],
@@ -346,7 +346,7 @@ def compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_c
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_horizontal_advection_of_w(
+def compute_khalf_horizontal_advection_of_w(
     khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
     w: fa.CellKField[wpfloat],
     khalf_tangential_wind: fa.EdgeKField[wpfloat],
@@ -366,7 +366,7 @@ def compute_horizontal_advection_of_w(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_horizontal_advection_of_w(
+    _compute_khalf_horizontal_advection_of_w(
         khalf_horizontal_advection_of_w_at_edge,
         w,
         khalf_tangential_wind,

@@ -72,7 +72,7 @@ class VelocityAdvection:
         self._compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction = compute_edge_diagnostics_for_velocity_advection.compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction.with_backend(
             self._backend
         )
-        self._compute_horizontal_advection_of_w = compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
+        self._compute_khalf_horizontal_advection_of_w = compute_edge_diagnostics_for_velocity_advection.compute_khalf_horizontal_advection_of_w.with_backend(
             self._backend
         )
 
@@ -388,7 +388,7 @@ class VelocityAdvection:
         cell_areas: fa.CellField[float],
     ):
         """
-        Compute some diagnostic variables that are used in the predictor step
+        Compute some diagnostic variables that are used in the corrector step
         of the dycore and advective tendency of normal and vertical winds.
 
         Args:
@@ -403,7 +403,7 @@ class VelocityAdvection:
 
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
-        self._compute_horizontal_advection_of_w(
+        self._compute_khalf_horizontal_advection_of_w(
             khalf_horizontal_advection_of_w_at_edge=self._khalf_horizontal_advection_of_w_at_edge,
             w=prognostic_state.w,
             khalf_tangential_wind=khalf_tangential_wind,

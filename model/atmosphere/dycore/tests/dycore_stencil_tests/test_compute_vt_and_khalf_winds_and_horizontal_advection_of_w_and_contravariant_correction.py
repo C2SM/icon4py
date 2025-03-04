@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.stencils.compute_edge_diagnostics_for_velocity_advection import (
-    fused_velocity_advection_stencil_1_to_7,
+    compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction,
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base as base_grid, horizontal as h_grid
@@ -33,115 +33,118 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 )
 
 
-class TestFusedVelocityAdvectionStencil1To7(StencilTest):
-    PROGRAM = fused_velocity_advection_stencil_1_to_7
+class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrection(StencilTest):
+    PROGRAM = compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_correction
     OUTPUTS = (
-        "vt",
-        "vn_ie",
-        "z_kin_hor_e",
-        "z_w_concorr_me",
-        "z_v_grad_w",
+        "tangential_wind",
+        "khalf_tangential_wind",
+        "khalf_vn",
+        "horizontal_kinetic_energy_at_edge",
+        "contravariant_correction_at_edge",
+        "khalf_horizontal_advection_of_w_at_edge",
     )
     MARKERS = (pytest.mark.embedded_remap_error,)
 
     @staticmethod
     def _fused_velocity_advection_stencil_1_to_6_numpy(
         connectivities: dict[gtx.Dimension, np.ndarray],
+        tangential_wind: np.ndarray,
+        khalf_tangential_wind: np.ndarray,
+        khalf_vn: np.ndarray,
+        horizontal_kinetic_energy_at_edge: np.ndarray,
+        contravariant_correction_at_edge: np.ndarray,
         vn: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         wgtfac_e: np.ndarray,
         ddxn_z_full: np.ndarray,
         ddxt_z_full: np.ndarray,
-        z_w_concorr_me: np.ndarray,
         wgtfacq_e: np.ndarray,
-        nflatlev: int,
-        z_vt_ie: np.ndarray,
-        vt: np.ndarray,
-        vn_ie: np.ndarray,
-        z_kin_hor_e: np.ndarray,
+        skip_compute_predictor_vertical_advection: bool,
         k: np.ndarray,
+        nflatlev: int,
         nlev: int,
-        lvn_only: bool,
     ):
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
 
         condition1 = k_nlev < nlev
-        vt = np.where(
+        tangential_wind = np.where(
             condition1,
             compute_tangential_wind_numpy(connectivities, vn, rbf_vec_coeff_e),
-            vt,
+            tangential_wind,
         )
 
         condition2 = (1 <= k_nlev) & (k_nlev < nlev)
-        vn_ie[:, :-1], z_kin_hor_e = np.where(
+        khalf_vn[:, :-1], horizontal_kinetic_energy_at_edge = np.where(
             condition2,
-            interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(wgtfac_e, vn, vt),
-            (vn_ie[:, :nlev], z_kin_hor_e),
+            interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(wgtfac_e, vn, tangential_wind),
+            (khalf_vn[:, :nlev], horizontal_kinetic_energy_at_edge),
         )
 
-        if not lvn_only:
-            z_vt_ie = np.where(
+        if not skip_compute_predictor_vertical_advection:
+            khalf_tangential_wind = np.where(
                 condition2,
-                interpolate_vt_to_interface_edges_numpy(wgtfac_e, vt),
-                z_vt_ie,
+                interpolate_vt_to_interface_edges_numpy(wgtfac_e, tangential_wind),
+                khalf_tangential_wind,
             )
 
         condition3 = k_nlev == 0
-        vn_ie[:, :nlev], z_vt_ie, z_kin_hor_e = np.where(
+        khalf_vn[:, :nlev], khalf_tangential_wind, horizontal_kinetic_energy_at_edge = np.where(
             condition3,
-            compute_horizontal_kinetic_energy_numpy(vn, vt),
-            (vn_ie[:, :nlev], z_vt_ie, z_kin_hor_e),
+            compute_horizontal_kinetic_energy_numpy(vn, tangential_wind),
+            (khalf_vn[:, :nlev], khalf_tangential_wind, horizontal_kinetic_energy_at_edge),
         )
 
         condition4 = k == nlev
-        vn_ie = np.where(
+        khalf_vn = np.where(
             condition4,
             extrapolate_at_top_numpy(wgtfacq_e, vn),
-            vn_ie,
+            khalf_vn,
         )
 
         condition5 = (nflatlev <= k_nlev) & (k_nlev < nlev)
-        z_w_concorr_me = np.where(
+        contravariant_correction_at_edge = np.where(
             condition5,
-            compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, vt),
-            z_w_concorr_me,
+            compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, tangential_wind),
+            contravariant_correction_at_edge,
         )
 
-        return vt, vn_ie, z_vt_ie, z_kin_hor_e, z_w_concorr_me
+        return (
+            tangential_wind,
+            khalf_tangential_wind,
+            khalf_vn,
+            horizontal_kinetic_energy_at_edge,
+            contravariant_correction_at_edge,
+        )
 
     @classmethod
     def reference(
         cls,
         grid,
+        tangential_wind: np.ndarray,
+        khalf_tangential_wind: np.ndarray,
+        khalf_vn: np.ndarray,
+        horizontal_kinetic_energy_at_edge: np.ndarray,
+        contravariant_correction_at_edge: np.ndarray,
+        khalf_horizontal_advection_of_w_at_edge: np.ndarray,
         vn: np.ndarray,
+        w: np.ndarray,
         rbf_vec_coeff_e: np.ndarray,
         wgtfac_e: np.ndarray,
         ddxn_z_full: np.ndarray,
         ddxt_z_full: np.ndarray,
-        z_w_concorr_me: np.ndarray,
         wgtfacq_e: np.ndarray,
-        nflatlev: np.ndarray,
         c_intp: np.ndarray,
-        w: np.ndarray,
         inv_dual_edge_length: np.ndarray,
         inv_primal_edge_length: np.ndarray,
         tangent_orientation: np.ndarray,
-        z_vt_ie: np.ndarray,
-        vt: np.ndarray,
-        vn_ie: np.ndarray,
-        z_kin_hor_e: np.ndarray,
-        z_v_grad_w: np.ndarray,
+        skip_compute_predictor_vertical_advection: bool,
         k: np.ndarray,
-        istep: int,
-        nlev: int,
-        lvn_only: bool,
         edge: np.ndarray,
-        vertex: np.ndarray,
+        nflatlev: np.ndarray,
+        nlev: int,
         lateral_boundary_7: int,
         halo_1: int,
-        start_vertex_lateral_boundary_level_2: int,
-        end_vertex_halo: int,
         horizontal_start: int,
         horizontal_end: int,
         vertical_start: int,
@@ -149,83 +152,85 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
     ) -> dict:
         k_nlev = k[:-1]
 
-        if istep == 1:
-            (
-                vt,
-                vn_ie,
-                z_vt_ie,
-                z_kin_hor_e,
-                z_w_concorr_me,
-            ) = cls._fused_velocity_advection_stencil_1_to_6_numpy(
-                grid,
-                vn,
-                rbf_vec_coeff_e,
-                wgtfac_e,
-                ddxn_z_full,
-                ddxt_z_full,
-                z_w_concorr_me,
-                wgtfacq_e,
-                nflatlev,
-                z_vt_ie,
-                vt,
-                vn_ie,
-                z_kin_hor_e,
-                k,
-                nlev,
-                lvn_only,
-            )
+        (
+            tangential_wind,
+            khalf_tangential_wind,
+            khalf_vn,
+            horizontal_kinetic_energy_at_edge,
+            contravariant_correction_at_edge,
+        ) = cls._fused_velocity_advection_stencil_1_to_6_numpy(
+            grid,
+            tangential_wind,
+            khalf_tangential_wind,
+            khalf_vn,
+            horizontal_kinetic_energy_at_edge,
+            contravariant_correction_at_edge,
+            vn,
+            rbf_vec_coeff_e,
+            wgtfac_e,
+            ddxn_z_full,
+            ddxt_z_full,
+            wgtfacq_e,
+            skip_compute_predictor_vertical_advection,
+            k,
+            nflatlev,
+            nlev,
+        )
 
         edge = edge[:, np.newaxis]
 
         condition_mask = (lateral_boundary_7 <= edge) & (edge < halo_1) & (k_nlev < nlev)
 
-        z_w_v = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
-        if istep == 2:
-            z_w_v[:start_vertex_lateral_boundary_level_2, :] = 0.0
+        khalf_w_at_edge = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
+            grid, w, c_intp
+        )
 
-        if not lvn_only:
-            z_v_grad_w = np.where(
+        if not skip_compute_predictor_vertical_advection:
+            khalf_horizontal_advection_of_w_at_edge = np.where(
                 condition_mask,
                 compute_horizontal_advection_term_for_vertical_velocity_numpy(
                     grid,
-                    vn_ie[:, :-1],
+                    khalf_vn[:, :-1],
                     inv_dual_edge_length,
                     w,
-                    z_vt_ie,
+                    khalf_tangential_wind,
                     inv_primal_edge_length,
                     tangent_orientation,
-                    z_w_v,
+                    khalf_w_at_edge,
                 ),
-                z_v_grad_w,
+                khalf_horizontal_advection_of_w_at_edge,
             )
 
         return dict(
-            vt=vt,
-            vn_ie=vn_ie,
-            z_kin_hor_e=z_kin_hor_e,
-            z_w_concorr_me=z_w_concorr_me,
-            z_v_grad_w=z_v_grad_w,
+            tangential_wind=tangential_wind,
+            khalf_tangential_wind=khalf_tangential_wind,
+            khalf_vn=khalf_vn,
+            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+            contravariant_correction_at_edge=contravariant_correction_at_edge,
+            khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
         )
 
     @pytest.fixture
     def input_data(self, grid: base_grid.BaseGrid) -> dict:
-        c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
+        tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        khalf_tangential_wind = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        khalf_vn = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        horizontal_kinetic_energy_at_edge = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        contravariant_correction_at_edge = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
+        khalf_horizontal_advection_of_w_at_edge = data_alloc.zero_field(
+            grid, dims.EdgeDim, dims.KDim
+        )
         vn = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         rbf_vec_coeff_e = data_alloc.random_field(grid, dims.EdgeDim, dims.E2C2EDim)
-        vt = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         wgtfac_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        vn_ie = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
-        z_kin_hor_e = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
-        z_vt_ie = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         ddxn_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
         ddxt_z_full = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
-        z_w_concorr_me = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         inv_dual_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
-        w = data_alloc.random_field(grid, dims.CellDim, dims.KDim)
         inv_primal_edge_length = data_alloc.random_field(grid, dims.EdgeDim)
         tangent_orientation = data_alloc.random_field(grid, dims.EdgeDim)
-        z_v_grad_w = data_alloc.zero_field(grid, dims.EdgeDim, dims.KDim)
         wgtfacq_e = data_alloc.random_field(grid, dims.EdgeDim, dims.KDim)
+        c_intp = data_alloc.random_field(grid, dims.VertexDim, dims.V2CDim)
 
         k = data_alloc.index_field(
             dim=dims.KDim,
@@ -233,57 +238,46 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
             extend={dims.KDim: 1},
         )
         edge = data_alloc.index_field(dim=dims.EdgeDim, grid=grid)
-        vertex = data_alloc.index_field(dim=dims.VertexDim, grid=grid)
 
         nlev = grid.num_levels
         nflatlev = 13
 
-        istep = 1
-        lvn_only = False
+        skip_compute_predictor_vertical_advection = False
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        vertex_domain = h_grid.domain(dims.VertexDim)
         # For the ICON grid we use the proper domain bounds (otherwise we will run into non-protected skip values)
         lateral_boundary_7 = grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
         halo_1 = grid.end_index(edge_domain(h_grid.Zone.HALO))
-        start_vertex_lateral_boundary_level_2 = grid.start_index(
-            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
-        )
-        end_vertex_halo = grid.end_index(vertex_domain(h_grid.Zone.HALO))
         horizontal_start = 0
         horizontal_end = grid.num_edges
         vertical_start = 0
         vertical_end = nlev + 1
 
         return dict(
+            khalf_tangential_wind=khalf_tangential_wind,
+            tangential_wind=tangential_wind,
+            khalf_vn=khalf_vn,
+            horizontal_kinetic_energy_at_edge=horizontal_kinetic_energy_at_edge,
+            contravariant_correction_at_edge=contravariant_correction_at_edge,
+            khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
             vn=vn,
+            w=w,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             wgtfac_e=wgtfac_e,
             ddxn_z_full=ddxn_z_full,
             ddxt_z_full=ddxt_z_full,
-            z_w_concorr_me=z_w_concorr_me,
             wgtfacq_e=wgtfacq_e,
-            nflatlev=nflatlev,
             c_intp=c_intp,
-            w=w,
             inv_dual_edge_length=inv_dual_edge_length,
             inv_primal_edge_length=inv_primal_edge_length,
             tangent_orientation=tangent_orientation,
-            z_vt_ie=z_vt_ie,
-            vt=vt,
-            vn_ie=vn_ie,
-            z_kin_hor_e=z_kin_hor_e,
-            z_v_grad_w=z_v_grad_w,
+            skip_compute_predictor_vertical_advection=skip_compute_predictor_vertical_advection,
             k=k,
-            istep=istep,
-            nlev=nlev,
-            lvn_only=lvn_only,
             edge=edge,
-            vertex=vertex,
+            nflatlev=nflatlev,
+            nlev=nlev,
             lateral_boundary_7=lateral_boundary_7,
             halo_1=halo_1,
-            start_vertex_lateral_boundary_level_2=start_vertex_lateral_boundary_level_2,
-            end_vertex_halo=end_vertex_halo,
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
             vertical_start=vertical_start,

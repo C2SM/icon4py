@@ -82,10 +82,6 @@ def _compute_khalf_contravariant_corrected_w(
         khalf_contravariant_corrected_w_at_cell,
     )
 
-    khalf_contravariant_corrected_w_at_cell = where(
-        k == nlev, 0.0, khalf_contravariant_corrected_w_at_cell
-    )
-
     return khalf_contravariant_corrected_w_at_cell
 
 

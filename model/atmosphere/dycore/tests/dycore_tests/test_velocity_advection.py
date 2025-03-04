@@ -647,7 +647,7 @@ def test_velocity_fused_1_7_compute_edge_diagnostics_for_velocity_advection_in_c
     )
     end_vertex_halo = icon_grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-    compute_edge_diagnostics_for_velocity_advection.compute_horizontal_advection_of_w.with_backend(
+    compute_edge_diagnostics_for_velocity_advection.compute_khalf_horizontal_advection_of_w.with_backend(
         backend
     )(
         khalf_horizontal_advection_of_w_at_edge=khalf_horizontal_advection_of_w_at_edge,
