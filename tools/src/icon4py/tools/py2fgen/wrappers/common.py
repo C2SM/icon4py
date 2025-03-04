@@ -65,9 +65,12 @@ class BackendIntEnum(eve.IntEnum):
 _BACKEND_MAP = {
     BackendIntEnum._GTFN_CPU: run_gtfn_cached,
     BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
-    BackendIntEnum._DACE_CPU: run_dace_cpu,
-    BackendIntEnum._DACE_GPU: run_dace_gpu,
 }
+if dace:
+    _BACKEND_MAP |= {
+        BackendIntEnum._DACE_CPU: run_dace_cpu,
+        BackendIntEnum._DACE_GPU: run_dace_gpu,
+    }
 
 
 def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
