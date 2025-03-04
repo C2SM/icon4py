@@ -26,6 +26,7 @@ import gt4py.next as gtx
 import icon4py.model.common.grid.states as grid_states
 from icon4py.model.atmosphere.dycore import dycore_states, solve_nonhydro
 from icon4py.model.common import dimension as dims, utils as common_utils
+from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -144,7 +145,7 @@ def solve_nh_init(
     l_vert_nested: bool,
     rhotheta_offctr: gtx.float64,
     veladv_offctr: gtx.float64,
-    max_nudging_coeff: gtx.float64,
+    nudge_max_coeff: gtx.float64,  # note: this is the ICON value (scaled with the default physics-dynamics timestep ratio)
     divdamp_fac: gtx.float64,
     divdamp_fac2: gtx.float64,
     divdamp_fac3: gtx.float64,
@@ -179,7 +180,7 @@ def solve_nh_init(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coeff=max_nudging_coeff,
+        max_nudging_coeff=nudge_max_coeff / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         divdamp_fac=divdamp_fac,
         divdamp_fac2=divdamp_fac2,
         divdamp_fac3=divdamp_fac3,
@@ -305,7 +306,9 @@ def solve_nh_init(
         config=vertical_config,
         vct_a=vct_a,
         vct_b=vct_b,
-        _min_index_flat_horizontal_grad_pressure=nflat_gradp,
+        _min_index_flat_horizontal_grad_pressure=gtx.int32(
+            nflat_gradp - 1
+        ),  # Fortran vs Python indexing
     )
 
     global granule

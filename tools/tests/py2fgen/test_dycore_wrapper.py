@@ -93,7 +93,7 @@ def test_dycore_wrapper_granule_inputs(
     l_vert_nested = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
-    max_nudging_coeff = 0.075
+    nudge_max_coeff = 0.375  # note: this is the ICON value (scaled with the default physics-dynamics timestep ratio)
     divdamp_fac = 0.004
     divdamp_fac2 = 0.004
     divdamp_fac3 = 0.004
@@ -113,7 +113,9 @@ def test_dycore_wrapper_granule_inputs(
     # vertical params
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
-    nflat_gradp = grid_savepoint.nflat_gradp()
+    nflat_gradp = gtx.int32(
+        grid_savepoint.nflat_gradp() + 1
+    )  # undo the -1 to go back to Fortran value
 
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
@@ -546,7 +548,7 @@ def test_dycore_wrapper_granule_inputs(
             l_vert_nested=l_vert_nested,
             rhotheta_offctr=rhotheta_offctr,
             veladv_offctr=veladv_offctr,
-            max_nudging_coeff=max_nudging_coeff,
+            nudge_max_coeff=nudge_max_coeff,
             divdamp_fac=divdamp_fac,
             divdamp_fac2=divdamp_fac2,
             divdamp_fac3=divdamp_fac3,
@@ -763,7 +765,7 @@ def test_granule_solve_nonhydro_single_step_regional(
     l_vert_nested = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
-    max_nudging_coeff = 0.075
+    nudge_max_coeff = 0.375
     divdamp_fac = 0.004
     divdamp_fac2 = 0.004
     divdamp_fac3 = 0.004
@@ -783,7 +785,9 @@ def test_granule_solve_nonhydro_single_step_regional(
     # vertical params
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
-    nflat_gradp = grid_savepoint.nflat_gradp()
+    nflat_gradp = gtx.int32(
+        grid_savepoint.nflat_gradp() + 1
+    )  # undo the -1 to go back to Fortran value
 
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
@@ -1035,7 +1039,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coeff=max_nudging_coeff,
+        nudge_max_coeff=nudge_max_coeff,
         divdamp_fac=divdamp_fac,
         divdamp_fac2=divdamp_fac2,
         divdamp_fac3=divdamp_fac3,
@@ -1218,7 +1222,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
     l_vert_nested = False
     rhotheta_offctr = -0.1
     veladv_offctr = 0.25
-    max_nudging_coeff = 0.075
+    nudge_max_coeff = 0.375
     divdamp_fac = 0.004
     divdamp_fac2 = 0.004
     divdamp_fac3 = 0.004
@@ -1238,7 +1242,9 @@ def test_granule_solve_nonhydro_multi_step_regional(
     # vertical params
     vct_a = grid_savepoint.vct_a()
     vct_b = grid_savepoint.vct_b()
-    nflat_gradp = grid_savepoint.nflat_gradp()
+    nflat_gradp = gtx.int32(
+        grid_savepoint.nflat_gradp() + 1
+    )  # undo the -1 to go back to Fortran value
 
     # other params
     dtime = sp.get_metadata("dtime").get("dtime")
@@ -1490,7 +1496,7 @@ def test_granule_solve_nonhydro_multi_step_regional(
         l_vert_nested=l_vert_nested,
         rhotheta_offctr=rhotheta_offctr,
         veladv_offctr=veladv_offctr,
-        max_nudging_coeff=max_nudging_coeff,
+        nudge_max_coeff=nudge_max_coeff,
         divdamp_fac=divdamp_fac,
         divdamp_fac2=divdamp_fac2,
         divdamp_fac3=divdamp_fac3,

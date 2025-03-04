@@ -114,7 +114,7 @@ extern int solve_nh_init_wrapper(
     double rayleigh_coeff, int divdamp_order, int is_iau_active,
     double iau_wgt_dyn, int divdamp_type, double divdamp_trans_start,
     double divdamp_trans_end, int l_vert_nested, double rhotheta_offctr,
-    double veladv_offctr, double max_nudging_coeff, double divdamp_fac,
+    double veladv_offctr, double nudge_max_coeff, double divdamp_fac,
     double divdamp_fac2, double divdamp_fac3, double divdamp_fac4,
     double divdamp_z, double divdamp_z2, double divdamp_z3, double divdamp_z4,
     double lowest_layer_thickness, double model_top_height,
