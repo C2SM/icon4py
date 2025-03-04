@@ -199,11 +199,11 @@ def test_nonhydro_predictor_step(
     at_first_substep = substep_init == 1
 
     prognostic_states = utils.create_prognostic_states(sp)
-    solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh,
-        at_first_substep=at_first_substep,
-        at_initial_timestep=at_initial_timestep,
-    )
+
+    if not (at_initial_timestep and at_first_substep):
+        diagnostic_state_nh.ddt_w_adv_pc.swap()
+    if not at_first_substep:
+        diagnostic_state_nh.ddt_vn_apc_pc.swap()
 
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -221,6 +221,7 @@ def test_nonhydro_predictor_step(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
     cell_start_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+
     edge_start_lateral_boundary_level_5 = icon_grid.start_index(
         edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
@@ -325,7 +326,6 @@ def test_nonhydro_predictor_step(
         atol=1e-21,
     )
 
-    # TODO Fix REGIONAL
     # compute_horizontal_advection_of_rho_and_theta
     assert helpers.dallclose(
         solve_nonhydro.intermediate_fields.z_rho_e.asnumpy()[
@@ -479,13 +479,10 @@ def test_nonhydro_predictor_step(
         sp_exit.z_beta().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
-
     # stencil 45_b, 52
     assert helpers.dallclose(
-        solve_nonhydro.intermediate_fields.z_q.asnumpy()[
-            cell_start_nudging:, : icon_grid.num_levels
-        ],
-        sp_exit.z_q().asnumpy()[cell_start_nudging:, : icon_grid.num_levels],
+        solve_nonhydro.intermediate_fields.z_q.asnumpy()[cell_start_nudging:, :],
+        sp_exit.z_q().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 48, 49
@@ -619,11 +616,11 @@ def test_nonhydro_corrector_step(
     at_last_substep = substep_init == ndyn_substeps
 
     prognostic_states = utils.create_prognostic_states(init_savepoint)
-    solve_nonhydro.update_time_levels_for_velocity_tendencies(
-        diagnostic_state_nh,
-        at_first_substep=at_first_substep,
-        at_initial_timestep=at_initial_timestep,
-    )
+
+    if not (at_initial_timestep and at_first_substep):
+        diagnostic_state_nh.ddt_w_adv_pc.swap()
+    if not at_first_substep:
+        diagnostic_state_nh.ddt_vn_apc_pc.swap()
 
     solve_nonhydro.run_corrector_step(
         diagnostic_state_nh=diagnostic_state_nh,
@@ -690,7 +687,7 @@ def test_nonhydro_corrector_step(
         prognostic_states.next.theta_v.asnumpy(),
         savepoint_nonhydro_exit.theta_v_new().asnumpy(),
     )
-    # stencil 31 - TODO savepoint value starts differing from 0.0 at 1688 which is a n edge boundary
+    # stencil 31
     assert helpers.dallclose(
         solve_nonhydro.z_vn_avg.asnumpy()[solve_nonhydro._start_edge_lateral_boundary_level_5 :, :],
         savepoint_nonhydro_exit.z_vn_avg().asnumpy()[
@@ -940,6 +937,11 @@ def test_run_solve_nonhydro_multi_step(
     for i_substep in range(ndyn_substeps):
         at_first_substep = i_substep == 0
         at_last_substep = i_substep == (ndyn_substeps - 1)
+
+        if not (at_initial_timestep and at_first_substep):
+            diagnostic_state_nh.ddt_w_adv_pc.swap()
+        if not at_first_substep:
+            diagnostic_state_nh.ddt_vn_apc_pc.swap()
 
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
