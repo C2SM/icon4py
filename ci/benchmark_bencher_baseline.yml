@@ -39,7 +39,7 @@ include:
       with open(args.output_file, "w") as file:
           json.dump(flat_data, file, indent=2)
       EOF
-    - uv pip install flatten_json
+    - uv pip install --system flatten_json
     - python flatten.py results.json results.json
     - | # Additional fields to results.json for Kibana
       jq ". | {\"data_stream\": {\"type\": \"logs\", \"dataset\": \"service.icon4py.bencher.baseline\", \"namespace\": \"alps\"}} + ." results.json > results_tmp.json && mv results_tmp.json results.json
