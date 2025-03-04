@@ -164,6 +164,7 @@ def pytest_runtest_setup(item):
         is_datatest=item.config.getoption("--datatest"),
     )
 
+
 # Replace "fullname" of pytest benchmarks with a shorter name for better readability in bencher
 def pytest_benchmark_update_json(output_json):
     for bench in output_json["benchmarks"]:
