@@ -306,7 +306,6 @@ def test_factory_ddxn_z_full(grid_savepoint, metrics_savepoint, grid_file, exper
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.vwind_impl_wgt()
@@ -331,7 +330,6 @@ def test_factory_vwind_impl_wgt(grid_savepoint, metrics_savepoint, grid_file, ex
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_factory_vwind_expl_wgt(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.vwind_expl_wgt()
@@ -463,7 +461,6 @@ def test_factory_hmask_dd3d(grid_savepoint, metrics_savepoint, grid_file, experi
         (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
-@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_factory_zdiff_gradp(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref = metrics_savepoint.zdiff_gradp()
@@ -527,7 +524,6 @@ def test_factory_wgtfacq_e(grid_savepoint, metrics_savepoint, grid_file, experim
         (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
     ],
 )
-@pytest.mark.cpu_only
 @pytest.mark.datatest
 def test_factory_diffusion(grid_savepoint, metrics_savepoint, grid_file, experiment, backend):
     field_ref_1 = metrics_savepoint.mask_hdiff()
