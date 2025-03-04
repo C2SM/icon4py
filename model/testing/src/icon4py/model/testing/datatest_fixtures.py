@@ -201,7 +201,7 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, substep_i
 
 @pytest.fixture
 def savepoint_velocity_1_7_init(
-    data_provider, step_date_init, istep_init, vn_only, substep_init
+    data_provider, step_date_init, istep_init, substep_init
 ):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 1 to 7.
@@ -210,7 +210,7 @@ def savepoint_velocity_1_7_init(
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.savepoint_velocity_1_7_init(
-        istep=istep_init, vn_only=vn_only, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep_init=substep_init
     )
 
 
@@ -229,7 +229,7 @@ def savepoint_velocity_8_13_init(data_provider, step_date_init, istep_init, subs
 
 @pytest.fixture
 def savepoint_velocity_15_18_init(
-    data_provider, step_date_init, istep_init, vn_only, substep_init
+    data_provider, step_date_init, istep_init, substep_init
 ):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 15 to 18.
@@ -238,13 +238,13 @@ def savepoint_velocity_15_18_init(
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.savepoint_velocity_15_18_init(
-        istep=istep_init, vn_only=vn_only, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep_init=substep_init
     )
 
 
 @pytest.fixture
 def savepoint_velocity_19_20_init(
-    data_provider, step_date_init, istep_init, vn_only, substep_init
+    data_provider, step_date_init, istep_init, substep_init
 ):  # F811
     """
     Load data from ICON savepoint at start of velocity_advection module for combined stencils 19 to 20.
@@ -253,7 +253,7 @@ def savepoint_velocity_19_20_init(
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.savepoint_velocity_19_20_init(
-        istep=istep_init, vn_only=vn_only, date=step_date_init, substep_init=substep_init
+        istep=istep_init, date=step_date_init, substep_init=substep_init
     )
 
 
@@ -289,7 +289,7 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, substep_e
 
 @pytest.fixture
 def savepoint_velocity_1_7_exit(
-    data_provider, step_date_exit, istep_init, vn_only, substep_init
+    data_provider, step_date_exit, istep_init, substep_init
 ):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 1 to 7.
@@ -300,7 +300,7 @@ def savepoint_velocity_1_7_exit(
     - substep: dynamical substep
     """
     return data_provider.savepoint_velocity_1_7_exit(
-        istep=istep_init, vn_only=vn_only, date=step_date_exit, substep_init=substep_init
+        istep=istep_init, date=step_date_exit, substep_init=substep_init
     )
 
 
@@ -319,7 +319,7 @@ def savepoint_velocity_8_13_exit(data_provider, step_date_exit, istep_init, subs
 
 @pytest.fixture
 def savepoint_velocity_15_18_exit(
-    data_provider, step_date_exit, istep_init, vn_only, substep_init
+    data_provider, step_date_exit, istep_init, substep_init
 ):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 15 to 18.
@@ -328,13 +328,13 @@ def savepoint_velocity_15_18_exit(
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.savepoint_velocity_15_18_exit(
-        istep=istep_init, vn_only=vn_only, date=step_date_exit, substep_init=substep_init
+        istep=istep_init, date=step_date_exit, substep_init=substep_init
     )
 
 
 @pytest.fixture
 def savepoint_velocity_19_20_exit(
-    data_provider, step_date_exit, istep_init, vn_only, substep_init
+    data_provider, step_date_exit, istep_init, substep_init
 ):  # F811
     """
     Load data from ICON savepoint at exist of velocity_advection module for combined stencils 19 to 20.
@@ -343,7 +343,7 @@ def savepoint_velocity_19_20_exit(
     fixture, passing 'step_data=<iso_string>'
     """
     return data_provider.savepoint_velocity_19_20_exit(
-        istep=istep_init, vn_only=vn_only, date=step_date_exit, substep_init=substep_init
+        istep=istep_init, date=step_date_exit, substep_init=substep_init
     )
 
 

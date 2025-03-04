@@ -1146,7 +1146,7 @@ class IconNonHydroExitSavepoint(IconSavepoint):
 
     def vn(self):
         return self._get_field("vn", dims.EdgeDim, dims.KDim)
-      
+
     def z_rho_expl(self):
         return self._get_field("z_rho_expl", dims.CellDim, dims.KDim)
 
@@ -1173,7 +1173,7 @@ class IconNonHydroExitSavepoint(IconSavepoint):
 
     def z_beta(self):
         return self._get_field("z_beta", dims.CellDim, dims.KDim)
-      
+
     def vn_new(self):
         return self._get_field("vn_new", dims.EdgeDim, dims.KDim)
 
@@ -2228,7 +2228,7 @@ class IconSerialDataProvider:
         )
 
     def savepoint_velocity_1_7_exit(
-        self, istep: int, vn_only: bool, date: str, substep_init: int
+        self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExit1to7Savepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-1to7-exit"]
@@ -2256,7 +2256,7 @@ class IconSerialDataProvider:
         )
 
     def savepoint_velocity_15_18_exit(
-        self, istep: int, vn_only: bool, date: str, substep_init: int
+        self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExit15to18Savepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-15to18-exit"]
@@ -2270,7 +2270,7 @@ class IconSerialDataProvider:
         )
 
     def savepoint_velocity_19_20_exit(
-        self, istep: int, vn_only: bool, date: str, substep_init: int
+        self, istep: int, date: str, substep_init: int
     ) -> IconVelocityExit19to20Savepoint:
         savepoint = (
             self.serializer.savepoint["velocity-tendencies-19to20-exit"]
