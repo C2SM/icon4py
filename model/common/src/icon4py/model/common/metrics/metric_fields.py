@@ -44,7 +44,6 @@ from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpola
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
-    average_edge_kdim_level_up,
     difference_k_level_up,
     grad_fd_norm,
 )
@@ -421,25 +420,6 @@ def compute_ddxt_z_half_e(
         inv_primal_edge_length,
         tangent_orientation,
         out=ddxt_z_half_e,
-        domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def compute_ddxn_z_full(
-    ddxnt_z_half_e: fa.EdgeKField[wpfloat],
-    ddxn_z_full: fa.EdgeKField[wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    average_edge_kdim_level_up(
-        ddxnt_z_half_e,
-        out=ddxn_z_full,
         domain={
             dims.EdgeDim: (horizontal_start, horizontal_end),
             dims.KDim: (vertical_start, vertical_end),

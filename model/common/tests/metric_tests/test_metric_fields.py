@@ -19,7 +19,10 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
     compute_cell_2_vertex_interpolation,
 )
-from icon4py.model.common.math.helpers import average_cell_kdim_level_up
+from icon4py.model.common.math.helpers import (
+    average_cell_kdim_level_up,
+    average_of_two_vertical_levels_downwards_on_edges,
+)
 from icon4py.model.common.metrics.compute_vwind_impl_wgt import (
     compute_vwind_impl_wgt,
 )
@@ -28,7 +31,6 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_coeff_dwdz,
     compute_ddqz_z_full_and_inverse,
     compute_ddqz_z_half,
-    compute_ddxn_z_full,
     compute_ddxn_z_half_e,
     compute_ddxt_z_half_e,
     compute_exner_exfac,
@@ -263,7 +265,7 @@ def test_compute_ddxt_z_full_e(
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
     ddxn_z_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
-    compute_ddxn_z_full.with_backend(backend)(
+    average_of_two_vertical_levels_downwards_on_edges.with_backend(backend)(
         ddxnt_z_half_e=ddxn_z_half_e,
         ddxn_z_full=ddxn_z_full,
         horizontal_start=0,
@@ -344,7 +346,7 @@ def test_compute_ddxn_z_full(grid_savepoint, icon_grid, metrics_savepoint, backe
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
     ddxn_z_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
-    compute_ddxn_z_full.with_backend(backend)(
+    average_of_two_vertical_levels_downwards_on_edges.with_backend(backend)(
         ddxnt_z_half_e=ddxn_z_half_e,
         ddxn_z_full=ddxn_z_full,
         horizontal_start=0,
@@ -392,7 +394,7 @@ def test_compute_ddxt_z_full(
         },
     )
     ddxt_z_full = data_alloc.zero_field(icon_grid, dims.EdgeDim, dims.KDim, backend=backend)
-    compute_ddxn_z_full.with_backend(backend)(
+    average_of_two_vertical_levels_downwards_on_edges.with_backend(backend)(
         ddxnt_z_half_e=ddxt_z_half_e,
         ddxn_z_full=ddxt_z_full,
         horizontal_start=0,
