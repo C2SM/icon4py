@@ -7,8 +7,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py import next as gtx
-from gt4py.next import field_operator
+from gt4py.next import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import arccos, cos, sin, sqrt, where
+from numpy import int32
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import E2C, E2V, Koff
@@ -16,7 +17,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def average_cell_kdim_level_up(
+def average_level_plus1_on_cells(
     half_level_field: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
     """
@@ -34,7 +35,7 @@ def average_cell_kdim_level_up(
 
 
 @field_operator
-def average_edge_kdim_level_up(
+def average_level_plus1_on_edges(
     half_level_field: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
     """
@@ -52,25 +53,7 @@ def average_edge_kdim_level_up(
 
 
 @field_operator
-def difference_k_level_down(
-    half_level_field: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
-    """
-    Calculate the difference value of adjacent interface levels.
-
-    Computes the difference of two adjacent interface levels downwards over a cell field for storage
-    in the corresponding full levels.
-    Args:
-        half_level_field: Field[Dims[CellDim, dims.KDim], wpfloat]
-
-    Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
-
-    """
-    return half_level_field(Koff[-1]) - half_level_field
-
-
-@field_operator
-def difference_k_level_up(
+def difference_level_plus1_on_cells(
     half_level_field: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
     """
@@ -529,3 +512,41 @@ def arc_length(
 
     """
     return radius * arccos(dot_product_on_edges(x0, x1, y0, y1, z0, z1))
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def average_two_vertical_levels_downwards_on_edges(
+    input_field: fa.EdgeKField[wpfloat],
+    average: fa.EdgeKField[wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    average_level_plus1_on_edges(
+        input_field,
+        out=average,
+        domain={
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def average_two_vertical_levels_downwards_on_cells(
+    input_field: fa.CellKField[wpfloat],
+    average: fa.CellKField[wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    average_level_plus1_on_cells(
+        input_field,
+        out=average,
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
+    )
