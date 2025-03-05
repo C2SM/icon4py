@@ -12,7 +12,7 @@ testdata
 simple_mesh*.nc
 /prof
 .profile
-imgs
+imgs*
 *.log
 *.csv
 
