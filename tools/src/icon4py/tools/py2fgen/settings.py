@@ -20,7 +20,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 
 
 try:
-    import dace  # type: ignore[import-not-found]
+    import dace  # type: ignore[import-untyped]
     from gt4py.next.program_processors.runners.dace import (
         run_dace_cpu,
         run_dace_cpu_noopt,
