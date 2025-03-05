@@ -122,7 +122,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         connectivities: dict[gtx.Dimension, np.ndarray],
         contravariant_corrected_w_at_cell: np.ndarray,
         vertical_wind_advective_tendency: np.ndarray,
-        w,
+        w: np.ndarray,
         khalf_contravariant_corrected_w_at_cell: np.ndarray,
         khalf_horizontal_advection_of_w_at_edge: np.ndarray,
         coeff1_dwdz,
