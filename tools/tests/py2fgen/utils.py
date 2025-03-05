@@ -73,9 +73,9 @@ def compare_values_shallow(value1, value2, obj_name="value"):
 
     # Handle comparison of cupy array objects
     if cp is not None:
-        if isinstance(value1, np.ndarray) and isinstance(value2, np.ndarray):
+        if isinstance(value1, cp.ndarray) and isinstance(value2, cp.ndarray):
             try:
-                np.testing.assert_equal(value1, value2)  # Compare arrays for equality
+                cp.testing.assert_equal(value1, value2)  # Compare arrays for equality
                 return True, None
             except AssertionError:
                 return False, f"Array mismatch for {obj_name}"
