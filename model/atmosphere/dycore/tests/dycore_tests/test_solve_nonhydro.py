@@ -1394,7 +1394,15 @@ def test_run_solve_nonhydro_41_to_60(
         dims.CEDim, field=interpolation_savepoint.geofac_div()
     )
 
-    fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60.with_backend(
+    buffer=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=bool)
+    w_prev=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_q_prev=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_a=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_b=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_c=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+    w_prep=data_alloc.zero_field(icon_grid, dims.CellDim, dims.KDim)
+
+    fused_solve_nonhydro_stencil_41_to_60.fused_solve_nonhydro_stencil_41_to_60_predictor.with_backend(
         backend
     )(
         geofac_div=geofac_div,
@@ -1438,11 +1446,17 @@ def test_run_solve_nonhydro_41_to_60(
         exner_dyn_incr=exner_dyn_incr,
         mass_flx_ic=mass_flx_ic,
         vol_flx_ic=vol_flx_ic,
+        buffer=buffer,
+        w_prev=w_prev,
+        z_q_prev=z_q_prev,
+        z_a=z_a,
+        z_b=z_b,
+        z_c=z_c,
+        w_prep=w_prep,
         wgt_nnow_vel=nonhydro_params.wgt_nnow_vel,
         wgt_nnew_vel=nonhydro_params.wgt_nnew_vel,
         itime_scheme=itime_scheme,
         lprep_adv=lprep_adv,
-        lclean_mflx=lclean_mflx,
         r_nsubsteps=r_nsubsteps,
         cvd_o_rd=constants.CVD_O_RD,
         iau_wgt_dyn=iau_wgt_dyn,
@@ -1454,19 +1468,18 @@ def test_run_solve_nonhydro_41_to_60(
         l_vert_nested=l_vert_nested,
         is_iau_active=is_iau_active,
         rayleigh_type=config.rayleigh_type.value,
-        lhdiff_rcf=lhdiff_rcf,
         divdamp_type=divdamp_type.value,
-        idyn_timestep=at_first_substep,
         index_of_damping_layer=grid_savepoint.nrdmax()[0],
         n_lev=icon_grid.num_levels,
         jk_start=jk_start,
         kstart_dd3d=nonhydro_params.kstart_dd3d,
         kstart_moist=vertical_params.kstart_moist,
         istep=istep_init,
+        at_first_substep=at_first_substep,
         start_cell_nudging=start_cell_nudging,
         end_cell_local=end_cell_local,
         vertical_start=0,
-        vertical_end=icon_grid.num_levels + 1,
+        vertical_end=icon_grid.num_levels,
         offset_provider={
             "C2E": icon_grid.get_offset_provider("C2E"),
             "C2CE": icon_grid.get_offset_provider("C2CE"),
