@@ -63,7 +63,7 @@ class TestComputeVtAndKhalfWindsAndHorizontalAdvectionOfWAndContravariantCorrect
         k: np.ndarray,
         nflatlev: int,
         nlev: int,
-    ):
+    ) -> tuple[np.ndarray]:
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
 
