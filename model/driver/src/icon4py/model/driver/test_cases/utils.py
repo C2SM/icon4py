@@ -277,7 +277,7 @@ def initialize_solve_nonhydro_diagnostic_state(
         khalf_vn=data_alloc.zero_field(
             grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
-        w_concorr_c=data_alloc.zero_field(
+        khalf_contravariant_correction_at_cell=data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, backend=backend
         ),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
