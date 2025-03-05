@@ -23,7 +23,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO (Chia RUi): Rename and clean up the individual stencils used by the combined stencil
 @field_operator
 def _compute_advection_in_horizontal_momentum_equation(
     normal_wind_advective_tendency: fa.EdgeKField[vpfloat],
