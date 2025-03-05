@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 # TODO (Chia RUi): Rename and clean up the individual stencils used by the combined stencil
-@field_operator
+@gtx.field_operator
 def _compute_horizontal_kinetic_energy_and_khalf_contravariant_correction(
     horizontal_kinetic_energy_at_edge: fa.EdgeKField[vpfloat],
     e_bln_c_s: gtx.Field[gtx.Dims[dims.CEDim], wpfloat],
