@@ -76,7 +76,7 @@ def _compute_interface_vt_vn_and_kinetic_energy(
     return khalf_vn, khalf_tangential_wind, horizontal_kinetic_energy_at_edge
 
 
-@field_operator
+@gtx.field_operator
 def _fused_velocity_advection_stencil_1_to_6(
     vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: gtx.Field[gtx.Dims[dims.EdgeDim, dims.E2C2EDim], wpfloat],
