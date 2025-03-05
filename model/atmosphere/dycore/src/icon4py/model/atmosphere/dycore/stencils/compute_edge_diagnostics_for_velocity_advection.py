@@ -224,7 +224,7 @@ def _compute_vt_and_khalf_winds_and_horizontal_advection_of_w_and_contravariant_
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_khalf_horizontal_advection_of_w(
     khalf_horizontal_advection_of_w_at_edge: fa.EdgeKField[vpfloat],
     w: fa.CellKField[wpfloat],
