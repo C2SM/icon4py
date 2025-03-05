@@ -147,7 +147,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         start_cell_lateral_boundary,
         end_cell_halo,
         **kwargs,
-    ):
+    ) -> dict:
         # We need to store the initial return field, because we only compute on a subdomain.
         contravariant_corrected_w_at_cell_ret = contravariant_corrected_w_at_cell.copy()
         vertical_wind_advective_tendency_ret = vertical_wind_advective_tendency.copy()
