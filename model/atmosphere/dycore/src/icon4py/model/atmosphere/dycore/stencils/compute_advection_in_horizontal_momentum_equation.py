@@ -103,7 +103,7 @@ def _compute_advection_in_horizontal_momentum_equation(
     return normal_wind_advective_tendency
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=GridType.UNSTRUCTURED)
 def compute_advection_in_horizontal_momentum_equation(
     normal_wind_advective_tendency: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
