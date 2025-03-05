@@ -93,12 +93,13 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         for c in range(grid.num_cells):
             cell[c] = c
 
+        cell_domain = h_grid.domain(dims.CellDim)
+
         nrdmax = 13
         interior_idx = grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
         halo_idx = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         type_shear = 2
 
-        cell_domain = h_grid.domain(dims.CellDim)
         horizontal_start = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
         horizontal_end = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         vertical_start = 0
