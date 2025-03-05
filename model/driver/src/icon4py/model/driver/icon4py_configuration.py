@@ -163,15 +163,22 @@ def read_config(
 
     def _gauss3d_vertical_config():
         return v_grid.VerticalGridConfig(
-            num_levels=40,
+            num_levels=100,
             rayleigh_damping_height=45000.0,
-            model_top_height=5000.0,
-            lowest_layer_thickness=10.0,
+            model_top_height=600.0,
+            flat_height=500.0,
+            lowest_layer_thickness=3.0,
             stretch_factor=1.0,
         )
 
     def _gauss3d_diffusion_config(n_substeps: int):
-        return diffusion.DiffusionConfig()
+        return diffusion.DiffusionConfig(
+            hdiff_w=False,
+            hdiff_vn=False,
+            hdiff_temp=False,
+            zdiffu_t=False,
+            n_substeps=n_substeps,
+        )
 
     def _gauss3d_nonhydro_config(n_substeps: int):
         return solve_nh.NonHydrostaticConfig(
@@ -181,8 +188,8 @@ def read_config(
 
     def _gauss3d_config():
         icon_run_config = Icon4pyRunConfig(
-            dtime=datetime.timedelta(seconds=1.0),
-            end_date=datetime.datetime(1, 1, 1, 0, 0, 4),
+            dtime=datetime.timedelta(seconds=0.1),
+            end_date=datetime.datetime(1, 1, 1, 0, 0, 1),
             apply_initial_stabilization=False,
             n_substeps=5,
             backend_name=icon4py_driver_backend,

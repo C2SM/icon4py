@@ -1,4 +1,3 @@
-
 import logging
 
 import gt4py.next as gtx
@@ -49,12 +48,6 @@ class ImmersedBoundaryMethod:
         self._dirichlet_value_exner   = 1.0
         self._dirichlet_value_theta_v = 301.0
 
-        if DEBUG_LEVEL >= 2:
-            self._delta_file_vn = open("ibm_delta_vn.csv", "a")
-            self._delta_file_vn.write("\n")
-            self._delta_file_w = open("ibm_delta_w.csv", "a")
-            self._delta_file_w.write("\n")
-
         log.info("IBM initialized")
 
     def _make_masks(
@@ -76,7 +69,7 @@ class ImmersedBoundaryMethod:
         half_cell_mask_np = self._mask_gaussian_hill(grid, grid_file_path, vertical_params, half_cell_mask_np)
 
         full_cell_mask_np = half_cell_mask_np[:, :-1]
-    
+
         c2e = grid.connectivities[dims.C2EDim]
         for k in range(grid.num_levels):
             full_edge_mask_np[c2e[np.where(full_cell_mask_np[:,k])], k] = True
@@ -99,29 +92,38 @@ class ImmersedBoundaryMethod:
         """
         half_cell_mask_np[[5,16], -3:] = True
         return half_cell_mask_np
-    
+
     def _mask_gaussian_hill(
         self,
         grid: icon_grid.IconGrid,
         grid_file_path: str,
         vertical_params: v_grid.VerticalGrid,
-        half_cell_mask_np: np.ndarray
+        half_cell_mask_np: np.ndarray,
     ) -> np.ndarray:
         """
         Create a Gaussian hill mask.
         """
-        hill_x = 1000.
-        hill_y = 1000.
-        hill_height = 200.
-        hill_width  = 500.
+        hill_x = 500.
+        hill_y = 500.
+        hill_height = 100.
+        hill_width  = 100.
         compute_distance_from_hill = lambda x, y: ((x - hill_x)**2 + (y - hill_y)**2)**0.5
         compute_hill_elevation = lambda x, y: hill_height * np.exp(-(compute_distance_from_hill(x, y) / hill_width)**2)
         grid_file = xr.open_dataset(grid_file_path)
         cell_x = grid_file.cell_circumcenter_cartesian_x.values
         cell_y = grid_file.cell_circumcenter_cartesian_y.values
         interface_physical_height = vertical_params.interface_physical_height.ndarray
+        buildings = [
+            [390, 410, 490, 510,  60],
+            [490, 510, 490, 510, 130],
+        ]
         for k in range(half_cell_mask_np.shape[1]):
             half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= interface_physical_height[k], True, False)
+            for building in buildings:
+                xmin, xmax, ymin, ymax, top = building
+                half_cell_mask_np[
+                    (cell_x >= xmin) & (cell_x <= xmax) & (cell_y >= ymin) & (cell_y <= ymax) & (interface_physical_height[k] <= top), k
+                ] = True
         if DEBUG_LEVEL >= 4:
             with open("testdata/hill_elevation_cells.csv", "r") as f:
                 hill_elevation_cells = np.loadtxt(f, delimiter=",")
@@ -284,29 +286,3 @@ class ImmersedBoundaryMethod:
         """
         field = where(mask, dir_value, field)
         return field
-
-
-    def check_boundary_conditions(
-        self,
-        prognostic_state: prognostic_state.PrognosticState,
-    ):
-        """
-        Check boundary conditions on prognostic variables.
-        """
-
-        if DEBUG_LEVEL < 2:
-            return
-
-        edge_mask = self.full_edge_mask.ndarray
-        cell_mask = self.half_cell_mask.ndarray
-        vn = prognostic_state.vn.ndarray
-        w  = prognostic_state.w.ndarray
-
-        delta_vn = np.abs(vn[edge_mask] - self._dirichlet_value_vn)
-        delta_w  = np.abs(w [cell_mask] - self._dirichlet_value_w )
-
-        log.info(f"IBM delta on vn: min {delta_vn.min():10.3e} max {delta_vn.max():10.3e}")
-        log.info(f"IBM delta on w : min {delta_w .min():10.3e} max {delta_w .max():10.3e}")
-
-        self._delta_file_vn.write(f" {delta_vn.min():10.3e}, {delta_vn.max():10.3e},")
-        self._delta_file_w .write(f" {delta_w .min():10.3e}, {delta_w .max():10.3e},")
