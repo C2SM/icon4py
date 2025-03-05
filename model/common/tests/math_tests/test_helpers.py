@@ -98,18 +98,13 @@ class TestAverageTwoVerticalLevelsDownwardsOnCells(testing_helpers.StencilTest):
 
     @pytest.fixture
     def input_data(self, grid: base.BaseGrid) -> dict:
-        input_field = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
-        result = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
-        horizontal_start = 0
-        horizontal_end = grid.num_cells
-        vertical_start = 0
-        vertical_end = grid.num_levels
-
+        input_field = data_alloc.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        result = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             input_field=input_field,
             average=result,
-            vertical_start=vertical_start,
-            vertical_end=vertical_end,
-            horizontal_start=horizontal_start,
-            horizontal_end=horizontal_end,
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(grid.num_levels),
         )

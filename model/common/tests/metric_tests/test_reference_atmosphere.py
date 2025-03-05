@@ -45,10 +45,6 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     theta_ref_mc = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, backend=backend
     )
-    start = 0
-    horizontal_end = icon_grid.num_cells
-    vertical_end = icon_grid.num_levels
-
     compute_reference_atmosphere_cell_fields.with_backend(backend)(
         z_height=z_mc,
         p0ref=constants.P0REF,
@@ -62,10 +58,10 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
         exner_ref_mc=exner_ref_mc,
         rho_ref_mc=rho_ref_mc,
         theta_ref_mc=theta_ref_mc,
-        horizontal_start=start,
-        horizontal_end=horizontal_end,
-        vertical_start=start,
-        vertical_end=vertical_end,
+        horizontal_start=gtx.int32(0),
+        horizontal_end=gtx.int32(icon_grid.num_cells),
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={},
     )
 
@@ -91,10 +87,6 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
     theta_ref_ic = data_alloc.zero_field(
         icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=ta.wpfloat, backend=backend
     )
-    start = 0
-    horizontal_end = icon_grid.num_cells
-    vertical_end = icon_grid.num_levels + 1
-
     compute_reference_atmosphere_cell_fields.with_backend(backend=backend)(
         z_height=z_ifc,
         p0ref=constants.P0REF,
@@ -108,10 +100,10 @@ def test_compute_reference_atmosphere_on_half_level_mass_points(
         exner_ref_mc=exner_ref_ic,
         rho_ref_mc=rho_ref_ic,
         theta_ref_mc=theta_ref_ic,
-        horizontal_start=start,
-        horizontal_end=horizontal_end,
-        vertical_start=start,
-        vertical_end=vertical_end,
+        horizontal_start=gtx.int32(0),
+        horizontal_end=gtx.int32(icon_grid.num_cells),
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(icon_grid.num_levels + 1),
         offset_provider={},
     )
 
@@ -156,18 +148,14 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
         horizontal.domain(dims.EdgeDim)(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
-    num_edges = int(icon_grid.num_edges)
-    vertical_start = 0
-    vertical_end = gtx.int32(icon_grid.num_levels)
-
     cell_2_edge_interpolation.with_backend(backend)(
         z_mc,
         c_lin_e,
         z_me,
         horizontal_start=horizontal_start,
-        horizontal_end=num_edges,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
+        horizontal_end=gtx.int32(icon_grid.num_edges),
+        vertical_start=gtx.int32(0),
+        vertical_end=gtx.int32(icon_grid.num_levels),
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
     compute_reference_atmosphere_edge_fields.with_backend(backend)(
@@ -183,9 +171,9 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
         rho_ref_me=rho_ref_me,
         theta_ref_me=theta_ref_me,
         horizontal_start=horizontal_start,
-        horizontal_end=num_edges,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
+        horizontal_end=(gtx.int32(icon_grid.num_edges)),
+        vertical_start=(gtx.int32(0)),
+        vertical_end=(gtx.int32(icon_grid.num_levels)),
         offset_provider={},
     )
     assert helpers.dallclose(rho_ref_me.asnumpy(), rho_ref_me_ref.asnumpy())
