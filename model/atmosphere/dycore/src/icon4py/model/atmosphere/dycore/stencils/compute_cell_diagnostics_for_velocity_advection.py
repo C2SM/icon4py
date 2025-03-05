@@ -60,7 +60,7 @@ def _compute_horizontal_kinetic_energy_and_khalf_contravariant_correction(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _compute_khalf_contravariant_corrected_w(
     w: fa.CellKField[wpfloat],
     khalf_contravariant_correction_at_cell: fa.CellKField[vpfloat],
