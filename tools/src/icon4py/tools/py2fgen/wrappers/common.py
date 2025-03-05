@@ -7,25 +7,113 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # type: ignore
 
+import functools
 import logging
+from typing import TypeAlias, Union
 
+import gt4py.next as gtx
 import numpy as np
+from gt4py import eve
+from gt4py._core import definitions as gt4py_definitions
+from gt4py.next import backend as gtx_backend
+from gt4py.next.program_processors.runners.gtfn import (
+    run_gtfn_cached,
+    run_gtfn_gpu_cached,
+)
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.grid import base, horizontal, icon
-from icon4py.tools.py2fgen.settings import config
 
+
+try:
+    import dace  # type: ignore[import-untyped]
+    from gt4py.next.program_processors.runners.dace import (
+        run_dace_cpu,
+        run_dace_gpu,
+    )
+except ImportError:
+    from types import ModuleType
+    from typing import Optional
+
+    dace: Optional[ModuleType] = None  # type: ignore[no-redef] # definition needed here
+
+try:
+    import cupy as cp
+
+    xp = cp
+except ImportError:
+    cp = None
+    xp = np
+
+
+NDArray: TypeAlias = Union[np.ndarray, xp.ndarray]
 
 # TODO(havogt) import needed to register MultNodeRun in get_processor_properties, does the pattern make sense?
 assert hasattr(mpi_decomposition, "get_multinode_properties")
 
-xp = config.array_ns
-
 log = logging.getLogger(__name__)
 
 
-def adjust_fortran_indices(inp: np.ndarray | xp.ndarray, offset: int) -> np.ndarray | xp.ndarray:
+class BackendIntEnum(eve.IntEnum):
+    DEFAULT = 0
+    DEFAULT_CPU = 1
+    DEFAULT_GPU = 2
+    _GTFN_CPU = 11
+    _GTFN_GPU = 12
+    _DACE_CPU = 21
+    _DACE_GPU = 22
+
+
+_BACKEND_MAP = {
+    BackendIntEnum._GTFN_CPU: run_gtfn_cached,
+    BackendIntEnum._GTFN_GPU: run_gtfn_gpu_cached,
+}
+if dace:
+    _BACKEND_MAP |= {
+        BackendIntEnum._DACE_CPU: run_dace_cpu,
+        BackendIntEnum._DACE_GPU: run_dace_gpu,
+    }
+
+
+def select_backend(selector: BackendIntEnum, on_gpu: bool) -> gtx_backend.Backend:
+    default_cpu = BackendIntEnum._GTFN_CPU
+    default_gpu = BackendIntEnum._GTFN_GPU
+    if selector == BackendIntEnum.DEFAULT:
+        if on_gpu:
+            selector = BackendIntEnum.DEFAULT_GPU
+        else:
+            selector = BackendIntEnum.DEFAULT_CPU
+    if selector == BackendIntEnum.DEFAULT_CPU:
+        selector = default_cpu
+    elif selector == BackendIntEnum.DEFAULT_GPU:
+        selector = default_gpu
+
+    if selector not in (
+        BackendIntEnum._GTFN_CPU,
+        BackendIntEnum._GTFN_GPU,
+        BackendIntEnum._DACE_CPU,
+        BackendIntEnum._DACE_GPU,
+    ):
+        raise ValueError(f"Invalid backend selector: {selector.name}")
+    if on_gpu and selector in (BackendIntEnum._DACE_CPU, BackendIntEnum._GTFN_CPU):
+        raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=True")
+    if not on_gpu and selector in (BackendIntEnum._DACE_GPU, BackendIntEnum._GTFN_GPU):
+        raise ValueError(f"Inconsistent backend selection: {selector.name} and on_gpu=False")
+
+    assert selector in _BACKEND_MAP
+    return _BACKEND_MAP[selector]
+
+
+@functools.lru_cache(maxsize=None)
+def cached_dummy_field(
+    _name: str, domain: gtx.Domain, dtype: gt4py_definitions.DType, allocator: gtx_backend.Backend
+) -> gtx.Field:
+    # _name is used to differentiate between different dummy fields
+    return gtx.zeros(domain, dtype=dtype, allocator=allocator)
+
+
+def adjust_fortran_indices(inp: np.ndarray | NDArray, offset: int) -> np.ndarray | NDArray:
     """For some Fortran arrays we need to subtract 1 to be compatible with Python indexing."""
     return inp - offset
 
@@ -37,17 +125,16 @@ def construct_icon_grid(
     vertex_ends: np.ndarray,
     edge_starts: np.ndarray,
     edge_ends: np.ndarray,
-    c2e: xp.ndarray,
-    e2c: xp.ndarray,
-    c2e2c: xp.ndarray,
-    e2c2e: xp.ndarray,
-    e2v: xp.ndarray,
-    v2e: xp.ndarray,
-    v2c: xp.ndarray,
-    e2c2v: xp.ndarray,
-    c2v: xp.ndarray,
+    c2e: NDArray,
+    e2c: NDArray,
+    c2e2c: NDArray,
+    e2c2e: NDArray,
+    e2v: NDArray,
+    v2e: NDArray,
+    v2c: NDArray,
+    e2c2v: NDArray,
+    c2v: NDArray,
     grid_id: str,
-    global_grid_params: icon.GlobalGridParams,
     num_vertices: int,
     num_cells: int,
     num_edges: int,
@@ -63,6 +150,8 @@ def construct_icon_grid(
 
     log.debug("Offsetting Fortran connectivitity arrays by 1")
     offset = 1
+
+    xp = np if not on_gpu else cp
 
     cells_start_index = adjust_fortran_indices(cell_starts, offset)
     vertex_start_index = adjust_fortran_indices(vertex_starts, offset)
@@ -102,7 +191,6 @@ def construct_icon_grid(
     grid = (
         icon.IconGrid(id_=grid_id)
         .with_config(config)
-        .with_global_params(global_grid_params)
         .with_start_end_indices(dims.VertexDim, vertex_start_index, vertex_end_index)
         .with_start_end_indices(dims.EdgeDim, edge_start_index, edge_end_index)
         .with_start_end_indices(dims.CellDim, cells_start_index, cells_end_index)
