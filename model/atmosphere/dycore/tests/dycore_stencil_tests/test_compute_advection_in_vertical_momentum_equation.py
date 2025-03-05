@@ -127,7 +127,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         khalf_horizontal_advection_of_w_at_edge: np.ndarray,
         coeff1_dwdz: np.ndarray,
         coeff2_dwdz: np.ndarray,
-        e_bln_c_s,
+        e_bln_c_s: np.ndarray,
         ddqz_z_half,
         area,
         geofac_n2s,
