@@ -26,7 +26,7 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@field_operator
+@gtx.field_operator
 def _compute_advective_vertical_wind_tendency_and_apply_diffusion(
     khalf_contravariant_corrected_w_at_cell: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
