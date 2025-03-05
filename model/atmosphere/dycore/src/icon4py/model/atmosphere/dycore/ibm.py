@@ -3,6 +3,7 @@ import logging
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import where
 
+from icon4py.model.testing import serialbox as sb
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.grid import (
@@ -33,14 +34,20 @@ class ImmersedBoundaryMethod:
     def __init__(
         self,
         grid: icon_grid.IconGrid,
+        savepoint_path: str,
         grid_file_path: str,
-        vertical_params: v_grid.VerticalGrid,
+        backend: gtx.backend.Backend = gtx.gtfn_cpu,
     ):
         """
         Initialize the immersed boundary method.
         """
 
-        self._make_masks(grid, grid_file_path, vertical_params)
+        self._make_masks(
+            grid=grid,
+            savepoint_path=savepoint_path,
+            grid_file_path=grid_file_path,
+            backend=backend,
+        )
 
         self._dirichlet_value_vn      = 0.0
         self._dirichlet_value_w       = 0.0
@@ -53,20 +60,20 @@ class ImmersedBoundaryMethod:
     def _make_masks(
         self,
         grid: icon_grid.IconGrid,
+        savepoint_path: str,
         grid_file_path: str,
-        vertical_params: v_grid.VerticalGrid,
+        backend: gtx.backend.Backend = gtx.gtfn_cpu,
     ) -> None:
         """
         Create masks for the immersed boundary method.
         """
-
         half_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels+1), dtype=bool)
         full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
         full_edge_mask_np = np.zeros((grid.num_edges, grid.num_levels), dtype=bool)
         neigh_full_cell_mask_np = np.zeros((grid.num_cells, grid.num_levels), dtype=bool)
 
         #half_cell_mask_np = self._mask_test_cells(half_cell_mask_np)
-        half_cell_mask_np = self._mask_gaussian_hill(grid, grid_file_path, vertical_params, half_cell_mask_np)
+        half_cell_mask_np = self._mask_gaussian_hill(grid, grid_file_path, savepoint_path, backend, half_cell_mask_np)
 
         full_cell_mask_np = half_cell_mask_np[:, :-1]
 
@@ -97,7 +104,8 @@ class ImmersedBoundaryMethod:
         self,
         grid: icon_grid.IconGrid,
         grid_file_path: str,
-        vertical_params: v_grid.VerticalGrid,
+        savepoint_path: str,
+        backend: gtx.backend.Backend,
         half_cell_mask_np: np.ndarray,
     ) -> np.ndarray:
         """
@@ -107,34 +115,42 @@ class ImmersedBoundaryMethod:
         hill_y = 500.
         hill_height = 100.
         hill_width  = 100.
+
+        grid_file = xr.open_dataset(grid_file_path)
+        data_provider = sb.IconSerialDataProvider(
+            backend=backend,
+            fname_prefix="icon_pydycore",
+            path=savepoint_path,
+        )
+        metrics_savepoint = data_provider.from_metrics_savepoint()
+        half_level_heights = metrics_savepoint.z_ifc().asnumpy()
+
         compute_distance_from_hill = lambda x, y: ((x - hill_x)**2 + (y - hill_y)**2)**0.5
         compute_hill_elevation = lambda x, y: hill_height * np.exp(-(compute_distance_from_hill(x, y) / hill_width)**2)
-        grid_file = xr.open_dataset(grid_file_path)
         cell_x = grid_file.cell_circumcenter_cartesian_x.values
         cell_y = grid_file.cell_circumcenter_cartesian_y.values
-        interface_physical_height = vertical_params.interface_physical_height.ndarray
         buildings = [
             [390, 410, 490, 510,  60],
             [490, 510, 490, 510, 130],
         ]
         for k in range(half_cell_mask_np.shape[1]):
-            half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= interface_physical_height[k], True, False)
+            half_cell_mask_np[:, k] = np.where(compute_hill_elevation(cell_x, cell_y) >= half_level_heights[:,k], True, False)
             for building in buildings:
                 xmin, xmax, ymin, ymax, top = building
                 half_cell_mask_np[
-                    (cell_x >= xmin) & (cell_x <= xmax) & (cell_y >= ymin) & (cell_y <= ymax) & (interface_physical_height[k] <= top), k
+                    (cell_x >= xmin) & (cell_x <= xmax) & (cell_y >= ymin) & (cell_y <= ymax) & (half_level_heights[:,k] <= top), k
                 ] = True
-        if DEBUG_LEVEL >= 4:
-            with open("testdata/hill_elevation_cells.csv", "r") as f:
-                hill_elevation_cells = np.loadtxt(f, delimiter=",")
-            for i in range(cell_x.shape[0]):
-                print(f"cell {i:03d}: {cell_x[i]:8.4e} {cell_y[i]:8.4e} {compute_distance_from_hill(cell_x[i], cell_y[i]):8.4e} {compute_hill_elevation(cell_x[i], cell_y[i]):8.4e}")
-                print(f"          {hill_elevation_cells[i,2]:8.4e} {hill_elevation_cells[i,3]:8.4e} {hill_elevation_cells[i,4]:8.4e} {hill_elevation_cells[i,5]:8.4e}")
-            import matplotlib.pyplot as plt
-            plt.figure(1); plt.clf(); plt.show(block=False)
-            plt.plot(compute_distance_from_hill(cell_x, cell_y), compute_hill_elevation(cell_x, cell_y), 'o')
-            plt.plot(hill_elevation_cells[:,4], hill_elevation_cells[:,5], '+')
-            plt.draw()
+        #if DEBUG_LEVEL >= 4:
+        #    with open("testdata/hill_elevation_cells.csv", "r") as f:
+        #        hill_elevation_cells = np.loadtxt(f, delimiter=",")
+        #    for i in range(cell_x.shape[0]):
+        #        print(f"cell {i:03d}: {cell_x[i]:8.4e} {cell_y[i]:8.4e} {compute_distance_from_hill(cell_x[i], cell_y[i]):8.4e} {compute_hill_elevation(cell_x[i], cell_y[i]):8.4e}")
+        #        print(f"          {hill_elevation_cells[i,2]:8.4e} {hill_elevation_cells[i,3]:8.4e} {hill_elevation_cells[i,4]:8.4e} {hill_elevation_cells[i,5]:8.4e}")
+        #    import matplotlib.pyplot as plt
+        #    plt.figure(1); plt.clf(); plt.show(block=False)
+        #    plt.plot(compute_distance_from_hill(cell_x, cell_y), compute_hill_elevation(cell_x, cell_y), 'o')
+        #    plt.plot(hill_elevation_cells[:,4], hill_elevation_cells[:,5], '+')
+        #    plt.draw()
         return half_cell_mask_np
 
 
