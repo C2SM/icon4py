@@ -91,7 +91,7 @@ class TestComputeHorizontalKineticEnergyAndKhalfContravariantCorrectedW(StencilT
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid: base.BaseGrid):
         horizontal_kinetic_energy_at_cell = data_alloc.zero_field(grid, dims.CellDim, dims.KDim)
         khalf_contravariant_corrected_w_at_cell = data_alloc.zero_field(
             grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}
